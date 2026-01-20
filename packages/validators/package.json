@@ -1,0 +1,21 @@
+{
+  "name": "@trainers/validators",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./user": "./src/user.ts",
+    "./post": "./src/post.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@trainers/typescript-config": "workspace:*",
+    "typescript": "^5.7.3"
+  }
+}

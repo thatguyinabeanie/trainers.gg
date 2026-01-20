@@ -1,0 +1,17 @@
+{
+  "name": "@trainers/tailwind-config",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./theme.ts",
+    "./postcss": "./postcss.config.js"
+  },
+  "files": [
+    "theme.ts",
+    "postcss.config.js"
+  ],
+  "devDependencies": {
+    "tailwindcss": "^4.0.0"
+  }
+}
