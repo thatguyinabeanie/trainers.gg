@@ -1,17 +1,10 @@
+// Client-safe exports only
+// Server-only functions should be imported directly from "@/lib/supabase/server"
+// Middleware functions should be imported directly from "@/lib/supabase/middleware"
+
 export { createClient, supabase } from "./client";
 export {
-  createClient as createServerClient,
-  createClientReadOnly,
-} from "./server";
-export {
-  createClient as createMiddlewareClient,
-  refreshSession,
-} from "./middleware";
-export {
-  getUser,
   getUserClient,
-  isAuthenticated,
-  getUserId,
   getAuthUrls,
   oauthProviders,
   type OAuthProvider,

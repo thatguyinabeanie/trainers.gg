@@ -91,6 +91,9 @@ export function useSupabaseQuery<T>(
     }
   }, [supabase, queryFn]);
 
+  // Stringify deps to trigger re-execution when values change
+  const depsKey = JSON.stringify(deps);
+
   useEffect(() => {
     mountedRef.current = true;
     execute();
@@ -98,8 +101,7 @@ export function useSupabaseQuery<T>(
     return () => {
       mountedRef.current = false;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [execute, ...deps]);
+  }, [execute, depsKey]);
 
   return {
     data,

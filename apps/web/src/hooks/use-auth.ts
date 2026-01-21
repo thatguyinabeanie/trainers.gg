@@ -1,5 +1,7 @@
 "use client";
 
+/* global window */
+
 import { useEffect, useMemo, useState } from "react";
 import { type User, type Session } from "@supabase/supabase-js";
 import { createPublicSupabaseClient } from "@trainers/supabase";
@@ -51,10 +53,12 @@ export function useAuth() {
   const signInWithOAuth = async (
     provider: "google" | "discord" | "github" | "twitter"
   ) => {
+    const origin =
+      typeof window !== "undefined" ? window.location.origin : "";
     const { error } = await supabase.auth.signInWithOAuth({
       provider,
       options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
+        redirectTo: `${origin}/auth/callback`,
       },
     });
     if (error) {
@@ -83,8 +87,10 @@ export function useAuth() {
   };
 
   const resetPassword = async (email: string) => {
+    const origin =
+      typeof window !== "undefined" ? window.location.origin : "";
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/reset-password`,
+      redirectTo: `${origin}/reset-password`,
     });
     return { error };
   };

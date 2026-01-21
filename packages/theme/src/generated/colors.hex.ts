@@ -1,12 +1,12 @@
 /**
  * AUTO-GENERATED - DO NOT EDIT MANUALLY
  * Generated from packages/theme/src/primitives/colors.oklch.ts
- *
+ * 
  * Hex color values for mobile/NativeWind compatibility
  */
 
 export const colors = {
-  primary: {
+  "primary": {
     "50": "#e7faf6",
     "100": "#cff5ed",
     "200": "#9ae9dc",
@@ -17,9 +17,9 @@ export const colors = {
     "700": "#1a8279",
     "800": "#246a64",
     "900": "#1d5853",
-    "950": "#173937",
+    "950": "#173937"
   },
-  neutral: {
+  "neutral": {
     "50": "#fafafa",
     "100": "#f5f5f5",
     "200": "#e5e5e5",
@@ -30,9 +30,9 @@ export const colors = {
     "700": "#404040",
     "800": "#262626",
     "900": "#171717",
-    "950": "#0a0a0a",
+    "950": "#0a0a0a"
   },
-  destructive: {
+  "destructive": {
     "50": "#fff0ee",
     "100": "#ffdfd9",
     "200": "#ffbeb4",
@@ -43,8 +43,8 @@ export const colors = {
     "700": "#a20711",
     "800": "#80070d",
     "900": "#620a0b",
-    "950": "#370404",
-  },
+    "950": "#370404"
+  }
 } as const;
 
 export type HexColors = typeof colors;

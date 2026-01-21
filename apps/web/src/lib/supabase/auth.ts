@@ -1,20 +1,10 @@
 import { type User } from "@supabase/supabase-js";
-import { createClient } from "./server";
 import { createClient as createBrowserClient } from "./client";
 
-export async function getUser(): Promise<User | null> {
-  const supabase = await createClient();
-  const {
-    data: { user },
-    error,
-  } = await supabase.auth.getUser();
-  if (error) {
-    console.error("Error getting user:", error);
-    return null;
-  }
-  return user;
-}
-
+/**
+ * Client-side function to get the current user.
+ * Use this in Client Components and browser-side code.
+ */
 export async function getUserClient(): Promise<User | null> {
   const supabase = createBrowserClient();
   const {
@@ -28,16 +18,9 @@ export async function getUserClient(): Promise<User | null> {
   return user;
 }
 
-export async function isAuthenticated(): Promise<boolean> {
-  const user = await getUser();
-  return !!user;
-}
-
-export async function getUserId(): Promise<string | null> {
-  const user = await getUser();
-  return user?.id ?? null;
-}
-
+/**
+ * Auth redirect URLs for different environments.
+ */
 export const getAuthUrls = () => {
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
   return {
@@ -49,6 +32,9 @@ export const getAuthUrls = () => {
   };
 };
 
+/**
+ * OAuth provider configurations.
+ */
 export const oauthProviders = [
   { name: "google", displayName: "Google", icon: "🔍" },
   { name: "discord", displayName: "Discord", icon: "🎮" },
