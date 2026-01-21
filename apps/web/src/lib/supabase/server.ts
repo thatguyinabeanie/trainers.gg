@@ -7,17 +7,17 @@ import {
 
 /**
  * Create a Supabase client for server-side usage with Clerk authentication.
- * Uses the Clerk "supabase" JWT template for authenticated requests.
+ * Uses Clerk's native Supabase integration via session tokens.
  *
- * Requires a "supabase" JWT template configured in Clerk Dashboard.
- * See: https://clerk.com/docs/integrations/databases/supabase
+ * Requires Third-Party Auth configured in Supabase Dashboard.
+ * See: https://supabase.com/docs/guides/auth/third-party/clerk
  */
 export async function createServerSupabaseClient() {
   const { getToken } = await auth();
 
   return createSupabaseClient(async () => {
-    // Use the "supabase" JWT template configured in Clerk
-    return (await getToken({ template: "supabase" })) ?? null;
+    // Use Clerk's session token directly (native Supabase integration)
+    return (await getToken()) ?? null;
   });
 }
 
