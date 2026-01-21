@@ -5,11 +5,13 @@
       "type": "local",
       "command": [
         "npx",
-        "@playwright/mcp",
+        "-y",
+        "@playwright/mcp@latest",
         "--browser",
         "chrome",
         "--extension",
       ],
+      "enabled": true,
     },
     "vercel": {
       "type": "remote",
