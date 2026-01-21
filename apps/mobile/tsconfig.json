@@ -1,6 +1,7 @@
 {
   "extends": "@trainers/typescript-config/expo.json",
   "compilerOptions": {
+    "composite": true,
     "baseUrl": ".",
     "paths": {
       "@/*": [

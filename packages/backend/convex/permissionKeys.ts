@@ -66,7 +66,8 @@ export type PermissionKey =
   | "admin.manage_temporary_roles";
 
 // Permission constants for use in Convex backend code
-export const PERMISSIONS: Record<string, PermissionKey> = {
+// Using `as const satisfies` to preserve literal types while ensuring type safety
+export const PERMISSIONS = {
   // Organization Permissions
   ORG_CREATE: "organization.create",
   ORG_REQUEST_CREATE: "organization.request.create",
@@ -150,4 +151,4 @@ export const PERMISSIONS: Record<string, PermissionKey> = {
   ADMIN_MANAGE_AUDIT_LOGS: "admin.manage_audit_logs",
   ADMIN_ASSUME_SITE_ADMIN: "admin.assume_site_admin",
   ADMIN_MANAGE_TEMPORARY_ROLES: "admin.manage_temporary_roles",
-};
+} as const satisfies Record<string, PermissionKey>;

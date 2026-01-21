@@ -1,6 +1,7 @@
 {
   "extends": "@trainers/typescript-config/library.json",
   "compilerOptions": {
+    "composite": true,
     "outDir": "dist",
     "rootDir": "."
   },

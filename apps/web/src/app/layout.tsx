@@ -1,8 +1,11 @@
-import { ClerkProvider } from "@clerk/nextjs";
+import { Providers } from "@/components/providers";
+import { TopNav } from "@/components/topnav";
+import { Toaster } from "@/components/ui/sonner";
 import type { Metadata } from "next";
 import { Geist_Mono, Inter } from "next/font/google";
 import type { ReactNode } from "react";
 import "@/styles/globals.css";
+import { cn } from "@/lib/utils";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 
@@ -11,10 +14,15 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const defaultUrl = process.env.VERCEL_URL
+  ? `https://${process.env.VERCEL_URL}`
+  : "http://localhost:3000";
+
 export const metadata: Metadata = {
+  metadataBase: new URL(defaultUrl),
   title: "trainers.gg - Pokemon Community",
   description:
-    "The social platform for Pokemon trainers, powered by Bluesky/AT Protocol",
+    "The social platform for Pokemon trainers. Build teams, compete in tournaments, and connect with the community.",
 };
 
 export default function RootLayout({
@@ -23,10 +31,48 @@ export default function RootLayout({
   children: ReactNode;
 }>) {
   return (
-    <ClerkProvider>
-      <html lang="en" className={inter.variable}>
-        <body className={`${geistMono.variable} antialiased`}>{children}</body>
-      </html>
-    </ClerkProvider>
+    <html lang="en" className={inter.variable} suppressHydrationWarning>
+      <body
+        className={cn(
+          geistMono.variable,
+          "bg-background text-foreground flex min-h-screen flex-col antialiased"
+        )}
+      >
+        <Providers>
+          <TopNav />
+          <main className="flex w-full flex-1 flex-col">{children}</main>
+
+          <footer className="border-border/40 w-full border-t py-6">
+            <div className="text-muted-foreground container mx-auto flex flex-col items-center justify-between px-4 text-sm md:flex-row md:px-6">
+              <p>
+                Powered by{" "}
+                <a
+                  href="https://bsky.app"
+                  target="_blank"
+                  className="font-bold hover:underline"
+                  rel="noreferrer"
+                >
+                  Bluesky
+                </a>
+                {" & "}
+                <a
+                  href="https://convex.dev"
+                  target="_blank"
+                  className="font-bold hover:underline"
+                  rel="noreferrer"
+                >
+                  Convex
+                </a>
+              </p>
+              <div className="flex items-center gap-4">
+                <span>&copy; {new Date().getFullYear()} trainers.gg</span>
+              </div>
+            </div>
+          </footer>
+
+          <Toaster />
+        </Providers>
+      </body>
+    </html>
   );
 }

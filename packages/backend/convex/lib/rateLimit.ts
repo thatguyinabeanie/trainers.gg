@@ -74,7 +74,7 @@ export class RateLimitExceededError extends Error {
  */
 function createRateLimitIdentifier(
   profileId: Id<"profiles">,
-  action: RateLimitAction
+  action: RateLimitAction,
 ): string {
   return `${profileId}:${action}`;
 }
@@ -111,7 +111,7 @@ function createRateLimitIdentifier(
 export async function checkRateLimit(
   ctx: MutationCtx,
   profileId: Id<"profiles">,
-  action: RateLimitAction
+  action: RateLimitAction,
 ): Promise<RateLimitResult> {
   const config = RATE_LIMIT_ACTIONS[action];
   const identifier = createRateLimitIdentifier(profileId, action);
@@ -147,7 +147,7 @@ export async function checkRateLimit(
 
   // Filter to requests within the sliding window
   const recentRequests = (existingRecord.requestTimestamps || []).filter(
-    (timestamp) => timestamp > windowStart
+    (timestamp) => timestamp > windowStart,
   );
 
   // Current count is requests in the sliding window
@@ -156,7 +156,7 @@ export async function checkRateLimit(
   // Check if limit exceeded
   if (currentCount >= config.maxRequests) {
     // Calculate reset time based on oldest request in the window
-    const oldestRequestTime = recentRequests[0];
+    const oldestRequestTime = recentRequests[0] ?? now;
     const resetInMs = oldestRequestTime + config.windowMs - now;
 
     return {
@@ -205,7 +205,7 @@ export async function checkRateLimit(
 export async function enforceRateLimit(
   ctx: MutationCtx,
   profileId: Id<"profiles">,
-  action: RateLimitAction
+  action: RateLimitAction,
 ): Promise<void> {
   const result = await checkRateLimit(ctx, profileId, action);
   if (!result.allowed) {
@@ -226,7 +226,7 @@ export async function enforceRateLimit(
  */
 export async function cleanupExpiredRateLimits(
   ctx: MutationCtx,
-  maxRecordsToDelete = 100
+  maxRecordsToDelete = 100,
 ): Promise<number> {
   const now = Date.now();
 
