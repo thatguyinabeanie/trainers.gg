@@ -71,24 +71,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       // With Clerk + Supabase integration, we use clerk_id to find the user
       // The Supabase client is already authenticated via Clerk session token
-      const { data: userData, error: userError } = await supabase
+      // Use .maybeSingle() to return null instead of throwing 406 when no row exists
+      const { data: userData } = await supabase
         .from("users")
         .select("*")
         .eq("clerk_id", clerkUser.id)
-        .single();
+        .maybeSingle();
 
-      if (userError || !userData) {
+      if (!userData) {
         // User doesn't exist in Supabase yet - will be created by syncUser
         setUser(null);
         return;
       }
 
-      // Get profile
+      // Get profile (may not exist yet for new users)
       const { data: profileData } = await supabase
         .from("profiles")
         .select("*")
         .eq("user_id", userData.id)
-        .single();
+        .maybeSingle();
 
       setUser({
         id: userData.id,
@@ -120,11 +121,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsSyncing(true);
     try {
       // Check if user exists by clerk_id
+      // Use .maybeSingle() to return null instead of throwing 406 when no row exists
       const { data: existingUser } = await supabase
         .from("users")
         .select("id")
         .eq("clerk_id", clerkUser.id)
-        .single();
+        .maybeSingle();
 
       if (!existingUser) {
         // Generate a UUID for the new user
