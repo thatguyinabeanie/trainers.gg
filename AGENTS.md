@@ -1,12 +1,12 @@
 # trainers.gg - Agent Guidelines
 
-A Pokemon community platform powered by Bluesky/AT Protocol. Monorepo with Next.js 15 web app, Expo 54 mobile app, and Convex backend.
+A Pokemon community platform powered by Bluesky/AT Protocol. Monorepo with Next.js 16 web app, Expo 54 mobile app, and Convex backend.
 
 ## Monorepo Structure
 
 ```
-apps/web        → Next.js 15 (React 18) - @trainers/web
-apps/mobile     → Expo 54 (React 18) - @trainers/mobile
+apps/web        → Next.js 16 (React 19) - @trainers/web
+apps/mobile     → Expo 54 (React 19) - @trainers/mobile
 packages/backend   → Convex database/functions - @trainers/backend
 packages/ui        → Shared UI components - @trainers/ui
 packages/validators → Zod schemas - @trainers/validators
@@ -201,7 +201,7 @@ export const updateUser = mutation({
 
 ### React Version
 
-Both web and mobile use **React 18.x** for consistency across the monorepo.
+Both web and mobile use **React 19.2** for consistency across the monorepo (Next.js 16 + Expo 54).
 
 ### Tailwind Versions
 
