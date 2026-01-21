@@ -8,8 +8,12 @@
         "@playwright/mcp",
         "--browser",
         "chrome",
-        "--extension"
-      ]
-    }
-  }
+        "--extension",
+      ],
+    },
+    "vercel": {
+      "type": "remote",
+      "url": "https://mcp.vercel.com/beanie-gg/trainers-gg",
+    },
+  },
 }
