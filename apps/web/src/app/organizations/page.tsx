@@ -3,7 +3,6 @@
 import { useQuery } from "convex/react";
 import { api } from "@/lib/convex/api";
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -13,7 +12,7 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Building2, Plus, Search, Loader2, Trophy } from "lucide-react";
+import { Building2, Search, Loader2, Trophy } from "lucide-react";
 import { useState } from "react";
 
 export default function OrganizationsPage() {
@@ -37,22 +36,14 @@ export default function OrganizationsPage() {
   return (
     <div className="container mx-auto px-4 py-8">
       {/* Header */}
-      <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="flex items-center gap-2 text-3xl font-bold">
-            <Building2 className="h-8 w-8" />
-            Organizations
-          </h1>
-          <p className="text-muted-foreground mt-1">
-            Browse Pokemon community organizations
-          </p>
-        </div>
-        <Link href="/organizations/create">
-          <Button>
-            <Plus className="mr-2 h-4 w-4" />
-            Create Organization
-          </Button>
-        </Link>
+      <div className="mb-8">
+        <h1 className="flex items-center gap-2 text-3xl font-bold">
+          <Building2 className="h-8 w-8" />
+          Organizations
+        </h1>
+        <p className="text-muted-foreground mt-1">
+          Browse Pokemon community organizations
+        </p>
       </div>
 
       {/* Search */}
@@ -81,17 +72,11 @@ export default function OrganizationsPage() {
             <h3 className="mb-2 text-lg font-semibold">
               No organizations found
             </h3>
-            <p className="text-muted-foreground mb-4 text-center">
+            <p className="text-muted-foreground text-center">
               {searchQuery
                 ? "Try a different search term"
-                : "Be the first to create an organization!"}
+                : "Check back later for community organizations!"}
             </p>
-            <Link href="/organizations/create">
-              <Button>
-                <Plus className="mr-2 h-4 w-4" />
-                Create Organization
-              </Button>
-            </Link>
           </CardContent>
         </Card>
       )}
