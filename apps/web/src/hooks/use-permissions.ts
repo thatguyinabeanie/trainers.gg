@@ -1,9 +1,8 @@
 "use client";
 
-import { type Id } from "@trainers/backend-convex/convex/_generated/dataModel";
 import { type PermissionKey } from "@/lib/constants/permissions";
-import { api } from "@/lib/convex/api";
-import { useQuery } from "convex/react";
+import { getCurrentUser, getUserPermissions, hasPermission } from "@trainers/supabase";
+import { useSupabaseQuery } from "@/lib/supabase";
 
 /**
  * Custom hook to check if the current user has a specific permission
@@ -13,24 +12,25 @@ import { useQuery } from "convex/react";
  */
 export function usePermission(permission: PermissionKey, enabled = true) {
   // Get current user with profile
-  const user = useQuery(api.auth.getCurrentUser);
+  const { data: user, isLoading: userLoading } = useSupabaseQuery(
+    (supabase) => getCurrentUser(supabase),
+    []
+  );
 
   // Check permission if user is loaded and has a profile
-  const permissionCheck = useQuery(
-    api.permissions.queries.hasPermissionQuery,
-    user?.profile?._id && enabled
-      ? {
-          profileId: user.profile._id as Id<"profiles">,
-          permission,
-        }
-      : "skip"
+  const { data: permissionCheck, isLoading: permissionLoading } = useSupabaseQuery(
+    async (supabase) => {
+      if (!user?.profile?.id || !enabled) return false;
+      return hasPermission(supabase, user.profile.id, permission);
+    },
+    [user?.profile?.id, enabled, permission]
   );
 
   return {
     hasPermission: permissionCheck === true,
     isLoading:
-      user === undefined ||
-      (user?.profile?._id && enabled && permissionCheck === undefined),
+      userLoading ||
+      (user?.profile?.id && enabled && permissionLoading),
     user,
   };
 }
@@ -43,16 +43,18 @@ export function usePermission(permission: PermissionKey, enabled = true) {
  */
 export function usePermissions(permissions: PermissionKey[], enabled = true) {
   // Get current user with profile
-  const user = useQuery(api.auth.getCurrentUser);
+  const { data: user, isLoading: userLoading } = useSupabaseQuery(
+    (supabase) => getCurrentUser(supabase),
+    []
+  );
 
   // Get all user permissions in a single query
-  const userPermissions = useQuery(
-    api.permissions.queries.getUserPermissions,
-    user?.profile?._id && enabled
-      ? {
-          profileId: user.profile._id as Id<"profiles">,
-        }
-      : "skip"
+  const { data: userPermissions, isLoading: permissionsLoading } = useSupabaseQuery(
+    async (supabase) => {
+      if (!user?.profile?.id || !enabled) return [];
+      return getUserPermissions(supabase, user.profile.id);
+    },
+    [user?.profile?.id, enabled]
   );
 
   // Create permissions map by checking if each requested permission is in the user's permissions
@@ -62,8 +64,8 @@ export function usePermissions(permissions: PermissionKey[], enabled = true) {
   });
 
   const isLoading =
-    user === undefined ||
-    (user?.profile?._id && enabled && userPermissions === undefined);
+    userLoading ||
+    (user?.profile?.id && enabled && permissionsLoading);
 
   return {
     permissions: permissionsMap,

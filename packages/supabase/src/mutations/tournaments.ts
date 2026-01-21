@@ -216,15 +216,18 @@ export async function registerForTournament(
     throw new Error("Tournament is not open for registration");
   }
 
-  // Check max participants
+  // Check max participants and determine registration status
+  let registrationStatus: "registered" | "waitlist" = "registered";
   if (tournament.max_participants) {
     const { count } = await supabase
       .from("tournament_registrations")
       .select("*", { count: "exact", head: true })
-      .eq("tournament_id", tournamentId);
+      .eq("tournament_id", tournamentId)
+      .eq("status", "registered");
 
     if ((count ?? 0) >= tournament.max_participants) {
-      throw new Error("Tournament is full");
+      // Tournament is full, add to waitlist instead of rejecting
+      registrationStatus = "waitlist";
     }
   }
 
@@ -234,7 +237,7 @@ export async function registerForTournament(
     .insert({
       tournament_id: tournamentId,
       profile_id: profile.id,
-      status: "pending",
+      status: registrationStatus,
       registered_at: new Date().toISOString(),
       team_name: data?.teamName,
       notes: data?.notes,
@@ -244,7 +247,11 @@ export async function registerForTournament(
     .single();
 
   if (error) throw error;
-  return { success: true, registrationId: registration.id };
+  return {
+    success: true,
+    registrationId: registration.id,
+    status: registrationStatus,
+  };
 }
 
 /**
@@ -374,4 +381,497 @@ export async function updateRegistrationStatus(
 
   if (error) throw error;
   return { success: true };
+}
+
+/**
+ * Check in to a tournament
+ */
+export async function checkIn(supabase: TypedClient, tournamentId: string) {
+  const profile = await getCurrentProfile(supabase);
+  if (!profile) throw new Error("Not authenticated");
+
+  // Find the user's registration
+  const { data: registration } = await supabase
+    .from("tournament_registrations")
+    .select("id, status")
+    .eq("tournament_id", tournamentId)
+    .eq("profile_id", profile.id)
+    .single();
+
+  if (!registration) throw new Error("Registration not found");
+
+  // Validate current status allows check-in
+  if (
+    registration.status !== "registered" &&
+    registration.status !== "confirmed"
+  ) {
+    throw new Error(
+      `Cannot check in from status "${registration.status}". Must be "registered" or "confirmed".`,
+    );
+  }
+
+  // Check tournament allows check-in (should be upcoming or active)
+  const { data: tournament } = await supabase
+    .from("tournaments")
+    .select("status")
+    .eq("id", tournamentId)
+    .single();
+
+  if (!tournament) throw new Error("Tournament not found");
+  if (tournament.status !== "upcoming" && tournament.status !== "active") {
+    throw new Error("Tournament is not open for check-in");
+  }
+
+  const { error } = await supabase
+    .from("tournament_registrations")
+    .update({ status: "checked_in" })
+    .eq("id", registration.id);
+
+  if (error) throw error;
+  return { success: true };
+}
+
+/**
+ * Undo check-in for a tournament
+ */
+export async function undoCheckIn(supabase: TypedClient, tournamentId: string) {
+  const profile = await getCurrentProfile(supabase);
+  if (!profile) throw new Error("Not authenticated");
+
+  // Find the user's registration
+  const { data: registration } = await supabase
+    .from("tournament_registrations")
+    .select("id, status")
+    .eq("tournament_id", tournamentId)
+    .eq("profile_id", profile.id)
+    .single();
+
+  if (!registration) throw new Error("Registration not found");
+
+  if (registration.status !== "checked_in") {
+    throw new Error("You are not currently checked in");
+  }
+
+  // Check tournament status - can only undo before tournament starts
+  const { data: tournament } = await supabase
+    .from("tournaments")
+    .select("status")
+    .eq("id", tournamentId)
+    .single();
+
+  if (!tournament) throw new Error("Tournament not found");
+  if (tournament.status === "active") {
+    throw new Error("Cannot undo check-in after tournament has started");
+  }
+
+  const { error } = await supabase
+    .from("tournament_registrations")
+    .update({ status: "registered" })
+    .eq("id", registration.id);
+
+  if (error) throw error;
+  return { success: true };
+}
+
+/**
+ * Start a match (set status to active)
+ */
+export async function startMatch(supabase: TypedClient, matchId: string) {
+  const profile = await getCurrentProfile(supabase);
+  if (!profile) throw new Error("Not authenticated");
+
+  // Get match with round and phase info to verify tournament ownership
+  const { data: match } = await supabase
+    .from("tournament_matches")
+    .select(
+      `
+      id,
+      status,
+      profile1_id,
+      profile2_id,
+      round_id,
+      tournament_rounds!inner (
+        phase_id,
+        tournament_phases!inner (
+          tournament_id,
+          tournaments!inner (
+            organization_id,
+            organizations!inner (
+              owner_profile_id
+            )
+          )
+        )
+      )
+    `,
+    )
+    .eq("id", matchId)
+    .single();
+
+  if (!match) throw new Error("Match not found");
+
+  // Check permission - must be tournament organizer or a player in the match
+  const rounds = match.tournament_rounds as unknown as {
+    phase_id: string;
+    tournament_phases: {
+      tournament_id: string;
+      tournaments: {
+        organization_id: string;
+        organizations: {
+          owner_profile_id: string;
+        };
+      };
+    };
+  };
+
+  const isOrganizer =
+    rounds.tournament_phases.tournaments.organizations.owner_profile_id ===
+    profile.id;
+  const isPlayer =
+    match.profile1_id === profile.id || match.profile2_id === profile.id;
+
+  if (!isOrganizer && !isPlayer) {
+    throw new Error("You don't have permission to start this match");
+  }
+
+  if (match.status !== "pending") {
+    throw new Error(`Cannot start match with status "${match.status}"`);
+  }
+
+  const { error } = await supabase
+    .from("tournament_matches")
+    .update({
+      status: "active",
+      start_time: new Date().toISOString(),
+    })
+    .eq("id", matchId);
+
+  if (error) throw error;
+  return { success: true };
+}
+
+/**
+ * Report match result
+ */
+export async function reportMatchResult(
+  supabase: TypedClient,
+  matchId: string,
+  winnerId: string,
+  player1Score: number,
+  player2Score: number,
+) {
+  const profile = await getCurrentProfile(supabase);
+  if (!profile) throw new Error("Not authenticated");
+
+  // Get match with tournament info
+  const { data: match } = await supabase
+    .from("tournament_matches")
+    .select(
+      `
+      id,
+      status,
+      profile1_id,
+      profile2_id,
+      round_id,
+      tournament_rounds!inner (
+        phase_id,
+        tournament_phases!inner (
+          tournament_id,
+          tournaments!inner (
+            organization_id,
+            organizations!inner (
+              owner_profile_id
+            )
+          )
+        )
+      )
+    `,
+    )
+    .eq("id", matchId)
+    .single();
+
+  if (!match) throw new Error("Match not found");
+
+  // Check permission - must be tournament organizer or a player in the match
+  const rounds = match.tournament_rounds as unknown as {
+    phase_id: string;
+    tournament_phases: {
+      tournament_id: string;
+      tournaments: {
+        organization_id: string;
+        organizations: {
+          owner_profile_id: string;
+        };
+      };
+    };
+  };
+
+  const isOrganizer =
+    rounds.tournament_phases.tournaments.organizations.owner_profile_id ===
+    profile.id;
+  const isPlayer =
+    match.profile1_id === profile.id || match.profile2_id === profile.id;
+
+  if (!isOrganizer && !isPlayer) {
+    throw new Error("You don't have permission to report this match result");
+  }
+
+  // Validate match is in progress
+  if (match.status !== "active" && match.status !== "pending") {
+    throw new Error(
+      `Cannot report result for match with status "${match.status}"`,
+    );
+  }
+
+  // Validate winner is one of the players
+  if (winnerId !== match.profile1_id && winnerId !== match.profile2_id) {
+    throw new Error("Winner must be one of the match participants");
+  }
+
+  // Validate scores are non-negative
+  if (player1Score < 0 || player2Score < 0) {
+    throw new Error("Scores cannot be negative");
+  }
+
+  const { error } = await supabase
+    .from("tournament_matches")
+    .update({
+      winner_profile_id: winnerId,
+      game_wins1: player1Score,
+      game_wins2: player2Score,
+      status: "completed",
+      end_time: new Date().toISOString(),
+    })
+    .eq("id", matchId);
+
+  if (error) throw error;
+  return { success: true };
+}
+
+/**
+ * Withdraw from a tournament (delete registration)
+ */
+export async function withdrawFromTournament(
+  supabase: TypedClient,
+  tournamentId: string,
+) {
+  const profile = await getCurrentProfile(supabase);
+  if (!profile) throw new Error("Not authenticated");
+
+  // Find registration
+  const { data: registration } = await supabase
+    .from("tournament_registrations")
+    .select("id, tournament_id")
+    .eq("tournament_id", tournamentId)
+    .eq("profile_id", profile.id)
+    .single();
+
+  if (!registration) throw new Error("Registration not found");
+
+  // Check tournament status
+  const { data: tournament } = await supabase
+    .from("tournaments")
+    .select("status")
+    .eq("id", registration.tournament_id)
+    .single();
+
+  if (tournament?.status === "active") {
+    throw new Error("Cannot withdraw after tournament has started");
+  }
+
+  const { error } = await supabase
+    .from("tournament_registrations")
+    .delete()
+    .eq("id", registration.id);
+
+  if (error) throw error;
+  return { success: true };
+}
+
+/**
+ * Delete a tournament (draft only)
+ */
+export async function deleteTournament(
+  supabase: TypedClient,
+  tournamentId: string,
+) {
+  const profile = await getCurrentProfile(supabase);
+  if (!profile) throw new Error("Not authenticated");
+
+  // Get tournament
+  const { data: tournament } = await supabase
+    .from("tournaments")
+    .select("organization_id, status")
+    .eq("id", tournamentId)
+    .single();
+
+  if (!tournament) throw new Error("Tournament not found");
+
+  // Verify permission
+  const { data: org } = await supabase
+    .from("organizations")
+    .select("owner_profile_id")
+    .eq("id", tournament.organization_id)
+    .single();
+
+  if (org?.owner_profile_id !== profile.id) {
+    throw new Error("You don't have permission to delete this tournament");
+  }
+
+  if (tournament.status !== "draft") {
+    throw new Error("Only draft tournaments can be deleted");
+  }
+
+  const { error } = await supabase
+    .from("tournaments")
+    .delete()
+    .eq("id", tournamentId);
+
+  if (error) throw error;
+  return { success: true };
+}
+
+/**
+ * Send tournament invitations to players
+ */
+export async function sendTournamentInvitations(
+  supabase: TypedClient,
+  tournamentId: string,
+  profileIds: string[],
+  message?: string,
+) {
+  const profile = await getCurrentProfile(supabase);
+  if (!profile) throw new Error("Not authenticated");
+
+  // Get tournament and verify permission
+  const { data: tournament } = await supabase
+    .from("tournaments")
+    .select("organization_id")
+    .eq("id", tournamentId)
+    .single();
+
+  if (!tournament) throw new Error("Tournament not found");
+
+  const { data: org } = await supabase
+    .from("organizations")
+    .select("owner_profile_id")
+    .eq("id", tournament.organization_id)
+    .single();
+
+  if (org?.owner_profile_id !== profile.id) {
+    throw new Error("You don't have permission to send invitations");
+  }
+
+  // Check for existing invitations
+  const { data: existingInvitations } = await supabase
+    .from("tournament_invitations")
+    .select("invited_profile_id")
+    .eq("tournament_id", tournamentId)
+    .in("invited_profile_id", profileIds);
+
+  const existingIds = new Set(
+    existingInvitations?.map((inv) => inv.invited_profile_id) ?? [],
+  );
+  const newProfileIds = profileIds.filter((id) => !existingIds.has(id));
+
+  if (newProfileIds.length === 0) {
+    return {
+      invitationsSent: 0,
+      alreadyInvited: profileIds.length,
+    };
+  }
+
+  // Create invitations
+  const invitations = newProfileIds.map((profileId) => ({
+    tournament_id: tournamentId,
+    invited_profile_id: profileId,
+    invited_by_profile_id: profile.id,
+    status: "pending" as const,
+    message: message ?? null,
+    invited_at: new Date().toISOString(),
+    expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 days
+  }));
+
+  const { error } = await supabase
+    .from("tournament_invitations")
+    .insert(invitations);
+
+  if (error) throw error;
+
+  return {
+    invitationsSent: newProfileIds.length,
+    alreadyInvited: existingIds.size,
+  };
+}
+
+/**
+ * Respond to a tournament invitation
+ */
+export async function respondToTournamentInvitation(
+  supabase: TypedClient,
+  invitationId: string,
+  response: "accept" | "decline",
+) {
+  const profile = await getCurrentProfile(supabase);
+  if (!profile) throw new Error("Not authenticated");
+
+  // Get invitation
+  const { data: invitation } = await supabase
+    .from("tournament_invitations")
+    .select("*")
+    .eq("id", invitationId)
+    .single();
+
+  if (!invitation) throw new Error("Invitation not found");
+
+  if (invitation.invited_profile_id !== profile.id) {
+    throw new Error("This invitation is not for you");
+  }
+
+  if (invitation.status !== "pending") {
+    throw new Error("Invitation has already been responded to");
+  }
+
+  // Check expiration
+  if (invitation.expires_at && new Date(invitation.expires_at) < new Date()) {
+    throw new Error("Invitation has expired");
+  }
+
+  // Update invitation
+  const { error: updateError } = await supabase
+    .from("tournament_invitations")
+    .update({
+      status: response === "accept" ? "accepted" : "declined",
+      responded_at: new Date().toISOString(),
+    })
+    .eq("id", invitationId);
+
+  if (updateError) throw updateError;
+
+  // If accepted, create registration
+  let registrationResult: { message?: string } | null = null;
+  if (response === "accept") {
+    try {
+      const { data: registration, error: regError } = await supabase
+        .from("tournament_registrations")
+        .insert({
+          tournament_id: invitation.tournament_id,
+          profile_id: profile.id,
+          status: "registered",
+          registered_at: new Date().toISOString(),
+          rental_team_photo_verified: false,
+        })
+        .select()
+        .single();
+
+      if (regError) throw regError;
+      registrationResult = { message: `Registration ID: ${registration.id}` };
+    } catch {
+      registrationResult = { message: "Registration created from invitation" };
+    }
+  }
+
+  return {
+    success: true,
+    registration: registrationResult,
+  };
 }

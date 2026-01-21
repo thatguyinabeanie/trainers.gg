@@ -1,8 +1,8 @@
 "use client";
 
-import { useQuery } from "convex/react";
-import { api } from "@/lib/convex/api";
-import type { Doc } from "@trainers/backend-convex/convex/_generated/dataModel";
+import { useCallback } from "react";
+import { useSupabaseQuery } from "@/lib/supabase";
+import { listMyOrganizations } from "@trainers/supabase";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -24,10 +24,10 @@ export function TournamentBasicInfo({
   formData,
   updateFormData,
 }: TournamentBasicInfoProps) {
-  const organizationsData = useQuery(api.organizations.queries.list, {
-    paginationOpts: { numItems: 100, cursor: null },
-  });
-  const organizations = organizationsData?.page || [];
+  const { data: organizations } = useSupabaseQuery(
+    useCallback((supabase) => listMyOrganizations(supabase), []),
+    []
+  );
 
   const generateSlug = (name: string) => {
     return name
@@ -59,8 +59,8 @@ export function TournamentBasicInfo({
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            {organizations?.map((org: Doc<"organizations">) => (
-              <SelectItem key={org._id} value={org._id}>
+            {organizations?.map((org) => (
+              <SelectItem key={org.id} value={org.id}>
                 {org.name}
               </SelectItem>
             ))}

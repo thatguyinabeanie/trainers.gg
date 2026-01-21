@@ -43,4 +43,15 @@ export {
   getTournamentStandings,
   getPlayerTournamentStats,
   getPlayerMatches,
+  getMyDashboardData,
+  getCheckInStatus,
+  getCheckInStats,
+  getUserTeams,
+  getMatchDetails,
+  getRegistrationStatus,
+  getTournamentInvitationsSent,
+  getTournamentInvitationsReceived,
 } from "./tournaments";
+
+// Permission queries
+export { getUserPermissions, hasPermission } from "./permissions";

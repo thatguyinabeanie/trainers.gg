@@ -96,6 +96,72 @@ export async function updateUsername(
 }
 
 /**
+ * Ensure a profile exists for the current user, creating one with defaults if needed
+ * Returns the existing or newly created profile
+ */
+export async function ensureProfile(supabase: TypedClient) {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error("Not authenticated");
+
+  // Check if profile already exists
+  const { data: existing } = await supabase
+    .from("profiles")
+    .select("*")
+    .eq("user_id", user.id)
+    .single();
+
+  if (existing) {
+    return existing;
+  }
+
+  // Get user record for default values
+  const { data: userData } = await supabase
+    .from("users")
+    .select("*")
+    .eq("id", user.id)
+    .single();
+
+  // Generate default username from email or user id
+  const email = userData?.email ?? user.email ?? "";
+  const defaultUsername =
+    email
+      .split("@")[0]
+      ?.toLowerCase()
+      .replace(/[^a-z0-9_]/g, "_") || `user_${user.id.slice(0, 8)}`;
+
+  // Ensure username is unique by appending random suffix if needed
+  let username = defaultUsername;
+  let attempts = 0;
+  while (attempts < 5) {
+    const { data: usernameExists } = await supabase
+      .from("profiles")
+      .select("id")
+      .eq("username", username)
+      .single();
+
+    if (!usernameExists) break;
+    username = `${defaultUsername}_${Math.random().toString(36).slice(2, 6)}`;
+    attempts++;
+  }
+
+  const { data: profile, error } = await supabase
+    .from("profiles")
+    .insert({
+      user_id: user.id,
+      username,
+      display_name: userData?.name ?? username,
+      avatar_url: userData?.image ?? null,
+    })
+    .select()
+    .single();
+
+  if (error) throw error;
+  return profile;
+}
+
+/**
  * Create a new profile for a user (if not auto-created by trigger)
  */
 export async function createProfile(

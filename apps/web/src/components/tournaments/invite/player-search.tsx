@@ -1,9 +1,8 @@
 "use client";
 
-import { useState, useMemo } from "react";
-import { useQuery } from "convex/react";
-import { api } from "@/lib/convex/api";
-import type { Id } from "@trainers/backend-convex/convex/_generated/dataModel";
+import { useState, useMemo, useCallback } from "react";
+import { useSupabaseQuery } from "@/lib/supabase";
+import { searchProfiles } from "@trainers/supabase";
 import type { SelectedPlayer } from "@/lib/types/tournament";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -20,20 +19,19 @@ import {
 } from "lucide-react";
 
 interface PlayerSearchProps {
-  tournamentId: Id<"tournaments">;
+  tournamentId: string;
   selectedPlayers: SelectedPlayer[];
   onSelectPlayer: (player: SelectedPlayer) => void;
-  onRemovePlayer: (playerId: Id<"profiles">) => void;
-  excludePlayerIds?: Id<"profiles">[];
+  onRemovePlayer: (playerId: string) => void;
+  excludePlayerIds?: string[];
   maxSelections?: number;
 }
 
 interface SearchResult {
-  _id: Id<"profiles">;
+  id: string;
   username: string;
-  displayName: string;
-  avatarUrl?: string | null;
-  tier?: string | null;
+  display_name: string;
+  avatar_url?: string | null;
 }
 
 export function PlayerSearch({
@@ -47,21 +45,27 @@ export function PlayerSearch({
   const [searchQuery, setSearchQuery] = useState("");
 
   // Search for players when query is at least 2 characters
-  const searchResults = useQuery(
-    api.users.queries.searchByUsernamePrefix,
-    searchQuery.length >= 2 ? { prefix: searchQuery } : "skip"
+  const { data: searchResults, isLoading } = useSupabaseQuery(
+    useCallback(
+      (supabase) =>
+        searchQuery.length >= 2
+          ? searchProfiles(supabase, searchQuery, 20)
+          : Promise.resolve([]),
+      [searchQuery]
+    ),
+    [searchQuery]
   );
 
   // Filter out already selected and excluded players
   const filteredResults = useMemo(() => {
     if (!searchResults) return [];
 
-    const selectedIds = new Set(selectedPlayers.map((p) => p._id));
+    const selectedIds = new Set(selectedPlayers.map((p) => p.id));
     const excludedIds = new Set(excludePlayerIds);
 
     return searchResults.filter(
       (player: SearchResult) =>
-        !selectedIds.has(player._id) && !excludedIds.has(player._id)
+        !selectedIds.has(player.id) && !excludedIds.has(player.id)
     );
   }, [searchResults, selectedPlayers, excludePlayerIds]);
 
@@ -70,10 +74,10 @@ export function PlayerSearch({
       return;
     }
     onSelectPlayer({
-      _id: player._id,
+      id: player.id,
       username: player.username,
-      displayName: player.displayName,
-      avatarUrl: player.avatarUrl ?? undefined,
+      displayName: player.display_name,
+      avatarUrl: player.avatar_url ?? undefined,
       tier: undefined,
     });
     setSearchQuery("");
@@ -97,7 +101,7 @@ export function PlayerSearch({
                 variant="ghost"
                 size="sm"
                 onClick={() =>
-                  selectedPlayers.forEach((p) => onRemovePlayer(p._id))
+                  selectedPlayers.forEach((p) => onRemovePlayer(p.id))
                 }
                 className="text-muted-foreground h-auto p-0 text-xs hover:text-red-600"
               >
@@ -108,7 +112,7 @@ export function PlayerSearch({
           <div className="flex flex-wrap gap-2">
             {selectedPlayers.map((player) => (
               <Badge
-                key={player._id}
+                key={player.id}
                 variant="secondary"
                 className="flex items-center gap-1 py-1 pr-1 pl-2"
               >
@@ -123,7 +127,7 @@ export function PlayerSearch({
                 </span>
                 {player.tier && <Star className="h-3 w-3 text-yellow-500" />}
                 <button
-                  onClick={() => onRemovePlayer(player._id)}
+                  onClick={() => onRemovePlayer(player.id)}
                   className="hover:bg-muted ml-1 rounded-full p-0.5"
                 >
                   <X className="h-3 w-3" />
@@ -165,7 +169,7 @@ export function PlayerSearch({
       {/* Search Results */}
       {searchQuery.length >= 2 && (
         <div className="rounded-md border">
-          {searchResults === undefined ? (
+          {isLoading ? (
             <div className="flex items-center justify-center py-8">
               <Loader2 className="text-muted-foreground h-5 w-5 animate-spin" />
             </div>
@@ -173,7 +177,7 @@ export function PlayerSearch({
             <div className="flex flex-col items-center justify-center py-8 text-center">
               <Users className="text-muted-foreground mb-2 h-8 w-8" />
               <p className="text-muted-foreground text-sm">
-                {searchResults.length === 0
+                {searchResults?.length === 0
                   ? "No players found"
                   : "All matching players are already selected"}
               </p>
@@ -183,21 +187,21 @@ export function PlayerSearch({
               <div className="divide-y">
                 {filteredResults.map((player: SearchResult) => (
                   <button
-                    key={player._id}
+                    key={player.id}
                     onClick={() => handleSelectPlayer(player)}
                     disabled={isAtMaxSelections}
                     className="hover:bg-muted/50 flex w-full items-center justify-between p-3 text-left transition-colors disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     <div className="flex items-center gap-3">
                       <Avatar className="h-8 w-8">
-                        <AvatarImage src={player.avatarUrl ?? undefined} />
+                        <AvatarImage src={player.avatar_url ?? undefined} />
                         <AvatarFallback>
-                          {player.displayName.slice(0, 2).toUpperCase()}
+                          {player.display_name.slice(0, 2).toUpperCase()}
                         </AvatarFallback>
                       </Avatar>
                       <div>
                         <p className="text-sm font-medium">
-                          {player.displayName}
+                          {player.display_name}
                         </p>
                         <p className="text-muted-foreground text-xs">
                           @{player.username}

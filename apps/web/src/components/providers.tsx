@@ -1,6 +1,6 @@
 "use client";
 
-import { AuthProvider } from "@/components/auth/auth-provider-supabase";
+import { AuthProvider } from "@/components/auth/auth-provider";
 import { ClerkProvider } from "@clerk/nextjs";
 import { ThemeProvider } from "next-themes";
 import { type ReactNode } from "react";

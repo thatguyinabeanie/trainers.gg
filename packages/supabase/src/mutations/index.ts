@@ -5,7 +5,12 @@
  */
 
 // User mutations
-export { updateProfile, updateUsername, createProfile } from "./users";
+export {
+  updateProfile,
+  updateUsername,
+  createProfile,
+  ensureProfile,
+} from "./users";
 
 // Organization mutations
 export {
@@ -26,4 +31,12 @@ export {
   cancelRegistration,
   archiveTournament,
   updateRegistrationStatus,
+  checkIn,
+  undoCheckIn,
+  startMatch,
+  reportMatchResult,
+  withdrawFromTournament,
+  deleteTournament,
+  sendTournamentInvitations,
+  respondToTournamentInvitation,
 } from "./tournaments";

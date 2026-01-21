@@ -1,9 +1,9 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { useMutation, useQuery } from "convex/react";
-import { api } from "@/lib/convex/api";
+import { useSupabaseQuery, useSupabaseMutation } from "@/lib/supabase";
+import { getCurrentUser, createOrganization } from "@trainers/supabase";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -26,8 +26,17 @@ export default function CreateOrganizationPage() {
   const [description, setDescription] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const currentUser = useQuery(api.users.getCurrentUser);
-  const createOrganization = useMutation(api.organizations.mutations.create);
+  const userQueryFn = useCallback(
+    (supabase: Parameters<typeof getCurrentUser>[0]) => getCurrentUser(supabase),
+    []
+  );
+
+  const { data: currentUser, isLoading: userLoading } = useSupabaseQuery(userQueryFn);
+
+  const { mutateAsync: createOrg } = useSupabaseMutation(
+    (supabase, args: { name: string; slug: string; description?: string }) =>
+      createOrganization(supabase, args)
+  );
 
   const generateSlug = (orgName: string) => {
     return orgName
@@ -58,7 +67,7 @@ export default function CreateOrganizationPage() {
 
     setIsSubmitting(true);
     try {
-      await createOrganization({
+      await createOrg({
         name: name.trim(),
         slug: slug.trim(),
         description: description.trim() || undefined,
@@ -80,7 +89,7 @@ export default function CreateOrganizationPage() {
   };
 
   // Auth check
-  if (currentUser === undefined) {
+  if (userLoading) {
     return (
       <div className="flex min-h-[50vh] items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin" />

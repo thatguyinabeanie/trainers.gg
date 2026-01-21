@@ -60,7 +60,6 @@ export function useSupabaseQuery<T>(
     return () => {
       mountedRef.current = false;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [execute, ...deps]);
 
   return {

@@ -1,9 +1,11 @@
 "use client";
 
-import { useState } from "react";
-import { useQuery, useMutation } from "convex/react";
-import { api } from "@/lib/convex/api";
-import type { Id } from "@trainers/backend-convex/convex/_generated/dataModel";
+import { useState, useCallback } from "react";
+import { useSupabaseQuery, useSupabaseMutation } from "@/lib/supabase";
+import {
+  getTournamentInvitationsReceived,
+  respondToTournamentInvitation,
+} from "@trainers/supabase";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -36,30 +38,42 @@ interface TournamentInvitationsViewProps {
   className?: string;
 }
 
+interface RespondArgs {
+  invitationId: string;
+  response: "accept" | "decline";
+}
+
 export function TournamentInvitationsView({
   className,
 }: TournamentInvitationsViewProps) {
-  const [respondingTo, setRespondingTo] =
-    useState<Id<"tournamentInvitations"> | null>(null);
-  const invitations = useQuery(
-    api.tournaments.invitations.getTournamentInvitationsReceived,
-    {}
+  const [respondingTo, setRespondingTo] = useState<string | null>(null);
+
+  const {
+    data: invitations,
+    isLoading,
+    refetch,
+  } = useSupabaseQuery(
+    useCallback(
+      (supabase) => getTournamentInvitationsReceived(supabase),
+      []
+    ),
+    []
   );
-  const respondToInvitation = useMutation(
-    api.tournaments.invitations.respondToTournamentInvitation
+
+  const { mutateAsync: respondToInvitation } = useSupabaseMutation(
+    (supabase, args: RespondArgs) =>
+      respondToTournamentInvitation(supabase, args.invitationId, args.response)
   );
 
   const handleResponse = async (
-    invitationId: Id<"tournamentInvitations">,
+    invitationId: string,
     response: "accept" | "decline"
   ) => {
     setRespondingTo(invitationId);
     try {
       const result = await respondToInvitation({
-        data: {
-          invitationId,
-          response,
-        },
+        invitationId,
+        response,
       });
 
       toast.success(
@@ -70,6 +84,9 @@ export function TournamentInvitationsView({
             `You have ${response === "accept" ? "accepted" : "declined"} the tournament invitation.`,
         }
       );
+
+      // Refetch invitations after response
+      refetch();
     } catch (error) {
       toast.error("Failed to respond", {
         description:
@@ -82,7 +99,7 @@ export function TournamentInvitationsView({
     }
   };
 
-  if (!invitations) {
+  if (isLoading) {
     return (
       <div className={`space-y-4 ${className || ""}`}>
         <div className="bg-muted h-8 animate-pulse rounded" />
@@ -100,10 +117,10 @@ export function TournamentInvitationsView({
     );
   }
 
-  const pendingInvitations = invitations.filter(
+  const pendingInvitations = (invitations ?? []).filter(
     (inv) => inv.status === "pending" && !inv.isExpired
   );
-  const respondedInvitations = invitations.filter(
+  const respondedInvitations = (invitations ?? []).filter(
     (inv) =>
       inv.status === "accepted" || inv.status === "declined" || inv.isExpired
   );
@@ -111,14 +128,14 @@ export function TournamentInvitationsView({
   const InvitationCard = ({
     invitation,
   }: {
-    invitation: (typeof invitations)[0];
+    invitation: NonNullable<typeof invitations>[0];
   }) => {
     const isExpired = invitation.isExpired;
     const isPending = invitation.status === "pending" && !isExpired;
 
     return (
       <Card
-        key={invitation._id}
+        key={invitation.id}
         className={`transition-all ${isPending ? "border-primary/20" : ""}`}
       >
         <CardHeader className="pb-3">
@@ -181,13 +198,13 @@ export function TournamentInvitationsView({
                 })}
               </span>
             </div>
-            {invitation.tournament?.startDate && (
+            {invitation.tournament?.start_date && (
               <div className="flex items-center gap-2">
                 <Clock className="h-4 w-4" />
                 <span>
                   Starts{" "}
                   {formatDistanceToNow(
-                    new Date(invitation.tournament.startDate),
+                    new Date(invitation.tournament.start_date),
                     { addSuffix: true }
                   )}
                 </span>
@@ -229,7 +246,7 @@ export function TournamentInvitationsView({
                   <Button
                     variant="default"
                     className="flex-1 gap-2"
-                    disabled={respondingTo === invitation._id}
+                    disabled={respondingTo === invitation.id}
                   >
                     <Check className="h-4 w-4" />
                     Accept
@@ -249,7 +266,7 @@ export function TournamentInvitationsView({
                   <AlertDialogFooter>
                     <AlertDialogCancel>Cancel</AlertDialogCancel>
                     <AlertDialogAction
-                      onClick={() => handleResponse(invitation._id, "accept")}
+                      onClick={() => handleResponse(invitation.id, "accept")}
                       className="gap-2"
                     >
                       <Check className="h-4 w-4" />
@@ -262,8 +279,8 @@ export function TournamentInvitationsView({
               <Button
                 variant="outline"
                 className="flex-1 gap-2"
-                onClick={() => handleResponse(invitation._id, "decline")}
-                disabled={respondingTo === invitation._id}
+                onClick={() => handleResponse(invitation.id, "decline")}
+                disabled={respondingTo === invitation.id}
               >
                 <X className="h-4 w-4" />
                 Decline
@@ -355,7 +372,7 @@ export function TournamentInvitationsView({
             </Card>
           ) : (
             pendingInvitations.map((invitation) => (
-              <InvitationCard key={invitation._id} invitation={invitation} />
+              <InvitationCard key={invitation.id} invitation={invitation} />
             ))
           )}
         </TabsContent>
@@ -375,7 +392,7 @@ export function TournamentInvitationsView({
             </Card>
           ) : (
             respondedInvitations.map((invitation) => (
-              <InvitationCard key={invitation._id} invitation={invitation} />
+              <InvitationCard key={invitation.id} invitation={invitation} />
             ))
           )}
         </TabsContent>

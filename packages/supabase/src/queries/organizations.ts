@@ -227,16 +227,35 @@ export async function getOrganizationById(supabase: TypedClient, id: string) {
 
 /**
  * List organizations where user is owner or member
+ * If no profileId is provided, returns organizations for the current authenticated user
  */
 export async function listMyOrganizations(
   supabase: TypedClient,
-  profileId: string,
+  profileId?: string,
 ) {
+  let targetProfileId = profileId;
+
+  if (!targetProfileId) {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return [];
+
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("id")
+      .eq("user_id", user.id)
+      .single();
+
+    if (!profile) return [];
+    targetProfileId = profile.id;
+  }
+
   // Get organizations where user is owner
   const { data: ownedOrgs } = await supabase
     .from("organizations")
     .select("*")
-    .eq("owner_profile_id", profileId);
+    .eq("owner_profile_id", targetProfileId);
 
   // Get organizations where user is a member
   const { data: memberships } = await supabase
@@ -246,7 +265,7 @@ export async function listMyOrganizations(
       organization:organizations(*)
     `,
     )
-    .eq("profile_id", profileId);
+    .eq("profile_id", targetProfileId);
 
   const ownedOrgsWithFlag = (ownedOrgs ?? []).map((org) => ({
     ...org,
@@ -263,7 +282,7 @@ export async function listMyOrganizations(
       const typedOrg = org as { id: string; owner_profile_id: string };
       return {
         ...org,
-        isOwner: typedOrg.owner_profile_id === profileId,
+        isOwner: typedOrg.owner_profile_id === targetProfileId,
       };
     });
 

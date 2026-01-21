@@ -1,9 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { useMutation } from "convex/react";
-import { api } from "@/lib/convex/api";
-import type { Id } from "@trainers/backend-convex/convex/_generated/dataModel";
+import { useSupabaseMutation } from "@/lib/supabase";
+import { sendTournamentInvitations } from "@trainers/supabase";
 import type { SelectedPlayer } from "@/lib/types/tournament";
 import {
   Card,
@@ -23,10 +22,16 @@ import { toast } from "sonner";
 import { PlayerSearch } from "./player-search";
 
 interface InviteFormProps {
-  tournamentId: Id<"tournaments">;
+  tournamentId: string;
   tournamentName: string;
   onSuccess?: () => void;
   maxInvitations?: number;
+}
+
+interface SendInvitationsArgs {
+  tournamentId: string;
+  profileIds: string[];
+  message?: string;
 }
 
 export function InviteForm({
@@ -41,8 +46,14 @@ export function InviteForm({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [successCount, setSuccessCount] = useState<number | null>(null);
 
-  const sendInvitations = useMutation(
-    api.tournaments.invitations.sendTournamentInvitations
+  const { mutateAsync: sendInvitations } = useSupabaseMutation(
+    (supabase, args: SendInvitationsArgs) =>
+      sendTournamentInvitations(
+        supabase,
+        args.tournamentId,
+        args.profileIds,
+        args.message
+      )
   );
 
   const handleSelectPlayer = (player: SelectedPlayer) => {
@@ -50,8 +61,8 @@ export function InviteForm({
     setSuccessCount(null);
   };
 
-  const handleRemovePlayer = (playerId: Id<"profiles">) => {
-    setSelectedPlayers((prev) => prev.filter((p) => p._id !== playerId));
+  const handleRemovePlayer = (playerId: string) => {
+    setSelectedPlayers((prev) => prev.filter((p) => p.id !== playerId));
     setSuccessCount(null);
   };
 
@@ -68,11 +79,9 @@ export function InviteForm({
 
     try {
       const result = await sendInvitations({
-        data: {
-          tournamentId,
-          profileIds: selectedPlayers.map((p) => p._id),
-          message: message.trim() || undefined,
-        },
+        tournamentId,
+        profileIds: selectedPlayers.map((p) => p.id),
+        message: message.trim() || undefined,
       });
 
       if (result.invitationsSent > 0) {

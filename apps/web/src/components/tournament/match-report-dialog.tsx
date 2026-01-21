@@ -1,9 +1,12 @@
 "use client";
 
-import { useState } from "react";
-import { useQuery, useMutation } from "convex/react";
-import { api } from "@/lib/convex/api";
-import type { Id } from "@trainers/backend-convex/convex/_generated/dataModel";
+import { useState, useCallback } from "react";
+import { useSupabaseQuery, useSupabaseMutation } from "@/lib/supabase";
+import {
+  getMatchDetails,
+  reportMatchResult,
+  startMatch,
+} from "@trainers/supabase";
 import {
   Dialog,
   DialogContent,
@@ -31,7 +34,7 @@ import {
 import { toast } from "sonner";
 
 interface MatchReportDialogProps {
-  matchId: Id<"tournamentMatches"> | null;
+  matchId: string | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onReportSubmitted?: () => void;
@@ -44,24 +47,50 @@ export function MatchReportDialog({
   onReportSubmitted,
 }: MatchReportDialogProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [winnerId, setWinnerId] = useState<Id<"profiles"> | null>(null);
+  const [winnerId, setWinnerId] = useState<string | null>(null);
   const [player1Score, setPlayer1Score] = useState("2");
   const [player2Score, setPlayer2Score] = useState("0");
 
-  const matchDetails = useQuery(
-    api.tournaments.matches.getMatchDetails,
-    matchId ? { matchId } : "skip"
+  const { data: matchDetails } = useSupabaseQuery(
+    useCallback(
+      async (supabase) => {
+        if (!matchId) return null;
+        return getMatchDetails(supabase, matchId);
+      },
+      [matchId]
+    ),
+    [matchId]
   );
 
-  const reportResult = useMutation(api.tournaments.matches.reportMatchResult);
-  const startMatch = useMutation(api.tournaments.matches.startMatch);
+  const { mutateAsync: reportResultMutation } = useSupabaseMutation(
+    (
+      supabase,
+      args: {
+        matchId: string;
+        winnerId: string;
+        player1Score: number;
+        player2Score: number;
+      }
+    ) =>
+      reportMatchResult(
+        supabase,
+        args.matchId,
+        args.winnerId,
+        args.player1Score,
+        args.player2Score
+      )
+  );
+
+  const { mutateAsync: startMatchMutation } = useSupabaseMutation(
+    (supabase, args: { matchId: string }) => startMatch(supabase, args.matchId)
+  );
 
   const handleStartMatch = async () => {
     if (!matchId) return;
 
     setIsSubmitting(true);
     try {
-      await startMatch({ matchId });
+      await startMatchMutation({ matchId });
       toast.success("Match started", {
         description: "The match timer has begun",
       });
@@ -94,13 +123,11 @@ export function MatchReportDialog({
 
     setIsSubmitting(true);
     try {
-      await reportResult({
-        data: {
-          matchId,
-          winnerId,
-          player1Score: score1,
-          player2Score: score2,
-        },
+      await reportResultMutation({
+        matchId,
+        winnerId,
+        player1Score: score1,
+        player2Score: score2,
       });
 
       toast.success("Match reported", {
@@ -136,6 +163,11 @@ export function MatchReportDialog({
   }
 
   const { match, player1, player2, round, tournament } = matchDetails;
+
+  // Supabase returns arrays for joined relations - get the first item
+  const p1 = Array.isArray(player1) ? player1[0] : player1;
+  const p2 = Array.isArray(player2) ? player2[0] : player2;
+
   const isMatchActive = match.status === "active";
   const isMatchPending = match.status === "pending";
   const isMatchCompleted = match.status === "completed";
@@ -145,10 +177,10 @@ export function MatchReportDialog({
     const s1 = parseInt(p1Score) || 0;
     const s2 = parseInt(p2Score) || 0;
 
-    if (s1 > s2 && player1) {
-      setWinnerId(player1.id);
-    } else if (s2 > s1 && player2) {
-      setWinnerId(player2.id);
+    if (s1 > s2 && p1) {
+      setWinnerId(p1.id);
+    } else if (s2 > s1 && p2) {
+      setWinnerId(p2.id);
     }
   };
 
@@ -161,8 +193,8 @@ export function MatchReportDialog({
             {isMatchCompleted ? "Match Result" : "Report Match Result"}
           </DialogTitle>
           <DialogDescription>
-            {tournament.name} • {round.name}
-            {match.tableNumber ? ` • Table ${match.tableNumber}` : ""}
+            {tournament?.name ?? "Tournament"} • {round?.name ?? "Round"}
+            {match.table_number ? ` • Table ${match.table_number}` : ""}
           </DialogDescription>
         </DialogHeader>
 
@@ -190,25 +222,27 @@ export function MatchReportDialog({
             {/* Player 1 */}
             <div
               className={`rounded-lg border p-4 transition-colors ${
-                winnerId === player1?.id
+                winnerId === p1?.id
                   ? "border-green-500 bg-green-500/10"
-                  : match.winnerProfileId === player1?.id
+                  : match.winner_profile_id === p1?.id
                     ? "border-green-500/50 bg-green-500/5"
                     : ""
               }`}
             >
               <div className="mb-3 flex items-center gap-3">
                 <Avatar>
-                  <AvatarImage src={player1?.avatarUrl} />
+                  <AvatarImage src={p1?.avatar_url ?? undefined} />
                   <AvatarFallback>
                     <User className="h-4 w-4" />
                   </AvatarFallback>
                 </Avatar>
                 <div className="flex-1">
-                  <p className="font-medium">{player1?.name || "BYE"}</p>
+                  <p className="font-medium">
+                    {p1?.display_name ?? p1?.username ?? "BYE"}
+                  </p>
                   <p className="text-muted-foreground text-xs">Player 1</p>
                 </div>
-                {match.winnerProfileId === player1?.id && (
+                {match.winner_profile_id === p1?.id && (
                   <Badge variant="default" className="bg-green-600">
                     <Trophy className="mr-1 h-3 w-3" />
                     Winner
@@ -216,7 +250,7 @@ export function MatchReportDialog({
                 )}
               </div>
 
-              {!isMatchCompleted && player1 && (
+              {!isMatchCompleted && p1 && (
                 <>
                   <div className="space-y-2">
                     <Label htmlFor="player1-score">Games Won</Label>
@@ -238,7 +272,7 @@ export function MatchReportDialog({
 
               {isMatchCompleted && (
                 <div className="text-center">
-                  <p className="text-3xl font-bold">{match.gameWins1 || 0}</p>
+                  <p className="text-3xl font-bold">{match.game_wins1 || 0}</p>
                   <p className="text-muted-foreground text-xs">Games Won</p>
                 </div>
               )}
@@ -254,25 +288,27 @@ export function MatchReportDialog({
             {/* Player 2 */}
             <div
               className={`rounded-lg border p-4 transition-colors ${
-                winnerId === player2?.id
+                winnerId === p2?.id
                   ? "border-green-500 bg-green-500/10"
-                  : match.winnerProfileId === player2?.id
+                  : match.winner_profile_id === p2?.id
                     ? "border-green-500/50 bg-green-500/5"
                     : ""
               }`}
             >
               <div className="mb-3 flex items-center gap-3">
                 <Avatar>
-                  <AvatarImage src={player2?.avatarUrl} />
+                  <AvatarImage src={p2?.avatar_url ?? undefined} />
                   <AvatarFallback>
                     <User className="h-4 w-4" />
                   </AvatarFallback>
                 </Avatar>
                 <div className="flex-1">
-                  <p className="font-medium">{player2?.name || "BYE"}</p>
+                  <p className="font-medium">
+                    {p2?.display_name ?? p2?.username ?? "BYE"}
+                  </p>
                   <p className="text-muted-foreground text-xs">Player 2</p>
                 </div>
-                {match.winnerProfileId === player2?.id && (
+                {match.winner_profile_id === p2?.id && (
                   <Badge variant="default" className="bg-green-600">
                     <Trophy className="mr-1 h-3 w-3" />
                     Winner
@@ -280,7 +316,7 @@ export function MatchReportDialog({
                 )}
               </div>
 
-              {!isMatchCompleted && player2 && (
+              {!isMatchCompleted && p2 && (
                 <>
                   <div className="space-y-2">
                     <Label htmlFor="player2-score">Games Won</Label>
@@ -302,7 +338,7 @@ export function MatchReportDialog({
 
               {isMatchCompleted && (
                 <div className="text-center">
-                  <p className="text-3xl font-bold">{match.gameWins2 || 0}</p>
+                  <p className="text-3xl font-bold">{match.game_wins2 || 0}</p>
                   <p className="text-muted-foreground text-xs">Games Won</p>
                 </div>
               )}
@@ -317,30 +353,28 @@ export function MatchReportDialog({
                 <Label>Select Winner</Label>
                 <RadioGroup
                   value={winnerId || ""}
-                  onValueChange={(value) =>
-                    setWinnerId(value as Id<"profiles">)
-                  }
+                  onValueChange={(value) => setWinnerId(value)}
                   disabled={isSubmitting}
                 >
-                  {player1 && (
+                  {p1 && (
                     <div className="flex items-center space-x-2">
-                      <RadioGroupItem value={player1.id} id="winner-1" />
+                      <RadioGroupItem value={p1.id} id="winner-1" />
                       <Label
                         htmlFor="winner-1"
                         className="flex-1 cursor-pointer"
                       >
-                        {player1.name} wins
+                        {p1.display_name ?? p1.username} wins
                       </Label>
                     </div>
                   )}
-                  {player2 && (
+                  {p2 && (
                     <div className="flex items-center space-x-2">
-                      <RadioGroupItem value={player2.id} id="winner-2" />
+                      <RadioGroupItem value={p2.id} id="winner-2" />
                       <Label
                         htmlFor="winner-2"
                         className="flex-1 cursor-pointer"
                       >
-                        {player2.name} wins
+                        {p2.display_name ?? p2.username} wins
                       </Label>
                     </div>
                   )}

@@ -1,9 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { useMutation } from "convex/react";
-import { api } from "@/lib/convex/api";
-import type { Id } from "@trainers/backend-convex/convex/_generated/dataModel";
+import { useSupabaseMutation } from "@/lib/supabase";
+import { updateTournament, deleteTournament } from "@trainers/supabase";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -23,19 +22,19 @@ import { toast } from "sonner";
 
 interface TournamentSettingsProps {
   tournament: {
-    _id: Id<"tournaments">;
+    id: string;
     name: string;
     slug: string;
-    description?: string;
+    description?: string | null;
     status: string;
-    format: string;
-    maxParticipants?: number;
-    startDate?: number;
-    endDate?: number;
-    registrationDeadline?: number;
-    roundTimeMinutes?: number;
-    rentalTeamPhotosEnabled?: boolean;
-    rentalTeamPhotosRequired?: boolean;
+    format: string | null;
+    max_participants?: number | null;
+    start_date?: string | null;
+    end_date?: string | null;
+    registration_deadline?: string | null;
+    round_time_minutes?: number | null;
+    rental_team_photos_enabled?: boolean | null;
+    rental_team_photos_required?: boolean | null;
   };
 }
 
@@ -45,22 +44,36 @@ export function TournamentSettings({ tournament }: TournamentSettingsProps) {
     name: tournament.name || "",
     description: tournament.description || "",
     format: tournament.format || "",
-    maxParticipants: tournament.maxParticipants || "",
-    roundTimeMinutes: tournament.roundTimeMinutes || 50,
-    rentalTeamPhotosEnabled: tournament.rentalTeamPhotosEnabled || false,
-    rentalTeamPhotosRequired: tournament.rentalTeamPhotosRequired || false,
+    maxParticipants: tournament.max_participants?.toString() || "",
+    roundTimeMinutes: tournament.round_time_minutes || 50,
+    rentalTeamPhotosEnabled: tournament.rental_team_photos_enabled || false,
+    rentalTeamPhotosRequired: tournament.rental_team_photos_required || false,
   });
 
-  const updateTournament = useMutation(api.tournaments.mutations.update);
-  const deleteTournament = useMutation(
-    api.tournaments.mutations.deleteTournament
+  const { mutateAsync: updateTournamentMutation } = useSupabaseMutation(
+    (
+      supabase,
+      args: {
+        tournamentId: string;
+        updates: {
+          name?: string;
+          description?: string;
+          format?: string;
+        };
+      }
+    ) => updateTournament(supabase, args.tournamentId, args.updates)
+  );
+
+  const { mutateAsync: deleteTournamentMutation } = useSupabaseMutation(
+    (supabase, args: { tournamentId: string }) =>
+      deleteTournament(supabase, args.tournamentId)
   );
 
   const handleSave = async () => {
     try {
-      await updateTournament({
-        id: tournament._id,
-        data: {
+      await updateTournamentMutation({
+        tournamentId: tournament.id,
+        updates: {
           name: formData.name,
           description: formData.description,
           format: formData.format,
@@ -91,7 +104,7 @@ export function TournamentSettings({ tournament }: TournamentSettingsProps) {
     }
 
     try {
-      await deleteTournament({ id: tournament._id });
+      await deleteTournamentMutation({ tournamentId: tournament.id });
       toast.success("Tournament deleted", {
         description: "The tournament has been permanently deleted.",
       });
