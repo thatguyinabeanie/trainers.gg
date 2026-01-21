@@ -57,12 +57,12 @@ export function UpcomingTournaments({
             <div className="space-y-4">
               {myTournaments.map((tournament) => (
                 <div
-                  key={tournament._id}
+                  key={tournament.id}
                   className="flex items-center justify-between rounded-md border p-4"
                 >
                   <div>
                     <Link
-                      href={`/tournaments/${tournament._id}`}
+                      href={`/tournaments/${tournament.id}`}
                       className="font-semibold hover:underline"
                     >
                       {tournament.name}
@@ -73,7 +73,7 @@ export function UpcomingTournaments({
                         : "Date TBD"}
                     </p>
                   </div>
-                  <Link href={`/tournaments/${tournament._id}`}>
+                  <Link href={`/tournaments/${tournament.id}`}>
                     <Button variant="secondary" size="sm">
                       View
                     </Button>

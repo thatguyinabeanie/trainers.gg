@@ -57,6 +57,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isSyncing, setIsSyncing] = useState(false);
   const hasTriedSync = useRef(false);
 
   // Fetch user from Supabase using Clerk user ID (sub claim)
@@ -116,6 +117,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const syncUser = useCallback(async () => {
     if (!clerkUser || !session) return;
 
+    setIsSyncing(true);
     try {
       // Check if user exists by clerk_id
       const { data: existingUser } = await supabase
@@ -171,6 +173,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await fetchUser();
     } catch (err) {
       console.error("Error syncing user:", err);
+    } finally {
+      setIsSyncing(false);
     }
   }, [clerkUser, session, supabase, fetchUser]);
 
@@ -238,7 +242,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
   }, [clerkSignOut]);
 
-  const loading = !clerkLoaded || (isSignedIn && isLoading);
+  const loading = !clerkLoaded || (isSignedIn && (isLoading || isSyncing));
 
   const value = useMemo(
     () => ({

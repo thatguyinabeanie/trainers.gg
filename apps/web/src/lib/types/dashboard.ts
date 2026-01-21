@@ -5,7 +5,7 @@
  */
 
 export interface DashboardTournament {
-  _id: string;
+  id: string;
   name: string;
   startDate?: number;
   status?: "upcoming" | "in_progress" | "completed";
@@ -15,14 +15,14 @@ export interface DashboardTournament {
 }
 
 export interface DashboardOrganization {
-  _id: string;
+  id: string;
   name: string;
   role: string;
   slug?: string;
 }
 
 export interface DashboardActivity {
-  _id: string;
+  id: string;
   tournamentName: string;
   opponentName: string;
   result: "won" | "lost";

@@ -54,7 +54,7 @@ export function OverviewClient() {
   // Transform Supabase data to match expected component formats
   const transformedTournaments =
     dashboardData?.myTournaments.map((t) => ({
-      _id: t.id,
+      id: t.id,
       name: t.name,
       startDate: t.startDate ? new Date(t.startDate).getTime() : null,
       status: t.status,
@@ -62,7 +62,7 @@ export function OverviewClient() {
 
   const transformedActivities =
     dashboardData?.recentActivity.map((a) => ({
-      _id: a.id,
+      id: a.id,
       tournamentName: a.tournamentName,
       opponentName: a.opponentName,
       result: a.result,
@@ -105,7 +105,7 @@ export function OverviewClient() {
           <OrganizerAccess
             organizations={
               myOrganizations?.map((org) => ({
-                _id: org.id,
+                id: org.id,
                 name: org.name,
                 role: org.isOwner ? "Owner" : "Staff",
               })) || []
