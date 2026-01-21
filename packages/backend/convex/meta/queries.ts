@@ -40,7 +40,7 @@ export const getPlatformStats = query({
     // Count tournaments by status
     const allTournaments = await ctx.db.query("tournaments").collect();
     const activeTournaments = allTournaments.filter(
-      (t) => !t.archivedAt && t.status !== "cancelled"
+      (t) => !t.archivedAt && t.status !== "cancelled",
     );
 
     const statusCounts = {
@@ -129,12 +129,12 @@ export const getOrganizationStats = query({
       .query("tournamentRegistrations")
       .collect();
     const orgRegistrations = allRegistrations.filter((r) =>
-      tournamentIds.has(r.tournamentId)
+      tournamentIds.has(r.tournamentId),
     );
 
     // Count unique participants in this org's tournaments
     const uniqueParticipants = new Set(
-      orgRegistrations.map((r) => r.profileId)
+      orgRegistrations.map((r) => r.profileId),
     );
 
     // Get completed matches for this org's tournaments
@@ -152,10 +152,10 @@ export const getOrganizationStats = query({
     const orgPhaseIds = new Set(
       phases
         .filter((p) => orgTournamentIds.has(p.tournamentId))
-        .map((p) => p._id)
+        .map((p) => p._id),
     );
     const orgRoundIds = new Set(
-      rounds.filter((r) => orgPhaseIds.has(r.phaseId)).map((r) => r._id)
+      rounds.filter((r) => orgPhaseIds.has(r.phaseId)).map((r) => r._id),
     );
 
     const orgMatches = allMatches.filter((m) => orgRoundIds.has(m.roundId));
@@ -202,7 +202,7 @@ export const getTournamentStats = query({
     const registrations = await ctx.db
       .query("tournamentRegistrations")
       .withIndex("by_tournament", (q) =>
-        q.eq("tournamentId", args.tournamentId)
+        q.eq("tournamentId", args.tournamentId),
       )
       .collect();
 
@@ -219,7 +219,7 @@ export const getTournamentStats = query({
     const playerStats = await ctx.db
       .query("tournamentPlayerStats")
       .withIndex("by_tournament", (q) =>
-        q.eq("tournamentId", args.tournamentId)
+        q.eq("tournamentId", args.tournamentId),
       )
       .collect();
 
@@ -244,21 +244,21 @@ export const getTournamentStats = query({
     const phases = await ctx.db
       .query("tournamentPhases")
       .withIndex("by_tournament", (q) =>
-        q.eq("tournamentId", args.tournamentId)
+        q.eq("tournamentId", args.tournamentId),
       )
       .collect();
 
     const phaseIds = phases.map((p) => p._id);
     const allRounds = await ctx.db.query("tournamentRounds").collect();
     const tournamentRounds = allRounds.filter((r) =>
-      phaseIds.includes(r.phaseId)
+      phaseIds.includes(r.phaseId),
     );
 
     // Get matches
     const roundIds = tournamentRounds.map((r) => r._id);
     const allMatches = await ctx.db.query("tournamentMatches").collect();
     const tournamentMatches = allMatches.filter((m) =>
-      roundIds.includes(m.roundId)
+      roundIds.includes(m.roundId),
     );
 
     const matchStats = {
@@ -332,20 +332,20 @@ export const getPlayerPerformanceTrends = query({
 
     // Batch fetch tournament info
     const tournamentIds = Array.from(
-      new Set(playerStats.map((s) => s.tournamentId))
+      new Set(playerStats.map((s) => s.tournamentId)),
     );
     const tournaments = await Promise.all(
-      tournamentIds.map((id) => ctx.db.get(id))
+      tournamentIds.map((id) => ctx.db.get(id)),
     );
     const tournamentMap = new Map(
-      tournaments.filter((t) => t !== null).map((t) => [t._id, t])
+      tournaments.filter((t) => t !== null).map((t) => [t._id, t]),
     );
 
     // Build performance history with tournament context
     const performanceHistory = playerStats
       .map((stats) => {
         const tournament = tournamentMap.get(
-          stats.tournamentId
+          stats.tournamentId,
         ) as Doc<"tournaments">;
         if (!tournament?.startDate || typeof tournament.startDate !== "number")
           return null;
@@ -369,7 +369,7 @@ export const getPlayerPerformanceTrends = query({
 
     // Calculate overall trends
     const completedTournaments = performanceHistory.filter(
-      (h) => h.tournamentStatus === "completed"
+      (h) => h.tournamentStatus === "completed",
     );
 
     const overallStats = {
@@ -378,7 +378,7 @@ export const getPlayerPerformanceTrends = query({
         completedTournaments.length > 0
           ? completedTournaments.reduce(
               (sum, h) => sum + h.matchWinPercentage,
-              0
+              0,
             ) / completedTournaments.length
           : 0,
       bestFinish:
@@ -386,19 +386,19 @@ export const getPlayerPerformanceTrends = query({
           ? Math.min(
               ...completedTournaments
                 .map((h) => h.finalRanking)
-                .filter((r): r is number => r !== undefined)
+                .filter((r): r is number => r !== undefined),
             )
           : null,
       totalMatchWins: completedTournaments.reduce(
         (sum, h) => sum + h.matchWins,
-        0
+        0,
       ),
       totalMatchLosses: completedTournaments.reduce(
         (sum, h) => sum + h.matchLosses,
-        0
+        0,
       ),
       top4Finishes: completedTournaments.filter(
-        (h) => h.finalRanking !== undefined && h.finalRanking <= 4
+        (h) => h.finalRanking !== undefined && h.finalRanking <= 4,
       ).length,
       championships: completedTournaments.filter((h) => h.finalRanking === 1)
         .length,
@@ -441,7 +441,7 @@ export const getLeaderboard = query({
         .collect();
       const orgTournamentIds = new Set(orgTournaments.map((t) => t._id));
       filteredStats = allPlayerStats.filter((s) =>
-        orgTournamentIds.has(s.tournamentId)
+        orgTournamentIds.has(s.tournamentId),
       );
     }
 
@@ -527,7 +527,7 @@ export const getLeaderboard = query({
           winRate: Math.round(winRate * 10) / 10,
           championshipPoints,
         };
-      }
+      },
     );
 
     // Sort by championship points, then win rate
@@ -541,10 +541,10 @@ export const getLeaderboard = query({
     // Fetch profile info for top entries
     const topEntries = leaderboardEntries.slice(0, limit);
     const profiles = await Promise.all(
-      topEntries.map((e) => ctx.db.get(e.profileId))
+      topEntries.map((e) => ctx.db.get(e.profileId)),
     );
     const profileMap = new Map(
-      profiles.filter((p) => p !== null).map((p) => [p._id, p])
+      profiles.filter((p) => p !== null).map((p) => [p._id, p]),
     );
 
     const leaderboard = topEntries.map((entry, index) => {
@@ -594,7 +594,7 @@ export const getFormatStatistics = query({
 
     // Filter out archived and cancelled tournaments
     const activeTournaments = tournaments.filter(
-      (t) => !t.archivedAt && t.status !== "cancelled"
+      (t) => !t.archivedAt && t.status !== "cancelled",
     );
 
     // Group by format
@@ -669,7 +669,7 @@ export const getActivityTimeline = query({
   args: {
     organizationId: v.optional(v.id("organizations")),
     granularity: v.optional(
-      v.union(v.literal("day"), v.literal("week"), v.literal("month"))
+      v.union(v.literal("day"), v.literal("week"), v.literal("month")),
     ),
     startDate: v.optional(v.number()),
     endDate: v.optional(v.number()),
@@ -703,11 +703,11 @@ export const getActivityTimeline = query({
       const date = new Date(timestamp);
       switch (granularity) {
         case "day":
-          return date.toISOString().split("T")[0];
+          return date.toISOString().split("T")[0] ?? "";
         case "week": {
           const weekStart = new Date(date);
           weekStart.setDate(date.getDate() - date.getDay());
-          return weekStart.toISOString().split("T")[0];
+          return weekStart.toISOString().split("T")[0] ?? "";
         }
         case "month":
           return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
@@ -758,7 +758,7 @@ export const getActivityTimeline = query({
 
     // Convert to sorted array
     const timeline = Array.from(periodStats.values()).sort((a, b) =>
-      a.period.localeCompare(b.period)
+      a.period.localeCompare(b.period),
     );
 
     return {
@@ -794,7 +794,7 @@ export const getHeadToHead = query({
         ((m.profile1Id === args.profile1Id &&
           m.profile2Id === args.profile2Id) ||
           (m.profile1Id === args.profile2Id &&
-            m.profile2Id === args.profile1Id))
+            m.profile2Id === args.profile1Id)),
     );
 
     // Calculate wins for each player
@@ -826,25 +826,25 @@ export const getHeadToHead = query({
 
     // Get tournament context for each match
     const roundIds = Array.from(
-      new Set(headToHeadMatches.map((m) => m.roundId))
+      new Set(headToHeadMatches.map((m) => m.roundId)),
     );
     const rounds = await Promise.all(roundIds.map((id) => ctx.db.get(id)));
     const roundMap = new Map(
-      rounds.filter((r) => r !== null).map((r) => [r._id, r])
+      rounds.filter((r) => r !== null).map((r) => [r._id, r]),
     );
 
     const phaseIds = Array.from(
       new Set(
         rounds
           .filter(
-            (r): r is NonNullable<typeof r> => r !== null && r.phaseId !== null
+            (r): r is NonNullable<typeof r> => r !== null && r.phaseId !== null,
           )
-          .map((r) => r.phaseId!)
-      )
+          .map((r) => r.phaseId!),
+      ),
     );
     const phases = await Promise.all(phaseIds.map((id) => ctx.db.get(id)));
     const phaseMap = new Map(
-      phases.filter((p) => p !== null).map((p) => [p._id, p])
+      phases.filter((p) => p !== null).map((p) => [p._id, p]),
     );
 
     const tournamentIds = Array.from(
@@ -852,16 +852,16 @@ export const getHeadToHead = query({
         phases
           .filter(
             (p): p is NonNullable<typeof p> =>
-              p !== null && p.tournamentId !== null
+              p !== null && p.tournamentId !== null,
           )
-          .map((p) => p.tournamentId!)
-      )
+          .map((p) => p.tournamentId!),
+      ),
     );
     const tournaments = await Promise.all(
-      tournamentIds.map((id) => ctx.db.get(id))
+      tournamentIds.map((id) => ctx.db.get(id)),
     );
     const tournamentMap = new Map(
-      tournaments.filter((t) => t !== null).map((t) => [t._id, t])
+      tournaments.filter((t) => t !== null).map((t) => [t._id, t]),
     );
 
     // Build match history with context

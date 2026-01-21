@@ -28,7 +28,7 @@ export const generatePairings = mutation({
       user.profile._id,
       "tournament.update" as const,
       "tournament",
-      args.tournamentId
+      args.tournamentId,
     );
 
     if (!hasManagePermission) {
@@ -44,13 +44,13 @@ export const generatePairings = mutation({
     const registrations = await ctx.db
       .query("tournamentRegistrations")
       .withIndex("by_tournament_status", (q) =>
-        q.eq("tournamentId", args.tournamentId).eq("status", "checked_in")
+        q.eq("tournamentId", args.tournamentId).eq("status", "checked_in"),
       )
       .collect();
 
     if (registrations.length < 2) {
       throw new Error(
-        "Need at least 2 checked-in players to generate pairings"
+        "Need at least 2 checked-in players to generate pairings",
       );
     }
 
@@ -58,7 +58,7 @@ export const generatePairings = mutation({
     let phase = await ctx.db
       .query("tournamentPhases")
       .withIndex("by_tournament", (q) =>
-        q.eq("tournamentId", args.tournamentId)
+        q.eq("tournamentId", args.tournamentId),
       )
       .first();
 
@@ -92,7 +92,7 @@ export const generatePairings = mutation({
 
     // Check if round already exists
     const existingRound = existingRounds.find(
-      (r) => r.roundNumber === roundNumber
+      (r) => r.roundNumber === roundNumber,
     );
     if (existingRound) {
       throw new Error(`Round ${roundNumber} already exists`);
@@ -115,28 +115,33 @@ export const generatePairings = mutation({
       pairings = await generateSwissPairings(
         ctx,
         registrations,
-        existingRounds
+        existingRounds,
       );
     } else if (phase.phaseType === "single_elimination") {
       pairings = generateEliminationPairings(
-        registrations.map((r) => r.profileId)
+        registrations.map((r) => r.profileId),
       );
     } else {
       // Random pairings as fallback
       const shuffled = [...registrations].sort(() => Math.random() - 0.5);
       for (let i = 0; i < shuffled.length; i += 2) {
-        if (i + 1 < shuffled.length) {
-          pairings.push([shuffled[i].profileId, shuffled[i + 1].profileId]);
-        } else {
+        const player1 = shuffled[i];
+        const player2 = shuffled[i + 1];
+        if (player1 && player2) {
+          pairings.push([player1.profileId, player2.profileId]);
+        } else if (player1) {
           // Bye
-          pairings.push([shuffled[i].profileId, null]);
+          pairings.push([player1.profileId, null]);
         }
       }
     }
 
     // Create matches
     for (let i = 0; i < pairings.length; i++) {
-      const [player1Id, player2Id] = pairings[i];
+      const pairing = pairings[i];
+      if (!pairing) continue;
+
+      const [player1Id, player2Id] = pairing;
 
       await ctx.db.insert("tournamentMatches", {
         roundId,
@@ -185,14 +190,18 @@ async function generateSwissPairings(
   _existingRounds: Array<{
     roundNumber: number;
     phaseId: Id<"tournamentPhases">;
-  }>
+  }>,
 ): Promise<Array<[Id<"profiles">, Id<"profiles"> | null]>> {
-  const tournamentId = registrations[0].tournamentId;
+  const firstRegistration = registrations[0];
+  if (!firstRegistration) {
+    return [];
+  }
+  const tournamentId = firstRegistration.tournamentId;
   // Get standings from previous rounds
   const standings = await ctx.db
     .query("tournamentStandings")
     .withIndex("by_tournament_round", (q) =>
-      q.eq("tournamentId", registrations[0].tournamentId)
+      q.eq("tournamentId", firstRegistration.tournamentId),
     )
     .collect();
 
@@ -237,9 +246,11 @@ async function generateSwissPairings(
     // Generate first round pairings (simple top-down pairing)
     const pairings: Array<[Id<"profiles">, Id<"profiles"> | null]> = [];
     for (let i = 0; i < sortedPlayers.length; i += 2) {
-      const player1 = sortedPlayers[i].profileId;
-      const player2 = sortedPlayers[i + 1]?.profileId || null;
-      pairings.push([player1, player2]);
+      const player1 = sortedPlayers[i];
+      const player2 = sortedPlayers[i + 1];
+      if (player1) {
+        pairings.push([player1.profileId, player2?.profileId ?? null]);
+      }
     }
     return pairings;
   }
@@ -258,8 +269,8 @@ async function generateSwissPairings(
       ctx.db
         .query("tournamentMatches")
         .withIndex("by_round", (q) => q.eq("roundId", roundId))
-        .collect()
-    )
+        .collect(),
+    ),
   );
   const allMatches = matchArrays.flat();
 
@@ -310,7 +321,7 @@ async function generateSwissPairings(
 
   // Sort point groups in descending order (highest points first)
   const sortedPointGroups = Array.from(pointGroups.entries()).sort(
-    (a, b) => b[0] - a[0]
+    (a, b) => b[0] - a[0],
   );
 
   // STEP 2: Pair within each point group
@@ -329,6 +340,7 @@ async function generateSwissPairings(
     // Pair players within this point group
     for (let i = 0; i < sortedGroup.length; i++) {
       const currentPlayerId = sortedGroup[i];
+      if (!currentPlayerId) continue;
 
       if (paired.has(currentPlayerId)) continue;
 
@@ -337,6 +349,7 @@ async function generateSwissPairings(
       // Try to pair with someone in the same point group
       for (let j = i + 1; j < sortedGroup.length; j++) {
         const candidateId = sortedGroup[j];
+        if (!candidateId) continue;
 
         if (paired.has(candidateId)) continue;
 
@@ -353,6 +366,7 @@ async function generateSwissPairings(
       if (!foundPair) {
         for (let j = i + 1; j < sortedGroup.length; j++) {
           const candidateId = sortedGroup[j];
+          if (!candidateId) continue;
 
           if (paired.has(candidateId)) continue;
 
@@ -384,7 +398,10 @@ async function generateSwissPairings(
   const unpairedPlayers = sortedPlayers.filter((p) => !paired.has(p.profileId));
 
   for (let i = 0; i < unpairedPlayers.length; i++) {
-    const currentPlayerId = unpairedPlayers[i].profileId;
+    const currentPlayer = unpairedPlayers[i];
+    if (!currentPlayer) continue;
+
+    const currentPlayerId = currentPlayer.profileId;
 
     if (paired.has(currentPlayerId)) continue;
 
@@ -392,7 +409,10 @@ async function generateSwissPairings(
 
     // Try to pair with any other unpaired player (cross-group pairing)
     for (let j = i + 1; j < unpairedPlayers.length; j++) {
-      const candidateId = unpairedPlayers[j].profileId;
+      const candidatePlayer = unpairedPlayers[j];
+      if (!candidatePlayer) continue;
+
+      const candidateId = candidatePlayer.profileId;
 
       if (paired.has(candidateId)) continue;
 
@@ -408,7 +428,10 @@ async function generateSwissPairings(
     // Allow rematch if necessary
     if (!foundPair) {
       for (let j = i + 1; j < unpairedPlayers.length; j++) {
-        const candidateId = unpairedPlayers[j].profileId;
+        const candidatePlayer = unpairedPlayers[j];
+        if (!candidatePlayer) continue;
+
+        const candidateId = candidatePlayer.profileId;
 
         if (paired.has(candidateId)) continue;
 
@@ -441,7 +464,7 @@ async function generateSwissPairings(
   if (finalUnpaired.length > 0) {
     // Prefer players who haven't received a bye yet
     const playersWithoutBye = finalUnpaired.filter(
-      (p) => !playerStatsMap.get(p.profileId)?.hasReceivedBye
+      (p) => !playerStatsMap.get(p.profileId)?.hasReceivedBye,
     );
 
     // If any players haven't had a bye, pick the lowest-ranked one (last in sorted order)
@@ -481,8 +504,8 @@ async function generateSwissPairings(
           eventType: "pairing_forced_rematch",
           eventData: event,
           createdAt: Date.now(),
-        })
-      )
+        }),
+      ),
     );
   }
 
@@ -490,7 +513,7 @@ async function generateSwissPairings(
 }
 
 function generateEliminationPairings(
-  playerIds: Id<"profiles">[]
+  playerIds: Id<"profiles">[],
 ): Array<[Id<"profiles">, Id<"profiles"> | null]> {
   const pairings: Array<[Id<"profiles">, Id<"profiles"> | null]> = [];
 
@@ -500,8 +523,11 @@ function generateEliminationPairings(
 
   for (let i = 0; i < halfPoint; i++) {
     const player1 = playerIds[i];
+    if (!player1) continue;
+
     const player2Index = numPlayers - 1 - i;
-    const player2 = player2Index < halfPoint ? null : playerIds[player2Index];
+    const player2 =
+      player2Index < halfPoint ? null : (playerIds[player2Index] ?? null);
 
     pairings.push([player1, player2]);
   }
@@ -535,7 +561,7 @@ export const startRound = mutation({
       user.profile._id,
       "tournament.update" as const,
       "tournament",
-      phase.tournamentId
+      phase.tournamentId,
     );
 
     if (!hasManagePermission) {

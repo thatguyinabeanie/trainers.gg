@@ -36,10 +36,10 @@ export const getMyDashboardData = query({
     // Batch fetch all tournaments at once (optimized from N+1)
     const tournamentIds = tournamentRegistrations.map((r) => r.tournamentId);
     const tournamentsRaw = await Promise.all(
-      tournamentIds.map((id) => ctx.db.get(id))
+      tournamentIds.map((id) => ctx.db.get(id)),
     );
     const tournamentsMap = new Map(
-      tournamentsRaw.filter((t) => t !== null).map((t) => [t._id, t])
+      tournamentsRaw.filter((t) => t !== null).map((t) => [t._id, t]),
     );
 
     // Build myTournaments list without N+1
@@ -129,14 +129,14 @@ export const getMyDashboardData = query({
 
     // Filter to completed matches only
     const completedMatches = recentMatches.filter(
-      (m) => m.status === "completed"
+      (m) => m.status === "completed",
     );
 
     // Batch fetch all rounds at once (optimized from N+1)
     const roundIds = completedMatches.map((m) => m.roundId);
     const roundsRaw = await Promise.all(roundIds.map((id) => ctx.db.get(id)));
     const roundsMap = new Map(
-      roundsRaw.filter((r) => r !== null).map((r) => [r._id, r])
+      roundsRaw.filter((r) => r !== null).map((r) => [r._id, r]),
     );
 
     // Batch fetch all phases at once
@@ -145,20 +145,20 @@ export const getMyDashboardData = query({
     ];
     const phasesRaw = await Promise.all(phaseIds.map((id) => ctx.db.get(id)));
     const phasesMap = new Map(
-      phasesRaw.filter((p) => p !== null).map((p) => [p._id, p])
+      phasesRaw.filter((p) => p !== null).map((p) => [p._id, p]),
     );
 
     // Batch fetch all tournaments for matches at once
     const matchTournamentIds = [
       ...new Set(
-        phasesRaw.filter((p) => p !== null).map((p) => p.tournamentId)
+        phasesRaw.filter((p) => p !== null).map((p) => p.tournamentId),
       ),
     ];
     const matchTournamentsRaw = await Promise.all(
-      matchTournamentIds.map((id) => ctx.db.get(id))
+      matchTournamentIds.map((id) => ctx.db.get(id)),
     );
     const matchTournamentsMap = new Map(
-      matchTournamentsRaw.filter((t) => t !== null).map((t) => [t._id, t])
+      matchTournamentsRaw.filter((t) => t !== null).map((t) => [t._id, t]),
     );
 
     // Batch fetch all opponent profiles at once
@@ -166,10 +166,10 @@ export const getMyDashboardData = query({
       .map((m) => (m.profile1Id === profileId ? m.profile2Id : m.profile1Id))
       .filter((id): id is NonNullable<typeof id> => id !== undefined);
     const opponentsRaw = await Promise.all(
-      opponentIds.map((id) => ctx.db.get(id))
+      opponentIds.map((id) => ctx.db.get(id)),
     );
     const opponentsMap = new Map(
-      opponentsRaw.filter((o) => o !== null).map((o) => [o._id, o])
+      opponentsRaw.filter((o) => o !== null).map((o) => [o._id, o]),
     );
 
     // Build recent activity without N+1
@@ -201,10 +201,10 @@ export const getMyDashboardData = query({
 
     const achievements = [];
     const championshipsWon = playerStats.filter(
-      (s) => s.finalRanking === 1
+      (s) => s.finalRanking === 1,
     ).length;
     const top4Finishes = playerStats.filter(
-      (s) => s.finalRanking && s.finalRanking <= 4
+      (s) => s.finalRanking && s.finalRanking <= 4,
     ).length;
 
     if (championshipsWon > 0) {
@@ -274,7 +274,7 @@ export const _getMyTournaments = internalQuery({
           startDate: t.startDate ?? null,
           status: t.status,
         };
-      })
+      }),
     );
 
     return tournaments.filter((t): t is NonNullable<typeof t> => t !== null);
@@ -298,7 +298,7 @@ export const _getMyOrganizations = internalQuery({
           name: o.name,
           slug: o.slug,
         };
-      })
+      }),
     );
 
     return organizations.filter((o): o is NonNullable<typeof o> => o !== null);
@@ -324,7 +324,7 @@ export const list = query({
       paginatedTournaments = await ctx.db
         .query("tournaments")
         .withIndex("by_org", (q) =>
-          q.eq("organizationId", args.organizationId!)
+          q.eq("organizationId", args.organizationId!),
         )
         .order("desc")
         .paginate(args.paginationOpts);
@@ -341,7 +341,7 @@ export const list = query({
     // Filter out archived tournaments unless explicitly requested
     if (!args.includeArchived) {
       filteredItems = filteredItems.filter(
-        (tournament) => !tournament.archivedAt
+        (tournament) => !tournament.archivedAt,
       );
     }
 
@@ -350,13 +350,13 @@ export const list = query({
       filteredItems = filteredItems.filter(
         (tournament) =>
           tournament.name.toLowerCase().includes(term) ||
-          tournament.format?.toLowerCase().includes(term)
+          tournament.format?.toLowerCase().includes(term),
       );
     }
 
     if (args.statusFilter && args.statusFilter !== "all") {
       filteredItems = filteredItems.filter(
-        (tournament) => tournament.status === args.statusFilter
+        (tournament) => tournament.status === args.statusFilter,
       );
     }
 
@@ -369,7 +369,7 @@ export const list = query({
           currentUser.profile._id,
           PERMISSIONS.TOURNAMENT_VIEW,
           "tournament",
-          tournament._id
+          tournament._id,
         );
 
         // Public tournaments or tournaments where user has view permission
@@ -381,7 +381,7 @@ export const list = query({
     } else {
       // Non-authenticated users can only see non-draft tournaments
       filteredItems = filteredItems.filter(
-        (tournament) => tournament.status !== "draft"
+        (tournament) => tournament.status !== "draft",
       );
     }
 
@@ -401,7 +401,7 @@ export const list = query({
               }
             : null,
         };
-      })
+      }),
     );
 
     return {
@@ -446,7 +446,7 @@ export const getBySlug = query({
         currentUser.profile._id,
         PERMISSIONS.TOURNAMENT_VIEW,
         "tournament",
-        tournament._id
+        tournament._id,
       );
 
       if (!hasViewPermission) {
@@ -472,12 +472,12 @@ export const getBySlug = query({
           ...reg,
           profile,
         };
-      })
+      }),
     );
 
     const stats = {
       currentParticipants: participants.filter(
-        (p) => p.status === "registered" || p.status === "checked_in"
+        (p) => p.status === "registered" || p.status === "checked_in",
       ).length,
       waitlistCount: participants.filter((p) => p.status === "waitlist").length,
       completedMatches: 0, // Tracked in TODO.md: Match Counting Implementation (TODO #3)
@@ -518,7 +518,9 @@ export const getByOrgAndSlug = query({
     const tournament = await ctx.db
       .query("tournaments")
       .withIndex("by_org_slug", (q) =>
-        q.eq("organizationId", organization._id).eq("slug", args.tournamentSlug)
+        q
+          .eq("organizationId", organization._id)
+          .eq("slug", args.tournamentSlug),
       )
       .first();
 
@@ -538,7 +540,7 @@ export const getByOrgAndSlug = query({
         currentUser.profile._id,
         PERMISSIONS.TOURNAMENT_VIEW,
         "tournament",
-        tournament._id
+        tournament._id,
       );
 
       if (!hasViewPermission) {
@@ -590,7 +592,7 @@ export const isOrganizer = query({
       currentUser.profile._id,
       PERMISSIONS.TOURNAMENT_MANAGE,
       "tournament",
-      tournament._id
+      tournament._id,
     );
 
     if (hasManagePermission) {
@@ -667,19 +669,19 @@ export const listArchived = query({
         currentUser.profile._id,
         PERMISSIONS.TOURNAMENT_VIEW,
         "organization",
-        args.organizationId
+        args.organizationId,
       );
 
       if (!hasOrgPermission) {
         throw new Error(
-          "You don't have permission to view archived tournaments for this organization"
+          "You don't have permission to view archived tournaments for this organization",
         );
       }
 
       query = ctx.db
         .query("tournaments")
         .withIndex("by_org_archived", (q) =>
-          q.eq("organizationId", args.organizationId!)
+          q.eq("organizationId", args.organizationId!),
         )
         .order("desc");
     } else {
@@ -687,14 +689,14 @@ export const listArchived = query({
       const hasAdminPermission = await hasPermission(
         ctx,
         currentUser.profile._id,
-        PERMISSIONS.ADMIN_ACCESS,
+        PERMISSIONS.ADMIN_ASSUME_SITE_ADMIN,
         "global",
-        undefined
+        undefined,
       );
 
       if (!hasAdminPermission) {
         throw new Error(
-          "Admin access required to view all archived tournaments"
+          "Admin access required to view all archived tournaments",
         );
       }
 
@@ -708,7 +710,7 @@ export const listArchived = query({
 
     // Filter to only archived tournaments (archivedAt is set)
     const archivedTournaments = paginatedResult.page.filter(
-      (t) => t.archivedAt !== undefined
+      (t) => t.archivedAt !== undefined,
     );
 
     // Fetch organizations
@@ -729,7 +731,7 @@ export const listArchived = query({
             : null,
           archivedByName: archivedByProfile?.displayName || "Unknown",
         };
-      })
+      }),
     );
 
     return {

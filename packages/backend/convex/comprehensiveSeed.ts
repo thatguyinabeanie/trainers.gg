@@ -16,7 +16,7 @@ export const seedComprehensiveData = internalMutation({
     // Seeding must be explicitly enabled via ENABLE_SEEDING environment variable
     if (process.env.ENABLE_SEEDING !== "true") {
       throw new Error(
-        "🚨 PRODUCTION SAFETY: Seeding is DISABLED. Set ENABLE_SEEDING=true environment variable in Convex dashboard for development deployments only. NEVER enable in production or preview."
+        "🚨 PRODUCTION SAFETY: Seeding is DISABLED. Set ENABLE_SEEDING=true environment variable in Convex dashboard for development deployments only. NEVER enable in production or preview.",
       );
     }
 
@@ -332,7 +332,7 @@ export const seedComprehensiveData = internalMutation({
     }
 
     console.log(
-      `✅ Users: ${stats.users} created, ${stats.usersUpdated} updated | Profiles: ${stats.profiles} created, ${stats.profilesUpdated} updated`
+      `✅ Users: ${stats.users} created, ${stats.usersUpdated} updated | Profiles: ${stats.profiles} created, ${stats.profilesUpdated} updated`,
     );
 
     // === STEP 2: Create Organizations ===
@@ -475,7 +475,7 @@ export const seedComprehensiveData = internalMutation({
       const existingMembership = await ctx.db
         .query("organizationMembers")
         .withIndex("by_org_profile", (q) =>
-          q.eq("organizationId", orgId).eq("profileId", owner.profileId)
+          q.eq("organizationId", orgId).eq("profileId", owner.profileId),
         )
         .first();
 
@@ -574,7 +574,7 @@ export const seedComprehensiveData = internalMutation({
         // Add an admin to larger orgs
         if (orgData.tier === "partner") {
           const adminUser = userProfiles.find(
-            (u) => u.userType === "organizer" && u.email !== orgData.ownerEmail
+            (u) => u.userType === "organizer" && u.email !== orgData.ownerEmail,
           );
           if (adminUser && adminRole) {
             await ctx.db.insert("organizationMembers", {
@@ -603,7 +603,7 @@ export const seedComprehensiveData = internalMutation({
         const existing = await ctx.db
           .query("organizationMembers")
           .withIndex("by_org_profile", (q) =>
-            q.eq("organizationId", orgId).eq("profileId", player.profileId)
+            q.eq("organizationId", orgId).eq("profileId", player.profileId),
           )
           .first();
 
@@ -623,7 +623,7 @@ export const seedComprehensiveData = internalMutation({
 
     const activeOrgs = organizations.filter((o) => o.status === "active");
     const players = userProfiles.filter(
-      (u) => u.userType === "competitive" || u.userType === "casual"
+      (u) => u.userType === "competitive" || u.userType === "casual",
     );
 
     const tournamentsData = [
@@ -744,6 +744,8 @@ export const seedComprehensiveData = internalMutation({
       if (tourney.orgIndex >= activeOrgs.length) continue;
 
       const org = activeOrgs[tourney.orgIndex];
+      if (!org) continue;
+
       const startDate = Date.now() + tourney.daysAgo * 24 * 60 * 60 * 1000;
 
       const tournamentId = await ctx.db.insert("tournaments", {
@@ -780,6 +782,7 @@ export const seedComprehensiveData = internalMutation({
 
       for (let i = 0; i < registrants.length; i++) {
         const player = registrants[i];
+        if (!player) continue;
 
         await ctx.db.insert("tournamentRegistrations", {
           tournamentId,
@@ -805,14 +808,14 @@ export const seedComprehensiveData = internalMutation({
     }
 
     console.log(
-      `✅ Created ${stats.tournaments} tournaments with ${stats.registrations} registrations`
+      `✅ Created ${stats.tournaments} tournaments with ${stats.registrations} registrations`,
     );
 
     // === STEP 4: Create Tournament Phases, Rounds, and Matches ===
     console.log("⚔️  Creating tournament phases, rounds, and matches...");
 
     const completedTournaments = tournaments.filter(
-      (t) => t.status === "completed"
+      (t) => t.status === "completed",
     );
     const activeTournaments = tournaments.filter((t) => t.status === "active");
 
@@ -1004,7 +1007,7 @@ export const seedComprehensiveData = internalMutation({
     }
 
     console.log(
-      `✅ Created tournament structures with ${stats.matches} matches`
+      `✅ Created tournament structures with ${stats.matches} matches`,
     );
 
     // === STEP 4.5: Calculate Player Stats from Match History ===
@@ -1041,7 +1044,7 @@ export const seedComprehensiveData = internalMutation({
       // Calculate stats for each player
       for (const profileId of tournament.registrantIds) {
         const playerMatches = tournamentMatches.filter(
-          (m) => m.profile1Id === profileId || m.profile2Id === profileId
+          (m) => m.profile1Id === profileId || m.profile2Id === profileId,
         );
 
         let matchWins = 0;
@@ -1081,10 +1084,10 @@ export const seedComprehensiveData = internalMutation({
         let opponentCount = 0;
         for (const oppId of opponentIds) {
           const oppMatches = tournamentMatches.filter(
-            (m) => m.profile1Id === oppId || m.profile2Id === oppId
+            (m) => m.profile1Id === oppId || m.profile2Id === oppId,
           );
           const oppWins = oppMatches.filter(
-            (m) => m.winnerProfileId === oppId
+            (m) => m.winnerProfileId === oppId,
           ).length;
           const oppPlayed = oppMatches.length;
           if (oppPlayed > 0) {
@@ -1202,21 +1205,37 @@ export const seedComprehensiveData = internalMutation({
         // Add 6 Pokemon to the team
         for (let p = 0; p < 6; p++) {
           const pokeData = samplePokemon[p];
+          if (!pokeData) continue;
+
+          const natureOptions = [
+            "Adamant",
+            "Jolly",
+            "Timid",
+            "Modest",
+            "Bold",
+            "Careful",
+          ] as const;
+          const itemOptions = [
+            "Assault Vest",
+            "Life Orb",
+            "Choice Scarf",
+            "Focus Sash",
+            "Sitrus Berry",
+          ] as const;
+
+          const nature =
+            natureOptions[Math.floor(Math.random() * natureOptions.length)] ??
+            "Adamant";
+          const heldItem =
+            itemOptions[Math.floor(Math.random() * itemOptions.length)] ??
+            "Assault Vest";
 
           const pokemonId = await ctx.db.insert("pokemon", {
             species: pokeData.species,
             level: 50,
-            nature: ["Adamant", "Jolly", "Timid", "Modest", "Bold", "Careful"][
-              Math.floor(Math.random() * 6)
-            ],
+            nature,
             ability: pokeData.ability,
-            heldItem: [
-              "Assault Vest",
-              "Life Orb",
-              "Choice Scarf",
-              "Focus Sash",
-              "Sitrus Berry",
-            ][Math.floor(Math.random() * 5)],
+            heldItem,
             isShiny: Math.random() > 0.9,
             move1: pokeData.move1,
             move2: pokeData.move2,
@@ -1275,7 +1294,7 @@ export const seedComprehensiveData = internalMutation({
     console.log("\n⚠️  IMPORTANT: Seeded users are not yet synced with Clerk!");
     console.log("   Run: bun src/scripts/sync-seed-users-with-clerk.ts");
     console.log(
-      "   This will create Clerk accounts so users can authenticate.\n"
+      "   This will create Clerk accounts so users can authenticate.\n",
     );
 
     return summary;

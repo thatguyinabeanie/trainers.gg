@@ -2,7 +2,9 @@
   "extends": "@trainers/typescript-config/library.json",
   "compilerOptions": {
     "outDir": "dist",
-    "rootDir": "."
+    "rootDir": ".",
+    "declaration": false,
+    "declarationMap": false
   },
   "include": ["convex/**/*.ts"],
   "exclude": ["node_modules", "dist"]
