@@ -3,7 +3,6 @@
 import { useQuery } from "convex/react";
 import { api } from "@/lib/convex/api";
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -22,7 +21,6 @@ import {
 } from "@/components/ui/select";
 import {
   Trophy,
-  Plus,
   Calendar,
   Users,
   Search,
@@ -69,22 +67,14 @@ export default function TournamentsPage() {
   return (
     <div className="container mx-auto px-4 py-8">
       {/* Header */}
-      <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="flex items-center gap-2 text-3xl font-bold">
-            <Trophy className="h-8 w-8" />
-            Tournaments
-          </h1>
-          <p className="text-muted-foreground mt-1">
-            Browse and join Pokemon tournaments
-          </p>
-        </div>
-        <Link href="/tournaments/create">
-          <Button>
-            <Plus className="mr-2 h-4 w-4" />
-            Create Tournament
-          </Button>
-        </Link>
+      <div className="mb-8">
+        <h1 className="flex items-center gap-2 text-3xl font-bold">
+          <Trophy className="h-8 w-8" />
+          Tournaments
+        </h1>
+        <p className="text-muted-foreground mt-1">
+          Browse and join Pokemon tournaments
+        </p>
       </div>
 
       {/* Filters */}
@@ -127,17 +117,11 @@ export default function TournamentsPage() {
           <CardContent className="flex flex-col items-center justify-center py-12">
             <Trophy className="text-muted-foreground mb-4 h-12 w-12" />
             <h3 className="mb-2 text-lg font-semibold">No tournaments found</h3>
-            <p className="text-muted-foreground mb-4 text-center">
+            <p className="text-muted-foreground text-center">
               {searchQuery || statusFilter !== "all"
                 ? "Try adjusting your filters"
-                : "Be the first to create a tournament!"}
+                : "Check back later for upcoming tournaments!"}
             </p>
-            <Link href="/tournaments/create">
-              <Button>
-                <Plus className="mr-2 h-4 w-4" />
-                Create Tournament
-              </Button>
-            </Link>
           </CardContent>
         </Card>
       )}
