@@ -8,12 +8,18 @@ importers:
 
   .:
     devDependencies:
+      '@types/node':
+        specifier: ^22.0.0
+        version: 22.19.7
       prettier:
         specifier: ^3.4.2
         version: 3.8.0
       turbo:
         specifier: ^2.3.3
         version: 2.7.5
+      typescript:
+        specifier: ^5.7.2
+        version: 5.9.3
 
   apps/mobile:
     dependencies:
