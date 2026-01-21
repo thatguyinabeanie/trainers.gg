@@ -2,11 +2,7 @@ import type { ReactNode } from "react";
 import { PageContainer } from "@/components/layout/page-container";
 import { DashboardNav } from "./dashboard-nav";
 
-export default function DashboardLayout({
-  children,
-}: {
-  children: ReactNode;
-}) {
+export default function DashboardLayout({ children }: { children: ReactNode }) {
   return (
     <PageContainer variant="wide" noPadding>
       <div className="w-full py-8">

@@ -37,7 +37,7 @@ export async function listPublicOrganizations(supabase: TypedClient) {
         activeTournamentsCount: activeCount ?? 0,
         totalTournamentsCount: totalCount ?? 0,
       };
-    }),
+    })
   );
 
   return orgsWithCounts;
@@ -48,7 +48,7 @@ export async function listPublicOrganizations(supabase: TypedClient) {
  */
 export async function listOrganizations(
   supabase: TypedClient,
-  options: { limit?: number; offset?: number; searchTerm?: string } = {},
+  options: { limit?: number; offset?: number; searchTerm?: string } = {}
 ) {
   const { limit = 10, offset = 0, searchTerm } = options;
 
@@ -59,7 +59,7 @@ export async function listOrganizations(
       *,
       owner:profiles!organizations_owner_profile_id_fkey(*)
     `,
-      { count: "exact" },
+      { count: "exact" }
     )
     .order("created_at", { ascending: false });
 
@@ -92,7 +92,7 @@ export async function listOrganizations(
           tournaments: tournamentCount ?? 0,
         },
       };
-    }),
+    })
   );
 
   return {
@@ -107,7 +107,7 @@ export async function listOrganizations(
  */
 export async function getOrganizationBySlug(
   supabase: TypedClient,
-  slug: string,
+  slug: string
 ) {
   const { data: organization, error } = await supabase
     .from("organizations")
@@ -115,7 +115,7 @@ export async function getOrganizationBySlug(
       `
       *,
       owner:profiles!organizations_owner_profile_id_fkey(*)
-    `,
+    `
     )
     .eq("slug", slug)
     .single();
@@ -147,15 +147,15 @@ export async function getOrganizationBySlug(
         .select("*", { count: "exact", head: true })
         .eq("tournament_id", t.id);
       return { ...t, registrationCount: count ?? 0 };
-    }),
+    })
   );
 
   // Separate by status
   const activeTournaments = tournamentsWithCounts.filter(
-    (t) => t.status === "active",
+    (t) => t.status === "active"
   );
   const upcomingTournaments = tournamentsWithCounts.filter(
-    (t) => t.status === "upcoming",
+    (t) => t.status === "upcoming"
   );
   const completedTournaments = tournamentsWithCounts
     .filter((t) => t.status === "completed")
@@ -163,15 +163,15 @@ export async function getOrganizationBySlug(
 
   // Calculate stats
   const tournamentsWithParticipants = tournaments.filter(
-    (t) => t.max_participants && t.max_participants > 0,
+    (t) => t.max_participants && t.max_participants > 0
   );
   const avgTournamentSize =
     tournamentsWithParticipants.length > 0
       ? Math.round(
           tournamentsWithParticipants.reduce(
             (sum, t) => sum + (t.max_participants ?? 0),
-            0,
-          ) / tournamentsWithParticipants.length,
+            0
+          ) / tournamentsWithParticipants.length
         )
       : 0;
 
@@ -185,7 +185,7 @@ export async function getOrganizationBySlug(
   const primaryFormat =
     formatCounts.size > 0
       ? (Array.from(formatCounts.entries()).sort(
-          (a, b) => b[1] - a[1],
+          (a, b) => b[1] - a[1]
         )[0]?.[0] ?? null)
       : null;
 
@@ -216,7 +216,7 @@ export async function getOrganizationById(supabase: TypedClient, id: string) {
       `
       *,
       owner:profiles!organizations_owner_profile_id_fkey(*)
-    `,
+    `
     )
     .eq("id", id)
     .single();
@@ -231,7 +231,7 @@ export async function getOrganizationById(supabase: TypedClient, id: string) {
  */
 export async function listMyOrganizations(
   supabase: TypedClient,
-  profileId?: string,
+  profileId?: string
 ) {
   let targetProfileId = profileId;
 
@@ -263,7 +263,7 @@ export async function listMyOrganizations(
     .select(
       `
       organization:organizations(*)
-    `,
+    `
     )
     .eq("profile_id", targetProfileId);
 
@@ -275,8 +275,7 @@ export async function listMyOrganizations(
   const memberOrgs = (memberships ?? [])
     .map((m) => m.organization)
     .filter(
-      (org): org is NonNullable<typeof org> =>
-        org !== null && org !== undefined,
+      (org): org is NonNullable<typeof org> => org !== null && org !== undefined
     )
     .map((org) => {
       const typedOrg = org as { id: string; owner_profile_id: string };
@@ -289,7 +288,7 @@ export async function listMyOrganizations(
   // Combine and deduplicate
   const allOrgs = [...ownedOrgsWithFlag, ...memberOrgs];
   const uniqueOrgs = allOrgs.filter(
-    (org, index, self) => index === self.findIndex((o) => o.id === org.id),
+    (org, index, self) => index === self.findIndex((o) => o.id === org.id)
   );
 
   return uniqueOrgs;
@@ -301,7 +300,7 @@ export async function listMyOrganizations(
 export async function canManageOrganization(
   supabase: TypedClient,
   organizationId: string,
-  profileId: string,
+  profileId: string
 ) {
   // Check if owner
   const { data: org } = await supabase
@@ -327,7 +326,7 @@ export async function canManageOrganization(
           )
         )
       )
-    `,
+    `
     )
     .eq("profile_id", profileId);
 
@@ -359,7 +358,7 @@ export async function canManageOrganization(
  */
 export async function listOrganizationMembers(
   supabase: TypedClient,
-  organizationId: string,
+  organizationId: string
 ) {
   const { data, error } = await supabase
     .from("organization_members")
@@ -367,7 +366,7 @@ export async function listOrganizationMembers(
       `
       *,
       profile:profiles(*)
-    `,
+    `
     )
     .eq("organization_id", organizationId);
 
@@ -381,7 +380,7 @@ export async function listOrganizationMembers(
 export async function isOrganizationMember(
   supabase: TypedClient,
   organizationId: string,
-  profileId: string,
+  profileId: string
 ) {
   // Check if owner
   const { data: org } = await supabase
@@ -410,7 +409,7 @@ export async function isOrganizationMember(
  */
 export async function getMyOrganizationInvitations(
   supabase: TypedClient,
-  profileId: string,
+  profileId: string
 ) {
   const { data: invitations, error } = await supabase
     .from("organization_invitations")
@@ -419,7 +418,7 @@ export async function getMyOrganizationInvitations(
       *,
       organization:organizations(*),
       invited_by:profiles!organization_invitations_invited_by_profile_id_fkey(*)
-    `,
+    `
     )
     .eq("invited_profile_id", profileId)
     .eq("status", "pending");
@@ -433,7 +432,7 @@ export async function getMyOrganizationInvitations(
  */
 export async function getOrganizationInvitations(
   supabase: TypedClient,
-  organizationId: string,
+  organizationId: string
 ) {
   const { data: invitations, error } = await supabase
     .from("organization_invitations")
@@ -442,7 +441,7 @@ export async function getOrganizationInvitations(
       *,
       invited_profile:profiles!organization_invitations_invited_profile_id_fkey(*),
       invited_by:profiles!organization_invitations_invited_by_profile_id_fkey(*)
-    `,
+    `
     )
     .eq("organization_id", organizationId)
     .eq("status", "pending");

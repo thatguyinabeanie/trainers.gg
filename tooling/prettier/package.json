@@ -4,6 +4,10 @@
   "private": true,
   "type": "module",
   "main": "index.js",
+  "scripts": {
+    "format": "prettier --write \"*.js\"",
+    "format:check": "prettier --check \"*.js\""
+  },
   "files": [
     "index.js"
   ],

@@ -24,33 +24,37 @@ import { v } from "convex/values";
 export default defineSchema({
   users: defineTable({
     // Bluesky Identity
-    did: v.string(),                      // Bluesky DID (e.g., "did:plc:abc123...")
-    handle: v.string(),                   // Bluesky handle (e.g., "user.bsky.social")
-    
+    did: v.string(), // Bluesky DID (e.g., "did:plc:abc123...")
+    handle: v.string(), // Bluesky handle (e.g., "user.bsky.social")
+
     // Profile Info (initially pulled from Bluesky, user can override)
     displayName: v.optional(v.string()),
     bio: v.optional(v.string()),
     avatarUrl: v.optional(v.string()),
     bannerUrl: v.optional(v.string()),
-    
+
     // trainers.gg Specific Fields
     gamePreferences: v.optional(v.array(v.string())), // ["VGC", "Showdown", "Draft", "Casual"]
     location: v.optional(v.string()),
-    
+
     // Social Links
-    socialLinks: v.optional(v.object({
-      twitter: v.optional(v.string()),
-      youtube: v.optional(v.string()),
-      twitch: v.optional(v.string()),
-      discord: v.optional(v.string()),
-    })),
-    
+    socialLinks: v.optional(
+      v.object({
+        twitter: v.optional(v.string()),
+        youtube: v.optional(v.string()),
+        twitch: v.optional(v.string()),
+        discord: v.optional(v.string()),
+      })
+    ),
+
     // Settings
-    settings: v.optional(v.object({
-      crossPostToBluesky: v.boolean(),    // Default: true
-      defaultFeedView: v.string(),        // "pokemon" | "all"
-    })),
-    
+    settings: v.optional(
+      v.object({
+        crossPostToBluesky: v.boolean(), // Default: true
+        defaultFeedView: v.string(), // "pokemon" | "all"
+      })
+    ),
+
     // Metadata
     createdAt: v.number(),
     updatedAt: v.number(),
@@ -63,21 +67,21 @@ export default defineSchema({
 
 ### Field Details
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `did` | string | Bluesky Decentralized Identifier - primary key for Bluesky identity |
-| `handle` | string | Bluesky handle (can change, but DID is permanent) |
-| `displayName` | string? | Display name shown on profile |
-| `bio` | string? | User bio/description |
-| `avatarUrl` | string? | URL to avatar image |
-| `bannerUrl` | string? | URL to banner image |
-| `gamePreferences` | string[]? | Array of game formats user plays |
-| `location` | string? | User's location (city, country) |
-| `socialLinks` | object? | Links to other social platforms |
-| `settings` | object? | User preferences |
-| `createdAt` | number | Unix timestamp of account creation |
-| `updatedAt` | number | Unix timestamp of last update |
-| `lastLoginAt` | number? | Unix timestamp of last login |
+| Field             | Type      | Description                                                         |
+| ----------------- | --------- | ------------------------------------------------------------------- |
+| `did`             | string    | Bluesky Decentralized Identifier - primary key for Bluesky identity |
+| `handle`          | string    | Bluesky handle (can change, but DID is permanent)                   |
+| `displayName`     | string?   | Display name shown on profile                                       |
+| `bio`             | string?   | User bio/description                                                |
+| `avatarUrl`       | string?   | URL to avatar image                                                 |
+| `bannerUrl`       | string?   | URL to banner image                                                 |
+| `gamePreferences` | string[]? | Array of game formats user plays                                    |
+| `location`        | string?   | User's location (city, country)                                     |
+| `socialLinks`     | object?   | Links to other social platforms                                     |
+| `settings`        | object?   | User preferences                                                    |
+| `createdAt`       | number    | Unix timestamp of account creation                                  |
+| `updatedAt`       | number    | Unix timestamp of last update                                       |
+| `lastLoginAt`     | number?   | Unix timestamp of last login                                        |
 
 ---
 
@@ -94,12 +98,12 @@ export const getCurrentUser = query({
   handler: async (ctx) => {
     const identity = await ctx.auth.getUserIdentity();
     if (!identity) return null;
-    
+
     const user = await ctx.db
       .query("users")
       .withIndex("by_did", (q) => q.eq("did", identity.subject))
       .unique();
-    
+
     return user;
   },
 });
@@ -148,9 +152,9 @@ export const createOrUpdateUser = mutation({
       .query("users")
       .withIndex("by_did", (q) => q.eq("did", args.did))
       .unique();
-    
+
     const now = Date.now();
-    
+
     if (existing) {
       // Update existing user
       await ctx.db.patch(existing._id, {
@@ -188,24 +192,26 @@ export const updateProfile = mutation({
     bio: v.optional(v.string()),
     location: v.optional(v.string()),
     gamePreferences: v.optional(v.array(v.string())),
-    socialLinks: v.optional(v.object({
-      twitter: v.optional(v.string()),
-      youtube: v.optional(v.string()),
-      twitch: v.optional(v.string()),
-      discord: v.optional(v.string()),
-    })),
+    socialLinks: v.optional(
+      v.object({
+        twitter: v.optional(v.string()),
+        youtube: v.optional(v.string()),
+        twitch: v.optional(v.string()),
+        discord: v.optional(v.string()),
+      })
+    ),
   },
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
     if (!identity) throw new Error("Not authenticated");
-    
+
     const user = await ctx.db
       .query("users")
       .withIndex("by_did", (q) => q.eq("did", identity.subject))
       .unique();
-    
+
     if (!user) throw new Error("User not found");
-    
+
     await ctx.db.patch(user._id, {
       ...args,
       updatedAt: Date.now(),
@@ -222,19 +228,19 @@ export const updateSettings = mutation({
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
     if (!identity) throw new Error("Not authenticated");
-    
+
     const user = await ctx.db
       .query("users")
       .withIndex("by_did", (q) => q.eq("did", identity.subject))
       .unique();
-    
+
     if (!user) throw new Error("User not found");
-    
+
     const currentSettings = user.settings || {
       crossPostToBluesky: true,
       defaultFeedView: "pokemon",
     };
-    
+
     await ctx.db.patch(user._id, {
       settings: {
         ...currentSettings,
@@ -372,15 +378,15 @@ Since Bluesky OAuth uses non-standard JWT format with DPoP, we may need custom a
 
 ## Indexes Strategy
 
-| Table | Index | Purpose |
-|-------|-------|---------|
-| `users` | `by_did` | Primary lookup for authenticated users |
-| `users` | `by_handle` | Lookup users by handle for profiles |
-| `cachedPosts` | `by_uri` | Deduplicate and lookup specific posts |
-| `cachedPosts` | `by_author` | Get posts by specific user |
-| `cachedPosts` | `by_created` | Sort posts chronologically |
-| `follows` | `by_follower` | Get who a user follows |
-| `follows` | `by_following` | Get a user's followers |
+| Table         | Index          | Purpose                                |
+| ------------- | -------------- | -------------------------------------- |
+| `users`       | `by_did`       | Primary lookup for authenticated users |
+| `users`       | `by_handle`    | Lookup users by handle for profiles    |
+| `cachedPosts` | `by_uri`       | Deduplicate and lookup specific posts  |
+| `cachedPosts` | `by_author`    | Get posts by specific user             |
+| `cachedPosts` | `by_created`   | Sort posts chronologically             |
+| `follows`     | `by_follower`  | Get who a user follows                 |
+| `follows`     | `by_following` | Get a user's followers                 |
 
 ---
 
@@ -402,6 +408,7 @@ Since Bluesky OAuth uses non-standard JWT format with DPoP, we may need custom a
 ```
 
 **Source of Truth**:
+
 - Bluesky posts, likes, reposts, follows: Bluesky PDS
 - trainers.gg profile extensions: Convex
 - User settings/preferences: Convex

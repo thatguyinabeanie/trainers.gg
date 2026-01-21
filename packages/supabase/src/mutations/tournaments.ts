@@ -41,7 +41,7 @@ export async function createTournament(
     swissRounds?: number;
     tournamentFormat?: TournamentFormat;
     roundTimeMinutes?: number;
-  },
+  }
 ) {
   const profile = await getCurrentProfile(supabase);
   if (!profile) throw new Error("Not authenticated");
@@ -133,7 +133,7 @@ export async function updateTournament(
     endDate?: string;
     maxParticipants?: number;
     status?: TournamentStatus;
-  },
+  }
 ) {
   const profile = await getCurrentProfile(supabase);
   if (!profile) throw new Error("Not authenticated");
@@ -188,7 +188,7 @@ export async function registerForTournament(
   data?: {
     teamName?: string;
     notes?: string;
-  },
+  }
 ) {
   const profile = await getCurrentProfile(supabase);
   if (!profile) throw new Error("Not authenticated");
@@ -260,7 +260,7 @@ export async function registerForTournament(
  */
 export async function cancelRegistration(
   supabase: TypedClient,
-  registrationId: string,
+  registrationId: string
 ) {
   const profile = await getCurrentProfile(supabase);
   if (!profile) throw new Error("Not authenticated");
@@ -302,7 +302,7 @@ export async function cancelRegistration(
  */
 export async function archiveTournament(
   supabase: TypedClient,
-  tournamentId: string,
+  tournamentId: string
 ) {
   const profile = await getCurrentProfile(supabase);
   if (!profile) throw new Error("Not authenticated");
@@ -342,7 +342,7 @@ export async function archiveTournament(
 export async function updateRegistrationStatus(
   supabase: TypedClient,
   registrationId: string,
-  status: Database["public"]["Enums"]["registration_status"],
+  status: Database["public"]["Enums"]["registration_status"]
 ) {
   const profile = await getCurrentProfile(supabase);
   if (!profile) throw new Error("Not authenticated");
@@ -407,7 +407,7 @@ export async function checkIn(supabase: TypedClient, tournamentId: string) {
     registration.status !== "confirmed"
   ) {
     throw new Error(
-      `Cannot check in from status "${registration.status}". Must be "registered" or "confirmed".`,
+      `Cannot check in from status "${registration.status}". Must be "registered" or "confirmed".`
     );
   }
 
@@ -503,7 +503,7 @@ export async function startMatch(supabase: TypedClient, matchId: string) {
           )
         )
       )
-    `,
+    `
     )
     .eq("id", matchId)
     .single();
@@ -558,7 +558,7 @@ export async function reportMatchResult(
   matchId: string,
   winnerId: string,
   player1Score: number,
-  player2Score: number,
+  player2Score: number
 ) {
   const profile = await getCurrentProfile(supabase);
   if (!profile) throw new Error("Not authenticated");
@@ -585,7 +585,7 @@ export async function reportMatchResult(
           )
         )
       )
-    `,
+    `
     )
     .eq("id", matchId)
     .single();
@@ -619,7 +619,7 @@ export async function reportMatchResult(
   // Validate match is in progress
   if (match.status !== "active" && match.status !== "pending") {
     throw new Error(
-      `Cannot report result for match with status "${match.status}"`,
+      `Cannot report result for match with status "${match.status}"`
     );
   }
 
@@ -653,7 +653,7 @@ export async function reportMatchResult(
  */
 export async function withdrawFromTournament(
   supabase: TypedClient,
-  tournamentId: string,
+  tournamentId: string
 ) {
   const profile = await getCurrentProfile(supabase);
   if (!profile) throw new Error("Not authenticated");
@@ -693,7 +693,7 @@ export async function withdrawFromTournament(
  */
 export async function deleteTournament(
   supabase: TypedClient,
-  tournamentId: string,
+  tournamentId: string
 ) {
   const profile = await getCurrentProfile(supabase);
   if (!profile) throw new Error("Not authenticated");
@@ -738,7 +738,7 @@ export async function sendTournamentInvitations(
   supabase: TypedClient,
   tournamentId: string,
   profileIds: string[],
-  message?: string,
+  message?: string
 ) {
   const profile = await getCurrentProfile(supabase);
   if (!profile) throw new Error("Not authenticated");
@@ -770,7 +770,7 @@ export async function sendTournamentInvitations(
     .in("invited_profile_id", profileIds);
 
   const existingIds = new Set(
-    existingInvitations?.map((inv) => inv.invited_profile_id) ?? [],
+    existingInvitations?.map((inv) => inv.invited_profile_id) ?? []
   );
   const newProfileIds = profileIds.filter((id) => !existingIds.has(id));
 
@@ -810,7 +810,7 @@ export async function sendTournamentInvitations(
 export async function respondToTournamentInvitation(
   supabase: TypedClient,
   invitationId: string,
-  response: "accept" | "decline",
+  response: "accept" | "decline"
 ) {
   const profile = await getCurrentProfile(supabase);
   if (!profile) throw new Error("Not authenticated");

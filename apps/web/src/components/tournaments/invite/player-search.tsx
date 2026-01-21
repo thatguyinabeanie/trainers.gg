@@ -9,14 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import {
-  Search,
-  UserPlus,
-  Loader2,
-  X,
-  Users,
-  Star,
-} from "lucide-react";
+import { Search, UserPlus, Loader2, X, Users, Star } from "lucide-react";
 
 interface PlayerSearchProps {
   tournamentId: string;

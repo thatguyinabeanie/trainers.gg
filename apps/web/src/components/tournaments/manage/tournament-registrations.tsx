@@ -226,7 +226,11 @@ export function TournamentRegistrations({
                       )}
                     </TableCell>
                     <TableCell>
-                      <Badge className={getStatusColor(registration.status ?? "pending")}>
+                      <Badge
+                        className={getStatusColor(
+                          registration.status ?? "pending"
+                        )}
+                      >
                         {registration.status ?? "pending"}
                       </Badge>
                     </TableCell>

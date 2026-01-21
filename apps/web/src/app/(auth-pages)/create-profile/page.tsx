@@ -11,8 +11,8 @@ function CreateProfileForm() {
   const router = useRouter();
   const { user, loading, refetchUser } = useAuth();
   const { mutateAsync: ensureProfileMutation, isLoading: isSubmitting } =
-    useSupabaseMutation(
-      (supabase, _args: Record<string, never>) => ensureProfile(supabase)
+    useSupabaseMutation((supabase, _args: Record<string, never>) =>
+      ensureProfile(supabase)
     );
 
   const [error, setError] = useState<string | null>(null);
@@ -37,9 +37,7 @@ function CreateProfileForm() {
       router.push("/");
     } catch (err) {
       console.error("Profile creation error:", err);
-      setError(
-        err instanceof Error ? err.message : "Failed to create profile"
-      );
+      setError(err instanceof Error ? err.message : "Failed to create profile");
     }
   };
 
@@ -63,8 +61,7 @@ function CreateProfileForm() {
       <div className="text-center">
         <h1 className="text-2xl font-bold">Complete Your Profile</h1>
         <p className="text-muted-foreground mt-1 text-sm">
-          We&apos;ll set up your trainer profile using your account
-          information.
+          We&apos;ll set up your trainer profile using your account information.
         </p>
       </div>
 

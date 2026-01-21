@@ -16,7 +16,9 @@ export function ActiveOrganizationsClient() {
 
   const queryFn = useCallback(
     (supabase: Parameters<typeof listMyOrganizations>[0]) =>
-      profileId ? listMyOrganizations(supabase, profileId) : Promise.resolve([]),
+      profileId
+        ? listMyOrganizations(supabase, profileId)
+        : Promise.resolve([]),
     [profileId]
   );
 

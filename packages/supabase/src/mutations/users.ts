@@ -13,7 +13,7 @@ export async function updateProfile(
     displayName?: string;
     bio?: string;
     avatarUrl?: string;
-  },
+  }
 ) {
   // Verify the user owns this profile
   const {
@@ -55,7 +55,7 @@ export async function updateProfile(
 export async function updateUsername(
   supabase: TypedClient,
   profileId: string,
-  newUsername: string,
+  newUsername: string
 ) {
   // Verify the user owns this profile
   const {
@@ -171,7 +171,7 @@ export async function createProfile(
     displayName: string;
     bio?: string;
     avatarUrl?: string;
-  },
+  }
 ) {
   const {
     data: { user },

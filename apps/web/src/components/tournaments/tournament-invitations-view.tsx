@@ -53,10 +53,7 @@ export function TournamentInvitationsView({
     isLoading,
     refetch,
   } = useSupabaseQuery(
-    useCallback(
-      (supabase) => getTournamentInvitationsReceived(supabase),
-      []
-    ),
+    useCallback((supabase) => getTournamentInvitationsReceived(supabase), []),
     []
   );
 

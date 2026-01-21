@@ -89,7 +89,7 @@ export function oklchToCss(color: OklchColor, alpha?: number): string {
  * Convert a palette object to hex values
  */
 export function paletteToHex<T extends Record<string, OklchColor>>(
-  palette: T,
+  palette: T
 ): Record<keyof T, string> {
   const result = {} as Record<keyof T, string>;
   for (const [key, value] of Object.entries(palette)) {

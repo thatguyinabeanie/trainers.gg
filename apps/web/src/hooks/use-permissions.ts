@@ -16,19 +16,19 @@ export function usePermission(permission: PermissionKey, enabled = true) {
   const { user, isLoading: userLoading } = useCurrentUser();
 
   // Check permission if user is loaded and has a profile
-  const { data: permissionCheck, isLoading: permissionLoading } = useSupabaseQuery(
-    async (supabase) => {
-      if (!user?.profile?.id || !enabled) return false;
-      return hasPermission(supabase, user.profile.id, permission);
-    },
-    [user?.profile?.id, enabled, permission]
-  );
+  const { data: permissionCheck, isLoading: permissionLoading } =
+    useSupabaseQuery(
+      async (supabase) => {
+        if (!user?.profile?.id || !enabled) return false;
+        return hasPermission(supabase, user.profile.id, permission);
+      },
+      [user?.profile?.id, enabled, permission]
+    );
 
   return {
     hasPermission: permissionCheck === true,
     isLoading:
-      userLoading ||
-      (user?.profile?.id && enabled && permissionLoading),
+      userLoading || (user?.profile?.id && enabled && permissionLoading),
     user,
   };
 }
@@ -44,13 +44,14 @@ export function usePermissions(permissions: PermissionKey[], enabled = true) {
   const { user, isLoading: userLoading } = useCurrentUser();
 
   // Get all user permissions in a single query
-  const { data: userPermissions, isLoading: permissionsLoading } = useSupabaseQuery(
-    async (supabase) => {
-      if (!user?.profile?.id || !enabled) return [];
-      return getUserPermissions(supabase, user.profile.id);
-    },
-    [user?.profile?.id, enabled]
-  );
+  const { data: userPermissions, isLoading: permissionsLoading } =
+    useSupabaseQuery(
+      async (supabase) => {
+        if (!user?.profile?.id || !enabled) return [];
+        return getUserPermissions(supabase, user.profile.id);
+      },
+      [user?.profile?.id, enabled]
+    );
 
   // Create permissions map by checking if each requested permission is in the user's permissions
   const permissionsMap = {} as Record<PermissionKey, boolean>;
@@ -59,8 +60,7 @@ export function usePermissions(permissions: PermissionKey[], enabled = true) {
   });
 
   const isLoading =
-    userLoading ||
-    (user?.profile?.id && enabled && permissionsLoading);
+    userLoading || (user?.profile?.id && enabled && permissionsLoading);
 
   return {
     permissions: permissionsMap,

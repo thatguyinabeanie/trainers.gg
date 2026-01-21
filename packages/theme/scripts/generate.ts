@@ -106,13 +106,13 @@ const semanticHex = {
     Object.entries(semanticTokens.light).map(([key, value]) => [
       key,
       oklchToHex(value),
-    ]),
+    ])
   ),
   dark: Object.fromEntries(
     Object.entries(semanticTokens.dark).map(([key, value]) => [
       key,
       oklchToHex(value),
-    ]),
+    ])
   ),
 };
 

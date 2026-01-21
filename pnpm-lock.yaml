@@ -41,9 +41,15 @@ importers:
 
   .:
     devDependencies:
+      '@trainers/prettier-config':
+        specifier: workspace:*
+        version: link:tooling/prettier
       prettier:
         specifier: 'catalog:'
         version: 3.8.1
+      prettier-plugin-tailwindcss:
+        specifier: ^0.6.9
+        version: 0.6.14(prettier@3.8.1)
       turbo:
         specifier: ^2.7.5
         version: 2.7.5
@@ -305,6 +311,9 @@ importers:
         specifier: 'catalog:'
         version: 3.25.76
     devDependencies:
+      '@trainers/prettier-config':
+        specifier: workspace:*
+        version: link:../../tooling/prettier
       '@trainers/typescript-config':
         specifier: workspace:*
         version: link:../../tooling/typescript
@@ -321,6 +330,9 @@ importers:
         specifier: 'catalog:'
         version: 3.25.76
     devDependencies:
+      '@trainers/prettier-config':
+        specifier: workspace:*
+        version: link:../../tooling/prettier
       '@trainers/typescript-config':
         specifier: workspace:*
         version: link:../../tooling/typescript
@@ -339,6 +351,9 @@ importers:
       '@trainers/eslint-config':
         specifier: workspace:*
         version: link:../../tooling/eslint
+      '@trainers/prettier-config':
+        specifier: workspace:*
+        version: link:../../tooling/prettier
       '@trainers/typescript-config':
         specifier: workspace:*
         version: link:../../tooling/typescript
@@ -358,6 +373,9 @@ importers:
         specifier: 'catalog:'
         version: 3.25.76
     devDependencies:
+      '@trainers/prettier-config':
+        specifier: workspace:*
+        version: link:../../tooling/prettier
       '@trainers/typescript-config':
         specifier: workspace:*
         version: link:../../tooling/typescript
@@ -394,6 +412,10 @@ importers:
       typescript:
         specifier: ^5.9.0
         version: 5.9.3
+    devDependencies:
+      '@trainers/prettier-config':
+        specifier: workspace:*
+        version: link:../prettier
 
   tooling/prettier:
     dependencies:
@@ -406,11 +428,18 @@ importers:
 
   tooling/tailwind:
     devDependencies:
+      '@trainers/prettier-config':
+        specifier: workspace:*
+        version: link:../prettier
       tailwindcss:
         specifier: ^4.0.0
         version: 4.1.18
 
-  tooling/typescript: {}
+  tooling/typescript:
+    devDependencies:
+      '@trainers/prettier-config':
+        specifier: workspace:*
+        version: link:../prettier
 
 packages:
 
@@ -13101,6 +13130,10 @@ snapshots:
   prettier-plugin-tailwindcss@0.6.14(prettier@3.8.0):
     dependencies:
       prettier: 3.8.0
+
+  prettier-plugin-tailwindcss@0.6.14(prettier@3.8.1):
+    dependencies:
+      prettier: 3.8.1
 
   prettier@3.8.0: {}
 

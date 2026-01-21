@@ -26,10 +26,16 @@ export default function HomePage() {
         </div>
 
         <nav className="text-muted-foreground mt-12 flex flex-wrap justify-center gap-6 text-sm">
-          <Link href="/tournaments" className="hover:text-primary transition-colors">
+          <Link
+            href="/tournaments"
+            className="hover:text-primary transition-colors"
+          >
             Tournaments
           </Link>
-          <Link href="/draft-leagues" className="hover:text-primary transition-colors">
+          <Link
+            href="/draft-leagues"
+            className="hover:text-primary transition-colors"
+          >
             Draft Leagues
           </Link>
           <Link href="/teams" className="hover:text-primary transition-colors">

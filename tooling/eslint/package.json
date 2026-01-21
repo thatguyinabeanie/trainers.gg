@@ -8,6 +8,10 @@
     "./nextjs": "./nextjs.js",
     "./expo": "./expo.js"
   },
+  "scripts": {
+    "format": "prettier --write \"*.js\"",
+    "format:check": "prettier --check \"*.js\""
+  },
   "files": [
     "base.js",
     "nextjs.js",
@@ -22,8 +26,12 @@
     "eslint-plugin-react-hooks": "^5.1.0",
     "globals": "^17.0.0"
   },
+  "devDependencies": {
+    "@trainers/prettier-config": "workspace:*"
+  },
   "peerDependencies": {
     "eslint": "^9.39.0",
     "typescript": "^5.9.0"
-  }
+  },
+  "prettier": "@trainers/prettier-config"
 }

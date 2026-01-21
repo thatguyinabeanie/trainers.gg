@@ -28,7 +28,7 @@ export const generatePairings = mutation({
       user.profile._id,
       "tournament.update" as const,
       "tournament",
-      args.tournamentId,
+      args.tournamentId
     );
 
     if (!hasManagePermission) {
@@ -44,13 +44,13 @@ export const generatePairings = mutation({
     const registrations = await ctx.db
       .query("tournamentRegistrations")
       .withIndex("by_tournament_status", (q) =>
-        q.eq("tournamentId", args.tournamentId).eq("status", "checked_in"),
+        q.eq("tournamentId", args.tournamentId).eq("status", "checked_in")
       )
       .collect();
 
     if (registrations.length < 2) {
       throw new Error(
-        "Need at least 2 checked-in players to generate pairings",
+        "Need at least 2 checked-in players to generate pairings"
       );
     }
 
@@ -58,7 +58,7 @@ export const generatePairings = mutation({
     let phase = await ctx.db
       .query("tournamentPhases")
       .withIndex("by_tournament", (q) =>
-        q.eq("tournamentId", args.tournamentId),
+        q.eq("tournamentId", args.tournamentId)
       )
       .first();
 
@@ -92,7 +92,7 @@ export const generatePairings = mutation({
 
     // Check if round already exists
     const existingRound = existingRounds.find(
-      (r) => r.roundNumber === roundNumber,
+      (r) => r.roundNumber === roundNumber
     );
     if (existingRound) {
       throw new Error(`Round ${roundNumber} already exists`);
@@ -115,11 +115,11 @@ export const generatePairings = mutation({
       pairings = await generateSwissPairings(
         ctx,
         registrations,
-        existingRounds,
+        existingRounds
       );
     } else if (phase.phaseType === "single_elimination") {
       pairings = generateEliminationPairings(
-        registrations.map((r) => r.profileId),
+        registrations.map((r) => r.profileId)
       );
     } else {
       // Random pairings as fallback
@@ -190,7 +190,7 @@ async function generateSwissPairings(
   _existingRounds: Array<{
     roundNumber: number;
     phaseId: Id<"tournamentPhases">;
-  }>,
+  }>
 ): Promise<Array<[Id<"profiles">, Id<"profiles"> | null]>> {
   const firstRegistration = registrations[0];
   if (!firstRegistration) {
@@ -201,7 +201,7 @@ async function generateSwissPairings(
   const standings = await ctx.db
     .query("tournamentStandings")
     .withIndex("by_tournament_round", (q) =>
-      q.eq("tournamentId", firstRegistration.tournamentId),
+      q.eq("tournamentId", firstRegistration.tournamentId)
     )
     .collect();
 
@@ -269,8 +269,8 @@ async function generateSwissPairings(
       ctx.db
         .query("tournamentMatches")
         .withIndex("by_round", (q) => q.eq("roundId", roundId))
-        .collect(),
-    ),
+        .collect()
+    )
   );
   const allMatches = matchArrays.flat();
 
@@ -321,7 +321,7 @@ async function generateSwissPairings(
 
   // Sort point groups in descending order (highest points first)
   const sortedPointGroups = Array.from(pointGroups.entries()).sort(
-    (a, b) => b[0] - a[0],
+    (a, b) => b[0] - a[0]
   );
 
   // STEP 2: Pair within each point group
@@ -464,7 +464,7 @@ async function generateSwissPairings(
   if (finalUnpaired.length > 0) {
     // Prefer players who haven't received a bye yet
     const playersWithoutBye = finalUnpaired.filter(
-      (p) => !playerStatsMap.get(p.profileId)?.hasReceivedBye,
+      (p) => !playerStatsMap.get(p.profileId)?.hasReceivedBye
     );
 
     // If any players haven't had a bye, pick the lowest-ranked one (last in sorted order)
@@ -504,8 +504,8 @@ async function generateSwissPairings(
           eventType: "pairing_forced_rematch",
           eventData: event,
           createdAt: Date.now(),
-        }),
-      ),
+        })
+      )
     );
   }
 
@@ -513,7 +513,7 @@ async function generateSwissPairings(
 }
 
 function generateEliminationPairings(
-  playerIds: Id<"profiles">[],
+  playerIds: Id<"profiles">[]
 ): Array<[Id<"profiles">, Id<"profiles"> | null]> {
   const pairings: Array<[Id<"profiles">, Id<"profiles"> | null]> = [];
 
@@ -561,7 +561,7 @@ export const startRound = mutation({
       user.profile._id,
       "tournament.update" as const,
       "tournament",
-      phase.tournamentId,
+      phase.tournamentId
     );
 
     if (!hasManagePermission) {

@@ -74,7 +74,7 @@ export async function getUserById(supabase: TypedClient, userId: string) {
  */
 export async function getUserWithProfile(
   supabase: TypedClient,
-  userId: string,
+  userId: string
 ) {
   const { data: user, error: userError } = await supabase
     .from("users")
@@ -98,7 +98,7 @@ export async function getUserWithProfile(
  */
 export async function getProfileByUsername(
   supabase: TypedClient,
-  username: string,
+  username: string
 ) {
   const { data, error } = await supabase
     .from("profiles")
@@ -106,7 +106,7 @@ export async function getProfileByUsername(
       `
       *,
       user:users(*)
-    `,
+    `
     )
     .eq("username", username)
     .single();
@@ -120,7 +120,7 @@ export async function getProfileByUsername(
  */
 export async function getProfileByUserId(
   supabase: TypedClient,
-  userId: string,
+  userId: string
 ) {
   const { data, error } = await supabase
     .from("profiles")
@@ -138,7 +138,7 @@ export async function getProfileByUserId(
 export async function searchProfiles(
   supabase: TypedClient,
   query: string,
-  limit = 10,
+  limit = 10
 ) {
   const { data, error } = await supabase
     .from("profiles")

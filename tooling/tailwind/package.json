@@ -7,11 +7,17 @@
     ".": "./theme.ts",
     "./postcss": "./postcss.config.js"
   },
+  "scripts": {
+    "format": "prettier --write \"*.{ts,js}\"",
+    "format:check": "prettier --check \"*.{ts,js}\""
+  },
   "files": [
     "theme.ts",
     "postcss.config.js"
   ],
   "devDependencies": {
+    "@trainers/prettier-config": "workspace:*",
     "tailwindcss": "^4.0.0"
-  }
+  },
+  "prettier": "@trainers/prettier-config"
 }

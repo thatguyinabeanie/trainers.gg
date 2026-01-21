@@ -1,6 +1,12 @@
 "use client";
 
-import { useClerk, useSession, useSignIn, useSignUp, useUser } from "@clerk/nextjs";
+import {
+  useClerk,
+  useSession,
+  useSignIn,
+  useSignUp,
+  useUser,
+} from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 import {
   createContext,
@@ -131,7 +137,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (checkError) {
         // If we get a 401, the session token likely doesn't have the right claims
         // This can happen if Clerk wasn't configured for Supabase before this session was created
-        if (checkError.message?.includes("401") || checkError.code === "PGRST301") {
+        if (
+          checkError.message?.includes("401") ||
+          checkError.code === "PGRST301"
+        ) {
           console.error(
             "Supabase authentication failed. Please sign out and sign back in to refresh your session.",
             checkError
@@ -164,7 +173,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           // Handle specific error codes
           if (createError.code === "23505") {
             // Unique violation - user was created by webhook, fetch instead
-            console.log("User already exists (created by webhook), fetching...");
+            console.log(
+              "User already exists (created by webhook), fetching..."
+            );
           } else if (createError.message?.includes("401")) {
             console.error(
               "Supabase authentication failed. Please sign out and sign back in to refresh your session."
@@ -173,7 +184,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             return;
           } else {
             console.error("Error creating user:", createError);
-            console.error("Error details:", JSON.stringify(createError, null, 2));
+            console.error(
+              "Error details:",
+              JSON.stringify(createError, null, 2)
+            );
           }
         } else if (newUser) {
           // Create default profile
@@ -182,12 +196,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             clerkUser.primaryEmailAddress?.emailAddress?.split("@")[0] ||
             `user_${newUser.id.slice(0, 8)}`;
 
-          const { error: profileError } = await supabase.from("profiles").insert({
-            user_id: newUser.id,
-            username: username.toLowerCase().replace(/[^a-z0-9_]/g, "_"),
-            display_name: clerkUser.fullName || username,
-            avatar_url: clerkUser.imageUrl,
-          });
+          const { error: profileError } = await supabase
+            .from("profiles")
+            .insert({
+              user_id: newUser.id,
+              username: username.toLowerCase().replace(/[^a-z0-9_]/g, "_"),
+              display_name: clerkUser.fullName || username,
+              avatar_url: clerkUser.imageUrl,
+            });
 
           if (profileError && profileError.code !== "23505") {
             console.error("Error creating profile:", profileError);

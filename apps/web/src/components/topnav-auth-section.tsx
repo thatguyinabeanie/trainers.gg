@@ -82,7 +82,7 @@ export function TopNavAuthSection({ themeSwitcher }: TopNavAuthSectionProps) {
 
       {/* User Dropdown */}
       <DropdownMenu>
-        <DropdownMenuTrigger className="bg-transparent hover:bg-accent focus-visible:ring-ring inline-flex cursor-pointer items-center justify-center gap-2 rounded-md px-2 py-1.5 text-sm font-medium whitespace-nowrap transition-colors focus-visible:ring-1 focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50">
+        <DropdownMenuTrigger className="hover:bg-accent focus-visible:ring-ring inline-flex cursor-pointer items-center justify-center gap-2 rounded-md bg-transparent px-2 py-1.5 text-sm font-medium whitespace-nowrap transition-colors focus-visible:ring-1 focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50">
           <Avatar className="h-8 w-8">
             {user.profile?.avatarUrl && (
               <AvatarImage src={user.profile.avatarUrl} alt={displayName} />

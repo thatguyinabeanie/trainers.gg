@@ -47,10 +47,7 @@ export function CheckInCard({
   const [isChecking, setIsChecking] = useState(false);
   const [timeRemaining, setTimeRemaining] = useState<string>("");
 
-  const {
-    data: checkInStatus,
-    refetch: refetchStatus,
-  } = useSupabaseQuery(
+  const { data: checkInStatus, refetch: refetchStatus } = useSupabaseQuery(
     useCallback(
       (supabase) => getCheckInStatus(supabase, tournamentId),
       [tournamentId]
@@ -58,10 +55,7 @@ export function CheckInCard({
     [tournamentId]
   );
 
-  const {
-    data: checkInStats,
-    refetch: refetchStats,
-  } = useSupabaseQuery(
+  const { data: checkInStats, refetch: refetchStats } = useSupabaseQuery(
     useCallback(
       (supabase) => getCheckInStats(supabase, tournamentId),
       [tournamentId]

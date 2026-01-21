@@ -57,7 +57,7 @@ Deno.serve(async (req: Request) => {
       {
         status: 500,
         headers: { "Content-Type": "application/json" },
-      },
+      }
     );
   }
 
@@ -94,7 +94,7 @@ Deno.serve(async (req: Request) => {
       {
         status: 401,
         headers: { "Content-Type": "application/json" },
-      },
+      }
     );
   }
 
@@ -132,12 +132,12 @@ Deno.serve(async (req: Request) => {
 
         // Get primary email
         const primaryEmail = email_addresses?.find(
-          (e) => e.id === primary_email_address_id,
+          (e) => e.id === primary_email_address_id
         )?.email_address;
 
         // Get primary phone
         const primaryPhone = phone_numbers?.find(
-          (p) => p.id === primary_phone_number_id,
+          (p) => p.id === primary_phone_number_id
         )?.phone_number;
 
         // Build display name
@@ -223,7 +223,7 @@ Deno.serve(async (req: Request) => {
         }
 
         console.log(
-          `Created user ${userId} with profile ${profile?.id} for Clerk user ${clerkId}`,
+          `Created user ${userId} with profile ${profile?.id} for Clerk user ${clerkId}`
         );
         break;
       }
@@ -247,12 +247,12 @@ Deno.serve(async (req: Request) => {
 
         // Get primary email
         const primaryEmail = email_addresses?.find(
-          (e) => e.id === primary_email_address_id,
+          (e) => e.id === primary_email_address_id
         )?.email_address;
 
         // Get primary phone
         const primaryPhone = phone_numbers?.find(
-          (p) => p.id === primary_phone_number_id,
+          (p) => p.id === primary_phone_number_id
         )?.phone_number;
 
         // Build display name
@@ -349,7 +349,7 @@ Deno.serve(async (req: Request) => {
       {
         status: 500,
         headers: { "Content-Type": "application/json" },
-      },
+      }
     );
   }
 });

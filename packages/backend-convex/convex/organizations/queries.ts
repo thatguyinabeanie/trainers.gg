@@ -36,12 +36,12 @@ export const getBySlug = query({
           const registrationCount = await ctx.db
             .query("tournamentRegistrations")
             .withIndex("by_tournament", (q) =>
-              q.eq("tournamentId", tournament._id),
+              q.eq("tournamentId", tournament._id)
             )
             .collect()
             .then((regs) => regs.length);
           return { ...tournament, registrationCount };
-        }),
+        })
     );
 
     const upcomingTournamentsWithCounts = await Promise.all(
@@ -51,12 +51,12 @@ export const getBySlug = query({
           const registrationCount = await ctx.db
             .query("tournamentRegistrations")
             .withIndex("by_tournament", (q) =>
-              q.eq("tournamentId", tournament._id),
+              q.eq("tournamentId", tournament._id)
             )
             .collect()
             .then((regs) => regs.length);
           return { ...tournament, registrationCount };
-        }),
+        })
     );
 
     const completedTournamentsWithCounts = await Promise.all(
@@ -68,25 +68,25 @@ export const getBySlug = query({
           const registrationCount = await ctx.db
             .query("tournamentRegistrations")
             .withIndex("by_tournament", (q) =>
-              q.eq("tournamentId", tournament._id),
+              q.eq("tournamentId", tournament._id)
             )
             .collect()
             .then((regs) => regs.length);
           return { ...tournament, registrationCount };
-        }),
+        })
     );
 
     // Calculate average tournament size
     const tournamentsWithParticipants = allTournaments.filter(
-      (t) => t.maxParticipants && t.maxParticipants > 0,
+      (t) => t.maxParticipants && t.maxParticipants > 0
     );
     const avgTournamentSize =
       tournamentsWithParticipants.length > 0
         ? Math.round(
             tournamentsWithParticipants.reduce(
               (sum, t) => sum + (t.maxParticipants || 0),
-              0,
-            ) / tournamentsWithParticipants.length,
+              0
+            ) / tournamentsWithParticipants.length
           )
         : 0;
 
@@ -100,7 +100,7 @@ export const getBySlug = query({
     const primaryFormat =
       formatCounts.size > 0
         ? (Array.from(formatCounts.entries()).sort(
-            (a, b) => b[1] - a[1],
+            (a, b) => b[1] - a[1]
           )[0]?.[0] ?? null)
         : null;
 
@@ -175,7 +175,7 @@ export const getOrganizationMembers = query({
         const groups = await ctx.db
           .query("groups")
           .withIndex("by_org", (q) =>
-            q.eq("organizationId", args.organizationId),
+            q.eq("organizationId", args.organizationId)
           )
           .collect();
 
@@ -192,7 +192,7 @@ export const getOrganizationMembers = query({
               .withIndex("by_profile_group_role", (q) =>
                 q
                   .eq("profileId", member.profileId)
-                  .eq("groupRoleId", groupRole._id),
+                  .eq("groupRoleId", groupRole._id)
               )
               .first();
 
@@ -213,7 +213,7 @@ export const getOrganizationMembers = query({
           profile,
           roles: memberRoles,
         };
-      }),
+      })
     );
 
     return membersWithDetails;
@@ -241,7 +241,7 @@ export const getOrganizationGroups = query({
           const profileGroupRoles = await ctx.db
             .query("profileGroupRoles")
             .withIndex("by_group_role", (q) =>
-              q.eq("groupRoleId", groupRole._id),
+              q.eq("groupRoleId", groupRole._id)
             )
             .collect();
           memberCount += profileGroupRoles.length;
@@ -253,7 +253,7 @@ export const getOrganizationGroups = query({
             members: memberCount,
           },
         };
-      }),
+      })
     );
 
     return groupsWithCounts;
@@ -275,7 +275,7 @@ export const getOrganizationInvitations = query({
       invitations.map(async (invitation) => {
         const invitedProfile = await ctx.db.get(invitation.invitedProfileId);
         const invitedByProfile = await ctx.db.get(
-          invitation.invitedByProfileId,
+          invitation.invitedByProfileId
         );
 
         return {
@@ -283,7 +283,7 @@ export const getOrganizationInvitations = query({
           invitedProfile,
           invitedByProfile,
         };
-      }),
+      })
     );
 
     return invitationsWithDetails;
@@ -301,7 +301,7 @@ export const getMyInvitations = query({
     const invitations = await ctx.db
       .query("organizationInvitations")
       .withIndex("by_invited_status", (q) =>
-        q.eq("invitedProfileId", user.profile!._id).eq("status", "pending"),
+        q.eq("invitedProfileId", user.profile!._id).eq("status", "pending")
       )
       .collect();
 
@@ -309,7 +309,7 @@ export const getMyInvitations = query({
       invitations.map(async (invitation) => {
         const organization = await ctx.db.get(invitation.organizationId);
         return { ...invitation, organization };
-      }),
+      })
     );
   },
 });
@@ -346,7 +346,7 @@ export const getMyOrganizations = query({
           ...org,
           isOwner,
         };
-      }),
+      })
     );
 
     // Combine owned and member organizations, marking owners
@@ -361,7 +361,7 @@ export const getMyOrganizations = query({
       ...memberOrgs.filter((org) => org !== null),
     ];
     const uniqueOrgs = allOrgs.filter(
-      (org, index, self) => index === self.findIndex((o) => o._id === org._id),
+      (org, index, self) => index === self.findIndex((o) => o._id === org._id)
     );
 
     return uniqueOrgs;
@@ -380,8 +380,8 @@ export const list = query({
       q = q.filter((q) =>
         q.or(
           q.eq(q.field("name"), searchTerm),
-          q.eq(q.field("slug"), searchTerm),
-        ),
+          q.eq(q.field("slug"), searchTerm)
+        )
       );
     }
 
@@ -401,7 +401,7 @@ export const list = query({
           .withIndex("by_org", (q) => q.eq("organizationId", org._id))
           .collect()
           .then(
-            (tournaments) => tournaments.filter((t) => !t.archivedAt).length,
+            (tournaments) => tournaments.filter((t) => !t.archivedAt).length
           );
 
         return {
@@ -411,7 +411,7 @@ export const list = query({
             tournaments: tournamentCount,
           },
         };
-      }),
+      })
     );
 
     return {
@@ -441,7 +441,7 @@ export const listPublicOrganizations = query({
 
         const activeTournaments = allTournaments.filter(
           (t) =>
-            (t.status === "upcoming" || t.status === "active") && !t.archivedAt,
+            (t.status === "upcoming" || t.status === "active") && !t.archivedAt
         );
 
         return {
@@ -450,7 +450,7 @@ export const listPublicOrganizations = query({
           totalTournamentsCount: allTournaments.filter((t) => !t.archivedAt)
             .length,
         };
-      }),
+      })
     );
 
     return organizationsWithStats;

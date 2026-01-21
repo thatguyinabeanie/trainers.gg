@@ -428,7 +428,7 @@ supabase
     },
     (payload) => {
       console.log("Match updated:", payload);
-    },
+    }
   )
   .subscribe();
 ```
@@ -509,7 +509,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 serve(async (req) => {
   const supabase = createClient(
     Deno.env.get("SUPABASE_URL")!,
-    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
   );
 
   const { matchId, winnerId } = await req.json();
@@ -657,7 +657,7 @@ export const getWithMatches = query({
         ...match,
         player1: match.player1Id ? await ctx.db.get(match.player1Id) : null,
         player2: match.player2Id ? await ctx.db.get(match.player2Id) : null,
-      })),
+      }))
     );
 
     return { ...tournament, matches: enrichedMatches };
@@ -679,7 +679,7 @@ export async function getTournamentWithMatches(id: string) {
         player1:users!player1_id (id, username, avatar_url),
         player2:users!player2_id (id, username, avatar_url)
       )
-    `,
+    `
     )
     .eq("id", id)
     .single();
@@ -702,8 +702,8 @@ export const getPlayerStats = query({
       .filter((q) =>
         q.or(
           q.eq(q.field("player1Id"), args.playerId),
-          q.eq(q.field("player2Id"), args.playerId),
-        ),
+          q.eq(q.field("player2Id"), args.playerId)
+        )
       )
       .collect();
 
@@ -831,7 +831,7 @@ export const heartbeat = mutation({
       .withIndex("by_user_tournament", (q) =>
         q
           .eq("externalId", identity.subject)
-          .eq("tournamentId", args.tournamentId),
+          .eq("tournamentId", args.tournamentId)
       )
       .unique();
 
@@ -854,7 +854,7 @@ export const getOnline = query({
     return await ctx.db
       .query("presence")
       .withIndex("by_tournament", (q) =>
-        q.eq("tournamentId", args.tournamentId),
+        q.eq("tournamentId", args.tournamentId)
       )
       .filter((q) => q.gte(q.field("lastSeen"), cutoff))
       .collect();
@@ -952,7 +952,7 @@ export const submitMatchResult = mutation({
 export async function submitMatchResult(
   matchId: string,
   winnerId: string,
-  score: string,
+  score: string
 ) {
   const { data, error } = await supabase.rpc("submit_match_result", {
     p_match_id: matchId,
@@ -1064,7 +1064,7 @@ export const syncMatch = internalAction({
           match.winnerId,
           match.score,
           match.completedAt,
-        ],
+        ]
       );
     } finally {
       client.release();
@@ -1245,7 +1245,7 @@ import type { Database } from "./types";
 
 export const supabase = createClient<Database>(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
 ```
 

@@ -32,8 +32,7 @@ export default clerkMiddleware(async (auth, request) => {
   const pathname = request.nextUrl.pathname;
 
   // Skip middleware for static assets
-  const isStaticAsset =
-    pathname.includes(".") || pathname.startsWith("/_next");
+  const isStaticAsset = pathname.includes(".") || pathname.startsWith("/_next");
   const isAuthAPI = pathname.startsWith("/api/auth");
   const isWebhookAPI = pathname.startsWith("/api/webhooks");
 
