@@ -27,13 +27,16 @@ export function useSupabaseQuery<T>(
   queryFn: (supabase: TypedSupabaseClient) => Promise<T>,
   deps: unknown[] = []
 ): QueryResult<T> {
-  const supabase = useSupabaseClient();
+  const { client: supabase, isSessionLoaded } = useSupabaseClient();
   const [data, setData] = useState<T | undefined>(undefined);
   const [error, setError] = useState<Error | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const mountedRef = useRef(true);
 
   const execute = useCallback(async () => {
+    // Wait for session to be loaded before executing
+    if (!isSessionLoaded) return;
+
     setIsLoading(true);
     setError(null);
 
@@ -51,7 +54,7 @@ export function useSupabaseQuery<T>(
         setIsLoading(false);
       }
     }
-  }, [supabase, queryFn]);
+  }, [supabase, queryFn, isSessionLoaded]);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -88,7 +91,7 @@ interface MutationResult<TArgs, TResult> {
 export function useSupabaseMutation<TArgs, TResult>(
   mutationFn: (supabase: TypedSupabaseClient, args: TArgs) => Promise<TResult>
 ): MutationResult<TArgs, TResult> {
-  const supabase = useSupabaseClient();
+  const { client: supabase } = useSupabaseClient();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
 

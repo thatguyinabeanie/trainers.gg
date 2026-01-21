@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useRef } from "react";
 import { useSession } from "@clerk/nextjs";
 import { createSupabaseClient } from "@trainers/supabase";
 
@@ -12,14 +12,32 @@ import { createSupabaseClient } from "@trainers/supabase";
  * See: https://supabase.com/docs/guides/auth/third-party/clerk
  */
 export function useSupabaseClient() {
-  const { session } = useSession();
+  const { session, isLoaded } = useSession();
 
+  // Use a ref to store the session so the client doesn't recreate on every render
+  const sessionRef = useRef(session);
+  sessionRef.current = session;
+
+  // Create the client once - the accessToken function captures the ref
+  // which always points to the current session
   const client = useMemo(() => {
     return createSupabaseClient(async () => {
-      // Use Clerk's session token directly (native Supabase integration)
-      return (await session?.getToken()) ?? null;
+      const currentSession = sessionRef.current;
+      if (!currentSession) {
+        // Session not loaded or user not signed in
+        return null;
+      }
+      try {
+        const token = await currentSession.getToken();
+        return token ?? null;
+      } catch (error) {
+        console.error("Failed to get Clerk session token:", error);
+        return null;
+      }
     });
-  }, [session]);
+    // Empty deps - client is created once, uses ref for session
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-  return client;
+  return { client, isSessionLoaded: isLoaded };
 }
