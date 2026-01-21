@@ -1,4 +1,4 @@
-import type { Id } from "@trainers/backend/convex/_generated/dataModel";
+import type { Id } from "@trainers/backend-convex/convex/_generated/dataModel";
 
 export interface DashboardTournament {
   _id: Id<"tournaments">;

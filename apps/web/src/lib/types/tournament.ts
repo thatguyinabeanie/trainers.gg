@@ -2,7 +2,7 @@
  * Tournament-related types for trainers.gg
  */
 
-import type { Id } from "@trainers/backend/convex/_generated/dataModel";
+import type { Id } from "@trainers/backend-convex/convex/_generated/dataModel";
 
 /**
  * Form data for creating a new tournament

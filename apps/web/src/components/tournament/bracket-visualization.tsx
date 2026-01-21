@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import type { Id } from "@trainers/backend/convex/_generated/dataModel";
+import type { Id } from "@trainers/backend-convex/convex/_generated/dataModel";
 import { cn } from "@/lib/utils";
 import { Trophy, ChevronRight, Users, Clock } from "lucide-react";
 import { Badge } from "@/components/ui/badge";

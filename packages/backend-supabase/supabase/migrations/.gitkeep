@@ -1,0 +1,2 @@
+# This directory contains SQL migrations for Supabase
+# Create new migrations with: npx supabase migration new <name>

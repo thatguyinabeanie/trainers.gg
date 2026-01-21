@@ -2,7 +2,7 @@
 
 import { api } from "@/lib/convex/api";
 import { useClerk, useSignIn, useSignUp, useUser } from "@clerk/nextjs";
-import { useQuery } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import { useRouter } from "next/navigation";
 import {
   createContext,
@@ -10,6 +10,8 @@ import {
   useContext,
   useCallback,
   useMemo,
+  useEffect,
+  useRef,
 } from "react";
 
 interface UserProfile {
@@ -44,14 +46,67 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
-  const { isLoaded: clerkLoaded } = useUser();
+  const { isLoaded: clerkLoaded, isSignedIn, user: clerkUser } = useUser();
   const { signIn: clerkSignIn } = useSignIn();
   const { signUp: clerkSignUp } = useSignUp();
   const { signOut: clerkSignOut } = useClerk();
 
   // Get current user data from Convex
   const user = useQuery(api.auth.getCurrentUser, {});
-  const isLoading = !clerkLoaded || user === undefined;
+  const ensureUserProfile = useMutation(api.auth.ensureUserProfile);
+  const createUserWithProfile = useMutation(api.auth.createUserWithProfile);
+
+  // Track if we've already tried to create the user
+  const hasTriedCreating = useRef(false);
+
+  // If user is signed in via Clerk but doesn't exist in Convex, create them
+  useEffect(() => {
+    async function syncUser() {
+      if (
+        clerkLoaded &&
+        isSignedIn &&
+        clerkUser &&
+        user === null &&
+        !hasTriedCreating.current
+      ) {
+        hasTriedCreating.current = true;
+        try {
+          // Try to create user with profile
+          await createUserWithProfile({
+            clerkUserId: clerkUser.id,
+            email: clerkUser.primaryEmailAddress?.emailAddress,
+            name: clerkUser.fullName || undefined,
+            image: clerkUser.imageUrl,
+          });
+        } catch (error) {
+          // User might already exist, try to ensure profile exists
+          try {
+            await ensureUserProfile({});
+          } catch (profileError) {
+            console.error("Failed to ensure user profile:", profileError);
+          }
+        }
+      }
+    }
+
+    syncUser();
+  }, [
+    clerkLoaded,
+    isSignedIn,
+    clerkUser,
+    user,
+    createUserWithProfile,
+    ensureUserProfile,
+  ]);
+
+  // Reset the ref when user signs out
+  useEffect(() => {
+    if (!isSignedIn) {
+      hasTriedCreating.current = false;
+    }
+  }, [isSignedIn]);
+
+  const isLoading = !clerkLoaded || (isSignedIn && user === undefined);
 
   const signIn = useCallback(
     async (email: string, password: string) => {

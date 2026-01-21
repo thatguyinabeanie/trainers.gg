@@ -1,6 +1,6 @@
 "use client";
 
-import { type Id } from "@trainers/backend/convex/_generated/dataModel";
+import { type Id } from "@trainers/backend-convex/convex/_generated/dataModel";
 import { type PermissionKey } from "@/lib/constants/permissions";
 import { api } from "@/lib/convex/api";
 import { useQuery } from "convex/react";

@@ -2,5 +2,5 @@
 // This allows frontend code to import from a local path while keeping
 // the source of truth in the backend package
 
-export { PERMISSIONS } from "@trainers/backend/convex/permissionKeys";
-export type { PermissionKey } from "@trainers/backend/convex/permissionKeys";
+export { PERMISSIONS } from "@trainers/backend-convex/convex/permissionKeys";
+export type { PermissionKey } from "@trainers/backend-convex/convex/permissionKeys";

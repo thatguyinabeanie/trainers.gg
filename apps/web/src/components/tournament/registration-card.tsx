@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "@/lib/convex/api";
-import type { Doc, Id } from "@trainers/backend/convex/_generated/dataModel";
+import type { Doc, Id } from "@trainers/backend-convex/convex/_generated/dataModel";
 import {
   Card,
   CardContent,
