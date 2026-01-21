@@ -1,3 +1,11 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Colors are defined in @trainers/theme and loaded via tailwind.config.js */
+
+@layer base {
+  * {
+    border-color: theme("colors.border");
+  }
+}

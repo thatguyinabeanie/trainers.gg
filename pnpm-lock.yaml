@@ -17,6 +17,9 @@ importers:
 
   apps/mobile:
     dependencies:
+      '@trainers/theme':
+        specifier: workspace:*
+        version: link:../../packages/theme
       expo:
         specifier: ~54.0.31
         version: 54.0.31(@babel/core@7.28.6)(@expo/metro-runtime@6.1.2)(expo-router@6.0.22)(react-native@0.81.5(@babel/core@7.28.6)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0)
@@ -102,6 +105,9 @@ importers:
       '@tanstack/react-query':
         specifier: ^5.64.1
         version: 5.90.19(react@19.1.0)
+      '@trainers/theme':
+        specifier: workspace:*
+        version: link:../../packages/theme
       class-variance-authority:
         specifier: ^0.7.1
         version: 0.7.1
@@ -169,6 +175,15 @@ importers:
       convex:
         specifier: ^1.17.4
         version: 1.31.5(react@19.1.0)
+    devDependencies:
+      '@trainers/typescript-config':
+        specifier: workspace:*
+        version: link:../../tooling/typescript
+      typescript:
+        specifier: ^5.7.3
+        version: 5.9.3
+
+  packages/theme:
     devDependencies:
       '@trainers/typescript-config':
         specifier: workspace:*

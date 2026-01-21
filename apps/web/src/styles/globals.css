@@ -1,48 +1,11 @@
 @import "tailwindcss";
 @import "tw-animate-css";
+@import "@trainers/theme/theme.css";
 
 @custom-variant dark (&:is(.dark *));
 
 @theme {
-  /* Primary - Pokemon Red inspired */
-  --color-primary-50: #fef2f2;
-  --color-primary-100: #fee2e2;
-  --color-primary-200: #fecaca;
-  --color-primary-300: #fca5a5;
-  --color-primary-400: #f87171;
-  --color-primary-500: #ef4444;
-  --color-primary-600: #dc2626;
-  --color-primary-700: #b91c1c;
-  --color-primary-800: #991b1b;
-  --color-primary-900: #7f1d1d;
-  --color-primary-950: #450a0a;
-
-  /* Secondary - Pokemon Blue inspired */
-  --color-secondary-50: #eff6ff;
-  --color-secondary-100: #dbeafe;
-  --color-secondary-200: #bfdbfe;
-  --color-secondary-300: #93c5fd;
-  --color-secondary-400: #60a5fa;
-  --color-secondary-500: #3b82f6;
-  --color-secondary-600: #2563eb;
-  --color-secondary-700: #1d4ed8;
-  --color-secondary-800: #1e40af;
-  --color-secondary-900: #1e3a8a;
-  --color-secondary-950: #172554;
-
-  /* Accent - Pokemon Yellow inspired */
-  --color-accent-50: #fefce8;
-  --color-accent-100: #fef9c3;
-  --color-accent-200: #fef08a;
-  --color-accent-300: #fde047;
-  --color-accent-400: #facc15;
-  --color-accent-500: #eab308;
-  --color-accent-600: #ca8a04;
-  --color-accent-700: #a16207;
-  --color-accent-800: #854d0e;
-  --color-accent-900: #713f12;
-  --color-accent-950: #422006;
-
+  /* Font families */
   --font-sans: "Noto Sans", ui-sans-serif, system-ui, -apple-system,
     BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco,
@@ -50,11 +13,12 @@
 }
 
 :root {
+  /* shadcn/ui semantic tokens - Light mode */
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.145 0 0);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.627 0.194 149.214);
+  --primary: oklch(0.627 0.194 168.96);
   --primary-foreground: oklch(0.985 0 0);
   --secondary: oklch(0.97 0 0);
   --secondary-foreground: oklch(0.205 0 0);
@@ -66,26 +30,27 @@
   --destructive-foreground: oklch(0.985 0 0);
   --border: oklch(0.922 0 0);
   --input: oklch(0.922 0 0);
-  --ring: oklch(0.627 0.194 149.214);
+  --ring: oklch(0.627 0.194 168.96);
   --radius: 0.625rem;
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
-  --chart-1: oklch(0.627 0.194 149.214);
+  --chart-1: oklch(0.627 0.194 168.96);
   --chart-2: oklch(0.6 0.118 184.704);
   --chart-3: oklch(0.398 0.07 227.392);
   --chart-4: oklch(0.828 0.189 84.429);
   --chart-5: oklch(0.769 0.188 70.08);
   --sidebar: oklch(0.985 0 0);
   --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.627 0.194 149.214);
+  --sidebar-primary: oklch(0.627 0.194 168.96);
   --sidebar-primary-foreground: oklch(0.985 0 0);
   --sidebar-accent: oklch(0.97 0 0);
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.627 0.194 149.214);
+  --sidebar-ring: oklch(0.627 0.194 168.96);
 }
 
 .dark {
+  /* shadcn/ui semantic tokens - Dark mode */
   --background: oklch(0.145 0 0);
   --foreground: oklch(0.985 0 0);
   --card: oklch(0.205 0 0);
@@ -118,16 +83,6 @@
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.704 0.14 168.96);
-}
-
-* {
-  border-color: hsl(var(--border));
-}
-
-body {
-  background-color: hsl(var(--background));
-  color: hsl(var(--foreground));
-  font-family: var(--font-sans);
 }
 
 @theme inline {
