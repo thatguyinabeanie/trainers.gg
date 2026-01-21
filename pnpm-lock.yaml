@@ -117,6 +117,15 @@ importers:
       '@hookform/resolvers':
         specifier: ^5.2.2
         version: 5.2.2(react-hook-form@7.71.1(react@19.1.0))
+      '@pkmn/data':
+        specifier: ^0.10.5
+        version: 0.10.5
+      '@pkmn/dex':
+        specifier: ^0.10.5
+        version: 0.10.5
+      '@pkmn/sim':
+        specifier: ^0.10.5
+        version: 0.10.5
       '@radix-ui/react-dialog':
         specifier: ^1.1.15
         version: 1.1.15(@types/react-dom@19.1.11(@types/react@19.1.17))(@types/react@19.1.17)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
@@ -1923,6 +1932,27 @@ packages:
 
   '@open-draft/until@2.1.0':
     resolution: {integrity: sha512-U69T3ItWHvLwGg5eJ0n3I62nWuE6ilHlmz7zM0npLBRvPRd7e6NYmg54vvRtP5mZG7kZqZCFVdsTWo7BPtBujg==}
+
+  '@pkmn/data@0.10.5':
+    resolution: {integrity: sha512-8s3X9Q+jkJiyrhvdtzO4Uqd9cMWlYh2OSbbfvBRYO85PwmyDBO36QjqRDWbAoBwmH3MOMuLHmlIXv5EAICJqWw==}
+
+  '@pkmn/dex-types@0.10.5':
+    resolution: {integrity: sha512-saehdCTV/I1GL/VRGYknOt4cnUcf5Jeg73ZDalWsjG/DneIbAVUS1j7v9kelvVJ51UT0dymgUpqFdVvIIEJ9hA==}
+
+  '@pkmn/dex@0.10.5':
+    resolution: {integrity: sha512-id55qAIMekv1EMFgm761kVT2m+gcgrpgYYZWM7cX+1e8ufGmIALV7RCEZ+4tcOMI9jeAY6Bm3dNzMkgzKICImA==}
+
+  '@pkmn/sets@5.2.0':
+    resolution: {integrity: sha512-WHAW6bZu0WCo/3b+LTW7BE0fBhYZnWH1lCXIu2an8/wTiZ/+s1eTcQYj7W/YQKxWT5dm/La03AZ6CeqdJip9CQ==}
+
+  '@pkmn/sim@0.10.5':
+    resolution: {integrity: sha512-wwN4RUl0ktnxn3eOtX9OIn6pmRVswuwCOqwSwamKcY4YITn9Q8gJ3Z700w8oyq/vmte8AEHMJ+KIyqp1GsOjHQ==}
+
+  '@pkmn/streams@1.1.0':
+    resolution: {integrity: sha512-Pp9k7gt4xd76DqTU+LQEUyzuaauM4bV1MlehVtX1NS7o9zMFtjw50MfaEQ62dIMZyzxNjsJGoLGBeY1iSYLsRA==}
+
+  '@pkmn/types@4.0.0':
+    resolution: {integrity: sha512-gR2s/pxJYEegek1TtsYCQupNR3d5hMlcJFsiD+2LyfKr4tc+gETTql47tWLX5mFSbPcbXh7f4+7txlMIDoZx/g==}
 
   '@radix-ui/primitive@1.1.3':
     resolution: {integrity: sha512-JTF99U/6XIjCBo0wqkU5sK10glYe27MRRsfwoiq5zzOEZLHU3A3KCMa5X/azekYRCJ0HlwI0crAXS/5dEHTzDg==}
@@ -6517,6 +6547,9 @@ packages:
     peerDependencies:
       typescript: '>=4.8.4'
 
+  ts-chacha20@1.2.0:
+    resolution: {integrity: sha512-PTyPoWYHc2we8P2NTn5hpYG211popWbkjiw+k63xqjeMrx9pPtXSclz9F3fu0Tpr+vfR1xxcQFwsEkh1cXMLqw==}
+
   ts-interface-checker@0.1.13:
     resolution: {integrity: sha512-Y/arvbn+rrz3JCKl9C4kVNfTfSm2/mEp5FSz5EsZSANGPSlQrpRI5M4PKF+mJnE52jOO90PnPSc3Ur3bTQw0gA==}
 
@@ -8753,6 +8786,32 @@ snapshots:
       outvariant: 1.4.3
 
   '@open-draft/until@2.1.0': {}
+
+  '@pkmn/data@0.10.5':
+    dependencies:
+      '@pkmn/dex-types': 0.10.5
+
+  '@pkmn/dex-types@0.10.5':
+    dependencies:
+      '@pkmn/types': 4.0.0
+
+  '@pkmn/dex@0.10.5':
+    dependencies:
+      '@pkmn/dex-types': 0.10.5
+
+  '@pkmn/sets@5.2.0':
+    dependencies:
+      '@pkmn/types': 4.0.0
+
+  '@pkmn/sim@0.10.5':
+    dependencies:
+      '@pkmn/sets': 5.2.0
+      '@pkmn/streams': 1.1.0
+      ts-chacha20: 1.2.0
+
+  '@pkmn/streams@1.1.0': {}
+
+  '@pkmn/types@4.0.0': {}
 
   '@radix-ui/primitive@1.1.3': {}
 
@@ -13946,6 +14005,8 @@ snapshots:
   ts-api-utils@2.4.0(typescript@5.9.3):
     dependencies:
       typescript: 5.9.3
+
+  ts-chacha20@1.2.0: {}
 
   ts-interface-checker@0.1.13: {}
 
