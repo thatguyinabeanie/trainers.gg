@@ -1,12 +1,6 @@
-// Client-side exports
+// Client-side exports only
+// Server-side code should be imported directly from "./server"
 export { useSupabaseClient } from "./client";
-
-// Server-side exports
-export {
-  createServerSupabaseClient,
-  createPublicServerSupabaseClient,
-  createAdminSupabaseClient,
-} from "./server";
 
 // Hook exports
 export { useSupabase, useSupabaseQuery, useSupabaseMutation } from "./hooks";
