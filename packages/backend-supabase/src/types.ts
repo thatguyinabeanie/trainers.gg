@@ -1791,6 +1791,7 @@ export type Database = {
       }
       users: {
         Row: {
+          clerk_id: string | null
           created_at: string | null
           email: string | null
           external_accounts: Json | null
@@ -1807,6 +1808,7 @@ export type Database = {
           username: string | null
         }
         Insert: {
+          clerk_id?: string | null
           created_at?: string | null
           email?: string | null
           external_accounts?: Json | null
@@ -1823,6 +1825,7 @@ export type Database = {
           username?: string | null
         }
         Update: {
+          clerk_id?: string | null
           created_at?: string | null
           email?: string | null
           external_accounts?: Json | null
