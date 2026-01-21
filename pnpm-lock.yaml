@@ -237,6 +237,9 @@ importers:
       sonner:
         specifier: ^2.0.7
         version: 2.0.7(react-dom@19.1.4(react@19.1.4))(react@19.1.4)
+      svix:
+        specifier: ^1.84.1
+        version: 1.84.1
       tailwind-merge:
         specifier: ^3.4.0
         version: 3.4.0
