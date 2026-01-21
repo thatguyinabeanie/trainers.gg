@@ -1,7 +1,7 @@
 "use client";
 
-import { useQuery } from "convex/react";
-import { api } from "@/lib/convex/api";
+import { useSupabaseQuery } from "@/lib/supabase";
+import { listPublicOrganizations } from "@trainers/supabase";
 import Link from "next/link";
 import {
   Card,
@@ -13,18 +13,19 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Building2, Search, Loader2, Trophy } from "lucide-react";
-import { useState } from "react";
+import { useState, useCallback } from "react";
 
 export default function OrganizationsPage() {
   const [searchQuery, setSearchQuery] = useState("");
 
-  // listPublicOrganizations returns an array directly, not paginated
-  const organizations = useQuery(
-    api.organizations.queries.listPublicOrganizations,
-    {}
+  // Wrap query function in useCallback to maintain stable reference
+  const queryFn = useCallback(
+    (supabase: Parameters<typeof listPublicOrganizations>[0]) =>
+      listPublicOrganizations(supabase),
+    []
   );
 
-  const isLoading = organizations === undefined;
+  const { data: organizations, isLoading } = useSupabaseQuery(queryFn);
 
   // Client-side search filter
   const filteredOrganizations = (organizations ?? []).filter(
@@ -85,7 +86,7 @@ export default function OrganizationsPage() {
       {!isLoading && filteredOrganizations.length > 0 && (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {filteredOrganizations.map((org) => (
-            <Link key={org._id} href={`/${org.slug}`}>
+            <Link key={org.id} href={`/${org.slug}`}>
               <Card className="h-full transition-shadow hover:shadow-md">
                 <CardHeader className="pb-3">
                   <div className="flex items-start justify-between">

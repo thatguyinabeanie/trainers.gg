@@ -1,7 +1,7 @@
 "use client";
 
-import { useQuery } from "convex/react";
-import { api } from "@/lib/convex/api";
+import { useSupabaseQuery } from "@/lib/supabase";
+import { listPublicTournaments } from "@trainers/supabase";
 import Link from "next/link";
 import {
   Card,
@@ -27,7 +27,7 @@ import {
   Loader2,
   MapPin,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useCallback, useMemo } from "react";
 
 type TournamentStatus =
   | "draft"
@@ -48,14 +48,29 @@ export default function TournamentsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
 
-  const tournamentsData = useQuery(api.tournaments.queries.list, {
-    paginationOpts: { numItems: 50, cursor: null },
-    statusFilter:
+  // Memoize the status filter value for the query
+  const queryStatusFilter = useMemo(
+    () =>
       statusFilter !== "all" ? (statusFilter as TournamentStatus) : undefined,
-  });
+    [statusFilter]
+  );
+
+  // Wrap query function in useCallback with proper dependencies
+  const queryFn = useCallback(
+    (supabase: Parameters<typeof listPublicTournaments>[0]) =>
+      listPublicTournaments(supabase, {
+        limit: 50,
+        cursor: null,
+        statusFilter: queryStatusFilter,
+      }),
+    [queryStatusFilter]
+  );
+
+  const { data: tournamentsData, isLoading } = useSupabaseQuery(queryFn, [
+    queryStatusFilter,
+  ]);
 
   const tournaments = tournamentsData?.page || [];
-  const isLoading = tournamentsData === undefined;
 
   // Client-side search filter
   const filteredTournaments = tournaments.filter(
@@ -131,7 +146,7 @@ export default function TournamentsPage() {
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {filteredTournaments.map((tournament) => (
             <Link
-              key={tournament._id}
+              key={tournament.id}
               href={`/${tournament.organization?.slug ?? "unknown"}/${tournament.slug}`}
             >
               <Card className="h-full transition-shadow hover:shadow-md">
@@ -157,11 +172,11 @@ export default function TournamentsPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="text-muted-foreground space-y-2 text-sm">
-                    {tournament.startDate && (
+                    {tournament.start_date && (
                       <div className="flex items-center gap-2">
                         <Calendar className="h-4 w-4" />
                         <span>
-                          {new Date(tournament.startDate).toLocaleDateString()}
+                          {new Date(tournament.start_date).toLocaleDateString()}
                         </span>
                       </div>
                     )}
@@ -169,8 +184,8 @@ export default function TournamentsPage() {
                       <Users className="h-4 w-4" />
                       <span>
                         {tournament.participants?.length || 0}
-                        {tournament.maxParticipants
-                          ? ` / ${tournament.maxParticipants}`
+                        {tournament.max_participants
+                          ? ` / ${tournament.max_participants}`
                           : ""}{" "}
                         players
                       </span>

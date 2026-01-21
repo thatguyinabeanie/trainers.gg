@@ -2,10 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useSupabaseClient } from "./client";
-import type { SupabaseClient } from "@supabase/supabase-js";
-import type { Database } from "@trainers/backend-supabase";
-
-type TypedClient = SupabaseClient<Database>;
+import type { TypedSupabaseClient } from "@trainers/supabase";
 
 /**
  * Re-export useSupabaseClient for convenience
@@ -27,7 +24,7 @@ interface QueryResult<T> {
  * Similar to Convex's useQuery but for Supabase
  */
 export function useSupabaseQuery<T>(
-  queryFn: (supabase: TypedClient) => Promise<T>,
+  queryFn: (supabase: TypedSupabaseClient) => Promise<T>,
   deps: unknown[] = []
 ): QueryResult<T> {
   const supabase = useSupabaseClient();
@@ -90,7 +87,7 @@ interface MutationResult<TArgs, TResult> {
  * Similar to Convex's useMutation but for Supabase
  */
 export function useSupabaseMutation<TArgs, TResult>(
-  mutationFn: (supabase: TypedClient, args: TArgs) => Promise<TResult>
+  mutationFn: (supabase: TypedSupabaseClient, args: TArgs) => Promise<TResult>
 ): MutationResult<TArgs, TResult> {
   const supabase = useSupabaseClient();
   const [isLoading, setIsLoading] = useState(false);

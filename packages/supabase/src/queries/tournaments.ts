@@ -5,6 +5,72 @@ type TypedClient = SupabaseClient<Database>;
 type TournamentStatus = Database["public"]["Enums"]["tournament_status"];
 
 /**
+ * List public tournaments with pagination (for public browse page)
+ * Returns format compatible with Convex api.tournaments.queries.list
+ */
+export async function listPublicTournaments(
+  supabase: TypedClient,
+  options: {
+    limit?: number;
+    cursor?: number | null;
+    statusFilter?: TournamentStatus;
+  } = {},
+) {
+  const { limit = 50, cursor = null, statusFilter } = options;
+  const offset = cursor ?? 0;
+
+  let query = supabase
+    .from("tournaments")
+    .select(
+      `
+      *,
+      organization:organizations(id, name, slug)
+    `,
+      { count: "exact" },
+    )
+    .is("archived_at", null)
+    .order("start_date", { ascending: false, nullsFirst: false })
+    .range(offset, offset + limit - 1);
+
+  // Filter by status if provided
+  if (statusFilter) {
+    query = query.eq("status", statusFilter);
+  } else {
+    // Default: show upcoming, active, and completed (not draft or cancelled)
+    query = query.in("status", ["upcoming", "active", "completed"]);
+  }
+
+  const { data, error, count } = await query;
+
+  if (error) throw error;
+
+  // Get registration counts for each tournament
+  const tournamentsWithCounts = await Promise.all(
+    (data ?? []).map(async (tournament) => {
+      const { count: regCount } = await supabase
+        .from("tournament_registrations")
+        .select("*", { count: "exact", head: true })
+        .eq("tournament_id", tournament.id);
+
+      return {
+        ...tournament,
+        participants: Array(regCount ?? 0).fill(null), // Mimic Convex structure
+        _count: { registrations: regCount ?? 0 },
+      };
+    }),
+  );
+
+  const totalCount = count ?? 0;
+  const nextCursor = offset + limit < totalCount ? offset + limit : null;
+
+  return {
+    page: tournamentsWithCounts,
+    continueCursor: nextCursor,
+    isDone: nextCursor === null,
+  };
+}
+
+/**
  * List tournaments with filters and pagination
  */
 export async function listTournaments(

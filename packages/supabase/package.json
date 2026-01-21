@@ -1,11 +1,13 @@
 {
-  "name": "@trainers/backend-supabase",
+  "name": "@trainers/supabase",
   "version": "0.0.1",
   "private": true,
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
     "./client": "./src/client.ts",
+    "./queries": "./src/queries/index.ts",
+    "./mutations": "./src/mutations/index.ts",
     "./types": "./src/types.ts"
   },
   "scripts": {

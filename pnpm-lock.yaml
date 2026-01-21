@@ -153,9 +153,9 @@ importers:
       '@trainers/backend-convex':
         specifier: workspace:*
         version: link:../../packages/backend-convex
-      '@trainers/backend-supabase':
+      '@trainers/supabase':
         specifier: workspace:*
-        version: link:../../packages/backend-supabase
+        version: link:../../packages/supabase
       '@trainers/theme':
         specifier: workspace:*
         version: link:../../packages/theme
@@ -288,7 +288,7 @@ importers:
         specifier: ^5.9.3
         version: 5.9.3
 
-  packages/backend-supabase:
+  packages/supabase:
     dependencies:
       '@supabase/supabase-js':
         specifier: ^2.49.1

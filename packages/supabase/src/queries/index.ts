@@ -17,6 +17,7 @@ export {
 
 // Organization queries
 export {
+  listPublicOrganizations,
   listOrganizations,
   getOrganizationBySlug,
   getOrganizationById,
@@ -24,10 +25,13 @@ export {
   canManageOrganization,
   listOrganizationMembers,
   isOrganizationMember,
+  getMyOrganizationInvitations,
+  getOrganizationInvitations,
 } from "./organizations";
 
 // Tournament queries
 export {
+  listPublicTournaments,
   listTournaments,
   getTournamentByOrgAndSlug,
   getTournamentById,

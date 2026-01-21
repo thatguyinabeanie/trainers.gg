@@ -1,5 +1,5 @@
 /**
- * @trainers/backend-supabase
+ * @trainers/supabase
  *
  * Supabase backend package for trainers.gg
  * Primary backend for all database operations.
@@ -7,9 +7,10 @@
 
 // Client exports
 export {
-  createBrowserClient,
-  createServerClient,
-  getSupabaseBrowserClient,
+  createSupabaseClient,
+  createPublicSupabaseClient,
+  createAdminSupabaseClient,
+  type TypedSupabaseClient,
 } from "./client";
 
 // Query exports
