@@ -24,8 +24,8 @@
     "expo-router": "~6.0.22",
     "expo-splash-screen": "~31.0.13",
     "expo-status-bar": "~3.0.9",
-    "react": "19.1.0",
-    "react-dom": "19.1.0",
+    "react": "catalog:",
+    "react-dom": "catalog:",
     "react-native": "0.81.5",
     "react-native-reanimated": "~4.1.1",
     "react-native-safe-area-context": "~5.6.0",
@@ -40,11 +40,11 @@
     "@trainers/eslint-config": "workspace:*",
     "@trainers/prettier-config": "workspace:*",
     "@trainers/typescript-config": "workspace:*",
-    "@types/react": "~19.1.10",
+    "@types/react": "catalog:",
     "babel-preset-expo": "~54.0.10",
-    "eslint": "^9.39.2",
+    "eslint": "catalog:",
     "tailwindcss": "^3.4.17",
-    "typescript": "^5.9.3"
+    "typescript": "catalog:"
   },
   "prettier": "@trainers/prettier-config"
 }

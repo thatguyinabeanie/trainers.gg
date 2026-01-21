@@ -355,7 +355,7 @@ export function MatchReportDialog({
                 <Label>Select Winner</Label>
                 <RadioGroup
                   value={winnerId || ""}
-                  onValueChange={(value) => setWinnerId(value)}
+                  onValueChange={(value: string) => setWinnerId(value)}
                   disabled={isSubmitting}
                 >
                   {p1 && (

@@ -68,7 +68,7 @@ export function TournamentFormat({
         <Label htmlFor="format">Game Format</Label>
         <Select
           value={formData.format}
-          onValueChange={(value) =>
+          onValueChange={(value: string | null) =>
             updateFormData({ format: value || undefined })
           }
         >
@@ -186,7 +186,7 @@ export function TournamentFormat({
               <Label htmlFor="topCutSize">Top Cut Size</Label>
               <Select
                 value={formData.topCutSize?.toString()}
-                onValueChange={(value) =>
+                onValueChange={(value: string | null) =>
                   updateFormData({
                     topCutSize: value ? parseInt(value) : undefined,
                   })
@@ -219,7 +219,7 @@ export function TournamentFormat({
           </div>
           <Switch
             checked={formData.rentalTeamPhotosEnabled}
-            onCheckedChange={(checked) =>
+            onCheckedChange={(checked: boolean) =>
               updateFormData({ rentalTeamPhotosEnabled: checked })
             }
           />
@@ -235,7 +235,7 @@ export function TournamentFormat({
             </div>
             <Switch
               checked={formData.rentalTeamPhotosRequired}
-              onCheckedChange={(checked) =>
+              onCheckedChange={(checked: boolean) =>
                 updateFormData({ rentalTeamPhotosRequired: checked })
               }
             />

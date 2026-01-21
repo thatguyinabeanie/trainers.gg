@@ -51,7 +51,7 @@ export function TournamentBasicInfo({
         <Label htmlFor="organization">Organization *</Label>
         <Select
           value={formData.organizationId}
-          onValueChange={(value) =>
+          onValueChange={(value: string | null) =>
             updateFormData({ organizationId: value || undefined })
           }
         >
