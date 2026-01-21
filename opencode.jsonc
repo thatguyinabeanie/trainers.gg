@@ -9,9 +9,15 @@
         "@playwright/mcp@latest",
         "--browser",
         "chrome",
-        "--extension"
+        "--extension",
       ],
-      "enabled": true
-    }
+      "enabled": true,
+    },
+    "vercel": {
+      "type": "remote",
+      "url": "https://mcp.vercel.com/beanie-gg/trainers-gg",
+      "enabled": true,
+      "oauth": {},
+    },
   },
 }
