@@ -50,9 +50,8 @@ export function TopNav() {
         </nav>
 
         {/* Right: Auth & Theme */}
-        <div className="flex items-center gap-2">
-          <TopNavAuthSection />
-          <ThemeSwitcher />
+        <div className="flex items-center">
+          <TopNavAuthSection themeSwitcher={<ThemeSwitcher />} />
         </div>
       </div>
     </header>

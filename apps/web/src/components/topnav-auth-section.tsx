@@ -22,8 +22,13 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import type { ReactNode } from "react";
 
-export function TopNavAuthSection() {
+interface TopNavAuthSectionProps {
+  themeSwitcher?: ReactNode;
+}
+
+export function TopNavAuthSection({ themeSwitcher }: TopNavAuthSectionProps) {
   const router = useRouter();
   const { user, signOut, loading } = useAuth();
 
@@ -44,6 +49,7 @@ export function TopNavAuthSection() {
   if (!user) {
     return (
       <div className="flex items-center gap-2">
+        {themeSwitcher}
         <Link href="/sign-in">
           <Button variant="ghost" size="sm">
             Sign In
@@ -70,6 +76,9 @@ export function TopNavAuthSection() {
         <Bell className="h-5 w-5" />
         <span className="sr-only">Notifications</span>
       </Button>
+
+      {/* Theme Switcher */}
+      {themeSwitcher}
 
       {/* User Dropdown */}
       <DropdownMenu>
