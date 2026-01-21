@@ -7,7 +7,7 @@ This document describes the monorepo structure and architecture for trainers.gg.
 ```
 trainers.gg/
 ├── apps/
-│   ├── web/                        # Next.js 16 app (React 19.2)
+│   ├── web/                        # Next.js 16 app (React 19.1)
 │   │   ├── src/
 │   │   │   ├── app/                # App Router pages
 │   │   │   ├── components/         # App-specific components
@@ -19,7 +19,7 @@ trainers.gg/
 │   │   ├── tsconfig.json
 │   │   └── package.json
 │   │
-│   └── mobile/                     # Expo 54 app (React 18)
+│   └── mobile/                     # Expo 54 app (React 19.1)
 │       ├── src/
 │       │   ├── app/                # Expo Router screens
 │       │   ├── components/         # App-specific components
@@ -140,15 +140,15 @@ trainers.gg/
 
 All internal packages use the `@trainers` namespace:
 
-| Package | Name | Description |
-|---------|------|-------------|
-| `packages/backend` | `@trainers/backend` | Convex schema, queries, mutations, actions |
-| `packages/ui` | `@trainers/ui` | Web UI components (shadcn/Base UI) |
-| `packages/validators` | `@trainers/validators` | Shared Zod validation schemas |
-| `tooling/typescript` | `@trainers/typescript-config` | Shared TypeScript configs |
-| `tooling/eslint` | `@trainers/eslint-config` | Shared ESLint configs |
-| `tooling/prettier` | `@trainers/prettier-config` | Shared Prettier config |
-| `tooling/tailwind` | `@trainers/tailwind-config` | Shared Tailwind theme |
+| Package               | Name                          | Description                                |
+| --------------------- | ----------------------------- | ------------------------------------------ |
+| `packages/backend`    | `@trainers/backend`           | Convex schema, queries, mutations, actions |
+| `packages/ui`         | `@trainers/ui`                | Web UI components (shadcn/Base UI)         |
+| `packages/validators` | `@trainers/validators`        | Shared Zod validation schemas              |
+| `tooling/typescript`  | `@trainers/typescript-config` | Shared TypeScript configs                  |
+| `tooling/eslint`      | `@trainers/eslint-config`     | Shared ESLint configs                      |
+| `tooling/prettier`    | `@trainers/prettier-config`   | Shared Prettier config                     |
+| `tooling/tailwind`    | `@trainers/tailwind-config`   | Shared Tailwind theme                      |
 
 ---
 
@@ -159,7 +159,7 @@ All internal packages use the `@trainers` namespace:
 │                              CLIENTS                                      │
 ├────────────────────────────────┬─────────────────────────────────────────┤
 │         Web (Next.js)          │           Mobile (Expo)                 │
-│         React 19.2             │           React 18                      │
+│         React 19.1             │           React 19.1                    │
 │         shadcn/Base UI         │           NativeWind                    │
 └────────────────────────────────┴─────────────────────────────────────────┘
                     │                                    │
@@ -197,6 +197,7 @@ All internal packages use the `@trainers` namespace:
 ### 1. Convex as Backend
 
 Convex handles:
+
 - Database storage (users, cached posts, follows)
 - Server-side functions (queries, mutations)
 - External API calls via Actions (Bluesky API)
@@ -206,6 +207,7 @@ Convex handles:
 ### 2. Bluesky Integration via Actions
 
 All Bluesky API calls go through Convex Actions:
+
 - Keeps API keys/secrets secure on server
 - Allows caching and rate limit management
 - Single source of truth for Bluesky interactions
@@ -213,18 +215,19 @@ All Bluesky API calls go through Convex Actions:
 
 ### 3. Shared Code Strategy
 
-| Code Type | Shared Between Platforms? | Location |
-|-----------|---------------------------|----------|
-| Database schema | Yes | `packages/backend` |
-| Queries/Mutations | Yes | `packages/backend` |
-| Validators | Yes | `packages/validators` |
-| UI Components | No (different libs) | `packages/ui` (web), `apps/mobile/components` |
-| Business logic | Yes (in Convex) | `packages/backend` |
-| Styling tokens | Yes (Tailwind theme) | `tooling/tailwind` |
+| Code Type         | Shared Between Platforms? | Location                                      |
+| ----------------- | ------------------------- | --------------------------------------------- |
+| Database schema   | Yes                       | `packages/backend`                            |
+| Queries/Mutations | Yes                       | `packages/backend`                            |
+| Validators        | Yes                       | `packages/validators`                         |
+| UI Components     | No (different libs)       | `packages/ui` (web), `apps/mobile/components` |
+| Business logic    | Yes (in Convex)           | `packages/backend`                            |
+| Styling tokens    | Yes (Tailwind theme)      | `tooling/tailwind`                            |
 
 ### 4. React Version Handling
 
-Since web uses React 19.2 and mobile uses React 18:
+Since both web and mobile use React 19.1:
+
 - Shared packages (`backend`, `validators`) don't import React directly
 - UI components are platform-specific
 - Convex hooks work with both React versions
@@ -264,22 +267,22 @@ Since web uses React 19.2 and mobile uses React 18:
 
 ### Required Variables
 
-| Variable | Description | Used By |
-|----------|-------------|---------|
-| `CONVEX_DEPLOYMENT` | Convex deployment URL | All apps |
-| `NEXT_PUBLIC_CONVEX_URL` | Public Convex URL for web | Web |
-| `EXPO_PUBLIC_CONVEX_URL` | Public Convex URL for mobile | Mobile |
+| Variable                 | Description                  | Used By  |
+| ------------------------ | ---------------------------- | -------- |
+| `CONVEX_DEPLOYMENT`      | Convex deployment URL        | All apps |
+| `NEXT_PUBLIC_CONVEX_URL` | Public Convex URL for web    | Web      |
+| `EXPO_PUBLIC_CONVEX_URL` | Public Convex URL for mobile | Mobile   |
 
 ### Bluesky/OAuth Variables (when needed)
 
-| Variable | Description | Used By |
-|----------|-------------|---------|
-| `BLUESKY_CLIENT_ID` | OAuth client ID (URL to metadata) | Backend |
-| `BLUESKY_REDIRECT_URI` | OAuth callback URL | Backend |
+| Variable               | Description                       | Used By |
+| ---------------------- | --------------------------------- | ------- |
+| `BLUESKY_CLIENT_ID`    | OAuth client ID (URL to metadata) | Backend |
+| `BLUESKY_REDIRECT_URI` | OAuth callback URL                | Backend |
 
 ### Deployment Variables
 
-| Variable | Description | Used By |
-|----------|-------------|---------|
-| `VERCEL_URL` | Auto-set by Vercel | Web |
-| `EXPO_PUBLIC_API_URL` | API URL for mobile | Mobile |
+| Variable              | Description        | Used By |
+| --------------------- | ------------------ | ------- |
+| `VERCEL_URL`          | Auto-set by Vercel | Web     |
+| `EXPO_PUBLIC_API_URL` | API URL for mobile | Mobile  |

@@ -99,15 +99,15 @@ Tailwind classes are auto-sorted via `prettier-plugin-tailwindcss`.
 
 ### Naming Conventions
 
-| Item | Convention | Example |
-|------|------------|---------|
-| Files (components) | kebab-case | `post-card.tsx`, `like-button.tsx` |
-| Files (utilities) | kebab-case | `format-date.ts`, `cn.ts` |
-| React Components | PascalCase | `PostCard`, `LikeButton` |
-| Functions/variables | camelCase | `getUserById`, `isLoading` |
-| Constants | SCREAMING_SNAKE | `MAX_POST_LENGTH`, `API_URL` |
-| Types/Interfaces | PascalCase | `UserProfile`, `PostData` |
-| Zod schemas | camelCase + Schema | `userProfileSchema`, `createPostSchema` |
+| Item                | Convention         | Example                                 |
+| ------------------- | ------------------ | --------------------------------------- |
+| Files (components)  | kebab-case         | `post-card.tsx`, `like-button.tsx`      |
+| Files (utilities)   | kebab-case         | `format-date.ts`, `cn.ts`               |
+| React Components    | PascalCase         | `PostCard`, `LikeButton`                |
+| Functions/variables | camelCase          | `getUserById`, `isLoading`              |
+| Constants           | SCREAMING_SNAKE    | `MAX_POST_LENGTH`, `API_URL`            |
+| Types/Interfaces    | PascalCase         | `UserProfile`, `PostData`               |
+| Zod schemas         | camelCase + Schema | `userProfileSchema`, `createPostSchema` |
 
 ### Component Patterns
 
@@ -145,25 +145,26 @@ Button.displayName = "Button"; // Always set displayName
 - Use `"use client"` only at leaf nodes for interactivity
 - Push client boundaries down as far as possible
 
-| Use Server Component | Use Client Component |
-|---------------------|---------------------|
-| Data fetching | useState/useEffect |
-| Static content | Event handlers (onClick) |
-| Layouts, pages | Form inputs with live state |
-| SEO-critical content | Optimistic UI updates |
+| Use Server Component | Use Client Component        |
+| -------------------- | --------------------------- |
+| Data fetching        | useState/useEffect          |
+| Static content       | Event handlers (onClick)    |
+| Layouts, pages       | Form inputs with live state |
+| SEO-critical content | Optimistic UI updates       |
 
 ### Data Fetching Strategy
 
-| Context | Tool |
-|---------|------|
-| Server Components | Direct Convex/API calls |
-| Form submissions | Server Actions |
-| Client-side polling/pagination | TanStack Query |
-| Optimistic updates | Client component + Server Action |
+| Context                        | Tool                             |
+| ------------------------------ | -------------------------------- |
+| Server Components              | Direct Convex/API calls          |
+| Form submissions               | Server Actions                   |
+| Client-side polling/pagination | TanStack Query                   |
+| Optimistic updates             | Client component + Server Action |
 
 ### Server Actions
 
 Place in `apps/web/src/actions/` directory:
+
 ```typescript
 "use server";
 
@@ -180,7 +181,10 @@ export async function createPost(formData: FormData) {
 export const getUser = query({
   args: { id: v.string() },
   handler: async (ctx, args) => {
-    return await ctx.db.query("users").withIndex("by_id", q => q.eq("id", args.id)).unique();
+    return await ctx.db
+      .query("users")
+      .withIndex("by_id", (q) => q.eq("id", args.id))
+      .unique();
   },
 });
 
@@ -201,7 +205,9 @@ export const updateUser = mutation({
 
 ### React Version
 
-Both web and mobile use **React 19.2** for consistency across the monorepo (Next.js 16 + Expo 54).
+Both web and mobile use **React 19.1** for consistency across the monorepo (Next.js 16 + Expo 54).
+
+**Important:** Always use the lowest common denominator React version across the monorepo. This is typically dictated by Expo/React Native, which lags behind web frameworks. Check the [Expo SDK bundledNativeModules.json](https://github.com/expo/expo/blob/sdk-54/packages/expo/bundledNativeModules.json) for the required React version before upgrading.
 
 ### Tailwind Versions
 
@@ -210,9 +216,9 @@ Both web and mobile use **React 19.2** for consistency across the monorepo (Next
 
 ### Import Aliases
 
-| App | Alias | Path |
-|-----|-------|------|
-| Web | `@/*` | `./src/*` |
+| App    | Alias | Path      |
+| ------ | ----- | --------- |
+| Web    | `@/*` | `./src/*` |
 | Mobile | `@/*` | `./src/*` |
 
 ---
