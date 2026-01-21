@@ -12,7 +12,8 @@
     "clean": "rm -rf .next .turbo node_modules"
   },
   "dependencies": {
-    "next": "^15",
+    "@tanstack/react-query": "^5.64.1",
+    "next": "^16.1.4",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },
