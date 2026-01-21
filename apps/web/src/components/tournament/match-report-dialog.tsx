@@ -164,7 +164,9 @@ export function MatchReportDialog({
 
   const { match, player1, player2, round, tournament } = matchDetails;
 
-  // Supabase returns arrays for joined relations - get the first item
+  // Supabase returns arrays for joined relations when using select with nested objects.
+  // This happens because the relationship could theoretically be one-to-many.
+  // We safely extract the first item since we know it's a one-to-one relation.
   const p1 = Array.isArray(player1) ? player1[0] : player1;
   const p2 = Array.isArray(player2) ? player2[0] : player2;
 

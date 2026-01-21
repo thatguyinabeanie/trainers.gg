@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "../types";
+import { getInvitationExpiryDate } from "../constants";
 
 type TypedClient = SupabaseClient<Database>;
 type TournamentFormat = Database["public"]["Enums"]["tournament_format"];
@@ -788,7 +789,7 @@ export async function sendTournamentInvitations(
     status: "pending" as const,
     message: message ?? null,
     invited_at: new Date().toISOString(),
-    expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 days
+    expires_at: getInvitationExpiryDate(),
   }));
 
   const { error } = await supabase

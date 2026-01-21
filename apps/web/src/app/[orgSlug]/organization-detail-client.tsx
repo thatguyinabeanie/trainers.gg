@@ -2,7 +2,8 @@
 
 import { useCallback } from "react";
 import { useSupabaseQuery } from "@/lib/supabase";
-import { getOrganizationBySlug, getCurrentUser } from "@trainers/supabase";
+import { getOrganizationBySlug } from "@trainers/supabase";
+import { useCurrentUser } from "@/hooks/use-current-user";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import {
@@ -54,17 +55,12 @@ export function OrganizationDetailClient({
     [orgSlug]
   );
 
-  const userQueryFn = useCallback(
-    (supabase: Parameters<typeof getCurrentUser>[0]) => getCurrentUser(supabase),
-    []
-  );
-
   const { data: organization, isLoading: orgLoading } = useSupabaseQuery(
     orgQueryFn,
     [orgSlug]
   );
 
-  const { data: currentUser } = useSupabaseQuery(userQueryFn);
+  const { user: currentUser } = useCurrentUser();
 
   if (orgLoading) {
     return (

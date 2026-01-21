@@ -3,7 +3,8 @@
 import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useSupabaseQuery, useSupabaseMutation } from "@/lib/supabase";
-import { getCurrentUser, listMyOrganizations, createTournament } from "@trainers/supabase";
+import { listMyOrganizations, createTournament } from "@trainers/supabase";
+import { useCurrentUser } from "@/hooks/use-current-user";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -54,12 +55,7 @@ export default function CreateTournamentPage() {
   const [formData, setFormData] = useState<TournamentFormData>(defaultFormData);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const userQueryFn = useCallback(
-    (supabase: Parameters<typeof getCurrentUser>[0]) => getCurrentUser(supabase),
-    []
-  );
-
-  const { data: currentUser, isLoading: userLoading } = useSupabaseQuery(userQueryFn);
+  const { user: currentUser, isLoading: userLoading } = useCurrentUser();
 
   const orgsQueryFn = useCallback(
     (supabase: Parameters<typeof listMyOrganizations>[0]) => {

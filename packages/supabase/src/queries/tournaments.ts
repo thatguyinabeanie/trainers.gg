@@ -331,7 +331,7 @@ export async function getTournamentStandings(
     `,
     )
     .eq("tournament_id", tournamentId)
-    .order("standing", { ascending: true });
+    .order("rank", { ascending: true });
 
   if (error) throw error;
   return data ?? [];

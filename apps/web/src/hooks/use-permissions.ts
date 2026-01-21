@@ -1,8 +1,9 @@
 "use client";
 
 import { type PermissionKey } from "@/lib/constants/permissions";
-import { getCurrentUser, getUserPermissions, hasPermission } from "@trainers/supabase";
+import { getUserPermissions, hasPermission } from "@trainers/supabase";
 import { useSupabaseQuery } from "@/lib/supabase";
+import { useCurrentUser } from "./use-current-user";
 
 /**
  * Custom hook to check if the current user has a specific permission
@@ -11,11 +12,8 @@ import { useSupabaseQuery } from "@/lib/supabase";
  * @returns Object with hasPermission boolean and loading state
  */
 export function usePermission(permission: PermissionKey, enabled = true) {
-  // Get current user with profile
-  const { data: user, isLoading: userLoading } = useSupabaseQuery(
-    (supabase) => getCurrentUser(supabase),
-    []
-  );
+  // Use shared hook to get current user (prevents duplicate queries)
+  const { user, isLoading: userLoading } = useCurrentUser();
 
   // Check permission if user is loaded and has a profile
   const { data: permissionCheck, isLoading: permissionLoading } = useSupabaseQuery(
@@ -42,11 +40,8 @@ export function usePermission(permission: PermissionKey, enabled = true) {
  * @returns Object with permissions map and loading state
  */
 export function usePermissions(permissions: PermissionKey[], enabled = true) {
-  // Get current user with profile
-  const { data: user, isLoading: userLoading } = useSupabaseQuery(
-    (supabase) => getCurrentUser(supabase),
-    []
-  );
+  // Use shared hook to get current user (prevents duplicate queries)
+  const { user, isLoading: userLoading } = useCurrentUser();
 
   // Get all user permissions in a single query
   const { data: userPermissions, isLoading: permissionsLoading } = useSupabaseQuery(

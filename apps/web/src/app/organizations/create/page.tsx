@@ -1,9 +1,10 @@
 "use client";
 
-import React, { useState, useCallback } from "react";
+import React, { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useSupabaseQuery, useSupabaseMutation } from "@/lib/supabase";
-import { getCurrentUser, createOrganization } from "@trainers/supabase";
+import { useSupabaseMutation } from "@/lib/supabase";
+import { createOrganization } from "@trainers/supabase";
+import { useCurrentUser } from "@/hooks/use-current-user";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -26,12 +27,7 @@ export default function CreateOrganizationPage() {
   const [description, setDescription] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const userQueryFn = useCallback(
-    (supabase: Parameters<typeof getCurrentUser>[0]) => getCurrentUser(supabase),
-    []
-  );
-
-  const { data: currentUser, isLoading: userLoading } = useSupabaseQuery(userQueryFn);
+  const { user: currentUser, isLoading: userLoading } = useCurrentUser();
 
   const { mutateAsync: createOrg } = useSupabaseMutation(
     (supabase, args: { name: string; slug: string; description?: string }) =>

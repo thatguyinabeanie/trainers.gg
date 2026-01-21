@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "../types";
+import { getInvitationExpiryDate } from "../constants";
 
 type TypedClient = SupabaseClient<Database>;
 
@@ -163,7 +164,7 @@ export async function inviteToOrganization(
       invited_profile_id: invitedProfileId,
       invited_by_profile_id: profile.id,
       status: "pending",
-      expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 days
+      expires_at: getInvitationExpiryDate(),
     })
     .select()
     .single();

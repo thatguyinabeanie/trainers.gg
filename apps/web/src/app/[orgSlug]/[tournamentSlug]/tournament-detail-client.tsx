@@ -2,7 +2,8 @@
 
 import { useCallback } from "react";
 import { useSupabaseQuery } from "@/lib/supabase";
-import { getTournamentByOrgAndSlug, getCurrentUser } from "@trainers/supabase";
+import { getTournamentByOrgAndSlug } from "@trainers/supabase";
+import { useCurrentUser } from "@/hooks/use-current-user";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import {
@@ -59,17 +60,12 @@ export function TournamentDetailClient({
     [orgSlug, tournamentSlug]
   );
 
-  const userQueryFn = useCallback(
-    (supabase: Parameters<typeof getCurrentUser>[0]) => getCurrentUser(supabase),
-    []
-  );
-
   const { data: tournament, isLoading: tournamentLoading } = useSupabaseQuery(
     tournamentQueryFn,
     [orgSlug, tournamentSlug]
   );
 
-  const { data: currentUser } = useSupabaseQuery(userQueryFn);
+  const { user: currentUser } = useCurrentUser();
 
   if (tournamentLoading) {
     return (
