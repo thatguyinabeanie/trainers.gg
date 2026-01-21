@@ -11,6 +11,10 @@
     "./convex/_generated/dataModel": {
       "types": "./convex/_generated/dataModel.d.ts",
       "default": "./convex/_generated/dataModel.js"
+    },
+    "./convex/permissionKeys": {
+      "types": "./convex/permissionKeys.ts",
+      "default": "./convex/permissionKeys.ts"
     }
   },
   "scripts": {
