@@ -7,7 +7,6 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
@@ -88,16 +87,14 @@ export function TopNavAuthSection() {
           </span>
         </DropdownMenuTrigger>
         <DropdownMenuContent className="w-56" align="end">
-          <DropdownMenuLabel className="font-normal">
-            <div className="flex flex-col space-y-1">
-              <p className="text-sm leading-none font-medium">
-                {user.profile?.displayName || user.name}
-              </p>
-              <p className="text-muted-foreground text-xs leading-none">
-                {user.email}
-              </p>
-            </div>
-          </DropdownMenuLabel>
+          <div className="px-1.5 py-1.5">
+            <p className="text-sm leading-none font-medium">
+              {user.profile?.displayName || user.name}
+            </p>
+            <p className="text-muted-foreground mt-1 text-xs leading-none">
+              {user.email}
+            </p>
+          </div>
           <DropdownMenuSeparator />
           <DropdownMenuItem onClick={() => router.push("/dashboard")}>
             <LayoutDashboard className="mr-2 h-4 w-4" />
