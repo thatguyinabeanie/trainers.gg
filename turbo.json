@@ -27,7 +27,13 @@
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
-      "outputs": [".next/**", "!.next/cache/**", "dist/**", ".expo/**"]
+      "outputs": [
+        ".next/**",
+        "!.next/cache/**",
+        "dist/**",
+        ".expo/**",
+        "src/generated/**"
+      ]
     },
     "dev": {
       "cache": false,
