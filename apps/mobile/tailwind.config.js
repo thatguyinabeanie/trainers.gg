@@ -1,4 +1,4 @@
-const { sharedTheme } = require("@trainers/theme/tailwind");
+const { mobileTheme } = require("@trainers/theme/mobile");
 
 /** @type {import('tailwindcss').Config} */
 module.exports = {
@@ -6,10 +6,10 @@ module.exports = {
   presets: [require("nativewind/preset")],
   theme: {
     extend: {
-      ...sharedTheme,
+      ...mobileTheme,
       // Mobile-specific font family (uses system fonts)
       fontFamily: {
-        sans: ["Noto Sans", "System"],
+        sans: ["Inter", "System"],
         mono: ["monospace"],
       },
     },

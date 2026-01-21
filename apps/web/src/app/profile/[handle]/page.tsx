@@ -1,5 +1,5 @@
 export default function ProfilePage({
-  params,
+  params: _params,
 }: {
   params: Promise<{ handle: string }>;
 }) {

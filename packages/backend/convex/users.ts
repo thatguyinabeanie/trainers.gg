@@ -1,153 +1,87 @@
-import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
+import { mutation, query } from "./_generated/server";
+import { getCurrentUserHelper } from "./auth";
+import type { Doc } from "./_generated/dataModel";
 
-// Get current authenticated user
+// Simple query to check if any users exist (for seeding check)
+export const count = query({
+  args: {},
+  handler: async (ctx) => {
+    const users = await ctx.db.query("users").collect();
+    return users.length;
+  },
+});
+
+// Get current user with profile
 export const getCurrentUser = query({
   args: {},
   handler: async (ctx) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) return null;
-
-    const user = await ctx.db
-      .query("users")
-      .withIndex("by_did", (q) => q.eq("did", identity.subject))
-      .unique();
-
-    return user;
-  },
-});
-
-// Get user by DID
-export const getUserByDid = query({
-  args: { did: v.string() },
-  handler: async (ctx, args) => {
-    return await ctx.db
-      .query("users")
-      .withIndex("by_did", (q) => q.eq("did", args.did))
-      .unique();
-  },
-});
-
-// Get user by handle
-export const getUserByHandle = query({
-  args: { handle: v.string() },
-  handler: async (ctx, args) => {
-    return await ctx.db
-      .query("users")
-      .withIndex("by_handle", (q) => q.eq("handle", args.handle))
-      .unique();
-  },
-});
-
-// Create or update user on OAuth callback
-export const createOrUpdateUser = mutation({
-  args: {
-    did: v.string(),
-    handle: v.string(),
-    displayName: v.optional(v.string()),
-    avatarUrl: v.optional(v.string()),
-    bio: v.optional(v.string()),
-  },
-  handler: async (ctx, args) => {
-    const existing = await ctx.db
-      .query("users")
-      .withIndex("by_did", (q) => q.eq("did", args.did))
-      .unique();
-
-    const now = Date.now();
-
-    if (existing) {
-      // Update existing user
-      await ctx.db.patch(existing._id, {
-        handle: args.handle,
-        lastLoginAt: now,
-        updatedAt: now,
-      });
-      return existing._id;
-    } else {
-      // Create new user
-      return await ctx.db.insert("users", {
-        did: args.did,
-        handle: args.handle,
-        displayName: args.displayName,
-        avatarUrl: args.avatarUrl,
-        bio: args.bio,
-        settings: {
-          crossPostToBluesky: true,
-          defaultFeedView: "pokemon",
-        },
-        createdAt: now,
-        updatedAt: now,
-        lastLoginAt: now,
-      });
+    const user = await getCurrentUserHelper(ctx);
+    if (!user) {
+      return null;
     }
+
+    // Get user profile
+    const profile = await ctx.db
+      .query("profiles")
+      .withIndex("by_user", (q) => q.eq("userId", user.id))
+      .first();
+
+    return {
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      profile: profile
+        ? {
+            id: profile._id,
+            displayName: profile.displayName,
+            username: profile.username,
+            bio: profile.bio,
+            avatarUrl: profile.avatarUrl,
+          }
+        : null,
+    };
   },
 });
 
 // Update user profile
 export const updateProfile = mutation({
   args: {
+    profileId: v.id("profiles"),
     displayName: v.optional(v.string()),
     bio: v.optional(v.string()),
-    location: v.optional(v.string()),
-    gamePreferences: v.optional(v.array(v.string())),
-    socialLinks: v.optional(
-      v.object({
-        twitter: v.optional(v.string()),
-        youtube: v.optional(v.string()),
-        twitch: v.optional(v.string()),
-        discord: v.optional(v.string()),
-      })
-    ),
+    avatarUrl: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new Error("Not authenticated");
+    const user = await getCurrentUserHelper(ctx);
+    if (!user) {
+      throw new Error("Not authenticated");
+    }
+    const userId = user.id;
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
 
-    const user = await ctx.db
-      .query("users")
-      .withIndex("by_did", (q) => q.eq("did", identity.subject))
-      .unique();
+    // Get the profile to verify ownership
+    const profile = await ctx.db.get(args.profileId);
+    if (!profile) {
+      throw new Error("Profile not found");
+    }
 
-    if (!user) throw new Error("User not found");
+    // Verify the profile belongs to the current user
+    if (profile.userId !== userId) {
+      throw new Error("You can only update your own profile");
+    }
 
-    await ctx.db.patch(user._id, {
-      ...args,
-      updatedAt: Date.now(),
-    });
-  },
-});
+    // Prepare update data
+    const updates: Partial<Doc<"profiles">> = {};
+    if (args.displayName !== undefined) updates.displayName = args.displayName;
+    if (args.bio !== undefined) updates.bio = args.bio;
+    if (args.avatarUrl !== undefined) updates.avatarUrl = args.avatarUrl;
 
-// Update user settings
-export const updateSettings = mutation({
-  args: {
-    crossPostToBluesky: v.optional(v.boolean()),
-    defaultFeedView: v.optional(v.string()),
-  },
-  handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new Error("Not authenticated");
+    // Update the profile
+    await ctx.db.patch(args.profileId, updates);
 
-    const user = await ctx.db
-      .query("users")
-      .withIndex("by_did", (q) => q.eq("did", identity.subject))
-      .unique();
-
-    if (!user) throw new Error("User not found");
-
-    const currentSettings = user.settings ?? {
-      crossPostToBluesky: true,
-      defaultFeedView: "pokemon",
-    };
-
-    await ctx.db.patch(user._id, {
-      settings: {
-        ...currentSettings,
-        ...Object.fromEntries(
-          Object.entries(args).filter(([, v]) => v !== undefined)
-        ),
-      },
-      updatedAt: Date.now(),
-    });
+    return { success: true };
   },
 });

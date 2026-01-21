@@ -1,10 +1,14 @@
+import { ClerkProvider } from "@clerk/nextjs";
 import type { Metadata } from "next";
-import { Noto_Sans } from "next/font/google";
+import { Geist_Mono, Inter } from "next/font/google";
+import type { ReactNode } from "react";
 import "@/styles/globals.css";
 
-const notoSans = Noto_Sans({
+const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
+
+const geistMono = Geist_Mono({
+  variable: "--font-geist-mono",
   subsets: ["latin"],
-  variable: "--font-sans",
 });
 
 export const metadata: Metadata = {
@@ -16,13 +20,13 @@ export const metadata: Metadata = {
 export default function RootLayout({
   children,
 }: Readonly<{
-  children: React.ReactNode;
+  children: ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body className={`${notoSans.variable} min-h-screen font-sans antialiased`}>
-        {children}
-      </body>
-    </html>
+    <ClerkProvider>
+      <html lang="en" className={inter.variable}>
+        <body className={`${geistMono.variable} antialiased`}>{children}</body>
+      </html>
+    </ClerkProvider>
   );
 }

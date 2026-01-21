@@ -1,6 +1,6 @@
 {
   "functions": "convex/",
   "node": {
-    "externalPackages": []
+    "externalPackages": ["@clerk/backend", "@clerk/nextjs", "svix", "zod"]
   }
 }

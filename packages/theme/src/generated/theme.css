@@ -1,0 +1,79 @@
+/**
+ * AUTO-GENERATED - DO NOT EDIT MANUALLY
+ * Generated from packages/theme/src/tokens/semantic.ts
+ * 
+ * CSS custom properties for Tailwind CSS 4 and web apps
+ */
+
+:root {
+  --background: oklch(1.000 0.000 0.00);
+  --foreground: oklch(0.145 0.000 0.00);
+  --card: oklch(1.000 0.000 0.00);
+  --card-foreground: oklch(0.145 0.000 0.00);
+  --popover: oklch(1.000 0.000 0.00);
+  --popover-foreground: oklch(0.145 0.000 0.00);
+  --primary: oklch(0.600 0.100 185.00);
+  --primary-foreground: oklch(0.980 0.010 181.00);
+  --secondary: oklch(0.967 0.001 286.38);
+  --secondary-foreground: oklch(0.210 0.006 285.88);
+  --muted: oklch(0.970 0.000 0.00);
+  --muted-foreground: oklch(0.556 0.000 0.00);
+  --accent: oklch(0.970 0.000 0.00);
+  --accent-foreground: oklch(0.205 0.000 0.00);
+  --destructive: oklch(0.580 0.220 27.00);
+  --destructive-foreground: oklch(0.985 0.000 0.00);
+  --border: oklch(0.922 0.000 0.00);
+  --input: oklch(0.922 0.000 0.00);
+  --ring: oklch(0.708 0.000 0.00);
+  --chart1: oklch(0.850 0.130 181.00);
+  --chart2: oklch(0.780 0.130 182.00);
+  --chart3: oklch(0.700 0.120 183.00);
+  --chart4: oklch(0.600 0.100 185.00);
+  --chart5: oklch(0.510 0.090 186.00);
+  --sidebar: oklch(0.985 0.000 0.00);
+  --sidebar-foreground: oklch(0.145 0.000 0.00);
+  --sidebar-primary: oklch(0.600 0.100 185.00);
+  --sidebar-primary-foreground: oklch(0.980 0.010 181.00);
+  --sidebar-accent: oklch(0.970 0.000 0.00);
+  --sidebar-accent-foreground: oklch(0.205 0.000 0.00);
+  --sidebar-border: oklch(0.922 0.000 0.00);
+  --sidebar-ring: oklch(0.708 0.000 0.00);
+
+  --radius: 0.625rem;
+}
+
+.dark {
+  --background: oklch(0.145 0.000 0.00);
+  --foreground: oklch(0.985 0.000 0.00);
+  --card: oklch(0.205 0.000 0.00);
+  --card-foreground: oklch(0.985 0.000 0.00);
+  --popover: oklch(0.205 0.000 0.00);
+  --popover-foreground: oklch(0.985 0.000 0.00);
+  --primary: oklch(0.700 0.120 183.00);
+  --primary-foreground: oklch(0.280 0.040 193.00);
+  --secondary: oklch(0.274 0.006 286.03);
+  --secondary-foreground: oklch(0.985 0.000 0.00);
+  --muted: oklch(0.269 0.000 0.00);
+  --muted-foreground: oklch(0.708 0.000 0.00);
+  --accent: oklch(0.371 0.000 0.00);
+  --accent-foreground: oklch(0.985 0.000 0.00);
+  --destructive: oklch(0.704 0.191 22.22);
+  --destructive-foreground: oklch(0.985 0.000 0.00);
+  --border: oklch(1.000 0.000 0.00 / 10%);
+  --input: oklch(1.000 0.000 0.00 / 15%);
+  --ring: oklch(0.556 0.000 0.00);
+  --chart1: oklch(0.850 0.130 181.00);
+  --chart2: oklch(0.780 0.130 182.00);
+  --chart3: oklch(0.700 0.120 183.00);
+  --chart4: oklch(0.600 0.100 185.00);
+  --chart5: oklch(0.510 0.090 186.00);
+  --sidebar: oklch(0.205 0.000 0.00);
+  --sidebar-foreground: oklch(0.985 0.000 0.00);
+  --sidebar-primary: oklch(0.780 0.130 182.00);
+  --sidebar-primary-foreground: oklch(0.280 0.040 193.00);
+  --sidebar-accent: oklch(0.269 0.000 0.00);
+  --sidebar-accent-foreground: oklch(0.985 0.000 0.00);
+  --sidebar-border: oklch(1.000 0.000 0.00 / 10%);
+  --sidebar-ring: oklch(0.556 0.000 0.00);
+
+}

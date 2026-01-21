@@ -4,5 +4,11 @@ packages:
   - tooling/*
 
 onlyBuiltDependencies:
+  - '@clerk/shared'
+  - browser-tabs-lock
+  - bufferutil
+  - core-js
   - esbuild
+  - msw
   - sharp
+  - utf-8-validate
