@@ -1,33 +1,43 @@
-import { auth } from "@clerk/nextjs/server";
-import {
-  createSupabaseClient,
-  createPublicSupabaseClient,
-  createAdminSupabaseClient,
-} from "@trainers/supabase";
+import { createServerClient } from "@supabase/ssr";
+import { cookies } from "next/headers";
+import type { Database } from "@trainers/supabase/types";
 
-/**
- * Create a Supabase client for server-side usage with Clerk authentication.
- * Uses Clerk's native Supabase integration via session tokens.
- *
- * Requires Third-Party Auth configured in Supabase Dashboard.
- * See: https://supabase.com/docs/guides/auth/third-party/clerk
- */
-export async function createServerSupabaseClient() {
-  const { getToken } = await auth();
-
-  return createSupabaseClient(async () => {
-    // Use Clerk's session token directly (native Supabase integration)
-    return (await getToken()) ?? null;
-  });
+export async function createClient() {
+  const cookieStore = await cookies();
+  return createServerClient<Database>(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return cookieStore.getAll();
+        },
+        setAll(cookiesToSet) {
+          try {
+            cookiesToSet.forEach(({ name, value, options }) => {
+              cookieStore.set(name, value, options);
+            });
+          } catch (error) {
+            console.warn("Failed to set cookies in Server Component:", error);
+          }
+        },
+      },
+    }
+  );
 }
 
-/**
- * Create an unauthenticated Supabase client for public data access on the server.
- */
-export { createPublicSupabaseClient as createPublicServerSupabaseClient };
-
-/**
- * Create a Supabase admin client with service role key.
- * Bypasses RLS - use with caution! Only use in trusted server contexts.
- */
-export { createAdminSupabaseClient };
+export async function createClientReadOnly() {
+  const cookieStore = await cookies();
+  return createServerClient<Database>(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return cookieStore.getAll();
+        },
+        setAll() {},
+      },
+    }
+  );
+}

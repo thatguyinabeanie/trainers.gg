@@ -1,22 +1,23 @@
-import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
-import { NextResponse } from "next/server";
+import { NextResponse, type NextRequest } from "next/server";
+import { refreshSession } from "@/lib/supabase/middleware";
 
-const isAuthPage = createRouteMatcher([
+// Auth pages that require unauthenticated state
+const authPages = [
   "/sign-in",
   "/sign-up",
   "/forgot-password",
   "/reset-password",
-]);
+];
 
-const isPublicPage = createRouteMatcher([
+// Public pages that don't require authentication
+const publicPages = [
   "/",
   "/coming-soon",
   "/sign-in",
   "/sign-up",
   "/forgot-password",
   "/reset-password",
-  "/api/auth(.*)",
-  "/api/webhooks(.*)",
+  "/auth/callback",
   // Public content pages
   "/tournaments",
   "/organizations",
@@ -26,47 +27,42 @@ const isPublicPage = createRouteMatcher([
   "/draft-leagues",
   "/home",
   "/about",
-]);
+];
 
-export default clerkMiddleware(async (auth, request) => {
+function isAuthPage(pathname: string): boolean {
+  return authPages.some(
+    (page) => pathname === page || pathname.startsWith(`${page}/`)
+  );
+}
+
+function isPublicPage(pathname: string): boolean {
+  return publicPages.some(
+    (page) => pathname === page || pathname.startsWith(`${page}/`)
+  );
+}
+
+export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
 
-  // Skip middleware for static assets
+  // Skip middleware for static assets and Next.js internals
   const isStaticAsset = pathname.includes(".") || pathname.startsWith("/_next");
-  const isAuthAPI = pathname.startsWith("/api/auth");
+  const isAuthAPI =
+    pathname.startsWith("/api/auth") || pathname.startsWith("/auth/callback");
   const isWebhookAPI = pathname.startsWith("/api/webhooks");
 
   if (isStaticAsset || isAuthAPI) {
-    return;
-  }
-
-  // Maintenance mode - redirect all non-essential routes to /coming-soon
-  // Allow auth pages so users can still sign in during maintenance
-  const isMaintenanceMode = process.env.MAINTENANCE_MODE === "true";
-  if (isMaintenanceMode) {
-    const maintenanceAllowedPaths = [
-      "/",
-      "/coming-soon",
-      "/sign-in",
-      "/sign-up",
-      "/forgot-password",
-      "/reset-password",
-    ];
-    const isAllowedPath = maintenanceAllowedPaths.includes(pathname);
-
-    if (!isWebhookAPI && !isAllowedPath) {
-      return NextResponse.redirect(new URL("/coming-soon", request.url));
-    }
+    return NextResponse.next();
   }
 
   // Webhook security checks
   if (isWebhookAPI) {
     // Block authenticated users from accessing webhooks
     const authHeader = request.headers.get("authorization");
-    const sessionCookie = request.cookies.get("__session")?.value;
-    const clerkSessionCookie = request.cookies.get("__clerk_db_jwt")?.value;
+    const supabaseAuthCookie = request.cookies
+      .getAll()
+      .some((c) => c.name.startsWith("sb-"));
 
-    if (authHeader || sessionCookie || clerkSessionCookie) {
+    if (authHeader || supabaseAuthCookie) {
       console.warn("Authenticated user blocked from webhook", { pathname });
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
@@ -85,42 +81,57 @@ export default clerkMiddleware(async (auth, request) => {
       return NextResponse.json({ error: "Payload too large" }, { status: 413 });
     }
 
-    return;
+    return NextResponse.next();
   }
 
-  // Allow public pages (except auth pages which need special handling)
-  // This prevents MIDDLEWARE_INVOCATION_FAILED errors when Clerk
-  // environment variables are misconfigured or unavailable
-  if (isPublicPage(request) && !isAuthPage(request)) {
-    return;
-  }
+  // Maintenance mode - redirect all non-essential routes to /coming-soon
+  const isMaintenanceMode = process.env.MAINTENANCE_MODE === "true";
+  if (isMaintenanceMode) {
+    const maintenanceAllowedPaths = [
+      "/",
+      "/coming-soon",
+      "/sign-in",
+      "/sign-up",
+      "/forgot-password",
+      "/reset-password",
+    ];
+    const isAllowedPath = maintenanceAllowedPaths.includes(pathname);
 
-  // Handle auth pages - allow unauthenticated users, redirect authenticated users
-  if (isAuthPage(request)) {
-    // Try to get auth state, but don't fail if Clerk is unavailable
-    try {
-      const { userId } = await auth();
-      if (userId) {
-        // Authenticated users should go to home, not auth pages
-        return NextResponse.redirect(new URL("/", request.url));
-      }
-    } catch {
-      // If auth() fails, allow access to auth pages anyway
+    if (!isAllowedPath) {
+      return NextResponse.redirect(new URL("/coming-soon", request.url));
     }
-    // Allow unauthenticated users to access auth pages
-    return;
   }
 
-  // Only call auth() when we actually need to check authentication
-  const { userId } = await auth();
+  // Refresh Supabase session on each request
+  const { supabase, response } = await refreshSession(request);
+
+  // Check if user is authenticated
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  // Handle auth pages - redirect authenticated users away
+  if (isAuthPage(pathname)) {
+    if (user) {
+      return NextResponse.redirect(new URL("/", request.url));
+    }
+    return response;
+  }
+
+  // Allow public pages without authentication
+  if (isPublicPage(pathname)) {
+    return response;
+  }
 
   // Protect all other pages - require authentication
-  if (!userId) {
+  if (!user) {
     const signInUrl = new URL("/sign-in", request.url);
-    signInUrl.searchParams.set("from", pathname);
+    signInUrl.searchParams.set("redirectTo", pathname);
     return NextResponse.redirect(signInUrl);
   }
-});
+
+  return response;
+}
 
 export const config = {
   matcher: [

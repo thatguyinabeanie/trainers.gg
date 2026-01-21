@@ -1,13 +1,51 @@
 "use client";
 
-import { useEffect, useState, useCallback, useRef } from "react";
-import { useSupabaseClient } from "./client";
+import { useEffect, useState, useCallback, useRef, useMemo } from "react";
+import { createClient } from "./client";
 import type { TypedSupabaseClient } from "@trainers/supabase";
+import type { User } from "@supabase/supabase-js";
 
 /**
- * Re-export useSupabaseClient for convenience
+ * Hook to get a Supabase client for client components.
+ * Creates a stable client instance that persists across re-renders.
  */
-export { useSupabaseClient as useSupabase } from "./client";
+export function useSupabase() {
+  const client = useMemo(() => createClient(), []);
+  return client;
+}
+
+/**
+ * Hook to get the current authenticated user.
+ * Subscribes to auth state changes.
+ */
+export function useUser() {
+  const supabase = useSupabase();
+  const [user, setUser] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const getUser = async () => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      setUser(user);
+      setIsLoading(false);
+    };
+
+    getUser();
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+      setIsLoading(false);
+    });
+
+    return () => subscription.unsubscribe();
+  }, [supabase]);
+
+  return { user, isLoading };
+}
 
 /**
  * Generic query result type
@@ -27,16 +65,13 @@ export function useSupabaseQuery<T>(
   queryFn: (supabase: TypedSupabaseClient) => Promise<T>,
   deps: unknown[] = []
 ): QueryResult<T> {
-  const { client: supabase, isSessionLoaded } = useSupabaseClient();
+  const supabase = useSupabase();
   const [data, setData] = useState<T | undefined>(undefined);
   const [error, setError] = useState<Error | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const mountedRef = useRef(true);
 
   const execute = useCallback(async () => {
-    // Wait for session to be loaded before executing
-    if (!isSessionLoaded) return;
-
     setIsLoading(true);
     setError(null);
 
@@ -54,7 +89,7 @@ export function useSupabaseQuery<T>(
         setIsLoading(false);
       }
     }
-  }, [supabase, queryFn, isSessionLoaded]);
+  }, [supabase, queryFn]);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -63,6 +98,7 @@ export function useSupabaseQuery<T>(
     return () => {
       mountedRef.current = false;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [execute, ...deps]);
 
   return {
@@ -91,7 +127,7 @@ interface MutationResult<TArgs, TResult> {
 export function useSupabaseMutation<TArgs, TResult>(
   mutationFn: (supabase: TypedSupabaseClient, args: TArgs) => Promise<TResult>
 ): MutationResult<TArgs, TResult> {
-  const { client: supabase } = useSupabaseClient();
+  const supabase = useSupabase();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
 

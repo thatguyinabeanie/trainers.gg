@@ -75,7 +75,11 @@ export function OverviewClient() {
     <>
       <div className="mb-8">
         <h2 className="text-2xl font-bold">
-          Welcome back, {user?.name || user?.profile?.displayName || "Trainer"}!
+          Welcome back,{" "}
+          {user?.profile?.displayName ||
+            (user?.user_metadata?.full_name as string | undefined) ||
+            (user?.user_metadata?.name as string | undefined) ||
+            "Trainer"}!
         </h2>
         <p className="text-muted-foreground text-sm">
           Here&apos;s your competitive overview across all profiles

@@ -71,10 +71,14 @@ function CreateProfileForm() {
             <span className="text-muted-foreground">Email</span>
             <span className="font-medium">{user.email ?? "Not provided"}</span>
           </div>
-          {user.name && (
+          {(user.user_metadata?.full_name ||
+            user.user_metadata?.name) && (
             <div className="flex items-center justify-between">
               <span className="text-muted-foreground">Name</span>
-              <span className="font-medium">{user.name}</span>
+              <span className="font-medium">
+                {(user.user_metadata?.full_name as string) ||
+                  (user.user_metadata?.name as string)}
+              </span>
             </div>
           )}
         </div>

@@ -1,9 +1,26 @@
-// Client-side exports only
-// Server-side code should be imported directly from "./server"
-export { useSupabaseClient } from "./client";
+export { createClient, supabase } from "./client";
+export {
+  createClient as createServerClient,
+  createClientReadOnly,
+} from "./server";
+export {
+  createClient as createMiddlewareClient,
+  refreshSession,
+} from "./middleware";
+export {
+  getUser,
+  getUserClient,
+  isAuthenticated,
+  getUserId,
+  getAuthUrls,
+  oauthProviders,
+  type OAuthProvider,
+} from "./auth";
 
-// Hook exports
-export { useSupabase, useSupabaseQuery, useSupabaseMutation } from "./hooks";
-
-// Re-export types and utilities from the package
-export type { TypedSupabaseClient } from "@trainers/supabase";
+// Hook exports for client components
+export {
+  useSupabase,
+  useUser,
+  useSupabaseQuery,
+  useSupabaseMutation,
+} from "./hooks";
