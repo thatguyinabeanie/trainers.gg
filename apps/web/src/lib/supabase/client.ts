@@ -36,7 +36,6 @@ export function useSupabaseClient() {
       }
     });
     // Empty deps - client is created once, uses ref for session
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return { client, isSessionLoaded: isLoaded };
