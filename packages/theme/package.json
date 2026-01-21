@@ -22,8 +22,8 @@
   "devDependencies": {
     "@trainers/eslint-config": "workspace:*",
     "@trainers/typescript-config": "workspace:*",
-    "eslint": "^9.39.2",
+    "eslint": "catalog:",
     "tsx": "^4.19.2",
-    "typescript": "^5.9.3"
+    "typescript": "catalog:"
   }
 }

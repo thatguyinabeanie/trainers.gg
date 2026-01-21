@@ -105,7 +105,7 @@ export default function TournamentsPage() {
         </div>
         <Select
           value={statusFilter}
-          onValueChange={(value) => setStatusFilter(value ?? "all")}
+          onValueChange={(value: string | null) => setStatusFilter(value ?? "all")}
         >
           <SelectTrigger className="w-full sm:w-[180px]">
             <SelectValue placeholder="Filter by status" />

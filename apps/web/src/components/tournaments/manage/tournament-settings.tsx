@@ -281,7 +281,7 @@ export function TournamentSettings({ tournament }: TournamentSettingsProps) {
             </div>
             <Switch
               checked={formData.rentalTeamPhotosEnabled}
-              onCheckedChange={(checked) =>
+              onCheckedChange={(checked: boolean) =>
                 setFormData((prev) => ({
                   ...prev,
                   rentalTeamPhotosEnabled: checked,
@@ -301,7 +301,7 @@ export function TournamentSettings({ tournament }: TournamentSettingsProps) {
               </div>
               <Switch
                 checked={formData.rentalTeamPhotosRequired}
-                onCheckedChange={(checked) =>
+                onCheckedChange={(checked: boolean) =>
                   setFormData((prev) => ({
                     ...prev,
                     rentalTeamPhotosRequired: checked,
