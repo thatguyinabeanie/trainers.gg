@@ -22,6 +22,12 @@ export function TopNav() {
               Tournaments
             </Link>
             <Link
+              href="/organizations"
+              className="text-muted-foreground hover:text-foreground text-sm transition-colors"
+            >
+              Organizations
+            </Link>
+            <Link
               href="/teams"
               className="text-muted-foreground hover:text-foreground text-sm transition-colors"
             >

@@ -555,6 +555,7 @@ export const getByOrgAndSlug = query({
       organization: {
         name: organization.name,
         slug: organization.slug,
+        ownerProfileId: organization.ownerProfileId,
       },
     };
   },

@@ -17,6 +17,7 @@ import {
   Swords,
   Home,
   Newspaper,
+  Building2,
 } from "lucide-react";
 import { useAuth } from "@/components/auth/auth-provider";
 
@@ -29,6 +30,7 @@ interface NavItem {
 const authenticatedNavItems: NavItem[] = [
   { href: "/dashboard", label: "Dashboard", icon: Home },
   { href: "/tournaments", label: "Tournaments", icon: Trophy },
+  { href: "/organizations", label: "Organizations", icon: Building2 },
   { href: "/teams", label: "Team Builder", icon: Swords },
   { href: "/players", label: "Players", icon: Users },
   { href: "/articles", label: "Articles", icon: Newspaper },
@@ -36,6 +38,7 @@ const authenticatedNavItems: NavItem[] = [
 
 const publicNavItems: NavItem[] = [
   { href: "/tournaments", label: "Tournaments", icon: Trophy },
+  { href: "/organizations", label: "Organizations", icon: Building2 },
   { href: "/players", label: "Players", icon: Users },
   { href: "/articles", label: "Articles", icon: Newspaper },
 ];
