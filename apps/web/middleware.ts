@@ -9,13 +9,13 @@ const isAuthPage = createRouteMatcher([
 
 const isPublicPage = createRouteMatcher([
   "/",
+  "/coming-soon",
   "/sign-in",
   "/sign-up",
   "/forgot-password",
   "/reset-password",
-  "/api/auth",
-  "/api/auth/*",
-  "/api/webhooks/*",
+  "/api/auth(.*)",
+  "/api/webhooks(.*)",
   // Public content pages
   "/tournaments",
   "/players",
@@ -33,6 +33,17 @@ export default clerkMiddleware(async (auth, request) => {
 
   if (isStaticAsset || isAuthAPI) {
     return;
+  }
+
+  // Maintenance mode - redirect all non-essential routes to /coming-soon
+  const isMaintenanceMode = process.env.MAINTENANCE_MODE === "true";
+  if (isMaintenanceMode) {
+    const maintenanceAllowedPaths = ["/", "/coming-soon"];
+    const isAllowedPath = maintenanceAllowedPaths.includes(pathname);
+
+    if (!isWebhookAPI && !isAllowedPath) {
+      return Response.redirect(new URL("/coming-soon", request.url));
+    }
   }
 
   // Webhook security checks
@@ -73,16 +84,19 @@ export default clerkMiddleware(async (auth, request) => {
     return;
   }
 
+  // Allow public pages without requiring auth() call
+  // This prevents MIDDLEWARE_INVOCATION_FAILED errors when Clerk
+  // environment variables are misconfigured or unavailable
+  if (isPublicPage(request) && !isAuthPage(request)) {
+    return;
+  }
+
+  // Only call auth() when we actually need to check authentication
   const { userId } = await auth();
 
   // Redirect authenticated users away from auth pages
   if (isAuthPage(request) && userId) {
     return Response.redirect(new URL("/", request.url));
-  }
-
-  // Allow public pages
-  if (isPublicPage(request)) {
-    return;
   }
 
   // Protect all other pages - require authentication
