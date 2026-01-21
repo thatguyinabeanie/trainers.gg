@@ -1,9 +1,13 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useQuery, useMutation } from "convex/react";
-import { api } from "@/lib/convex/api";
-import type { Id } from "@trainers/backend/convex/_generated/dataModel";
+import { useState, useEffect, useCallback } from "react";
+import { useSupabaseQuery, useSupabaseMutation } from "@/lib/supabase";
+import {
+  getCheckInStatus,
+  getCheckInStats,
+  checkIn,
+  undoCheckIn,
+} from "@trainers/supabase";
 import {
   Card,
   CardContent,
@@ -26,13 +30,13 @@ import {
 import { toast } from "sonner";
 
 type CheckedInPlayer = {
-  profileId: Id<"profiles">;
+  profileId: string;
   displayName: string;
   checkedInAt: number;
 };
 
 interface CheckInCardProps {
-  tournamentId: Id<"tournaments">;
+  tournamentId: string;
   isOrganizer?: boolean;
 }
 
@@ -43,16 +47,36 @@ export function CheckInCard({
   const [isChecking, setIsChecking] = useState(false);
   const [timeRemaining, setTimeRemaining] = useState<string>("");
 
-  const checkInStatus = useQuery(api.tournaments.checkin.getCheckInStatus, {
-    tournamentId,
-  });
+  const {
+    data: checkInStatus,
+    refetch: refetchStatus,
+  } = useSupabaseQuery(
+    useCallback(
+      (supabase) => getCheckInStatus(supabase, tournamentId),
+      [tournamentId]
+    ),
+    [tournamentId]
+  );
 
-  const checkInStats = useQuery(api.tournaments.checkin.getCheckInStats, {
-    tournamentId,
-  });
+  const {
+    data: checkInStats,
+    refetch: refetchStats,
+  } = useSupabaseQuery(
+    useCallback(
+      (supabase) => getCheckInStats(supabase, tournamentId),
+      [tournamentId]
+    ),
+    [tournamentId]
+  );
 
-  const checkIn = useMutation(api.tournaments.checkin.checkIn);
-  const undoCheckIn = useMutation(api.tournaments.checkin.undoCheckIn);
+  const { mutateAsync: checkInMutation } = useSupabaseMutation(
+    (supabase, _args: Record<string, never>) => checkIn(supabase, tournamentId)
+  );
+
+  const { mutateAsync: undoCheckInMutation } = useSupabaseMutation(
+    (supabase, _args: Record<string, never>) =>
+      undoCheckIn(supabase, tournamentId)
+  );
 
   // Update countdown timer
   useEffect(() => {
@@ -90,10 +114,12 @@ export function CheckInCard({
   const handleCheckIn = async () => {
     setIsChecking(true);
     try {
-      await checkIn({ data: { tournamentId } });
+      await checkInMutation({});
       toast.success("Checked in successfully", {
         description: "You're all set for the tournament!",
       });
+      refetchStatus();
+      refetchStats();
     } catch (error) {
       toast.error("Check-in failed", {
         description:
@@ -107,10 +133,12 @@ export function CheckInCard({
   const handleUndoCheckIn = async () => {
     setIsChecking(true);
     try {
-      await undoCheckIn({ data: { tournamentId } });
+      await undoCheckInMutation({});
       toast.success("Check-in undone", {
         description: "You've been unchecked from the tournament",
       });
+      refetchStatus();
+      refetchStats();
     } catch (error) {
       toast.error("Failed to undo check-in", {
         description: error instanceof Error ? error.message : "Failed to undo",

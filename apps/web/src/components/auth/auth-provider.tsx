@@ -1,8 +1,6 @@
 "use client";
 
-import { api } from "@/lib/convex/api";
-import { useClerk, useSignIn, useSignUp, useUser } from "@clerk/nextjs";
-import { useQuery } from "convex/react";
+import { useClerk, useSession, useSignIn, useSignUp, useUser } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 import {
   createContext,
@@ -10,10 +8,14 @@ import {
   useContext,
   useCallback,
   useMemo,
+  useEffect,
+  useRef,
+  useState,
 } from "react";
+import { useSupabaseClient } from "@/lib/supabase/client";
 
 interface UserProfile {
-  _id: string;
+  id: string;
   displayName: string;
   username: string;
   bio?: string;
@@ -22,6 +24,7 @@ interface UserProfile {
 
 interface User {
   id: string;
+  clerkId: string;
   email?: string;
   name?: string;
   profile?: UserProfile | null;
@@ -38,20 +41,162 @@ interface AuthContextType {
     displayName: string
   ) => Promise<void>;
   signOut: () => Promise<void>;
+  refetchUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
-  const { isLoaded: clerkLoaded } = useUser();
+  const { isLoaded: clerkLoaded, isSignedIn, user: clerkUser } = useUser();
+  const { session } = useSession();
   const { signIn: clerkSignIn } = useSignIn();
   const { signUp: clerkSignUp } = useSignUp();
   const { signOut: clerkSignOut } = useClerk();
+  const supabase = useSupabaseClient();
 
-  // Get current user data from Convex
-  const user = useQuery(api.auth.getCurrentUser, {});
-  const isLoading = !clerkLoaded || user === undefined;
+  const [user, setUser] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const hasTriedSync = useRef(false);
+
+  // Fetch user from Supabase using Clerk user ID (sub claim)
+  const fetchUser = useCallback(async () => {
+    if (!clerkUser?.id || !session) {
+      setUser(null);
+      setIsLoading(false);
+      return;
+    }
+
+    try {
+      // With Clerk + Supabase integration, we use clerk_id to find the user
+      // The Supabase client is already authenticated via Clerk session token
+      const { data: userData, error: userError } = await supabase
+        .from("users")
+        .select("*")
+        .eq("clerk_id", clerkUser.id)
+        .single();
+
+      if (userError || !userData) {
+        // User doesn't exist in Supabase yet - will be created by syncUser
+        setUser(null);
+        return;
+      }
+
+      // Get profile
+      const { data: profileData } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("user_id", userData.id)
+        .single();
+
+      setUser({
+        id: userData.id,
+        clerkId: clerkUser.id,
+        email: userData.email ?? undefined,
+        name: userData.name ?? undefined,
+        profile: profileData
+          ? {
+              id: profileData.id,
+              displayName: profileData.display_name,
+              username: profileData.username,
+              bio: profileData.bio ?? undefined,
+              avatarUrl: profileData.avatar_url ?? undefined,
+            }
+          : null,
+      });
+    } catch (err) {
+      console.error("Error fetching user:", err);
+      setUser(null);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [clerkUser?.id, session, supabase]);
+
+  // Sync Clerk user to Supabase if they don't exist
+  const syncUser = useCallback(async () => {
+    if (!clerkUser || !session) return;
+
+    setIsSyncing(true);
+    try {
+      // Check if user exists by clerk_id
+      const { data: existingUser } = await supabase
+        .from("users")
+        .select("id")
+        .eq("clerk_id", clerkUser.id)
+        .single();
+
+      if (!existingUser) {
+        // Generate a UUID for the new user
+        const userId = crypto.randomUUID();
+
+        // Create user in Supabase
+        const { data: newUser, error: createError } = await supabase
+          .from("users")
+          .insert({
+            id: userId,
+            clerk_id: clerkUser.id,
+            email: clerkUser.primaryEmailAddress?.emailAddress,
+            name: clerkUser.fullName,
+            image: clerkUser.imageUrl,
+          })
+          .select()
+          .single();
+
+        if (createError) {
+          console.error("Error creating user:", {
+            message: createError.message,
+            code: createError.code,
+            details: createError.details,
+            hint: createError.hint,
+          });
+          return;
+        }
+
+        // Create default profile
+        if (newUser) {
+          const username =
+            clerkUser.username ||
+            clerkUser.primaryEmailAddress?.emailAddress?.split("@")[0] ||
+            `user_${newUser.id.slice(0, 8)}`;
+
+          await supabase.from("profiles").insert({
+            user_id: newUser.id,
+            username: username.toLowerCase().replace(/[^a-z0-9_]/g, "_"),
+            display_name: clerkUser.fullName || username,
+            avatar_url: clerkUser.imageUrl,
+          });
+        }
+      }
+
+      // Fetch updated user data
+      await fetchUser();
+    } catch (err) {
+      console.error("Error syncing user:", err);
+    } finally {
+      setIsSyncing(false);
+    }
+  }, [clerkUser, session, supabase, fetchUser]);
+
+  // Sync user when Clerk auth state changes
+  useEffect(() => {
+    if (!clerkLoaded) return;
+
+    if (isSignedIn && clerkUser && session && !hasTriedSync.current) {
+      hasTriedSync.current = true;
+      syncUser();
+    } else if (!isSignedIn) {
+      hasTriedSync.current = false;
+      setUser(null);
+      setIsLoading(false);
+    }
+  }, [clerkLoaded, isSignedIn, clerkUser, session, syncUser]);
+
+  // Refresh user data when refetchUser is called
+  const refetchUser = useCallback(async () => {
+    setIsLoading(true);
+    await fetchUser();
+  }, [fetchUser]);
 
   const signIn = useCallback(
     async (email: string, password: string) => {
@@ -94,17 +239,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     await clerkSignOut({ redirectUrl: "/" });
+    setUser(null);
   }, [clerkSignOut]);
+
+  const loading = !clerkLoaded || (isSignedIn && (isLoading || isSyncing));
 
   const value = useMemo(
     () => ({
-      user: user || null,
-      loading: isLoading,
+      user,
+      loading,
       signIn,
       signUp,
       signOut,
+      refetchUser,
     }),
-    [user, isLoading, signIn, signUp, signOut]
+    [user, loading, signIn, signUp, signOut, refetchUser]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
@@ -122,6 +271,7 @@ export function useAuth() {
         signIn: async () => {},
         signUp: async () => {},
         signOut: async () => {},
+        refetchUser: async () => {},
       };
     }
     throw new Error("useAuth must be used within an AuthProvider");

@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { useMutation, useQuery } from "convex/react";
-import { api } from "@/lib/convex/api";
+import { useSupabaseQuery, useSupabaseMutation } from "@/lib/supabase";
+import { listMyOrganizations, createTournament } from "@trainers/supabase";
+import { useCurrentUser } from "@/hooks/use-current-user";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -54,8 +55,32 @@ export default function CreateTournamentPage() {
   const [formData, setFormData] = useState<TournamentFormData>(defaultFormData);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const currentUser = useQuery(api.users.getCurrentUser);
-  const createTournament = useMutation(api.tournaments.mutations.create);
+  const { user: currentUser, isLoading: userLoading } = useCurrentUser();
+
+  const orgsQueryFn = useCallback(
+    (supabase: Parameters<typeof listMyOrganizations>[0]) => {
+      if (!currentUser?.profile?.id) return Promise.resolve([]);
+      return listMyOrganizations(supabase, currentUser.profile.id);
+    },
+    [currentUser?.profile?.id]
+  );
+
+  // Fetch user's organizations for the form
+  const { data: _userOrganizations } = useSupabaseQuery(orgsQueryFn, [currentUser?.profile?.id]);
+
+  const { mutateAsync: createTournamentMutation } = useSupabaseMutation(
+    (
+      supabase,
+      args: {
+        organizationId: string;
+        name: string;
+        slug: string;
+        format?: string;
+        startDate?: string;
+        endDate?: string;
+      }
+    ) => createTournament(supabase, args)
+  );
 
   const updateFormData = (updates: Partial<TournamentFormData>) => {
     setFormData((prev) => ({ ...prev, ...updates }));
@@ -106,13 +131,17 @@ export default function CreateTournamentPage() {
 
     setIsSubmitting(true);
     try {
-      const tournament = await createTournament({
-        organizationId: formData.organizationId as never,
+      const tournament = await createTournamentMutation({
+        organizationId: formData.organizationId as string,
         name: formData.name,
         slug: formData.slug,
-        startDate: formData.startDate,
-        endDate: formData.endDate,
         format: formData.format,
+        startDate: formData.startDate
+          ? new Date(formData.startDate).toISOString()
+          : undefined,
+        endDate: formData.endDate
+          ? new Date(formData.endDate).toISOString()
+          : undefined,
       });
 
       toast.success("Tournament created!", {
@@ -137,7 +166,7 @@ export default function CreateTournamentPage() {
   };
 
   // Auth check
-  if (currentUser === undefined) {
+  if (userLoading) {
     return (
       <div className="flex min-h-[50vh] items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin" />

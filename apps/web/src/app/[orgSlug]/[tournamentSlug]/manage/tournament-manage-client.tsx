@@ -1,7 +1,9 @@
 "use client";
 
-import { useQuery } from "convex/react";
-import { api } from "@/lib/convex/api";
+import { useCallback } from "react";
+import { useSupabaseQuery } from "@/lib/supabase";
+import { getTournamentByOrgAndSlug } from "@trainers/supabase";
+import { useCurrentUser } from "@/hooks/use-current-user";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -39,15 +41,21 @@ export function TournamentManageClient({
 }: TournamentManageClientProps) {
   const router = useRouter();
 
-  const tournament = useQuery(api.tournaments.queries.getByOrgAndSlug, {
-    organizationSlug: orgSlug,
-    tournamentSlug: tournamentSlug,
-  });
+  const tournamentQueryFn = useCallback(
+    (supabase: Parameters<typeof getTournamentByOrgAndSlug>[0]) =>
+      getTournamentByOrgAndSlug(supabase, orgSlug, tournamentSlug),
+    [orgSlug, tournamentSlug]
+  );
 
-  const currentUser = useQuery(api.users.getCurrentUser);
+  const { data: tournament, isLoading: tournamentLoading } = useSupabaseQuery(
+    tournamentQueryFn,
+    [orgSlug, tournamentSlug]
+  );
+
+  const { user: currentUser, isLoading: userLoading } = useCurrentUser();
 
   // Loading state
-  if (tournament === undefined || currentUser === undefined) {
+  if (tournamentLoading || userLoading) {
     return (
       <div className="flex min-h-[50vh] items-center justify-center">
         <Loader2 className="text-muted-foreground h-8 w-8 animate-spin" />
@@ -56,7 +64,7 @@ export function TournamentManageClient({
   }
 
   // Not found
-  if (tournament === null) {
+  if (!tournament) {
     return (
       <div className="container mx-auto px-4 py-8">
         <Card>
@@ -84,9 +92,16 @@ export function TournamentManageClient({
     return null;
   }
 
+  // Type assertion for organization
+  const organization = tournament.organization as {
+    id: string;
+    name: string;
+    slug: string;
+    owner_profile_id: string;
+  } | null;
+
   // Permission check
-  const isOrganizer =
-    currentUser.profile?.id === tournament.organization?.ownerProfileId;
+  const isOrganizer = currentUser.profile?.id === organization?.owner_profile_id;
 
   if (!isOrganizer) {
     return (
@@ -110,28 +125,51 @@ export function TournamentManageClient({
     );
   }
 
-  // Build tournament object for components
-  const tournamentData = {
-    _id: tournament._id,
+  // Build tournament object for components that still expect camelCase format
+  // (TournamentOverview, TournamentPairings, TournamentStandings)
+  const tournamentDataCamelCase = {
     name: tournament.name,
     slug: tournament.slug,
     description: tournament.description || "",
-    status: tournament.status,
+    status: tournament.status || "draft",
     format: tournament.format || "",
-    tournamentFormat: tournament.tournamentFormat || "swiss_only",
-    maxParticipants: tournament.maxParticipants,
-    startDate: tournament.startDate,
-    endDate: tournament.endDate,
-    registrationDeadline: tournament.registrationDeadline,
-    roundTimeMinutes: tournament.roundTimeMinutes,
-    swissRounds: tournament.swissRounds,
-    topCutSize: tournament.topCutSize,
-    rentalTeamPhotosEnabled: tournament.rentalTeamPhotosEnabled,
-    rentalTeamPhotosRequired: tournament.rentalTeamPhotosRequired,
-    currentRound: tournament.currentRound,
+    tournamentFormat: tournament.tournament_format || "swiss_only",
+    maxParticipants: tournament.max_participants ?? undefined,
+    startDate: tournament.start_date ? new Date(tournament.start_date).getTime() : undefined,
+    endDate: tournament.end_date ? new Date(tournament.end_date).getTime() : undefined,
+    registrationDeadline: tournament.registration_deadline
+      ? new Date(tournament.registration_deadline).getTime()
+      : undefined,
+    roundTimeMinutes: tournament.round_time_minutes ?? undefined,
+    swissRounds: tournament.swiss_rounds ?? undefined,
+    topCutSize: tournament.top_cut_size ?? undefined,
+    rentalTeamPhotosEnabled: tournament.rental_team_photos_enabled ?? undefined,
+    rentalTeamPhotosRequired: tournament.rental_team_photos_required ?? undefined,
+    currentRound: tournament.current_round ?? undefined,
     registrations: [],
-    _creationTime: tournament._creationTime,
+    _creationTime: tournament.created_at ? new Date(tournament.created_at).getTime() : Date.now(),
   };
+
+  // Tournament data for migrated components that expect snake_case format
+  // (TournamentSettings, TournamentRegistrations)
+  const tournamentDataSnakeCase = {
+    id: tournament.id,
+    name: tournament.name,
+    slug: tournament.slug,
+    description: tournament.description,
+    status: tournament.status || "draft",
+    format: tournament.format,
+    max_participants: tournament.max_participants,
+    start_date: tournament.start_date,
+    end_date: tournament.end_date,
+    registration_deadline: tournament.registration_deadline,
+    round_time_minutes: tournament.round_time_minutes,
+    rental_team_photos_enabled: tournament.rental_team_photos_enabled,
+    rental_team_photos_required: tournament.rental_team_photos_required,
+  };
+
+  // Tournament ID for components that need it
+  const tournamentId = tournament.id;
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -195,36 +233,36 @@ export function TournamentManageClient({
         </TabsList>
 
         <TabsContent value="overview">
-          <TournamentOverview tournament={tournamentData} />
+          <TournamentOverview tournament={tournamentDataCamelCase} />
         </TabsContent>
 
         <TabsContent value="registrations">
-          <TournamentRegistrations tournament={tournamentData} />
+          <TournamentRegistrations tournament={tournamentDataSnakeCase} />
         </TabsContent>
 
         <TabsContent value="invitations" className="space-y-6">
           <div className="grid gap-6 lg:grid-cols-2">
             <InviteForm
-              tournamentId={tournament._id}
+              tournamentId={tournamentId}
               tournamentName={tournament.name}
             />
             <InvitationList
-              tournamentId={tournament._id}
+              tournamentId={tournamentId}
               showActions={true}
             />
           </div>
         </TabsContent>
 
         <TabsContent value="pairings">
-          <TournamentPairings tournament={tournamentData} />
+          <TournamentPairings tournament={tournamentDataCamelCase} />
         </TabsContent>
 
         <TabsContent value="standings">
-          <TournamentStandings tournament={tournamentData} />
+          <TournamentStandings tournament={tournamentDataCamelCase} />
         </TabsContent>
 
         <TabsContent value="settings">
-          <TournamentSettings tournament={tournamentData} />
+          <TournamentSettings tournament={tournamentDataSnakeCase} />
         </TabsContent>
       </Tabs>
     </div>

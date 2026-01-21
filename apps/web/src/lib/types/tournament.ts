@@ -2,8 +2,6 @@
  * Tournament-related types for trainers.gg
  */
 
-import type { Id } from "@trainers/backend/convex/_generated/dataModel";
-
 /**
  * Form data for creating a new tournament
  */
@@ -33,21 +31,21 @@ export interface TournamentFormData {
  * Tournament match data
  */
 export interface TournamentMatch {
-  _id: Id<"tournamentMatches">;
+  id: string;
   matchNumber: number;
   status: string;
   gameWins1: number;
   gameWins2: number;
-  winnerProfileId?: Id<"profiles"> | null;
+  winnerProfileId?: string | null;
   isBye?: boolean;
   participant1?: {
-    id?: Id<"profiles">;
+    id?: string;
     name: string;
     seed?: number;
     isBye?: boolean;
   } | null;
   participant2?: {
-    id?: Id<"profiles">;
+    id?: string;
     name: string;
     seed?: number;
   } | null;
@@ -57,7 +55,7 @@ export interface TournamentMatch {
  * Tournament round data
  */
 export interface TournamentRound {
-  _id: Id<"tournamentRounds">;
+  id: string;
   roundNumber: number;
   name: string;
   status: string;
@@ -68,7 +66,7 @@ export interface TournamentRound {
  * Tournament phase data
  */
 export interface TournamentPhase {
-  _id: Id<"tournamentPhases">;
+  id: string;
   name: string;
   format: string;
   status: string;
@@ -79,7 +77,7 @@ export interface TournamentPhase {
  * Selected player for invitations
  */
 export interface SelectedPlayer {
-  _id: Id<"profiles">;
+  id: string;
   username: string;
   displayName: string;
   avatarUrl?: string;

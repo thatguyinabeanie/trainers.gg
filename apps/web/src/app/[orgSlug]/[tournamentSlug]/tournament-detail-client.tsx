@@ -1,7 +1,9 @@
 "use client";
 
-import { useQuery } from "convex/react";
-import { api } from "@/lib/convex/api";
+import { useCallback } from "react";
+import { useSupabaseQuery } from "@/lib/supabase";
+import { getTournamentByOrgAndSlug } from "@trainers/supabase";
+import { useCurrentUser } from "@/hooks/use-current-user";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import {
@@ -14,10 +16,6 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  RegistrationCard,
-  CheckInCard,
-} from "@/components/tournament";
 import {
   Trophy,
   Calendar,
@@ -56,14 +54,20 @@ export function TournamentDetailClient({
   orgSlug,
   tournamentSlug,
 }: TournamentDetailClientProps) {
-  const tournament = useQuery(api.tournaments.queries.getByOrgAndSlug, {
-    organizationSlug: orgSlug,
-    tournamentSlug: tournamentSlug,
-  });
+  const tournamentQueryFn = useCallback(
+    (supabase: Parameters<typeof getTournamentByOrgAndSlug>[0]) =>
+      getTournamentByOrgAndSlug(supabase, orgSlug, tournamentSlug),
+    [orgSlug, tournamentSlug]
+  );
 
-  const currentUser = useQuery(api.users.getCurrentUser);
+  const { data: tournament, isLoading: tournamentLoading } = useSupabaseQuery(
+    tournamentQueryFn,
+    [orgSlug, tournamentSlug]
+  );
 
-  if (tournament === undefined) {
+  const { user: currentUser } = useCurrentUser();
+
+  if (tournamentLoading) {
     return (
       <div className="flex min-h-[50vh] items-center justify-center">
         <Loader2 className="text-muted-foreground h-8 w-8 animate-spin" />
@@ -71,7 +75,7 @@ export function TournamentDetailClient({
     );
   }
 
-  if (tournament === null) {
+  if (!tournament) {
     return (
       <div className="container mx-auto px-4 py-8">
         <Card>
@@ -93,12 +97,20 @@ export function TournamentDetailClient({
     );
   }
 
-  const isOrganizer = currentUser?.profile?.id === tournament.organization?.ownerProfileId;
+  // Type assertion for organization which may be a nested object
+  const organization = tournament.organization as {
+    id: string;
+    name: string;
+    slug: string;
+    owner_profile_id: string;
+  } | null;
+
+  const isOrganizer = currentUser?.profile?.id === organization?.owner_profile_id;
   const canManage = isOrganizer; // Could extend to check org membership
 
-  const formatDate = (timestamp?: number | null) => {
-    if (!timestamp) return "TBD";
-    return new Date(timestamp).toLocaleDateString("en-US", {
+  const formatDate = (dateStr?: string | null) => {
+    if (!dateStr) return "TBD";
+    return new Date(dateStr).toLocaleDateString("en-US", {
       weekday: "long",
       year: "numeric",
       month: "long",
@@ -107,6 +119,9 @@ export function TournamentDetailClient({
       minute: "2-digit",
     });
   };
+
+  // Get registration count from the registrations array
+  const registrationCount = tournament.registrations?.length || 0;
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -117,7 +132,7 @@ export function TournamentDetailClient({
         </Link>
         <span>/</span>
         <Link href={`/${orgSlug}`} className="hover:underline">
-          {tournament.organization?.name || orgSlug}
+          {organization?.name || orgSlug}
         </Link>
         <span>/</span>
         <span className="text-foreground">{tournament.name}</span>
@@ -136,13 +151,13 @@ export function TournamentDetailClient({
           </div>
 
           <div className="text-muted-foreground flex flex-wrap items-center gap-4 text-sm">
-            {tournament.organization && (
+            {organization && (
               <Link
                 href={`/${orgSlug}`}
                 className="flex items-center gap-1 hover:underline"
               >
                 <MapPin className="h-4 w-4" />
-                {tournament.organization.name}
+                {organization.name}
               </Link>
             )}
             {tournament.format && (
@@ -153,9 +168,9 @@ export function TournamentDetailClient({
             )}
             <span className="flex items-center gap-1">
               <Users className="h-4 w-4" />
-              {tournament.participants?.length || 0}
-              {tournament.maxParticipants
-                ? ` / ${tournament.maxParticipants}`
+              {registrationCount}
+              {tournament.max_participants
+                ? ` / ${tournament.max_participants}`
                 : ""}{" "}
               players
             </span>
@@ -212,17 +227,17 @@ export function TournamentDetailClient({
                         Start Date
                       </p>
                       <p className="font-medium">
-                        {formatDate(tournament.startDate)}
+                        {formatDate(tournament.start_date)}
                       </p>
                     </div>
                     <div>
                       <p className="text-muted-foreground text-sm">End Date</p>
                       <p className="font-medium">
-                        {formatDate(tournament.endDate)}
+                        {formatDate(tournament.end_date)}
                       </p>
                     </div>
                   </div>
-                  {tournament.registrationDeadline && (
+                  {tournament.registration_deadline && (
                     <>
                       <Separator />
                       <div>
@@ -230,7 +245,7 @@ export function TournamentDetailClient({
                           Registration Deadline
                         </p>
                         <p className="font-medium">
-                          {formatDate(tournament.registrationDeadline)}
+                          {formatDate(tournament.registration_deadline)}
                         </p>
                       </div>
                     </>
@@ -259,28 +274,28 @@ export function TournamentDetailClient({
                         Tournament Format
                       </p>
                       <p className="font-medium capitalize">
-                        {tournament.tournamentFormat?.replace(/_/g, " ") ||
+                        {tournament.tournament_format?.replace(/_/g, " ") ||
                           "Not specified"}
                       </p>
                     </div>
-                    {tournament.roundTimeMinutes && (
+                    {tournament.round_time_minutes && (
                       <div>
                         <p className="text-muted-foreground text-sm">
                           Round Time
                         </p>
                         <p className="flex items-center gap-1 font-medium">
                           <Clock className="h-4 w-4" />
-                          {tournament.roundTimeMinutes} minutes
+                          {tournament.round_time_minutes} minutes
                         </p>
                       </div>
                     )}
-                    {tournament.swissRounds && (
+                    {tournament.swiss_rounds && (
                       <div>
                         <p className="text-muted-foreground text-sm">
                           Swiss Rounds
                         </p>
                         <p className="font-medium">
-                          {tournament.swissRounds} rounds
+                          {tournament.swiss_rounds} rounds
                         </p>
                       </div>
                     )}
@@ -325,15 +340,40 @@ export function TournamentDetailClient({
 
         {/* Sidebar */}
         <div className="space-y-6">
-          {/* Registration Card */}
+          {/* Registration Card - TODO: Migrate to Supabase */}
           {tournament.status === "upcoming" && (
-            <RegistrationCard tournamentId={tournament._id} />
+            <Card>
+              <CardHeader>
+                <CardTitle>Registration</CardTitle>
+                <CardDescription>
+                  {registrationCount}
+                  {tournament.max_participants
+                    ? ` / ${tournament.max_participants}`
+                    : ""}{" "}
+                  registered
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <p className="text-muted-foreground text-sm">
+                  Registration functionality is being migrated. Check back soon!
+                </p>
+              </CardContent>
+            </Card>
           )}
 
-          {/* Check-in Card */}
+          {/* Check-in Card - TODO: Migrate to Supabase */}
           {(tournament.status === "upcoming" ||
             tournament.status === "active") && (
-            <CheckInCard tournamentId={tournament._id} />
+            <Card>
+              <CardHeader>
+                <CardTitle>Check-In</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-muted-foreground text-sm">
+                  Check-in functionality is being migrated. Check back soon!
+                </p>
+              </CardContent>
+            </Card>
           )}
 
           {/* Quick Links */}

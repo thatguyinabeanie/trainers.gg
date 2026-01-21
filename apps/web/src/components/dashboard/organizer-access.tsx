@@ -8,7 +8,7 @@ import Link from "next/link";
 
 interface OrganizerAccessProps {
   organizations: Array<{
-    _id: string;
+    id: string;
     name: string;
     role: string;
   }>;
@@ -42,7 +42,7 @@ export function OrganizerAccess({ organizations }: OrganizerAccessProps) {
           <div className="space-y-3">
             {organizations.map((org) => (
               <div
-                key={org._id}
+                key={org.id}
                 className="flex items-center justify-between rounded-lg border p-3"
               >
                 <div>

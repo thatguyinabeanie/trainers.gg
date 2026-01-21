@@ -1,9 +1,13 @@
 "use client";
 
-import { useState } from "react";
-import { useQuery, useMutation } from "convex/react";
-import { api } from "@/lib/convex/api";
-import type { Doc, Id } from "@trainers/backend/convex/_generated/dataModel";
+import { useState, useCallback } from "react";
+import { useSupabaseQuery, useSupabaseMutation } from "@/lib/supabase";
+import {
+  getRegistrationStatus,
+  getUserTeams,
+  registerForTournament,
+  withdrawFromTournament,
+} from "@trainers/supabase";
 import {
   Card,
   CardContent,
@@ -43,48 +47,50 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
-type UserTeamWithCount = Doc<"teams"> & {
-  pokemonCount: number;
-};
-
 interface RegistrationCardProps {
-  tournamentId: Id<"tournaments">;
+  tournamentId: string;
 }
 
 export function RegistrationCard({ tournamentId }: RegistrationCardProps) {
   const [isRegistering, setIsRegistering] = useState(false);
   const [showRegistrationDialog, setShowRegistrationDialog] = useState(false);
-  const [selectedTeamId, setSelectedTeamId] = useState<Id<"teams"> | null>(
-    null
-  );
+  const [selectedTeamId, setSelectedTeamId] = useState<string | null>(null);
   const [teamName, setTeamName] = useState("");
   const [notes, setNotes] = useState("");
 
-  const registrationStatus = useQuery(
-    api.tournaments.registration.getRegistrationStatus,
-    {
-      tournamentId,
-    }
+  const {
+    data: registrationStatus,
+    isLoading: isLoadingStatus,
+    refetch: refetchStatus,
+  } = useSupabaseQuery(
+    useCallback(
+      (supabase) => getRegistrationStatus(supabase, tournamentId),
+      [tournamentId]
+    ),
+    [tournamentId]
   );
 
-  const userTeams = useQuery(api.tournaments.registration.getUserTeams);
-  const registerForTournament = useMutation(
-    api.tournaments.registration.registerForTournament
+  const { data: userTeams } = useSupabaseQuery(
+    useCallback((supabase) => getUserTeams(supabase), []),
+    []
   );
-  const withdrawFromTournament = useMutation(
-    api.tournaments.registration.withdrawFromTournament
+
+  const { mutateAsync: registerMutation } = useSupabaseMutation(
+    (supabase, data: { teamName?: string; notes?: string }) =>
+      registerForTournament(supabase, tournamentId, data)
+  );
+
+  const { mutateAsync: withdrawMutation } = useSupabaseMutation(
+    (supabase, _args: Record<string, never>) =>
+      withdrawFromTournament(supabase, tournamentId)
   );
 
   const handleRegister = async () => {
     setIsRegistering(true);
     try {
-      const result = await registerForTournament({
-        data: {
-          tournamentId,
-          teamId: selectedTeamId || undefined,
-          teamName: teamName || undefined,
-          notes: notes || undefined,
-        },
+      const result = await registerMutation({
+        teamName: teamName || undefined,
+        notes: notes || undefined,
       });
 
       toast.success(
@@ -103,6 +109,7 @@ export function RegistrationCard({ tournamentId }: RegistrationCardProps) {
       setSelectedTeamId(null);
       setTeamName("");
       setNotes("");
+      refetchStatus();
     } catch (error) {
       toast.error("Registration failed", {
         description:
@@ -120,10 +127,11 @@ export function RegistrationCard({ tournamentId }: RegistrationCardProps) {
 
     setIsRegistering(true);
     try {
-      await withdrawFromTournament({ data: { tournamentId } });
+      await withdrawMutation({});
       toast.success("Withdrawn successfully", {
         description: "You have been removed from the tournament",
       });
+      refetchStatus();
     } catch (error) {
       toast.error("Withdrawal failed", {
         description:
@@ -134,7 +142,7 @@ export function RegistrationCard({ tournamentId }: RegistrationCardProps) {
     }
   };
 
-  if (!registrationStatus) {
+  if (isLoadingStatus || !registrationStatus) {
     return (
       <Card>
         <CardContent className="py-12">
@@ -356,17 +364,15 @@ export function RegistrationCard({ tournamentId }: RegistrationCardProps) {
               <Label>Select Team (Optional)</Label>
               <Select
                 value={selectedTeamId || ""}
-                onValueChange={(value) =>
-                  setSelectedTeamId(value as Id<"teams">)
-                }
+                onValueChange={(value) => setSelectedTeamId(value || null)}
               >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="">No team selected</SelectItem>
-                  {userTeams?.map((team: UserTeamWithCount) => (
-                    <SelectItem key={team._id} value={team._id}>
+                  {userTeams?.map((team) => (
+                    <SelectItem key={team.id} value={team.id}>
                       {team.name} ({team.pokemonCount}/6 Pokemon)
                     </SelectItem>
                   ))}

@@ -2,17 +2,19 @@
 
 import { useAuth } from "@/components/auth/auth-provider";
 import { Button } from "@/components/ui/button";
-import { api } from "@/lib/convex/api";
-import { useMutation } from "convex/react";
+import { ensureProfile } from "@trainers/supabase";
+import { useSupabaseMutation } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 
 function CreateProfileForm() {
   const router = useRouter();
-  const { user, loading } = useAuth();
-  const ensureProfile = useMutation(api.auth.ensureUserProfile);
+  const { user, loading, refetchUser } = useAuth();
+  const { mutateAsync: ensureProfileMutation, isLoading: isSubmitting } =
+    useSupabaseMutation(
+      (supabase, _args: Record<string, never>) => ensureProfile(supabase)
+    );
 
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -27,19 +29,17 @@ function CreateProfileForm() {
   }, [user, loading, router]);
 
   const handleCreateProfile = async () => {
-    setIsSubmitting(true);
     setError(null);
 
     try {
-      await ensureProfile();
+      await ensureProfileMutation({});
+      await refetchUser();
       router.push("/");
     } catch (err) {
       console.error("Profile creation error:", err);
       setError(
         err instanceof Error ? err.message : "Failed to create profile"
       );
-    } finally {
-      setIsSubmitting(false);
     }
   };
 

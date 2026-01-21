@@ -2,8 +2,9 @@
 
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useMutation, useQuery } from "convex/react";
-import { api } from "@/lib/convex/api";
+import { useSupabaseMutation } from "@/lib/supabase";
+import { createOrganization } from "@trainers/supabase";
+import { useCurrentUser } from "@/hooks/use-current-user";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -26,8 +27,12 @@ export default function CreateOrganizationPage() {
   const [description, setDescription] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const currentUser = useQuery(api.users.getCurrentUser);
-  const createOrganization = useMutation(api.organizations.mutations.create);
+  const { user: currentUser, isLoading: userLoading } = useCurrentUser();
+
+  const { mutateAsync: createOrg } = useSupabaseMutation(
+    (supabase, args: { name: string; slug: string; description?: string }) =>
+      createOrganization(supabase, args)
+  );
 
   const generateSlug = (orgName: string) => {
     return orgName
@@ -58,7 +63,7 @@ export default function CreateOrganizationPage() {
 
     setIsSubmitting(true);
     try {
-      await createOrganization({
+      await createOrg({
         name: name.trim(),
         slug: slug.trim(),
         description: description.trim() || undefined,
@@ -80,7 +85,7 @@ export default function CreateOrganizationPage() {
   };
 
   // Auth check
-  if (currentUser === undefined) {
+  if (userLoading) {
     return (
       <div className="flex min-h-[50vh] items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin" />

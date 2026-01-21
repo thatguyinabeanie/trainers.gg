@@ -1,9 +1,8 @@
 "use client";
 
-import { useState } from "react";
-import { useQuery } from "convex/react";
-import { api } from "@/lib/convex/api";
-import type { Id } from "@trainers/backend/convex/_generated/dataModel";
+import { useState, useCallback } from "react";
+import { useSupabaseQuery } from "@/lib/supabase";
+import { getTournamentInvitationsSent } from "@trainers/supabase";
 import {
   Card,
   CardContent,
@@ -47,21 +46,21 @@ import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
 
 interface InvitationListProps {
-  tournamentId: Id<"tournaments">;
+  tournamentId: string;
   showActions?: boolean;
 }
 
 type InvitationStatus = "pending" | "accepted" | "declined" | "expired";
 
 interface InvitationData {
-  _id: Id<"tournamentInvitations">;
+  id: string;
   status: InvitationStatus;
   message?: string;
-  invitedAt: number;
-  expiresAt?: number;
-  respondedAt?: number;
+  invited_at: string;
+  expires_at?: string | null;
+  responded_at?: string | null;
   invitedPlayer: {
-    id: Id<"profiles">;
+    id: string;
     username: string;
     displayName: string;
     avatarUrl?: string | null;
@@ -103,15 +102,20 @@ export function InvitationList({
   showActions = true,
 }: InvitationListProps) {
   const [revokeDialogOpen, setRevokeDialogOpen] = useState(false);
-  const [selectedInvitationId, setSelectedInvitationId] =
-    useState<Id<"tournamentInvitations"> | null>(null);
+  const [selectedInvitationId, setSelectedInvitationId] = useState<
+    string | null
+  >(null);
   const [isLoading, setIsLoading] = useState(false);
 
   // Use the getTournamentInvitationsSent query filtered by tournamentId
-  const invitations = useQuery(
-    api.tournaments.invitations.getTournamentInvitationsSent,
-    { tournamentId }
-  );
+  const { data: invitations, isLoading: isLoadingInvitations } =
+    useSupabaseQuery(
+      useCallback(
+        (supabase) => getTournamentInvitationsSent(supabase, tournamentId),
+        [tournamentId]
+      ),
+      [tournamentId]
+    );
 
   const handleRevoke = async () => {
     if (!selectedInvitationId) return;
@@ -132,9 +136,7 @@ export function InvitationList({
     }
   };
 
-  const handleResend = async (
-    _invitationId: Id<"tournamentInvitations">
-  ) => {
+  const handleResend = async (_invitationId: string) => {
     try {
       // Note: resend mutation would need to be added to the backend
       toast.info("Resend functionality coming soon");
@@ -146,12 +148,12 @@ export function InvitationList({
     }
   };
 
-  const openRevokeDialog = (invitationId: Id<"tournamentInvitations">) => {
+  const openRevokeDialog = (invitationId: string) => {
     setSelectedInvitationId(invitationId);
     setRevokeDialogOpen(true);
   };
 
-  if (invitations === undefined) {
+  if (isLoadingInvitations) {
     return (
       <Card>
         <CardContent className="py-12">
@@ -164,15 +166,17 @@ export function InvitationList({
   }
 
   // Transform data to match our interface
-  const transformedInvitations: InvitationData[] = invitations.map((inv) => ({
-    _id: inv._id,
-    status: inv.status as InvitationStatus,
-    message: inv.message ?? undefined,
-    invitedAt: inv.invitedAt,
-    expiresAt: inv.expiresAt ?? undefined,
-    respondedAt: inv.respondedAt ?? undefined,
-    invitedPlayer: inv.invitedPlayer,
-  }));
+  const transformedInvitations: InvitationData[] = (invitations ?? []).map(
+    (inv) => ({
+      id: inv.id,
+      status: inv.status as InvitationStatus,
+      message: inv.message ?? undefined,
+      invited_at: inv.invited_at ?? new Date().toISOString(),
+      expires_at: inv.expires_at,
+      responded_at: inv.responded_at,
+      invitedPlayer: inv.invitedPlayer,
+    })
+  );
 
   // Group invitations by status
   const pendingInvitations = transformedInvitations.filter(
@@ -222,7 +226,7 @@ export function InvitationList({
                     <div className="space-y-2">
                       {pendingInvitations.map((invitation) => (
                         <InvitationItem
-                          key={invitation._id}
+                          key={invitation.id}
                           invitation={invitation}
                           showActions={showActions}
                           onResend={handleResend}
@@ -242,7 +246,7 @@ export function InvitationList({
                     <div className="space-y-2">
                       {respondedInvitations.map((invitation) => (
                         <InvitationItem
-                          key={invitation._id}
+                          key={invitation.id}
                           invitation={invitation}
                           showActions={false}
                         />
@@ -290,8 +294,8 @@ export function InvitationList({
 interface InvitationItemProps {
   invitation: InvitationData;
   showActions?: boolean;
-  onResend?: (id: Id<"tournamentInvitations">) => void;
-  onRevoke?: (id: Id<"tournamentInvitations">) => void;
+  onResend?: (id: string) => void;
+  onRevoke?: (id: string) => void;
 }
 
 function InvitationItem({
@@ -302,11 +306,16 @@ function InvitationItem({
 }: InvitationItemProps) {
   // Check if invitation is expired
   const isExpired =
-    invitation.expiresAt && invitation.expiresAt < Date.now();
+    invitation.expires_at && new Date(invitation.expires_at) < new Date();
   const effectiveStatus =
     isExpired && invitation.status === "pending" ? "expired" : invitation.status;
   const effectiveConfig = statusConfig[effectiveStatus];
   const StatusIcon = effectiveConfig.icon;
+
+  const invitedAtTime = new Date(invitation.invited_at).getTime();
+  const respondedAtTime = invitation.responded_at
+    ? new Date(invitation.responded_at).getTime()
+    : null;
 
   return (
     <div className="bg-muted/30 flex items-center justify-between rounded-lg p-3">
@@ -351,9 +360,9 @@ function InvitationItem({
             {effectiveConfig.label}
           </Badge>
           <p className="text-muted-foreground mt-1 text-xs">
-            {invitation.respondedAt
-              ? `Responded ${formatDistanceToNow(invitation.respondedAt, { addSuffix: true })}`
-              : `Sent ${formatDistanceToNow(invitation.invitedAt, { addSuffix: true })}`}
+            {respondedAtTime
+              ? `Responded ${formatDistanceToNow(respondedAtTime, { addSuffix: true })}`
+              : `Sent ${formatDistanceToNow(invitedAtTime, { addSuffix: true })}`}
           </p>
         </div>
 
@@ -365,12 +374,12 @@ function InvitationItem({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => onResend?.(invitation._id)}>
+              <DropdownMenuItem onClick={() => onResend?.(invitation.id)}>
                 <RotateCcw className="mr-2 h-4 w-4" />
                 Resend Invitation
               </DropdownMenuItem>
               <DropdownMenuItem
-                onClick={() => onRevoke?.(invitation._id)}
+                onClick={() => onRevoke?.(invitation.id)}
                 className="text-destructive focus:text-destructive"
               >
                 <Trash2 className="mr-2 h-4 w-4" />

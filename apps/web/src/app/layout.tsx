@@ -56,12 +56,12 @@ export default function RootLayout({
                 </a>
                 {" & "}
                 <a
-                  href="https://convex.dev"
+                  href="https://supabase.com"
                   target="_blank"
                   className="font-bold hover:underline"
                   rel="noreferrer"
                 >
-                  Convex
+                  Supabase
                 </a>
               </p>
               <div className="flex items-center gap-4">

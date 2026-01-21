@@ -1,14 +1,12 @@
-import type { Id } from "@trainers/backend/convex/_generated/dataModel";
-
 export interface DashboardTournament {
-  _id: Id<"tournaments">;
+  id: string;
   name: string;
   startDate?: number | null;
   status: string;
 }
 
 export interface DashboardOrganization {
-  _id: Id<"organizations">;
+  id: string;
   name: string;
   slug: string;
 }

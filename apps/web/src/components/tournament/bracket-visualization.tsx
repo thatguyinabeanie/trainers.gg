@@ -1,20 +1,20 @@
 "use client";
 
 import { useMemo } from "react";
-import type { Id } from "@trainers/backend/convex/_generated/dataModel";
 import { cn } from "@/lib/utils";
 import { Trophy, ChevronRight, Users, Clock } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import type {
   TournamentMatch,
   TournamentPhase,
+  TournamentRound,
 } from "@/lib/types/tournament";
 
 interface BracketVisualizationProps {
   phases: TournamentPhase[];
-  _currentPhase?: Id<"tournamentPhases">;
+  _currentPhase?: string;
   canManage?: boolean;
-  onMatchClick?: (matchId: Id<"tournamentMatches">) => void;
+  onMatchClick?: (matchId: string) => void;
 }
 
 export function BracketVisualization({
@@ -81,15 +81,15 @@ function SingleEliminationBracket({
 }: {
   phase: TournamentPhase;
   canManage: boolean;
-  onMatchClick?: (matchId: Id<"tournamentMatches">) => void;
+  onMatchClick?: (matchId: string) => void;
 }) {
   const rounds = phase.rounds || [];
 
   return (
     <div className="overflow-x-auto">
       <div className="flex min-w-max gap-8 p-4">
-        {rounds.map((round, roundIndex) => (
-          <div key={round._id} className="flex flex-col gap-4">
+        {rounds.map((round: TournamentRound, roundIndex: number) => (
+          <div key={round.id} className="flex flex-col gap-4">
             <div className="mb-2 text-center">
               <h3 className="font-semibold">{round.name}</h3>
               <Badge variant="outline" className="text-xs">
@@ -111,12 +111,12 @@ function SingleEliminationBracket({
                 gap: `${Math.pow(2, roundIndex) * 2}rem`,
               }}
             >
-              {round.matches.map((match) => (
+              {round.matches.map((match: TournamentMatch) => (
                 <MatchCard
-                  key={match._id}
+                  key={match.id}
                   match={match}
                   canManage={canManage}
-                  onClick={() => onMatchClick?.(match._id)}
+                  onClick={() => onMatchClick?.(match.id)}
                   isFinals={roundIndex === rounds.length - 1}
                 />
               ))}
@@ -135,12 +135,12 @@ function SwissRoundsDisplay({
 }: {
   phase: TournamentPhase;
   canManage: boolean;
-  onMatchClick?: (matchId: Id<"tournamentMatches">) => void;
+  onMatchClick?: (matchId: string) => void;
 }) {
   return (
     <div className="space-y-6">
-      {phase.rounds.map((round) => (
-        <div key={round._id} className="space-y-4">
+      {phase.rounds.map((round: TournamentRound) => (
+        <div key={round.id} className="space-y-4">
           <div className="flex items-center justify-between">
             <h3 className="text-lg font-semibold">{round.name}</h3>
             <Badge
@@ -161,12 +161,12 @@ function SwissRoundsDisplay({
           </div>
 
           <div className="grid gap-2">
-            {round.matches.map((match) => (
+            {round.matches.map((match: TournamentMatch) => (
               <SwissMatchCard
-                key={match._id}
+                key={match.id}
                 match={match}
                 canManage={canManage}
-                onClick={() => onMatchClick?.(match._id)}
+                onClick={() => onMatchClick?.(match.id)}
               />
             ))}
           </div>

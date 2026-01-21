@@ -1,9 +1,8 @@
 "use client";
 
-import { useState } from "react";
-import { useQuery } from "convex/react";
-import { api } from "@/lib/convex/api";
-import type { Id } from "@trainers/backend/convex/_generated/dataModel";
+import { useState, useCallback } from "react";
+import { useSupabaseQuery } from "@/lib/supabase";
+import { getTournamentRegistrations } from "@trainers/supabase";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
@@ -31,38 +30,11 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Search, MoreHorizontal, UserCheck, UserX, Mail } from "lucide-react";
 
-interface Registration {
-  _id: Id<"tournamentRegistrations">;
-  tournamentId: Id<"tournaments">;
-  profileId: Id<"profiles">;
-  status: "pending" | "confirmed" | "waitlist" | "declined";
-  registeredAt: number;
-  teamName?: string;
-  notes?: string;
-  teamId?: Id<"teams">;
-  rentalTeamPhotoUrl?: string;
-  rentalTeamPhotoKey?: string;
-  rentalTeamPhotoUploadedAt?: number;
-  rentalTeamPhotoVerified: boolean;
-  rentalTeamPhotoVerifiedBy?: Id<"profiles">;
-  rentalTeamPhotoVerifiedAt?: number;
-  profile?: {
-    _id: Id<"profiles">;
-    displayName: string;
-    username: string;
-    avatarUrl?: string;
-  };
-  team?: {
-    _id: Id<"teams">;
-    name: string;
-  };
-}
-
 interface TournamentRegistrationsProps {
   tournament: {
-    _id: Id<"tournaments">;
+    id: string;
     status: string;
-    rentalTeamPhotosEnabled?: boolean;
+    rental_team_photos_enabled?: boolean | null;
   };
 }
 
@@ -71,17 +43,21 @@ export function TournamentRegistrations({
 }: TournamentRegistrationsProps) {
   const [searchTerm, setSearchTerm] = useState("");
 
-  const registrations = useQuery(api.tournaments.getRegistrations, {
-    tournamentId: tournament._id,
-  }) as Registration[] | undefined;
+  const { data: registrations } = useSupabaseQuery(
+    useCallback(
+      (supabase) => getTournamentRegistrations(supabase, tournament.id),
+      [tournament.id]
+    ),
+    [tournament.id]
+  );
 
   const filteredRegistrations =
     registrations?.filter(
       (reg) =>
-        reg.profile?.displayName
+        reg.profile?.display_name
           ?.toLowerCase()
           .includes(searchTerm.toLowerCase()) ||
-        reg.teamName?.toLowerCase().includes(searchTerm.toLowerCase())
+        reg.team_name?.toLowerCase().includes(searchTerm.toLowerCase())
     ) || [];
 
   const getStatusColor = (status: string) => {
@@ -94,12 +70,17 @@ export function TournamentRegistrations({
         return "bg-blue-100 text-blue-800";
       case "declined":
         return "bg-red-100 text-red-800";
+      case "registered":
+        return "bg-green-100 text-green-800";
+      case "checked_in":
+        return "bg-emerald-100 text-emerald-800";
       default:
         return "bg-gray-100 text-gray-800";
     }
   };
 
-  const formatDate = (timestamp: number) => {
+  const formatDate = (timestamp: string | null) => {
+    if (!timestamp) return "N/A";
     return new Date(timestamp).toLocaleDateString("en-US", {
       month: "short",
       day: "numeric",
@@ -151,8 +132,9 @@ export function TournamentRegistrations({
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">
-              {registrations?.filter((r) => r.status === "confirmed").length ||
-                0}
+              {registrations?.filter(
+                (r) => r.status === "confirmed" || r.status === "registered"
+              ).length || 0}
             </div>
           </CardContent>
         </Card>
@@ -213,19 +195,21 @@ export function TournamentRegistrations({
               </TableHeader>
               <TableBody>
                 {filteredRegistrations.map((registration) => (
-                  <TableRow key={registration._id}>
+                  <TableRow key={registration.id}>
                     <TableCell>
                       <div className="flex items-center gap-3">
                         <Avatar className="h-8 w-8">
-                          <AvatarImage src={registration.profile?.avatarUrl} />
+                          <AvatarImage
+                            src={registration.profile?.avatar_url ?? undefined}
+                          />
                           <AvatarFallback>
-                            {registration.profile?.displayName?.charAt(0) ||
+                            {registration.profile?.display_name?.charAt(0) ||
                               "?"}
                           </AvatarFallback>
                         </Avatar>
                         <div>
                           <div className="font-medium">
-                            {registration.profile?.displayName ||
+                            {registration.profile?.display_name ||
                               "Unknown Player"}
                           </div>
                           <div className="text-muted-foreground text-sm">
@@ -235,27 +219,27 @@ export function TournamentRegistrations({
                       </div>
                     </TableCell>
                     <TableCell>
-                      {registration.teamName || (
+                      {registration.team_name || (
                         <span className="text-muted-foreground italic">
                           No team name
                         </span>
                       )}
                     </TableCell>
                     <TableCell>
-                      <Badge className={getStatusColor(registration.status)}>
-                        {registration.status}
+                      <Badge className={getStatusColor(registration.status ?? "pending")}>
+                        {registration.status ?? "pending"}
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      {formatDate(registration.registeredAt)}
+                      {formatDate(registration.registered_at)}
                     </TableCell>
                     <TableCell>
-                      {tournament.rentalTeamPhotosEnabled ? (
-                        registration.rentalTeamPhotoVerified ? (
+                      {tournament.rental_team_photos_enabled ? (
+                        registration.rental_team_photo_verified ? (
                           <Badge className="bg-green-100 text-green-800">
                             Verified
                           </Badge>
-                        ) : registration.rentalTeamPhotoUrl ? (
+                        ) : registration.rental_team_photo_url ? (
                           <Badge className="bg-yellow-100 text-yellow-800">
                             Pending
                           </Badge>

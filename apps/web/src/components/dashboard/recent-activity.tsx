@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 
 interface RecentActivityProps {
   activities: Array<{
-    _id: string;
+    id: string;
     tournamentName: string;
     opponentName: string;
     result: string;
@@ -38,7 +38,7 @@ export function RecentActivity({ activities }: RecentActivityProps) {
             <div className="space-y-3">
               {activities.map((activity) => (
                 <div
-                  key={activity._id}
+                  key={activity.id}
                   className="flex items-center justify-between rounded-lg border p-3"
                 >
                   <div className="flex-1">

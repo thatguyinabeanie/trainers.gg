@@ -1,7 +1,9 @@
 "use client";
 
-import { useQuery } from "convex/react";
-import { api } from "@/lib/convex/api";
+import { useCallback } from "react";
+import { useSupabaseQuery } from "@/lib/supabase";
+import { getOrganizationBySlug } from "@trainers/supabase";
+import { useCurrentUser } from "@/hooks/use-current-user";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import {
@@ -47,13 +49,20 @@ const statusColors: Record<TournamentStatus, string> = {
 export function OrganizationDetailClient({
   orgSlug,
 }: OrganizationDetailClientProps) {
-  const organization = useQuery(api.organizations.queries.getBySlug, {
-    slug: orgSlug,
-  });
+  const orgQueryFn = useCallback(
+    (supabase: Parameters<typeof getOrganizationBySlug>[0]) =>
+      getOrganizationBySlug(supabase, orgSlug),
+    [orgSlug]
+  );
 
-  const currentUser = useQuery(api.users.getCurrentUser);
+  const { data: organization, isLoading: orgLoading } = useSupabaseQuery(
+    orgQueryFn,
+    [orgSlug]
+  );
 
-  if (organization === undefined) {
+  const { user: currentUser } = useCurrentUser();
+
+  if (orgLoading) {
     return (
       <div className="flex min-h-[50vh] items-center justify-center">
         <Loader2 className="text-muted-foreground h-8 w-8 animate-spin" />
@@ -61,7 +70,7 @@ export function OrganizationDetailClient({
     );
   }
 
-  if (organization === null) {
+  if (!organization) {
     return (
       <div className="container mx-auto px-4 py-8">
         <Card>
@@ -85,8 +94,8 @@ export function OrganizationDetailClient({
     );
   }
 
-  const isOwner = currentUser?.profile?.id === organization.ownerProfileId;
-  
+  const isOwner = currentUser?.profile?.id === organization.owner_profile_id;
+
   // Combine all tournament types from the organization query
   const tournaments = [
     ...(organization.tournaments?.active || []),
@@ -109,7 +118,7 @@ export function OrganizationDetailClient({
       <div className="mb-8 flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
         <div className="flex items-start gap-4">
           <Avatar className="h-16 w-16">
-            <AvatarImage src={organization.logoUrl ?? undefined} />
+            <AvatarImage src={organization.logo_url ?? undefined} />
             <AvatarFallback className="text-xl">
               {organization.name.slice(0, 2).toUpperCase()}
             </AvatarFallback>
@@ -186,7 +195,9 @@ export function OrganizationDetailClient({
             </div>
             <div>
               <p className="text-2xl font-bold">
-                {new Date(organization._creationTime).getFullYear()}
+                {organization.created_at
+                  ? new Date(organization.created_at).getFullYear()
+                  : new Date().getFullYear()}
               </p>
               <p className="text-muted-foreground text-sm">Founded</p>
             </div>
@@ -230,7 +241,7 @@ export function OrganizationDetailClient({
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {tournaments.map((tournament) => (
                 <Link
-                  key={tournament._id}
+                  key={tournament.id}
                   href={`/${orgSlug}/${tournament.slug}`}
                 >
                   <Card className="h-full transition-shadow hover:shadow-md">
@@ -250,12 +261,12 @@ export function OrganizationDetailClient({
                     </CardHeader>
                     <CardContent>
                       <div className="text-muted-foreground space-y-2 text-sm">
-                        {tournament.startDate && (
+                        {tournament.start_date && (
                           <div className="flex items-center gap-2">
                             <Calendar className="h-4 w-4" />
                             <span>
                               {new Date(
-                                tournament.startDate
+                                tournament.start_date
                               ).toLocaleDateString()}
                             </span>
                           </div>
@@ -264,8 +275,8 @@ export function OrganizationDetailClient({
                           <Users className="h-4 w-4" />
                           <span>
                             {tournament.registrationCount || 0}
-                            {tournament.maxParticipants
-                              ? ` / ${tournament.maxParticipants}`
+                            {tournament.max_participants
+                              ? ` / ${tournament.max_participants}`
                               : ""}{" "}
                             players
                           </span>
