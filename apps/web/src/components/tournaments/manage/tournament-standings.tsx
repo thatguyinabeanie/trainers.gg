@@ -25,7 +25,7 @@ interface TournamentStandingsProps {
   };
 }
 
-export function TournamentStandings({}: TournamentStandingsProps) {
+export function TournamentStandings(_props: TournamentStandingsProps) {
   // Mock standings data - replace with actual query
   const standings = [
     {

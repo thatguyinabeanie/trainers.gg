@@ -7,7 +7,6 @@ import { Trophy, ChevronRight, Users, Clock } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import type {
   TournamentMatch,
-  TournamentRound,
   TournamentPhase,
 } from "@/lib/types/tournament";
 

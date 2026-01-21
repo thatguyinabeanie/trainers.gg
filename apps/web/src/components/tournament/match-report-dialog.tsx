@@ -161,7 +161,8 @@ export function MatchReportDialog({
             {isMatchCompleted ? "Match Result" : "Report Match Result"}
           </DialogTitle>
           <DialogDescription>
-            {tournament.name} • {round.name} • Table {match.matchNumber}
+            {tournament.name} • {round.name}
+            {match.tableNumber ? ` • Table ${match.tableNumber}` : ""}
           </DialogDescription>
         </DialogHeader>
 

@@ -60,9 +60,11 @@ export function TournamentSettings({ tournament }: TournamentSettingsProps) {
     try {
       await updateTournament({
         id: tournament._id,
-        name: formData.name,
-        description: formData.description,
-        format: formData.format,
+        data: {
+          name: formData.name,
+          description: formData.description,
+          format: formData.format,
+        },
       });
 
       toast.success("Settings saved", {

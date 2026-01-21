@@ -56,11 +56,12 @@ export function CheckInCard({
 
   // Update countdown timer
   useEffect(() => {
-    if (!checkInStatus?.checkInEndTime) return;
+    const endTime = checkInStatus?.checkInEndTime;
+    if (!endTime) return;
 
     const updateTimer = () => {
       const now = Date.now();
-      const remaining = checkInStatus.checkInEndTime - now;
+      const remaining = endTime - now;
 
       if (remaining <= 0) {
         setTimeRemaining("Check-in closed");
