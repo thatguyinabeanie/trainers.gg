@@ -1,15 +1,29 @@
 /**
  * Supabase Mutation Functions
  *
- * This directory contains write operations for Supabase.
- * Use these for data that lives exclusively in Supabase
- * (not synced from Convex).
- *
- * Example usage:
- *
- * import { trackAnalyticsEvent } from "@trainers/backend-supabase/mutations/analytics";
- *
- * await trackAnalyticsEvent(supabase, { event: "page_view", ... });
+ * Write operations for data modifications.
  */
 
-export {};
+// User mutations
+export { updateProfile, updateUsername, createProfile } from "./users";
+
+// Organization mutations
+export {
+  createOrganization,
+  updateOrganization,
+  inviteToOrganization,
+  acceptOrganizationInvitation,
+  declineOrganizationInvitation,
+  leaveOrganization,
+  removeMember,
+} from "./organizations";
+
+// Tournament mutations
+export {
+  createTournament,
+  updateTournament,
+  registerForTournament,
+  cancelRegistration,
+  archiveTournament,
+  updateRegistrationStatus,
+} from "./tournaments";

@@ -2,8 +2,7 @@
  * @trainers/backend-supabase
  *
  * Supabase backend package for trainers.gg
- * Used for analytics, BI tool integration, and features requiring
- * PostgreSQL capabilities (complex queries, aggregations, Presence).
+ * Primary backend for all database operations.
  */
 
 // Client exports
@@ -12,6 +11,12 @@ export {
   createServerClient,
   getSupabaseBrowserClient,
 } from "./client";
+
+// Query exports
+export * from "./queries";
+
+// Mutation exports
+export * from "./mutations";
 
 // Type exports
 export type {
