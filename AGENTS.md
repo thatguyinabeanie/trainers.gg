@@ -1,23 +1,46 @@
 # trainers.gg - Agent Guidelines
 
-A Pokemon community platform powered by Bluesky/AT Protocol. Monorepo with Next.js 16 web app, Expo 54 mobile app, and Convex backend.
+A Pokemon community platform for competitive players. Monorepo with Next.js 16 web app, Expo 54 mobile app, and Supabase backend.
 
 ## Monorepo Structure
 
 ```
-apps/web        → Next.js 16 (React 19) - @trainers/web
-apps/mobile     → Expo 54 (React 19) - @trainers/mobile
-packages/backend   → Convex database/functions - @trainers/backend
-packages/ui        → Shared UI components - @trainers/ui
-packages/validators → Zod schemas - @trainers/validators
-tooling/*          → Shared configs (typescript, eslint, prettier, tailwind)
+apps/
+  web/                 # Next.js 16 (React 19) - @trainers/web
+  mobile/              # Expo 54 (React 19) - @trainers/mobile
+
+packages/
+  supabase/            # Supabase client, queries, edge functions - @trainers/supabase
+  backend-convex/      # Convex (legacy/migration) - @trainers/backend
+  ui/                  # Shared UI components - @trainers/ui
+  theme/               # Shared theme tokens - @trainers/theme
+  validators/          # Zod schemas - @trainers/validators
+
+tooling/
+  eslint/              # @trainers/eslint-config
+  prettier/            # @trainers/prettier-config
+  tailwind/            # @trainers/tailwind-config
+  typescript/          # @trainers/typescript-config
 ```
+
+---
+
+## Tech Stack
+
+| Layer          | Technology                                | Notes                                               |
+| -------------- | ----------------------------------------- | --------------------------------------------------- |
+| Auth           | Clerk                                     | Handles sign-up, sign-in, OAuth, session management |
+| Database       | Supabase (PostgreSQL)                     | Row Level Security with Clerk JWT tokens            |
+| Edge Functions | Supabase Edge Functions                   | Deno runtime, used for webhooks                     |
+| Web            | Next.js 16                                | React 19, App Router, Server Components             |
+| Mobile         | Expo 54                                   | React Native with NativeWind                        |
+| Styling        | Tailwind CSS 4 (web), NativeWind (mobile) |                                                     |
 
 ---
 
 ## Build / Lint / Test Commands
 
-### Root Commands (from repo root)
+### Root Commands
 
 ```bash
 pnpm install              # Install all dependencies
@@ -33,29 +56,78 @@ pnpm format:check         # Check formatting without fixing
 pnpm clean                # Remove all build artifacts and node_modules
 ```
 
-### Running Commands for Single Package
+### Single Package Commands
 
 ```bash
 pnpm turbo run <task> --filter=@trainers/web
 pnpm turbo run <task> --filter=@trainers/mobile
-pnpm turbo run <task> --filter=@trainers/backend
-pnpm turbo run <task> --filter=@trainers/ui
-pnpm turbo run <task> --filter=@trainers/validators
+pnpm turbo run <task> --filter=@trainers/supabase
 ```
 
-### Convex Backend
+### Supabase Commands
 
 ```bash
-cd packages/backend && pnpm dev    # Start Convex dev server (requires login)
-cd packages/backend && pnpm deploy # Deploy to production
+cd packages/supabase
+pnpm local:start          # Start local Supabase (requires Docker)
+pnpm local:stop           # Stop local Supabase
+pnpm generate-types       # Generate TypeScript types from schema
+pnpm db:migrate           # Push migrations to local database
+pnpm db:reset             # Reset local database
 ```
 
-### Testing (when added)
+---
 
-```bash
-pnpm test                 # Run all tests
-pnpm test:web             # Run web tests only
-pnpm turbo run test --filter=@trainers/web -- --run src/path/to/file.test.ts
+## Authentication Architecture
+
+### Clerk + Supabase Integration
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                        User Flow                            │
+├─────────────────────────────────────────────────────────────┤
+│  1. User signs in via Clerk                                 │
+│  2. Clerk issues JWT with user's clerk_id in `sub` claim    │
+│  3. Web app passes JWT to Supabase via accessToken option   │
+│  4. Supabase verifies JWT using Third-Party Auth config     │
+│  5. RLS policies use clerk_user_id() function for access    │
+└─────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────┐
+│                    Webhook Sync Flow                        │
+├─────────────────────────────────────────────────────────────┤
+│  1. User created/updated/deleted in Clerk                   │
+│  2. Clerk sends webhook to Supabase Edge Function           │
+│  3. Edge function verifies signature with svix              │
+│  4. Creates/updates/deletes user + profile in Supabase      │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Key Files
+
+| File                                                  | Purpose                                     |
+| ----------------------------------------------------- | ------------------------------------------- |
+| `apps/web/src/lib/supabase/server.ts`                 | Server-side Supabase client with Clerk auth |
+| `apps/web/src/lib/supabase/client.ts`                 | Client-side Supabase client with Clerk auth |
+| `apps/web/src/components/auth/auth-provider.tsx`      | Client-side auth state + user sync fallback |
+| `packages/supabase/supabase/functions/clerk-webhook/` | Edge function for Clerk webhooks            |
+
+### Database Helper Function
+
+```sql
+-- Used in RLS policies to get Clerk user ID from JWT
+CREATE OR REPLACE FUNCTION public.clerk_user_id()
+RETURNS TEXT AS $$
+  SELECT (auth.jwt() ->> 'sub')::text;
+$$ LANGUAGE SQL STABLE;
+```
+
+### RLS Policy Pattern
+
+```sql
+-- Example: Users can only read their own data
+CREATE POLICY "Users can view own data"
+ON public.users FOR SELECT
+USING (clerk_id = clerk_user_id());
 ```
 
 ---
@@ -70,12 +142,8 @@ pnpm turbo run test --filter=@trainers/web -- --run src/path/to/file.test.ts
   import { type Metadata } from "next";
   import { type VariantProps } from "class-variance-authority";
   ```
-- Prefix unused variables with `_` to silence warnings:
-  ```typescript
-  const [_unused, setUsed] = useState();
-  ```
+- Prefix unused variables with `_` to silence warnings
 - Avoid `any` - use `unknown` and narrow types instead
-- Export types alongside their schemas/functions
 
 ### Prettier (enforced)
 
@@ -89,25 +157,17 @@ pnpm turbo run test --filter=@trainers/web -- --run src/path/to/file.test.ts
 }
 ```
 
-Tailwind classes are auto-sorted via `prettier-plugin-tailwindcss`.
-
-### ESLint Rules
-
-- `@typescript-eslint/consistent-type-imports`: Enforces `type` imports
-- `@typescript-eslint/no-unused-vars`: Warn (use `_` prefix to ignore)
-- `@typescript-eslint/no-empty-object-type`: Off (allows `{}` types)
-
 ### Naming Conventions
 
-| Item                | Convention         | Example                                 |
-| ------------------- | ------------------ | --------------------------------------- |
-| Files (components)  | kebab-case         | `post-card.tsx`, `like-button.tsx`      |
-| Files (utilities)   | kebab-case         | `format-date.ts`, `cn.ts`               |
-| React Components    | PascalCase         | `PostCard`, `LikeButton`                |
-| Functions/variables | camelCase          | `getUserById`, `isLoading`              |
-| Constants           | SCREAMING_SNAKE    | `MAX_POST_LENGTH`, `API_URL`            |
-| Types/Interfaces    | PascalCase         | `UserProfile`, `PostData`               |
-| Zod schemas         | camelCase + Schema | `userProfileSchema`, `createPostSchema` |
+| Item                | Convention         | Example             |
+| ------------------- | ------------------ | ------------------- |
+| Files (components)  | kebab-case         | `post-card.tsx`     |
+| Files (utilities)   | kebab-case         | `format-date.ts`    |
+| React Components    | PascalCase         | `PostCard`          |
+| Functions/variables | camelCase          | `getUserById`       |
+| Constants           | SCREAMING_SNAKE    | `MAX_POST_LENGTH`   |
+| Types/Interfaces    | PascalCase         | `UserProfile`       |
+| Zod schemas         | camelCase + Schema | `userProfileSchema` |
 
 ### Component Patterns
 
@@ -120,20 +180,6 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
 );
 Button.displayName = "Button"; // Always set displayName
 ```
-
-### Error Handling
-
-- Use `throw new Error("message")` in Convex mutations for auth/validation errors
-- Return `null` from queries when data not found (don't throw)
-- Use try/catch in Server Actions, return error objects:
-  ```typescript
-  try {
-    await doSomething();
-    return { success: true };
-  } catch (error) {
-    return { success: false, error: "Something went wrong" };
-  }
-  ```
 
 ---
 
@@ -156,47 +202,121 @@ Button.displayName = "Button"; // Always set displayName
 
 | Context                        | Tool                             |
 | ------------------------------ | -------------------------------- |
-| Server Components              | Direct Convex/API calls          |
+| Server Components              | Direct Supabase calls            |
 | Form submissions               | Server Actions                   |
 | Client-side polling/pagination | TanStack Query                   |
 | Optimistic updates             | Client component + Server Action |
 
-### Server Actions
-
-Place in `apps/web/src/actions/` directory:
+### Supabase Query Patterns
 
 ```typescript
-"use server";
+// Queries - use maybeSingle() when record might not exist
+const { data: user } = await supabase
+  .from("users")
+  .select("*")
+  .eq("clerk_id", clerkId)
+  .maybeSingle(); // Returns null if not found, no error
 
-export async function createPost(formData: FormData) {
-  const text = formData.get("text") as string;
-  // Validate, call Convex, return result
-}
+// Use single() only when record MUST exist
+const { data: profile } = await supabase
+  .from("profiles")
+  .select("*")
+  .eq("id", profileId)
+  .single(); // Throws 406 error if not found
 ```
 
-### Convex Patterns
+### Error Handling
 
-```typescript
-// Queries - return null if not found, don't throw
-export const getUser = query({
-  args: { id: v.string() },
-  handler: async (ctx, args) => {
-    return await ctx.db
-      .query("users")
-      .withIndex("by_id", (q) => q.eq("id", args.id))
-      .unique();
-  },
-});
+- Use `throw new Error("message")` for validation errors
+- Return `null` from queries when data not found (don't throw)
+- Use try/catch in Server Actions, return error objects:
+  ```typescript
+  try {
+    await doSomething();
+    return { success: true };
+  } catch (error) {
+    return { success: false, error: "Something went wrong" };
+  }
+  ```
 
-// Mutations - throw on auth/validation errors
-export const updateUser = mutation({
-  args: { name: v.string() },
-  handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new Error("Not authenticated");
-    // ...
-  },
-});
+---
+
+## Database Schema (Key Tables)
+
+### users
+
+Synced from Clerk via webhook.
+
+| Column          | Type | Description                      |
+| --------------- | ---- | -------------------------------- |
+| id              | uuid | Primary key (generated)          |
+| clerk_id        | text | Clerk user ID (e.g., "user_xxx") |
+| email           | text | Primary email                    |
+| name            | text | Display name                     |
+| image           | text | Avatar URL                       |
+| main_profile_id | uuid | FK to profiles                   |
+
+### profiles
+
+Player profiles linked to users.
+
+| Column       | Type | Description         |
+| ------------ | ---- | ------------------- |
+| id           | uuid | Primary key         |
+| user_id      | uuid | FK to users         |
+| username     | text | Unique username     |
+| display_name | text | Public display name |
+| avatar_url   | text | Profile avatar      |
+
+---
+
+## Environment Variables
+
+### Web App (.env.local)
+
+```bash
+# Supabase
+NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+
+# Clerk
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_...
+CLERK_SECRET_KEY=sk_...
+```
+
+### Supabase Edge Functions
+
+Set via Supabase Dashboard → Edge Functions → Secrets:
+
+```bash
+CLERK_WEBHOOK_SECRET=whsec_...
+```
+
+---
+
+## File Organization
+
+```
+apps/web/src/
+├── app/              # Next.js App Router pages
+├── components/
+│   ├── auth/         # Auth components (AuthProvider)
+│   ├── layout/       # Header, sidebar, nav
+│   └── ui/           # Local UI primitives
+├── lib/
+│   └── supabase/     # Supabase client setup
+└── styles/           # Global CSS
+
+packages/supabase/
+├── src/
+│   ├── client.ts     # Client creation functions
+│   ├── types.ts      # Generated database types
+│   ├── queries/      # Read-only query functions
+│   └── mutations/    # Write operations
+└── supabase/
+    ├── functions/    # Edge functions (Deno)
+    └── migrations/   # SQL migration files
 ```
 
 ---
@@ -205,14 +325,14 @@ export const updateUser = mutation({
 
 ### React Version
 
-Both web and mobile use **React 19.1** for consistency across the monorepo (Next.js 16 + Expo 54).
+Both web and mobile use **React 19.1** for consistency.
 
-**Important:** Always use the lowest common denominator React version across the monorepo. This is typically dictated by Expo/React Native, which lags behind web frameworks. Check the [Expo SDK bundledNativeModules.json](https://github.com/expo/expo/blob/sdk-54/packages/expo/bundledNativeModules.json) for the required React version before upgrading.
+**Important:** Always use the lowest common denominator React version across the monorepo. Check [Expo SDK bundledNativeModules.json](https://github.com/expo/expo/blob/sdk-54/packages/expo/bundledNativeModules.json) before upgrading.
 
 ### Tailwind Versions
 
-- **Web**: Tailwind CSS 4.x (uses `@tailwindcss/postcss`, `@import "tailwindcss"`)
-- **Mobile**: Tailwind CSS 3.x via NativeWind (uses `@tailwind base/components/utilities`)
+- **Web**: Tailwind CSS 4.x (uses `@tailwindcss/postcss`)
+- **Mobile**: Tailwind CSS 3.x via NativeWind
 
 ### Import Aliases
 
@@ -220,42 +340,3 @@ Both web and mobile use **React 19.1** for consistency across the monorepo (Next
 | ------ | ----- | --------- |
 | Web    | `@/*` | `./src/*` |
 | Mobile | `@/*` | `./src/*` |
-
----
-
-## File Organization
-
-```
-apps/web/src/
-├── app/           # Next.js App Router pages
-├── components/    # App-specific components
-│   ├── layout/    # Header, sidebar, nav (Server)
-│   ├── feed/      # Feed components (mostly Server)
-│   ├── post/      # Post components (mixed)
-│   └── ui/        # Local UI primitives
-├── actions/       # Server Actions
-├── lib/           # Utilities, API clients
-└── styles/        # Global CSS
-
-packages/ui/src/   # Shared components (Button, Card, Input, etc.)
-packages/validators/src/  # Zod schemas and inferred types
-packages/backend/convex/  # Convex schema, queries, mutations
-```
-
----
-
-## Environment Variables
-
-Required variables (create `.env.local` from `.env.example`):
-
-```bash
-# Convex
-CONVEX_DEPLOYMENT=         # Convex deployment URL
-NEXT_PUBLIC_CONVEX_URL=    # Public Convex URL for web
-
-# Bluesky OAuth (Phase 2)
-BLUESKY_CLIENT_ID=         # OAuth client ID
-BLUESKY_REDIRECT_URI=      # OAuth callback URL
-```
-
-Never commit `.env`, `.env.local`, or files containing secrets.

@@ -1,22 +1,17 @@
-# @trainers/backend-supabase
+# @trainers/supabase
 
-Supabase backend package for trainers.gg. Used alongside `@trainers/backend-convex` for features requiring PostgreSQL capabilities.
+Supabase backend package for trainers.gg. Provides database access, authentication integration with Clerk, and edge functions.
 
-## Use Cases
+## Features
 
-- **Analytics & Reporting**: Complex SQL aggregations, window functions
-- **BI Tool Integration**: Direct database access for Metabase, Tableau, etc.
-- **Presence Features**: Who's online, cursor positions (native Supabase Realtime)
-- **Broadcast/Pub-Sub**: Low-latency messaging for live features
+- **PostgreSQL Database** with Row Level Security (RLS)
+- **Clerk Integration** via Third-Party Auth (native JWT verification)
+- **Edge Functions** for webhooks and server-side operations
+- **Type-safe Queries** with generated TypeScript types
 
 ## Setup
 
-### 1. Create Supabase Project
-
-1. Go to [supabase.com](https://supabase.com) and create a new project
-2. Note your project URL and keys
-
-### 2. Environment Variables
+### 1. Environment Variables
 
 Add to your `.env.local`:
 
@@ -24,46 +19,84 @@ Add to your `.env.local`:
 # Supabase
 NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
-SUPABASE_SERVICE_ROLE_KEY=your-service-role-key  # Server-side only, never expose!
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key  # Server-side only!
 ```
+
+### 2. Clerk + Supabase Integration
+
+This package uses Clerk's native Supabase integration (Third-Party Auth):
+
+1. In Supabase Dashboard → Settings → Third-Party Auth
+2. Add Clerk as a provider with your Clerk JWKS URL
+3. RLS policies use `clerk_user_id()` function to get the authenticated user
 
 ### 3. Generate Types
 
-After creating your database schema:
+After modifying your database schema:
 
 ```bash
-cd packages/backend-supabase
+cd packages/supabase
 pnpm generate-types
 ```
 
-This updates `src/types.ts` with your actual database schema.
-
 ## Usage
+
+### Server-Side (Next.js App Router)
+
+```typescript
+import { createServerSupabaseClient } from "@/lib/supabase/server";
+
+// In a Server Component or Server Action
+const supabase = await createServerSupabaseClient();
+const { data } = await supabase.from("users").select("*");
+```
 
 ### Client-Side (React Components)
 
 ```typescript
-import { getSupabaseBrowserClient } from "@trainers/backend-supabase";
+import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 
 function MyComponent() {
-  const supabase = getSupabaseBrowserClient();
-
+  const supabase = createBrowserSupabaseClient();
   // Use supabase client...
 }
 ```
 
-### Server-Side (API Routes, Server Actions)
+### Admin Operations (Bypasses RLS)
 
 ```typescript
-import { createServerClient } from "@trainers/backend-supabase";
+import { createAdminSupabaseClient } from "@trainers/supabase";
 
-async function myServerAction() {
-  // With RLS (uses anon key)
-  const supabase = createServerClient();
+// Only use in trusted server contexts (webhooks, etc.)
+const supabase = createAdminSupabaseClient();
+```
 
-  // Bypass RLS (uses service role - be careful!)
-  const adminSupabase = createServerClient({ useServiceRole: true });
-}
+## Edge Functions
+
+Edge functions are deployed to Supabase and run on Deno.
+
+### clerk-webhook
+
+Syncs user data from Clerk to Supabase:
+
+- `user.created` → Creates user + profile
+- `user.updated` → Updates user data
+- `user.deleted` → Deletes user
+
+**Endpoint:** `https://your-project.supabase.co/functions/v1/clerk-webhook`
+
+**Required Secrets:**
+
+- `CLERK_WEBHOOK_SECRET` - From Clerk dashboard
+
+### Deploying Edge Functions
+
+```bash
+# Deploy a single function
+npx supabase functions deploy clerk-webhook
+
+# Deploy all functions
+npx supabase functions deploy
 ```
 
 ## Development
@@ -85,27 +118,72 @@ pnpm db:reset
 pnpm generate-types
 ```
 
-## Migrations
-
-SQL migrations live in `supabase/migrations/`. Create new migrations with:
-
-```bash
-cd packages/backend-supabase
-npx supabase migration new your_migration_name
-```
-
 ## Architecture
 
 ```
-packages/backend-supabase/
+packages/supabase/
 ├── src/
-│   ├── client.ts       # Supabase client creation
+│   ├── client.ts       # Supabase client creation (authenticated, public, admin)
 │   ├── types.ts        # Generated database types
 │   ├── index.ts        # Package exports
 │   ├── queries/        # Read-only query functions
+│   │   ├── users.ts
+│   │   ├── tournaments.ts
+│   │   └── organizations.ts
 │   └── mutations/      # Write operations
-├── supabase/
-│   └── migrations/     # SQL migration files
-├── package.json
-└── tsconfig.json
+│       ├── users.ts
+│       └── tournaments.ts
+└── supabase/
+    ├── functions/      # Edge functions (Deno runtime)
+    │   └── clerk-webhook/
+    │       ├── index.ts
+    │       └── deno.json
+    └── migrations/     # SQL migration files
 ```
+
+## Key Patterns
+
+### RLS with Clerk
+
+```sql
+-- Helper function to get Clerk user ID from JWT
+CREATE OR REPLACE FUNCTION public.clerk_user_id()
+RETURNS TEXT AS $$
+  SELECT (auth.jwt() ->> 'sub')::text;
+$$ LANGUAGE SQL STABLE;
+
+-- Example RLS policy
+CREATE POLICY "Users can view own data"
+ON public.users FOR SELECT
+USING (clerk_id = clerk_user_id());
+```
+
+### Query Patterns
+
+```typescript
+// Use maybeSingle() when record might not exist
+const { data: user } = await supabase
+  .from("users")
+  .select("*")
+  .eq("clerk_id", clerkId)
+  .maybeSingle(); // Returns null, no error
+
+// Use single() only when record MUST exist
+const { data: profile } = await supabase
+  .from("profiles")
+  .select("*")
+  .eq("id", profileId)
+  .single(); // Throws 406 if not found
+```
+
+## Database Schema
+
+Key tables:
+
+| Table                      | Description                        |
+| -------------------------- | ---------------------------------- |
+| `users`                    | User accounts (synced from Clerk)  |
+| `profiles`                 | Player profiles (username, avatar) |
+| `organizations`            | Tournament organizer accounts      |
+| `tournaments`              | Tournament events                  |
+| `tournament_registrations` | Player registrations               |
