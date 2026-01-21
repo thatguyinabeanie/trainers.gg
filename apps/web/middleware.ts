@@ -42,9 +42,17 @@ export default clerkMiddleware(async (auth, request) => {
   }
 
   // Maintenance mode - redirect all non-essential routes to /coming-soon
+  // Allow auth pages so users can still sign in during maintenance
   const isMaintenanceMode = process.env.MAINTENANCE_MODE === "true";
   if (isMaintenanceMode) {
-    const maintenanceAllowedPaths = ["/", "/coming-soon"];
+    const maintenanceAllowedPaths = [
+      "/",
+      "/coming-soon",
+      "/sign-in",
+      "/sign-up",
+      "/forgot-password",
+      "/reset-password",
+    ];
     const isAllowedPath = maintenanceAllowedPaths.includes(pathname);
 
     if (!isWebhookAPI && !isAllowedPath) {
@@ -81,20 +89,31 @@ export default clerkMiddleware(async (auth, request) => {
     return;
   }
 
-  // Allow public pages without requiring auth() call
+  // Allow public pages (except auth pages which need special handling)
   // This prevents MIDDLEWARE_INVOCATION_FAILED errors when Clerk
   // environment variables are misconfigured or unavailable
   if (isPublicPage(request) && !isAuthPage(request)) {
     return;
   }
 
+  // Handle auth pages - allow unauthenticated users, redirect authenticated users
+  if (isAuthPage(request)) {
+    // Try to get auth state, but don't fail if Clerk is unavailable
+    try {
+      const { userId } = await auth();
+      if (userId) {
+        // Authenticated users should go to home, not auth pages
+        return NextResponse.redirect(new URL("/", request.url));
+      }
+    } catch {
+      // If auth() fails, allow access to auth pages anyway
+    }
+    // Allow unauthenticated users to access auth pages
+    return;
+  }
+
   // Only call auth() when we actually need to check authentication
   const { userId } = await auth();
-
-  // Redirect authenticated users away from auth pages
-  if (isAuthPage(request) && userId) {
-    return NextResponse.redirect(new URL("/", request.url));
-  }
 
   // Protect all other pages - require authentication
   if (!userId) {
