@@ -19,8 +19,13 @@ const isPublicPage = createRouteMatcher([
   "/api/webhooks(.*)",
   // Public content pages
   "/tournaments",
+  "/organizations",
   "/players",
   "/articles",
+  "/teams",
+  "/draft-leagues",
+  "/home",
+  "/about",
 ]);
 
 export default clerkMiddleware(async (auth, request) => {
