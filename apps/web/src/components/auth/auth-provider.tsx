@@ -146,12 +146,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           .single();
 
         if (createError) {
-          console.error("Error creating user:", {
-            message: createError.message,
-            code: createError.code,
-            details: createError.details,
-            hint: createError.hint,
-          });
+          console.error("Error creating user:", createError);
+          console.error("Error details:", JSON.stringify(createError, null, 2));
           return;
         }
 
