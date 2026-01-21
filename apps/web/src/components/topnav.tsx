@@ -27,17 +27,20 @@ export function TopNav() {
             >
               Organizations
             </Link>
-            <Link
-              href="/teams"
-              className="text-muted-foreground hover:text-foreground text-sm transition-colors"
-            >
-              Team Builder
-            </Link>
+
             <Link
               href="/players"
               className="text-muted-foreground hover:text-foreground text-sm transition-colors"
             >
               Players
+            </Link>
+
+
+            <Link
+              href="/teams"
+              className="text-muted-foreground hover:text-foreground text-sm transition-colors"
+            >
+              Team Builder
             </Link>
             <Link
               href="/articles"

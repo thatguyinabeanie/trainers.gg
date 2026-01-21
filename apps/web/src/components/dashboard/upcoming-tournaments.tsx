@@ -7,19 +7,16 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { buttonVariants } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 import { Trophy, Plus, ChevronRight } from "lucide-react";
 import Link from "next/link";
-import { type DashboardTournament } from "@/lib/types/dashboard";
-
-interface UpcomingTournamentsProps {
-  myTournaments: DashboardTournament[];
-}
+import type { DashboardTournament } from "@/types/dashboard";
 
 export function UpcomingTournaments({
   myTournaments,
-}: UpcomingTournamentsProps) {
+}: {
+  myTournaments: DashboardTournament[];
+}) {
   return (
     <div className="lg:col-span-2">
       <Card>
@@ -31,12 +28,11 @@ export function UpcomingTournaments({
                 Tournaments you&apos;re registered for
               </CardDescription>
             </div>
-            <Link
-              href="/tournaments"
-              className={cn(buttonVariants({ variant: "ghost", size: "sm" }))}
-            >
-              View all
-              <ChevronRight className="ml-1 h-4 w-4" />
+            <Link href="/tournaments">
+              <Button variant="ghost" size="sm">
+                View all
+                <ChevronRight className="ml-1 h-4 w-4" />
+              </Button>
             </Link>
           </div>
         </CardHeader>
@@ -50,12 +46,11 @@ export function UpcomingTournaments({
               <p className="text-muted-foreground mt-2 text-sm">
                 Browse available tournaments to join
               </p>
-              <Link
-                href="/tournaments"
-                className={cn(buttonVariants({ size: "sm" }), "mt-4")}
-              >
-                <Plus className="mr-2 h-4 w-4" />
-                Find Tournaments
+              <Link href="/tournaments">
+                <Button size="sm" className="mt-4">
+                  <Plus className="mr-2 h-4 w-4" />
+                  Find Tournaments
+                </Button>
               </Link>
             </div>
           ) : (
@@ -78,13 +73,10 @@ export function UpcomingTournaments({
                         : "Date TBD"}
                     </p>
                   </div>
-                  <Link
-                    href={`/tournaments/${tournament._id}`}
-                    className={cn(
-                      buttonVariants({ variant: "secondary", size: "sm" })
-                    )}
-                  >
-                    View
+                  <Link href={`/tournaments/${tournament._id}`}>
+                    <Button variant="secondary" size="sm">
+                      View
+                    </Button>
                   </Link>
                 </div>
               ))}

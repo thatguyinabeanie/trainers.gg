@@ -2,10 +2,17 @@
 
 import { Card, CardContent } from "@/components/ui/card";
 import { TrendingUp, Trophy, Target, Award } from "lucide-react";
-import { type DashboardStats } from "@/lib/types/dashboard";
 
 interface StatsOverviewProps {
-  stats: DashboardStats;
+  stats: {
+    winRate: number;
+    winRateChange: number;
+    currentRating: number;
+    ratingRank: number;
+    activeTournaments: number;
+    totalEnrolled: number;
+    championPoints: number;
+  };
 }
 
 export function StatsOverview({ stats }: StatsOverviewProps) {
@@ -52,8 +59,12 @@ export function StatsOverview({ stats }: StatsOverviewProps) {
         <CardContent className="p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-muted-foreground text-sm">Active Tournaments</p>
-              <p className="mt-2 text-3xl font-bold">{stats.activeTournaments}</p>
+              <p className="text-muted-foreground text-sm">
+                Active Tournaments
+              </p>
+              <p className="mt-2 text-3xl font-bold">
+                {stats.activeTournaments}
+              </p>
               <p className="text-muted-foreground mt-1 text-xs">
                 {stats.totalEnrolled} total enrolled
               </p>

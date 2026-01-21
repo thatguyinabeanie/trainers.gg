@@ -1,22 +1,50 @@
 "use client";
 
-import { useUser, useClerk } from "@clerk/nextjs";
-import Link from "next/link";
-import { Bell, Settings, User } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { useAuth } from "@/components/auth/auth-provider";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Bell,
+  LogOut,
+  Settings,
+  Trophy,
+  UserCircle,
+  Users,
+  LayoutDashboard,
+} from "lucide-react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 export function TopNavAuthSection() {
-  const { user, isLoaded } = useUser();
-  const { signOut } = useClerk();
+  const router = useRouter();
+  const { user, signOut, loading } = useAuth();
 
-  if (!isLoaded) {
-    return null;
+  const handleSignOut = async () => {
+    await signOut();
+  };
+
+  // Show loading state
+  if (loading) {
+    return (
+      <div className="flex items-center gap-2">
+        <Skeleton className="h-8 w-8 rounded-full" />
+        <Skeleton className="hidden h-4 w-20 sm:block" />
+      </div>
+    );
   }
 
   if (!user) {
     return (
-      <div className="flex items-center justify-end gap-4">
+      <div className="flex items-center gap-2">
         <Link href="/sign-in">
           <Button variant="ghost" size="sm">
             Sign In
@@ -30,51 +58,81 @@ export function TopNavAuthSection() {
   }
 
   const displayName =
-    user.fullName ||
-    user.username ||
-    user.emailAddresses?.[0]?.emailAddress ||
-    "Trainer";
-  const avatarUrl = user.imageUrl;
-  const initials = displayName
-    .split(" ")
-    .map((n: string) => n[0])
-    .join("")
-    .toUpperCase()
-    .slice(0, 2);
+    user.profile?.displayName || user.name || user.email || "Trainer";
+  const userInitial =
+    user.profile?.displayName?.charAt(0).toUpperCase() ||
+    user.email?.charAt(0).toUpperCase() ||
+    "T";
 
   return (
-    <div className="flex items-center justify-end gap-4">
-      <div className="flex items-center gap-2">
-        <Avatar className="h-8 w-8">
-          <AvatarImage src={avatarUrl} alt={displayName} />
-          <AvatarFallback className="text-xs">
-            {initials || <User className="h-4 w-4" />}
-          </AvatarFallback>
-        </Avatar>
-        <span className="text-muted-foreground hidden text-sm sm:inline">
-          {displayName}
-        </span>
-      </div>
-      <Button variant="ghost" size="icon" className="size-9">
-        <Bell className="size-4" />
+    <div className="flex items-center gap-2">
+      {/* Notification Bell */}
+      <Button variant="ghost" size="icon" className="relative">
+        <Bell className="h-5 w-5" />
+        <span className="sr-only">Notifications</span>
       </Button>
-      <Link href="/dashboard">
-        <Button variant="ghost" size="icon" className="size-9">
-          <Settings className="size-4" />
-        </Button>
-      </Link>
-      <Link href="/dashboard">
-        <Button size="sm" variant="outline" className="hidden sm:inline-flex">
-          Dashboard
-        </Button>
-      </Link>
-      <Button
-        size="sm"
-        variant="ghost"
-        onClick={() => signOut({ redirectUrl: "/" })}
-      >
-        Sign Out
-      </Button>
+
+      {/* User Dropdown */}
+      <DropdownMenu>
+        <DropdownMenuTrigger className="bg-transparent hover:bg-accent focus-visible:ring-ring inline-flex cursor-pointer items-center justify-center gap-2 rounded-md px-2 py-1.5 text-sm font-medium whitespace-nowrap transition-colors focus-visible:ring-1 focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50">
+          <Avatar className="h-8 w-8">
+            {user.profile?.avatarUrl && (
+              <AvatarImage src={user.profile.avatarUrl} alt={displayName} />
+            )}
+            <AvatarFallback className="bg-primary/10 text-primary text-sm font-semibold">
+              {userInitial}
+            </AvatarFallback>
+          </Avatar>
+          <span className="text-muted-foreground hidden text-sm sm:inline">
+            {displayName}
+          </span>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent className="w-56" align="end">
+          <DropdownMenuLabel className="font-normal">
+            <div className="flex flex-col space-y-1">
+              <p className="text-sm leading-none font-medium">
+                {user.profile?.displayName || user.name}
+              </p>
+              <p className="text-muted-foreground text-xs leading-none">
+                {user.email}
+              </p>
+            </div>
+          </DropdownMenuLabel>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem onClick={() => router.push("/dashboard")}>
+            <LayoutDashboard className="mr-2 h-4 w-4" />
+            <span>Dashboard</span>
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => router.push("/dashboard/profiles")}>
+            <UserCircle className="mr-2 h-4 w-4" />
+            <span>My Profile</span>
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => router.push("/tournaments")}>
+            <Trophy className="mr-2 h-4 w-4" />
+            <span>My Tournaments</span>
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            onClick={() => router.push("/dashboard/organizations")}
+          >
+            <Users className="mr-2 h-4 w-4" />
+            <span>My Organizations</span>
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem onClick={() => router.push("/settings")} disabled>
+            <Settings className="mr-2 h-4 w-4" />
+            <span>Settings</span>
+            <span className="text-muted-foreground ml-auto text-xs">Soon</span>
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem
+            onClick={handleSignOut}
+            className="text-destructive focus:text-destructive"
+          >
+            <LogOut className="mr-2 h-4 w-4" />
+            <span>Sign out</span>
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
     </div>
   );
 }

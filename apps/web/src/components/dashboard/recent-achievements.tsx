@@ -1,23 +1,27 @@
 "use client";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { buttonVariants } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 import { Trophy, Award, Star } from "lucide-react";
 import Link from "next/link";
-import { type DashboardAchievement } from "@/lib/types/dashboard";
 
 interface RecentAchievementsProps {
-  achievements: DashboardAchievement[];
+  achievements: Array<{
+    id: string;
+    title: string;
+    description: string;
+    icon: string;
+    color: string;
+  }>;
 }
 
-const iconMap = {
-  Trophy,
-  Award,
-  Star,
-} as const;
-
 export function RecentAchievements({ achievements }: RecentAchievementsProps) {
+  const iconMap = {
+    Trophy,
+    Award,
+    Star,
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -34,7 +38,8 @@ export function RecentAchievements({ achievements }: RecentAchievementsProps) {
           <>
             <div className="space-y-3">
               {achievements.map((achievement) => {
-                const Icon = iconMap[achievement.icon] || Trophy;
+                const Icon =
+                  iconMap[achievement.icon as keyof typeof iconMap] || Trophy;
                 return (
                   <div
                     key={achievement.id}
@@ -53,14 +58,10 @@ export function RecentAchievements({ achievements }: RecentAchievementsProps) {
                 );
               })}
             </div>
-            <Link
-              href="/achievements"
-              className={cn(
-                buttonVariants({ variant: "outline", size: "sm" }),
-                "mt-4 w-full"
-              )}
-            >
-              View All Achievements
+            <Link href="/achievements">
+              <Button variant="outline" size="sm" className="mt-4 w-full">
+                View All Achievements
+              </Button>
             </Link>
           </>
         )}

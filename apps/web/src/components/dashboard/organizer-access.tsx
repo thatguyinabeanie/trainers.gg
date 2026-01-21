@@ -2,14 +2,16 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { buttonVariants } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import { Shield } from "lucide-react";
 import Link from "next/link";
-import { type DashboardOrganization } from "@/lib/types/dashboard";
-import { cn } from "@/lib/utils";
 
 interface OrganizerAccessProps {
-  organizations: DashboardOrganization[];
+  organizations: Array<{
+    _id: string;
+    name: string;
+    role: string;
+  }>;
 }
 
 export function OrganizerAccess({ organizations }: OrganizerAccessProps) {
@@ -30,11 +32,10 @@ export function OrganizerAccess({ organizations }: OrganizerAccessProps) {
             <p className="text-muted-foreground mb-4 text-sm">
               Need tournament hosting permissions?
             </p>
-            <Link
-              href="/organizations/requests"
-              className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
-            >
-              Request Organizer Role
+            <Link href="/organizations/create">
+              <Button variant="outline" size="sm">
+                Request Organizer Role
+              </Button>
             </Link>
           </div>
         ) : (

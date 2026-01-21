@@ -44,7 +44,7 @@ export function QuickActions() {
       <Link href="/teams">
         <Card className="cursor-pointer transition-shadow hover:shadow-lg">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Manage Teams</CardTitle>
+            <CardTitle className="text-sm font-medium">Team Builder</CardTitle>
             <Users className="text-muted-foreground h-4 w-4" />
           </CardHeader>
           <CardContent>

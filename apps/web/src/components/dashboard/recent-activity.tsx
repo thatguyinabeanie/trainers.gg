@@ -8,10 +8,15 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { type DashboardActivity } from "@/lib/types/dashboard";
 
 interface RecentActivityProps {
-  activities: DashboardActivity[];
+  activities: Array<{
+    _id: string;
+    tournamentName: string;
+    opponentName: string;
+    result: string;
+    date: number;
+  }>;
 }
 
 export function RecentActivity({ activities }: RecentActivityProps) {
@@ -25,7 +30,9 @@ export function RecentActivity({ activities }: RecentActivityProps) {
         <CardContent>
           {activities.length === 0 ? (
             <div className="py-8 text-center">
-              <p className="text-muted-foreground text-sm">No recent activity</p>
+              <p className="text-muted-foreground text-sm">
+                No recent activity
+              </p>
             </div>
           ) : (
             <div className="space-y-3">
@@ -43,7 +50,9 @@ export function RecentActivity({ activities }: RecentActivityProps) {
                     </p>
                   </div>
                   <Badge
-                    variant={activity.result === "won" ? "default" : "secondary"}
+                    variant={
+                      activity.result === "won" ? "default" : "secondary"
+                    }
                     className={
                       activity.result === "won"
                         ? "bg-green-500 hover:bg-green-600"

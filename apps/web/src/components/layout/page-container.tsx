@@ -5,6 +5,7 @@ interface PageContainerProps {
   children: ReactNode;
   variant?: "default" | "narrow" | "wide";
   className?: string;
+  noPadding?: boolean;
 }
 
 const variantStyles = {
@@ -17,11 +18,13 @@ export function PageContainer({
   children,
   variant = "default",
   className,
+  noPadding = false,
 }: PageContainerProps) {
   return (
     <div
       className={cn(
-        "container mx-auto px-4 py-8 md:px-6",
+        "container mx-auto",
+        !noPadding && "px-4 py-8 md:px-6",
         variantStyles[variant],
         className
       )}
