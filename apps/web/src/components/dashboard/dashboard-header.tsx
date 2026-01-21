@@ -12,7 +12,8 @@ export function DashboardHeader() {
         {user?.profile?.displayName ||
           (user?.user_metadata?.full_name as string | undefined) ||
           (user?.user_metadata?.name as string | undefined) ||
-          "Trainer"}!
+          "Trainer"}
+        !
       </h1>
       <p className="text-muted-foreground">
         Here&apos;s what&apos;s happening on trainers.gg

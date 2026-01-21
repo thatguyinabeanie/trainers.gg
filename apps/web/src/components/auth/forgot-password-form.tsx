@@ -67,7 +67,7 @@ export function ForgotPasswordForm() {
             If an account exists with that email address, we&apos;ve sent you a
             link to reset your password.
           </p>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-muted-foreground text-sm">
             <Link href="/sign-in" className="text-primary hover:underline">
               Back to sign in
             </Link>
@@ -83,14 +83,14 @@ export function ForgotPasswordForm() {
         <CardTitle className="text-2xl">Forgot Password</CardTitle>
       </CardHeader>
       <CardContent className="flex flex-col gap-6">
-        <p className="text-center text-sm text-muted-foreground">
+        <p className="text-muted-foreground text-center text-sm">
           Enter your email address and we&apos;ll send you a link to reset your
           password.
         </p>
 
         <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
           {error && (
-            <div className="rounded-lg bg-destructive/10 p-3 text-sm text-destructive">
+            <div className="bg-destructive/10 text-destructive rounded-lg p-3 text-sm">
               {error}
             </div>
           )}
@@ -106,7 +106,7 @@ export function ForgotPasswordForm() {
               {...register("email")}
             />
             {errors.email && (
-              <p className="text-sm text-destructive">{errors.email.message}</p>
+              <p className="text-destructive text-sm">{errors.email.message}</p>
             )}
           </div>
 
@@ -115,7 +115,7 @@ export function ForgotPasswordForm() {
           </Button>
         </form>
 
-        <p className="text-center text-sm text-muted-foreground">
+        <p className="text-muted-foreground text-center text-sm">
           Remember your password?{" "}
           <Link href="/sign-in" className="text-primary hover:underline">
             Sign in

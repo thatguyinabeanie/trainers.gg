@@ -72,7 +72,7 @@ export function SignInForm() {
       <CardContent className="flex flex-col gap-6">
         <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
           {error && (
-            <div className="rounded-lg bg-destructive/10 p-3 text-sm text-destructive">
+            <div className="bg-destructive/10 text-destructive rounded-lg p-3 text-sm">
               {error}
             </div>
           )}
@@ -88,7 +88,7 @@ export function SignInForm() {
               {...register("email")}
             />
             {errors.email && (
-              <p className="text-sm text-destructive">{errors.email.message}</p>
+              <p className="text-destructive text-sm">{errors.email.message}</p>
             )}
           </div>
 
@@ -97,7 +97,7 @@ export function SignInForm() {
               <Label htmlFor="password">Password</Label>
               <Link
                 href="/forgot-password"
-                className="text-sm text-muted-foreground hover:text-foreground"
+                className="text-muted-foreground hover:text-foreground text-sm"
               >
                 Forgot password?
               </Link>
@@ -111,7 +111,7 @@ export function SignInForm() {
               {...register("password")}
             />
             {errors.password && (
-              <p className="text-sm text-destructive">
+              <p className="text-destructive text-sm">
                 {errors.password.message}
               </p>
             )}
@@ -124,13 +124,13 @@ export function SignInForm() {
 
         <div className="flex items-center gap-4">
           <Separator className="flex-1" />
-          <span className="text-sm text-muted-foreground">or</span>
+          <span className="text-muted-foreground text-sm">or</span>
           <Separator className="flex-1" />
         </div>
 
         <SocialAuthButtons mode="signin" />
 
-        <p className="text-center text-sm text-muted-foreground">
+        <p className="text-muted-foreground text-center text-sm">
           Don&apos;t have an account?{" "}
           <Link href="/sign-up" className="text-primary hover:underline">
             Sign up

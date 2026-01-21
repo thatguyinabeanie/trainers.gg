@@ -86,7 +86,7 @@ export function SignUpForm() {
             We&apos;ve sent you a verification link. Please check your email and
             click the link to verify your account.
           </p>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-muted-foreground text-sm">
             Already verified?{" "}
             <Link href="/sign-in" className="text-primary hover:underline">
               Sign in
@@ -105,7 +105,7 @@ export function SignUpForm() {
       <CardContent className="flex flex-col gap-6">
         <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
           {error && (
-            <div className="rounded-lg bg-destructive/10 p-3 text-sm text-destructive">
+            <div className="bg-destructive/10 text-destructive rounded-lg p-3 text-sm">
               {error}
             </div>
           )}
@@ -121,7 +121,7 @@ export function SignUpForm() {
               {...register("email")}
             />
             {errors.email && (
-              <p className="text-sm text-destructive">{errors.email.message}</p>
+              <p className="text-destructive text-sm">{errors.email.message}</p>
             )}
           </div>
 
@@ -136,11 +136,11 @@ export function SignUpForm() {
               {...register("password")}
             />
             {errors.password && (
-              <p className="text-sm text-destructive">
+              <p className="text-destructive text-sm">
                 {errors.password.message}
               </p>
             )}
-            <ul className="list-inside list-disc text-xs text-muted-foreground">
+            <ul className="text-muted-foreground list-inside list-disc text-xs">
               <li>At least 8 characters</li>
               <li>At least one uppercase letter</li>
               <li>At least one lowercase letter</li>
@@ -159,7 +159,7 @@ export function SignUpForm() {
               {...register("confirmPassword")}
             />
             {errors.confirmPassword && (
-              <p className="text-sm text-destructive">
+              <p className="text-destructive text-sm">
                 {errors.confirmPassword.message}
               </p>
             )}
@@ -172,13 +172,13 @@ export function SignUpForm() {
 
         <div className="flex items-center gap-4">
           <Separator className="flex-1" />
-          <span className="text-sm text-muted-foreground">or</span>
+          <span className="text-muted-foreground text-sm">or</span>
           <Separator className="flex-1" />
         </div>
 
         <SocialAuthButtons mode="signup" />
 
-        <p className="text-center text-sm text-muted-foreground">
+        <p className="text-muted-foreground text-center text-sm">
           Already have an account?{" "}
           <Link href="/sign-in" className="text-primary hover:underline">
             Sign in

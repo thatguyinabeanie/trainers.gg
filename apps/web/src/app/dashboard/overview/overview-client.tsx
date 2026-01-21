@@ -79,7 +79,8 @@ export function OverviewClient() {
           {user?.profile?.displayName ||
             (user?.user_metadata?.full_name as string | undefined) ||
             (user?.user_metadata?.name as string | undefined) ||
-            "Trainer"}!
+            "Trainer"}
+          !
         </h2>
         <p className="text-muted-foreground text-sm">
           Here&apos;s your competitive overview across all profiles

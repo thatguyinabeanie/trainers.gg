@@ -73,13 +73,13 @@ export function ResetPasswordForm() {
         <CardTitle className="text-2xl">Reset Password</CardTitle>
       </CardHeader>
       <CardContent className="flex flex-col gap-6">
-        <p className="text-center text-sm text-muted-foreground">
+        <p className="text-muted-foreground text-center text-sm">
           Enter your new password below.
         </p>
 
         <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
           {error && (
-            <div className="rounded-lg bg-destructive/10 p-3 text-sm text-destructive">
+            <div className="bg-destructive/10 text-destructive rounded-lg p-3 text-sm">
               {error}
             </div>
           )}
@@ -95,11 +95,11 @@ export function ResetPasswordForm() {
               {...register("password")}
             />
             {errors.password && (
-              <p className="text-sm text-destructive">
+              <p className="text-destructive text-sm">
                 {errors.password.message}
               </p>
             )}
-            <ul className="list-inside list-disc text-xs text-muted-foreground">
+            <ul className="text-muted-foreground list-inside list-disc text-xs">
               <li>At least 8 characters</li>
               <li>At least one uppercase letter</li>
               <li>At least one lowercase letter</li>
@@ -118,7 +118,7 @@ export function ResetPasswordForm() {
               {...register("confirmPassword")}
             />
             {errors.confirmPassword && (
-              <p className="text-sm text-destructive">
+              <p className="text-destructive text-sm">
                 {errors.confirmPassword.message}
               </p>
             )}
