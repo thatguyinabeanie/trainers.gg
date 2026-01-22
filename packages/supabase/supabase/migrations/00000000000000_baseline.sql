@@ -240,7 +240,7 @@ ALTER TYPE "public"."user_tier" OWNER TO "postgres";
 -- FUNCTIONS
 -- =============================================================================
 
-CREATE OR REPLACE FUNCTION "public"."get_current_profile_id"() RETURNS "bigint"
+CREATE OR REPLACE FUNCTION "public"."get_current_profile_id"() RETURNS bigint
     LANGUAGE "sql" STABLE SECURITY DEFINER
     AS $$
   SELECT p.id FROM profiles p
