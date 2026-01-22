@@ -179,8 +179,9 @@ create_env_file() {
   # Get keys from supabase status using JSON output
   STATUS_JSON=$($SUPABASE_CMD status --output json 2>/dev/null || echo "{}")
   
-  ANON_KEY=$(echo "$STATUS_JSON" | grep -o '"anon_key":"[^"]*"' | cut -d'"' -f4 || echo "")
-  SERVICE_KEY=$(echo "$STATUS_JSON" | grep -o '"service_role_key":"[^"]*"' | cut -d'"' -f4 || echo "")
+  # Extract keys - JSON format has spaces: "KEY": "value"
+  ANON_KEY=$(echo "$STATUS_JSON" | grep '"ANON_KEY"' | sed 's/.*"ANON_KEY": *"\([^"]*\)".*/\1/')
+  SERVICE_KEY=$(echo "$STATUS_JSON" | grep '"SERVICE_ROLE_KEY"' | sed 's/.*"SERVICE_ROLE_KEY": *"\([^"]*\)".*/\1/')
   
   if [ -n "$ANON_KEY" ] && [ -n "$SERVICE_KEY" ]; then
     cat > "$ENV_FILE" << EOF
