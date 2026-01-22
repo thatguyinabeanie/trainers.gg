@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 
 interface RecentActivityProps {
   activities: Array<{
-    id: string;
+    id: number;
     tournamentName: string;
     opponentName: string;
     result: string;

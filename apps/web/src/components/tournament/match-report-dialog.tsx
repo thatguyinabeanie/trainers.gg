@@ -34,7 +34,7 @@ import {
 import { toast } from "sonner";
 
 interface MatchReportDialogProps {
-  matchId: string | null;
+  matchId: number | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onReportSubmitted?: () => void;
@@ -47,7 +47,7 @@ export function MatchReportDialog({
   onReportSubmitted,
 }: MatchReportDialogProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [winnerId, setWinnerId] = useState<string | null>(null);
+  const [winnerId, setWinnerId] = useState<number | null>(null);
   const [player1Score, setPlayer1Score] = useState("2");
   const [player2Score, setPlayer2Score] = useState("0");
 
@@ -66,8 +66,8 @@ export function MatchReportDialog({
     (
       supabase,
       args: {
-        matchId: string;
-        winnerId: string;
+        matchId: number;
+        winnerId: number;
         player1Score: number;
         player2Score: number;
       }
@@ -82,7 +82,7 @@ export function MatchReportDialog({
   );
 
   const { mutateAsync: startMatchMutation } = useSupabaseMutation(
-    (supabase, args: { matchId: string }) => startMatch(supabase, args.matchId)
+    (supabase, args: { matchId: number }) => startMatch(supabase, args.matchId)
   );
 
   const handleStartMatch = async () => {
@@ -354,13 +354,15 @@ export function MatchReportDialog({
               <div className="space-y-3">
                 <Label>Select Winner</Label>
                 <RadioGroup
-                  value={winnerId || ""}
-                  onValueChange={(value: string) => setWinnerId(value)}
+                  value={winnerId?.toString() ?? ""}
+                  onValueChange={(value: string) =>
+                    setWinnerId(value ? Number(value) : null)
+                  }
                   disabled={isSubmitting}
                 >
                   {p1 && (
                     <div className="flex items-center space-x-2">
-                      <RadioGroupItem value={p1.id} id="winner-1" />
+                      <RadioGroupItem value={String(p1.id)} id="winner-1" />
                       <Label
                         htmlFor="winner-1"
                         className="flex-1 cursor-pointer"
@@ -371,7 +373,7 @@ export function MatchReportDialog({
                   )}
                   {p2 && (
                     <div className="flex items-center space-x-2">
-                      <RadioGroupItem value={p2.id} id="winner-2" />
+                      <RadioGroupItem value={String(p2.id)} id="winner-2" />
                       <Label
                         htmlFor="winner-2"
                         className="flex-1 cursor-pointer"

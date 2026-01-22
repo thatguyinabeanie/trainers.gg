@@ -32,7 +32,7 @@ import { Search, MoreHorizontal, UserCheck, UserX, Mail } from "lucide-react";
 
 interface TournamentRegistrationsProps {
   tournament: {
-    id: string;
+    id: number;
     status: string;
     rental_team_photos_enabled?: boolean | null;
   };

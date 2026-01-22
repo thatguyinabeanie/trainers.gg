@@ -6,7 +6,7 @@
  * Form data for creating a new tournament
  */
 export interface TournamentFormData {
-  organizationId?: string;
+  organizationId?: number;
   name: string;
   slug: string;
   description?: string;
@@ -77,7 +77,7 @@ export interface TournamentPhase {
  * Selected player for invitations
  */
 export interface SelectedPlayer {
-  id: string;
+  id: number;
   username: string;
   displayName: string;
   avatarUrl?: string;

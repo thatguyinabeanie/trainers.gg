@@ -79,7 +79,7 @@ export async function createOrganization(
  */
 export async function updateOrganization(
   supabase: TypedClient,
-  organizationId: string,
+  organizationId: number,
   updates: {
     name?: string;
     description?: string;
@@ -125,8 +125,8 @@ export async function updateOrganization(
  */
 export async function inviteToOrganization(
   supabase: TypedClient,
-  organizationId: string,
-  invitedProfileId: string
+  organizationId: number,
+  invitedProfileId: number
 ) {
   const profile = await getCurrentProfile(supabase);
   if (!profile) throw new Error("Not authenticated");
@@ -178,7 +178,7 @@ export async function inviteToOrganization(
  */
 export async function acceptOrganizationInvitation(
   supabase: TypedClient,
-  invitationId: string
+  invitationId: number
 ) {
   const profile = await getCurrentProfile(supabase);
   if (!profile) throw new Error("Not authenticated");
@@ -224,7 +224,7 @@ export async function acceptOrganizationInvitation(
  */
 export async function declineOrganizationInvitation(
   supabase: TypedClient,
-  invitationId: string
+  invitationId: number
 ) {
   const profile = await getCurrentProfile(supabase);
   if (!profile) throw new Error("Not authenticated");
@@ -256,7 +256,7 @@ export async function declineOrganizationInvitation(
  */
 export async function leaveOrganization(
   supabase: TypedClient,
-  organizationId: string
+  organizationId: number
 ) {
   const profile = await getCurrentProfile(supabase);
   if (!profile) throw new Error("Not authenticated");
@@ -289,8 +289,8 @@ export async function leaveOrganization(
  */
 export async function removeMember(
   supabase: TypedClient,
-  organizationId: string,
-  profileId: string
+  organizationId: number,
+  profileId: number
 ) {
   const profile = await getCurrentProfile(supabase);
   if (!profile) throw new Error("Not authenticated");

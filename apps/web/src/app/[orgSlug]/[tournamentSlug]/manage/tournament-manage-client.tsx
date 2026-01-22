@@ -94,10 +94,10 @@ export function TournamentManageClient({
 
   // Type assertion for organization
   const organization = tournament.organization as {
-    id: string;
+    id: number;
     name: string;
     slug: string;
-    owner_profile_id: string;
+    owner_profile_id: number;
   } | null;
 
   // Permission check

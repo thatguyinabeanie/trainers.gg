@@ -12,16 +12,16 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Search, UserPlus, Loader2, X, Users, Star } from "lucide-react";
 
 interface PlayerSearchProps {
-  tournamentId: string;
+  tournamentId: number;
   selectedPlayers: SelectedPlayer[];
   onSelectPlayer: (player: SelectedPlayer) => void;
-  onRemovePlayer: (playerId: string) => void;
-  excludePlayerIds?: string[];
+  onRemovePlayer: (playerId: number) => void;
+  excludePlayerIds?: number[];
   maxSelections?: number;
 }
 
 interface SearchResult {
-  id: string;
+  id: number;
   username: string;
   display_name: string;
   avatar_url?: string | null;

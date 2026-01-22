@@ -8,7 +8,7 @@ import Link from "next/link";
 
 interface OrganizerAccessProps {
   organizations: Array<{
-    id: string;
+    id: number;
     name: string;
     role: string;
   }>;
