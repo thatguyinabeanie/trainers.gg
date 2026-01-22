@@ -2667,6 +2667,17 @@ ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON TAB
 ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON TABLES TO "service_role";
 
 
+-- =============================================================================
+-- AUTH TRIGGER
+-- =============================================================================
+-- This trigger was created via the Supabase dashboard and is needed to
+-- automatically create user and profile records when a new auth user signs up.
+-- The update_*_updated_at triggers are already defined earlier in this file.
+
+CREATE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW
+  EXECUTE FUNCTION public.handle_new_user();
 
 
 
