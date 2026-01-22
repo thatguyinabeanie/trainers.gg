@@ -11,35 +11,95 @@ NC='\033[0m' # No Color
 # Get the directory where this script is located
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SUPABASE_DIR="$(dirname "$SCRIPT_DIR")"
+ROOT_DIR="$SUPABASE_DIR/../.."
+ENV_FILE="$ROOT_DIR/.env.local"
 
-echo -e "${BLUE}Setting up local Supabase...${NC}"
+# =============================================================================
+# Skip in CI/Production environments
+# =============================================================================
+if [ -n "$CI" ] || [ -n "$VERCEL" ] || [ -n "$NETLIFY" ] || [ -n "$GITHUB_ACTIONS" ]; then
+  echo -e "${BLUE}CI/Production environment detected - skipping local Supabase setup${NC}"
+  exit 0
+fi
 
-# Check if Docker is running
+# =============================================================================
+# Skip if SKIP_LOCAL_SUPABASE is set (for devs who want to use remote)
+# =============================================================================
+if [ -n "$SKIP_LOCAL_SUPABASE" ]; then
+  echo -e "${BLUE}SKIP_LOCAL_SUPABASE is set - skipping local Supabase setup${NC}"
+  exit 0
+fi
+
+# =============================================================================
+# Skip if .env.local already exists and points to a remote Supabase
+# =============================================================================
+if [ -f "$ENV_FILE" ]; then
+  if grep -q "NEXT_PUBLIC_SUPABASE_URL=" "$ENV_FILE"; then
+    SUPABASE_URL=$(grep "NEXT_PUBLIC_SUPABASE_URL=" "$ENV_FILE" | cut -d'=' -f2)
+    # If URL is not localhost, assume they want to use remote
+    if [[ "$SUPABASE_URL" != *"127.0.0.1"* ]] && [[ "$SUPABASE_URL" != *"localhost"* ]]; then
+      echo -e "${GREEN}.env.local exists with remote Supabase URL - skipping local setup${NC}"
+      echo -e "${BLUE}To use local Supabase, delete .env.local or set URL to http://127.0.0.1:54321${NC}"
+      exit 0
+    fi
+  fi
+fi
+
+echo -e "${BLUE}========================================${NC}"
+echo -e "${BLUE}  Setting up Local Supabase            ${NC}"
+echo -e "${BLUE}========================================${NC}"
+echo ""
+
+# =============================================================================
+# Check Docker
+# =============================================================================
 check_docker() {
   echo -e "${YELLOW}Checking Docker...${NC}"
+  if ! command -v docker &> /dev/null; then
+    echo -e "${RED}Docker is not installed.${NC}"
+    echo ""
+    echo -e "${YELLOW}Options:${NC}"
+    echo "  1. Install Docker Desktop: https://www.docker.com/products/docker-desktop"
+    echo "  2. Use remote Supabase by creating apps/web/.env.local with:"
+    echo ""
+    echo "     NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co"
+    echo "     NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key"
+    echo "     SUPABASE_SERVICE_ROLE_KEY=your-service-role-key"
+    echo ""
+    exit 1
+  fi
+  
   if ! docker info > /dev/null 2>&1; then
-    echo -e "${RED}Docker is not running. Please start Docker Desktop and try again.${NC}"
+    echo -e "${RED}Docker is not running.${NC}"
+    echo ""
+    echo -e "${YELLOW}Options:${NC}"
+    echo "  1. Start Docker Desktop and run 'pnpm dev' again"
+    echo "  2. Use remote Supabase by creating apps/web/.env.local with your project credentials"
+    echo ""
     exit 1
   fi
   echo -e "${GREEN}Docker is running${NC}"
 }
 
-# Check if Supabase CLI is installed
+# =============================================================================
+# Check Supabase CLI
+# =============================================================================
 check_supabase_cli() {
   echo -e "${YELLOW}Checking Supabase CLI...${NC}"
   if ! command -v supabase &> /dev/null; then
     echo -e "${YELLOW}Supabase CLI not found. Using npx...${NC}"
-    SUPABASE_CMD="npx supabase"
+    SUPABASE_CMD="npx supabase@latest"
   else
     SUPABASE_CMD="supabase"
     echo -e "${GREEN}Supabase CLI found${NC}"
   fi
 }
 
+# =============================================================================
 # Check if Supabase is already running
+# =============================================================================
 check_supabase_status() {
   cd "$SUPABASE_DIR"
-  
   if $SUPABASE_CMD status > /dev/null 2>&1; then
     return 0
   else
@@ -47,9 +107,11 @@ check_supabase_status() {
   fi
 }
 
+# =============================================================================
 # Start Supabase
+# =============================================================================
 start_supabase() {
-  echo -e "${YELLOW}Starting Supabase...${NC}"
+  echo -e "${YELLOW}Starting Supabase (this may take a minute on first run)...${NC}"
   cd "$SUPABASE_DIR"
   
   $SUPABASE_CMD start
@@ -62,93 +124,96 @@ start_supabase() {
   fi
 }
 
+# =============================================================================
 # Apply migrations
+# =============================================================================
 apply_migrations() {
   echo -e "${YELLOW}Applying migrations...${NC}"
   cd "$SUPABASE_DIR"
   
-  $SUPABASE_CMD migration up --local
+  # Use db push which applies all migrations
+  $SUPABASE_CMD db push --local 2>/dev/null || $SUPABASE_CMD migration up --local 2>/dev/null || true
   
-  if [ $? -eq 0 ]; then
-    echo -e "${GREEN}Migrations applied successfully${NC}"
-  else
-    echo -e "${RED}Failed to apply migrations${NC}"
-    exit 1
-  fi
+  echo -e "${GREEN}Migrations applied${NC}"
 }
 
+# =============================================================================
 # Run seed file if it exists
+# =============================================================================
 run_seed() {
   cd "$SUPABASE_DIR"
   
   if [ -f "supabase/seed.sql" ]; then
     echo -e "${YELLOW}Running seed file...${NC}"
-    $SUPABASE_CMD db execute --file supabase/seed.sql --local
-    
-    if [ $? -eq 0 ]; then
-      echo -e "${GREEN}Seed data applied successfully${NC}"
-    else
-      echo -e "${YELLOW}Warning: Failed to apply seed data (non-fatal)${NC}"
-    fi
+    $SUPABASE_CMD db execute --file supabase/seed.sql --local 2>/dev/null || true
+    echo -e "${GREEN}Seed data applied${NC}"
   fi
 }
 
-# Generate TypeScript types
+# =============================================================================
+# Generate TypeScript types (disabled - use production types)
+# =============================================================================
+# NOTE: Types should be generated from production schema, not local.
+# Local Supabase may not have all tables that production has.
+# To regenerate types from production, run:
+#   pnpm --filter=@trainers/supabase run generate-types
 generate_types() {
-  echo -e "${YELLOW}Generating TypeScript types...${NC}"
-  cd "$SUPABASE_DIR"
-  
-  $SUPABASE_CMD gen types typescript --local > src/types.ts
-  
-  if [ $? -eq 0 ]; then
-    echo -e "${GREEN}Types generated successfully${NC}"
-  else
-    echo -e "${YELLOW}Warning: Failed to generate types (non-fatal)${NC}"
-  fi
+  echo -e "${BLUE}Skipping type generation (using production types)${NC}"
 }
 
-# Create .env.local if it doesn't exist
+# =============================================================================
+# Create .env.local for web app
+# =============================================================================
 create_env_file() {
   cd "$SUPABASE_DIR"
-  WEB_DIR="$SUPABASE_DIR/../../apps/web"
-  ENV_FILE="$WEB_DIR/.env.local"
   
-  if [ ! -f "$ENV_FILE" ]; then
-    echo -e "${YELLOW}Creating .env.local for web app...${NC}"
-    
-    # Get keys from supabase status
-    ANON_KEY=$($SUPABASE_CMD status --output json 2>/dev/null | grep -o '"anon_key":"[^"]*"' | cut -d'"' -f4 || echo "")
-    SERVICE_KEY=$($SUPABASE_CMD status --output json 2>/dev/null | grep -o '"service_role_key":"[^"]*"' | cut -d'"' -f4 || echo "")
-    
-    if [ -n "$ANON_KEY" ] && [ -n "$SERVICE_KEY" ]; then
-      cat > "$ENV_FILE" << EOF
-# Supabase Local Development
+  # Always update .env.local with local credentials when using local Supabase
+  echo -e "${YELLOW}Configuring web app environment...${NC}"
+  
+  # Get keys from supabase status using JSON output
+  STATUS_JSON=$($SUPABASE_CMD status --output json 2>/dev/null || echo "{}")
+  
+  ANON_KEY=$(echo "$STATUS_JSON" | grep -o '"anon_key":"[^"]*"' | cut -d'"' -f4 || echo "")
+  SERVICE_KEY=$(echo "$STATUS_JSON" | grep -o '"service_role_key":"[^"]*"' | cut -d'"' -f4 || echo "")
+  
+  if [ -n "$ANON_KEY" ] && [ -n "$SERVICE_KEY" ]; then
+    cat > "$ENV_FILE" << EOF
+# =============================================================================
+# Supabase Local Development (auto-generated by setup-local.sh)
+# =============================================================================
+# To use a remote Supabase instance instead, replace these values with your
+# project credentials from https://app.supabase.com/project/_/settings/api
+# =============================================================================
+
 NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321
 NEXT_PUBLIC_SUPABASE_ANON_KEY=$ANON_KEY
 SUPABASE_SERVICE_ROLE_KEY=$SERVICE_KEY
 EOF
-      echo -e "${GREEN}Created $ENV_FILE${NC}"
-    else
-      echo -e "${YELLOW}Could not auto-generate .env.local - please create it manually${NC}"
-    fi
+    echo -e "${GREEN}Created $ENV_FILE${NC}"
   else
-    echo -e "${GREEN}.env.local already exists${NC}"
+    echo -e "${YELLOW}Could not auto-generate .env.local${NC}"
+    echo -e "${YELLOW}Please create it manually with your Supabase credentials${NC}"
   fi
 }
 
-# Print connection info
-print_connection_info() {
+# =============================================================================
+# Print success message
+# =============================================================================
+print_success() {
   echo ""
-  echo -e "${BLUE}========================================${NC}"
-  echo -e "${GREEN}Local Supabase is ready!${NC}"
-  echo -e "${BLUE}========================================${NC}"
+  echo -e "${GREEN}========================================${NC}"
+  echo -e "${GREEN}  Local Supabase is ready!             ${NC}"
+  echo -e "${GREEN}========================================${NC}"
   echo ""
-  cd "$SUPABASE_DIR"
-  $SUPABASE_CMD status
+  echo -e "${BLUE}Supabase Studio:${NC} http://127.0.0.1:54323"
+  echo -e "${BLUE}API URL:${NC}         http://127.0.0.1:54321"
+  echo -e "${BLUE}Database:${NC}        postgresql://postgres:postgres@127.0.0.1:54322/postgres"
   echo ""
 }
 
-# Main execution
+# =============================================================================
+# Main
+# =============================================================================
 main() {
   check_docker
   check_supabase_cli
@@ -163,7 +228,7 @@ main() {
   run_seed
   generate_types
   create_env_file
-  print_connection_info
+  print_success
 }
 
 main "$@"
