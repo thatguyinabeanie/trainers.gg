@@ -621,11 +621,11 @@ ALTER TABLE "public"."profile_group_roles" OWNER TO "postgres";
 
 -- -----------------------------------------------------------------------------
 -- feature_usage
--- id becomes bigint, entity_id stays uuid (polymorphic reference)
+-- id becomes bigint, entity_id becomes bigint (polymorphic reference to profiles/orgs)
 -- -----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS "public"."feature_usage" (
     "id" bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
-    "entity_id" "uuid" NOT NULL,
+    "entity_id" bigint NOT NULL,
     "entity_type" "public"."entity_type" NOT NULL,
     "feature_key" "text" NOT NULL,
     "period_start" timestamp with time zone NOT NULL,
@@ -640,11 +640,11 @@ ALTER TABLE "public"."feature_usage" OWNER TO "postgres";
 
 -- -----------------------------------------------------------------------------
 -- subscriptions
--- id becomes bigint, entity_id stays uuid (polymorphic reference)
+-- id becomes bigint, entity_id becomes bigint (polymorphic reference to profiles/orgs)
 -- -----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS "public"."subscriptions" (
     "id" bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
-    "entity_id" "uuid" NOT NULL,
+    "entity_id" bigint NOT NULL,
     "entity_type" "public"."entity_type" NOT NULL,
     "tier" "text" NOT NULL,
     "status" "public"."subscription_status" DEFAULT 'active'::"public"."subscription_status",
