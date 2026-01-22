@@ -13,6 +13,7 @@ export {
   getProfileByUsername,
   getProfileByUserId,
   searchProfiles,
+  getEmailByUsername,
 } from "./users";
 
 // Organization queries

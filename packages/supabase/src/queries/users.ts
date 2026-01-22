@@ -149,3 +149,32 @@ export async function searchProfiles(
   if (error) throw error;
   return data ?? [];
 }
+
+/**
+ * Get user email by username (checks both users.username and profiles.username)
+ * Used for login with username support
+ */
+export async function getEmailByUsername(
+  supabase: TypedClient,
+  username: string
+): Promise<string | null> {
+  // First try users.username (direct match)
+  const { data: user } = await supabase
+    .from("users")
+    .select("email")
+    .eq("username", username)
+    .maybeSingle();
+
+  if (user?.email) return user.email;
+
+  // Fallback: check profiles.username and join to users
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("user:users(email)")
+    .eq("username", username)
+    .maybeSingle();
+
+  // Type assertion since we know the structure
+  const profileUser = profile?.user as { email: string | null } | null;
+  return profileUser?.email ?? null;
+}

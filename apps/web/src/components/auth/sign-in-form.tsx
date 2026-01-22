@@ -13,12 +13,21 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { SocialAuthButtons } from "./social-auth-buttons";
 import { useAuth } from "@/hooks/use-auth";
+import { resolveLoginIdentifier } from "@/app/(auth-pages)/actions";
 
 const signInSchema = z.object({
-  email: z
+  identifier: z
     .string()
-    .min(1, "Email is required")
-    .email("Please enter a valid email address"),
+    .min(1, "Email or username is required")
+    .refine(
+      (val) => {
+        // Allow email format or username format (alphanumeric, underscores, hyphens)
+        const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val);
+        const isUsername = /^[a-zA-Z0-9_-]{3,30}$/.test(val);
+        return isEmail || isUsername;
+      },
+      { message: "Please enter a valid email or username" }
+    ),
   password: z.string().min(1, "Password is required"),
 });
 
@@ -43,8 +52,18 @@ export function SignInForm() {
     setIsSubmitting(true);
 
     try {
+      // Resolve username to email if needed
+      const { email, error: resolveError } = await resolveLoginIdentifier(
+        data.identifier
+      );
+
+      if (resolveError || !email) {
+        setError(resolveError || "Could not find account");
+        return;
+      }
+
       const { error: signInError } = await signInWithEmail(
-        data.email,
+        email,
         data.password
       );
 
@@ -78,17 +97,19 @@ export function SignInForm() {
           )}
 
           <div className="flex flex-col gap-2">
-            <Label htmlFor="email">Email</Label>
+            <Label htmlFor="identifier">Email or Username</Label>
             <Input
-              id="email"
-              type="email"
-              placeholder="you@example.com"
-              autoComplete="email"
-              aria-invalid={errors.email ? "true" : undefined}
-              {...register("email")}
+              id="identifier"
+              type="text"
+              placeholder="you@example.com or username"
+              autoComplete="username"
+              aria-invalid={errors.identifier ? "true" : undefined}
+              {...register("identifier")}
             />
-            {errors.email && (
-              <p className="text-destructive text-sm">{errors.email.message}</p>
+            {errors.identifier && (
+              <p className="text-destructive text-sm">
+                {errors.identifier.message}
+              </p>
             )}
           </div>
 
