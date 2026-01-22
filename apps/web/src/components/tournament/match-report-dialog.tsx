@@ -226,7 +226,7 @@ export function MatchReportDialog({
               className={`rounded-lg border p-4 transition-colors ${
                 winnerId === p1?.id
                   ? "border-green-500 bg-green-500/10"
-                  : match.winner_profile_id === p1?.id
+                  : match.winner_alt_id === p1?.id
                     ? "border-green-500/50 bg-green-500/5"
                     : ""
               }`}
@@ -244,7 +244,7 @@ export function MatchReportDialog({
                   </p>
                   <p className="text-muted-foreground text-xs">Player 1</p>
                 </div>
-                {match.winner_profile_id === p1?.id && (
+                {match.winner_alt_id === p1?.id && (
                   <Badge variant="default" className="bg-green-600">
                     <Trophy className="mr-1 h-3 w-3" />
                     Winner
@@ -292,7 +292,7 @@ export function MatchReportDialog({
               className={`rounded-lg border p-4 transition-colors ${
                 winnerId === p2?.id
                   ? "border-green-500 bg-green-500/10"
-                  : match.winner_profile_id === p2?.id
+                  : match.winner_alt_id === p2?.id
                     ? "border-green-500/50 bg-green-500/5"
                     : ""
               }`}
@@ -310,7 +310,7 @@ export function MatchReportDialog({
                   </p>
                   <p className="text-muted-foreground text-xs">Player 2</p>
                 </div>
-                {match.winner_profile_id === p2?.id && (
+                {match.winner_alt_id === p2?.id && (
                   <Badge variant="default" className="bg-green-600">
                     <Trophy className="mr-1 h-3 w-3" />
                     Winner

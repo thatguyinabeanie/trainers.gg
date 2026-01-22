@@ -68,16 +68,16 @@ export async function completeProfile(data: {
       return { success: false, error: "Failed to update profile" };
     }
 
-    // Also update the profile username
-    const { error: profileError } = await supabase
-      .from("profiles")
+    // Also update the alt username
+    const { error: altError } = await supabase
+      .from("alts")
       .update({
         username: data.username.toLowerCase(),
       })
       .eq("user_id", user.id);
 
-    if (profileError) {
-      console.error("Error updating profile:", profileError);
+    if (altError) {
+      console.error("Error updating alt:", altError);
       // Non-fatal, continue
     }
 

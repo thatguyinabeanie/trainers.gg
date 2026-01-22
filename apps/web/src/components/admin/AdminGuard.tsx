@@ -73,7 +73,7 @@ export default function AdminGuard({
     return null; // Will redirect in useEffect
   }
 
-  if (!user.profile) {
+  if (!user.alt) {
     return (
       <div className="container mx-auto px-4 py-8 md:px-6">
         <Alert className="mx-auto max-w-2xl">

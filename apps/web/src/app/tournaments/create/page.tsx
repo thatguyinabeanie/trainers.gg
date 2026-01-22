@@ -59,15 +59,15 @@ export default function CreateTournamentPage() {
 
   const orgsQueryFn = useCallback(
     (supabase: Parameters<typeof listMyOrganizations>[0]) => {
-      if (!currentUser?.profile?.id) return Promise.resolve([]);
-      return listMyOrganizations(supabase, currentUser.profile.id);
+      if (!currentUser?.alt?.id) return Promise.resolve([]);
+      return listMyOrganizations(supabase, currentUser.alt.id);
     },
-    [currentUser?.profile?.id]
+    [currentUser?.alt?.id]
   );
 
   // Fetch user's organizations for the form
   const { data: _userOrganizations } = useSupabaseQuery(orgsQueryFn, [
-    currentUser?.profile?.id,
+    currentUser?.alt?.id,
   ]);
 
   const { mutateAsync: createTournamentMutation } = useSupabaseMutation(

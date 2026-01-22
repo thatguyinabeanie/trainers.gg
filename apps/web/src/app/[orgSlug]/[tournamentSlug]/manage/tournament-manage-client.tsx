@@ -97,12 +97,11 @@ export function TournamentManageClient({
     id: number;
     name: string;
     slug: string;
-    owner_profile_id: number;
+    owner_alt_id: number;
   } | null;
 
   // Permission check
-  const isOrganizer =
-    currentUser.profile?.id === organization?.owner_profile_id;
+  const isOrganizer = currentUser.alt?.id === organization?.owner_alt_id;
 
   if (!isOrganizer) {
     return (

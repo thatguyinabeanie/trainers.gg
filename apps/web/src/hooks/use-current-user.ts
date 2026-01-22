@@ -18,10 +18,12 @@ export function useCurrentUser() {
 
   return {
     user,
-    profile: user?.profile ?? null,
+    alt: user?.alt ?? null,
+    // Keep profile as alias for backwards compatibility during migration
+    profile: user?.alt ?? null,
     isLoading,
     error,
     isAuthenticated: !!user,
-    hasProfile: !!user?.profile,
+    hasProfile: !!user?.alt,
   };
 }

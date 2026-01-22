@@ -102,11 +102,10 @@ export function TournamentDetailClient({
     id: number;
     name: string;
     slug: string;
-    owner_profile_id: number;
+    owner_alt_id: number;
   } | null;
 
-  const isOrganizer =
-    currentUser?.profile?.id === organization?.owner_profile_id;
+  const isOrganizer = currentUser?.alt?.id === organization?.owner_alt_id;
   const canManage = isOrganizer; // Could extend to check org membership
 
   const formatDate = (dateStr?: string | null) => {

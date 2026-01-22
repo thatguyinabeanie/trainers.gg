@@ -54,7 +54,7 @@ export function TournamentRegistrations({
   const filteredRegistrations =
     registrations?.filter(
       (reg) =>
-        reg.profile?.display_name
+        reg.alt?.display_name
           ?.toLowerCase()
           .includes(searchTerm.toLowerCase()) ||
         reg.team_name?.toLowerCase().includes(searchTerm.toLowerCase())
@@ -200,20 +200,18 @@ export function TournamentRegistrations({
                       <div className="flex items-center gap-3">
                         <Avatar className="h-8 w-8">
                           <AvatarImage
-                            src={registration.profile?.avatar_url ?? undefined}
+                            src={registration.alt?.avatar_url ?? undefined}
                           />
                           <AvatarFallback>
-                            {registration.profile?.display_name?.charAt(0) ||
-                              "?"}
+                            {registration.alt?.display_name?.charAt(0) || "?"}
                           </AvatarFallback>
                         </Avatar>
                         <div>
                           <div className="font-medium">
-                            {registration.profile?.display_name ||
-                              "Unknown Player"}
+                            {registration.alt?.display_name || "Unknown Player"}
                           </div>
                           <div className="text-muted-foreground text-sm">
-                            @{registration.profile?.username || "unknown"}
+                            @{registration.alt?.username || "unknown"}
                           </div>
                         </div>
                       </div>
