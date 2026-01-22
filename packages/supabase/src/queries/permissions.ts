@@ -4,15 +4,15 @@ import type { Database } from "../types";
 type TypedClient = SupabaseClient<Database>;
 
 /**
- * Get all permission keys for a profile through RBAC
- * (profile -> profile_group_roles -> group_roles -> roles -> role_permissions -> permissions)
+ * Get all permission keys for an alt through RBAC
+ * (alt -> alt_group_roles -> group_roles -> roles -> role_permissions -> permissions)
  */
 export async function getUserPermissions(
   supabase: TypedClient,
-  profileId: number
+  altId: number
 ): Promise<string[]> {
-  const { data: profileGroupRoles, error } = await supabase
-    .from("profile_group_roles")
+  const { data: altGroupRoles, error } = await supabase
+    .from("alt_group_roles")
     .select(
       `
       group_role:group_roles(
@@ -24,7 +24,7 @@ export async function getUserPermissions(
       )
     `
     )
-    .eq("profile_id", profileId);
+    .eq("alt_id", altId);
 
   if (error) {
     console.error("Error fetching user permissions:", error);
@@ -33,8 +33,8 @@ export async function getUserPermissions(
 
   const permissions = new Set<string>();
 
-  for (const pgr of profileGroupRoles ?? []) {
-    const groupRole = pgr.group_role as {
+  for (const agr of altGroupRoles ?? []) {
+    const groupRole = agr.group_role as {
       role: {
         role_permissions: { permission: { key: string } | null }[];
       } | null;
@@ -53,13 +53,13 @@ export async function getUserPermissions(
 }
 
 /**
- * Check if a profile has a specific permission
+ * Check if an alt has a specific permission
  */
 export async function hasPermission(
   supabase: TypedClient,
-  profileId: number,
+  altId: number,
   permission: string
 ): Promise<boolean> {
-  const permissions = await getUserPermissions(supabase, profileId);
+  const permissions = await getUserPermissions(supabase, altId);
   return permissions.includes(permission);
 }

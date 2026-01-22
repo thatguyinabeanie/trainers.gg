@@ -73,7 +73,7 @@ export default function CreateOrganizationPage() {
         description: "Your organization has been created successfully.",
       });
 
-      router.push(`/${slug.trim()}`);
+      router.push(`/organizations/${slug.trim()}`);
     } catch (error) {
       toast.error("Failed to create organization", {
         description:
@@ -157,7 +157,7 @@ export default function CreateOrganizationPage() {
               <Label htmlFor="slug">URL Slug *</Label>
               <div className="flex items-center gap-2">
                 <span className="text-muted-foreground text-sm">
-                  trainers.gg/
+                  trainers.gg/organizations/
                 </span>
                 <Input
                   id="slug"

@@ -61,14 +61,14 @@ export async function checkUsernameAvailability(
       return { available: false, error: null };
     }
 
-    // Check profiles table
-    const { data: existingProfile } = await supabase
-      .from("profiles")
+    // Check alts table
+    const { data: existingAlt } = await supabase
+      .from("alts")
       .select("id")
       .eq("username", trimmed)
       .maybeSingle();
 
-    if (existingProfile) {
+    if (existingAlt) {
       return { available: false, error: null };
     }
 

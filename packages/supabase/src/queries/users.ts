@@ -16,7 +16,7 @@ export async function getUserCount(supabase: TypedClient) {
 }
 
 /**
- * Get current authenticated user with profile
+ * Get current authenticated user with alt
  */
 export async function getCurrentUser(supabase: TypedClient) {
   const {
@@ -33,8 +33,8 @@ export async function getCurrentUser(supabase: TypedClient) {
 
   if (userError || !user) return null;
 
-  const { data: profile } = await supabase
-    .from("profiles")
+  const { data: alt } = await supabase
+    .from("alts")
     .select("*")
     .eq("user_id", user.id)
     .single();
@@ -43,13 +43,13 @@ export async function getCurrentUser(supabase: TypedClient) {
     id: user.id,
     email: user.email,
     name: user.name,
-    profile: profile
+    alt: alt
       ? {
-          id: profile.id,
-          displayName: profile.display_name,
-          username: profile.username,
-          bio: profile.bio,
-          avatarUrl: profile.avatar_url,
+          id: alt.id,
+          displayName: alt.display_name,
+          username: alt.username,
+          bio: alt.bio,
+          avatarUrl: alt.avatar_url,
         }
       : null,
   };
@@ -70,12 +70,9 @@ export async function getUserById(supabase: TypedClient, userId: string) {
 }
 
 /**
- * Get user with profile by ID
+ * Get user with alt by ID
  */
-export async function getUserWithProfile(
-  supabase: TypedClient,
-  userId: string
-) {
+export async function getUserWithAlt(supabase: TypedClient, userId: string) {
   const { data: user, error: userError } = await supabase
     .from("users")
     .select("*")
@@ -84,24 +81,24 @@ export async function getUserWithProfile(
 
   if (userError || !user) return null;
 
-  const { data: profile } = await supabase
-    .from("profiles")
+  const { data: alt } = await supabase
+    .from("alts")
     .select("*")
     .eq("user_id", userId)
     .single();
 
-  return { ...user, profile };
+  return { ...user, alt };
 }
 
 /**
- * Get profile by username
+ * Get alt by username
  */
-export async function getProfileByUsername(
+export async function getAltByUsername(
   supabase: TypedClient,
   username: string
 ) {
   const { data, error } = await supabase
-    .from("profiles")
+    .from("alts")
     .select(
       `
       *,
@@ -116,14 +113,11 @@ export async function getProfileByUsername(
 }
 
 /**
- * Get profile by user ID
+ * Get alt by user ID
  */
-export async function getProfileByUserId(
-  supabase: TypedClient,
-  userId: string
-) {
+export async function getAltByUserId(supabase: TypedClient, userId: string) {
   const { data, error } = await supabase
-    .from("profiles")
+    .from("alts")
     .select("*")
     .eq("user_id", userId)
     .single();
@@ -133,15 +127,15 @@ export async function getProfileByUserId(
 }
 
 /**
- * Search profiles by username or display name
+ * Search alts by username or display name
  */
-export async function searchProfiles(
+export async function searchAlts(
   supabase: TypedClient,
   query: string,
   limit = 10
 ) {
   const { data, error } = await supabase
-    .from("profiles")
+    .from("alts")
     .select("*")
     .or(`username.ilike.%${query}%,display_name.ilike.%${query}%`)
     .limit(limit);
@@ -151,7 +145,7 @@ export async function searchProfiles(
 }
 
 /**
- * Get user email by username (checks both users.username and profiles.username)
+ * Get user email by username (checks both users.username and alts.username)
  * Used for login with username support
  */
 export async function getEmailByUsername(
@@ -167,14 +161,30 @@ export async function getEmailByUsername(
 
   if (user?.email) return user.email;
 
-  // Fallback: check profiles.username and join to users
-  const { data: profile } = await supabase
-    .from("profiles")
+  // Fallback: check alts.username and join to users
+  const { data: alt } = await supabase
+    .from("alts")
     .select("user:users(email)")
     .eq("username", username)
     .maybeSingle();
 
   // Type assertion since we know the structure
-  const profileUser = profile?.user as { email: string | null } | null;
-  return profileUser?.email ?? null;
+  const altUser = alt?.user as { email: string | null } | null;
+  return altUser?.email ?? null;
 }
+
+// =============================================================================
+// Legacy aliases for backward compatibility (deprecated - use new names)
+// =============================================================================
+
+/** @deprecated Use getUserWithAlt instead */
+export const getUserWithProfile = getUserWithAlt;
+
+/** @deprecated Use getAltByUsername instead */
+export const getProfileByUsername = getAltByUsername;
+
+/** @deprecated Use getAltByUserId instead */
+export const getProfileByUserId = getAltByUserId;
+
+/** @deprecated Use searchAlts instead */
+export const searchProfiles = searchAlts;

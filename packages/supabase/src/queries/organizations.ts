@@ -57,7 +57,7 @@ export async function listOrganizations(
     .select(
       `
       *,
-      owner:profiles!organizations_owner_profile_id_fkey(*)
+      owner:alts!organizations_owner_alt_id_fkey(*)
     `,
       { count: "exact" }
     )
@@ -114,7 +114,7 @@ export async function getOrganizationBySlug(
     .select(
       `
       *,
-      owner:profiles!organizations_owner_profile_id_fkey(*)
+      owner:alts!organizations_owner_alt_id_fkey(*)
     `
     )
     .eq("slug", slug)
@@ -215,7 +215,7 @@ export async function getOrganizationById(supabase: TypedClient, id: number) {
     .select(
       `
       *,
-      owner:profiles!organizations_owner_profile_id_fkey(*)
+      owner:alts!organizations_owner_alt_id_fkey(*)
     `
     )
     .eq("id", id)
@@ -227,35 +227,35 @@ export async function getOrganizationById(supabase: TypedClient, id: number) {
 
 /**
  * List organizations where user is owner or member
- * If no profileId is provided, returns organizations for the current authenticated user
+ * If no altId is provided, returns organizations for the current authenticated user
  */
 export async function listMyOrganizations(
   supabase: TypedClient,
-  profileId?: number
+  altId?: number
 ) {
-  let targetProfileId: number | undefined = profileId;
+  let targetAltId: number | undefined = altId;
 
-  if (!targetProfileId) {
+  if (!targetAltId) {
     const {
       data: { user },
     } = await supabase.auth.getUser();
     if (!user) return [];
 
-    const { data: profile } = await supabase
-      .from("profiles")
+    const { data: alt } = await supabase
+      .from("alts")
       .select("id")
       .eq("user_id", user.id)
       .single();
 
-    if (!profile) return [];
-    targetProfileId = profile.id as number;
+    if (!alt) return [];
+    targetAltId = alt.id as number;
   }
 
   // Get organizations where user is owner
   const { data: ownedOrgs } = await supabase
     .from("organizations")
     .select("*")
-    .eq("owner_profile_id", targetProfileId);
+    .eq("owner_alt_id", targetAltId);
 
   // Get organizations where user is a member
   const { data: memberships } = await supabase
@@ -265,7 +265,7 @@ export async function listMyOrganizations(
       organization:organizations(*)
     `
     )
-    .eq("profile_id", targetProfileId!);
+    .eq("alt_id", targetAltId!);
 
   const ownedOrgsWithFlag = (ownedOrgs ?? []).map((org) => ({
     ...org,
@@ -278,10 +278,10 @@ export async function listMyOrganizations(
       (org): org is NonNullable<typeof org> => org !== null && org !== undefined
     )
     .map((org) => {
-      const typedOrg = org as { id: number; owner_profile_id: number };
+      const typedOrg = org as { id: number; owner_alt_id: number };
       return {
         ...org,
-        isOwner: typedOrg.owner_profile_id === targetProfileId,
+        isOwner: typedOrg.owner_alt_id === targetAltId,
       };
     });
 
@@ -300,22 +300,22 @@ export async function listMyOrganizations(
 export async function canManageOrganization(
   supabase: TypedClient,
   organizationId: number,
-  profileId: number
+  altId: number
 ) {
   // Check if owner
   const { data: org } = await supabase
     .from("organizations")
-    .select("owner_profile_id")
+    .select("owner_alt_id")
     .eq("id", organizationId)
     .single();
 
-  if (org?.owner_profile_id === profileId) {
+  if (org?.owner_alt_id === altId) {
     return true;
   }
 
   // Check if member with ORG_MANAGE permission through RBAC
-  const { data: profileGroupRoles } = await supabase
-    .from("profile_group_roles")
+  const { data: altGroupRoles } = await supabase
+    .from("alt_group_roles")
     .select(
       `
       group_role:group_roles(
@@ -328,10 +328,10 @@ export async function canManageOrganization(
       )
     `
     )
-    .eq("profile_id", profileId);
+    .eq("alt_id", altId);
 
-  for (const pgr of profileGroupRoles ?? []) {
-    const groupRole = pgr.group_role as {
+  for (const agr of altGroupRoles ?? []) {
+    const groupRole = agr.group_role as {
       group: { organization_id: number } | null;
       role: {
         role_permissions: { permission: { key: string } | null }[];
@@ -354,7 +354,7 @@ export async function canManageOrganization(
 }
 
 /**
- * List organization members with profile details
+ * List organization members with alt details
  */
 export async function listOrganizationMembers(
   supabase: TypedClient,
@@ -365,7 +365,7 @@ export async function listOrganizationMembers(
     .select(
       `
       *,
-      profile:profiles(*)
+      alt:alts(*)
     `
     )
     .eq("organization_id", organizationId);
@@ -375,21 +375,21 @@ export async function listOrganizationMembers(
 }
 
 /**
- * Check if profile is member of organization
+ * Check if alt is member of organization
  */
 export async function isOrganizationMember(
   supabase: TypedClient,
   organizationId: number,
-  profileId: number
+  altId: number
 ) {
   // Check if owner
   const { data: org } = await supabase
     .from("organizations")
-    .select("owner_profile_id")
+    .select("owner_alt_id")
     .eq("id", organizationId)
     .single();
 
-  if (org?.owner_profile_id === profileId) {
+  if (org?.owner_alt_id === altId) {
     return true;
   }
 
@@ -398,18 +398,18 @@ export async function isOrganizationMember(
     .from("organization_members")
     .select("id")
     .eq("organization_id", organizationId)
-    .eq("profile_id", profileId)
+    .eq("alt_id", altId)
     .single();
 
   return !!data;
 }
 
 /**
- * Get pending invitations for a profile
+ * Get pending invitations for an alt
  */
 export async function getMyOrganizationInvitations(
   supabase: TypedClient,
-  profileId: number
+  altId: number
 ) {
   const { data: invitations, error } = await supabase
     .from("organization_invitations")
@@ -417,10 +417,10 @@ export async function getMyOrganizationInvitations(
       `
       *,
       organization:organizations(*),
-      invited_by:profiles!organization_invitations_invited_by_profile_id_fkey(*)
+      invited_by:alts!organization_invitations_invited_by_alt_id_fkey(*)
     `
     )
-    .eq("invited_profile_id", profileId)
+    .eq("invited_alt_id", altId)
     .eq("status", "pending");
 
   if (error) throw error;
@@ -439,8 +439,8 @@ export async function getOrganizationInvitations(
     .select(
       `
       *,
-      invited_profile:profiles!organization_invitations_invited_profile_id_fkey(*),
-      invited_by:profiles!organization_invitations_invited_by_profile_id_fkey(*)
+      invited_alt:alts!organization_invitations_invited_alt_id_fkey(*),
+      invited_by:alts!organization_invitations_invited_by_alt_id_fkey(*)
     `
     )
     .eq("organization_id", organizationId)

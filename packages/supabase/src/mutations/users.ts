@@ -4,36 +4,36 @@ import type { Database } from "../types";
 type TypedClient = SupabaseClient<Database>;
 
 /**
- * Update user profile
+ * Update user alt
  */
-export async function updateProfile(
+export async function updateAlt(
   supabase: TypedClient,
-  profileId: number,
+  altId: number,
   updates: {
     displayName?: string;
     bio?: string;
     avatarUrl?: string;
   }
 ) {
-  // Verify the user owns this profile
+  // Verify the user owns this alt
   const {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) throw new Error("Not authenticated");
 
-  const { data: profile } = await supabase
-    .from("profiles")
+  const { data: alt } = await supabase
+    .from("alts")
     .select("user_id")
-    .eq("id", profileId)
+    .eq("id", altId)
     .single();
 
-  if (!profile) throw new Error("Profile not found");
-  if (profile.user_id !== user.id) {
-    throw new Error("You can only update your own profile");
+  if (!alt) throw new Error("Alt not found");
+  if (alt.user_id !== user.id) {
+    throw new Error("You can only update your own alt");
   }
 
   // Prepare update data
-  const updateData: Database["public"]["Tables"]["profiles"]["Update"] = {};
+  const updateData: Database["public"]["Tables"]["alts"]["Update"] = {};
   if (updates.displayName !== undefined)
     updateData.display_name = updates.displayName;
   if (updates.bio !== undefined) updateData.bio = updates.bio;
@@ -41,9 +41,9 @@ export async function updateProfile(
     updateData.avatar_url = updates.avatarUrl;
 
   const { error } = await supabase
-    .from("profiles")
+    .from("alts")
     .update(updateData)
-    .eq("id", profileId);
+    .eq("id", altId);
 
   if (error) throw error;
   return { success: true };
@@ -54,32 +54,32 @@ export async function updateProfile(
  */
 export async function updateUsername(
   supabase: TypedClient,
-  profileId: number,
+  altId: number,
   newUsername: string
 ) {
-  // Verify the user owns this profile
+  // Verify the user owns this alt
   const {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) throw new Error("Not authenticated");
 
-  const { data: profile } = await supabase
-    .from("profiles")
+  const { data: alt } = await supabase
+    .from("alts")
     .select("user_id")
-    .eq("id", profileId)
+    .eq("id", altId)
     .single();
 
-  if (!profile) throw new Error("Profile not found");
-  if (profile.user_id !== user.id) {
-    throw new Error("You can only update your own profile");
+  if (!alt) throw new Error("Alt not found");
+  if (alt.user_id !== user.id) {
+    throw new Error("You can only update your own alt");
   }
 
   // Check username uniqueness
   const { data: existing } = await supabase
-    .from("profiles")
+    .from("alts")
     .select("id")
     .eq("username", newUsername.toLowerCase())
-    .neq("id", profileId)
+    .neq("id", altId)
     .single();
 
   if (existing) {
@@ -87,27 +87,27 @@ export async function updateUsername(
   }
 
   const { error } = await supabase
-    .from("profiles")
+    .from("alts")
     .update({ username: newUsername.toLowerCase() })
-    .eq("id", profileId);
+    .eq("id", altId);
 
   if (error) throw error;
   return { success: true };
 }
 
 /**
- * Ensure a profile exists for the current user, creating one with defaults if needed
- * Returns the existing or newly created profile
+ * Ensure an alt exists for the current user, creating one with defaults if needed
+ * Returns the existing or newly created alt
  */
-export async function ensureProfile(supabase: TypedClient) {
+export async function ensureAlt(supabase: TypedClient) {
   const {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) throw new Error("Not authenticated");
 
-  // Check if profile already exists
+  // Check if alt already exists
   const { data: existing } = await supabase
-    .from("profiles")
+    .from("alts")
     .select("*")
     .eq("user_id", user.id)
     .single();
@@ -136,7 +136,7 @@ export async function ensureProfile(supabase: TypedClient) {
   let attempts = 0;
   while (attempts < 5) {
     const { data: usernameExists } = await supabase
-      .from("profiles")
+      .from("alts")
       .select("id")
       .eq("username", username)
       .single();
@@ -146,8 +146,8 @@ export async function ensureProfile(supabase: TypedClient) {
     attempts++;
   }
 
-  const { data: profile, error } = await supabase
-    .from("profiles")
+  const { data: alt, error } = await supabase
+    .from("alts")
     .insert({
       user_id: user.id,
       username,
@@ -158,13 +158,13 @@ export async function ensureProfile(supabase: TypedClient) {
     .single();
 
   if (error) throw error;
-  return profile;
+  return alt;
 }
 
 /**
- * Create a new profile for a user (if not auto-created by trigger)
+ * Create a new alt for a user (if not auto-created by trigger)
  */
-export async function createProfile(
+export async function createAlt(
   supabase: TypedClient,
   data: {
     username: string;
@@ -178,20 +178,20 @@ export async function createProfile(
   } = await supabase.auth.getUser();
   if (!user) throw new Error("Not authenticated");
 
-  // Check if profile already exists
+  // Check if alt already exists
   const { data: existing } = await supabase
-    .from("profiles")
+    .from("alts")
     .select("id")
     .eq("user_id", user.id)
     .single();
 
   if (existing) {
-    throw new Error("Profile already exists for this user");
+    throw new Error("Alt already exists for this user");
   }
 
   // Check username uniqueness
   const { data: usernameExists } = await supabase
-    .from("profiles")
+    .from("alts")
     .select("id")
     .eq("username", data.username.toLowerCase())
     .single();
@@ -200,8 +200,8 @@ export async function createProfile(
     throw new Error("Username is already taken");
   }
 
-  const { data: profile, error } = await supabase
-    .from("profiles")
+  const { data: alt, error } = await supabase
+    .from("alts")
     .insert({
       user_id: user.id,
       username: data.username.toLowerCase(),
@@ -213,5 +213,18 @@ export async function createProfile(
     .single();
 
   if (error) throw error;
-  return profile;
+  return alt;
 }
+
+// =============================================================================
+// Legacy aliases for backward compatibility (deprecated - use new names)
+// =============================================================================
+
+/** @deprecated Use updateAlt instead */
+export const updateProfile = updateAlt;
+
+/** @deprecated Use ensureAlt instead */
+export const ensureProfile = ensureAlt;
+
+/** @deprecated Use createAlt instead */
+export const createProfile = createAlt;

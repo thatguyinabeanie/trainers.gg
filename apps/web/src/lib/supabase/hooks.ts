@@ -70,13 +70,19 @@ export function useSupabaseQuery<T>(
   const [error, setError] = useState<Error | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const mountedRef = useRef(true);
+  // Store queryFn in a ref to avoid triggering re-executions
+  const queryFnRef = useRef(queryFn);
+  queryFnRef.current = queryFn;
+
+  // Stringify deps to trigger re-execution when values change
+  const depsKey = JSON.stringify(deps);
 
   const execute = useCallback(async () => {
     setIsLoading(true);
     setError(null);
 
     try {
-      const result = await queryFn(supabase);
+      const result = await queryFnRef.current(supabase);
       if (mountedRef.current) {
         setData(result);
       }
@@ -89,10 +95,8 @@ export function useSupabaseQuery<T>(
         setIsLoading(false);
       }
     }
-  }, [supabase, queryFn]);
-
-  // Stringify deps to trigger re-execution when values change
-  const depsKey = JSON.stringify(deps);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [supabase, depsKey]);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -101,7 +105,7 @@ export function useSupabaseQuery<T>(
     return () => {
       mountedRef.current = false;
     };
-  }, [execute, depsKey]);
+  }, [execute]);
 
   return {
     data,

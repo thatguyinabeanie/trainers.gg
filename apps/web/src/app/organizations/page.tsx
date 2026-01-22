@@ -86,7 +86,7 @@ export default function OrganizationsPage() {
       {!isLoading && filteredOrganizations.length > 0 && (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {filteredOrganizations.map((org) => (
-            <Link key={org.id} href={`/${org.slug}`}>
+            <Link key={org.id} href={`/organizations/${org.slug}`}>
               <Card className="h-full transition-shadow hover:shadow-md">
                 <CardHeader className="pb-3">
                   <div className="flex items-start justify-between">

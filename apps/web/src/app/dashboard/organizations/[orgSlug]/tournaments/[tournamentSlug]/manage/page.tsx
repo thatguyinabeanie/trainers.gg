@@ -1,16 +1,16 @@
+"use client";
+
 import { use } from "react";
 import { TournamentManageClient } from "./tournament-manage-client";
 
-interface TournamentManagePageProps {
+interface PageProps {
   params: Promise<{
     orgSlug: string;
     tournamentSlug: string;
   }>;
 }
 
-export default function TournamentManagePage({
-  params,
-}: TournamentManagePageProps) {
+export default function TournamentManagePage({ params }: PageProps) {
   const { orgSlug, tournamentSlug } = use(params);
 
   return (

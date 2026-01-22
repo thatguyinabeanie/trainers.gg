@@ -30,7 +30,7 @@ import {
 import { toast } from "sonner";
 
 type CheckedInPlayer = {
-  profileId: number;
+  altId: number;
   displayName: string;
   checkedInAt: number;
 };
@@ -342,7 +342,7 @@ export function CheckInCard({
                 .slice(0, 5)
                 .map((player: CheckedInPlayer) => (
                   <div
-                    key={player.profileId}
+                    key={player.altId}
                     className="flex items-center justify-between py-1 text-sm"
                   >
                     <span className="font-medium">{player.displayName}</span>

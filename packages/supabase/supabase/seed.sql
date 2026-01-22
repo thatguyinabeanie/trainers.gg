@@ -11,41 +11,90 @@
 CREATE EXTENSION IF NOT EXISTS pgcrypto WITH SCHEMA extensions;
 
 -- -----------------------------------------------------------------------------
--- Test Users (via auth.users - trigger creates public.users + profiles)
+-- Test Users (via auth.users - trigger creates public.users + alts)
 -- -----------------------------------------------------------------------------
 -- Users use distinct UUIDs for easy identification
 
 INSERT INTO auth.users (
   id, instance_id, email, encrypted_password, email_confirmed_at,
-  raw_user_meta_data, created_at, updated_at,
-  confirmation_token, email_change, email_change_token_new, recovery_token
+  aud, role, raw_app_meta_data, raw_user_meta_data, 
+  created_at, updated_at, confirmation_token, email_change, email_change_token_new, recovery_token
 ) VALUES
   ('a1b2c3d4-e5f6-4a5b-8c9d-0e1f2a3b4c5d', '00000000-0000-0000-0000-000000000000',
    'admin@trainers.local', extensions.crypt('password123', extensions.gen_salt('bf')), NOW(),
-   '{"username": "admin_trainer", "first_name": "Admin", "last_name": "Trainer"}'::jsonb, NOW(), NOW(), '', '', '', ''),
+   'authenticated', 'authenticated',
+   '{"provider": "email", "providers": ["email"]}'::jsonb,
+   '{"username": "admin_trainer", "first_name": "Admin", "last_name": "Trainer"}'::jsonb,
+   NOW(), NOW(), '', '', '', ''),
   
   ('b2c3d4e5-f6a7-5b6c-9d0e-1f2a3b4c5d6e', '00000000-0000-0000-0000-000000000000',
    'player@trainers.local', extensions.crypt('password123', extensions.gen_salt('bf')), NOW(),
-   '{"username": "ash_ketchum", "first_name": "Ash", "last_name": "Ketchum"}'::jsonb, NOW(), NOW(), '', '', '', ''),
+   'authenticated', 'authenticated',
+   '{"provider": "email", "providers": ["email"]}'::jsonb,
+   '{"username": "ash_ketchum", "first_name": "Ash", "last_name": "Ketchum"}'::jsonb,
+   NOW(), NOW(), '', '', '', ''),
   
   ('c3d4e5f6-a7b8-6c7d-0e1f-2a3b4c5d6e7f', '00000000-0000-0000-0000-000000000000',
    'champion@trainers.local', extensions.crypt('password123', extensions.gen_salt('bf')), NOW(),
-   '{"username": "cynthia", "first_name": "Cynthia", "last_name": "Shirona"}'::jsonb, NOW(), NOW(), '', '', '', ''),
+   'authenticated', 'authenticated',
+   '{"provider": "email", "providers": ["email"]}'::jsonb,
+   '{"username": "cynthia", "first_name": "Cynthia", "last_name": "Shirona"}'::jsonb,
+   NOW(), NOW(), '', '', '', ''),
   
   ('d4e5f6a7-b8c9-7d8e-1f2a-3b4c5d6e7f8a', '00000000-0000-0000-0000-000000000000',
    'gymleader@trainers.local', extensions.crypt('password123', extensions.gen_salt('bf')), NOW(),
-   '{"username": "brock", "first_name": "Brock", "last_name": "Harrison"}'::jsonb, NOW(), NOW(), '', '', '', ''),
+   'authenticated', 'authenticated',
+   '{"provider": "email", "providers": ["email"]}'::jsonb,
+   '{"username": "brock", "first_name": "Brock", "last_name": "Harrison"}'::jsonb,
+   NOW(), NOW(), '', '', '', ''),
   
   ('e5f6a7b8-c9d0-8e9f-2a3b-4c5d6e7f8a9b', '00000000-0000-0000-0000-000000000000',
    'elite@trainers.local', extensions.crypt('password123', extensions.gen_salt('bf')), NOW(),
-   '{"username": "karen", "first_name": "Karen", "last_name": "Elite"}'::jsonb, NOW(), NOW(), '', '', '', ''),
+   'authenticated', 'authenticated',
+   '{"provider": "email", "providers": ["email"]}'::jsonb,
+   '{"username": "karen", "first_name": "Karen", "last_name": "Elite"}'::jsonb,
+   NOW(), NOW(), '', '', '', ''),
   
   ('f6a7b8c9-d0e1-9f0a-3b4c-5d6e7f8a9b0c', '00000000-0000-0000-0000-000000000000',
    'casual@trainers.local', extensions.crypt('password123', extensions.gen_salt('bf')), NOW(),
-   '{"username": "red", "first_name": "Red", "last_name": "Champion"}'::jsonb, NOW(), NOW(), '', '', '', '');
+   'authenticated', 'authenticated',
+   '{"provider": "email", "providers": ["email"]}'::jsonb,
+   '{"username": "red", "first_name": "Red", "last_name": "Champion"}'::jsonb,
+   NOW(), NOW(), '', '', '', '');
 
 -- -----------------------------------------------------------------------------
--- Update users/profiles with additional data (trigger created basic records)
+-- Auth Identities (required for email/password login)
+-- -----------------------------------------------------------------------------
+
+INSERT INTO auth.identities (
+  id, user_id, provider_id, provider, identity_data, last_sign_in_at, created_at, updated_at
+) VALUES
+  (gen_random_uuid(), 'a1b2c3d4-e5f6-4a5b-8c9d-0e1f2a3b4c5d', 'a1b2c3d4-e5f6-4a5b-8c9d-0e1f2a3b4c5d', 'email',
+   '{"sub": "a1b2c3d4-e5f6-4a5b-8c9d-0e1f2a3b4c5d", "email": "admin@trainers.local", "email_verified": true}'::jsonb,
+   NOW(), NOW(), NOW()),
+  
+  (gen_random_uuid(), 'b2c3d4e5-f6a7-5b6c-9d0e-1f2a3b4c5d6e', 'b2c3d4e5-f6a7-5b6c-9d0e-1f2a3b4c5d6e', 'email',
+   '{"sub": "b2c3d4e5-f6a7-5b6c-9d0e-1f2a3b4c5d6e", "email": "player@trainers.local", "email_verified": true}'::jsonb,
+   NOW(), NOW(), NOW()),
+  
+  (gen_random_uuid(), 'c3d4e5f6-a7b8-6c7d-0e1f-2a3b4c5d6e7f', 'c3d4e5f6-a7b8-6c7d-0e1f-2a3b4c5d6e7f', 'email',
+   '{"sub": "c3d4e5f6-a7b8-6c7d-0e1f-2a3b4c5d6e7f", "email": "champion@trainers.local", "email_verified": true}'::jsonb,
+   NOW(), NOW(), NOW()),
+  
+  (gen_random_uuid(), 'd4e5f6a7-b8c9-7d8e-1f2a-3b4c5d6e7f8a', 'd4e5f6a7-b8c9-7d8e-1f2a-3b4c5d6e7f8a', 'email',
+   '{"sub": "d4e5f6a7-b8c9-7d8e-1f2a-3b4c5d6e7f8a", "email": "gymleader@trainers.local", "email_verified": true}'::jsonb,
+   NOW(), NOW(), NOW()),
+  
+  (gen_random_uuid(), 'e5f6a7b8-c9d0-8e9f-2a3b-4c5d6e7f8a9b', 'e5f6a7b8-c9d0-8e9f-2a3b-4c5d6e7f8a9b', 'email',
+   '{"sub": "e5f6a7b8-c9d0-8e9f-2a3b-4c5d6e7f8a9b", "email": "elite@trainers.local", "email_verified": true}'::jsonb,
+   NOW(), NOW(), NOW()),
+  
+  (gen_random_uuid(), 'f6a7b8c9-d0e1-9f0a-3b4c-5d6e7f8a9b0c', 'f6a7b8c9-d0e1-9f0a-3b4c-5d6e7f8a9b0c', 'email',
+   '{"sub": "f6a7b8c9-d0e1-9f0a-3b4c-5d6e7f8a9b0c", "email": "casual@trainers.local", "email_verified": true}'::jsonb,
+   NOW(), NOW(), NOW());
+
+-- -----------------------------------------------------------------------------
+-- Update users/alts with additional data (trigger created basic records)
 -- -----------------------------------------------------------------------------
 
 UPDATE public.users SET
@@ -72,30 +121,30 @@ UPDATE public.users SET
   birth_date = '1996-08-27', country = 'JP'
 WHERE id = 'f6a7b8c9-d0e1-9f0a-3b4c-5d6e7f8a9b0c';
 
--- Update profiles with bios and tiers
-UPDATE public.profiles SET
+-- Update alts with bios and tiers
+UPDATE public.alts SET
   bio = 'Platform administrator and VGC enthusiast. Organizing tournaments since 2015.'
 WHERE user_id = 'a1b2c3d4-e5f6-4a5b-8c9d-0e1f2a3b4c5d';
 
-UPDATE public.profiles SET
+UPDATE public.alts SET
   bio = 'Gotta catch em all! On my journey to become a Pokemon Master.',
   tier = 'player_pro'
 WHERE user_id = 'b2c3d4e5-f6a7-5b6c-9d0e-1f2a3b4c5d6e';
 
-UPDATE public.profiles SET
+UPDATE public.alts SET
   bio = 'Sinnoh Champion. I believe the bonds we share with Pokemon lead to true strength.',
   tier = 'player_pro'
 WHERE user_id = 'c3d4e5f6-a7b8-6c7d-0e1f-2a3b4c5d6e7f';
 
-UPDATE public.profiles SET
+UPDATE public.alts SET
   bio = 'Pewter City Gym Leader. Rock-type specialist and Pokemon Breeder.'
 WHERE user_id = 'd4e5f6a7-b8c9-7d8e-1f2a-3b4c5d6e7f8a';
 
-UPDATE public.profiles SET
+UPDATE public.alts SET
   bio = 'Elite Four member. Strong Pokemon. Weak Pokemon. That is only the selfish perception of people.'
 WHERE user_id = 'e5f6a7b8-c9d0-8e9f-2a3b-4c5d6e7f8a9b';
 
-UPDATE public.profiles SET
+UPDATE public.alts SET
   bio = '...'
 WHERE user_id = 'f6a7b8c9-d0e1-9f0a-3b4c-5d6e7f8a9b0c';
 
@@ -106,13 +155,13 @@ WHERE user_id = 'f6a7b8c9-d0e1-9f0a-3b4c-5d6e7f8a9b0c';
 
 DO $$
 DECLARE
-  -- Profile IDs (bigint, auto-generated by trigger)
-  admin_profile_id bigint;
-  ash_profile_id bigint;
-  cynthia_profile_id bigint;
-  brock_profile_id bigint;
-  karen_profile_id bigint;
-  red_profile_id bigint;
+  -- Alt IDs (bigint, auto-generated by trigger)
+  admin_alt_id bigint;
+  ash_alt_id bigint;
+  cynthia_alt_id bigint;
+  brock_alt_id bigint;
+  karen_alt_id bigint;
+  red_alt_id bigint;
   
   -- Organization IDs (bigint)
   vgc_league_id bigint;
@@ -151,6 +200,7 @@ DECLARE
   friendly_id bigint;
   
   -- Role IDs (bigint)
+  site_admin_role_id bigint;
   owner_role_id bigint;
   admin_role_id bigint;
   mod_role_id bigint;
@@ -167,57 +217,68 @@ DECLARE
   perm_content_mod bigint;
 
 BEGIN
-  -- Get profile IDs created by trigger
-  SELECT id INTO admin_profile_id FROM public.profiles WHERE user_id = 'a1b2c3d4-e5f6-4a5b-8c9d-0e1f2a3b4c5d';
-  SELECT id INTO ash_profile_id FROM public.profiles WHERE user_id = 'b2c3d4e5-f6a7-5b6c-9d0e-1f2a3b4c5d6e';
-  SELECT id INTO cynthia_profile_id FROM public.profiles WHERE user_id = 'c3d4e5f6-a7b8-6c7d-0e1f-2a3b4c5d6e7f';
-  SELECT id INTO brock_profile_id FROM public.profiles WHERE user_id = 'd4e5f6a7-b8c9-7d8e-1f2a-3b4c5d6e7f8a';
-  SELECT id INTO karen_profile_id FROM public.profiles WHERE user_id = 'e5f6a7b8-c9d0-8e9f-2a3b-4c5d6e7f8a9b';
-  SELECT id INTO red_profile_id FROM public.profiles WHERE user_id = 'f6a7b8c9-d0e1-9f0a-3b4c-5d6e7f8a9b0c';
+  -- Get alt IDs created by trigger
+  SELECT id INTO admin_alt_id FROM public.alts WHERE user_id = 'a1b2c3d4-e5f6-4a5b-8c9d-0e1f2a3b4c5d';
+  SELECT id INTO ash_alt_id FROM public.alts WHERE user_id = 'b2c3d4e5-f6a7-5b6c-9d0e-1f2a3b4c5d6e';
+  SELECT id INTO cynthia_alt_id FROM public.alts WHERE user_id = 'c3d4e5f6-a7b8-6c7d-0e1f-2a3b4c5d6e7f';
+  SELECT id INTO brock_alt_id FROM public.alts WHERE user_id = 'd4e5f6a7-b8c9-7d8e-1f2a-3b4c5d6e7f8a';
+  SELECT id INTO karen_alt_id FROM public.alts WHERE user_id = 'e5f6a7b8-c9d0-8e9f-2a3b-4c5d6e7f8a9b';
+  SELECT id INTO red_alt_id FROM public.alts WHERE user_id = 'f6a7b8c9-d0e1-9f0a-3b4c-5d6e7f8a9b0c';
+
+  -- ==========================================================================
+  -- Site Admin Role Assignment
+  -- ==========================================================================
+  
+  -- Get the Site Admin role ID (created by migration)
+  SELECT id INTO site_admin_role_id FROM public.roles WHERE name = 'Site Admin' AND scope = 'site';
+  
+  -- Grant Site Admin role to admin user
+  INSERT INTO public.user_roles (user_id, role_id) VALUES
+    ('a1b2c3d4-e5f6-4a5b-8c9d-0e1f2a3b4c5d', site_admin_role_id);
 
   -- ==========================================================================
   -- Organizations
   -- ==========================================================================
   
   INSERT INTO public.organizations (
-    name, slug, description, status, owner_profile_id, tier, subscription_tier,
+    name, slug, description, status, owner_alt_id, tier, subscription_tier,
     discord_url, twitter_url, website_url
   ) VALUES (
     'VGC League', 'vgc-league',
     'Premier Pokemon VGC tournament organization. Weekly locals and monthly championships.',
-    'active', admin_profile_id, 'partner', 'organization_plus',
+    'active', admin_alt_id, 'partner', 'organization_plus',
     'https://discord.gg/vgcleague', 'https://twitter.com/vgcleague', 'https://vgcleague.com'
   ) RETURNING id INTO vgc_league_id;
   
   INSERT INTO public.organizations (
-    name, slug, description, status, owner_profile_id, tier, subscription_tier,
+    name, slug, description, status, owner_alt_id, tier, subscription_tier,
     discord_url, twitter_url, website_url
   ) VALUES (
     'Pallet Town Trainers', 'pallet-town',
     'A friendly community for trainers from Pallet Town and beyond. Casual and competitive events.',
-    'active', ash_profile_id, 'regular', 'free',
+    'active', ash_alt_id, 'regular', 'free',
     NULL, NULL, NULL
   ) RETURNING id INTO pallet_town_id;
   
   INSERT INTO public.organizations (
-    name, slug, description, status, owner_profile_id, tier, subscription_tier,
+    name, slug, description, status, owner_alt_id, tier, subscription_tier,
     discord_url, twitter_url, website_url
   ) VALUES (
     'Sinnoh Champions', 'sinnoh-champions',
     'Elite tournament series for Sinnoh region trainers. High-level competitive play.',
-    'active', cynthia_profile_id, 'verified', 'organization_plus',
+    'active', cynthia_alt_id, 'verified', 'organization_plus',
     'https://discord.gg/sinnoh', NULL, NULL
   ) RETURNING id INTO sinnoh_champs_id;
 
   -- Organization members
-  INSERT INTO public.organization_members (organization_id, profile_id) VALUES
-    (vgc_league_id, admin_profile_id),
-    (vgc_league_id, ash_profile_id),
-    (vgc_league_id, cynthia_profile_id),
-    (pallet_town_id, ash_profile_id),
-    (pallet_town_id, admin_profile_id),
-    (sinnoh_champs_id, cynthia_profile_id),
-    (sinnoh_champs_id, admin_profile_id);
+  INSERT INTO public.organization_members (organization_id, alt_id) VALUES
+    (vgc_league_id, admin_alt_id),
+    (vgc_league_id, ash_alt_id),
+    (vgc_league_id, cynthia_alt_id),
+    (pallet_town_id, ash_alt_id),
+    (pallet_town_id, admin_alt_id),
+    (sinnoh_champs_id, cynthia_alt_id),
+    (sinnoh_champs_id, admin_alt_id);
 
   -- ==========================================================================
   -- Pokemon
@@ -303,15 +364,15 @@ BEGIN
   -- ==========================================================================
   
   INSERT INTO public.teams (name, description, created_by, is_public, tags, notes)
-  VALUES ('Kanto Classics', 'My journey team, now VGC ready!', ash_profile_id, true, ARRAY['VGC', 'Kanto', 'Offensive'], 'Featured on stream at Worlds 2024')
+  VALUES ('Kanto Classics', 'My journey team, now VGC ready!', ash_alt_id, true, ARRAY['VGC', 'Kanto', 'Offensive'], 'Featured on stream at Worlds 2024')
   RETURNING id INTO kanto_team_id;
   
   INSERT INTO public.teams (name, description, created_by, is_public, tags, notes)
-  VALUES ('Sinnoh Elite', 'Championship team - balanced offense and defense', cynthia_profile_id, true, ARRAY['VGC', 'Sinnoh', 'Balance'], 'Undefeated at Sinnoh Regionals')
+  VALUES ('Sinnoh Elite', 'Championship team - balanced offense and defense', cynthia_alt_id, true, ARRAY['VGC', 'Sinnoh', 'Balance'], 'Undefeated at Sinnoh Regionals')
   RETURNING id INTO sinnoh_team_id;
   
   INSERT INTO public.teams (name, description, created_by, is_public, tags, notes)
-  VALUES ('Regulation G Meta', 'Current meta sample team for testing', admin_profile_id, true, ARRAY['VGC', 'Reg G', 'Meta'], 'Sample team for local testing')
+  VALUES ('Regulation G Meta', 'Current meta sample team for testing', admin_alt_id, true, ARRAY['VGC', 'Reg G', 'Meta'], 'Sample team for local testing')
   RETURNING id INTO meta_team_id;
 
   -- Link Pokemon to Teams
@@ -396,30 +457,30 @@ BEGIN
   -- ==========================================================================
   
   -- Registrations for upcoming tournament (Weekly #42)
-  INSERT INTO public.tournament_registrations (tournament_id, profile_id, status, team_name) VALUES
-    (weekly_id, ash_profile_id, 'registered', 'Kanto Classics'),
-    (weekly_id, cynthia_profile_id, 'registered', 'Sinnoh Elite'),
-    (weekly_id, brock_profile_id, 'registered', NULL),
-    (weekly_id, karen_profile_id, 'pending', NULL);
+  INSERT INTO public.tournament_registrations (tournament_id, alt_id, status, team_name) VALUES
+    (weekly_id, ash_alt_id, 'registered', 'Kanto Classics'),
+    (weekly_id, cynthia_alt_id, 'registered', 'Sinnoh Elite'),
+    (weekly_id, brock_alt_id, 'registered', NULL),
+    (weekly_id, karen_alt_id, 'pending', NULL);
 
   -- Registrations for active tournament (Monthly Championship)
-  INSERT INTO public.tournament_registrations (tournament_id, profile_id, status, team_name, checked_in_at) VALUES
-    (monthly_id, ash_profile_id, 'checked_in', 'Kanto Classics', NOW() - INTERVAL '3 hours'),
-    (monthly_id, cynthia_profile_id, 'checked_in', 'Sinnoh Elite', NOW() - INTERVAL '2 hours'),
-    (monthly_id, brock_profile_id, 'checked_in', NULL, NOW() - INTERVAL '2 hours'),
-    (monthly_id, karen_profile_id, 'checked_in', NULL, NOW() - INTERVAL '1 hour'),
-    (monthly_id, red_profile_id, 'checked_in', NULL, NOW() - INTERVAL '30 minutes');
+  INSERT INTO public.tournament_registrations (tournament_id, alt_id, status, team_name, checked_in_at) VALUES
+    (monthly_id, ash_alt_id, 'checked_in', 'Kanto Classics', NOW() - INTERVAL '3 hours'),
+    (monthly_id, cynthia_alt_id, 'checked_in', 'Sinnoh Elite', NOW() - INTERVAL '2 hours'),
+    (monthly_id, brock_alt_id, 'checked_in', NULL, NOW() - INTERVAL '2 hours'),
+    (monthly_id, karen_alt_id, 'checked_in', NULL, NOW() - INTERVAL '1 hour'),
+    (monthly_id, red_alt_id, 'checked_in', NULL, NOW() - INTERVAL '30 minutes');
 
   -- ==========================================================================
-  -- Roles and Permissions
+  -- Organization Roles and Permissions (scope = 'organization')
   -- ==========================================================================
   
-  INSERT INTO public.roles (name, description) VALUES ('Owner', 'Full control over the organization') RETURNING id INTO owner_role_id;
-  INSERT INTO public.roles (name, description) VALUES ('Admin', 'Administrative privileges') RETURNING id INTO admin_role_id;
-  INSERT INTO public.roles (name, description) VALUES ('Moderator', 'Can moderate content and users') RETURNING id INTO mod_role_id;
-  INSERT INTO public.roles (name, description) VALUES ('Tournament Organizer', 'Can create and manage tournaments') RETURNING id INTO to_role_id;
-  INSERT INTO public.roles (name, description) VALUES ('Judge', 'Can resolve match disputes') RETURNING id INTO judge_role_id;
-  INSERT INTO public.roles (name, description) VALUES ('Member', 'Basic member access') RETURNING id INTO member_role_id;
+  INSERT INTO public.roles (name, description, scope) VALUES ('Owner', 'Full control over the organization', 'organization') RETURNING id INTO owner_role_id;
+  INSERT INTO public.roles (name, description, scope) VALUES ('Admin', 'Administrative privileges', 'organization') RETURNING id INTO admin_role_id;
+  INSERT INTO public.roles (name, description, scope) VALUES ('Moderator', 'Can moderate content and users', 'organization') RETURNING id INTO mod_role_id;
+  INSERT INTO public.roles (name, description, scope) VALUES ('Tournament Organizer', 'Can create and manage tournaments', 'organization') RETURNING id INTO to_role_id;
+  INSERT INTO public.roles (name, description, scope) VALUES ('Judge', 'Can resolve match disputes', 'organization') RETURNING id INTO judge_role_id;
+  INSERT INTO public.roles (name, description, scope) VALUES ('Member', 'Basic member access', 'organization') RETURNING id INTO member_role_id;
 
   INSERT INTO public.permissions (key, name, description) VALUES ('org.manage', 'Manage Organization', 'Can modify organization settings') RETURNING id INTO perm_org_manage;
   INSERT INTO public.permissions (key, name, description) VALUES ('org.members.manage', 'Manage Members', 'Can add/remove organization members') RETURNING id INTO perm_members_manage;
@@ -459,14 +520,14 @@ END $$;
 -- 
 -- Test Accounts (all use password: password123)
 -- 
--- | Email                    | Username       | Role          |
--- |--------------------------|----------------|---------------|
--- | admin@trainers.local     | admin_trainer  | Admin/Org     |
--- | player@trainers.local    | ash_ketchum    | Player Pro    |
--- | champion@trainers.local  | cynthia        | Player Pro    |
--- | gymleader@trainers.local | brock          | Regular       |
--- | elite@trainers.local     | karen          | Regular       |
--- | casual@trainers.local    | red            | Regular       |
+-- | Email                    | Username       | Role             |
+-- |--------------------------|----------------|------------------|
+-- | admin@trainers.local     | admin_trainer  | Site Admin       |
+-- | player@trainers.local    | ash_ketchum    | Player Pro       |
+-- | champion@trainers.local  | cynthia        | Player Pro       |
+-- | gymleader@trainers.local | brock          | Regular          |
+-- | elite@trainers.local     | karen          | Regular          |
+-- | casual@trainers.local    | red            | Regular          |
 --
 -- Organizations:
 -- - VGC League (partner tier, org_plus subscription)

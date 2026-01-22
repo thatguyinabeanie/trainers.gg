@@ -201,6 +201,61 @@ export async function getTournamentByOrgAndSlug(
 }
 
 /**
+ * Get tournament by slug (globally unique)
+ * Used for /tournaments/{slug} public view
+ */
+export async function getTournamentBySlug(
+  supabase: TypedClient,
+  tournamentSlug: string
+) {
+  // Get the tournament by slug (now globally unique)
+  const { data: tournament, error } = await supabase
+    .from("tournaments")
+    .select(
+      `
+      *,
+      organization:organizations(*)
+    `
+    )
+    .eq("slug", tournamentSlug)
+    .is("archived_at", null)
+    .single();
+
+  if (error || !tournament) return null;
+
+  // Get additional details
+  const [registrations, phases, currentPhase] = await Promise.all([
+    supabase
+      .from("tournament_registrations")
+      .select("*")
+      .eq("tournament_id", tournament.id),
+    supabase
+      .from("tournament_phases")
+      .select("*")
+      .eq("tournament_id", tournament.id)
+      .order("phase_order", { ascending: true }),
+    tournament.current_phase_id
+      ? supabase
+          .from("tournament_phases")
+          .select("*")
+          .eq("id", tournament.current_phase_id)
+          .single()
+      : null,
+  ]);
+
+  return {
+    ...tournament,
+    registrations: registrations.data ?? [],
+    phases: phases.data ?? [],
+    currentPhase: currentPhase?.data ?? null,
+    _count: {
+      registrations: registrations.data?.length ?? 0,
+      phases: phases.data?.length ?? 0,
+    },
+  };
+}
+
+/**
  * Get tournament by ID
  */
 export async function getTournamentById(supabase: TypedClient, id: number) {
@@ -231,7 +286,7 @@ export async function getTournamentRegistrations(
     .select(
       `
       *,
-      profile:profiles!tournament_registrations_profile_id_fkey(*),
+      alt:alts!tournament_registrations_alt_id_fkey(*),
       team:teams(*)
     `
     )
@@ -243,18 +298,18 @@ export async function getTournamentRegistrations(
 }
 
 /**
- * Check if profile is registered for tournament
+ * Check if alt is registered for tournament
  */
 export async function isRegisteredForTournament(
   supabase: TypedClient,
   tournamentId: number,
-  profileId: number
+  altId: number
 ) {
   const { data } = await supabase
     .from("tournament_registrations")
     .select("id")
     .eq("tournament_id", tournamentId)
-    .eq("profile_id", profileId)
+    .eq("alt_id", altId)
     .single();
 
   return !!data;
@@ -303,9 +358,9 @@ export async function getRoundMatches(supabase: TypedClient, roundId: number) {
     .select(
       `
       *,
-      player1:profiles!tournament_matches_player1_profile_id_fkey(*),
-      player2:profiles!tournament_matches_player2_profile_id_fkey(*),
-      winner:profiles!tournament_matches_winner_profile_id_fkey(*)
+      player1:alts!tournament_matches_alt1_id_fkey(*),
+      player2:alts!tournament_matches_alt2_id_fkey(*),
+      winner:alts!tournament_matches_winner_alt_id_fkey(*)
     `
     )
     .eq("round_id", roundId)
@@ -327,7 +382,7 @@ export async function getTournamentStandings(
     .select(
       `
       *,
-      profile:profiles(*)
+      alt:alts(*)
     `
     )
     .eq("tournament_id", tournamentId)
@@ -343,13 +398,13 @@ export async function getTournamentStandings(
 export async function getPlayerTournamentStats(
   supabase: TypedClient,
   tournamentId: number,
-  profileId: number
+  altId: number
 ) {
   const { data, error } = await supabase
     .from("tournament_player_stats")
     .select("*")
     .eq("tournament_id", tournamentId)
-    .eq("profile_id", profileId)
+    .eq("alt_id", altId)
     .single();
 
   if (error) return null;
@@ -358,16 +413,16 @@ export async function getPlayerTournamentStats(
 
 /**
  * Get check-in status for current user
- * If no profileId is provided, returns status for the current authenticated user
+ * If no altId is provided, returns status for the current authenticated user
  */
 export async function getCheckInStatus(
   supabase: TypedClient,
   tournamentId: number,
-  profileId?: number
+  altId?: number
 ) {
-  let targetProfileId: number | undefined = profileId;
+  let targetAltId: number | undefined = altId;
 
-  if (!targetProfileId) {
+  if (!targetAltId) {
     const {
       data: { user },
     } = await supabase.auth.getUser();
@@ -382,13 +437,13 @@ export async function getCheckInStatus(
       };
     }
 
-    const { data: profile } = await supabase
-      .from("profiles")
+    const { data: alt } = await supabase
+      .from("alts")
       .select("id")
       .eq("user_id", user.id)
       .single();
 
-    if (!profile) {
+    if (!alt) {
       return {
         isRegistered: false,
         isCheckedIn: false,
@@ -398,7 +453,7 @@ export async function getCheckInStatus(
         registrationStatus: null,
       };
     }
-    targetProfileId = profile.id as number;
+    targetAltId = alt.id as number;
   }
 
   const { data: tournament } = await supabase
@@ -415,7 +470,7 @@ export async function getCheckInStatus(
     .from("tournament_registrations")
     .select("status, checked_in_at")
     .eq("tournament_id", tournamentId)
-    .eq("profile_id", targetProfileId!)
+    .eq("alt_id", targetAltId!)
     .single();
 
   const now = Date.now();
@@ -451,7 +506,7 @@ export async function getCheckInStats(
 ) {
   const { data: registrations } = await supabase
     .from("tournament_registrations")
-    .select("status, checked_in_at, profile_id")
+    .select("status, checked_in_at, alt_id")
     .eq("tournament_id", tournamentId);
 
   const regs = registrations ?? [];
@@ -461,27 +516,27 @@ export async function getCheckInStats(
   const dropped = regs.filter((r) => r.status === "dropped").length;
   const waitlist = regs.filter((r) => r.status === "waitlist").length;
 
-  // Get checked-in profiles
+  // Get checked-in alts
   const checkedInRegs = regs.filter((r) => r.status === "checked_in");
-  const profileIds = checkedInRegs.map((r) => r.profile_id);
+  const altIds = checkedInRegs.map((r) => r.alt_id);
 
   let checkedInList: {
-    profileId: number;
+    altId: number;
     displayName: string;
     checkedInAt: number;
   }[] = [];
 
-  if (profileIds.length > 0) {
-    const { data: profiles } = await supabase
-      .from("profiles")
-      .select("id, display_name")
-      .in("id", profileIds);
+  if (altIds.length > 0) {
+    const { data: alts } = await supabase
+      .from("alts")
+      .select("id, username")
+      .in("id", altIds);
 
-    const profileMap = new Map(profiles?.map((p) => [p.id, p]) ?? []);
+    const altMap = new Map(alts?.map((a) => [a.id, a]) ?? []);
 
     checkedInList = checkedInRegs.map((reg) => ({
-      profileId: reg.profile_id,
-      displayName: profileMap.get(reg.profile_id)?.display_name ?? "Unknown",
+      altId: reg.alt_id,
+      displayName: altMap.get(reg.alt_id)?.username ?? "Unknown",
       checkedInAt: reg.checked_in_at
         ? new Date(reg.checked_in_at).getTime()
         : Date.now(),
@@ -501,31 +556,31 @@ export async function getCheckInStats(
 
 /**
  * Get user's teams for tournament registration
- * If no profileId is provided, returns teams for the current authenticated user
+ * If no altId is provided, returns teams for the current authenticated user
  */
-export async function getUserTeams(supabase: TypedClient, profileId?: number) {
-  let targetProfileId: number | undefined = profileId;
+export async function getUserTeams(supabase: TypedClient, altId?: number) {
+  let targetAltId: number | undefined = altId;
 
-  if (!targetProfileId) {
+  if (!targetAltId) {
     const {
       data: { user },
     } = await supabase.auth.getUser();
     if (!user) return [];
 
-    const { data: profile } = await supabase
-      .from("profiles")
+    const { data: alt } = await supabase
+      .from("alts")
       .select("id")
       .eq("user_id", user.id)
       .single();
 
-    if (!profile) return [];
-    targetProfileId = profile.id as number;
+    if (!alt) return [];
+    targetAltId = alt.id as number;
   }
 
   const { data: teams } = await supabase
     .from("teams")
     .select("*")
-    .eq("created_by", targetProfileId!);
+    .eq("created_by", targetAltId!);
 
   if (!teams?.length) return [];
 
@@ -556,8 +611,8 @@ export async function getMatchDetails(supabase: TypedClient, matchId: number) {
     .select(
       `
       *,
-      player1:profiles!tournament_matches_player1_profile_id_fkey(*),
-      player2:profiles!tournament_matches_player2_profile_id_fkey(*),
+      player1:alts!tournament_matches_alt1_id_fkey(*),
+      player2:alts!tournament_matches_alt2_id_fkey(*),
       round:tournament_rounds(*)
     `
     )
@@ -588,7 +643,7 @@ export async function getMatchDetails(supabase: TypedClient, matchId: number) {
 export async function getPlayerMatches(
   supabase: TypedClient,
   tournamentId: number,
-  profileId: number
+  altId: number
 ) {
   const { data: phases } = await supabase
     .from("tournament_phases")
@@ -613,13 +668,13 @@ export async function getPlayerMatches(
     .select(
       `
       *,
-      player1:profiles!tournament_matches_player1_profile_id_fkey(*),
-      player2:profiles!tournament_matches_player2_profile_id_fkey(*),
+      player1:alts!tournament_matches_alt1_id_fkey(*),
+      player2:alts!tournament_matches_alt2_id_fkey(*),
       round:tournament_rounds(*)
     `
     )
     .in("round_id", roundIds)
-    .or(`player1_profile_id.eq.${profileId},player2_profile_id.eq.${profileId}`)
+    .or(`alt1_id.eq.${altId},alt2_id.eq.${altId}`)
     .order("created_at", { ascending: true });
 
   if (error) throw error;
@@ -630,10 +685,7 @@ export async function getPlayerMatches(
  * Get dashboard data for current user
  * Returns tournaments, organizations, stats, recent activity, and achievements
  */
-export async function getMyDashboardData(
-  supabase: TypedClient,
-  profileId: number
-) {
+export async function getMyDashboardData(supabase: TypedClient, altId: number) {
   // Fetch all registrations for this user
   const { data: tournamentRegistrations } = await supabase
     .from("tournament_registrations")
@@ -643,7 +695,7 @@ export async function getMyDashboardData(
       tournament:tournaments(*)
     `
     )
-    .eq("profile_id", profileId);
+    .eq("alt_id", altId);
 
   // Build myTournaments list (exclude archived)
   const myTournaments: {
@@ -681,7 +733,7 @@ export async function getMyDashboardData(
   const { data: playerStats } = await supabase
     .from("tournament_player_stats")
     .select("*")
-    .eq("profile_id", profileId);
+    .eq("alt_id", altId);
 
   let totalMatches = 0;
   let totalWins = 0;
@@ -709,8 +761,8 @@ export async function getMyDashboardData(
     .select(
       `
       *,
-      player1:profiles!tournament_matches_profile1_id_fkey(id, display_name),
-      player2:profiles!tournament_matches_profile2_id_fkey(id, display_name),
+      player1:alts!tournament_matches_alt1_id_fkey(id, display_name),
+      player2:alts!tournament_matches_alt2_id_fkey(id, display_name),
       round:tournament_rounds(
         id,
         phase:tournament_phases(
@@ -721,7 +773,7 @@ export async function getMyDashboardData(
     `
     )
     .eq("status", "completed")
-    .or(`profile1_id.eq.${profileId},profile2_id.eq.${profileId}`)
+    .or(`alt1_id.eq.${altId},alt2_id.eq.${altId}`)
     .order("updated_at", { ascending: false })
     .limit(5);
 
@@ -746,14 +798,14 @@ export async function getMyDashboardData(
     const tournament = round?.phase?.tournament;
     if (!tournament) continue;
 
-    const isPlayer1 = match.profile1_id === profileId;
+    const isPlayer1 = match.alt1_id === altId;
     const opponent = isPlayer1 ? match.player2 : match.player1;
     // player1/player2 are arrays from Supabase join, take first element
     const opponentArr = opponent as
       | { id: number; display_name: string }[]
       | null;
     const opponentProfile = opponentArr?.[0] ?? null;
-    const won = match.winner_profile_id === profileId;
+    const won = match.winner_alt_id === altId;
 
     recentActivity.push({
       id: match.id,
@@ -839,14 +891,14 @@ export async function getRegistrationStatus(
     data: { user },
   } = await supabase.auth.getUser();
 
-  let profileId: number | null = null;
+  let altId: number | null = null;
   if (user) {
-    const { data: profile } = await supabase
-      .from("profiles")
+    const { data: alt } = await supabase
+      .from("alts")
       .select("id")
       .eq("user_id", user.id)
       .single();
-    profileId = (profile?.id as number) ?? null;
+    altId = (alt?.id as number) ?? null;
   }
 
   // Get tournament
@@ -881,12 +933,12 @@ export async function getRegistrationStatus(
     waitlistPosition?: number;
   } | null = null;
 
-  if (profileId) {
+  if (altId) {
     const { data: userReg } = await supabase
       .from("tournament_registrations")
       .select("status")
       .eq("tournament_id", tournamentId)
-      .eq("profile_id", profileId)
+      .eq("alt_id", altId)
       .single();
 
     if (userReg) {
@@ -895,14 +947,12 @@ export async function getRegistrationStatus(
         // Calculate waitlist position
         const { data: waitlistRegs } = await supabase
           .from("tournament_registrations")
-          .select("profile_id, registered_at")
+          .select("alt_id, registered_at")
           .eq("tournament_id", tournamentId)
           .eq("status", "waitlist")
           .order("registered_at", { ascending: true });
 
-        const position = waitlistRegs?.findIndex(
-          (r) => r.profile_id === profileId
-        );
+        const position = waitlistRegs?.findIndex((r) => r.alt_id === altId);
         waitlistPosition =
           position !== undefined && position >= 0 ? position + 1 : undefined;
       }
@@ -957,7 +1007,7 @@ export async function getTournamentInvitationsSent(
     .select(
       `
       *,
-      invitedPlayer:profiles!tournament_invitations_invited_profile_id_fkey(
+      invitedPlayer:alts!tournament_invitations_invited_alt_id_fkey(
         id,
         username,
         display_name,
@@ -992,13 +1042,13 @@ export async function getTournamentInvitationsReceived(supabase: TypedClient) {
   } = await supabase.auth.getUser();
   if (!user) return [];
 
-  const { data: profile } = await supabase
-    .from("profiles")
+  const { data: alt } = await supabase
+    .from("alts")
     .select("id")
     .eq("user_id", user.id)
     .single();
 
-  if (!profile) return [];
+  if (!alt) return [];
 
   const { data, error } = await supabase
     .from("tournament_invitations")
@@ -1006,7 +1056,7 @@ export async function getTournamentInvitationsReceived(supabase: TypedClient) {
       `
       *,
       tournament:tournaments(*),
-      invitedBy:profiles!tournament_invitations_invited_by_profile_id_fkey(
+      invitedBy:alts!tournament_invitations_invited_by_alt_id_fkey(
         id,
         display_name,
         username,
@@ -1014,7 +1064,7 @@ export async function getTournamentInvitationsReceived(supabase: TypedClient) {
       )
     `
     )
-    .eq("invited_profile_id", profile.id)
+    .eq("invited_alt_id", alt.id)
     .order("invited_at", { ascending: false });
 
   if (error) throw error;
