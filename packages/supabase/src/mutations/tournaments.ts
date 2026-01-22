@@ -7,21 +7,21 @@ type TournamentFormat = Database["public"]["Enums"]["tournament_format"];
 type TournamentStatus = Database["public"]["Enums"]["tournament_status"];
 
 /**
- * Helper to get current profile
+ * Helper to get current alt
  */
-async function getCurrentProfile(supabase: TypedClient) {
+async function getCurrentAlt(supabase: TypedClient) {
   const {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return null;
 
-  const { data: profile } = await supabase
-    .from("profiles")
+  const { data: alt } = await supabase
+    .from("alts")
     .select("*")
     .eq("user_id", user.id)
     .single();
 
-  return profile;
+  return alt;
 }
 
 /**
@@ -43,13 +43,13 @@ export async function createTournament(
     roundTimeMinutes?: number;
   }
 ) {
-  const profile = await getCurrentProfile(supabase);
+  const profile = await getCurrentAlt(supabase);
   if (!profile) throw new Error("Not authenticated");
 
   // Verify organization exists and user has permission
   const { data: org } = await supabase
     .from("organizations")
-    .select("owner_profile_id")
+    .select("owner_alt_id")
     .eq("id", data.organizationId)
     .single();
 
@@ -57,7 +57,7 @@ export async function createTournament(
 
   // TODO: Check TOURNAMENT_CREATE permission through RBAC
   // For now, only org owner can create tournaments
-  if (org.owner_profile_id !== profile.id) {
+  if (org.owner_alt_id !== profile.id) {
     throw new Error("You don't have permission to create tournaments");
   }
 
@@ -135,7 +135,7 @@ export async function updateTournament(
     status?: TournamentStatus;
   }
 ) {
-  const profile = await getCurrentProfile(supabase);
+  const profile = await getCurrentAlt(supabase);
   if (!profile) throw new Error("Not authenticated");
 
   // Get tournament and org
@@ -150,11 +150,11 @@ export async function updateTournament(
   // Verify permission
   const { data: org } = await supabase
     .from("organizations")
-    .select("owner_profile_id")
+    .select("owner_alt_id")
     .eq("id", tournament.organization_id)
     .single();
 
-  if (org?.owner_profile_id !== profile.id) {
+  if (org?.owner_alt_id !== profile.id) {
     throw new Error("You don't have permission to update this tournament");
   }
 
@@ -190,15 +190,15 @@ export async function registerForTournament(
     notes?: string;
   }
 ) {
-  const profile = await getCurrentProfile(supabase);
-  if (!profile) throw new Error("Not authenticated");
+  const alt = await getCurrentAlt(supabase);
+  if (!alt) throw new Error("Not authenticated");
 
   // Check if already registered
   const { data: existing } = await supabase
     .from("tournament_registrations")
     .select("id")
     .eq("tournament_id", tournamentId)
-    .eq("profile_id", profile.id)
+    .eq("alt_id", alt.id)
     .single();
 
   if (existing) {
@@ -237,7 +237,7 @@ export async function registerForTournament(
     .from("tournament_registrations")
     .insert({
       tournament_id: tournamentId,
-      profile_id: profile.id,
+      alt_id: alt.id,
       status: registrationStatus,
       registered_at: new Date().toISOString(),
       team_name: data?.teamName,
@@ -262,18 +262,18 @@ export async function cancelRegistration(
   supabase: TypedClient,
   registrationId: number
 ) {
-  const profile = await getCurrentProfile(supabase);
-  if (!profile) throw new Error("Not authenticated");
+  const alt = await getCurrentAlt(supabase);
+  if (!alt) throw new Error("Not authenticated");
 
   // Verify ownership
   const { data: registration } = await supabase
     .from("tournament_registrations")
-    .select("profile_id, tournament_id")
+    .select("alt_id, tournament_id")
     .eq("id", registrationId)
     .single();
 
   if (!registration) throw new Error("Registration not found");
-  if (registration.profile_id !== profile.id) {
+  if (registration.alt_id !== alt.id) {
     throw new Error("You can only cancel your own registration");
   }
 
@@ -304,7 +304,7 @@ export async function archiveTournament(
   supabase: TypedClient,
   tournamentId: number
 ) {
-  const profile = await getCurrentProfile(supabase);
+  const profile = await getCurrentAlt(supabase);
   if (!profile) throw new Error("Not authenticated");
 
   // Get tournament
@@ -319,11 +319,11 @@ export async function archiveTournament(
   // Verify permission
   const { data: org } = await supabase
     .from("organizations")
-    .select("owner_profile_id")
+    .select("owner_alt_id")
     .eq("id", tournament.organization_id)
     .single();
 
-  if (org?.owner_profile_id !== profile.id) {
+  if (org?.owner_alt_id !== profile.id) {
     throw new Error("You don't have permission to archive this tournament");
   }
 
@@ -344,7 +344,7 @@ export async function updateRegistrationStatus(
   registrationId: number,
   status: Database["public"]["Enums"]["registration_status"]
 ) {
-  const profile = await getCurrentProfile(supabase);
+  const profile = await getCurrentAlt(supabase);
   if (!profile) throw new Error("Not authenticated");
 
   // Get registration and tournament
@@ -367,11 +367,11 @@ export async function updateRegistrationStatus(
   // Verify permission
   const { data: org } = await supabase
     .from("organizations")
-    .select("owner_profile_id")
+    .select("owner_alt_id")
     .eq("id", tournament.organization_id)
     .single();
 
-  if (org?.owner_profile_id !== profile.id) {
+  if (org?.owner_alt_id !== profile.id) {
     throw new Error("You don't have permission to update registrations");
   }
 
@@ -388,7 +388,7 @@ export async function updateRegistrationStatus(
  * Check in to a tournament
  */
 export async function checkIn(supabase: TypedClient, tournamentId: number) {
-  const profile = await getCurrentProfile(supabase);
+  const profile = await getCurrentAlt(supabase);
   if (!profile) throw new Error("Not authenticated");
 
   // Find the user's registration
@@ -436,7 +436,7 @@ export async function checkIn(supabase: TypedClient, tournamentId: number) {
  * Undo check-in for a tournament
  */
 export async function undoCheckIn(supabase: TypedClient, tournamentId: number) {
-  const profile = await getCurrentProfile(supabase);
+  const profile = await getCurrentAlt(supabase);
   if (!profile) throw new Error("Not authenticated");
 
   // Find the user's registration
@@ -478,7 +478,7 @@ export async function undoCheckIn(supabase: TypedClient, tournamentId: number) {
  * Start a match (set status to active)
  */
 export async function startMatch(supabase: TypedClient, matchId: number) {
-  const profile = await getCurrentProfile(supabase);
+  const profile = await getCurrentAlt(supabase);
   if (!profile) throw new Error("Not authenticated");
 
   // Get match with round and phase info to verify tournament ownership
@@ -488,8 +488,8 @@ export async function startMatch(supabase: TypedClient, matchId: number) {
       `
       id,
       status,
-      profile1_id,
-      profile2_id,
+      alt1_id,
+      alt2_id,
       round_id,
       tournament_rounds!inner (
         phase_id,
@@ -498,7 +498,7 @@ export async function startMatch(supabase: TypedClient, matchId: number) {
           tournaments!inner (
             organization_id,
             organizations!inner (
-              owner_profile_id
+              owner_alt_id
             )
           )
         )
@@ -518,17 +518,16 @@ export async function startMatch(supabase: TypedClient, matchId: number) {
       tournaments: {
         organization_id: number;
         organizations: {
-          owner_profile_id: number;
+          owner_alt_id: number;
         };
       };
     };
   };
 
   const isOrganizer =
-    rounds.tournament_phases.tournaments.organizations.owner_profile_id ===
+    rounds.tournament_phases.tournaments.organizations.owner_alt_id ===
     profile.id;
-  const isPlayer =
-    match.profile1_id === profile.id || match.profile2_id === profile.id;
+  const isPlayer = match.alt1_id === profile.id || match.alt2_id === profile.id;
 
   if (!isOrganizer && !isPlayer) {
     throw new Error("You don't have permission to start this match");
@@ -560,7 +559,7 @@ export async function reportMatchResult(
   player1Score: number,
   player2Score: number
 ) {
-  const profile = await getCurrentProfile(supabase);
+  const profile = await getCurrentAlt(supabase);
   if (!profile) throw new Error("Not authenticated");
 
   // Get match with tournament info
@@ -570,8 +569,8 @@ export async function reportMatchResult(
       `
       id,
       status,
-      profile1_id,
-      profile2_id,
+      alt1_id,
+      alt2_id,
       round_id,
       tournament_rounds!inner (
         phase_id,
@@ -580,7 +579,7 @@ export async function reportMatchResult(
           tournaments!inner (
             organization_id,
             organizations!inner (
-              owner_profile_id
+              owner_alt_id
             )
           )
         )
@@ -600,17 +599,16 @@ export async function reportMatchResult(
       tournaments: {
         organization_id: number;
         organizations: {
-          owner_profile_id: number;
+          owner_alt_id: number;
         };
       };
     };
   };
 
   const isOrganizer =
-    rounds.tournament_phases.tournaments.organizations.owner_profile_id ===
+    rounds.tournament_phases.tournaments.organizations.owner_alt_id ===
     profile.id;
-  const isPlayer =
-    match.profile1_id === profile.id || match.profile2_id === profile.id;
+  const isPlayer = match.alt1_id === profile.id || match.alt2_id === profile.id;
 
   if (!isOrganizer && !isPlayer) {
     throw new Error("You don't have permission to report this match result");
@@ -624,7 +622,7 @@ export async function reportMatchResult(
   }
 
   // Validate winner is one of the players
-  if (winnerId !== match.profile1_id && winnerId !== match.profile2_id) {
+  if (winnerId !== match.alt1_id && winnerId !== match.alt2_id) {
     throw new Error("Winner must be one of the match participants");
   }
 
@@ -636,7 +634,7 @@ export async function reportMatchResult(
   const { error } = await supabase
     .from("tournament_matches")
     .update({
-      winner_profile_id: winnerId,
+      winner_alt_id: winnerId,
       game_wins1: player1Score,
       game_wins2: player2Score,
       status: "completed",
@@ -655,7 +653,7 @@ export async function withdrawFromTournament(
   supabase: TypedClient,
   tournamentId: number
 ) {
-  const profile = await getCurrentProfile(supabase);
+  const profile = await getCurrentAlt(supabase);
   if (!profile) throw new Error("Not authenticated");
 
   // Find registration
@@ -695,7 +693,7 @@ export async function deleteTournament(
   supabase: TypedClient,
   tournamentId: number
 ) {
-  const profile = await getCurrentProfile(supabase);
+  const profile = await getCurrentAlt(supabase);
   if (!profile) throw new Error("Not authenticated");
 
   // Get tournament
@@ -710,11 +708,11 @@ export async function deleteTournament(
   // Verify permission
   const { data: org } = await supabase
     .from("organizations")
-    .select("owner_profile_id")
+    .select("owner_alt_id")
     .eq("id", tournament.organization_id)
     .single();
 
-  if (org?.owner_profile_id !== profile.id) {
+  if (org?.owner_alt_id !== profile.id) {
     throw new Error("You don't have permission to delete this tournament");
   }
 
@@ -740,7 +738,7 @@ export async function sendTournamentInvitations(
   profileIds: number[],
   message?: string
 ) {
-  const profile = await getCurrentProfile(supabase);
+  const profile = await getCurrentAlt(supabase);
   if (!profile) throw new Error("Not authenticated");
 
   // Get tournament and verify permission
@@ -754,23 +752,23 @@ export async function sendTournamentInvitations(
 
   const { data: org } = await supabase
     .from("organizations")
-    .select("owner_profile_id")
+    .select("owner_alt_id")
     .eq("id", tournament.organization_id)
     .single();
 
-  if (org?.owner_profile_id !== profile.id) {
+  if (org?.owner_alt_id !== profile.id) {
     throw new Error("You don't have permission to send invitations");
   }
 
   // Check for existing invitations
   const { data: existingInvitations } = await supabase
     .from("tournament_invitations")
-    .select("invited_profile_id")
+    .select("invited_alt_id")
     .eq("tournament_id", tournamentId)
-    .in("invited_profile_id", profileIds);
+    .in("invited_alt_id", profileIds);
 
   const existingIds = new Set(
-    existingInvitations?.map((inv) => inv.invited_profile_id) ?? []
+    existingInvitations?.map((inv) => inv.invited_alt_id) ?? []
   );
   const newProfileIds = profileIds.filter((id) => !existingIds.has(id));
 
@@ -784,8 +782,8 @@ export async function sendTournamentInvitations(
   // Create invitations
   const invitations = newProfileIds.map((profileId) => ({
     tournament_id: tournamentId,
-    invited_profile_id: profileId,
-    invited_by_profile_id: profile.id,
+    invited_alt_id: profileId,
+    invited_by_alt_id: profile.id,
     status: "pending" as const,
     message: message ?? null,
     invited_at: new Date().toISOString(),
@@ -812,8 +810,8 @@ export async function respondToTournamentInvitation(
   invitationId: number,
   response: "accept" | "decline"
 ) {
-  const profile = await getCurrentProfile(supabase);
-  if (!profile) throw new Error("Not authenticated");
+  const alt = await getCurrentAlt(supabase);
+  if (!alt) throw new Error("Not authenticated");
 
   // Get invitation
   const { data: invitation } = await supabase
@@ -824,7 +822,7 @@ export async function respondToTournamentInvitation(
 
   if (!invitation) throw new Error("Invitation not found");
 
-  if (invitation.invited_profile_id !== profile.id) {
+  if (invitation.invited_alt_id !== alt.id) {
     throw new Error("This invitation is not for you");
   }
 
@@ -856,7 +854,7 @@ export async function respondToTournamentInvitation(
         .from("tournament_registrations")
         .insert({
           tournament_id: invitation.tournament_id,
-          profile_id: profile.id,
+          alt_id: alt.id,
           status: "registered",
           registered_at: new Date().toISOString(),
           rental_team_photo_verified: false,
