@@ -1,0 +1,7 @@
+-- Baseline migration
+-- This file represents the initial database schema that was created when the project was first set up.
+-- It exists as a placeholder to match the migration history in the production database.
+-- The actual schema was created via the Supabase dashboard or initial project setup.
+--
+-- DO NOT MODIFY THIS FILE
+-- New schema changes should be added as new migrations with proper timestamps.
