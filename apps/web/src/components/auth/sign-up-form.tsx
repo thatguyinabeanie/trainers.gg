@@ -26,7 +26,7 @@ const signUpSchema = z
     username: z
       .string()
       .min(3, "Username must be at least 3 characters")
-      .max(30, "Username must be at most 30 characters")
+      .max(20, "Username must be at most 20 characters")
       .regex(
         /^[a-zA-Z0-9_-]+$/,
         "Username can only contain letters, numbers, underscores, and hyphens"
@@ -151,7 +151,7 @@ export function SignUpForm() {
               </p>
             )}
             <p className="text-muted-foreground text-xs">
-              3-30 characters. Letters, numbers, underscores, and hyphens only.
+              3-20 characters. Letters, numbers, underscores, and hyphens only.
             </p>
           </div>
 

@@ -43,7 +43,7 @@ export async function checkUsernameAvailability(
   const trimmed = username.trim().toLowerCase();
 
   // Validate username format
-  if (!/^[a-zA-Z0-9_-]{3,30}$/.test(trimmed)) {
+  if (!/^[a-zA-Z0-9_-]{3,20}$/.test(trimmed)) {
     return { available: false, error: "Invalid username format" };
   }
 
