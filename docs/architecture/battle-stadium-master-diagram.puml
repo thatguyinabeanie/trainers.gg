@@ -1,0 +1,232 @@
+@startuml
+!theme spacelab
+
+' === Actors ===
+actor Player
+actor TO as "Tournament Organizer"
+actor Judge
+actor Admin as "Org Admin"
+actor SiteAdmin as "Site Admin"
+actor Spectator
+actor System as "Platform System"
+
+' === External Services ===
+cloud "Supabase (Database + Auth + Realtime)" as Supabase
+cloud "Resend (Email)" as Resend
+cloud "OneSignal (Push)" as OneSignal
+cloud "Discord (Integration)" as Discord
+
+' === Main Entities ===
+entity "User" as User
+entity "Profile" as Profile
+entity "Organization" as Org
+entity "Group" as Group
+entity "Role" as Role
+entity "Permission" as Permission
+entity "GroupRole" as GroupRole
+entity "ProfileGroupRole" as ProfileGroupRole
+entity "RolePermission" as RolePermission
+entity "Tournament" as Tournament
+entity "Phase" as Phase
+entity "Round" as Round
+entity "Match" as Match
+entity "Registration" as Registration
+entity "Team" as Team
+entity "PlayerConductEvent" as ConductEvent
+entity "UserReputationScore" as ReputationScore
+entity "UserIP" as UserIP
+entity "Appeal" as Appeal
+entity "Evidence" as Evidence
+entity "AuditLog" as AuditLog
+entity "ChatMessage" as ChatMessage
+entity "Notification" as Notification
+entity "Article" as Article
+entity "Analytics" as Analytics
+
+' === User Flows ===
+Player --> Supabase : registers/logs in
+Supabase --> User : creates/returns user
+User --> Profile : creates/updates profile(s)
+Player --> System : manages teams, registers for tournaments
+Player --> System : views dashboard, analytics, conduct record
+Player --> System : sends/receives chat messages
+Player --> System : receives notifications
+Player --> System : submits appeal
+Player --> System : opts in/out of IP tracking
+Player --> System : receives email (Resend), push (OneSignal)
+
+TO --> Org : creates/owns organization
+TO --> System : creates tournaments, manages staff
+TO --> System : logs conduct events, positive events
+TO --> System : views conduct records (own tournaments)
+TO --> System : sets min rep score, bans/drops players
+TO --> System : receives notifications
+TO --> System : receives email (Resend)
+
+Judge --> System : enters results, verifies teams, manages check-in
+Judge --> System : logs conduct events (if permitted)
+
+Admin --> Org : manages org, staff, settings
+Admin --> System : reviews appeals, manages roles/permissions
+Admin --> System : views audit logs, analytics
+Admin --> System : receives notifications
+
+SiteAdmin --> System : full access to all orgs, tournaments, users
+SiteAdmin --> System : reviews all appeals, manages event types
+SiteAdmin --> System : manages privacy/data, abuse monitoring
+SiteAdmin --> System : receives notifications
+
+Spectator --> System : views public brackets, standings, articles
+
+' === Tournament Flows ===
+Player --> Registration : registers for tournament
+Registration --> Tournament : for tournament
+Registration --> Team : submits team
+Tournament --> Phase : has phases
+Phase --> Round : has rounds
+Round --> Match : has matches
+Match --> Profile : player1/player2
+Judge --> Match : enters results
+
+' === Conduct & Reputation ===
+TO --> ConductEvent : logs event (positive/negative)
+ConductEvent --> Profile : for user
+ConductEvent --> Tournament : in tournament
+ConductEvent --> Org : by organizer
+ConductEvent --> Evidence : has evidence
+ConductEvent --> Appeal : can be appealed
+ConductEvent --> ReputationScore : affects score
+System --> ReputationScore : recalculates (on event/decay)
+Player --> Appeal : submits (within 7 days)
+Appeal --> ConductEvent : references
+Appeal --> Evidence : can attach
+Admin --> Appeal : reviews, votes
+System --> AuditLog : logs all actions
+
+' === Real-Time & Messaging ===
+Player --> ChatMessage : sends/receives
+TO --> ChatMessage : sends/receives
+Judge --> ChatMessage : sends/receives
+Admin --> ChatMessage : sends/receives
+ChatMessage --> Supabase : publish/subscribe via Realtime
+System --> Supabase : publishes events (chat, notifications)
+System --> Notification : creates
+Notification --> Player : delivers (in-app)
+Notification --> TO : delivers (in-app)
+Notification --> Admin : delivers (in-app)
+Notification --> SiteAdmin : delivers (in-app)
+System --> Resend : sends email
+System --> OneSignal : sends push
+System --> Discord : sends webhook/integration
+
+' === Analytics & Articles ===
+Player --> Article : writes (future)
+TO --> Article : writes (future)
+Admin --> Article : reviews (future)
+Article --> Analytics : referenced in stats
+Tournament --> Analytics : has
+System --> Analytics : calculates, updates
+
+' === RBAC & Permissions ===
+Profile --> ProfileGroupRole : assigned
+ProfileGroupRole --> GroupRole : links
+GroupRole --> Group : for group
+GroupRole --> Role : for role
+Role --> RolePermission : has
+RolePermission --> Permission : grants
+
+' === Privacy & Security ===
+Player --> UserIP : opt in/out, tracked on participation
+System --> UserIP : logs IP, flags for ban evasion
+UserIP --> Profile : belongs to user
+System --> AuditLog : logs access, changes
+System --> Evidence : stores securely
+System --> Notification : notifies on privacy/data events
+
+' === Data Flows ===
+System --> Supabase : all persistent data + auth + real-time
+System --> Resend : transactional email
+System --> OneSignal : push notifications
+System --> Discord : community integration
+
+' === Notes & Groupings ===
+package "Users & Profiles" {
+  User -- Profile
+  Profile -- ProfileGroupRole
+}
+package "Organizations & RBAC" {
+  Org -- Group
+  Group -- GroupRole
+  GroupRole -- Role
+  Role -- RolePermission
+  RolePermission -- Permission
+  ProfileGroupRole -- GroupRole
+}
+package "Tournaments" {
+  Org -- Tournament
+  Tournament -- Phase
+  Phase -- Round
+  Round -- Match
+  Tournament -- Registration
+  Registration -- Team
+  Match -- Profile
+}
+package "Teams & Articles" {
+  Profile -- Team
+  Team -- Article
+  Article -- Analytics
+}
+package "Conduct & Reputation" {
+  Profile -- ConductEvent
+  ConductEvent -- Evidence
+  ConductEvent -- Appeal
+  ConductEvent -- ReputationScore
+  Profile -- UserIP
+}
+package "Real-Time & Messaging" {
+  ChatMessage -- Supabase
+  Notification -- Supabase
+}
+package "Privacy & Security" {
+  System -- AuditLog
+  System -- Evidence
+  System -- UserIP
+}
+
+note right of System
+  - Handles all business logic, API, validation
+  - Publishes real-time events to Supabase Realtime
+  - Sends email (Resend), push (OneSignal), Discord webhooks
+  - Enforces RBAC, privacy, compliance
+  - Runs scheduled jobs (score decay, analytics)
+end note
+
+note right of Player
+  - Registers/logs in (Supabase Auth)
+  - Manages profiles, teams
+  - Registers for tournaments
+  - Views dashboard, analytics, conduct
+  - Sends/receives chat, notifications
+  - Submits appeals
+end note
+
+note right of TO
+  - Creates orgs, tournaments
+  - Manages staff, logs conduct events
+  - Sets min rep, bans/drops
+  - Views analytics, conduct records
+end note
+
+note right of Admin
+  - Manages org, staff, roles
+  - Reviews appeals, audit logs
+  - Full analytics, settings
+end note
+
+note right of SiteAdmin
+  - Full platform access
+  - Reviews all appeals, event types
+  - Manages privacy, abuse monitoring
+end note
+
+@enduml 
