@@ -151,14 +151,20 @@ run_seed() {
 }
 
 # =============================================================================
-# Generate TypeScript types (disabled - use production types)
+# Generate TypeScript types from local database
 # =============================================================================
-# NOTE: Types should be generated from production schema, not local.
-# Local Supabase may not have all tables that production has.
-# To regenerate types from production, run:
-#   pnpm --filter=@trainers/supabase run generate-types
 generate_types() {
-  echo -e "${BLUE}Skipping type generation (using production types)${NC}"
+  echo -e "${YELLOW}Generating TypeScript types...${NC}"
+  cd "$SUPABASE_DIR"
+  
+  # Redirect stderr to suppress debug output
+  $SUPABASE_CMD gen types typescript --local 2>/dev/null > src/types.ts
+  
+  if [ $? -eq 0 ]; then
+    echo -e "${GREEN}Types generated successfully${NC}"
+  else
+    echo -e "${YELLOW}Warning: Failed to generate types (non-fatal)${NC}"
+  fi
 }
 
 # =============================================================================

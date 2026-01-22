@@ -7,10 +7,30 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instantiate createClient with right options
-  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
-  __InternalSupabase: {
-    PostgrestVersion: "14.1"
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
   }
   public: {
     Tables: {
@@ -1791,14 +1811,17 @@ export type Database = {
       }
       users: {
         Row: {
-          clerk_id: string | null
+          birth_date: string | null
+          country: string | null
           created_at: string | null
           email: string | null
           external_accounts: Json | null
+          first_name: string | null
           id: string
           image: string | null
           is_locked: boolean | null
           last_active_at: string | null
+          last_name: string | null
           last_sign_in_at: string | null
           main_profile_id: string | null
           name: string | null
@@ -1808,14 +1831,17 @@ export type Database = {
           username: string | null
         }
         Insert: {
-          clerk_id?: string | null
+          birth_date?: string | null
+          country?: string | null
           created_at?: string | null
           email?: string | null
           external_accounts?: Json | null
+          first_name?: string | null
           id: string
           image?: string | null
           is_locked?: boolean | null
           last_active_at?: string | null
+          last_name?: string | null
           last_sign_in_at?: string | null
           main_profile_id?: string | null
           name?: string | null
@@ -1825,14 +1851,17 @@ export type Database = {
           username?: string | null
         }
         Update: {
-          clerk_id?: string | null
+          birth_date?: string | null
+          country?: string | null
           created_at?: string | null
           email?: string | null
           external_accounts?: Json | null
+          first_name?: string | null
           id?: string
           image?: string | null
           is_locked?: boolean | null
           last_active_at?: string | null
+          last_name?: string | null
           last_sign_in_at?: string | null
           main_profile_id?: string | null
           name?: string | null
@@ -1856,7 +1885,8 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_current_profile_id: { Args: never; Returns: string }
+      get_current_user_id: { Args: never; Returns: string }
     }
     Enums: {
       billing_interval: "monthly" | "annual"
@@ -2018,6 +2048,9 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {
       billing_interval: ["monthly", "annual"],
