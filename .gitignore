@@ -38,6 +38,10 @@ coverage/
 # Convex
 .convex/
 
+# Supabase local
+packages/supabase/supabase/.branches/
+packages/supabase/supabase/.temp/
+
 # Expo
 *.jks
 *.p8
@@ -59,3 +63,4 @@ next-app
 
 # Turborepo
 .turbo
+.env.local.backup

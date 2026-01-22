@@ -30,13 +30,13 @@ import {
 import { toast } from "sonner";
 
 type CheckedInPlayer = {
-  profileId: string;
+  profileId: number;
   displayName: string;
   checkedInAt: number;
 };
 
 interface CheckInCardProps {
-  tournamentId: string;
+  tournamentId: number;
   isOrganizer?: boolean;
 }
 

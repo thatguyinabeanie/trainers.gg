@@ -8,7 +8,7 @@ type TypedClient = SupabaseClient<Database>;
  */
 export async function updateProfile(
   supabase: TypedClient,
-  profileId: string,
+  profileId: number,
   updates: {
     displayName?: string;
     bio?: string;
@@ -54,7 +54,7 @@ export async function updateProfile(
  */
 export async function updateUsername(
   supabase: TypedClient,
-  profileId: string,
+  profileId: number,
   newUsername: string
 ) {
   // Verify the user owns this profile

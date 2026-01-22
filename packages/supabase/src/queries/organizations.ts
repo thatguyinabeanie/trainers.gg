@@ -209,7 +209,7 @@ export async function getOrganizationBySlug(
 /**
  * Get organization by ID
  */
-export async function getOrganizationById(supabase: TypedClient, id: string) {
+export async function getOrganizationById(supabase: TypedClient, id: number) {
   const { data, error } = await supabase
     .from("organizations")
     .select(
@@ -231,9 +231,9 @@ export async function getOrganizationById(supabase: TypedClient, id: string) {
  */
 export async function listMyOrganizations(
   supabase: TypedClient,
-  profileId?: string
+  profileId?: number
 ) {
-  let targetProfileId = profileId;
+  let targetProfileId: number | undefined = profileId;
 
   if (!targetProfileId) {
     const {
@@ -248,7 +248,7 @@ export async function listMyOrganizations(
       .single();
 
     if (!profile) return [];
-    targetProfileId = profile.id;
+    targetProfileId = profile.id as number;
   }
 
   // Get organizations where user is owner
@@ -265,7 +265,7 @@ export async function listMyOrganizations(
       organization:organizations(*)
     `
     )
-    .eq("profile_id", targetProfileId);
+    .eq("profile_id", targetProfileId!);
 
   const ownedOrgsWithFlag = (ownedOrgs ?? []).map((org) => ({
     ...org,
@@ -278,7 +278,7 @@ export async function listMyOrganizations(
       (org): org is NonNullable<typeof org> => org !== null && org !== undefined
     )
     .map((org) => {
-      const typedOrg = org as { id: string; owner_profile_id: string };
+      const typedOrg = org as { id: number; owner_profile_id: number };
       return {
         ...org,
         isOwner: typedOrg.owner_profile_id === targetProfileId,
@@ -299,8 +299,8 @@ export async function listMyOrganizations(
  */
 export async function canManageOrganization(
   supabase: TypedClient,
-  organizationId: string,
-  profileId: string
+  organizationId: number,
+  profileId: number
 ) {
   // Check if owner
   const { data: org } = await supabase
@@ -332,7 +332,7 @@ export async function canManageOrganization(
 
   for (const pgr of profileGroupRoles ?? []) {
     const groupRole = pgr.group_role as {
-      group: { organization_id: string } | null;
+      group: { organization_id: number } | null;
       role: {
         role_permissions: { permission: { key: string } | null }[];
       } | null;
@@ -358,7 +358,7 @@ export async function canManageOrganization(
  */
 export async function listOrganizationMembers(
   supabase: TypedClient,
-  organizationId: string
+  organizationId: number
 ) {
   const { data, error } = await supabase
     .from("organization_members")
@@ -379,8 +379,8 @@ export async function listOrganizationMembers(
  */
 export async function isOrganizationMember(
   supabase: TypedClient,
-  organizationId: string,
-  profileId: string
+  organizationId: number,
+  profileId: number
 ) {
   // Check if owner
   const { data: org } = await supabase
@@ -409,7 +409,7 @@ export async function isOrganizationMember(
  */
 export async function getMyOrganizationInvitations(
   supabase: TypedClient,
-  profileId: string
+  profileId: number
 ) {
   const { data: invitations, error } = await supabase
     .from("organization_invitations")
@@ -432,7 +432,7 @@ export async function getMyOrganizationInvitations(
  */
 export async function getOrganizationInvitations(
   supabase: TypedClient,
-  organizationId: string
+  organizationId: number
 ) {
   const { data: invitations, error } = await supabase
     .from("organization_invitations")

@@ -39,14 +39,14 @@ interface TournamentInvitationsViewProps {
 }
 
 interface RespondArgs {
-  invitationId: string;
+  invitationId: number;
   response: "accept" | "decline";
 }
 
 export function TournamentInvitationsView({
   className,
 }: TournamentInvitationsViewProps) {
-  const [respondingTo, setRespondingTo] = useState<string | null>(null);
+  const [respondingTo, setRespondingTo] = useState<number | null>(null);
 
   const {
     data: invitations,
@@ -63,7 +63,7 @@ export function TournamentInvitationsView({
   );
 
   const handleResponse = async (
-    invitationId: string,
+    invitationId: number,
     response: "accept" | "decline"
   ) => {
     setRespondingTo(invitationId);

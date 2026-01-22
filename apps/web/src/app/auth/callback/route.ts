@@ -1,6 +1,7 @@
 import { type NextRequest } from "next/server";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { isProfileComplete } from "@/app/onboarding/actions";
 
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url);
@@ -35,6 +36,14 @@ export async function GET(request: NextRequest) {
       return redirect(
         `/sign-in?error=${encodeURIComponent("Authentication failed")}`
       );
+    }
+
+    // Check if this is a new user or returning user with incomplete profile
+    const profileComplete = await isProfileComplete();
+
+    if (!profileComplete) {
+      // Redirect to onboarding to complete profile
+      return redirect(`${origin}/onboarding`);
     }
 
     // Redirect to the intended destination

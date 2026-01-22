@@ -99,10 +99,10 @@ export function TournamentDetailClient({
 
   // Type assertion for organization which may be a nested object
   const organization = tournament.organization as {
-    id: string;
+    id: number;
     name: string;
     slug: string;
-    owner_profile_id: string;
+    owner_profile_id: number;
   } | null;
 
   const isOrganizer =

@@ -50,9 +50,11 @@ export function TournamentBasicInfo({
       <div className="space-y-2">
         <Label htmlFor="organization">Organization *</Label>
         <Select
-          value={formData.organizationId}
-          onValueChange={(value: string | null) =>
-            updateFormData({ organizationId: value || undefined })
+          value={formData.organizationId?.toString()}
+          onValueChange={(value) =>
+            updateFormData({
+              organizationId: value ? Number(value) : undefined,
+            })
           }
         >
           <SelectTrigger>
@@ -60,7 +62,7 @@ export function TournamentBasicInfo({
           </SelectTrigger>
           <SelectContent>
             {organizations?.map((org) => (
-              <SelectItem key={org.id} value={org.id}>
+              <SelectItem key={org.id} value={String(org.id)}>
                 {org.name}
               </SelectItem>
             ))}

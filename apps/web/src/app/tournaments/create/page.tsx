@@ -74,7 +74,7 @@ export default function CreateTournamentPage() {
     (
       supabase,
       args: {
-        organizationId: string;
+        organizationId: number;
         name: string;
         slug: string;
         format?: string;
@@ -134,7 +134,7 @@ export default function CreateTournamentPage() {
     setIsSubmitting(true);
     try {
       const tournament = await createTournamentMutation({
-        organizationId: formData.organizationId as string,
+        organizationId: formData.organizationId,
         name: formData.name,
         slug: formData.slug,
         format: formData.format,

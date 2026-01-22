@@ -9,6 +9,16 @@ const authPages = [
   "/reset-password",
 ];
 
+// Pages that don't require profile completion
+const noProfileCheckPages = [
+  "/onboarding",
+  "/auth/callback",
+  "/sign-in",
+  "/sign-up",
+  "/forgot-password",
+  "/reset-password",
+];
+
 // Public pages that don't require authentication
 const publicPages = [
   "/",
@@ -18,6 +28,7 @@ const publicPages = [
   "/forgot-password",
   "/reset-password",
   "/auth/callback",
+  "/onboarding",
   // Public content pages
   "/tournaments",
   "/organizations",
@@ -37,6 +48,12 @@ function isAuthPage(pathname: string): boolean {
 
 function isPublicPage(pathname: string): boolean {
   return publicPages.some(
+    (page) => pathname === page || pathname.startsWith(`${page}/`)
+  );
+}
+
+function requiresProfileCheck(pathname: string): boolean {
+  return !noProfileCheckPages.some(
     (page) => pathname === page || pathname.startsWith(`${page}/`)
   );
 }
@@ -128,6 +145,17 @@ export async function middleware(request: NextRequest) {
     const signInUrl = new URL("/sign-in", request.url);
     signInUrl.searchParams.set("redirectTo", pathname);
     return NextResponse.redirect(signInUrl);
+  }
+
+  // Check if user needs to complete onboarding
+  if (requiresProfileCheck(pathname)) {
+    // Check user metadata for onboarding status (fast check)
+    const onboardingCompleted = user.user_metadata?.onboarding_completed;
+
+    if (!onboardingCompleted) {
+      // Redirect to onboarding page
+      return NextResponse.redirect(new URL("/onboarding", request.url));
+    }
   }
 
   return response;

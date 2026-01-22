@@ -48,13 +48,13 @@ import {
 import { toast } from "sonner";
 
 interface RegistrationCardProps {
-  tournamentId: string;
+  tournamentId: number;
 }
 
 export function RegistrationCard({ tournamentId }: RegistrationCardProps) {
   const [isRegistering, setIsRegistering] = useState(false);
   const [showRegistrationDialog, setShowRegistrationDialog] = useState(false);
-  const [selectedTeamId, setSelectedTeamId] = useState<string | null>(null);
+  const [selectedTeamId, setSelectedTeamId] = useState<number | null>(null);
   const [teamName, setTeamName] = useState("");
   const [notes, setNotes] = useState("");
 
@@ -363,9 +363,9 @@ export function RegistrationCard({ tournamentId }: RegistrationCardProps) {
             <div className="space-y-2">
               <Label>Select Team (Optional)</Label>
               <Select
-                value={selectedTeamId || ""}
-                onValueChange={(value: string | null) =>
-                  setSelectedTeamId(value || null)
+                value={selectedTeamId?.toString() ?? ""}
+                onValueChange={(value) =>
+                  setSelectedTeamId(value ? Number(value) : null)
                 }
               >
                 <SelectTrigger>
@@ -374,7 +374,7 @@ export function RegistrationCard({ tournamentId }: RegistrationCardProps) {
                 <SelectContent>
                   <SelectItem value="">No team selected</SelectItem>
                   {userTeams?.map((team) => (
-                    <SelectItem key={team.id} value={team.id}>
+                    <SelectItem key={team.id} value={team.id.toString()}>
                       {team.name} ({team.pokemonCount}/6 Pokemon)
                     </SelectItem>
                   ))}

@@ -1,10 +1,11 @@
 {
   "name": "@trainers/mobile",
   "version": "0.0.1",
+  "type": "module",
   "private": true,
   "main": "expo-router/entry",
   "scripts": {
-    "dev": "expo start",
+    "dev:mobile": "expo start",
     "android": "expo run:android",
     "ios": "expo run:ios",
     "build": "expo export",

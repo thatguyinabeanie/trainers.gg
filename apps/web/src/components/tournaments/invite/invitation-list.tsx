@@ -46,21 +46,21 @@ import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
 
 interface InvitationListProps {
-  tournamentId: string;
+  tournamentId: number;
   showActions?: boolean;
 }
 
 type InvitationStatus = "pending" | "accepted" | "declined" | "expired";
 
 interface InvitationData {
-  id: string;
+  id: number;
   status: InvitationStatus;
   message?: string;
   invited_at: string;
   expires_at?: string | null;
   responded_at?: string | null;
   invitedPlayer: {
-    id: string;
+    id: number;
     username: string;
     displayName: string;
     avatarUrl?: string | null;
@@ -103,7 +103,7 @@ export function InvitationList({
 }: InvitationListProps) {
   const [revokeDialogOpen, setRevokeDialogOpen] = useState(false);
   const [selectedInvitationId, setSelectedInvitationId] = useState<
-    string | null
+    number | null
   >(null);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -136,7 +136,7 @@ export function InvitationList({
     }
   };
 
-  const handleResend = async (_invitationId: string) => {
+  const handleResend = async (_invitationId: number) => {
     try {
       // Note: resend mutation would need to be added to the backend
       toast.info("Resend functionality coming soon");
@@ -148,7 +148,7 @@ export function InvitationList({
     }
   };
 
-  const openRevokeDialog = (invitationId: string) => {
+  const openRevokeDialog = (invitationId: number) => {
     setSelectedInvitationId(invitationId);
     setRevokeDialogOpen(true);
   };
@@ -294,8 +294,8 @@ export function InvitationList({
 interface InvitationItemProps {
   invitation: InvitationData;
   showActions?: boolean;
-  onResend?: (id: string) => void;
-  onRevoke?: (id: string) => void;
+  onResend?: (id: number) => void;
+  onRevoke?: (id: number) => void;
 }
 
 function InvitationItem({
