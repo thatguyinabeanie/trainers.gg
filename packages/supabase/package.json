@@ -18,7 +18,12 @@
     "format:check": "prettier --check \"src/**/*.{ts,tsx,js,jsx,json,md}\"",
     "generate-types": "supabase gen types typescript --local > src/types.ts",
     "db:migrate": "supabase db push",
-    "db:reset": "supabase db reset"
+    "db:reset": "supabase db reset",
+    "db:diff": "supabase db diff",
+    "db:lint": "supabase db lint",
+    "db:seed": "supabase db seed",
+    "db:dump": "supabase db dump",
+    "db:status": "supabase status"
   },
   "dependencies": {
     "@supabase/supabase-js": "catalog:",

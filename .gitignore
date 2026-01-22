@@ -59,3 +59,4 @@ next-app
 
 # Turborepo
 .turbo
+.env.local.backup

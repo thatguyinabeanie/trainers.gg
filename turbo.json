@@ -54,6 +54,27 @@
     },
     "format:check": {
       "outputs": []
+    },
+    "db:reset": {
+      "cache": false
+    },
+    "db:migrate": {
+      "cache": false
+    },
+    "db:diff": {
+      "cache": false
+    },
+    "db:lint": {
+      "cache": false
+    },
+    "db:seed": {
+      "cache": false
+    },
+    "db:dump": {
+      "cache": false
+    },
+    "db:status": {
+      "cache": false
     }
   }
 }

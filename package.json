@@ -15,7 +15,14 @@
     "typecheck": "turbo run typecheck",
     "clean": "turbo run clean && rm -rf node_modules .turbo",
     "format": "turbo run format",
-    "format:check": "turbo run format:check"
+    "format:check": "turbo run format:check",
+    "db:reset": "turbo run db:reset --filter=@trainers/supabase",
+    "db:migrate": "turbo run db:migrate --filter=@trainers/supabase",
+    "db:diff": "turbo run db:diff --filter=@trainers/supabase",
+    "db:lint": "turbo run db:lint --filter=@trainers/supabase",
+    "db:seed": "turbo run db:seed --filter=@trainers/supabase",
+    "db:dump": "turbo run db:dump --filter=@trainers/supabase",
+    "db:status": "turbo run db:status --filter=@trainers/supabase"
   },
   "devDependencies": {
     "@trainers/prettier-config": "workspace:*",
