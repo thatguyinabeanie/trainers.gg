@@ -1,35 +1,64 @@
 "use client";
 
-import { useCallback } from "react";
-import { isSiteAdmin } from "@trainers/supabase";
-import { useSupabaseQuery } from "@/lib/supabase";
-import { useCurrentUser } from "./use-current-user";
+import { useEffect, useState } from "react";
+import { type User } from "@supabase/supabase-js";
+import { createClient } from "@/lib/supabase/client";
+import { useAuthContext } from "@/components/auth/auth-provider";
 
 /**
- * Hook to check if the current user is a site admin
+ * Hook to check if the current user is a site admin.
+ * Reads the is_site_admin claim from the JWT token (set by custom_access_token_hook).
  *
  * @returns Object with isSiteAdmin boolean and loading state
  */
-export function useSiteAdmin() {
-  const { user, isLoading: userLoading } = useCurrentUser();
-  const userId = user?.id;
+export function useSiteAdmin(): {
+  isSiteAdmin: boolean;
+  isLoading: boolean;
+  user: User | null;
+} {
+  const { user, loading: userLoading } = useAuthContext();
+  const [isSiteAdmin, setIsSiteAdmin] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Memoize the query function to prevent infinite loops
-  const queryFn = useCallback(
-    async (supabase: Parameters<typeof isSiteAdmin>[0]) => {
-      if (!userId) return false;
-      return isSiteAdmin(supabase, userId);
-    },
-    [userId]
-  );
+  useEffect(() => {
+    async function checkSiteAdmin() {
+      if (!user) {
+        setIsSiteAdmin(false);
+        setIsLoading(false);
+        return;
+      }
 
-  const { data: isAdmin, isLoading: adminLoading } = useSupabaseQuery(queryFn, [
-    userId,
-  ]);
+      try {
+        const supabase = createClient();
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+
+        if (session?.access_token) {
+          // Decode JWT payload to get is_site_admin claim
+          const payload = session.access_token.split(".")[1];
+          if (payload) {
+            const claims = JSON.parse(atob(payload)) as {
+              is_site_admin?: boolean;
+            };
+            setIsSiteAdmin(claims.is_site_admin === true);
+          }
+        } else {
+          setIsSiteAdmin(false);
+        }
+      } catch {
+        setIsSiteAdmin(false);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    checkSiteAdmin();
+  }, [user]);
 
   return {
-    isSiteAdmin: isAdmin === true,
-    isLoading: userLoading || (!!userId && adminLoading),
+    isSiteAdmin,
+    isLoading: userLoading || isLoading,
     user,
   };
 }

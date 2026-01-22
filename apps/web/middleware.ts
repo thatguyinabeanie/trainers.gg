@@ -137,7 +137,12 @@ export async function middleware(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  console.log("[middleware]", { pathname, userId: user?.id ?? "none" });
+  console.log("[middleware]", {
+    pathname,
+    userId: user?.id ?? "none",
+    isPublic: isPublicPage(pathname),
+    isSiteAdmin: isSiteAdminPage(pathname),
+  });
 
   // Handle auth pages - redirect authenticated users away
   if (isAuthPage(pathname)) {
@@ -172,23 +177,30 @@ export async function middleware(request: NextRequest) {
 
   // Check site admin access for /admin routes
   if (isSiteAdminPage(pathname)) {
-    // Query the database to check if user has site admin role
-    const { data: userRole } = await supabase
-      .from("user_roles")
-      .select(
-        `
-        role:roles!inner(
-          name,
-          scope
-        )
-      `
-      )
-      .eq("user_id", user.id)
-      .eq("roles.scope", "site")
-      .eq("roles.name", "Site Admin")
-      .maybeSingle();
+    // Get the session to access JWT claims
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
 
-    if (!userRole) {
+    // Check the is_site_admin claim from the JWT (set by custom_access_token_hook)
+    // The claim is added to the access token by the Postgres hook function
+    let isSiteAdmin = false;
+    if (session?.access_token) {
+      try {
+        const payload = session.access_token.split(".")[1];
+        if (payload) {
+          const claims = JSON.parse(atob(payload)) as {
+            is_site_admin?: boolean;
+          };
+          isSiteAdmin = claims.is_site_admin === true;
+        }
+      } catch {
+        // Invalid token format, treat as not admin
+        isSiteAdmin = false;
+      }
+    }
+
+    if (!isSiteAdmin) {
       // User is not a site admin - return 403
       return NextResponse.rewrite(new URL("/forbidden", request.url));
     }

@@ -12,6 +12,10 @@
   },
   "scripts": {
     "setup": "./scripts/setup-local.sh",
+    "start": "supabase start",
+    "stop": "supabase stop",
+    "restart": "supabase stop && supabase start",
+    "status": "supabase status",
     "local:start": "supabase start",
     "local:stop": "supabase stop",
     "local:status": "supabase status",

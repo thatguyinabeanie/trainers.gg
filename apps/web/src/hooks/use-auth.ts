@@ -4,15 +4,15 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { type User, type Session } from "@supabase/supabase-js";
-import { createPublicSupabaseClient } from "@trainers/supabase";
+import { createClient } from "@/lib/supabase/client";
 
 export function useAuth() {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Create client once and memoize to prevent recreating on each render
-  const supabase = useMemo(() => createPublicSupabaseClient(), []);
+  // Create SSR-compatible client that syncs session to cookies
+  const supabase = useMemo(() => createClient(), []);
 
   useEffect(() => {
     const getInitialSession = async () => {
