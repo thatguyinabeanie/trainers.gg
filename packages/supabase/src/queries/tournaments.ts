@@ -14,7 +14,7 @@ export async function listPublicTournaments(
     limit?: number;
     cursor?: number | null;
     statusFilter?: TournamentStatus;
-  } = {},
+  } = {}
 ) {
   const { limit = 50, cursor = null, statusFilter } = options;
   const offset = cursor ?? 0;
@@ -26,7 +26,7 @@ export async function listPublicTournaments(
       *,
       organization:organizations(id, name, slug)
     `,
-      { count: "exact" },
+      { count: "exact" }
     )
     .is("archived_at", null)
     .order("start_date", { ascending: false, nullsFirst: false })
@@ -57,7 +57,7 @@ export async function listPublicTournaments(
         participants: Array(regCount ?? 0).fill(null), // Mimic Convex structure
         _count: { registrations: regCount ?? 0 },
       };
-    }),
+    })
   );
 
   const totalCount = count ?? 0;
@@ -81,7 +81,7 @@ export async function listTournaments(
     organizationId?: string;
     status?: TournamentStatus;
     includeArchived?: boolean;
-  } = {},
+  } = {}
 ) {
   const { limit = 10, offset = 0, includeArchived = false } = options;
 
@@ -92,7 +92,7 @@ export async function listTournaments(
       *,
       organization:organizations(*)
     `,
-      { count: "exact" },
+      { count: "exact" }
     )
     .order("created_at", { ascending: false })
     .range(offset, offset + limit - 1);
@@ -125,7 +125,7 @@ export async function listTournaments(
         ...tournament,
         _count: { registrations: regCount ?? 0 },
       };
-    }),
+    })
   );
 
   return {
@@ -141,7 +141,7 @@ export async function listTournaments(
 export async function getTournamentByOrgAndSlug(
   supabase: TypedClient,
   organizationSlug: string,
-  tournamentSlug: string,
+  tournamentSlug: string
 ) {
   // First get the organization
   const { data: org } = await supabase
@@ -159,7 +159,7 @@ export async function getTournamentByOrgAndSlug(
       `
       *,
       organization:organizations(*)
-    `,
+    `
     )
     .eq("organization_id", org.id)
     .eq("slug", tournamentSlug)
@@ -210,7 +210,7 @@ export async function getTournamentById(supabase: TypedClient, id: string) {
       `
       *,
       organization:organizations(*)
-    `,
+    `
     )
     .eq("id", id)
     .single();
@@ -224,7 +224,7 @@ export async function getTournamentById(supabase: TypedClient, id: string) {
  */
 export async function getTournamentRegistrations(
   supabase: TypedClient,
-  tournamentId: string,
+  tournamentId: string
 ) {
   const { data, error } = await supabase
     .from("tournament_registrations")
@@ -233,7 +233,7 @@ export async function getTournamentRegistrations(
       *,
       profile:profiles!tournament_registrations_profile_id_fkey(*),
       team:teams(*)
-    `,
+    `
     )
     .eq("tournament_id", tournamentId)
     .order("registered_at", { ascending: true });
@@ -248,7 +248,7 @@ export async function getTournamentRegistrations(
 export async function isRegisteredForTournament(
   supabase: TypedClient,
   tournamentId: string,
-  profileId: string,
+  profileId: string
 ) {
   const { data } = await supabase
     .from("tournament_registrations")
@@ -265,7 +265,7 @@ export async function isRegisteredForTournament(
  */
 export async function getTournamentPhases(
   supabase: TypedClient,
-  tournamentId: string,
+  tournamentId: string
 ) {
   const { data, error } = await supabase
     .from("tournament_phases")
@@ -282,7 +282,7 @@ export async function getTournamentPhases(
  */
 export async function getTournamentRounds(
   supabase: TypedClient,
-  phaseId: string,
+  phaseId: string
 ) {
   const { data, error } = await supabase
     .from("tournament_rounds")
@@ -306,7 +306,7 @@ export async function getRoundMatches(supabase: TypedClient, roundId: string) {
       player1:profiles!tournament_matches_player1_profile_id_fkey(*),
       player2:profiles!tournament_matches_player2_profile_id_fkey(*),
       winner:profiles!tournament_matches_winner_profile_id_fkey(*)
-    `,
+    `
     )
     .eq("round_id", roundId)
     .order("table_number", { ascending: true });
@@ -320,7 +320,7 @@ export async function getRoundMatches(supabase: TypedClient, roundId: string) {
  */
 export async function getTournamentStandings(
   supabase: TypedClient,
-  tournamentId: string,
+  tournamentId: string
 ) {
   const { data, error } = await supabase
     .from("tournament_standings")
@@ -328,7 +328,7 @@ export async function getTournamentStandings(
       `
       *,
       profile:profiles(*)
-    `,
+    `
     )
     .eq("tournament_id", tournamentId)
     .order("rank", { ascending: true });
@@ -343,7 +343,7 @@ export async function getTournamentStandings(
 export async function getPlayerTournamentStats(
   supabase: TypedClient,
   tournamentId: string,
-  profileId: string,
+  profileId: string
 ) {
   const { data, error } = await supabase
     .from("tournament_player_stats")
@@ -363,7 +363,7 @@ export async function getPlayerTournamentStats(
 export async function getCheckInStatus(
   supabase: TypedClient,
   tournamentId: string,
-  profileId?: string,
+  profileId?: string
 ) {
   let targetProfileId = profileId;
 
@@ -447,7 +447,7 @@ export async function getCheckInStatus(
  */
 export async function getCheckInStats(
   supabase: TypedClient,
-  tournamentId: string,
+  tournamentId: string
 ) {
   const { data: registrations } = await supabase
     .from("tournament_registrations")
@@ -541,7 +541,7 @@ export async function getUserTeams(supabase: TypedClient, profileId?: string) {
         ...team,
         pokemonCount: count ?? 0,
       };
-    }),
+    })
   );
 
   return teamsWithCounts.filter((team) => team.pokemonCount > 0);
@@ -559,7 +559,7 @@ export async function getMatchDetails(supabase: TypedClient, matchId: string) {
       player1:profiles!tournament_matches_player1_profile_id_fkey(*),
       player2:profiles!tournament_matches_player2_profile_id_fkey(*),
       round:tournament_rounds(*)
-    `,
+    `
     )
     .eq("id", matchId)
     .single();
@@ -588,7 +588,7 @@ export async function getMatchDetails(supabase: TypedClient, matchId: string) {
 export async function getPlayerMatches(
   supabase: TypedClient,
   tournamentId: string,
-  profileId: string,
+  profileId: string
 ) {
   const { data: phases } = await supabase
     .from("tournament_phases")
@@ -616,7 +616,7 @@ export async function getPlayerMatches(
       player1:profiles!tournament_matches_player1_profile_id_fkey(*),
       player2:profiles!tournament_matches_player2_profile_id_fkey(*),
       round:tournament_rounds(*)
-    `,
+    `
     )
     .in("round_id", roundIds)
     .or(`player1_profile_id.eq.${profileId},player2_profile_id.eq.${profileId}`)
@@ -632,7 +632,7 @@ export async function getPlayerMatches(
  */
 export async function getMyDashboardData(
   supabase: TypedClient,
-  profileId: string,
+  profileId: string
 ) {
   // Fetch all registrations for this user
   const { data: tournamentRegistrations } = await supabase
@@ -641,7 +641,7 @@ export async function getMyDashboardData(
       `
       *,
       tournament:tournaments(*)
-    `,
+    `
     )
     .eq("profile_id", profileId);
 
@@ -718,7 +718,7 @@ export async function getMyDashboardData(
           tournament:tournaments(id, name)
         )
       )
-    `,
+    `
     )
     .eq("status", "completed")
     .or(`profile1_id.eq.${profileId},profile2_id.eq.${profileId}`)
@@ -774,10 +774,10 @@ export async function getMyDashboardData(
   }[] = [];
 
   const championshipsWon = (playerStats ?? []).filter(
-    (s) => s.final_ranking === 1,
+    (s) => s.final_ranking === 1
   ).length;
   const top4Finishes = (playerStats ?? []).filter(
-    (s) => s.final_ranking && s.final_ranking <= 4,
+    (s) => s.final_ranking && s.final_ranking <= 4
   ).length;
 
   if (championshipsWon > 0) {
@@ -832,7 +832,7 @@ export async function getMyDashboardData(
  */
 export async function getRegistrationStatus(
   supabase: TypedClient,
-  tournamentId: string,
+  tournamentId: string
 ) {
   // Get current user
   const {
@@ -871,7 +871,7 @@ export async function getRegistrationStatus(
     (r) =>
       r.status === "registered" ||
       r.status === "confirmed" ||
-      r.status === "checked_in",
+      r.status === "checked_in"
   ).length;
   const waitlistCount = regs.filter((r) => r.status === "waitlist").length;
 
@@ -901,7 +901,7 @@ export async function getRegistrationStatus(
           .order("registered_at", { ascending: true });
 
         const position = waitlistRegs?.findIndex(
-          (r) => r.profile_id === profileId,
+          (r) => r.profile_id === profileId
         );
         waitlistPosition =
           position !== undefined && position >= 0 ? position + 1 : undefined;
@@ -950,7 +950,7 @@ export async function getRegistrationStatus(
  */
 export async function getTournamentInvitationsSent(
   supabase: TypedClient,
-  tournamentId: string,
+  tournamentId: string
 ) {
   const { data, error } = await supabase
     .from("tournament_invitations")
@@ -963,7 +963,7 @@ export async function getTournamentInvitationsSent(
         display_name,
         avatar_url
       )
-    `,
+    `
     )
     .eq("tournament_id", tournamentId)
     .order("invited_at", { ascending: false });
@@ -1012,7 +1012,7 @@ export async function getTournamentInvitationsReceived(supabase: TypedClient) {
         username,
         avatar_url
       )
-    `,
+    `
     )
     .eq("invited_profile_id", profile.id)
     .order("invited_at", { ascending: false });

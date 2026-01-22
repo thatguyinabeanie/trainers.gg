@@ -66,7 +66,9 @@ export default function CreateTournamentPage() {
   );
 
   // Fetch user's organizations for the form
-  const { data: _userOrganizations } = useSupabaseQuery(orgsQueryFn, [currentUser?.profile?.id]);
+  const { data: _userOrganizations } = useSupabaseQuery(orgsQueryFn, [
+    currentUser?.profile?.id,
+  ]);
 
   const { mutateAsync: createTournamentMutation } = useSupabaseMutation(
     (

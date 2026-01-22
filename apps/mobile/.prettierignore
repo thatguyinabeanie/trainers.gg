@@ -1,0 +1,5 @@
+# Build output
+.expo/
+
+# Node modules
+node_modules/

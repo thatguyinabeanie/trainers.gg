@@ -132,7 +132,9 @@ export function InviteForm({
           <Send className="h-5 w-5" />
           Invite Players
         </CardTitle>
-        <CardDescription>Send tournament invitations to players</CardDescription>
+        <CardDescription>
+          Send tournament invitations to players
+        </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
         {/* Success message */}

@@ -1,33 +1,77 @@
-import { auth } from "@clerk/nextjs/server";
-import {
-  createSupabaseClient,
-  createPublicSupabaseClient,
-  createAdminSupabaseClient,
-} from "@trainers/supabase";
+import { createServerClient } from "@supabase/ssr";
+import { cookies } from "next/headers";
+import type { Database } from "@trainers/supabase/types";
+import type { User } from "@supabase/supabase-js";
 
-/**
- * Create a Supabase client for server-side usage with Clerk authentication.
- * Uses Clerk's native Supabase integration via session tokens.
- *
- * Requires Third-Party Auth configured in Supabase Dashboard.
- * See: https://supabase.com/docs/guides/auth/third-party/clerk
- */
-export async function createServerSupabaseClient() {
-  const { getToken } = await auth();
+export async function createClient() {
+  const cookieStore = await cookies();
+  return createServerClient<Database>(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return cookieStore.getAll();
+        },
+        setAll(cookiesToSet) {
+          try {
+            cookiesToSet.forEach(({ name, value, options }) => {
+              cookieStore.set(name, value, options);
+            });
+          } catch (error) {
+            console.warn("Failed to set cookies in Server Component:", error);
+          }
+        },
+      },
+    }
+  );
+}
 
-  return createSupabaseClient(async () => {
-    // Use Clerk's session token directly (native Supabase integration)
-    return (await getToken()) ?? null;
-  });
+export async function createClientReadOnly() {
+  const cookieStore = await cookies();
+  return createServerClient<Database>(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return cookieStore.getAll();
+        },
+        setAll() {},
+      },
+    }
+  );
 }
 
 /**
- * Create an unauthenticated Supabase client for public data access on the server.
+ * Server-side function to get the current user.
+ * Use this in Server Components, Route Handlers, and Server Actions.
  */
-export { createPublicSupabaseClient as createPublicServerSupabaseClient };
+export async function getUser(): Promise<User | null> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+    error,
+  } = await supabase.auth.getUser();
+  if (error) {
+    console.error("Error getting user:", error);
+    return null;
+  }
+  return user;
+}
 
 /**
- * Create a Supabase admin client with service role key.
- * Bypasses RLS - use with caution! Only use in trusted server contexts.
+ * Server-side function to check if user is authenticated.
  */
-export { createAdminSupabaseClient };
+export async function isAuthenticated(): Promise<boolean> {
+  const user = await getUser();
+  return !!user;
+}
+
+/**
+ * Server-side utility function to get user ID.
+ */
+export async function getUserId(): Promise<string | null> {
+  const user = await getUser();
+  return user?.id ?? null;
+}

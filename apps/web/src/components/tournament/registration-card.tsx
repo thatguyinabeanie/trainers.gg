@@ -364,7 +364,9 @@ export function RegistrationCard({ tournamentId }: RegistrationCardProps) {
               <Label>Select Team (Optional)</Label>
               <Select
                 value={selectedTeamId || ""}
-                onValueChange={(value: string | null) => setSelectedTeamId(value || null)}
+                onValueChange={(value: string | null) =>
+                  setSelectedTeamId(value || null)
+                }
               >
                 <SelectTrigger>
                   <SelectValue />

@@ -17,13 +17,17 @@
   "scripts": {
     "build": "tsx scripts/generate.ts",
     "typecheck": "tsc --noEmit",
-    "lint": "eslint . --max-warnings 0"
+    "lint": "eslint . --max-warnings 0",
+    "format": "prettier --write \"src/**/*.{ts,tsx,js,jsx,json,md}\" \"scripts/**/*.{ts,tsx,js,jsx,json,md}\"",
+    "format:check": "prettier --check \"src/**/*.{ts,tsx,js,jsx,json,md}\" \"scripts/**/*.{ts,tsx,js,jsx,json,md}\""
   },
   "devDependencies": {
     "@trainers/eslint-config": "workspace:*",
+    "@trainers/prettier-config": "workspace:*",
     "@trainers/typescript-config": "workspace:*",
     "eslint": "catalog:",
     "tsx": "^4.19.2",
     "typescript": "catalog:"
-  }
+  },
+  "prettier": "@trainers/prettier-config"
 }

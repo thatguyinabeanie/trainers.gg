@@ -9,7 +9,7 @@ type TypedClient = SupabaseClient<Database>;
  */
 export async function getUserPermissions(
   supabase: TypedClient,
-  profileId: string,
+  profileId: string
 ): Promise<string[]> {
   const { data: profileGroupRoles, error } = await supabase
     .from("profile_group_roles")
@@ -22,7 +22,7 @@ export async function getUserPermissions(
           )
         )
       )
-    `,
+    `
     )
     .eq("profile_id", profileId);
 
@@ -58,7 +58,7 @@ export async function getUserPermissions(
 export async function hasPermission(
   supabase: TypedClient,
   profileId: string,
-  permission: string,
+  permission: string
 ): Promise<boolean> {
   const permissions = await getUserPermissions(supabase, profileId);
   return permissions.includes(permission);

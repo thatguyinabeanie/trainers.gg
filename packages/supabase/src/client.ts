@@ -4,39 +4,27 @@ import type { Database } from "./types";
 export type TypedSupabaseClient = SupabaseClient<Database>;
 
 /**
- * Create a Supabase client with a custom token getter.
- * Use this for auth integrations (Clerk, etc.)
+ * Get Supabase configuration from environment variables.
  */
-export function createSupabaseClient(getToken: () => Promise<string | null>) {
+export function getSupabaseConfig() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
   if (!supabaseUrl || !supabaseAnonKey) {
     throw new Error(
       "Missing Supabase environment variables. " +
-        "Please set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY",
+        "Please set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY"
     );
   }
 
-  return createClient<Database>(supabaseUrl, supabaseAnonKey, {
-    accessToken: getToken,
-  });
+  return { supabaseUrl, supabaseAnonKey };
 }
 
 /**
  * Create an unauthenticated Supabase client for public data access.
  */
 export function createPublicSupabaseClient() {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-  if (!supabaseUrl || !supabaseAnonKey) {
-    throw new Error(
-      "Missing Supabase environment variables. " +
-        "Please set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY",
-    );
-  }
-
+  const { supabaseUrl, supabaseAnonKey } = getSupabaseConfig();
   return createClient<Database>(supabaseUrl, supabaseAnonKey);
 }
 
@@ -51,7 +39,7 @@ export function createAdminSupabaseClient() {
   if (!supabaseUrl || !supabaseServiceKey) {
     throw new Error(
       "Missing Supabase admin environment variables. " +
-        "Please set NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY",
+        "Please set NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY"
     );
   }
 

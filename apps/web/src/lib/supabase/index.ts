@@ -1,9 +1,19 @@
-// Client-side exports only
-// Server-side code should be imported directly from "./server"
-export { useSupabaseClient } from "./client";
+// Client-safe exports only
+// Server-only functions should be imported directly from "@/lib/supabase/server"
+// Middleware functions should be imported directly from "@/lib/supabase/middleware"
 
-// Hook exports
-export { useSupabase, useSupabaseQuery, useSupabaseMutation } from "./hooks";
+export { createClient, supabase } from "./client";
+export {
+  getUserClient,
+  getAuthUrls,
+  oauthProviders,
+  type OAuthProvider,
+} from "./auth";
 
-// Re-export types and utilities from the package
-export type { TypedSupabaseClient } from "@trainers/supabase";
+// Hook exports for client components
+export {
+  useSupabase,
+  useUser,
+  useSupabaseQuery,
+  useSupabaseMutation,
+} from "./hooks";

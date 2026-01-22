@@ -1,0 +1,31 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build outputs
+.next/
+.expo/
+dist/
+.turbo/
+
+# Generated files
+packages/supabase/src/types.ts
+packages/backend-convex/convex/_generated/
+
+# Lock files
+pnpm-lock.yaml
+package-lock.json
+yarn.lock
+
+# IDE
+.idea/
+.vscode/
+
+# OS
+.DS_Store
+
+# Coverage
+coverage/
+
+# Clerk local dev files
+apps/web/.clerk/

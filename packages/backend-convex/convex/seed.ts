@@ -62,7 +62,7 @@ export const seedRbac = internalMutation({
     // Seeding must be explicitly enabled via ENABLE_SEEDING environment variable
     if (process.env.ENABLE_SEEDING !== "true") {
       throw new Error(
-        "🚨 PRODUCTION SAFETY: Seeding is DISABLED. Set ENABLE_SEEDING=true environment variable in Convex dashboard for development deployments only. NEVER enable in production or preview.",
+        "🚨 PRODUCTION SAFETY: Seeding is DISABLED. Set ENABLE_SEEDING=true environment variable in Convex dashboard for development deployments only. NEVER enable in production or preview."
       );
     }
 
@@ -117,7 +117,7 @@ export const seedRbac = internalMutation({
           const existingLink = await ctx.db
             .query("rolePermissions")
             .withIndex("by_role_permission", (q) =>
-              q.eq("roleId", role!._id).eq("permissionId", pId),
+              q.eq("roleId", role!._id).eq("permissionId", pId)
             )
             .first();
           if (!existingLink) {
@@ -286,7 +286,7 @@ export const createTestUsers = internalMutation({
           const existingLink = await ctx.db
             .query("rolePermissions")
             .withIndex("by_role_permission", (q) =>
-              q.eq("roleId", role!._id).eq("permissionId", pId),
+              q.eq("roleId", role!._id).eq("permissionId", pId)
             )
             .first();
           if (!existingLink) {
@@ -357,7 +357,7 @@ export const createTestUsers = internalMutation({
     const organizerUser = await ctx.db
       .query("users")
       .withIndex("by_email", (q) =>
-        q.eq("email", "organizer@battlestadium.local"),
+        q.eq("email", "organizer@battlestadium.local")
       )
       .first();
 
@@ -473,7 +473,7 @@ export const createTestUsers = internalMutation({
               const testOrg = await ctx.db
                 .query("organizations")
                 .withIndex("by_owner", (q) =>
-                  q.eq("ownerProfileId", organizerProfile._id),
+                  q.eq("ownerProfileId", organizerProfile._id)
                 )
                 .first();
 
@@ -482,7 +482,7 @@ export const createTestUsers = internalMutation({
                 const defaultGroup = await ctx.db
                   .query("groups")
                   .withIndex("by_org", (q) =>
-                    q.eq("organizationId", testOrg._id),
+                    q.eq("organizationId", testOrg._id)
                   )
                   .first();
 
@@ -493,7 +493,7 @@ export const createTestUsers = internalMutation({
                     .withIndex("by_org_profile", (q) =>
                       q
                         .eq("organizationId", testOrg._id)
-                        .eq("profileId", profile._id),
+                        .eq("profileId", profile._id)
                     )
                     .first();
 
@@ -510,7 +510,7 @@ export const createTestUsers = internalMutation({
                     .withIndex("by_group_role", (q) =>
                       q
                         .eq("groupId", defaultGroup._id)
-                        .eq("roleId", playerRole._id),
+                        .eq("roleId", playerRole._id)
                     )
                     .first();
 
@@ -530,7 +530,7 @@ export const createTestUsers = internalMutation({
                       .withIndex("by_profile_group_role", (q) =>
                         q
                           .eq("profileId", profile._id)
-                          .eq("groupRoleId", playerGroupRoleId),
+                          .eq("groupRoleId", playerGroupRoleId)
                       )
                       .first();
 

@@ -7,6 +7,7 @@ This document details how trainers.gg integrates with Bluesky and the AT Protoco
 ## Overview
 
 trainers.gg uses Bluesky as the social backbone:
+
 - **Authentication**: Users sign in with Bluesky accounts via OAuth
 - **Social Graph**: Follows/followers from Bluesky
 - **Content**: Posts federate to/from Bluesky network
@@ -18,22 +19,22 @@ trainers.gg uses Bluesky as the social backbone:
 
 ### Key Terms
 
-| Term | Description |
-|------|-------------|
-| **DID** | Decentralized Identifier - permanent user ID (e.g., `did:plc:abc123...`) |
-| **Handle** | User-friendly name (e.g., `user.bsky.social` or `user.trainers.gg`) |
-| **PDS** | Personal Data Server - hosts user's data |
-| **Lexicon** | Schema definitions for AT Protocol (like OpenAPI for atproto) |
-| **XRPC** | HTTP-based RPC protocol used by AT Protocol |
+| Term        | Description                                                              |
+| ----------- | ------------------------------------------------------------------------ |
+| **DID**     | Decentralized Identifier - permanent user ID (e.g., `did:plc:abc123...`) |
+| **Handle**  | User-friendly name (e.g., `user.bsky.social` or `user.trainers.gg`)      |
+| **PDS**     | Personal Data Server - hosts user's data                                 |
+| **Lexicon** | Schema definitions for AT Protocol (like OpenAPI for atproto)            |
+| **XRPC**    | HTTP-based RPC protocol used by AT Protocol                              |
 
-### Bluesky Lexicons (app.bsky.*)
+### Bluesky Lexicons (app.bsky.\*)
 
-| Lexicon | Description |
-|---------|-------------|
-| `app.bsky.actor.*` | User profiles, preferences |
-| `app.bsky.feed.*` | Posts, likes, reposts, feeds |
-| `app.bsky.graph.*` | Follows, blocks, lists |
-| `app.bsky.notification.*` | Notifications |
+| Lexicon                   | Description                  |
+| ------------------------- | ---------------------------- |
+| `app.bsky.actor.*`        | User profiles, preferences   |
+| `app.bsky.feed.*`         | Posts, likes, reposts, feeds |
+| `app.bsky.graph.*`        | Follows, blocks, lists       |
+| `app.bsky.notification.*` | Notifications                |
 
 ---
 
@@ -59,12 +60,12 @@ Bluesky uses a custom OAuth 2.0 profile with additional security requirements:
 
 ### OAuth Requirements
 
-| Requirement | Description |
-|-------------|-------------|
-| **PKCE** | Proof Key for Code Exchange - required |
-| **PAR** | Pushed Authorization Requests - required |
-| **DPoP** | Demonstrating Proof of Possession - required |
-| **Client Metadata** | JSON file hosted at public URL |
+| Requirement         | Description                                  |
+| ------------------- | -------------------------------------------- |
+| **PKCE**            | Proof Key for Code Exchange - required       |
+| **PAR**             | Pushed Authorization Requests - required     |
+| **DPoP**            | Demonstrating Proof of Possession - required |
+| **Client Metadata** | JSON file hosted at public URL               |
 
 ### Client Metadata
 
@@ -91,10 +92,10 @@ trainers.gg must host a client metadata file at a public URL (e.g., `https://tra
 pnpm add @atproto/oauth-client-browser @atproto/api
 ```
 
-| Package | Purpose |
-|---------|---------|
+| Package                         | Purpose                                 |
+| ------------------------------- | --------------------------------------- |
 | `@atproto/oauth-client-browser` | Handles OAuth flow with DPoP, PAR, PKCE |
-| `@atproto/api` | Type-safe API client for Bluesky |
+| `@atproto/api`                  | Type-safe API client for Bluesky        |
 
 ---
 
@@ -119,15 +120,15 @@ export const getTimeline = action({
   },
   handler: async (ctx, args) => {
     const agent = new BskyAgent({ service: "https://bsky.social" });
-    
+
     // Resume session with access token
     // Note: This is simplified - actual implementation needs DPoP handling
-    
+
     const response = await agent.getTimeline({
       cursor: args.cursor,
       limit: args.limit || 50,
     });
-    
+
     return {
       feed: response.data.feed,
       cursor: response.data.cursor,
@@ -144,12 +145,12 @@ export const createPost = action({
   },
   handler: async (ctx, args) => {
     const agent = new BskyAgent({ service: "https://bsky.social" });
-    
+
     const response = await agent.post({
       text: args.text,
       createdAt: new Date().toISOString(),
     });
-    
+
     return {
       uri: response.uri,
       cid: response.cid,
@@ -166,9 +167,9 @@ export const likePost = action({
   },
   handler: async (ctx, args) => {
     const agent = new BskyAgent({ service: "https://bsky.social" });
-    
+
     const response = await agent.like(args.uri, args.cid);
-    
+
     return { uri: response.uri };
   },
 });
@@ -181,9 +182,9 @@ export const unlikePost = action({
   },
   handler: async (ctx, args) => {
     const agent = new BskyAgent({ service: "https://bsky.social" });
-    
+
     await agent.deleteLike(args.likeUri);
-    
+
     return { success: true };
   },
 });
@@ -197,9 +198,9 @@ export const repost = action({
   },
   handler: async (ctx, args) => {
     const agent = new BskyAgent({ service: "https://bsky.social" });
-    
+
     const response = await agent.repost(args.uri, args.cid);
-    
+
     return { uri: response.uri };
   },
 });
@@ -212,9 +213,9 @@ export const followUser = action({
   },
   handler: async (ctx, args) => {
     const agent = new BskyAgent({ service: "https://bsky.social" });
-    
+
     const response = await agent.follow(args.did);
-    
+
     return { uri: response.uri };
   },
 });
@@ -227,9 +228,9 @@ export const unfollowUser = action({
   },
   handler: async (ctx, args) => {
     const agent = new BskyAgent({ service: "https://bsky.social" });
-    
+
     await agent.deleteFollow(args.followUri);
-    
+
     return { success: true };
   },
 });
@@ -241,9 +242,9 @@ export const getProfile = action({
   },
   handler: async (ctx, args) => {
     const agent = new BskyAgent({ service: "https://bsky.social" });
-    
+
     const response = await agent.getProfile({ actor: args.actor });
-    
+
     return response.data;
   },
 });
@@ -257,13 +258,13 @@ export const getAuthorFeed = action({
   },
   handler: async (ctx, args) => {
     const agent = new BskyAgent({ service: "https://bsky.social" });
-    
+
     const response = await agent.getAuthorFeed({
       actor: args.actor,
       cursor: args.cursor,
       limit: args.limit || 50,
     });
-    
+
     return {
       feed: response.data.feed,
       cursor: response.data.cursor,
@@ -292,19 +293,35 @@ export const getAuthorFeed = action({
 ```typescript
 const POKEMON_KEYWORDS = [
   // Hashtags
-  '#pokemon', '#vgc', '#pokemonvgc', '#shinyhunting', '#shiny',
-  '#draftleague', '#pokemonshowdown', '#competitivepokemon',
-  '#pokemonscarlet', '#pokemonviolet', '#pokemonsv',
-  
+  "#pokemon",
+  "#vgc",
+  "#pokemonvgc",
+  "#shinyhunting",
+  "#shiny",
+  "#draftleague",
+  "#pokemonshowdown",
+  "#competitivepokemon",
+  "#pokemonscarlet",
+  "#pokemonviolet",
+  "#pokemonsv",
+
   // Keywords
-  'pokemon', 'vgc', 'showdown', 'draft league', 'shiny hunt',
-  'competitive pokemon', 'regionals', 'nationals', 'worlds',
-  'terastal', 'tera type',
+  "pokemon",
+  "vgc",
+  "showdown",
+  "draft league",
+  "shiny hunt",
+  "competitive pokemon",
+  "regionals",
+  "nationals",
+  "worlds",
+  "terastal",
+  "tera type",
 ];
 
 function isPokemonContent(text: string): boolean {
   const lowerText = text.toLowerCase();
-  return POKEMON_KEYWORDS.some(keyword => 
+  return POKEMON_KEYWORDS.some((keyword) =>
     lowerText.includes(keyword.toLowerCase())
   );
 }
@@ -313,6 +330,7 @@ function isPokemonContent(text: string): boolean {
 ### Future: Custom Feed Generator
 
 In Phase 2+, we could create a proper Bluesky Feed Generator that:
+
 - Uses ML to classify Pokemon content
 - Provides better relevance ranking
 - Runs as a separate service
@@ -324,6 +342,7 @@ In Phase 2+, we could create a proper Bluesky Feed Generator that:
 ### Default Behavior
 
 When a user creates a post on trainers.gg:
+
 1. Post is created on Bluesky (via their PDS)
 2. Post appears in their Bluesky feed
 3. Post is visible on trainers.gg
@@ -332,12 +351,15 @@ When a user creates a post on trainers.gg:
 
 ```typescript
 // Check user's cross-posting preference
-async function shouldCrossPost(userId: Id<"users">, perPostOverride?: boolean): Promise<boolean> {
+async function shouldCrossPost(
+  userId: Id<"users">,
+  perPostOverride?: boolean
+): Promise<boolean> {
   // Per-post override takes precedence
   if (perPostOverride !== undefined) {
     return perPostOverride;
   }
-  
+
   // Fall back to user's default setting
   const user = await ctx.db.get(userId);
   return user?.settings?.crossPostToBluesky ?? true;
@@ -370,8 +392,8 @@ For React Native/Expo, we need to handle OAuth differently:
 
 ```typescript
 // Using expo-auth-session
-import * as AuthSession from 'expo-auth-session';
-import * as WebBrowser from 'expo-web-browser';
+import * as AuthSession from "expo-auth-session";
+import * as WebBrowser from "expo-web-browser";
 
 // Register for redirect
 WebBrowser.maybeCompleteAuthSession();
@@ -407,12 +429,12 @@ WebBrowser.maybeCompleteAuthSession();
 
 ### Deployment Options
 
-| Platform | Pros | Cons |
-|----------|------|------|
-| **Fly.io** | Easy container deployment, good scaling | Cost at scale |
-| **Railway** | Simple, git-based deploys | Less control |
-| **Render** | Good free tier | Cold starts |
-| **DigitalOcean** | Full VPS control, cheap | More maintenance |
+| Platform         | Pros                                    | Cons             |
+| ---------------- | --------------------------------------- | ---------------- |
+| **Fly.io**       | Easy container deployment, good scaling | Cost at scale    |
+| **Railway**      | Simple, git-based deploys               | Less control     |
+| **Render**       | Good free tier                          | Cold starts      |
+| **DigitalOcean** | Full VPS control, cheap                 | More maintenance |
 
 ### PDS Requirements
 
@@ -430,6 +452,7 @@ trainers.gg              → PDS server
 ```
 
 Users would have handles like:
+
 - `ash.trainers.gg`
 - `cynthia.trainers.gg`
 - `leon.trainers.gg`
@@ -440,11 +463,11 @@ Users would have handles like:
 
 Bluesky has rate limits that we need to respect:
 
-| Endpoint | Limit |
-|----------|-------|
-| General API | ~3000 requests/5 min |
-| Create record | ~1500/hour |
-| Timeline fetch | Reasonable use |
+| Endpoint       | Limit                |
+| -------------- | -------------------- |
+| General API    | ~3000 requests/5 min |
+| Create record  | ~1500/hour           |
+| Timeline fetch | Reasonable use       |
 
 ### Mitigation Strategies
 
@@ -460,16 +483,16 @@ Bluesky has rate limits that we need to respect:
 ```typescript
 // Common Bluesky API errors
 const BLUESKY_ERRORS = {
-  'InvalidToken': 'Session expired, please sign in again',
-  'RateLimitExceeded': 'Too many requests, please wait',
-  'RecordNotFound': 'Post not found',
-  'InvalidRequest': 'Invalid request',
-  'AuthRequired': 'Please sign in to continue',
+  InvalidToken: "Session expired, please sign in again",
+  RateLimitExceeded: "Too many requests, please wait",
+  RecordNotFound: "Post not found",
+  InvalidRequest: "Invalid request",
+  AuthRequired: "Please sign in to continue",
 };
 
 function handleBlueskyError(error: any): string {
   const errorType = error?.error;
-  return BLUESKY_ERRORS[errorType] || 'Something went wrong';
+  return BLUESKY_ERRORS[errorType] || "Something went wrong";
 }
 ```
 

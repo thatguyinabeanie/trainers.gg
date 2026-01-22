@@ -4,21 +4,21 @@ This document captures all technical decisions made during the planning phase fo
 
 ## Tech Stack Summary
 
-| Layer | Technology | Version |
-|-------|------------|---------|
-| **Web Framework** | Next.js | 16 |
-| **Web React** | React | 19.2 |
-| **Mobile Framework** | Expo | 54 |
-| **Mobile React** | React | 18 |
-| **Database** | Convex | Latest |
-| **Authentication** | Bluesky OAuth (AT Protocol) | - |
-| **UI Components (Web)** | shadcn/ui with Base UI | Latest |
-| **UI Components (Mobile)** | NativeWind + custom | Latest |
-| **Styling** | Tailwind CSS | 4.x |
-| **Monorepo** | Turborepo + pnpm | Latest |
-| **Package Namespace** | `@trainers` | - |
-| **Deployment (Web)** | Vercel | - |
-| **Deployment (Mobile)** | EAS / Expo | - |
+| Layer                      | Technology                  | Version |
+| -------------------------- | --------------------------- | ------- |
+| **Web Framework**          | Next.js                     | 16      |
+| **Web React**              | React                       | 19.2    |
+| **Mobile Framework**       | Expo                        | 54      |
+| **Mobile React**           | React                       | 18      |
+| **Database**               | Convex                      | Latest  |
+| **Authentication**         | Bluesky OAuth (AT Protocol) | -       |
+| **UI Components (Web)**    | shadcn/ui with Base UI      | Latest  |
+| **UI Components (Mobile)** | NativeWind + custom         | Latest  |
+| **Styling**                | Tailwind CSS                | 4.x     |
+| **Monorepo**               | Turborepo + pnpm            | Latest  |
+| **Package Namespace**      | `@trainers`                 | -       |
+| **Deployment (Web)**       | Vercel                      | -       |
+| **Deployment (Mobile)**    | EAS / Expo                  | -       |
 
 ---
 
@@ -29,6 +29,7 @@ This document captures all technical decisions made during the planning phase fo
 **Decision**: Build both web (Next.js) and mobile (Expo) apps in parallel from the start.
 
 **Rationale**:
+
 - Pokemon community is heavily mobile-focused
 - Parallel development ensures consistent feature parity
 - Shared business logic reduces duplication
@@ -42,11 +43,13 @@ This document captures all technical decisions made during the planning phase fo
 **Decision**: Use pnpm workspaces with Turborepo for build orchestration.
 
 **Rationale**:
+
 - Follows T3 stack patterns for proven monorepo organization
 - Turborepo provides build caching and task orchestration
 - pnpm is faster and more efficient than npm/yarn for monorepos
 
 **Structure**:
+
 - `apps/` - User-facing applications (web, mobile)
 - `packages/` - Shared business logic and data layer
 - `tooling/` - Developer experience and configuration
@@ -58,6 +61,7 @@ This document captures all technical decisions made during the planning phase fo
 **Decision**: Use Convex as the database and backend.
 
 **Rationale**:
+
 - Real-time sync out of the box (great for live tournament brackets later)
 - Works with both React (Next.js) and React Native (Expo)
 - Combines database + serverless functions in one
@@ -72,16 +76,19 @@ This document captures all technical decisions made during the planning phase fo
 **Decision**: Phase 1 uses Bluesky's existing PDS infrastructure. Fast follow to deploy our own containerized PDS for `@username.trainers.gg` handles.
 
 **Phase 1 Flow**:
+
 1. User signs in with existing Bluesky account
 2. OR creates new `@username.bsky.social` account
 3. trainers.gg stores user profile data in Convex (linked via DID)
 
 **Phase 2 (Fast Follow)**:
+
 1. Deploy containerized PDS (likely Fly.io or similar)
 2. Users can create `@username.trainers.gg` handles
 3. Full control over user accounts and data
 
 **Rationale**:
+
 - Bluesky OAuth is complex (DPoP, PAR, PKCE requirements)
 - Using existing infrastructure reduces initial complexity
 - Can add own PDS without breaking existing accounts (account migration is supported)
@@ -93,12 +100,14 @@ This document captures all technical decisions made during the planning phase fo
 **Decision**: Use shadcn/ui with Base UI (not Radix UI).
 
 **Rationale**:
+
 - shadcn/ui provides beautiful, accessible components
 - Base UI is actively maintained (MUI backing) vs Radix concerns
 - shadcn/ui officially supports Base UI as an alternative to Radix
 - Components are copied into project for full customization control
 
 **Implementation**:
+
 - Use shadcn CLI with Base UI variant
 - Components available at `/docs/components/base/*` in shadcn docs
 
@@ -109,6 +118,7 @@ This document captures all technical decisions made during the planning phase fo
 **Decision**: Use NativeWind for Tailwind-style classes in React Native.
 
 **Rationale**:
+
 - Maintains design language consistency with web
 - Developers can use familiar Tailwind utility classes
 - Single design system across platforms
@@ -122,6 +132,7 @@ This document captures all technical decisions made during the planning phase fo
 **Decision**: Use `@trainers` as the package namespace.
 
 **Examples**:
+
 - `@trainers/ui` - Shared UI components
 - `@trainers/backend` - Convex functions
 - `@trainers/validators` - Shared Zod schemas
@@ -143,6 +154,7 @@ This document captures all technical decisions made during the planning phase fo
 **Decision**: Hybrid with tabs - default to Pokemon-curated feed, allow switching to full Bluesky feed.
 
 **Implementation (Phase 1)**: Keep it simple
+
 - Pokemon feed: Filter by hashtags/keywords related to Pokemon
 - Full feed: Show complete Bluesky feed from follows
 - Prioritize trainers.gg content in Pokemon feed (when we have our own posts)
@@ -152,6 +164,7 @@ This document captures all technical decisions made during the planning phase fo
 **Decision**: Always cross-post to Bluesky by default.
 
 **Options available**:
+
 1. Default behavior: All posts go to Bluesky automatically
 2. User settings: Global preference to change default
 3. Per-post override: Toggle on composer to skip Bluesky
@@ -161,6 +174,7 @@ This document captures all technical decisions made during the planning phase fo
 **Decision**: trainers.gg profiles are independent from Bluesky.
 
 **Flow**:
+
 1. On initial setup, pull avatar/name/bio from Bluesky profile
 2. User can edit/override any field
 3. trainers.gg profile stored in Convex, lives independently
@@ -173,6 +187,7 @@ This document captures all technical decisions made during the planning phase fo
 **Decision**: Simple text posts only for Phase 1.
 
 **Rationale**:
+
 - Team builder is a complex feature that deserves proper design
 - Don't want to half-bake the implementation
 - Can add team attachments to posts when team builder is ready
@@ -181,11 +196,13 @@ This document captures all technical decisions made during the planning phase fo
 
 ### 10. Deployment
 
-**Decision**: 
+**Decision**:
+
 - Web: Vercel
 - Mobile: EAS (Expo Application Services)
 
 **Rationale**:
+
 - Vercel has first-class Next.js support
 - EAS provides streamlined Expo builds and OTA updates
 - Both integrate well with the chosen stack
@@ -206,10 +223,10 @@ This document captures all technical decisions made during the planning phase fo
 
 ## Status
 
-| Item | Status |
-|------|--------|
-| Domain (trainers.gg) | Purchased |
-| Convex Account | Ready |
-| Vercel Account | TBD |
-| Planning Docs | Complete |
-| Implementation | Not Started |
+| Item                 | Status      |
+| -------------------- | ----------- |
+| Domain (trainers.gg) | Purchased   |
+| Convex Account       | Ready       |
+| Vercel Account       | TBD         |
+| Planning Docs        | Complete    |
+| Implementation       | Not Started |

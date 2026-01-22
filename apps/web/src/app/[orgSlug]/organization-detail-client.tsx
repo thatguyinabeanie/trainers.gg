@@ -223,7 +223,9 @@ export function OrganizationDetailClient({
             <Card>
               <CardContent className="flex flex-col items-center justify-center py-12">
                 <Trophy className="text-muted-foreground mb-4 h-12 w-12" />
-                <h3 className="mb-2 text-lg font-semibold">No tournaments yet</h3>
+                <h3 className="mb-2 text-lg font-semibold">
+                  No tournaments yet
+                </h3>
                 <p className="text-muted-foreground mb-4 text-center">
                   This organization hasn&apos;t created any tournaments
                 </p>

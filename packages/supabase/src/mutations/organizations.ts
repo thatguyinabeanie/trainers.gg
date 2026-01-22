@@ -33,7 +33,7 @@ export async function createOrganization(
     description?: string;
     website?: string;
     logoUrl?: string;
-  },
+  }
 ) {
   const profile = await getCurrentProfile(supabase);
   if (!profile) throw new Error("Not authenticated");
@@ -85,7 +85,7 @@ export async function updateOrganization(
     description?: string;
     website?: string;
     logoUrl?: string;
-  },
+  }
 ) {
   const profile = await getCurrentProfile(supabase);
   if (!profile) throw new Error("Not authenticated");
@@ -126,7 +126,7 @@ export async function updateOrganization(
 export async function inviteToOrganization(
   supabase: TypedClient,
   organizationId: string,
-  invitedProfileId: string,
+  invitedProfileId: string
 ) {
   const profile = await getCurrentProfile(supabase);
   if (!profile) throw new Error("Not authenticated");
@@ -178,7 +178,7 @@ export async function inviteToOrganization(
  */
 export async function acceptOrganizationInvitation(
   supabase: TypedClient,
-  invitationId: string,
+  invitationId: string
 ) {
   const profile = await getCurrentProfile(supabase);
   if (!profile) throw new Error("Not authenticated");
@@ -224,7 +224,7 @@ export async function acceptOrganizationInvitation(
  */
 export async function declineOrganizationInvitation(
   supabase: TypedClient,
-  invitationId: string,
+  invitationId: string
 ) {
   const profile = await getCurrentProfile(supabase);
   if (!profile) throw new Error("Not authenticated");
@@ -256,7 +256,7 @@ export async function declineOrganizationInvitation(
  */
 export async function leaveOrganization(
   supabase: TypedClient,
-  organizationId: string,
+  organizationId: string
 ) {
   const profile = await getCurrentProfile(supabase);
   if (!profile) throw new Error("Not authenticated");
@@ -270,7 +270,7 @@ export async function leaveOrganization(
 
   if (org?.owner_profile_id === profile.id) {
     throw new Error(
-      "Organization owner cannot leave. Transfer ownership first.",
+      "Organization owner cannot leave. Transfer ownership first."
     );
   }
 
@@ -290,7 +290,7 @@ export async function leaveOrganization(
 export async function removeMember(
   supabase: TypedClient,
   organizationId: string,
-  profileId: string,
+  profileId: string
 ) {
   const profile = await getCurrentProfile(supabase);
   if (!profile) throw new Error("Not authenticated");

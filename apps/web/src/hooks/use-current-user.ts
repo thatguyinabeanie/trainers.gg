@@ -10,10 +10,11 @@ import { useSupabaseQuery } from "@/lib/supabase";
  * @returns Object with user data and loading state
  */
 export function useCurrentUser() {
-  const { data: user, isLoading, error } = useSupabaseQuery(
-    (supabase) => getCurrentUser(supabase),
-    []
-  );
+  const {
+    data: user,
+    isLoading,
+    error,
+  } = useSupabaseQuery((supabase) => getCurrentUser(supabase), []);
 
   return {
     user,

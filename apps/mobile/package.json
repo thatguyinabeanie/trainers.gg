@@ -2,7 +2,6 @@
   "name": "@trainers/mobile",
   "version": "0.0.1",
   "private": true,
-  "type": "module",
   "main": "expo-router/entry",
   "scripts": {
     "dev": "expo start",
@@ -11,6 +10,8 @@
     "build": "expo export",
     "lint": "eslint . --max-warnings 0",
     "typecheck": "tsc --noEmit",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
+    "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md}\"",
     "clean": "rm -rf .expo node_modules"
   },
   "dependencies": {

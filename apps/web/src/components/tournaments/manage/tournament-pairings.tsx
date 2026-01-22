@@ -96,7 +96,9 @@ export function TournamentPairings({ tournament }: TournamentPairingsProps) {
         <div className="flex items-center gap-2">
           <Select
             value={selectedRound}
-            onValueChange={(value: string | null) => setSelectedRound(value || "")}
+            onValueChange={(value: string | null) =>
+              setSelectedRound(value || "")
+            }
           >
             <SelectTrigger className="w-32">
               <SelectValue />

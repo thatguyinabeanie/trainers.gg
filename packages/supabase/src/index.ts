@@ -7,7 +7,7 @@
 
 // Client exports
 export {
-  createSupabaseClient,
+  getSupabaseConfig,
   createPublicSupabaseClient,
   createAdminSupabaseClient,
   type TypedSupabaseClient,

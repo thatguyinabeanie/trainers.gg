@@ -381,9 +381,7 @@ export function convertShowdownToDbFormat(
 /**
  * Convert a full Showdown team to PokemonSet array
  */
-export function convertShowdownTeamToPokemonSets(
-  text: string
-): PokemonSet[] {
+export function convertShowdownTeamToPokemonSets(text: string): PokemonSet[] {
   const showdownTeam = parseTeam(text);
   return showdownTeam.map((sp) => convertShowdownToPokemonSet(sp));
 }
@@ -391,9 +389,7 @@ export function convertShowdownTeamToPokemonSets(
 /**
  * Convert a full Showdown team to flat database format array
  */
-export function convertShowdownTeamToDbFormat(
-  text: string
-): PokemonSetFlat[] {
+export function convertShowdownTeamToDbFormat(text: string): PokemonSetFlat[] {
   const showdownTeam = parseTeam(text);
   return showdownTeam.map((sp) => convertShowdownToDbFormat(sp));
 }

@@ -133,6 +133,7 @@ Build a comprehensive Pokemon community platform at trainers.gg that serves as a
 ## Phase 1 Focus
 
 Start with a solid MVP focusing on **social media features** with Bluesky integration:
+
 - User authentication via Bluesky OAuth
 - Social feed with Pokemon-curated and full Bluesky views
 - User profiles

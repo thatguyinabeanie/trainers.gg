@@ -105,7 +105,8 @@ export function TournamentDetailClient({
     owner_profile_id: string;
   } | null;
 
-  const isOrganizer = currentUser?.profile?.id === organization?.owner_profile_id;
+  const isOrganizer =
+    currentUser?.profile?.id === organization?.owner_profile_id;
   const canManage = isOrganizer; // Could extend to check org membership
 
   const formatDate = (dateStr?: string | null) => {
@@ -264,7 +265,9 @@ export function TournamentDetailClient({
                 <CardContent>
                   <div className="grid gap-4 sm:grid-cols-2">
                     <div>
-                      <p className="text-muted-foreground text-sm">Game Format</p>
+                      <p className="text-muted-foreground text-sm">
+                        Game Format
+                      </p>
                       <p className="font-medium">
                         {tournament.format || "Not specified"}
                       </p>
@@ -329,7 +332,7 @@ export function TournamentDetailClient({
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-muted-foreground text-center py-8">
+                  <p className="text-muted-foreground py-8 text-center">
                     Standings will appear once the tournament begins
                   </p>
                 </CardContent>

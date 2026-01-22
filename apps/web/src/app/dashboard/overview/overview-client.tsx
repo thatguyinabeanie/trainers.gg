@@ -19,7 +19,9 @@ export function OverviewClient() {
 
   const myOrganizationsQueryFn = useCallback(
     (supabase: Parameters<typeof listMyOrganizations>[0]) =>
-      profileId ? listMyOrganizations(supabase, profileId) : Promise.resolve([]),
+      profileId
+        ? listMyOrganizations(supabase, profileId)
+        : Promise.resolve([]),
     [profileId]
   );
 
@@ -74,7 +76,11 @@ export function OverviewClient() {
       <div className="mb-8">
         <h2 className="text-2xl font-bold">
           Welcome back,{" "}
-          {user?.name || user?.profile?.displayName || "Trainer"}!
+          {user?.profile?.displayName ||
+            (user?.user_metadata?.full_name as string | undefined) ||
+            (user?.user_metadata?.name as string | undefined) ||
+            "Trainer"}
+          !
         </h2>
         <p className="text-muted-foreground text-sm">
           Here&apos;s your competitive overview across all profiles

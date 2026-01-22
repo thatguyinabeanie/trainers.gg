@@ -101,7 +101,8 @@ export function TournamentManageClient({
   } | null;
 
   // Permission check
-  const isOrganizer = currentUser.profile?.id === organization?.owner_profile_id;
+  const isOrganizer =
+    currentUser.profile?.id === organization?.owner_profile_id;
 
   if (!isOrganizer) {
     return (
@@ -135,8 +136,12 @@ export function TournamentManageClient({
     format: tournament.format || "",
     tournamentFormat: tournament.tournament_format || "swiss_only",
     maxParticipants: tournament.max_participants ?? undefined,
-    startDate: tournament.start_date ? new Date(tournament.start_date).getTime() : undefined,
-    endDate: tournament.end_date ? new Date(tournament.end_date).getTime() : undefined,
+    startDate: tournament.start_date
+      ? new Date(tournament.start_date).getTime()
+      : undefined,
+    endDate: tournament.end_date
+      ? new Date(tournament.end_date).getTime()
+      : undefined,
     registrationDeadline: tournament.registration_deadline
       ? new Date(tournament.registration_deadline).getTime()
       : undefined,
@@ -144,10 +149,13 @@ export function TournamentManageClient({
     swissRounds: tournament.swiss_rounds ?? undefined,
     topCutSize: tournament.top_cut_size ?? undefined,
     rentalTeamPhotosEnabled: tournament.rental_team_photos_enabled ?? undefined,
-    rentalTeamPhotosRequired: tournament.rental_team_photos_required ?? undefined,
+    rentalTeamPhotosRequired:
+      tournament.rental_team_photos_required ?? undefined,
     currentRound: tournament.current_round ?? undefined,
     registrations: [],
-    _creationTime: tournament.created_at ? new Date(tournament.created_at).getTime() : Date.now(),
+    _creationTime: tournament.created_at
+      ? new Date(tournament.created_at).getTime()
+      : Date.now(),
   };
 
   // Tournament data for migrated components that expect snake_case format
@@ -179,7 +187,10 @@ export function TournamentManageClient({
           Tournaments
         </Link>
         <span>/</span>
-        <Link href={`/${orgSlug}/${tournamentSlug}`} className="hover:underline">
+        <Link
+          href={`/${orgSlug}/${tournamentSlug}`}
+          className="hover:underline"
+        >
           {tournament.name}
         </Link>
         <span>/</span>
@@ -246,10 +257,7 @@ export function TournamentManageClient({
               tournamentId={tournamentId}
               tournamentName={tournament.name}
             />
-            <InvitationList
-              tournamentId={tournamentId}
-              showActions={true}
-            />
+            <InvitationList tournamentId={tournamentId} showActions={true} />
           </div>
         </TabsContent>
 

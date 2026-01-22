@@ -19,14 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Trophy,
-  Calendar,
-  Users,
-  Search,
-  Loader2,
-  MapPin,
-} from "lucide-react";
+import { Trophy, Calendar, Users, Search, Loader2, MapPin } from "lucide-react";
 import { useState, useCallback, useMemo } from "react";
 
 type TournamentStatus =
@@ -105,7 +98,9 @@ export default function TournamentsPage() {
         </div>
         <Select
           value={statusFilter}
-          onValueChange={(value: string | null) => setStatusFilter(value ?? "all")}
+          onValueChange={(value: string | null) =>
+            setStatusFilter(value ?? "all")
+          }
         >
           <SelectTrigger className="w-full sm:w-[180px]">
             <SelectValue placeholder="Filter by status" />

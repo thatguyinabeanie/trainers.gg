@@ -11,6 +11,7 @@ This document outlines the sprint-by-sprint implementation plan for Phase 1 of t
 **Timeline**: 5 sprints (estimated 5 weeks)
 
 **Key Deliverables**:
+
 - Web app (Next.js 16)
 - Mobile app (Expo 54)
 - Bluesky OAuth authentication
@@ -28,12 +29,14 @@ This document outlines the sprint-by-sprint implementation plan for Phase 1 of t
 ### Tasks
 
 #### Monorepo Setup
+
 - [ ] Initialize pnpm workspace
 - [ ] Configure Turborepo (`turbo.json`)
 - [ ] Create `pnpm-workspace.yaml`
 - [ ] Set up root `package.json` with scripts
 
 #### Tooling Packages
+
 - [ ] Create `tooling/typescript` with shared tsconfigs
   - `base.json` - shared base config
   - `nextjs.json` - Next.js specific
@@ -43,6 +46,7 @@ This document outlines the sprint-by-sprint implementation plan for Phase 1 of t
 - [ ] Create `tooling/tailwind` with shared theme/tokens
 
 #### Web App (Next.js)
+
 - [ ] Initialize Next.js 16 app in `apps/web`
 - [ ] Configure Tailwind CSS 4.x
 - [ ] Set up basic app structure (App Router)
@@ -56,18 +60,21 @@ This document outlines the sprint-by-sprint implementation plan for Phase 1 of t
   - `/teams` - Coming soon
 
 #### Mobile App (Expo)
+
 - [ ] Initialize Expo 54 app in `apps/mobile`
 - [ ] Configure NativeWind
 - [ ] Set up Expo Router
 - [ ] Create placeholder screens matching web
 
 #### Convex Setup
+
 - [ ] Create `packages/backend` with Convex
 - [ ] Initialize Convex project
 - [ ] Create initial schema (users table)
 - [ ] Connect Convex to both apps
 
 ### Deliverables
+
 - Working monorepo with both apps running locally
 - Shared tooling configured
 - Basic navigation structure in place
@@ -81,12 +88,14 @@ This document outlines the sprint-by-sprint implementation plan for Phase 1 of t
 ### Tasks
 
 #### Bluesky OAuth Research & Setup
+
 - [ ] Research `@atproto/oauth-client-browser` package
 - [ ] Create OAuth client metadata JSON file
 - [ ] Set up OAuth callback route in Next.js
 - [ ] Implement OAuth flow for web
 
 #### User Management
+
 - [ ] Define full Convex schema for users
 - [ ] Create user queries:
   - `getUser` - get current user
@@ -98,12 +107,14 @@ This document outlines the sprint-by-sprint implementation plan for Phase 1 of t
   - `updateSettings` - edit preferences
 
 #### Auth Context
+
 - [ ] Create React auth context/provider
 - [ ] Implement protected route wrapper
 - [ ] Handle auth state persistence
 - [ ] Create sign in / sign out flows
 
 #### UI Components (Web)
+
 - [ ] Set up `packages/ui` with shadcn CLI (Base UI)
 - [ ] Create core components:
   - Button (variants: primary, secondary, ghost, etc.)
@@ -118,11 +129,13 @@ This document outlines the sprint-by-sprint implementation plan for Phase 1 of t
   - MobileNav (responsive)
 
 #### UI Components (Mobile)
+
 - [ ] Set up NativeWind in Expo
 - [ ] Create matching component primitives
 - [ ] Ensure design consistency
 
 ### Deliverables
+
 - Users can sign in with Bluesky account
 - User record created in Convex on first login
 - Core UI components available
@@ -137,6 +150,7 @@ This document outlines the sprint-by-sprint implementation plan for Phase 1 of t
 ### Tasks
 
 #### Bluesky API Integration
+
 - [ ] Create Bluesky API wrapper in Convex actions
 - [ ] Implement `getTimeline` action (fetch user's feed)
 - [ ] Implement `getAuthorFeed` action (fetch specific user's posts)
@@ -144,6 +158,7 @@ This document outlines the sprint-by-sprint implementation plan for Phase 1 of t
 - [ ] Handle rate limiting and errors
 
 #### Feed Display
+
 - [ ] Create Feed component
 - [ ] Create PostCard component:
   - Author info (avatar, name, handle)
@@ -157,6 +172,7 @@ This document outlines the sprint-by-sprint implementation plan for Phase 1 of t
 - [ ] Implement pull-to-refresh (mobile)
 
 #### Post Creation
+
 - [ ] Create PostComposer component
 - [ ] Implement `createPost` action in Convex:
   - Call Bluesky API to create post
@@ -165,6 +181,7 @@ This document outlines the sprint-by-sprint implementation plan for Phase 1 of t
 - [ ] Add image upload (future - defer if time constrained)
 
 #### Post Interactions
+
 - [ ] Implement `likePost` action
 - [ ] Implement `unlikePost` action
 - [ ] Implement `repost` action
@@ -172,6 +189,7 @@ This document outlines the sprint-by-sprint implementation plan for Phase 1 of t
 - [ ] Update PostCard to show interaction states
 
 ### Deliverables
+
 - Users can view their Bluesky feed
 - Users can switch between Pokemon-curated and full feed
 - Users can create posts (cross-posted to Bluesky)
@@ -186,6 +204,7 @@ This document outlines the sprint-by-sprint implementation plan for Phase 1 of t
 ### Tasks
 
 #### Profile Pages
+
 - [ ] Create ProfileHeader component:
   - Avatar, display name, handle
   - Bio
@@ -198,12 +217,14 @@ This document outlines the sprint-by-sprint implementation plan for Phase 1 of t
 - [ ] Implement profile data fetching from Bluesky
 
 #### Follow System
+
 - [ ] Implement `followUser` action
 - [ ] Implement `unfollowUser` action
 - [ ] Update follow button to reflect state
 - [ ] Show follow state on profiles
 
 #### Settings Pages
+
 - [ ] Create Settings layout with navigation
 - [ ] Implement Profile Settings:
   - Edit display name
@@ -218,11 +239,13 @@ This document outlines the sprint-by-sprint implementation plan for Phase 1 of t
   - Sign out
 
 #### Mobile Parity
+
 - [ ] Implement OAuth flow for mobile (Expo AuthSession)
 - [ ] Ensure all features work on mobile
 - [ ] Test and fix mobile-specific issues
 
 ### Deliverables
+
 - Full profile pages with user's posts
 - Follow/unfollow functionality
 - Settings pages with profile editing
@@ -237,6 +260,7 @@ This document outlines the sprint-by-sprint implementation plan for Phase 1 of t
 ### Tasks
 
 #### Coming Soon Pages
+
 - [ ] Create ComingSoon component (reusable)
 - [ ] Implement Tournaments page with teaser content
 - [ ] Implement Draft Leagues page with teaser content
@@ -244,6 +268,7 @@ This document outlines the sprint-by-sprint implementation plan for Phase 1 of t
 - [ ] Add email signup for notifications (optional)
 
 #### Polish & Bug Fixes
+
 - [ ] Review and fix UI inconsistencies
 - [ ] Improve loading states
 - [ ] Add error handling and error boundaries
@@ -252,12 +277,14 @@ This document outlines the sprint-by-sprint implementation plan for Phase 1 of t
 - [ ] Performance review (bundle size, load times)
 
 #### Testing
+
 - [ ] Manual testing of all flows
 - [ ] Test on multiple browsers
 - [ ] Test on iOS and Android devices
 - [ ] Fix critical bugs
 
 #### Deployment - Web
+
 - [ ] Create Vercel project
 - [ ] Configure environment variables
 - [ ] Set up preview deployments
@@ -265,17 +292,20 @@ This document outlines the sprint-by-sprint implementation plan for Phase 1 of t
 - [ ] Configure domain (when purchased)
 
 #### Deployment - Mobile
+
 - [ ] Configure EAS project
 - [ ] Set up build profiles (dev, preview, production)
 - [ ] Create development builds
 - [ ] Submit to app stores (or prepare for submission)
 
 #### Documentation
+
 - [ ] Update README with setup instructions
 - [ ] Document environment variables
 - [ ] Create contributing guide (optional)
 
 ### Deliverables
+
 - Polished, production-ready web app
 - Mobile apps ready for testing/distribution
 - Deployed to Vercel
@@ -288,12 +318,14 @@ This document outlines the sprint-by-sprint implementation plan for Phase 1 of t
 After the initial launch, prioritize these items:
 
 ### Own PDS (High Priority)
+
 - [ ] Deploy containerized PDS (Fly.io or similar)
 - [ ] Configure `trainers.gg` domain for PDS
 - [ ] Enable `@username.trainers.gg` handle creation
 - [ ] Update OAuth to support own PDS
 
 ### Enhanced Features
+
 - [ ] Reply functionality (view and create replies)
 - [ ] Image upload for posts
 - [ ] Notifications
@@ -301,6 +333,7 @@ After the initial launch, prioritize these items:
 - [ ] Better Pokemon content filtering (ML-based or keyword lists)
 
 ### Team Builder (Phase 2)
+
 - [ ] Design team builder data model
 - [ ] Implement team creation and management
 - [ ] Add team sharing to posts
@@ -309,39 +342,44 @@ After the initial launch, prioritize these items:
 
 ## Risk Mitigation
 
-| Risk | Mitigation |
-|------|------------|
-| Bluesky OAuth complexity (DPoP, PAR) | Start OAuth research early in Sprint 2; have fallback plan |
-| Mobile OAuth challenges | Test Expo AuthSession early; may need custom WebView solution |
-| Rate limits from Bluesky | Implement caching in Convex; show graceful degradation |
-| Domain not purchased | Use preview URLs for development; OAuth won't work without domain |
-| React version mismatch (19 vs 18) | Keep shared packages React-agnostic; test both platforms |
+| Risk                                 | Mitigation                                                        |
+| ------------------------------------ | ----------------------------------------------------------------- |
+| Bluesky OAuth complexity (DPoP, PAR) | Start OAuth research early in Sprint 2; have fallback plan        |
+| Mobile OAuth challenges              | Test Expo AuthSession early; may need custom WebView solution     |
+| Rate limits from Bluesky             | Implement caching in Convex; show graceful degradation            |
+| Domain not purchased                 | Use preview URLs for development; OAuth won't work without domain |
+| React version mismatch (19 vs 18)    | Keep shared packages React-agnostic; test both platforms          |
 
 ---
 
 ## Success Criteria
 
 ### Sprint 1
+
 - [ ] `pnpm dev` runs both apps successfully
 - [ ] Navigation works on both platforms
 
 ### Sprint 2
+
 - [ ] User can sign in with Bluesky account
 - [ ] User record exists in Convex after sign in
 - [ ] Core UI components render correctly
 
 ### Sprint 3
+
 - [ ] User can view their Bluesky feed
 - [ ] User can create a post that appears on Bluesky
 - [ ] User can like/repost
 
 ### Sprint 4
+
 - [ ] User can view any profile
 - [ ] User can follow/unfollow
 - [ ] User can edit their settings
 - [ ] Mobile app is fully functional
 
 ### Sprint 5
+
 - [ ] App is deployed and accessible
 - [ ] All coming soon pages exist
 - [ ] No critical bugs
