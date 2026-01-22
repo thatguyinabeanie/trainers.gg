@@ -23,7 +23,7 @@ const signInSchema = z.object({
       (val) => {
         // Allow email format or username format (alphanumeric, underscores, hyphens)
         const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val);
-        const isUsername = /^[a-zA-Z0-9_-]{3,30}$/.test(val);
+        const isUsername = /^[a-zA-Z0-9_-]{3,20}$/.test(val);
         return isEmail || isUsername;
       },
       { message: "Please enter a valid email or username" }

@@ -12,6 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { SocialAuthButtons } from "./social-auth-buttons";
 import { useAuth } from "@/hooks/use-auth";
+import { checkUsernameAvailability } from "@/app/(auth-pages)/actions";
 
 const passwordRequirements = z
   .string()
@@ -22,6 +23,14 @@ const passwordRequirements = z
 
 const signUpSchema = z
   .object({
+    username: z
+      .string()
+      .min(3, "Username must be at least 3 characters")
+      .max(20, "Username must be at most 20 characters")
+      .regex(
+        /^[a-zA-Z0-9_-]+$/,
+        "Username can only contain letters, numbers, underscores, and hyphens"
+      ),
     email: z
       .string()
       .min(1, "Email is required")
@@ -55,9 +64,25 @@ export function SignUpForm() {
     setIsSubmitting(true);
 
     try {
+      // Check username availability first
+      const { available, error: usernameError } =
+        await checkUsernameAvailability(data.username);
+
+      if (usernameError) {
+        setError(usernameError);
+        return;
+      }
+
+      if (!available) {
+        setError("Username is already taken");
+        return;
+      }
+
+      // Sign up with username in metadata
       const { error: signUpError } = await signUpWithEmail(
         data.email,
-        data.password
+        data.password,
+        data.username.toLowerCase()
       );
 
       if (signUpError) {
@@ -109,6 +134,26 @@ export function SignUpForm() {
               {error}
             </div>
           )}
+
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="username">Username</Label>
+            <Input
+              id="username"
+              type="text"
+              placeholder="cooltrainer123"
+              autoComplete="username"
+              aria-invalid={errors.username ? "true" : undefined}
+              {...register("username")}
+            />
+            {errors.username && (
+              <p className="text-destructive text-sm">
+                {errors.username.message}
+              </p>
+            )}
+            <p className="text-muted-foreground text-xs">
+              3-20 characters. Letters, numbers, underscores, and hyphens only.
+            </p>
+          </div>
 
           <div className="flex flex-col gap-2">
             <Label htmlFor="email">Email</Label>
