@@ -2,8 +2,7 @@
 
 import { useCallback } from "react";
 import { useSupabaseQuery } from "@/lib/supabase";
-import { getTournamentByOrgAndSlug } from "@trainers/supabase";
-import { useCurrentUser } from "@/hooks/use-current-user";
+import { getTournamentBySlug } from "@trainers/supabase";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import {
@@ -22,14 +21,13 @@ import {
   Users,
   MapPin,
   Clock,
-  Settings,
   Loader2,
   ArrowLeft,
   ExternalLink,
+  Building2,
 } from "lucide-react";
 
 interface TournamentDetailClientProps {
-  orgSlug: string;
   tournamentSlug: string;
 }
 
@@ -51,21 +49,18 @@ const statusColors: Record<TournamentStatus, string> = {
 };
 
 export function TournamentDetailClient({
-  orgSlug,
   tournamentSlug,
 }: TournamentDetailClientProps) {
   const tournamentQueryFn = useCallback(
-    (supabase: Parameters<typeof getTournamentByOrgAndSlug>[0]) =>
-      getTournamentByOrgAndSlug(supabase, orgSlug, tournamentSlug),
-    [orgSlug, tournamentSlug]
+    (supabase: Parameters<typeof getTournamentBySlug>[0]) =>
+      getTournamentBySlug(supabase, tournamentSlug),
+    [tournamentSlug]
   );
 
   const { data: tournament, isLoading: tournamentLoading } = useSupabaseQuery(
     tournamentQueryFn,
-    [orgSlug, tournamentSlug]
+    [tournamentSlug]
   );
-
-  const { user: currentUser } = useCurrentUser();
 
   if (tournamentLoading) {
     return (
@@ -102,11 +97,7 @@ export function TournamentDetailClient({
     id: number;
     name: string;
     slug: string;
-    owner_alt_id: number;
   } | null;
-
-  const isOrganizer = currentUser?.alt?.id === organization?.owner_alt_id;
-  const canManage = isOrganizer; // Could extend to check org membership
 
   const formatDate = (dateStr?: string | null) => {
     if (!dateStr) return "TBD";
@@ -131,60 +122,45 @@ export function TournamentDetailClient({
           Tournaments
         </Link>
         <span>/</span>
-        <Link href={`/organizations/${orgSlug}`} className="hover:underline">
-          {organization?.name || orgSlug}
-        </Link>
-        <span>/</span>
         <span className="text-foreground">{tournament.name}</span>
       </div>
 
       {/* Header */}
-      <div className="mb-8 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-        <div>
-          <div className="mb-2 flex items-center gap-3">
-            <h1 className="text-3xl font-bold">{tournament.name}</h1>
-            <Badge
-              className={statusColors[tournament.status as TournamentStatus]}
-            >
-              {tournament.status}
-            </Badge>
-          </div>
-
-          <div className="text-muted-foreground flex flex-wrap items-center gap-4 text-sm">
-            {organization && (
-              <Link
-                href={`/organizations/${orgSlug}`}
-                className="flex items-center gap-1 hover:underline"
-              >
-                <MapPin className="h-4 w-4" />
-                {organization.name}
-              </Link>
-            )}
-            {tournament.format && (
-              <span className="flex items-center gap-1">
-                <Trophy className="h-4 w-4" />
-                {tournament.format}
-              </span>
-            )}
-            <span className="flex items-center gap-1">
-              <Users className="h-4 w-4" />
-              {registrationCount}
-              {tournament.max_participants
-                ? ` / ${tournament.max_participants}`
-                : ""}{" "}
-              players
-            </span>
-          </div>
+      <div className="mb-8">
+        <div className="mb-2 flex items-center gap-3">
+          <h1 className="text-3xl font-bold">{tournament.name}</h1>
+          <Badge
+            className={statusColors[tournament.status as TournamentStatus]}
+          >
+            {tournament.status}
+          </Badge>
         </div>
 
-        {canManage && (
-          <Link href={`/organizations/${orgSlug}/${tournamentSlug}/manage`}>
-            <Button>
-              <Settings className="mr-2 h-4 w-4" />
-              Manage Tournament
-            </Button>
-          </Link>
-        )}
+        <div className="text-muted-foreground flex flex-wrap items-center gap-4 text-sm">
+          {organization && (
+            <Link
+              href={`/organizations/${organization.slug}`}
+              className="flex items-center gap-1 hover:underline"
+            >
+              <Building2 className="h-4 w-4" />
+              {organization.name}
+            </Link>
+          )}
+          {tournament.format && (
+            <span className="flex items-center gap-1">
+              <Trophy className="h-4 w-4" />
+              {tournament.format}
+            </span>
+          )}
+          <span className="flex items-center gap-1">
+            <Users className="h-4 w-4" />
+            {registrationCount}
+            {tournament.max_participants
+              ? ` / ${tournament.max_participants}`
+              : ""}{" "}
+            players
+          </span>
+        </div>
       </div>
 
       <div className="grid gap-8 lg:grid-cols-3">
@@ -342,7 +318,7 @@ export function TournamentDetailClient({
 
         {/* Sidebar */}
         <div className="space-y-6">
-          {/* Registration Card - TODO: Migrate to Supabase */}
+          {/* Registration Card */}
           {tournament.status === "upcoming" && (
             <Card>
               <CardHeader>
@@ -363,7 +339,7 @@ export function TournamentDetailClient({
             </Card>
           )}
 
-          {/* Check-in Card - TODO: Migrate to Supabase */}
+          {/* Check-in Card */}
           {(tournament.status === "upcoming" ||
             tournament.status === "active") && (
             <Card>
@@ -379,29 +355,21 @@ export function TournamentDetailClient({
           )}
 
           {/* Quick Links */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Quick Links</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              <Link href={`/organizations/${orgSlug}`}>
-                <Button variant="outline" className="w-full justify-start">
-                  <ExternalLink className="mr-2 h-4 w-4" />
-                  View Organization
-                </Button>
-              </Link>
-              {canManage && (
-                <Link
-                  href={`/organizations/${orgSlug}/${tournamentSlug}/manage`}
-                >
+          {organization && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Organizer</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Link href={`/organizations/${organization.slug}`}>
                   <Button variant="outline" className="w-full justify-start">
-                    <Settings className="mr-2 h-4 w-4" />
-                    Tournament Settings
+                    <ExternalLink className="mr-2 h-4 w-4" />
+                    {organization.name}
                   </Button>
                 </Link>
-              )}
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
     </div>

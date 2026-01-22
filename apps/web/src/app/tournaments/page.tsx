@@ -140,10 +140,7 @@ export default function TournamentsPage() {
       {!isLoading && filteredTournaments.length > 0 && (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {filteredTournaments.map((tournament) => (
-            <Link
-              key={tournament.id}
-              href={`/organizations/${tournament.organization?.slug ?? "unknown"}/${tournament.slug}`}
-            >
+            <Link key={tournament.id} href={`/tournaments/${tournament.slug}`}>
               <Card className="h-full transition-shadow hover:shadow-md">
                 <CardHeader className="pb-3">
                   <div className="flex items-start justify-between">

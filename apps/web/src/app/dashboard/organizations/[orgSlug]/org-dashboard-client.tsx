@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback } from "react";
+import { useRouter } from "next/navigation";
 import { useSupabaseQuery } from "@/lib/supabase";
 import { getOrganizationBySlug } from "@trainers/supabase";
 import { useCurrentUser } from "@/hooks/use-current-user";
@@ -14,19 +15,21 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Building2,
   Trophy,
   Users,
-  Calendar,
   Settings,
   Loader2,
   ArrowLeft,
+  Plus,
+  ExternalLink,
+  Calendar,
+  ShieldAlert,
 } from "lucide-react";
 
-interface OrganizationDetailClientProps {
+interface OrgDashboardClientProps {
   orgSlug: string;
 }
 
@@ -45,9 +48,9 @@ const statusColors: Record<TournamentStatus, string> = {
   cancelled: "bg-red-100 text-red-800",
 };
 
-export function OrganizationDetailClient({
-  orgSlug,
-}: OrganizationDetailClientProps) {
+export function OrgDashboardClient({ orgSlug }: OrgDashboardClientProps) {
+  const router = useRouter();
+
   const orgQueryFn = useCallback(
     (supabase: Parameters<typeof getOrganizationBySlug>[0]) =>
       getOrganizationBySlug(supabase, orgSlug),
@@ -59,9 +62,9 @@ export function OrganizationDetailClient({
     [orgSlug]
   );
 
-  const { user: currentUser } = useCurrentUser();
+  const { user: currentUser, isLoading: userLoading } = useCurrentUser();
 
-  if (orgLoading) {
+  if (orgLoading || userLoading) {
     return (
       <div className="flex min-h-[50vh] items-center justify-center">
         <Loader2 className="text-muted-foreground h-8 w-8 animate-spin" />
@@ -71,31 +74,54 @@ export function OrganizationDetailClient({
 
   if (!organization) {
     return (
-      <div className="container mx-auto px-4 py-8">
-        <Card>
-          <CardContent className="flex flex-col items-center justify-center py-12">
-            <Building2 className="text-muted-foreground mb-4 h-12 w-12" />
-            <h3 className="mb-2 text-lg font-semibold">
-              Organization not found
-            </h3>
-            <p className="text-muted-foreground mb-4 text-center">
-              This organization doesn&apos;t exist or has been removed
-            </p>
-            <Link href="/organizations">
-              <Button>
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Back to Organizations
-              </Button>
-            </Link>
-          </CardContent>
-        </Card>
-      </div>
+      <Card>
+        <CardContent className="flex flex-col items-center justify-center py-12">
+          <Building2 className="text-muted-foreground mb-4 h-12 w-12" />
+          <h3 className="mb-2 text-lg font-semibold">Organization not found</h3>
+          <p className="text-muted-foreground mb-4 text-center">
+            This organization doesn&apos;t exist or has been removed
+          </p>
+          <Link href="/dashboard/organizations">
+            <Button>
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back to Organizations
+            </Button>
+          </Link>
+        </CardContent>
+      </Card>
     );
   }
 
-  const isOwner = currentUser?.alt?.id === organization.owner_alt_id;
+  // Auth check
+  if (!currentUser) {
+    router.push("/sign-in");
+    return null;
+  }
 
-  // Combine all tournament types from the organization query
+  // Permission check
+  const isOwner = currentUser.alt?.id === organization.owner_alt_id;
+
+  if (!isOwner) {
+    return (
+      <Card>
+        <CardContent className="flex flex-col items-center justify-center py-12">
+          <ShieldAlert className="text-muted-foreground mb-4 h-12 w-12" />
+          <h3 className="mb-2 text-lg font-semibold">Access Denied</h3>
+          <p className="text-muted-foreground mb-4 text-center">
+            You don&apos;t have permission to manage this organization
+          </p>
+          <Link href={`/organizations/${orgSlug}`}>
+            <Button>
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              View Organization
+            </Button>
+          </Link>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // Combine all tournament types
   const tournaments = [
     ...(organization.tournaments?.active || []),
     ...(organization.tournaments?.upcoming || []),
@@ -103,58 +129,41 @@ export function OrganizationDetailClient({
   ];
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      {/* Breadcrumb */}
-      <div className="text-muted-foreground mb-4 flex items-center gap-2 text-sm">
-        <Link href="/organizations" className="hover:underline">
-          Organizations
-        </Link>
-        <span>/</span>
-        <span className="text-foreground">{organization.name}</span>
-      </div>
-
+    <div className="space-y-6">
       {/* Header */}
-      <div className="mb-8 flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
-        <div className="flex items-start gap-4">
-          <Avatar className="h-16 w-16">
-            <AvatarImage src={organization.logo_url ?? undefined} />
-            <AvatarFallback className="text-xl">
-              {organization.name.slice(0, 2).toUpperCase()}
-            </AvatarFallback>
-          </Avatar>
-          <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-3xl font-bold">{organization.name}</h1>
-              {(organization.tier === "verified" ||
-                organization.tier === "partner") && (
-                <Badge variant="secondary">
-                  {organization.tier === "partner" ? "Partner" : "Verified"}
-                </Badge>
-              )}
-            </div>
-            <p className="text-muted-foreground mt-1">@{organization.slug}</p>
-            {organization.description && (
-              <p className="text-muted-foreground mt-2 max-w-xl">
-                {organization.description}
-              </p>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <div className="mb-1 flex items-center gap-2">
+            <h1 className="text-2xl font-bold">{organization.name}</h1>
+            {(organization.tier === "verified" ||
+              organization.tier === "partner") && (
+              <Badge variant="secondary">
+                {organization.tier === "partner" ? "Partner" : "Verified"}
+              </Badge>
             )}
           </div>
+          <p className="text-muted-foreground text-sm">
+            Manage your organization
+          </p>
         </div>
-
         <div className="flex gap-2">
-          {isOwner && (
-            <Link href={`/dashboard/organizations/${orgSlug}`}>
-              <Button variant="outline">
-                <Settings className="mr-2 h-4 w-4" />
-                Manage Organization
-              </Button>
-            </Link>
-          )}
+          <Link href={`/organizations/${orgSlug}`}>
+            <Button variant="outline" size="sm">
+              <ExternalLink className="mr-2 h-4 w-4" />
+              View Public Page
+            </Button>
+          </Link>
+          <Link href={`/dashboard/organizations/${orgSlug}/tournaments/create`}>
+            <Button size="sm">
+              <Plus className="mr-2 h-4 w-4" />
+              New Tournament
+            </Button>
+          </Link>
         </div>
       </div>
 
       {/* Stats */}
-      <div className="mb-8 grid gap-4 sm:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-3">
         <Card>
           <CardContent className="flex items-center gap-4 pt-6">
             <div className="bg-primary/10 rounded-full p-3">
@@ -186,11 +195,9 @@ export function OrganizationDetailClient({
             </div>
             <div>
               <p className="text-2xl font-bold">
-                {organization.created_at
-                  ? new Date(organization.created_at).getFullYear()
-                  : new Date().getFullYear()}
+                {organization.tournaments?.active?.length || 0}
               </p>
-              <p className="text-muted-foreground text-sm">Founded</p>
+              <p className="text-muted-foreground text-sm">Active</p>
             </div>
           </CardContent>
         </Card>
@@ -207,6 +214,10 @@ export function OrganizationDetailClient({
             <Users className="h-4 w-4" />
             Members
           </TabsTrigger>
+          <TabsTrigger value="settings" className="gap-2">
+            <Settings className="h-4 w-4" />
+            Settings
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="tournaments">
@@ -218,18 +229,16 @@ export function OrganizationDetailClient({
                   No tournaments yet
                 </h3>
                 <p className="text-muted-foreground mb-4 text-center">
-                  This organization hasn&apos;t created any tournaments
+                  Create your first tournament to get started
                 </p>
-                {isOwner && (
-                  <Link
-                    href={`/dashboard/organizations/${orgSlug}/tournaments/create`}
-                  >
-                    <Button>
-                      <Trophy className="mr-2 h-4 w-4" />
-                      Create Tournament
-                    </Button>
-                  </Link>
-                )}
+                <Link
+                  href={`/dashboard/organizations/${orgSlug}/tournaments/create`}
+                >
+                  <Button>
+                    <Plus className="mr-2 h-4 w-4" />
+                    Create Tournament
+                  </Button>
+                </Link>
               </CardContent>
             </Card>
           ) : (
@@ -237,7 +246,7 @@ export function OrganizationDetailClient({
               {tournaments.map((tournament) => (
                 <Link
                   key={tournament.id}
-                  href={`/tournaments/${tournament.slug}`}
+                  href={`/dashboard/organizations/${orgSlug}/tournaments/${tournament.slug}/manage`}
                 >
                   <Card className="h-full transition-shadow hover:shadow-md">
                     <CardHeader className="pb-3">
@@ -290,12 +299,28 @@ export function OrganizationDetailClient({
             <CardHeader>
               <CardTitle>Members</CardTitle>
               <CardDescription>
-                People who are part of this organization
+                Manage your organization&apos;s team members
               </CardDescription>
             </CardHeader>
             <CardContent>
               <p className="text-muted-foreground py-8 text-center">
-                Member list coming soon
+                Member management coming soon
+              </p>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="settings">
+          <Card>
+            <CardHeader>
+              <CardTitle>Organization Settings</CardTitle>
+              <CardDescription>
+                Configure your organization&apos;s settings
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <p className="text-muted-foreground py-8 text-center">
+                Settings coming soon
               </p>
             </CardContent>
           </Card>

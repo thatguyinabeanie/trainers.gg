@@ -34,6 +34,7 @@ export {
 export {
   listPublicTournaments,
   listTournaments,
+  getTournamentBySlug,
   getTournamentByOrgAndSlug,
   getTournamentById,
   getTournamentRegistrations,

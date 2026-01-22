@@ -201,6 +201,61 @@ export async function getTournamentByOrgAndSlug(
 }
 
 /**
+ * Get tournament by slug (globally unique)
+ * Used for /tournaments/{slug} public view
+ */
+export async function getTournamentBySlug(
+  supabase: TypedClient,
+  tournamentSlug: string
+) {
+  // Get the tournament by slug (now globally unique)
+  const { data: tournament, error } = await supabase
+    .from("tournaments")
+    .select(
+      `
+      *,
+      organization:organizations(*)
+    `
+    )
+    .eq("slug", tournamentSlug)
+    .is("archived_at", null)
+    .single();
+
+  if (error || !tournament) return null;
+
+  // Get additional details
+  const [registrations, phases, currentPhase] = await Promise.all([
+    supabase
+      .from("tournament_registrations")
+      .select("*")
+      .eq("tournament_id", tournament.id),
+    supabase
+      .from("tournament_phases")
+      .select("*")
+      .eq("tournament_id", tournament.id)
+      .order("phase_order", { ascending: true }),
+    tournament.current_phase_id
+      ? supabase
+          .from("tournament_phases")
+          .select("*")
+          .eq("id", tournament.current_phase_id)
+          .single()
+      : null,
+  ]);
+
+  return {
+    ...tournament,
+    registrations: registrations.data ?? [],
+    phases: phases.data ?? [],
+    currentPhase: currentPhase?.data ?? null,
+    _count: {
+      registrations: registrations.data?.length ?? 0,
+      phases: phases.data?.length ?? 0,
+    },
+  };
+}
+
+/**
  * Get tournament by ID
  */
 export async function getTournamentById(supabase: TypedClient, id: number) {
