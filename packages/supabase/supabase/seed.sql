@@ -17,32 +17,81 @@ CREATE EXTENSION IF NOT EXISTS pgcrypto WITH SCHEMA extensions;
 
 INSERT INTO auth.users (
   id, instance_id, email, encrypted_password, email_confirmed_at,
-  raw_user_meta_data, created_at, updated_at,
-  confirmation_token, email_change, email_change_token_new, recovery_token
+  aud, role, raw_app_meta_data, raw_user_meta_data, 
+  created_at, updated_at, confirmation_token, email_change, email_change_token_new, recovery_token
 ) VALUES
   ('a1b2c3d4-e5f6-4a5b-8c9d-0e1f2a3b4c5d', '00000000-0000-0000-0000-000000000000',
    'admin@trainers.local', extensions.crypt('password123', extensions.gen_salt('bf')), NOW(),
-   '{"username": "admin_trainer", "first_name": "Admin", "last_name": "Trainer"}'::jsonb, NOW(), NOW(), '', '', '', ''),
+   'authenticated', 'authenticated',
+   '{"provider": "email", "providers": ["email"]}'::jsonb,
+   '{"username": "admin_trainer", "first_name": "Admin", "last_name": "Trainer"}'::jsonb,
+   NOW(), NOW(), '', '', '', ''),
   
   ('b2c3d4e5-f6a7-5b6c-9d0e-1f2a3b4c5d6e', '00000000-0000-0000-0000-000000000000',
    'player@trainers.local', extensions.crypt('password123', extensions.gen_salt('bf')), NOW(),
-   '{"username": "ash_ketchum", "first_name": "Ash", "last_name": "Ketchum"}'::jsonb, NOW(), NOW(), '', '', '', ''),
+   'authenticated', 'authenticated',
+   '{"provider": "email", "providers": ["email"]}'::jsonb,
+   '{"username": "ash_ketchum", "first_name": "Ash", "last_name": "Ketchum"}'::jsonb,
+   NOW(), NOW(), '', '', '', ''),
   
   ('c3d4e5f6-a7b8-6c7d-0e1f-2a3b4c5d6e7f', '00000000-0000-0000-0000-000000000000',
    'champion@trainers.local', extensions.crypt('password123', extensions.gen_salt('bf')), NOW(),
-   '{"username": "cynthia", "first_name": "Cynthia", "last_name": "Shirona"}'::jsonb, NOW(), NOW(), '', '', '', ''),
+   'authenticated', 'authenticated',
+   '{"provider": "email", "providers": ["email"]}'::jsonb,
+   '{"username": "cynthia", "first_name": "Cynthia", "last_name": "Shirona"}'::jsonb,
+   NOW(), NOW(), '', '', '', ''),
   
   ('d4e5f6a7-b8c9-7d8e-1f2a-3b4c5d6e7f8a', '00000000-0000-0000-0000-000000000000',
    'gymleader@trainers.local', extensions.crypt('password123', extensions.gen_salt('bf')), NOW(),
-   '{"username": "brock", "first_name": "Brock", "last_name": "Harrison"}'::jsonb, NOW(), NOW(), '', '', '', ''),
+   'authenticated', 'authenticated',
+   '{"provider": "email", "providers": ["email"]}'::jsonb,
+   '{"username": "brock", "first_name": "Brock", "last_name": "Harrison"}'::jsonb,
+   NOW(), NOW(), '', '', '', ''),
   
   ('e5f6a7b8-c9d0-8e9f-2a3b-4c5d6e7f8a9b', '00000000-0000-0000-0000-000000000000',
    'elite@trainers.local', extensions.crypt('password123', extensions.gen_salt('bf')), NOW(),
-   '{"username": "karen", "first_name": "Karen", "last_name": "Elite"}'::jsonb, NOW(), NOW(), '', '', '', ''),
+   'authenticated', 'authenticated',
+   '{"provider": "email", "providers": ["email"]}'::jsonb,
+   '{"username": "karen", "first_name": "Karen", "last_name": "Elite"}'::jsonb,
+   NOW(), NOW(), '', '', '', ''),
   
   ('f6a7b8c9-d0e1-9f0a-3b4c-5d6e7f8a9b0c', '00000000-0000-0000-0000-000000000000',
    'casual@trainers.local', extensions.crypt('password123', extensions.gen_salt('bf')), NOW(),
-   '{"username": "red", "first_name": "Red", "last_name": "Champion"}'::jsonb, NOW(), NOW(), '', '', '', '');
+   'authenticated', 'authenticated',
+   '{"provider": "email", "providers": ["email"]}'::jsonb,
+   '{"username": "red", "first_name": "Red", "last_name": "Champion"}'::jsonb,
+   NOW(), NOW(), '', '', '', '');
+
+-- -----------------------------------------------------------------------------
+-- Auth Identities (required for email/password login)
+-- -----------------------------------------------------------------------------
+
+INSERT INTO auth.identities (
+  id, user_id, provider_id, provider, identity_data, last_sign_in_at, created_at, updated_at
+) VALUES
+  (gen_random_uuid(), 'a1b2c3d4-e5f6-4a5b-8c9d-0e1f2a3b4c5d', 'a1b2c3d4-e5f6-4a5b-8c9d-0e1f2a3b4c5d', 'email',
+   '{"sub": "a1b2c3d4-e5f6-4a5b-8c9d-0e1f2a3b4c5d", "email": "admin@trainers.local", "email_verified": true}'::jsonb,
+   NOW(), NOW(), NOW()),
+  
+  (gen_random_uuid(), 'b2c3d4e5-f6a7-5b6c-9d0e-1f2a3b4c5d6e', 'b2c3d4e5-f6a7-5b6c-9d0e-1f2a3b4c5d6e', 'email',
+   '{"sub": "b2c3d4e5-f6a7-5b6c-9d0e-1f2a3b4c5d6e", "email": "player@trainers.local", "email_verified": true}'::jsonb,
+   NOW(), NOW(), NOW()),
+  
+  (gen_random_uuid(), 'c3d4e5f6-a7b8-6c7d-0e1f-2a3b4c5d6e7f', 'c3d4e5f6-a7b8-6c7d-0e1f-2a3b4c5d6e7f', 'email',
+   '{"sub": "c3d4e5f6-a7b8-6c7d-0e1f-2a3b4c5d6e7f", "email": "champion@trainers.local", "email_verified": true}'::jsonb,
+   NOW(), NOW(), NOW()),
+  
+  (gen_random_uuid(), 'd4e5f6a7-b8c9-7d8e-1f2a-3b4c5d6e7f8a', 'd4e5f6a7-b8c9-7d8e-1f2a-3b4c5d6e7f8a', 'email',
+   '{"sub": "d4e5f6a7-b8c9-7d8e-1f2a-3b4c5d6e7f8a", "email": "gymleader@trainers.local", "email_verified": true}'::jsonb,
+   NOW(), NOW(), NOW()),
+  
+  (gen_random_uuid(), 'e5f6a7b8-c9d0-8e9f-2a3b-4c5d6e7f8a9b', 'e5f6a7b8-c9d0-8e9f-2a3b-4c5d6e7f8a9b', 'email',
+   '{"sub": "e5f6a7b8-c9d0-8e9f-2a3b-4c5d6e7f8a9b", "email": "elite@trainers.local", "email_verified": true}'::jsonb,
+   NOW(), NOW(), NOW()),
+  
+  (gen_random_uuid(), 'f6a7b8c9-d0e1-9f0a-3b4c-5d6e7f8a9b0c', 'f6a7b8c9-d0e1-9f0a-3b4c-5d6e7f8a9b0c', 'email',
+   '{"sub": "f6a7b8c9-d0e1-9f0a-3b4c-5d6e7f8a9b0c", "email": "casual@trainers.local", "email_verified": true}'::jsonb,
+   NOW(), NOW(), NOW());
 
 -- -----------------------------------------------------------------------------
 -- Update users/alts with additional data (trigger created basic records)

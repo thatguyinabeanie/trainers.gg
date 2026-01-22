@@ -9,7 +9,7 @@ A Pokemon community platform for competitive players, tournament organizers, and
 | **Web**            | Next.js 16 (React 19, App Router)         |
 | **Mobile**         | Expo 54 (React Native, React 19)          |
 | **Database**       | Supabase (PostgreSQL)                     |
-| **Auth**           | Clerk                                     |
+| **Auth**           | Supabase Auth                             |
 | **Realtime**       | Supabase Realtime                         |
 | **Edge Functions** | Supabase Edge Functions (Deno)            |
 | **Styling**        | Tailwind CSS 4 (web), NativeWind (mobile) |
@@ -65,10 +65,6 @@ cp .env.example .env.local
 NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
 SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
-
-# Clerk
-NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_...
-CLERK_SECRET_KEY=sk_...
 ```
 
 ### Development
@@ -100,30 +96,44 @@ pnpm build:web
 ### Authentication Flow
 
 ```
-User → Clerk (Auth) → JWT Token → Supabase (RLS)
-                   ↓
-            Clerk Webhook → Supabase Edge Function → users/profiles tables
+User → Supabase Auth (email/password, OAuth) → Session → RLS Policies
+                                             ↓
+                              Database trigger → users/alts tables
 ```
 
-- **Clerk** handles all authentication (sign-up, sign-in, OAuth, MFA)
-- **Supabase** uses Clerk's JWT tokens for Row Level Security (RLS)
-- **Webhooks** sync user data from Clerk to Supabase on user.created/updated/deleted
+- **Supabase Auth** handles all authentication (sign-up, sign-in, OAuth)
+- **Row Level Security (RLS)** uses `auth.uid()` for access control
+- **Database triggers** automatically create user and alt records on sign-up
 
 ### Database
 
 - **PostgreSQL** via Supabase with Row Level Security
-- **Third-Party Auth** integration with Clerk (native JWT verification)
 - **Edge Functions** for webhooks and server-side operations
 
 ### Key Tables
 
 | Table                      | Description                                      |
 | -------------------------- | ------------------------------------------------ |
-| `users`                    | User accounts (synced from Clerk via webhook)    |
-| `profiles`                 | Player profiles (username, display name, avatar) |
+| `users`                    | User accounts (created via auth trigger)         |
+| `alts`                     | Player profiles (username, display name, avatar) |
 | `organizations`            | Tournament organizer accounts                    |
 | `tournaments`              | Tournament events                                |
 | `tournament_registrations` | Player registrations                             |
+| `roles`                    | Role definitions (site and org scoped)           |
+| `user_roles`               | Site-scoped role assignments                     |
+
+## Test Users (Local Development)
+
+After running `pnpm supabase db reset` in the supabase package, the following test users are available:
+
+| Email                      | Password      | Username      | Site Admin |
+| -------------------------- | ------------- | ------------- | ---------- |
+| `admin@trainers.local`     | `password123` | admin_trainer | Yes        |
+| `player@trainers.local`    | `password123` | ash_ketchum   | No         |
+| `champion@trainers.local`  | `password123` | cynthia       | No         |
+| `gymleader@trainers.local` | `password123` | brock         | No         |
+| `elite@trainers.local`     | `password123` | karen         | No         |
+| `casual@trainers.local`    | `password123` | red           | No         |
 
 ## Deployment
 

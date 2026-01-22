@@ -56,3 +56,13 @@ export {
 
 // Permission queries
 export { getUserPermissions, hasPermission } from "./permissions";
+
+// Site role queries
+export {
+  isSiteAdmin,
+  getSiteRoles,
+  getSiteAdmins,
+  getUserSiteRoles,
+  grantSiteRole,
+  revokeSiteRole,
+} from "./site-roles";

@@ -29,6 +29,7 @@ const publicPages = [
   "/reset-password",
   "/auth/callback",
   "/onboarding",
+  "/forbidden",
   // Public content pages
   "/tournaments",
   "/organizations",
@@ -39,6 +40,9 @@ const publicPages = [
   "/home",
   "/about",
 ];
+
+// Pages that require site admin role
+const siteAdminPages = ["/admin"];
 
 function isAuthPage(pathname: string): boolean {
   return authPages.some(
@@ -54,6 +58,12 @@ function isPublicPage(pathname: string): boolean {
 
 function requiresProfileCheck(pathname: string): boolean {
   return !noProfileCheckPages.some(
+    (page) => pathname === page || pathname.startsWith(`${page}/`)
+  );
+}
+
+function isSiteAdminPage(pathname: string): boolean {
+  return siteAdminPages.some(
     (page) => pathname === page || pathname.startsWith(`${page}/`)
   );
 }
@@ -127,6 +137,8 @@ export async function middleware(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
+  console.log("[middleware]", { pathname, userId: user?.id ?? "none" });
+
   // Handle auth pages - redirect authenticated users away
   if (isAuthPage(pathname)) {
     if (user) {
@@ -155,6 +167,30 @@ export async function middleware(request: NextRequest) {
     if (!onboardingCompleted) {
       // Redirect to onboarding page
       return NextResponse.redirect(new URL("/onboarding", request.url));
+    }
+  }
+
+  // Check site admin access for /admin routes
+  if (isSiteAdminPage(pathname)) {
+    // Query the database to check if user has site admin role
+    const { data: userRole } = await supabase
+      .from("user_roles")
+      .select(
+        `
+        role:roles!inner(
+          name,
+          scope
+        )
+      `
+      )
+      .eq("user_id", user.id)
+      .eq("roles.scope", "site")
+      .eq("roles.name", "Site Admin")
+      .maybeSingle();
+
+    if (!userRole) {
+      // User is not a site admin - return 403
+      return NextResponse.rewrite(new URL("/forbidden", request.url));
     }
   }
 

@@ -1,7 +1,13 @@
 "use client";
 
+import { useCallback } from "react";
 import { getCurrentUser } from "@trainers/supabase";
 import { useSupabaseQuery } from "@/lib/supabase";
+import type { TypedSupabaseClient } from "@trainers/supabase";
+
+// Stable query function to prevent infinite loops
+const fetchCurrentUser = (supabase: TypedSupabaseClient) =>
+  getCurrentUser(supabase);
 
 /**
  * Shared hook to get the current authenticated user with their profile.
@@ -14,7 +20,7 @@ export function useCurrentUser() {
     data: user,
     isLoading,
     error,
-  } = useSupabaseQuery((supabase) => getCurrentUser(supabase), []);
+  } = useSupabaseQuery(fetchCurrentUser, []);
 
   return {
     user,
