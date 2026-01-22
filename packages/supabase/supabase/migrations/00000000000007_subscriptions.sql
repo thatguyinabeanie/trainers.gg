@@ -1,7 +1,8 @@
 -- =============================================================================
--- Subscriptions and Feature Usage Tables
+-- Subscriptions and Feature Usage Tables (IDEMPOTENT)
 -- =============================================================================
 -- Billing and usage tracking for profiles and organizations.
+-- Uses CREATE TABLE IF NOT EXISTS and DO blocks for constraints.
 
 -- Feature usage tracking (polymorphic: profile or organization)
 CREATE TABLE IF NOT EXISTS "public"."feature_usage" (
@@ -37,16 +38,28 @@ CREATE TABLE IF NOT EXISTS "public"."subscriptions" (
 );
 ALTER TABLE "public"."subscriptions" OWNER TO "postgres";
 
--- Primary keys
-ALTER TABLE ONLY "public"."feature_usage"
-    ADD CONSTRAINT "feature_usage_pkey" PRIMARY KEY ("id");
+-- Primary keys (idempotent)
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'feature_usage_pkey') THEN
+        ALTER TABLE ONLY "public"."feature_usage" ADD CONSTRAINT "feature_usage_pkey" PRIMARY KEY ("id");
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'subscriptions_pkey') THEN
+        ALTER TABLE ONLY "public"."subscriptions" ADD CONSTRAINT "subscriptions_pkey" PRIMARY KEY ("id");
+    END IF;
+END $$;
 
-ALTER TABLE ONLY "public"."subscriptions"
-    ADD CONSTRAINT "subscriptions_pkey" PRIMARY KEY ("id");
-
--- Unique constraints
-ALTER TABLE ONLY "public"."feature_usage"
-    ADD CONSTRAINT "feature_usage_entity_id_entity_type_feature_key_period_star_key" UNIQUE ("entity_id", "entity_type", "feature_key", "period_start");
-
-ALTER TABLE ONLY "public"."subscriptions"
-    ADD CONSTRAINT "subscriptions_stripe_subscription_id_key" UNIQUE ("stripe_subscription_id");
+-- Unique constraints (idempotent)
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'feature_usage_entity_id_entity_type_feature_key_period_star_key') THEN
+        ALTER TABLE ONLY "public"."feature_usage"
+            ADD CONSTRAINT "feature_usage_entity_id_entity_type_feature_key_period_star_key" UNIQUE ("entity_id", "entity_type", "feature_key", "period_start");
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'subscriptions_stripe_subscription_id_key') THEN
+        ALTER TABLE ONLY "public"."subscriptions"
+            ADD CONSTRAINT "subscriptions_stripe_subscription_id_key" UNIQUE ("stripe_subscription_id");
+    END IF;
+END $$;

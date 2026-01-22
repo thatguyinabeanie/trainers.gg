@@ -1,7 +1,8 @@
 -- =============================================================================
--- Tournament Core Tables
+-- Tournament Core Tables (IDEMPOTENT)
 -- =============================================================================
 -- Core tournament structure: tournaments, templates, phases.
+-- Uses CREATE TABLE IF NOT EXISTS and DO blocks for constraints.
 
 -- Tournament templates (reusable configurations)
 CREATE TABLE IF NOT EXISTS "public"."tournament_templates" (
@@ -91,45 +92,82 @@ CREATE TABLE IF NOT EXISTS "public"."tournament_phases" (
 );
 ALTER TABLE "public"."tournament_phases" OWNER TO "postgres";
 
--- Primary keys
-ALTER TABLE ONLY "public"."tournament_templates"
-    ADD CONSTRAINT "tournament_templates_pkey" PRIMARY KEY ("id");
+-- Primary keys (idempotent)
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'tournament_templates_pkey') THEN
+        ALTER TABLE ONLY "public"."tournament_templates" ADD CONSTRAINT "tournament_templates_pkey" PRIMARY KEY ("id");
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'tournament_template_phases_pkey') THEN
+        ALTER TABLE ONLY "public"."tournament_template_phases" ADD CONSTRAINT "tournament_template_phases_pkey" PRIMARY KEY ("id");
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'tournaments_pkey') THEN
+        ALTER TABLE ONLY "public"."tournaments" ADD CONSTRAINT "tournaments_pkey" PRIMARY KEY ("id");
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'tournament_phases_pkey') THEN
+        ALTER TABLE ONLY "public"."tournament_phases" ADD CONSTRAINT "tournament_phases_pkey" PRIMARY KEY ("id");
+    END IF;
+END $$;
 
-ALTER TABLE ONLY "public"."tournament_template_phases"
-    ADD CONSTRAINT "tournament_template_phases_pkey" PRIMARY KEY ("id");
+-- Unique constraints (idempotent)
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'tournaments_organization_id_slug_key') THEN
+        ALTER TABLE ONLY "public"."tournaments" ADD CONSTRAINT "tournaments_organization_id_slug_key" UNIQUE ("organization_id", "slug");
+    END IF;
+END $$;
 
-ALTER TABLE ONLY "public"."tournaments"
-    ADD CONSTRAINT "tournaments_pkey" PRIMARY KEY ("id");
-
-ALTER TABLE ONLY "public"."tournament_phases"
-    ADD CONSTRAINT "tournament_phases_pkey" PRIMARY KEY ("id");
-
--- Unique constraints
-ALTER TABLE ONLY "public"."tournaments"
-    ADD CONSTRAINT "tournaments_organization_id_slug_key" UNIQUE ("organization_id", "slug");
-
--- Foreign keys
-ALTER TABLE ONLY "public"."tournament_templates"
-    ADD CONSTRAINT "tournament_templates_organization_id_fkey" FOREIGN KEY ("organization_id") REFERENCES "public"."organizations"("id") ON DELETE SET NULL;
-
-ALTER TABLE ONLY "public"."tournament_templates"
-    ADD CONSTRAINT "tournament_templates_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "public"."profiles"("id") ON DELETE CASCADE;
-
-ALTER TABLE ONLY "public"."tournament_template_phases"
-    ADD CONSTRAINT "tournament_template_phases_template_id_fkey" FOREIGN KEY ("template_id") REFERENCES "public"."tournament_templates"("id") ON DELETE CASCADE;
-
-ALTER TABLE ONLY "public"."tournaments"
-    ADD CONSTRAINT "tournaments_organization_id_fkey" FOREIGN KEY ("organization_id") REFERENCES "public"."organizations"("id") ON DELETE CASCADE;
-
-ALTER TABLE ONLY "public"."tournaments"
-    ADD CONSTRAINT "tournaments_template_id_fkey" FOREIGN KEY ("template_id") REFERENCES "public"."tournament_templates"("id") ON DELETE SET NULL;
-
-ALTER TABLE ONLY "public"."tournaments"
-    ADD CONSTRAINT "tournaments_archived_by_fkey" FOREIGN KEY ("archived_by") REFERENCES "public"."profiles"("id");
-
-ALTER TABLE ONLY "public"."tournament_phases"
-    ADD CONSTRAINT "tournament_phases_tournament_id_fkey" FOREIGN KEY ("tournament_id") REFERENCES "public"."tournaments"("id") ON DELETE CASCADE;
-
--- Deferred FK for tournaments.current_phase_id (self-referencing through phases)
-ALTER TABLE ONLY "public"."tournaments"
-    ADD CONSTRAINT "tournaments_current_phase_fk" FOREIGN KEY ("current_phase_id") REFERENCES "public"."tournament_phases"("id") ON DELETE SET NULL;
+-- Foreign keys (idempotent)
+DO $$
+BEGIN
+    -- tournament_templates -> organizations
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'tournament_templates_organization_id_fkey') THEN
+        ALTER TABLE ONLY "public"."tournament_templates"
+            ADD CONSTRAINT "tournament_templates_organization_id_fkey" FOREIGN KEY ("organization_id") REFERENCES "public"."organizations"("id") ON DELETE SET NULL;
+    END IF;
+    
+    -- tournament_templates -> profiles
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'tournament_templates_created_by_fkey') THEN
+        ALTER TABLE ONLY "public"."tournament_templates"
+            ADD CONSTRAINT "tournament_templates_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "public"."profiles"("id") ON DELETE CASCADE;
+    END IF;
+    
+    -- tournament_template_phases -> tournament_templates
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'tournament_template_phases_template_id_fkey') THEN
+        ALTER TABLE ONLY "public"."tournament_template_phases"
+            ADD CONSTRAINT "tournament_template_phases_template_id_fkey" FOREIGN KEY ("template_id") REFERENCES "public"."tournament_templates"("id") ON DELETE CASCADE;
+    END IF;
+    
+    -- tournaments -> organizations
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'tournaments_organization_id_fkey') THEN
+        ALTER TABLE ONLY "public"."tournaments"
+            ADD CONSTRAINT "tournaments_organization_id_fkey" FOREIGN KEY ("organization_id") REFERENCES "public"."organizations"("id") ON DELETE CASCADE;
+    END IF;
+    
+    -- tournaments -> tournament_templates
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'tournaments_template_id_fkey') THEN
+        ALTER TABLE ONLY "public"."tournaments"
+            ADD CONSTRAINT "tournaments_template_id_fkey" FOREIGN KEY ("template_id") REFERENCES "public"."tournament_templates"("id") ON DELETE SET NULL;
+    END IF;
+    
+    -- tournaments -> profiles (archived_by)
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'tournaments_archived_by_fkey') THEN
+        ALTER TABLE ONLY "public"."tournaments"
+            ADD CONSTRAINT "tournaments_archived_by_fkey" FOREIGN KEY ("archived_by") REFERENCES "public"."profiles"("id");
+    END IF;
+    
+    -- tournament_phases -> tournaments
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'tournament_phases_tournament_id_fkey') THEN
+        ALTER TABLE ONLY "public"."tournament_phases"
+            ADD CONSTRAINT "tournament_phases_tournament_id_fkey" FOREIGN KEY ("tournament_id") REFERENCES "public"."tournaments"("id") ON DELETE CASCADE;
+    END IF;
+    
+    -- Deferred FK for tournaments.current_phase_id (self-referencing through phases)
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'tournaments_current_phase_fk') THEN
+        ALTER TABLE ONLY "public"."tournaments"
+            ADD CONSTRAINT "tournaments_current_phase_fk" FOREIGN KEY ("current_phase_id") REFERENCES "public"."tournament_phases"("id") ON DELETE SET NULL;
+    END IF;
+END $$;

@@ -1,7 +1,8 @@
 -- =============================================================================
--- Extensions
+-- Extensions (IDEMPOTENT)
 -- =============================================================================
 -- This migration sets up required PostgreSQL extensions for the application.
+-- All statements are idempotent and safe to run multiple times.
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -14,6 +15,7 @@ SET xmloption = content;
 SET client_min_messages = warning;
 SET row_security = off;
 
+-- Update comment on public schema (idempotent)
 COMMENT ON SCHEMA "public" IS 'standard public schema';
 
 -- GraphQL support

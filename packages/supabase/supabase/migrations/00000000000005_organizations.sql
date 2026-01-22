@@ -1,7 +1,8 @@
 -- =============================================================================
--- Organizations Tables
+-- Organizations Tables (IDEMPOTENT)
 -- =============================================================================
 -- Organization management including members, invitations, and requests.
+-- Uses CREATE TABLE IF NOT EXISTS and DO blocks for constraints.
 
 -- Organizations table
 CREATE TABLE IF NOT EXISTS "public"."organizations" (
@@ -64,54 +65,98 @@ CREATE TABLE IF NOT EXISTS "public"."organization_requests" (
 );
 ALTER TABLE "public"."organization_requests" OWNER TO "postgres";
 
--- Primary keys
-ALTER TABLE ONLY "public"."organizations"
-    ADD CONSTRAINT "organizations_pkey" PRIMARY KEY ("id");
+-- Primary keys (idempotent)
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'organizations_pkey') THEN
+        ALTER TABLE ONLY "public"."organizations" ADD CONSTRAINT "organizations_pkey" PRIMARY KEY ("id");
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'organization_members_pkey') THEN
+        ALTER TABLE ONLY "public"."organization_members" ADD CONSTRAINT "organization_members_pkey" PRIMARY KEY ("id");
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'organization_invitations_pkey') THEN
+        ALTER TABLE ONLY "public"."organization_invitations" ADD CONSTRAINT "organization_invitations_pkey" PRIMARY KEY ("id");
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'organization_requests_pkey') THEN
+        ALTER TABLE ONLY "public"."organization_requests" ADD CONSTRAINT "organization_requests_pkey" PRIMARY KEY ("id");
+    END IF;
+END $$;
 
-ALTER TABLE ONLY "public"."organization_members"
-    ADD CONSTRAINT "organization_members_pkey" PRIMARY KEY ("id");
+-- Unique constraints (idempotent)
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'organizations_slug_key') THEN
+        ALTER TABLE ONLY "public"."organizations" ADD CONSTRAINT "organizations_slug_key" UNIQUE ("slug");
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'organization_members_organization_id_profile_id_key') THEN
+        ALTER TABLE ONLY "public"."organization_members" ADD CONSTRAINT "organization_members_organization_id_profile_id_key" UNIQUE ("organization_id", "profile_id");
+    END IF;
+END $$;
 
-ALTER TABLE ONLY "public"."organization_invitations"
-    ADD CONSTRAINT "organization_invitations_pkey" PRIMARY KEY ("id");
-
-ALTER TABLE ONLY "public"."organization_requests"
-    ADD CONSTRAINT "organization_requests_pkey" PRIMARY KEY ("id");
-
--- Unique constraints
-ALTER TABLE ONLY "public"."organizations"
-    ADD CONSTRAINT "organizations_slug_key" UNIQUE ("slug");
-
-ALTER TABLE ONLY "public"."organization_members"
-    ADD CONSTRAINT "organization_members_organization_id_profile_id_key" UNIQUE ("organization_id", "profile_id");
-
--- Foreign keys
-ALTER TABLE ONLY "public"."organizations"
-    ADD CONSTRAINT "organizations_owner_profile_id_fkey" FOREIGN KEY ("owner_profile_id") REFERENCES "public"."profiles"("id") ON DELETE RESTRICT;
-
-ALTER TABLE ONLY "public"."organization_members"
-    ADD CONSTRAINT "organization_members_organization_id_fkey" FOREIGN KEY ("organization_id") REFERENCES "public"."organizations"("id") ON DELETE CASCADE;
-
-ALTER TABLE ONLY "public"."organization_members"
-    ADD CONSTRAINT "organization_members_profile_id_fkey" FOREIGN KEY ("profile_id") REFERENCES "public"."profiles"("id") ON DELETE CASCADE;
-
-ALTER TABLE ONLY "public"."organization_invitations"
-    ADD CONSTRAINT "organization_invitations_organization_id_fkey" FOREIGN KEY ("organization_id") REFERENCES "public"."organizations"("id") ON DELETE CASCADE;
-
-ALTER TABLE ONLY "public"."organization_invitations"
-    ADD CONSTRAINT "organization_invitations_invited_profile_id_fkey" FOREIGN KEY ("invited_profile_id") REFERENCES "public"."profiles"("id") ON DELETE CASCADE;
-
-ALTER TABLE ONLY "public"."organization_invitations"
-    ADD CONSTRAINT "organization_invitations_invited_by_profile_id_fkey" FOREIGN KEY ("invited_by_profile_id") REFERENCES "public"."profiles"("id") ON DELETE CASCADE;
-
-ALTER TABLE ONLY "public"."organization_requests"
-    ADD CONSTRAINT "organization_requests_requested_by_profile_id_fkey" FOREIGN KEY ("requested_by_profile_id") REFERENCES "public"."profiles"("id") ON DELETE CASCADE;
-
-ALTER TABLE ONLY "public"."organization_requests"
-    ADD CONSTRAINT "organization_requests_reviewed_by_profile_id_fkey" FOREIGN KEY ("reviewed_by_profile_id") REFERENCES "public"."profiles"("id");
-
-ALTER TABLE ONLY "public"."organization_requests"
-    ADD CONSTRAINT "organization_requests_created_organization_id_fkey" FOREIGN KEY ("created_organization_id") REFERENCES "public"."organizations"("id");
-
--- Add the deferred FK from users to profiles (now that profiles and organizations exist)
-ALTER TABLE ONLY "public"."users"
-    ADD CONSTRAINT "users_main_profile_fk" FOREIGN KEY ("main_profile_id") REFERENCES "public"."profiles"("id") ON DELETE SET NULL;
+-- Foreign keys (idempotent)
+DO $$
+BEGIN
+    -- organizations -> profiles
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'organizations_owner_profile_id_fkey') THEN
+        ALTER TABLE ONLY "public"."organizations"
+            ADD CONSTRAINT "organizations_owner_profile_id_fkey" FOREIGN KEY ("owner_profile_id") REFERENCES "public"."profiles"("id") ON DELETE RESTRICT;
+    END IF;
+    
+    -- organization_members -> organizations
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'organization_members_organization_id_fkey') THEN
+        ALTER TABLE ONLY "public"."organization_members"
+            ADD CONSTRAINT "organization_members_organization_id_fkey" FOREIGN KEY ("organization_id") REFERENCES "public"."organizations"("id") ON DELETE CASCADE;
+    END IF;
+    
+    -- organization_members -> profiles
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'organization_members_profile_id_fkey') THEN
+        ALTER TABLE ONLY "public"."organization_members"
+            ADD CONSTRAINT "organization_members_profile_id_fkey" FOREIGN KEY ("profile_id") REFERENCES "public"."profiles"("id") ON DELETE CASCADE;
+    END IF;
+    
+    -- organization_invitations -> organizations
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'organization_invitations_organization_id_fkey') THEN
+        ALTER TABLE ONLY "public"."organization_invitations"
+            ADD CONSTRAINT "organization_invitations_organization_id_fkey" FOREIGN KEY ("organization_id") REFERENCES "public"."organizations"("id") ON DELETE CASCADE;
+    END IF;
+    
+    -- organization_invitations -> profiles (invited)
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'organization_invitations_invited_profile_id_fkey') THEN
+        ALTER TABLE ONLY "public"."organization_invitations"
+            ADD CONSTRAINT "organization_invitations_invited_profile_id_fkey" FOREIGN KEY ("invited_profile_id") REFERENCES "public"."profiles"("id") ON DELETE CASCADE;
+    END IF;
+    
+    -- organization_invitations -> profiles (invited_by)
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'organization_invitations_invited_by_profile_id_fkey') THEN
+        ALTER TABLE ONLY "public"."organization_invitations"
+            ADD CONSTRAINT "organization_invitations_invited_by_profile_id_fkey" FOREIGN KEY ("invited_by_profile_id") REFERENCES "public"."profiles"("id") ON DELETE CASCADE;
+    END IF;
+    
+    -- organization_requests -> profiles (requested_by)
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'organization_requests_requested_by_profile_id_fkey') THEN
+        ALTER TABLE ONLY "public"."organization_requests"
+            ADD CONSTRAINT "organization_requests_requested_by_profile_id_fkey" FOREIGN KEY ("requested_by_profile_id") REFERENCES "public"."profiles"("id") ON DELETE CASCADE;
+    END IF;
+    
+    -- organization_requests -> profiles (reviewed_by)
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'organization_requests_reviewed_by_profile_id_fkey') THEN
+        ALTER TABLE ONLY "public"."organization_requests"
+            ADD CONSTRAINT "organization_requests_reviewed_by_profile_id_fkey" FOREIGN KEY ("reviewed_by_profile_id") REFERENCES "public"."profiles"("id");
+    END IF;
+    
+    -- organization_requests -> organizations (created_org)
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'organization_requests_created_organization_id_fkey') THEN
+        ALTER TABLE ONLY "public"."organization_requests"
+            ADD CONSTRAINT "organization_requests_created_organization_id_fkey" FOREIGN KEY ("created_organization_id") REFERENCES "public"."organizations"("id");
+    END IF;
+    
+    -- Add the deferred FK from users to profiles (now that profiles and organizations exist)
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'users_main_profile_fk') THEN
+        ALTER TABLE ONLY "public"."users"
+            ADD CONSTRAINT "users_main_profile_fk" FOREIGN KEY ("main_profile_id") REFERENCES "public"."profiles"("id") ON DELETE SET NULL;
+    END IF;
+END $$;
