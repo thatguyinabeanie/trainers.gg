@@ -630,10 +630,7 @@ export async function getPlayerMatches(
  * Get dashboard data for current user
  * Returns tournaments, organizations, stats, recent activity, and achievements
  */
-export async function getMyDashboardData(
-  supabase: TypedClient,
-  profileId: number
-) {
+export async function getMyDashboardData(supabase: TypedClient, altId: number) {
   // Fetch all registrations for this user
   const { data: tournamentRegistrations } = await supabase
     .from("tournament_registrations")
@@ -643,7 +640,7 @@ export async function getMyDashboardData(
       tournament:tournaments(*)
     `
     )
-    .eq("profile_id", profileId);
+    .eq("alt_id", altId);
 
   // Build myTournaments list (exclude archived)
   const myTournaments: {
@@ -681,7 +678,7 @@ export async function getMyDashboardData(
   const { data: playerStats } = await supabase
     .from("tournament_player_stats")
     .select("*")
-    .eq("profile_id", profileId);
+    .eq("alt_id", altId);
 
   let totalMatches = 0;
   let totalWins = 0;
@@ -709,8 +706,8 @@ export async function getMyDashboardData(
     .select(
       `
       *,
-      player1:profiles!tournament_matches_profile1_id_fkey(id, display_name),
-      player2:profiles!tournament_matches_profile2_id_fkey(id, display_name),
+      player1:alts!tournament_matches_alt1_id_fkey(id, display_name),
+      player2:alts!tournament_matches_alt2_id_fkey(id, display_name),
       round:tournament_rounds(
         id,
         phase:tournament_phases(
@@ -721,7 +718,7 @@ export async function getMyDashboardData(
     `
     )
     .eq("status", "completed")
-    .or(`profile1_id.eq.${profileId},profile2_id.eq.${profileId}`)
+    .or(`alt1_id.eq.${altId},alt2_id.eq.${altId}`)
     .order("updated_at", { ascending: false })
     .limit(5);
 
@@ -746,14 +743,14 @@ export async function getMyDashboardData(
     const tournament = round?.phase?.tournament;
     if (!tournament) continue;
 
-    const isPlayer1 = match.profile1_id === profileId;
+    const isPlayer1 = match.alt1_id === altId;
     const opponent = isPlayer1 ? match.player2 : match.player1;
     // player1/player2 are arrays from Supabase join, take first element
     const opponentArr = opponent as
       | { id: number; display_name: string }[]
       | null;
     const opponentProfile = opponentArr?.[0] ?? null;
-    const won = match.winner_profile_id === profileId;
+    const won = match.winner_alt_id === altId;
 
     recentActivity.push({
       id: match.id,
@@ -839,14 +836,14 @@ export async function getRegistrationStatus(
     data: { user },
   } = await supabase.auth.getUser();
 
-  let profileId: number | null = null;
+  let altId: number | null = null;
   if (user) {
-    const { data: profile } = await supabase
+    const { data: alt } = await supabase
       .from("alts")
       .select("id")
       .eq("user_id", user.id)
       .single();
-    profileId = (profile?.id as number) ?? null;
+    altId = (alt?.id as number) ?? null;
   }
 
   // Get tournament
@@ -881,12 +878,12 @@ export async function getRegistrationStatus(
     waitlistPosition?: number;
   } | null = null;
 
-  if (profileId) {
+  if (altId) {
     const { data: userReg } = await supabase
       .from("tournament_registrations")
       .select("status")
       .eq("tournament_id", tournamentId)
-      .eq("profile_id", profileId)
+      .eq("alt_id", altId)
       .single();
 
     if (userReg) {
@@ -895,14 +892,12 @@ export async function getRegistrationStatus(
         // Calculate waitlist position
         const { data: waitlistRegs } = await supabase
           .from("tournament_registrations")
-          .select("profile_id, registered_at")
+          .select("alt_id, registered_at")
           .eq("tournament_id", tournamentId)
           .eq("status", "waitlist")
           .order("registered_at", { ascending: true });
 
-        const position = waitlistRegs?.findIndex(
-          (r) => r.profile_id === profileId
-        );
+        const position = waitlistRegs?.findIndex((r) => r.alt_id === altId);
         waitlistPosition =
           position !== undefined && position >= 0 ? position + 1 : undefined;
       }
@@ -957,7 +952,7 @@ export async function getTournamentInvitationsSent(
     .select(
       `
       *,
-      invitedPlayer:profiles!tournament_invitations_invited_profile_id_fkey(
+      invitedPlayer:alts!tournament_invitations_invited_alt_id_fkey(
         id,
         username,
         display_name,
@@ -992,13 +987,13 @@ export async function getTournamentInvitationsReceived(supabase: TypedClient) {
   } = await supabase.auth.getUser();
   if (!user) return [];
 
-  const { data: profile } = await supabase
+  const { data: alt } = await supabase
     .from("alts")
     .select("id")
     .eq("user_id", user.id)
     .single();
 
-  if (!profile) return [];
+  if (!alt) return [];
 
   const { data, error } = await supabase
     .from("tournament_invitations")
@@ -1006,7 +1001,7 @@ export async function getTournamentInvitationsReceived(supabase: TypedClient) {
       `
       *,
       tournament:tournaments(*),
-      invitedBy:profiles!tournament_invitations_invited_by_profile_id_fkey(
+      invitedBy:alts!tournament_invitations_invited_by_alt_id_fkey(
         id,
         display_name,
         username,
@@ -1014,7 +1009,7 @@ export async function getTournamentInvitationsReceived(supabase: TypedClient) {
       )
     `
     )
-    .eq("invited_profile_id", profile.id)
+    .eq("invited_alt_id", alt.id)
     .order("invited_at", { ascending: false });
 
   if (error) throw error;
