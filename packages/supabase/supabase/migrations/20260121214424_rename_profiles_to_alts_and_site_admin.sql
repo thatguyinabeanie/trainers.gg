@@ -384,18 +384,18 @@ SET search_path TO 'public'
 AS $$
 DECLARE
   claims jsonb;
-  user_id uuid;
+  v_user_id uuid;
   is_admin boolean;
 BEGIN
   -- Get the user ID from the event
-  user_id := (event->>'user_id')::uuid;
+  v_user_id := (event->>'user_id')::uuid;
   
   -- Check if user is a site admin
   SELECT EXISTS (
     SELECT 1 
     FROM user_roles ur
     JOIN roles r ON r.id = ur.role_id
-    WHERE ur.user_id = custom_access_token_hook.user_id
+    WHERE ur.user_id = v_user_id
       AND r.scope = 'site'
       AND r.name = 'Site Admin'
   ) INTO is_admin;
