@@ -68,7 +68,7 @@ export function ActiveOrganizationsClient() {
                       </div>
                     </div>
                   </div>
-                  <Link href={`/${org.slug}`}>
+                  <Link href={`/organizations/${org.slug}`}>
                     <Button variant="ghost" size="sm" className="mt-4">
                       Manage
                     </Button>
@@ -121,7 +121,7 @@ export function ActiveOrganizationsClient() {
                       </div>
                     </div>
                   </div>
-                  <Link href={`/${org.slug}`}>
+                  <Link href={`/organizations/${org.slug}`}>
                     <Button variant="ghost" size="sm" className="mt-4">
                       View
                     </Button>

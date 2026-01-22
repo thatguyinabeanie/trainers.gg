@@ -142,7 +142,7 @@ export default function TournamentsPage() {
           {filteredTournaments.map((tournament) => (
             <Link
               key={tournament.id}
-              href={`/${tournament.organization?.slug ?? "unknown"}/${tournament.slug}`}
+              href={`/organizations/${tournament.organization?.slug ?? "unknown"}/${tournament.slug}`}
             >
               <Card className="h-full transition-shadow hover:shadow-md">
                 <CardHeader className="pb-3">

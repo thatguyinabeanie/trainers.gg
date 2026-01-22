@@ -113,7 +113,7 @@ export function TournamentManageClient({
             <p className="text-muted-foreground mb-4 text-center">
               You don&apos;t have permission to manage this tournament
             </p>
-            <Link href={`/${orgSlug}/${tournamentSlug}`}>
+            <Link href={`/organizations/${orgSlug}/${tournamentSlug}`}>
               <Button>
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 View Tournament
@@ -187,7 +187,7 @@ export function TournamentManageClient({
         </Link>
         <span>/</span>
         <Link
-          href={`/${orgSlug}/${tournamentSlug}`}
+          href={`/organizations/${orgSlug}/${tournamentSlug}`}
           className="hover:underline"
         >
           {tournament.name}
@@ -205,7 +205,7 @@ export function TournamentManageClient({
           </h1>
           <p className="text-muted-foreground mt-1">{tournament.name}</p>
         </div>
-        <Link href={`/${orgSlug}/${tournamentSlug}`}>
+        <Link href={`/organizations/${orgSlug}/${tournamentSlug}`}>
           <Button variant="outline">
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to Tournament

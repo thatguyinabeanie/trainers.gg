@@ -145,7 +145,7 @@ export function OrganizationDetailClient({
         <div className="flex gap-2">
           {isOwner && (
             <>
-              <Link href={`/${orgSlug}/settings`}>
+              <Link href={`/organizations/${orgSlug}/settings`}>
                 <Button variant="outline">
                   <Settings className="mr-2 h-4 w-4" />
                   Settings
@@ -244,7 +244,7 @@ export function OrganizationDetailClient({
               {tournaments.map((tournament) => (
                 <Link
                   key={tournament.id}
-                  href={`/${orgSlug}/${tournament.slug}`}
+                  href={`/organizations/${orgSlug}/${tournament.slug}`}
                 >
                   <Card className="h-full transition-shadow hover:shadow-md">
                     <CardHeader className="pb-3">

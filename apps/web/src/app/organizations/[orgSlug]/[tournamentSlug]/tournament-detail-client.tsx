@@ -131,7 +131,7 @@ export function TournamentDetailClient({
           Tournaments
         </Link>
         <span>/</span>
-        <Link href={`/${orgSlug}`} className="hover:underline">
+        <Link href={`/organizations/${orgSlug}`} className="hover:underline">
           {organization?.name || orgSlug}
         </Link>
         <span>/</span>
@@ -153,7 +153,7 @@ export function TournamentDetailClient({
           <div className="text-muted-foreground flex flex-wrap items-center gap-4 text-sm">
             {organization && (
               <Link
-                href={`/${orgSlug}`}
+                href={`/organizations/${orgSlug}`}
                 className="flex items-center gap-1 hover:underline"
               >
                 <MapPin className="h-4 w-4" />
@@ -178,7 +178,7 @@ export function TournamentDetailClient({
         </div>
 
         {canManage && (
-          <Link href={`/${orgSlug}/${tournamentSlug}/manage`}>
+          <Link href={`/organizations/${orgSlug}/${tournamentSlug}/manage`}>
             <Button>
               <Settings className="mr-2 h-4 w-4" />
               Manage Tournament
@@ -384,14 +384,16 @@ export function TournamentDetailClient({
               <CardTitle>Quick Links</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
-              <Link href={`/${orgSlug}`}>
+              <Link href={`/organizations/${orgSlug}`}>
                 <Button variant="outline" className="w-full justify-start">
                   <ExternalLink className="mr-2 h-4 w-4" />
                   View Organization
                 </Button>
               </Link>
               {canManage && (
-                <Link href={`/${orgSlug}/${tournamentSlug}/manage`}>
+                <Link
+                  href={`/organizations/${orgSlug}/${tournamentSlug}/manage`}
+                >
                   <Button variant="outline" className="w-full justify-start">
                     <Settings className="mr-2 h-4 w-4" />
                     Tournament Settings
