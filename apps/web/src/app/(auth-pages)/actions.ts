@@ -33,3 +33,48 @@ export async function resolveLoginIdentifier(
     return { email: null, error: "An error occurred. Please try again." };
   }
 }
+
+/**
+ * Check if a username is available for registration.
+ */
+export async function checkUsernameAvailability(
+  username: string
+): Promise<{ available: boolean; error: string | null }> {
+  const trimmed = username.trim().toLowerCase();
+
+  // Validate username format
+  if (!/^[a-zA-Z0-9_-]{3,30}$/.test(trimmed)) {
+    return { available: false, error: "Invalid username format" };
+  }
+
+  try {
+    const supabase = await createClient();
+
+    // Check users table
+    const { data: existingUser } = await supabase
+      .from("users")
+      .select("id")
+      .eq("username", trimmed)
+      .maybeSingle();
+
+    if (existingUser) {
+      return { available: false, error: null };
+    }
+
+    // Check profiles table
+    const { data: existingProfile } = await supabase
+      .from("profiles")
+      .select("id")
+      .eq("username", trimmed)
+      .maybeSingle();
+
+    if (existingProfile) {
+      return { available: false, error: null };
+    }
+
+    return { available: true, error: null };
+  } catch (err) {
+    console.error("Error checking username availability:", err);
+    return { available: false, error: "An error occurred. Please try again." };
+  }
+}

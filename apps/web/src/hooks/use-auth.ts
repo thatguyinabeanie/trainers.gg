@@ -53,8 +53,7 @@ export function useAuth() {
   const signInWithOAuth = async (
     provider: "google" | "discord" | "github" | "twitter"
   ) => {
-    const origin =
-      typeof window !== "undefined" ? window.location.origin : "";
+    const origin = typeof window !== "undefined" ? window.location.origin : "";
     const { error } = await supabase.auth.signInWithOAuth({
       provider,
       options: {
@@ -76,19 +75,27 @@ export function useAuth() {
     return { data, error };
   };
 
-  const signUpWithEmail = async (email: string, password: string) => {
+  const signUpWithEmail = async (
+    email: string,
+    password: string,
+    username?: string
+  ) => {
     setLoading(true);
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
+      options: {
+        data: {
+          username: username?.toLowerCase(),
+        },
+      },
     });
     setLoading(false);
     return { data, error };
   };
 
   const resetPassword = async (email: string) => {
-    const origin =
-      typeof window !== "undefined" ? window.location.origin : "";
+    const origin = typeof window !== "undefined" ? window.location.origin : "";
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: `${origin}/reset-password`,
     });
