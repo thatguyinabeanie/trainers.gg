@@ -22,7 +22,7 @@ import { toast } from "sonner";
 
 interface TournamentSettingsProps {
   tournament: {
-    id: string;
+    id: number;
     name: string;
     slug: string;
     description?: string | null;
@@ -54,7 +54,7 @@ export function TournamentSettings({ tournament }: TournamentSettingsProps) {
     (
       supabase,
       args: {
-        tournamentId: string;
+        tournamentId: number;
         updates: {
           name?: string;
           description?: string;
@@ -65,7 +65,7 @@ export function TournamentSettings({ tournament }: TournamentSettingsProps) {
   );
 
   const { mutateAsync: deleteTournamentMutation } = useSupabaseMutation(
-    (supabase, args: { tournamentId: string }) =>
+    (supabase, args: { tournamentId: number }) =>
       deleteTournament(supabase, args.tournamentId)
   );
 

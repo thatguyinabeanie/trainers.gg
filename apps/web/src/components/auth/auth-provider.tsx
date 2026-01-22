@@ -12,7 +12,7 @@ import { type User } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/client";
 
 interface Profile {
-  id: string;
+  id: number;
   displayName: string;
   username: string;
   bio?: string;

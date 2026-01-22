@@ -1,12 +1,12 @@
 export interface DashboardTournament {
-  id: string;
+  id: number;
   name: string;
   startDate?: number | null;
   status: string;
 }
 
 export interface DashboardOrganization {
-  id: string;
+  id: number;
   name: string;
   slug: string;
 }

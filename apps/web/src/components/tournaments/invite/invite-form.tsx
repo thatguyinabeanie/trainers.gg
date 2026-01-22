@@ -22,15 +22,15 @@ import { toast } from "sonner";
 import { PlayerSearch } from "./player-search";
 
 interface InviteFormProps {
-  tournamentId: string;
+  tournamentId: number;
   tournamentName: string;
   onSuccess?: () => void;
   maxInvitations?: number;
 }
 
 interface SendInvitationsArgs {
-  tournamentId: string;
-  profileIds: string[];
+  tournamentId: number;
+  profileIds: number[];
   message?: string;
 }
 
@@ -61,7 +61,7 @@ export function InviteForm({
     setSuccessCount(null);
   };
 
-  const handleRemovePlayer = (playerId: string) => {
+  const handleRemovePlayer = (playerId: number) => {
     setSelectedPlayers((prev) => prev.filter((p) => p.id !== playerId));
     setSuccessCount(null);
   };
