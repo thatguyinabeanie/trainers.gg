@@ -7,30 +7,10 @@ export type Json =
   | Json[]
 
 export type Database = {
-  graphql_public: {
-    Tables: {
-      [_ in never]: never
-    }
-    Views: {
-      [_ in never]: never
-    }
-    Functions: {
-      graphql: {
-        Args: {
-          extensions?: Json
-          operationName?: string
-          query?: string
-          variables?: Json
-        }
-        Returns: Json
-      }
-    }
-    Enums: {
-      [_ in never]: never
-    }
-    CompositeTypes: {
-      [_ in never]: never
-    }
+  // Allows to automatically instantiate createClient with right options
+  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
+  __InternalSupabase: {
+    PostgrestVersion: "14.1"
   }
   public: {
     Tables: {
@@ -45,13 +25,13 @@ export type Database = {
           alt_id: number
           created_at?: string | null
           group_role_id: number
-          id?: never
+          id?: number
         }
         Update: {
           alt_id?: number
           created_at?: string | null
           group_role_id?: number
-          id?: never
+          id?: number
         }
         Relationships: [
           {
@@ -91,7 +71,7 @@ export type Database = {
           bio?: string | null
           created_at?: string | null
           display_name: string
-          id?: never
+          id?: number
           tier?: Database["public"]["Enums"]["user_tier"] | null
           tier_expires_at?: string | null
           tier_started_at?: string | null
@@ -105,7 +85,7 @@ export type Database = {
           bio?: string | null
           created_at?: string | null
           display_name?: string
-          id?: never
+          id?: number
           tier?: Database["public"]["Enums"]["user_tier"] | null
           tier_expires_at?: string | null
           tier_started_at?: string | null
@@ -129,7 +109,7 @@ export type Database = {
           entity_id: number
           entity_type: Database["public"]["Enums"]["entity_type"]
           feature_key: string
-          id: number
+          id: string
           period_end: string
           period_start: string
           updated_at: string | null
@@ -141,7 +121,7 @@ export type Database = {
           entity_id: number
           entity_type: Database["public"]["Enums"]["entity_type"]
           feature_key: string
-          id?: never
+          id?: string
           period_end: string
           period_start: string
           updated_at?: string | null
@@ -153,7 +133,7 @@ export type Database = {
           entity_id?: number
           entity_type?: Database["public"]["Enums"]["entity_type"]
           feature_key?: string
-          id?: never
+          id?: string
           period_end?: string
           period_start?: string
           updated_at?: string | null
@@ -172,13 +152,13 @@ export type Database = {
         Insert: {
           created_at?: string | null
           group_id: number
-          id?: never
+          id?: number
           role_id: number
         }
         Update: {
           created_at?: string | null
           group_id?: number
-          id?: never
+          id?: number
           role_id?: number
         }
         Relationships: [
@@ -209,14 +189,14 @@ export type Database = {
         Insert: {
           created_at?: string | null
           description?: string | null
-          id?: never
+          id?: number
           name: string
           organization_id: number
         }
         Update: {
           created_at?: string | null
           description?: string | null
-          id?: never
+          id?: number
           name?: string
           organization_id?: number
         }
@@ -244,7 +224,7 @@ export type Database = {
         Insert: {
           created_at?: string | null
           expires_at?: string | null
-          id?: never
+          id?: number
           invited_alt_id: number
           invited_by_alt_id: number
           organization_id: number
@@ -254,7 +234,7 @@ export type Database = {
         Update: {
           created_at?: string | null
           expires_at?: string | null
-          id?: never
+          id?: number
           invited_alt_id?: number
           invited_by_alt_id?: number
           organization_id?: number
@@ -295,13 +275,13 @@ export type Database = {
         Insert: {
           alt_id: number
           created_at?: string | null
-          id?: never
+          id?: number
           organization_id: number
         }
         Update: {
           alt_id?: number
           created_at?: string | null
-          id?: never
+          id?: number
           organization_id?: number
         }
         Relationships: [
@@ -339,7 +319,7 @@ export type Database = {
           created_at?: string | null
           created_organization_id?: number | null
           description?: string | null
-          id?: never
+          id?: number
           name: string
           rejection_reason?: string | null
           requested_by_alt_id: number
@@ -352,7 +332,7 @@ export type Database = {
           created_at?: string | null
           created_organization_id?: number | null
           description?: string | null
-          id?: never
+          id?: number
           name?: string
           rejection_reason?: string | null
           requested_by_alt_id?: number
@@ -413,7 +393,7 @@ export type Database = {
           description?: string | null
           discord_url?: string | null
           icon?: string | null
-          id?: never
+          id?: number
           logo_url?: string | null
           name: string
           owner_alt_id: number
@@ -435,7 +415,7 @@ export type Database = {
           description?: string | null
           discord_url?: string | null
           icon?: string | null
-          id?: never
+          id?: number
           logo_url?: string | null
           name?: string
           owner_alt_id?: number
@@ -473,14 +453,14 @@ export type Database = {
         Insert: {
           created_at?: string | null
           description?: string | null
-          id?: never
+          id?: number
           key: string
           name: string
         }
         Update: {
           created_at?: string | null
           description?: string | null
-          id?: never
+          id?: number
           key?: string
           name?: string
         }
@@ -529,7 +509,7 @@ export type Database = {
           format_legal?: boolean | null
           gender?: Database["public"]["Enums"]["pokemon_gender"] | null
           held_item?: string | null
-          id?: never
+          id?: number
           is_shiny?: boolean | null
           iv_attack?: number | null
           iv_defense?: number | null
@@ -559,7 +539,7 @@ export type Database = {
           format_legal?: boolean | null
           gender?: Database["public"]["Enums"]["pokemon_gender"] | null
           held_item?: string | null
-          id?: never
+          id?: number
           is_shiny?: boolean | null
           iv_attack?: number | null
           iv_defense?: number | null
@@ -583,7 +563,7 @@ export type Database = {
         Row: {
           created_at: string | null
           expires_at: string
-          id: number
+          id: string
           identifier: string
           request_timestamps: string[] | null
           window_start: string
@@ -591,7 +571,7 @@ export type Database = {
         Insert: {
           created_at?: string | null
           expires_at: string
-          id?: never
+          id?: string
           identifier: string
           request_timestamps?: string[] | null
           window_start: string
@@ -599,7 +579,7 @@ export type Database = {
         Update: {
           created_at?: string | null
           expires_at?: string
-          id?: never
+          id?: string
           identifier?: string
           request_timestamps?: string[] | null
           window_start?: string
@@ -615,13 +595,13 @@ export type Database = {
         }
         Insert: {
           created_at?: string | null
-          id?: never
+          id?: number
           permission_id: number
           role_id: number
         }
         Update: {
           created_at?: string | null
-          id?: never
+          id?: number
           permission_id?: number
           role_id?: number
         }
@@ -653,14 +633,14 @@ export type Database = {
         Insert: {
           created_at?: string | null
           description?: string | null
-          id?: never
+          id?: number
           name: string
           scope?: Database["public"]["Enums"]["role_scope"]
         }
         Update: {
           created_at?: string | null
           description?: string | null
-          id?: never
+          id?: number
           name?: string
           scope?: Database["public"]["Enums"]["role_scope"]
         }
@@ -678,7 +658,7 @@ export type Database = {
           entity_id: number
           entity_type: Database["public"]["Enums"]["entity_type"]
           expires_at: string | null
-          id: number
+          id: string
           started_at: string | null
           status: Database["public"]["Enums"]["subscription_status"] | null
           stripe_subscription_id: string | null
@@ -696,7 +676,7 @@ export type Database = {
           entity_id: number
           entity_type: Database["public"]["Enums"]["entity_type"]
           expires_at?: string | null
-          id?: never
+          id?: string
           started_at?: string | null
           status?: Database["public"]["Enums"]["subscription_status"] | null
           stripe_subscription_id?: string | null
@@ -714,7 +694,7 @@ export type Database = {
           entity_id?: number
           entity_type?: Database["public"]["Enums"]["entity_type"]
           expires_at?: string | null
-          id?: never
+          id?: string
           started_at?: string | null
           status?: Database["public"]["Enums"]["subscription_status"] | null
           stripe_subscription_id?: string | null
@@ -733,14 +713,14 @@ export type Database = {
         }
         Insert: {
           created_at?: string | null
-          id?: never
+          id?: number
           pokemon_id: number
           team_id: number
           team_position: number
         }
         Update: {
           created_at?: string | null
-          id?: never
+          id?: number
           pokemon_id?: number
           team_id?: number
           team_position?: number
@@ -780,7 +760,7 @@ export type Database = {
           created_by: number
           description?: string | null
           format_legal?: boolean | null
-          id?: never
+          id?: number
           is_public?: boolean | null
           name: string
           notes?: string | null
@@ -792,7 +772,7 @@ export type Database = {
           created_by?: number
           description?: string | null
           format_legal?: boolean | null
-          id?: never
+          id?: number
           is_public?: boolean | null
           name?: string
           notes?: string | null
@@ -823,7 +803,7 @@ export type Database = {
           created_by?: number | null
           event_data?: Json | null
           event_type: string
-          id?: never
+          id?: number
           tournament_id: number
         }
         Update: {
@@ -831,7 +811,7 @@ export type Database = {
           created_by?: number | null
           event_data?: Json | null
           event_type?: string
-          id?: never
+          id?: number
           tournament_id?: number
         }
         Relationships: [
@@ -866,7 +846,7 @@ export type Database = {
         }
         Insert: {
           expires_at?: string | null
-          id?: never
+          id?: number
           invited_alt_id: number
           invited_at?: string | null
           invited_by_alt_id: number
@@ -878,7 +858,7 @@ export type Database = {
         }
         Update: {
           expires_at?: string | null
-          id?: never
+          id?: number
           invited_alt_id?: number
           invited_at?: string | null
           invited_by_alt_id?: number
@@ -951,7 +931,7 @@ export type Database = {
           end_time?: string | null
           game_wins1?: number | null
           game_wins2?: number | null
-          id?: never
+          id?: number
           is_bye?: boolean | null
           match_confirmed_at?: string | null
           match_points1?: number | null
@@ -975,7 +955,7 @@ export type Database = {
           end_time?: string | null
           game_wins1?: number | null
           game_wins2?: number | null
-          id?: never
+          id?: number
           is_bye?: boolean | null
           match_confirmed_at?: string | null
           match_points1?: number | null
@@ -1042,7 +1022,7 @@ export type Database = {
         Insert: {
           alt_id: number
           created_at?: string | null
-          id?: never
+          id?: number
           opponent_alt_id: number
           round_number: number
           tournament_id: number
@@ -1050,7 +1030,7 @@ export type Database = {
         Update: {
           alt_id?: number
           created_at?: string | null
-          id?: never
+          id?: number
           opponent_alt_id?: number
           round_number?: number
           tournament_id?: number
@@ -1103,7 +1083,7 @@ export type Database = {
           alt2_id?: number | null
           alt2_seed?: number | null
           created_at?: string | null
-          id?: never
+          id?: number
           is_bye?: boolean | null
           match_id?: number | null
           pairing_reason?: string | null
@@ -1119,7 +1099,7 @@ export type Database = {
           alt2_id?: number | null
           alt2_seed?: number | null
           created_at?: string | null
-          id?: never
+          id?: number
           is_bye?: boolean | null
           match_id?: number | null
           pairing_reason?: string | null
@@ -1196,7 +1176,7 @@ export type Database = {
           completed_at?: string | null
           created_at?: string | null
           current_round?: number | null
-          id?: never
+          id?: number
           match_format: string
           name: string
           phase_order: number
@@ -1217,7 +1197,7 @@ export type Database = {
           completed_at?: string | null
           created_at?: string | null
           current_round?: number | null
-          id?: never
+          id?: number
           match_format?: string
           name?: string
           phase_order?: number
@@ -1262,7 +1242,7 @@ export type Database = {
           matches_played: number | null
           modified_buchholz_score: number | null
           opponent_game_win_percentage: number | null
-          opponent_history: number[] | null
+          opponent_history: string[] | null
           opponent_match_win_percentage: number | null
           opponent_opponent_match_win_percentage: number | null
           rounds_played: number | null
@@ -1282,7 +1262,7 @@ export type Database = {
           game_win_percentage?: number | null
           game_wins?: number | null
           has_received_bye?: boolean | null
-          id?: never
+          id?: number
           is_dropped?: boolean | null
           last_tiebreaker_update?: string | null
           match_losses?: number | null
@@ -1292,7 +1272,7 @@ export type Database = {
           matches_played?: number | null
           modified_buchholz_score?: number | null
           opponent_game_win_percentage?: number | null
-          opponent_history?: number[] | null
+          opponent_history?: string[] | null
           opponent_match_win_percentage?: number | null
           opponent_opponent_match_win_percentage?: number | null
           rounds_played?: number | null
@@ -1312,7 +1292,7 @@ export type Database = {
           game_win_percentage?: number | null
           game_wins?: number | null
           has_received_bye?: boolean | null
-          id?: never
+          id?: number
           is_dropped?: boolean | null
           last_tiebreaker_update?: string | null
           match_losses?: number | null
@@ -1322,7 +1302,7 @@ export type Database = {
           matches_played?: number | null
           modified_buchholz_score?: number | null
           opponent_game_win_percentage?: number | null
-          opponent_history?: number[] | null
+          opponent_history?: string[] | null
           opponent_match_win_percentage?: number | null
           opponent_opponent_match_win_percentage?: number | null
           rounds_played?: number | null
@@ -1358,14 +1338,14 @@ export type Database = {
         }
         Insert: {
           created_at?: string | null
-          id?: never
+          id?: number
           pokemon_id: number
           team_position: number
           tournament_registration_id: number
         }
         Update: {
           created_at?: string | null
-          id?: never
+          id?: number
           pokemon_id?: number
           team_position?: number
           tournament_registration_id?: number
@@ -1410,7 +1390,7 @@ export type Database = {
           alt_id: number
           checked_in_at?: string | null
           created_at?: string | null
-          id?: never
+          id?: number
           notes?: string | null
           registered_at?: string | null
           rental_team_photo_key?: string | null
@@ -1428,7 +1408,7 @@ export type Database = {
           alt_id?: number
           checked_in_at?: string | null
           created_at?: string | null
-          id?: never
+          id?: number
           notes?: string | null
           registered_at?: string | null
           rental_team_photo_key?: string | null
@@ -1488,7 +1468,7 @@ export type Database = {
         Insert: {
           created_at?: string | null
           end_time?: string | null
-          id?: never
+          id?: number
           name?: string | null
           phase_id: number
           round_number: number
@@ -1499,7 +1479,7 @@ export type Database = {
         Update: {
           created_at?: string | null
           end_time?: string | null
-          id?: never
+          id?: number
           name?: string | null
           phase_id?: number
           round_number?: number
@@ -1539,7 +1519,7 @@ export type Database = {
           game_losses?: number | null
           game_win_percentage?: number | null
           game_wins?: number | null
-          id?: never
+          id?: number
           match_points?: number | null
           match_win_percentage?: number | null
           opponent_game_win_percentage?: number | null
@@ -1554,7 +1534,7 @@ export type Database = {
           game_losses?: number | null
           game_win_percentage?: number | null
           game_wins?: number | null
-          id?: never
+          id?: number
           match_points?: number | null
           match_win_percentage?: number | null
           opponent_game_win_percentage?: number | null
@@ -1592,7 +1572,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string | null
-          id?: never
+          id?: number
           name: string
           phase_config?: Json | null
           phase_order: number
@@ -1601,7 +1581,7 @@ export type Database = {
         }
         Update: {
           created_at?: string | null
-          id?: never
+          id?: number
           name?: string
           phase_config?: Json | null
           phase_order?: number
@@ -1637,7 +1617,7 @@ export type Database = {
           created_at?: string | null
           created_by: number
           description?: string | null
-          id?: never
+          id?: number
           is_official?: boolean | null
           is_public?: boolean | null
           name: string
@@ -1651,7 +1631,7 @@ export type Database = {
           created_at?: string | null
           created_by?: number
           description?: string | null
-          id?: never
+          id?: number
           is_official?: boolean | null
           is_public?: boolean | null
           name?: string
@@ -1695,7 +1675,7 @@ export type Database = {
           max_participants: number | null
           name: string
           organization_id: number
-          participants: number[] | null
+          participants: string[] | null
           prize_pool: string | null
           registration_deadline: string | null
           rental_team_photos_enabled: boolean | null
@@ -1725,11 +1705,11 @@ export type Database = {
           end_date?: string | null
           featured?: boolean | null
           format?: string | null
-          id?: never
+          id?: number
           max_participants?: number | null
           name: string
           organization_id: number
-          participants?: number[] | null
+          participants?: string[] | null
           prize_pool?: string | null
           registration_deadline?: string | null
           rental_team_photos_enabled?: boolean | null
@@ -1759,11 +1739,11 @@ export type Database = {
           end_date?: string | null
           featured?: boolean | null
           format?: string | null
-          id?: never
+          id?: number
           max_participants?: number | null
           name?: string
           organization_id?: number
-          participants?: number[] | null
+          participants?: string[] | null
           prize_pool?: string | null
           registration_deadline?: string | null
           rental_team_photos_enabled?: boolean | null
@@ -2090,9 +2070,6 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
-  graphql_public: {
-    Enums: {},
-  },
   public: {
     Enums: {
       billing_interval: ["monthly", "annual"],

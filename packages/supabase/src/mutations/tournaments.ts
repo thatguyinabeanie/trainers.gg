@@ -396,7 +396,7 @@ export async function checkIn(supabase: TypedClient, tournamentId: number) {
     .from("tournament_registrations")
     .select("id, status")
     .eq("tournament_id", tournamentId)
-    .eq("profile_id", profile.id)
+    .eq("alt_id", profile.id)
     .single();
 
   if (!registration) throw new Error("Registration not found");
@@ -444,7 +444,7 @@ export async function undoCheckIn(supabase: TypedClient, tournamentId: number) {
     .from("tournament_registrations")
     .select("id, status")
     .eq("tournament_id", tournamentId)
-    .eq("profile_id", profile.id)
+    .eq("alt_id", profile.id)
     .single();
 
   if (!registration) throw new Error("Registration not found");
@@ -661,7 +661,7 @@ export async function withdrawFromTournament(
     .from("tournament_registrations")
     .select("id, tournament_id")
     .eq("tournament_id", tournamentId)
-    .eq("profile_id", profile.id)
+    .eq("alt_id", profile.id)
     .single();
 
   if (!registration) throw new Error("Registration not found");
