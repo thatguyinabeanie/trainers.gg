@@ -1,11 +1,11 @@
 # @trainers/supabase
 
-Supabase backend package for trainers.gg. Provides database access, authentication integration with Clerk, and edge functions.
+Supabase backend package for trainers.gg. Provides database access, native authentication, and edge functions.
 
 ## Features
 
 - **PostgreSQL Database** with Row Level Security (RLS)
-- **Clerk Integration** via Third-Party Auth (native JWT verification)
+- **Native Supabase Auth** with email/password and OAuth providers
 - **Edge Functions** for webhooks and server-side operations
 - **Type-safe Queries** with generated TypeScript types
 
@@ -22,13 +22,13 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
 SUPABASE_SERVICE_ROLE_KEY=your-service-role-key  # Server-side only!
 ```
 
-### 2. Clerk + Supabase Integration
+### 2. Configure Auth Providers
 
-This package uses Clerk's native Supabase integration (Third-Party Auth):
+In Supabase Dashboard → Authentication → Providers:
 
-1. In Supabase Dashboard → Settings → Third-Party Auth
-2. Add Clerk as a provider with your Clerk JWKS URL
-3. RLS policies use `clerk_user_id()` function to get the authenticated user
+1. Enable Email provider (enabled by default)
+2. Configure OAuth providers (Google, Discord, GitHub, Twitter) as needed
+3. Set redirect URLs for your app
 
 ### 3. Generate Types
 
@@ -44,20 +44,20 @@ pnpm generate-types
 ### Server-Side (Next.js App Router)
 
 ```typescript
-import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/supabase/server";
 
 // In a Server Component or Server Action
-const supabase = await createServerSupabaseClient();
+const supabase = await createClient();
 const { data } = await supabase.from("users").select("*");
 ```
 
 ### Client-Side (React Components)
 
 ```typescript
-import { createBrowserSupabaseClient } from "@/lib/supabase/client";
+import { createPublicSupabaseClient } from "@trainers/supabase";
 
 function MyComponent() {
-  const supabase = createBrowserSupabaseClient();
+  const supabase = createPublicSupabaseClient();
   // Use supabase client...
 }
 ```
@@ -69,34 +69,6 @@ import { createAdminSupabaseClient } from "@trainers/supabase";
 
 // Only use in trusted server contexts (webhooks, etc.)
 const supabase = createAdminSupabaseClient();
-```
-
-## Edge Functions
-
-Edge functions are deployed to Supabase and run on Deno.
-
-### clerk-webhook
-
-Syncs user data from Clerk to Supabase:
-
-- `user.created` → Creates user + profile
-- `user.updated` → Updates user data
-- `user.deleted` → Deletes user
-
-**Endpoint:** `https://your-project.supabase.co/functions/v1/clerk-webhook`
-
-**Required Secrets:**
-
-- `CLERK_WEBHOOK_SECRET` - From Clerk dashboard
-
-### Deploying Edge Functions
-
-```bash
-# Deploy a single function
-npx supabase functions deploy clerk-webhook
-
-# Deploy all functions
-npx supabase functions deploy
 ```
 
 ## Development
@@ -123,7 +95,7 @@ pnpm generate-types
 ```
 packages/supabase/
 ├── src/
-│   ├── client.ts       # Supabase client creation (authenticated, public, admin)
+│   ├── client.ts       # Supabase client creation (public, admin)
 │   ├── types.ts        # Generated database types
 │   ├── index.ts        # Package exports
 │   ├── queries/        # Read-only query functions
@@ -134,28 +106,23 @@ packages/supabase/
 │       ├── users.ts
 │       └── tournaments.ts
 └── supabase/
-    ├── functions/      # Edge functions (Deno runtime)
-    │   └── clerk-webhook/
-    │       ├── index.ts
-    │       └── deno.json
     └── migrations/     # SQL migration files
 ```
 
 ## Key Patterns
 
-### RLS with Clerk
+### RLS with Supabase Auth
 
 ```sql
--- Helper function to get Clerk user ID from JWT
-CREATE OR REPLACE FUNCTION public.clerk_user_id()
-RETURNS TEXT AS $$
-  SELECT (auth.jwt() ->> 'sub')::text;
-$$ LANGUAGE SQL STABLE;
-
--- Example RLS policy
+-- Example RLS policy using auth.uid()
 CREATE POLICY "Users can view own data"
 ON public.users FOR SELECT
-USING (clerk_id = clerk_user_id());
+USING (id = auth.uid());
+
+-- Example for related tables
+CREATE POLICY "Users can view own profiles"
+ON public.profiles FOR SELECT
+USING (user_id = auth.uid());
 ```
 
 ### Query Patterns
@@ -165,7 +132,7 @@ USING (clerk_id = clerk_user_id());
 const { data: user } = await supabase
   .from("users")
   .select("*")
-  .eq("clerk_id", clerkId)
+  .eq("id", userId)
   .maybeSingle(); // Returns null, no error
 
 // Use single() only when record MUST exist
@@ -182,8 +149,17 @@ Key tables:
 
 | Table                      | Description                        |
 | -------------------------- | ---------------------------------- |
-| `users`                    | User accounts (synced from Clerk)  |
+| `users`                    | User accounts (created on signup)  |
 | `profiles`                 | Player profiles (username, avatar) |
 | `organizations`            | Tournament organizer accounts      |
 | `tournaments`              | Tournament events                  |
 | `tournament_registrations` | Player registrations               |
+
+## Auth Flow
+
+1. User signs up via email/password or OAuth
+2. Supabase creates auth user in `auth.users`
+3. Database trigger (`handle_new_user`) automatically creates:
+   - `public.users` record with auth user ID
+   - `public.profiles` record with username from signup
+4. User is authenticated and can access protected resources

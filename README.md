@@ -131,20 +131,9 @@ User → Clerk (Auth) → JWT Token → Supabase (RLS)
 
 The web app auto-deploys to Vercel on push to `main`.
 
-### Edge Functions (Supabase)
+### Supabase
 
-```bash
-# Deploy edge function
-cd packages/supabase
-npx supabase functions deploy clerk-webhook
-```
-
-### Webhook Configuration
-
-1. Go to Clerk Dashboard → Webhooks
-2. Add endpoint: `https://your-project.supabase.co/functions/v1/clerk-webhook`
-3. Subscribe to: `user.created`, `user.updated`, `user.deleted`
-4. Add `CLERK_WEBHOOK_SECRET` to Supabase Edge Function secrets
+Database migrations are automatically applied via Supabase Git Integration on PR creation/merge.
 
 ## Commands
 
