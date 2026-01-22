@@ -2,6 +2,7 @@
 -- Triggers
 -- =============================================================================
 -- Automatic triggers for updated_at timestamps and auth user creation.
+-- Uses CREATE OR REPLACE TRIGGER for idempotency (PostgreSQL 14+).
 
 -- Updated at triggers
 CREATE OR REPLACE TRIGGER "update_users_updated_at" 
@@ -42,6 +43,9 @@ CREATE OR REPLACE TRIGGER "update_tournament_player_stats_updated_at"
 
 -- Auth trigger for new user creation
 -- This trigger automatically creates user and profile records when a new auth user signs up.
+-- Note: CREATE OR REPLACE TRIGGER doesn't work on auth schema tables in some Supabase versions,
+-- so we use DROP IF EXISTS + CREATE for idempotency.
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 CREATE TRIGGER on_auth_user_created
     AFTER INSERT ON auth.users
     FOR EACH ROW

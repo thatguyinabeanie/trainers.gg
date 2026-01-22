@@ -1,7 +1,8 @@
 -- =============================================================================
--- Tournament Operations Tables
+-- Tournament Operations Tables (IDEMPOTENT)
 -- =============================================================================
 -- Tournament runtime: rounds, matches, pairings, registrations, stats, standings.
+-- Uses CREATE TABLE IF NOT EXISTS and DO blocks for constraints.
 
 -- Tournament rounds
 CREATE TABLE IF NOT EXISTS "public"."tournament_rounds" (
@@ -90,8 +91,7 @@ CREATE TABLE IF NOT EXISTS "public"."tournament_registration_pokemon" (
     "tournament_registration_id" bigint NOT NULL,
     "pokemon_id" bigint NOT NULL,
     "team_position" integer NOT NULL,
-    "created_at" timestamp with time zone DEFAULT "now"(),
-    CONSTRAINT "tournament_registration_pokemon_team_position_check" CHECK ((("team_position" >= 1) AND ("team_position" <= 6)))
+    "created_at" timestamp with time zone DEFAULT "now"()
 );
 ALTER TABLE "public"."tournament_registration_pokemon" OWNER TO "postgres";
 
@@ -184,167 +184,266 @@ CREATE TABLE IF NOT EXISTS "public"."tournament_opponent_history" (
 ALTER TABLE "public"."tournament_opponent_history" OWNER TO "postgres";
 
 -- =============================================================================
--- Primary Keys
+-- Primary Keys (idempotent)
 -- =============================================================================
 
-ALTER TABLE ONLY "public"."tournament_rounds"
-    ADD CONSTRAINT "tournament_rounds_pkey" PRIMARY KEY ("id");
-
-ALTER TABLE ONLY "public"."tournament_matches"
-    ADD CONSTRAINT "tournament_matches_pkey" PRIMARY KEY ("id");
-
-ALTER TABLE ONLY "public"."tournament_pairings"
-    ADD CONSTRAINT "tournament_pairings_pkey" PRIMARY KEY ("id");
-
-ALTER TABLE ONLY "public"."tournament_registrations"
-    ADD CONSTRAINT "tournament_registrations_pkey" PRIMARY KEY ("id");
-
-ALTER TABLE ONLY "public"."tournament_registration_pokemon"
-    ADD CONSTRAINT "tournament_registration_pokemon_pkey" PRIMARY KEY ("id");
-
-ALTER TABLE ONLY "public"."tournament_invitations"
-    ADD CONSTRAINT "tournament_invitations_pkey" PRIMARY KEY ("id");
-
-ALTER TABLE ONLY "public"."tournament_events"
-    ADD CONSTRAINT "tournament_events_pkey" PRIMARY KEY ("id");
-
-ALTER TABLE ONLY "public"."tournament_player_stats"
-    ADD CONSTRAINT "tournament_player_stats_pkey" PRIMARY KEY ("id");
-
-ALTER TABLE ONLY "public"."tournament_standings"
-    ADD CONSTRAINT "tournament_standings_pkey" PRIMARY KEY ("id");
-
-ALTER TABLE ONLY "public"."tournament_opponent_history"
-    ADD CONSTRAINT "tournament_opponent_history_pkey" PRIMARY KEY ("id");
-
--- =============================================================================
--- Unique Constraints
--- =============================================================================
-
-ALTER TABLE ONLY "public"."tournament_rounds"
-    ADD CONSTRAINT "tournament_rounds_phase_id_round_number_key" UNIQUE ("phase_id", "round_number");
-
-ALTER TABLE ONLY "public"."tournament_registrations"
-    ADD CONSTRAINT "tournament_registrations_tournament_id_profile_id_key" UNIQUE ("tournament_id", "profile_id");
-
-ALTER TABLE ONLY "public"."tournament_registration_pokemon"
-    ADD CONSTRAINT "tournament_registration_pokem_tournament_registration_id_po_key" UNIQUE ("tournament_registration_id", "pokemon_id");
-
-ALTER TABLE ONLY "public"."tournament_registration_pokemon"
-    ADD CONSTRAINT "tournament_registration_pokem_tournament_registration_id_te_key" UNIQUE ("tournament_registration_id", "team_position");
-
-ALTER TABLE ONLY "public"."tournament_invitations"
-    ADD CONSTRAINT "tournament_invitations_tournament_id_invited_profile_id_key" UNIQUE ("tournament_id", "invited_profile_id");
-
-ALTER TABLE ONLY "public"."tournament_player_stats"
-    ADD CONSTRAINT "tournament_player_stats_tournament_id_profile_id_key" UNIQUE ("tournament_id", "profile_id");
-
-ALTER TABLE ONLY "public"."tournament_standings"
-    ADD CONSTRAINT "tournament_standings_tournament_id_profile_id_round_number_key" UNIQUE ("tournament_id", "profile_id", "round_number");
-
-ALTER TABLE ONLY "public"."tournament_opponent_history"
-    ADD CONSTRAINT "tournament_opponent_history_tournament_id_profile_id_oppone_key" UNIQUE ("tournament_id", "profile_id", "opponent_id", "round_number");
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'tournament_rounds_pkey') THEN
+        ALTER TABLE ONLY "public"."tournament_rounds" ADD CONSTRAINT "tournament_rounds_pkey" PRIMARY KEY ("id");
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'tournament_matches_pkey') THEN
+        ALTER TABLE ONLY "public"."tournament_matches" ADD CONSTRAINT "tournament_matches_pkey" PRIMARY KEY ("id");
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'tournament_pairings_pkey') THEN
+        ALTER TABLE ONLY "public"."tournament_pairings" ADD CONSTRAINT "tournament_pairings_pkey" PRIMARY KEY ("id");
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'tournament_registrations_pkey') THEN
+        ALTER TABLE ONLY "public"."tournament_registrations" ADD CONSTRAINT "tournament_registrations_pkey" PRIMARY KEY ("id");
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'tournament_registration_pokemon_pkey') THEN
+        ALTER TABLE ONLY "public"."tournament_registration_pokemon" ADD CONSTRAINT "tournament_registration_pokemon_pkey" PRIMARY KEY ("id");
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'tournament_invitations_pkey') THEN
+        ALTER TABLE ONLY "public"."tournament_invitations" ADD CONSTRAINT "tournament_invitations_pkey" PRIMARY KEY ("id");
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'tournament_events_pkey') THEN
+        ALTER TABLE ONLY "public"."tournament_events" ADD CONSTRAINT "tournament_events_pkey" PRIMARY KEY ("id");
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'tournament_player_stats_pkey') THEN
+        ALTER TABLE ONLY "public"."tournament_player_stats" ADD CONSTRAINT "tournament_player_stats_pkey" PRIMARY KEY ("id");
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'tournament_standings_pkey') THEN
+        ALTER TABLE ONLY "public"."tournament_standings" ADD CONSTRAINT "tournament_standings_pkey" PRIMARY KEY ("id");
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'tournament_opponent_history_pkey') THEN
+        ALTER TABLE ONLY "public"."tournament_opponent_history" ADD CONSTRAINT "tournament_opponent_history_pkey" PRIMARY KEY ("id");
+    END IF;
+END $$;
 
 -- =============================================================================
--- Foreign Keys
+-- Check Constraints (idempotent)
 -- =============================================================================
 
--- Rounds
-ALTER TABLE ONLY "public"."tournament_rounds"
-    ADD CONSTRAINT "tournament_rounds_phase_id_fkey" FOREIGN KEY ("phase_id") REFERENCES "public"."tournament_phases"("id") ON DELETE CASCADE;
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'tournament_registration_pokemon_team_position_check') THEN
+        ALTER TABLE "public"."tournament_registration_pokemon" 
+            ADD CONSTRAINT "tournament_registration_pokemon_team_position_check" CHECK ((("team_position" >= 1) AND ("team_position" <= 6)));
+    END IF;
+END $$;
 
--- Matches
-ALTER TABLE ONLY "public"."tournament_matches"
-    ADD CONSTRAINT "tournament_matches_round_id_fkey" FOREIGN KEY ("round_id") REFERENCES "public"."tournament_rounds"("id") ON DELETE CASCADE;
+-- =============================================================================
+-- Unique Constraints (idempotent)
+-- =============================================================================
 
-ALTER TABLE ONLY "public"."tournament_matches"
-    ADD CONSTRAINT "tournament_matches_profile1_id_fkey" FOREIGN KEY ("profile1_id") REFERENCES "public"."profiles"("id") ON DELETE SET NULL;
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'tournament_rounds_phase_id_round_number_key') THEN
+        ALTER TABLE ONLY "public"."tournament_rounds" ADD CONSTRAINT "tournament_rounds_phase_id_round_number_key" UNIQUE ("phase_id", "round_number");
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'tournament_registrations_tournament_id_profile_id_key') THEN
+        ALTER TABLE ONLY "public"."tournament_registrations" ADD CONSTRAINT "tournament_registrations_tournament_id_profile_id_key" UNIQUE ("tournament_id", "profile_id");
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'tournament_registration_pokem_tournament_registration_id_po_key') THEN
+        ALTER TABLE ONLY "public"."tournament_registration_pokemon" ADD CONSTRAINT "tournament_registration_pokem_tournament_registration_id_po_key" UNIQUE ("tournament_registration_id", "pokemon_id");
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'tournament_registration_pokem_tournament_registration_id_te_key') THEN
+        ALTER TABLE ONLY "public"."tournament_registration_pokemon" ADD CONSTRAINT "tournament_registration_pokem_tournament_registration_id_te_key" UNIQUE ("tournament_registration_id", "team_position");
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'tournament_invitations_tournament_id_invited_profile_id_key') THEN
+        ALTER TABLE ONLY "public"."tournament_invitations" ADD CONSTRAINT "tournament_invitations_tournament_id_invited_profile_id_key" UNIQUE ("tournament_id", "invited_profile_id");
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'tournament_player_stats_tournament_id_profile_id_key') THEN
+        ALTER TABLE ONLY "public"."tournament_player_stats" ADD CONSTRAINT "tournament_player_stats_tournament_id_profile_id_key" UNIQUE ("tournament_id", "profile_id");
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'tournament_standings_tournament_id_profile_id_round_number_key') THEN
+        ALTER TABLE ONLY "public"."tournament_standings" ADD CONSTRAINT "tournament_standings_tournament_id_profile_id_round_number_key" UNIQUE ("tournament_id", "profile_id", "round_number");
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'tournament_opponent_history_tournament_id_profile_id_oppone_key') THEN
+        ALTER TABLE ONLY "public"."tournament_opponent_history" ADD CONSTRAINT "tournament_opponent_history_tournament_id_profile_id_oppone_key" UNIQUE ("tournament_id", "profile_id", "opponent_id", "round_number");
+    END IF;
+END $$;
 
-ALTER TABLE ONLY "public"."tournament_matches"
-    ADD CONSTRAINT "tournament_matches_profile2_id_fkey" FOREIGN KEY ("profile2_id") REFERENCES "public"."profiles"("id") ON DELETE SET NULL;
+-- =============================================================================
+-- Foreign Keys (idempotent)
+-- =============================================================================
 
-ALTER TABLE ONLY "public"."tournament_matches"
-    ADD CONSTRAINT "tournament_matches_winner_profile_id_fkey" FOREIGN KEY ("winner_profile_id") REFERENCES "public"."profiles"("id") ON DELETE SET NULL;
-
-ALTER TABLE ONLY "public"."tournament_matches"
-    ADD CONSTRAINT "tournament_matches_staff_resolved_by_fkey" FOREIGN KEY ("staff_resolved_by") REFERENCES "public"."profiles"("id");
-
--- Pairings
-ALTER TABLE ONLY "public"."tournament_pairings"
-    ADD CONSTRAINT "tournament_pairings_tournament_id_fkey" FOREIGN KEY ("tournament_id") REFERENCES "public"."tournaments"("id") ON DELETE CASCADE;
-
-ALTER TABLE ONLY "public"."tournament_pairings"
-    ADD CONSTRAINT "tournament_pairings_round_id_fkey" FOREIGN KEY ("round_id") REFERENCES "public"."tournament_rounds"("id") ON DELETE CASCADE;
-
-ALTER TABLE ONLY "public"."tournament_pairings"
-    ADD CONSTRAINT "tournament_pairings_match_id_fkey" FOREIGN KEY ("match_id") REFERENCES "public"."tournament_matches"("id") ON DELETE SET NULL;
-
-ALTER TABLE ONLY "public"."tournament_pairings"
-    ADD CONSTRAINT "tournament_pairings_profile1_id_fkey" FOREIGN KEY ("profile1_id") REFERENCES "public"."profiles"("id") ON DELETE SET NULL;
-
-ALTER TABLE ONLY "public"."tournament_pairings"
-    ADD CONSTRAINT "tournament_pairings_profile2_id_fkey" FOREIGN KEY ("profile2_id") REFERENCES "public"."profiles"("id") ON DELETE SET NULL;
-
--- Registrations
-ALTER TABLE ONLY "public"."tournament_registrations"
-    ADD CONSTRAINT "tournament_registrations_tournament_id_fkey" FOREIGN KEY ("tournament_id") REFERENCES "public"."tournaments"("id") ON DELETE CASCADE;
-
-ALTER TABLE ONLY "public"."tournament_registrations"
-    ADD CONSTRAINT "tournament_registrations_profile_id_fkey" FOREIGN KEY ("profile_id") REFERENCES "public"."profiles"("id") ON DELETE CASCADE;
-
-ALTER TABLE ONLY "public"."tournament_registrations"
-    ADD CONSTRAINT "tournament_registrations_team_fk" FOREIGN KEY ("team_id") REFERENCES "public"."teams"("id") ON DELETE SET NULL;
-
-ALTER TABLE ONLY "public"."tournament_registrations"
-    ADD CONSTRAINT "tournament_registrations_rental_team_photo_verified_by_fkey" FOREIGN KEY ("rental_team_photo_verified_by") REFERENCES "public"."profiles"("id");
-
--- Registration Pokemon
-ALTER TABLE ONLY "public"."tournament_registration_pokemon"
-    ADD CONSTRAINT "tournament_registration_pokemon_tournament_registration_id_fkey" FOREIGN KEY ("tournament_registration_id") REFERENCES "public"."tournament_registrations"("id") ON DELETE CASCADE;
-
-ALTER TABLE ONLY "public"."tournament_registration_pokemon"
-    ADD CONSTRAINT "tournament_registration_pokemon_pokemon_id_fkey" FOREIGN KEY ("pokemon_id") REFERENCES "public"."pokemon"("id") ON DELETE CASCADE;
-
--- Invitations
-ALTER TABLE ONLY "public"."tournament_invitations"
-    ADD CONSTRAINT "tournament_invitations_tournament_id_fkey" FOREIGN KEY ("tournament_id") REFERENCES "public"."tournaments"("id") ON DELETE CASCADE;
-
-ALTER TABLE ONLY "public"."tournament_invitations"
-    ADD CONSTRAINT "tournament_invitations_invited_profile_id_fkey" FOREIGN KEY ("invited_profile_id") REFERENCES "public"."profiles"("id") ON DELETE CASCADE;
-
-ALTER TABLE ONLY "public"."tournament_invitations"
-    ADD CONSTRAINT "tournament_invitations_invited_by_profile_id_fkey" FOREIGN KEY ("invited_by_profile_id") REFERENCES "public"."profiles"("id") ON DELETE CASCADE;
-
-ALTER TABLE ONLY "public"."tournament_invitations"
-    ADD CONSTRAINT "tournament_invitations_registration_id_fkey" FOREIGN KEY ("registration_id") REFERENCES "public"."tournament_registrations"("id") ON DELETE SET NULL;
-
--- Events
-ALTER TABLE ONLY "public"."tournament_events"
-    ADD CONSTRAINT "tournament_events_tournament_id_fkey" FOREIGN KEY ("tournament_id") REFERENCES "public"."tournaments"("id") ON DELETE CASCADE;
-
-ALTER TABLE ONLY "public"."tournament_events"
-    ADD CONSTRAINT "tournament_events_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "public"."profiles"("id");
-
--- Player Stats
-ALTER TABLE ONLY "public"."tournament_player_stats"
-    ADD CONSTRAINT "tournament_player_stats_tournament_id_fkey" FOREIGN KEY ("tournament_id") REFERENCES "public"."tournaments"("id") ON DELETE CASCADE;
-
-ALTER TABLE ONLY "public"."tournament_player_stats"
-    ADD CONSTRAINT "tournament_player_stats_profile_id_fkey" FOREIGN KEY ("profile_id") REFERENCES "public"."profiles"("id") ON DELETE CASCADE;
-
--- Standings
-ALTER TABLE ONLY "public"."tournament_standings"
-    ADD CONSTRAINT "tournament_standings_tournament_id_fkey" FOREIGN KEY ("tournament_id") REFERENCES "public"."tournaments"("id") ON DELETE CASCADE;
-
-ALTER TABLE ONLY "public"."tournament_standings"
-    ADD CONSTRAINT "tournament_standings_profile_id_fkey" FOREIGN KEY ("profile_id") REFERENCES "public"."profiles"("id") ON DELETE CASCADE;
-
--- Opponent History
-ALTER TABLE ONLY "public"."tournament_opponent_history"
-    ADD CONSTRAINT "tournament_opponent_history_tournament_id_fkey" FOREIGN KEY ("tournament_id") REFERENCES "public"."tournaments"("id") ON DELETE CASCADE;
-
-ALTER TABLE ONLY "public"."tournament_opponent_history"
-    ADD CONSTRAINT "tournament_opponent_history_profile_id_fkey" FOREIGN KEY ("profile_id") REFERENCES "public"."profiles"("id") ON DELETE CASCADE;
-
-ALTER TABLE ONLY "public"."tournament_opponent_history"
-    ADD CONSTRAINT "tournament_opponent_history_opponent_id_fkey" FOREIGN KEY ("opponent_id") REFERENCES "public"."profiles"("id") ON DELETE CASCADE;
+DO $$
+BEGIN
+    -- Rounds
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'tournament_rounds_phase_id_fkey') THEN
+        ALTER TABLE ONLY "public"."tournament_rounds"
+            ADD CONSTRAINT "tournament_rounds_phase_id_fkey" FOREIGN KEY ("phase_id") REFERENCES "public"."tournament_phases"("id") ON DELETE CASCADE;
+    END IF;
+    
+    -- Matches
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'tournament_matches_round_id_fkey') THEN
+        ALTER TABLE ONLY "public"."tournament_matches"
+            ADD CONSTRAINT "tournament_matches_round_id_fkey" FOREIGN KEY ("round_id") REFERENCES "public"."tournament_rounds"("id") ON DELETE CASCADE;
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'tournament_matches_profile1_id_fkey') THEN
+        ALTER TABLE ONLY "public"."tournament_matches"
+            ADD CONSTRAINT "tournament_matches_profile1_id_fkey" FOREIGN KEY ("profile1_id") REFERENCES "public"."profiles"("id") ON DELETE SET NULL;
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'tournament_matches_profile2_id_fkey') THEN
+        ALTER TABLE ONLY "public"."tournament_matches"
+            ADD CONSTRAINT "tournament_matches_profile2_id_fkey" FOREIGN KEY ("profile2_id") REFERENCES "public"."profiles"("id") ON DELETE SET NULL;
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'tournament_matches_winner_profile_id_fkey') THEN
+        ALTER TABLE ONLY "public"."tournament_matches"
+            ADD CONSTRAINT "tournament_matches_winner_profile_id_fkey" FOREIGN KEY ("winner_profile_id") REFERENCES "public"."profiles"("id") ON DELETE SET NULL;
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'tournament_matches_staff_resolved_by_fkey') THEN
+        ALTER TABLE ONLY "public"."tournament_matches"
+            ADD CONSTRAINT "tournament_matches_staff_resolved_by_fkey" FOREIGN KEY ("staff_resolved_by") REFERENCES "public"."profiles"("id");
+    END IF;
+    
+    -- Pairings
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'tournament_pairings_tournament_id_fkey') THEN
+        ALTER TABLE ONLY "public"."tournament_pairings"
+            ADD CONSTRAINT "tournament_pairings_tournament_id_fkey" FOREIGN KEY ("tournament_id") REFERENCES "public"."tournaments"("id") ON DELETE CASCADE;
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'tournament_pairings_round_id_fkey') THEN
+        ALTER TABLE ONLY "public"."tournament_pairings"
+            ADD CONSTRAINT "tournament_pairings_round_id_fkey" FOREIGN KEY ("round_id") REFERENCES "public"."tournament_rounds"("id") ON DELETE CASCADE;
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'tournament_pairings_match_id_fkey') THEN
+        ALTER TABLE ONLY "public"."tournament_pairings"
+            ADD CONSTRAINT "tournament_pairings_match_id_fkey" FOREIGN KEY ("match_id") REFERENCES "public"."tournament_matches"("id") ON DELETE SET NULL;
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'tournament_pairings_profile1_id_fkey') THEN
+        ALTER TABLE ONLY "public"."tournament_pairings"
+            ADD CONSTRAINT "tournament_pairings_profile1_id_fkey" FOREIGN KEY ("profile1_id") REFERENCES "public"."profiles"("id") ON DELETE SET NULL;
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'tournament_pairings_profile2_id_fkey') THEN
+        ALTER TABLE ONLY "public"."tournament_pairings"
+            ADD CONSTRAINT "tournament_pairings_profile2_id_fkey" FOREIGN KEY ("profile2_id") REFERENCES "public"."profiles"("id") ON DELETE SET NULL;
+    END IF;
+    
+    -- Registrations
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'tournament_registrations_tournament_id_fkey') THEN
+        ALTER TABLE ONLY "public"."tournament_registrations"
+            ADD CONSTRAINT "tournament_registrations_tournament_id_fkey" FOREIGN KEY ("tournament_id") REFERENCES "public"."tournaments"("id") ON DELETE CASCADE;
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'tournament_registrations_profile_id_fkey') THEN
+        ALTER TABLE ONLY "public"."tournament_registrations"
+            ADD CONSTRAINT "tournament_registrations_profile_id_fkey" FOREIGN KEY ("profile_id") REFERENCES "public"."profiles"("id") ON DELETE CASCADE;
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'tournament_registrations_team_fk') THEN
+        ALTER TABLE ONLY "public"."tournament_registrations"
+            ADD CONSTRAINT "tournament_registrations_team_fk" FOREIGN KEY ("team_id") REFERENCES "public"."teams"("id") ON DELETE SET NULL;
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'tournament_registrations_rental_team_photo_verified_by_fkey') THEN
+        ALTER TABLE ONLY "public"."tournament_registrations"
+            ADD CONSTRAINT "tournament_registrations_rental_team_photo_verified_by_fkey" FOREIGN KEY ("rental_team_photo_verified_by") REFERENCES "public"."profiles"("id");
+    END IF;
+    
+    -- Registration Pokemon
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'tournament_registration_pokemon_tournament_registration_id_fkey') THEN
+        ALTER TABLE ONLY "public"."tournament_registration_pokemon"
+            ADD CONSTRAINT "tournament_registration_pokemon_tournament_registration_id_fkey" FOREIGN KEY ("tournament_registration_id") REFERENCES "public"."tournament_registrations"("id") ON DELETE CASCADE;
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'tournament_registration_pokemon_pokemon_id_fkey') THEN
+        ALTER TABLE ONLY "public"."tournament_registration_pokemon"
+            ADD CONSTRAINT "tournament_registration_pokemon_pokemon_id_fkey" FOREIGN KEY ("pokemon_id") REFERENCES "public"."pokemon"("id") ON DELETE CASCADE;
+    END IF;
+    
+    -- Invitations
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'tournament_invitations_tournament_id_fkey') THEN
+        ALTER TABLE ONLY "public"."tournament_invitations"
+            ADD CONSTRAINT "tournament_invitations_tournament_id_fkey" FOREIGN KEY ("tournament_id") REFERENCES "public"."tournaments"("id") ON DELETE CASCADE;
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'tournament_invitations_invited_profile_id_fkey') THEN
+        ALTER TABLE ONLY "public"."tournament_invitations"
+            ADD CONSTRAINT "tournament_invitations_invited_profile_id_fkey" FOREIGN KEY ("invited_profile_id") REFERENCES "public"."profiles"("id") ON DELETE CASCADE;
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'tournament_invitations_invited_by_profile_id_fkey') THEN
+        ALTER TABLE ONLY "public"."tournament_invitations"
+            ADD CONSTRAINT "tournament_invitations_invited_by_profile_id_fkey" FOREIGN KEY ("invited_by_profile_id") REFERENCES "public"."profiles"("id") ON DELETE CASCADE;
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'tournament_invitations_registration_id_fkey') THEN
+        ALTER TABLE ONLY "public"."tournament_invitations"
+            ADD CONSTRAINT "tournament_invitations_registration_id_fkey" FOREIGN KEY ("registration_id") REFERENCES "public"."tournament_registrations"("id") ON DELETE SET NULL;
+    END IF;
+    
+    -- Events
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'tournament_events_tournament_id_fkey') THEN
+        ALTER TABLE ONLY "public"."tournament_events"
+            ADD CONSTRAINT "tournament_events_tournament_id_fkey" FOREIGN KEY ("tournament_id") REFERENCES "public"."tournaments"("id") ON DELETE CASCADE;
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'tournament_events_created_by_fkey') THEN
+        ALTER TABLE ONLY "public"."tournament_events"
+            ADD CONSTRAINT "tournament_events_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "public"."profiles"("id");
+    END IF;
+    
+    -- Player Stats
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'tournament_player_stats_tournament_id_fkey') THEN
+        ALTER TABLE ONLY "public"."tournament_player_stats"
+            ADD CONSTRAINT "tournament_player_stats_tournament_id_fkey" FOREIGN KEY ("tournament_id") REFERENCES "public"."tournaments"("id") ON DELETE CASCADE;
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'tournament_player_stats_profile_id_fkey') THEN
+        ALTER TABLE ONLY "public"."tournament_player_stats"
+            ADD CONSTRAINT "tournament_player_stats_profile_id_fkey" FOREIGN KEY ("profile_id") REFERENCES "public"."profiles"("id") ON DELETE CASCADE;
+    END IF;
+    
+    -- Standings
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'tournament_standings_tournament_id_fkey') THEN
+        ALTER TABLE ONLY "public"."tournament_standings"
+            ADD CONSTRAINT "tournament_standings_tournament_id_fkey" FOREIGN KEY ("tournament_id") REFERENCES "public"."tournaments"("id") ON DELETE CASCADE;
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'tournament_standings_profile_id_fkey') THEN
+        ALTER TABLE ONLY "public"."tournament_standings"
+            ADD CONSTRAINT "tournament_standings_profile_id_fkey" FOREIGN KEY ("profile_id") REFERENCES "public"."profiles"("id") ON DELETE CASCADE;
+    END IF;
+    
+    -- Opponent History
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'tournament_opponent_history_tournament_id_fkey') THEN
+        ALTER TABLE ONLY "public"."tournament_opponent_history"
+            ADD CONSTRAINT "tournament_opponent_history_tournament_id_fkey" FOREIGN KEY ("tournament_id") REFERENCES "public"."tournaments"("id") ON DELETE CASCADE;
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'tournament_opponent_history_profile_id_fkey') THEN
+        ALTER TABLE ONLY "public"."tournament_opponent_history"
+            ADD CONSTRAINT "tournament_opponent_history_profile_id_fkey" FOREIGN KEY ("profile_id") REFERENCES "public"."profiles"("id") ON DELETE CASCADE;
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'tournament_opponent_history_opponent_id_fkey') THEN
+        ALTER TABLE ONLY "public"."tournament_opponent_history"
+            ADD CONSTRAINT "tournament_opponent_history_opponent_id_fkey" FOREIGN KEY ("opponent_id") REFERENCES "public"."profiles"("id") ON DELETE CASCADE;
+    END IF;
+END $$;

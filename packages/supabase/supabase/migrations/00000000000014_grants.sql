@@ -2,6 +2,10 @@
 -- Grants and Default Privileges
 -- =============================================================================
 -- Schema, function, and table grants for all roles.
+-- Note: All statements in this file are naturally idempotent:
+-- - GRANT statements can be re-run without error
+-- - ALTER DEFAULT PRIVILEGES can be re-run without error
+-- - ALTER PUBLICATION OWNER can be re-run without error
 
 -- =============================================================================
 -- Publication
