@@ -27,14 +27,14 @@ tooling/
 
 ## Tech Stack
 
-| Layer          | Technology                                | Notes                                               |
-| -------------- | ----------------------------------------- | --------------------------------------------------- |
-| Auth           | Clerk                                     | Handles sign-up, sign-in, OAuth, session management |
-| Database       | Supabase (PostgreSQL)                     | Row Level Security with Clerk JWT tokens            |
-| Edge Functions | Supabase Edge Functions                   | Deno runtime, used for webhooks                     |
-| Web            | Next.js 16                                | React 19, App Router, Server Components             |
-| Mobile         | Expo 54                                   | React Native with NativeWind                        |
-| Styling        | Tailwind CSS 4 (web), NativeWind (mobile) |                                                     |
+| Layer          | Technology                                | Notes                                     |
+| -------------- | ----------------------------------------- | ----------------------------------------- |
+| Auth           | Supabase Auth                             | Native auth with email/password and OAuth |
+| Database       | Supabase (PostgreSQL)                     | Row Level Security with auth.uid()        |
+| Edge Functions | Supabase Edge Functions                   | Deno runtime                              |
+| Web            | Next.js 16                                | React 19, App Router, Server Components   |
+| Mobile         | Expo 54                                   | React Native with NativeWind              |
+| Styling        | Tailwind CSS 4 (web), NativeWind (mobile) |                                           |
 
 ---
 
@@ -75,59 +75,86 @@ pnpm db:migrate           # Push migrations to local database
 pnpm db:reset             # Reset local database
 ```
 
+### Database Schema Changes
+
+**CRITICAL:** Never apply migrations directly to the Supabase project via MCP tools or the dashboard. All schema changes must be done via code:
+
+1. Create a new migration file in `packages/supabase/supabase/migrations/`
+2. Use naming convention: `YYYYMMDDHHMMSS_description.sql`
+3. Commit the migration file to the repository
+4. Push to a feature branch - Supabase will create a preview branch automatically
+5. Test on the preview branch before merging to main
+6. Merging to main will apply the migration to production
+
+This ensures:
+
+- All schema changes are version controlled
+- Changes can be reviewed in PRs
+- Migrations are tested on preview branches first
+- Production database changes are traceable
+
 ---
 
 ## Authentication Architecture
 
-### Clerk + Supabase Integration
+### Supabase Auth Integration
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                        User Flow                            │
 ├─────────────────────────────────────────────────────────────┤
-│  1. User signs in via Clerk                                 │
-│  2. Clerk issues JWT with user's clerk_id in `sub` claim    │
-│  3. Web app passes JWT to Supabase via accessToken option   │
-│  4. Supabase verifies JWT using Third-Party Auth config     │
-│  5. RLS policies use clerk_user_id() function for access    │
+│  1. User signs in via Supabase Auth (email/password, OAuth) │
+│  2. Supabase issues session with auth.uid()                 │
+│  3. Web app uses createServerClient for server-side auth    │
+│  4. Client uses createBrowserClient for client-side auth    │
+│  5. RLS policies use auth.uid() for access control          │
 └─────────────────────────────────────────────────────────────┘
 
 ┌─────────────────────────────────────────────────────────────┐
-│                    Webhook Sync Flow                        │
+│                    User Creation Flow                       │
 ├─────────────────────────────────────────────────────────────┤
-│  1. User created/updated/deleted in Clerk                   │
-│  2. Clerk sends webhook to Supabase Edge Function           │
-│  3. Edge function verifies signature with svix              │
-│  4. Creates/updates/deletes user + profile in Supabase      │
+│  1. User signs up via Supabase Auth                         │
+│  2. Database trigger creates user + profile records         │
+│  3. User metadata (username, name) stored in user_metadata  │
+│  4. Trigger extracts metadata and populates tables          │
 └─────────────────────────────────────────────────────────────┘
 ```
 
 ### Key Files
 
-| File                                                  | Purpose                                     |
-| ----------------------------------------------------- | ------------------------------------------- |
-| `apps/web/src/lib/supabase/server.ts`                 | Server-side Supabase client with Clerk auth |
-| `apps/web/src/lib/supabase/client.ts`                 | Client-side Supabase client with Clerk auth |
-| `apps/web/src/components/auth/auth-provider.tsx`      | Client-side auth state + user sync fallback |
-| `packages/supabase/supabase/functions/clerk-webhook/` | Edge function for Clerk webhooks            |
+| File                                             | Purpose                              |
+| ------------------------------------------------ | ------------------------------------ |
+| `apps/web/src/lib/supabase/server.ts`            | Server-side Supabase client          |
+| `apps/web/src/lib/supabase/client.ts`            | Client-side Supabase client          |
+| `apps/web/src/lib/supabase/middleware.ts`        | Session refresh middleware utilities |
+| `apps/web/src/hooks/use-auth.ts`                 | Client-side auth hook                |
+| `apps/web/src/components/auth/auth-provider.tsx` | Client-side auth state provider      |
+| `apps/web/middleware.ts`                         | Next.js middleware for session       |
 
-### Database Helper Function
+### Database Helper Functions
 
 ```sql
--- Used in RLS policies to get Clerk user ID from JWT
-CREATE OR REPLACE FUNCTION public.clerk_user_id()
-RETURNS TEXT AS $$
-  SELECT (auth.jwt() ->> 'sub')::text;
-$$ LANGUAGE SQL STABLE;
+-- Get the current authenticated user's ID
+CREATE OR REPLACE FUNCTION public.get_current_user_id()
+RETURNS uuid AS $$
+  SELECT auth.uid();
+$$ LANGUAGE SQL STABLE SECURITY DEFINER;
+
+-- Get the current user's profile ID
+CREATE OR REPLACE FUNCTION public.get_current_profile_id()
+RETURNS uuid AS $$
+  SELECT p.id FROM profiles p
+  WHERE p.user_id = auth.uid()
+$$ LANGUAGE SQL STABLE SECURITY DEFINER;
 ```
 
 ### RLS Policy Pattern
 
 ```sql
--- Example: Users can only read their own data
-CREATE POLICY "Users can view own data"
-ON public.users FOR SELECT
-USING (clerk_id = clerk_user_id());
+-- Example: Users can only update their own data
+CREATE POLICY "Users can update own record"
+ON public.users FOR UPDATE
+USING (id = auth.uid());
 ```
 
 ---
@@ -214,7 +241,7 @@ Button.displayName = "Button"; // Always set displayName
 const { data: user } = await supabase
   .from("users")
   .select("*")
-  .eq("clerk_id", clerkId)
+  .eq("id", userId)
   .maybeSingle(); // Returns null if not found, no error
 
 // Use single() only when record MUST exist
@@ -247,14 +274,18 @@ const { data: profile } = await supabase
 
 Synced from Clerk via webhook.
 
-| Column          | Type | Description                      |
-| --------------- | ---- | -------------------------------- |
-| id              | uuid | Primary key (generated)          |
-| clerk_id        | text | Clerk user ID (e.g., "user_xxx") |
-| email           | text | Primary email                    |
-| name            | text | Display name                     |
-| image           | text | Avatar URL                       |
-| main_profile_id | uuid | FK to profiles                   |
+| Column          | Type | Description                         |
+| --------------- | ---- | ----------------------------------- |
+| id              | uuid | Primary key (matches auth.users.id) |
+| email           | text | Primary email                       |
+| first_name      | text | User's first name                   |
+| last_name       | text | User's last name                    |
+| name            | text | Display name (legacy, for display)  |
+| username        | text | Unique username                     |
+| image           | text | Avatar URL                          |
+| birth_date      | date | User's date of birth                |
+| country         | text | Country code (ISO 3166-1 alpha-2)   |
+| main_profile_id | uuid | FK to profiles                      |
 
 ### profiles
 
@@ -279,18 +310,6 @@ Player profiles linked to users.
 NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
 SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
-
-# Clerk
-NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_...
-CLERK_SECRET_KEY=sk_...
-```
-
-### Supabase Edge Functions
-
-Set via Supabase Dashboard → Edge Functions → Secrets:
-
-```bash
-CLERK_WEBHOOK_SECRET=whsec_...
 ```
 
 ---

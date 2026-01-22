@@ -78,7 +78,13 @@ export function useAuth() {
   const signUpWithEmail = async (
     email: string,
     password: string,
-    username?: string
+    metadata?: {
+      username?: string;
+      firstName?: string;
+      lastName?: string;
+      birthDate?: string;
+      country?: string;
+    }
   ) => {
     setLoading(true);
     const { data, error } = await supabase.auth.signUp({
@@ -86,7 +92,11 @@ export function useAuth() {
       password,
       options: {
         data: {
-          username: username?.toLowerCase(),
+          username: metadata?.username?.toLowerCase(),
+          first_name: metadata?.firstName,
+          last_name: metadata?.lastName,
+          birth_date: metadata?.birthDate,
+          country: metadata?.country?.toUpperCase(),
         },
       },
     });
