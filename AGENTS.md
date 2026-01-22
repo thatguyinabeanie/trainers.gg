@@ -272,7 +272,7 @@ const { data: profile } = await supabase
 
 ### users
 
-Synced from Clerk via webhook.
+Created via database trigger on auth signup.
 
 | Column          | Type | Description                         |
 | --------------- | ---- | ----------------------------------- |
@@ -280,7 +280,6 @@ Synced from Clerk via webhook.
 | email           | text | Primary email                       |
 | first_name      | text | User's first name                   |
 | last_name       | text | User's last name                    |
-| name            | text | Display name (legacy, for display)  |
 | username        | text | Unique username                     |
 | image           | text | Avatar URL                          |
 | birth_date      | date | User's date of birth                |
