@@ -6,8 +6,9 @@
 -- Uses CREATE TABLE IF NOT EXISTS and DO blocks for constraints.
 
 -- Users table (matches auth.users.id)
+-- Note: PRIMARY KEY must be defined inline for FK references to work in same transaction
 CREATE TABLE IF NOT EXISTS "public"."users" (
-    "id" "uuid" NOT NULL,
+    "id" "uuid" NOT NULL PRIMARY KEY,
     "email" "text",
     "name" "text",
     "image" "text",
@@ -30,7 +31,7 @@ ALTER TABLE "public"."users" OWNER TO "postgres";
 
 -- Profiles table (player identities)
 CREATE TABLE IF NOT EXISTS "public"."profiles" (
-    "id" bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+    "id" bigint GENERATED ALWAYS AS IDENTITY NOT NULL PRIMARY KEY,
     "user_id" "uuid" NOT NULL,
     "display_name" "text" NOT NULL,
     "username" "text" NOT NULL,
@@ -47,7 +48,7 @@ ALTER TABLE "public"."profiles" OWNER TO "postgres";
 
 -- Rate limits (for API throttling)
 CREATE TABLE IF NOT EXISTS "public"."rate_limits" (
-    "id" bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+    "id" bigint GENERATED ALWAYS AS IDENTITY NOT NULL PRIMARY KEY,
     "identifier" "text" NOT NULL,
     "request_timestamps" timestamp with time zone[] DEFAULT '{}'::timestamp with time zone[],
     "window_start" timestamp with time zone NOT NULL,
@@ -55,22 +56,6 @@ CREATE TABLE IF NOT EXISTS "public"."rate_limits" (
     "created_at" timestamp with time zone DEFAULT "now"()
 );
 ALTER TABLE "public"."rate_limits" OWNER TO "postgres";
-
--- Primary keys (idempotent using DO block)
-DO $$
-BEGIN
-    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'users_pkey') THEN
-        ALTER TABLE ONLY "public"."users" ADD CONSTRAINT "users_pkey" PRIMARY KEY ("id");
-    END IF;
-    
-    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'profiles_pkey') THEN
-        ALTER TABLE ONLY "public"."profiles" ADD CONSTRAINT "profiles_pkey" PRIMARY KEY ("id");
-    END IF;
-    
-    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'rate_limits_pkey') THEN
-        ALTER TABLE ONLY "public"."rate_limits" ADD CONSTRAINT "rate_limits_pkey" PRIMARY KEY ("id");
-    END IF;
-END $$;
 
 -- Unique constraints (idempotent)
 DO $$

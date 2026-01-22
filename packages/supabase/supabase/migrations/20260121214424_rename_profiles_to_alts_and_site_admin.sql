@@ -313,17 +313,22 @@ ALTER TABLE "public"."tournament_matches" ADD CONSTRAINT "tournament_matches_sta
 
 -- PostgreSQL doesn't allow renaming enum values directly, so we need to:
 -- 1. Add the new value
--- 2. Update all data
+-- 2. Update all data (in a separate transaction - handled below)
 -- 3. Remove the old value (requires recreating the type)
 
 ALTER TYPE "public"."entity_type" ADD VALUE IF NOT EXISTS 'alt';
 
--- Update existing data to use 'alt' instead of 'profile'
-UPDATE "public"."feature_usage" SET "entity_type" = 'alt' WHERE "entity_type" = 'profile';
-UPDATE "public"."subscriptions" SET "entity_type" = 'alt' WHERE "entity_type" = 'profile';
-
--- Note: We can't remove 'profile' from the enum without recreating tables,
--- but since there's no data (fresh db), we leave both values. 'profile' will be unused.
+-- Note: We cannot use the new enum value 'alt' in the same transaction where it was added.
+-- PostgreSQL error: "unsafe use of new value of enum type"
+-- 
+-- Since this migration is designed for fresh databases where feature_usage and subscriptions
+-- tables are empty, we skip the UPDATE statements. If you need to migrate existing data,
+-- run the following statements AFTER this migration completes:
+--
+--   UPDATE "public"."feature_usage" SET "entity_type" = 'alt' WHERE "entity_type"::text = 'profile';
+--   UPDATE "public"."subscriptions" SET "entity_type" = 'alt' WHERE "entity_type"::text = 'profile';
+--
+-- For fresh databases, 'profile' will simply be an unused enum value.
 
 -- =============================================================================
 -- STEP 8: Create new helper functions
@@ -688,12 +693,14 @@ CREATE POLICY "Public templates are viewable" ON "public"."tournament_templates"
   ))));
 
 -- feature_usage
+-- Note: Using ::text comparison to avoid "unsafe use of new enum value" error
+-- since 'alt' was added to the enum in this same migration
 CREATE POLICY "Users can view own feature usage" ON "public"."feature_usage" 
-  FOR SELECT USING (((("entity_type" = 'alt'::"public"."entity_type") 
+  FOR SELECT USING (((("entity_type"::text = 'alt') 
     AND ("entity_id" IN ( 
       SELECT "alts"."id" FROM "public"."alts" WHERE ("alts"."user_id" = "auth"."uid"())
     ))) 
-    OR (("entity_type" = 'organization'::"public"."entity_type") 
+    OR (("entity_type"::text = 'organization') 
       AND ("entity_id" IN ( 
         SELECT "o"."id" FROM ("public"."organizations" "o"
         JOIN "public"."alts" "a" ON (("o"."owner_alt_id" = "a"."id")))
@@ -702,11 +709,11 @@ CREATE POLICY "Users can view own feature usage" ON "public"."feature_usage"
 
 -- subscriptions
 CREATE POLICY "Users can view own subscriptions" ON "public"."subscriptions" 
-  FOR SELECT USING (((("entity_type" = 'alt'::"public"."entity_type") 
+  FOR SELECT USING (((("entity_type"::text = 'alt') 
     AND ("entity_id" IN ( 
       SELECT "alts"."id" FROM "public"."alts" WHERE ("alts"."user_id" = "auth"."uid"())
     ))) 
-    OR (("entity_type" = 'organization'::"public"."entity_type") 
+    OR (("entity_type"::text = 'organization') 
       AND ("entity_id" IN ( 
         SELECT "o"."id" FROM ("public"."organizations" "o"
         JOIN "public"."alts" "a" ON (("o"."owner_alt_id" = "a"."id")))
