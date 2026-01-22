@@ -358,3 +358,104 @@ Both web and mobile use **React 19.1** for consistency.
 | ------ | ----- | --------- |
 | Web    | `@/*` | `./src/*` |
 | Mobile | `@/*` | `./src/*` |
+
+---
+
+## Documentation Index
+
+The `docs/` directory contains planning documents, architecture decisions, and feature specifications from the project's evolution.
+
+### Root Files
+
+| File                                              | Description                                                         |
+| ------------------------------------------------- | ------------------------------------------------------------------- |
+| `index.md`                                        | Main documentation index with Obsidian-compatible navigation        |
+| `ai_integration_architecture.md`                  | AI service layer specs: multi-model support, RAG, prompt caching    |
+| `architecture-research-monorepo-vs-single-app.md` | Research comparing monorepo vs single app approaches for web+mobile |
+| `AUTHENTICATION_SETUP.md`                         | Auth flow for protecting production site during development         |
+| `battle_stadium_overview.md`                      | Executive summary of the mobile AI Pokemon analysis platform        |
+| `business_strategy_market_penetration.md`         | Market analysis, TAM sizing, and business strategy                  |
+| `cross-platform-ui-libraries.md`                  | Comparison of NativeWind, Tamagui, Gluestack for React Native       |
+| `feature_specifications.md`                       | Detailed UI/UX specs for meta dashboard and major features          |
+| `figma-integration-guide.md`                      | Design system tokens, Figma-to-code workflow, component library     |
+| `meta_analytics_data_strategy.md`                 | Tournament meta database design and analytics data collection       |
+| `mobile_ai_pokemon_replay_converter.md`           | Multi-game platform expansion strategy (Pokemon GO, TCG, Unite)     |
+| `mobile-cv-video-architecture.md`                 | Mobile CV pipeline: camera, ML models, video recording, storage     |
+| `monorepo-implementation-guide.md`                | Step-by-step monorepo setup with Turborepo, pnpm, Next.js + Expo    |
+| `partnership_strategy_hardware.md`                | Anker partnership strategy and hardware integration plans           |
+| `realtime_tournament_analytics.md`                | Real-time tournament state management and live coaching features    |
+| `replay_analysis_engine.md`                       | Replay parsing, game state model, and "what if" scenario analysis   |
+| `skill_weighted_analysis_algorithm.md`            | Skill-tier weighting algorithm for meta analysis stratification     |
+| `technical_architecture_deep_dive.md`             | Mobile AI hardware capabilities and CV pipeline architecture        |
+| `tournament-schema-questions.md`                  | Tournament schema design decisions (brackets, match reporting)      |
+| `user_experience_flows.md`                        | User personas, onboarding flows, and journey mapping                |
+| `VERCEL_AUTHENTICATION_SETUP.md`                  | Vercel deployment protection and team access configuration          |
+| `vgc_cv_decisions.md`                             | Chrome extension + PWA architecture for VGC computer vision         |
+| `WEBHOOK_SETUP.md`                                | Clerk webhook setup for Convex integration (legacy)                 |
+
+### Subdirectories
+
+#### `architecture/`
+
+| File                        | Description                                              |
+| --------------------------- | -------------------------------------------------------- |
+| `index.md`                  | Architecture overview with links to all technical docs   |
+| `computer-vision-system.md` | Full CV system spec for extracting battle data from cart |
+| `mobile-app-strategy.md`    | React Native mobile app strategy and PWA migration path  |
+| `profiles-architecture.md`  | Multi-profile system design with free/paid tiers         |
+
+#### `audits/`
+
+| File                         | Description                                         |
+| ---------------------------- | --------------------------------------------------- |
+| `2026-01-13-audit-report.md` | Implementation audit: completed vs missing features |
+
+#### `development/`
+
+| File                 | Description                                          |
+| -------------------- | ---------------------------------------------------- |
+| `seed-data-setup.md` | Development seed data scripts with safety mechanisms |
+
+#### `organizations/`
+
+| File               | Description                                              |
+| ------------------ | -------------------------------------------------------- |
+| `ORGANIZATIONS.md` | Organization system overview: groups, roles, permissions |
+
+#### `planning/`
+
+| File                     | Description                                                      |
+| ------------------------ | ---------------------------------------------------------------- |
+| `PROJECT_BRIEF.md`       | Project overview: trainers.gg as Pokemon community platform      |
+| `ARCHITECTURE.md`        | Current monorepo structure for trainers.gg                       |
+| `BACKEND_COMPARISON.md`  | Convex vs Supabase comparison and dual-backend strategy          |
+| `BLUESKY_INTEGRATION.md` | AT Protocol integration: OAuth, social graph, content federation |
+| `CONVEX_SCHEMA.md`       | Convex database schema design (legacy, pre-Supabase)             |
+| `IMPLEMENTATION_PLAN.md` | Sprint-by-sprint Phase 1 implementation plan                     |
+| `TECHNICAL_DECISIONS.md` | Tech stack decisions: Next.js 16, Expo 54, Bluesky, etc.         |
+
+#### `setup/`
+
+| File                  | Description                                    |
+| --------------------- | ---------------------------------------------- |
+| `first-user-setup.md` | Guide for creating first user on fresh install |
+
+#### `site/`
+
+| File       | Description                                        |
+| ---------- | -------------------------------------------------- |
+| `index.md` | Site organization: landing page, orgs, tournaments |
+
+#### `tournaments/`
+
+| File                          | Description                                          |
+| ----------------------------- | ---------------------------------------------------- |
+| `index.md`                    | Tournament ownership, creation, and structure        |
+| `data-integration-and-elo.md` | RK9 Labs integration and ELO ranking system plans    |
+| `draft-league.md`             | Pokemon Draft League support: draft, rosters, trades |
+
+### Notes
+
+- Many docs reference "Battle Stadium" which was the project's previous name (now trainers.gg)
+- Some docs reference Convex as the backend; the project has migrated to Supabase
+- Compass artifact files (`compass_artifact_*.md`) are research exports - one is a Florida travel guide (misplaced), two cover Pokemon Showdown replay scraping
