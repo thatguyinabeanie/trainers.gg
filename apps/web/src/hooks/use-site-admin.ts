@@ -6,24 +6,25 @@ import { createClient } from "@/lib/supabase/client";
 import { useAuthContext } from "@/components/auth/auth-provider";
 
 /**
- * Hook to check if the current user is a site admin.
- * Reads the is_site_admin claim from the JWT token (set by custom_access_token_hook).
+ * Hook to get the current user's site roles and admin status.
+ * Reads the site_roles claim from the JWT token (set by custom_access_token_hook).
  *
- * @returns Object with isSiteAdmin boolean and loading state
+ * @returns Object with siteRoles array, isSiteAdmin boolean, and loading state
  */
 export function useSiteAdmin(): {
+  siteRoles: string[];
   isSiteAdmin: boolean;
   isLoading: boolean;
   user: User | null;
 } {
   const { user, loading: userLoading } = useAuthContext();
-  const [isSiteAdmin, setIsSiteAdmin] = useState(false);
+  const [siteRoles, setSiteRoles] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    async function checkSiteAdmin() {
+    async function checkSiteRoles() {
       if (!user) {
-        setIsSiteAdmin(false);
+        setSiteRoles([]);
         setIsLoading(false);
         return;
       }
@@ -35,29 +36,30 @@ export function useSiteAdmin(): {
         } = await supabase.auth.getSession();
 
         if (session?.access_token) {
-          // Decode JWT payload to get is_site_admin claim
+          // Decode JWT payload to get site_roles claim
           const payload = session.access_token.split(".")[1];
           if (payload) {
             const claims = JSON.parse(atob(payload)) as {
-              is_site_admin?: boolean;
+              site_roles?: string[];
             };
-            setIsSiteAdmin(claims.is_site_admin === true);
+            setSiteRoles(claims.site_roles ?? []);
           }
         } else {
-          setIsSiteAdmin(false);
+          setSiteRoles([]);
         }
       } catch {
-        setIsSiteAdmin(false);
+        setSiteRoles([]);
       } finally {
         setIsLoading(false);
       }
     }
 
-    checkSiteAdmin();
+    checkSiteRoles();
   }, [user]);
 
   return {
-    isSiteAdmin,
+    siteRoles,
+    isSiteAdmin: siteRoles.includes("site_admin"),
     isLoading: userLoading || isLoading,
     user,
   };

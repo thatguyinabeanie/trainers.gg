@@ -206,7 +206,6 @@ DECLARE
   mod_role_id bigint;
   to_role_id bigint;
   judge_role_id bigint;
-  member_role_id bigint;
   
   -- Permission IDs (bigint)
   perm_org_manage bigint;
@@ -229,10 +228,10 @@ BEGIN
   -- Site Admin Role Assignment
   -- ==========================================================================
   
-  -- Get the Site Admin role ID (created by migration)
-  SELECT id INTO site_admin_role_id FROM public.roles WHERE name = 'Site Admin' AND scope = 'site';
+  -- Get the site_admin role ID (created by migration)
+  SELECT id INTO site_admin_role_id FROM public.roles WHERE name = 'site_admin' AND scope = 'site';
   
-  -- Grant Site Admin role to admin user
+  -- Grant site_admin role to admin user
   INSERT INTO public.user_roles (user_id, role_id) VALUES
     ('a1b2c3d4-e5f6-4a5b-8c9d-0e1f2a3b4c5d', site_admin_role_id);
 
@@ -475,12 +474,11 @@ BEGIN
   -- Organization Roles and Permissions (scope = 'organization')
   -- ==========================================================================
   
-  INSERT INTO public.roles (name, description, scope) VALUES ('Owner', 'Full control over the organization', 'organization') RETURNING id INTO owner_role_id;
-  INSERT INTO public.roles (name, description, scope) VALUES ('Admin', 'Administrative privileges', 'organization') RETURNING id INTO admin_role_id;
-  INSERT INTO public.roles (name, description, scope) VALUES ('Moderator', 'Can moderate content and users', 'organization') RETURNING id INTO mod_role_id;
-  INSERT INTO public.roles (name, description, scope) VALUES ('Tournament Organizer', 'Can create and manage tournaments', 'organization') RETURNING id INTO to_role_id;
-  INSERT INTO public.roles (name, description, scope) VALUES ('Judge', 'Can resolve match disputes', 'organization') RETURNING id INTO judge_role_id;
-  INSERT INTO public.roles (name, description, scope) VALUES ('Member', 'Basic member access', 'organization') RETURNING id INTO member_role_id;
+  INSERT INTO public.roles (name, description, scope) VALUES ('org_owner', 'Full control over the organization', 'organization') RETURNING id INTO owner_role_id;
+  INSERT INTO public.roles (name, description, scope) VALUES ('org_admin', 'Administrative privileges', 'organization') RETURNING id INTO admin_role_id;
+  INSERT INTO public.roles (name, description, scope) VALUES ('org_moderator', 'Can moderate content and users', 'organization') RETURNING id INTO mod_role_id;
+  INSERT INTO public.roles (name, description, scope) VALUES ('org_tournament_organizer', 'Can create and manage tournaments', 'organization') RETURNING id INTO to_role_id;
+  INSERT INTO public.roles (name, description, scope) VALUES ('org_judge', 'Can resolve match disputes', 'organization') RETURNING id INTO judge_role_id;
 
   INSERT INTO public.permissions (key, name, description) VALUES ('org.manage', 'Manage Organization', 'Can modify organization settings') RETURNING id INTO perm_org_manage;
   INSERT INTO public.permissions (key, name, description) VALUES ('org.members.manage', 'Manage Members', 'Can add/remove organization members') RETURNING id INTO perm_members_manage;
@@ -520,14 +518,17 @@ END $$;
 -- 
 -- Test Accounts (all use password: password123)
 -- 
--- | Email                    | Username       | Role             |
--- |--------------------------|----------------|------------------|
--- | admin@trainers.local     | admin_trainer  | Site Admin       |
--- | player@trainers.local    | ash_ketchum    | Player Pro       |
--- | champion@trainers.local  | cynthia        | Player Pro       |
--- | gymleader@trainers.local | brock          | Regular          |
--- | elite@trainers.local     | karen          | Regular          |
--- | casual@trainers.local    | red            | Regular          |
+-- | Email                    | Username       | Site Role  | Alt Tier    |
+-- |--------------------------|----------------|------------|-------------|
+-- | admin@trainers.local     | admin_trainer  | site_admin | (default)   |
+-- | player@trainers.local    | ash_ketchum    | -          | player_pro  |
+-- | champion@trainers.local  | cynthia        | -          | player_pro  |
+-- | gymleader@trainers.local | brock          | -          | (default)   |
+-- | elite@trainers.local     | karen          | -          | (default)   |
+-- | casual@trainers.local    | red            | -          | (default)   |
+--
+-- Organization Roles (org_ prefix):
+-- - org_owner, org_admin, org_moderator, org_tournament_organizer, org_judge
 --
 -- Organizations:
 -- - VGC League (partner tier, org_plus subscription)

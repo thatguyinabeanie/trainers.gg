@@ -44,7 +44,7 @@ For development environments, you can use the seed script:
 2. **Default seeded permissions**
    The seed script creates:
    - Default permissions defined in `lib/constants/permissions.ts`
-   - Initial role templates (Owner, Admin, Manager, Member)
+   - Initial role templates (org_owner, org_admin, org_moderator, org_tournament_organizer, org_judge)
    - Role-permission mappings
 
 3. **Create test users**

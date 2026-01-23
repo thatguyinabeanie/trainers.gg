@@ -93,6 +93,12 @@ This ensures:
 - Migrations are tested on preview branches first
 - Production database changes are traceable
 
+**IMPORTANT:** Never edit a migration file that has already been committed or pushed. Always create a new migration file for any changes, even if fixing a previous migration. Editing existing migrations can cause:
+
+- Checksum mismatches in environments where the migration already ran
+- Inconsistent database state between local, preview, and production
+- Failed deployments due to migration history conflicts
+
 ---
 
 ## Authentication Architecture

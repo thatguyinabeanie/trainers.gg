@@ -1,11 +1,10 @@
 {
   "name": "@trainers/mobile",
   "version": "0.0.1",
-  "type": "module",
   "private": true,
   "main": "expo-router/entry",
   "scripts": {
-    "dev:mobile": "expo start",
+    "dev": "expo start",
     "android": "expo run:android",
     "ios": "expo run:ios",
     "build": "expo export",
@@ -16,8 +15,10 @@
     "clean": "rm -rf .expo node_modules"
   },
   "dependencies": {
-    "@clerk/clerk-expo": "^2.19.18",
+    "@supabase/supabase-js": "^2.49.4",
+    "@trainers/supabase": "workspace:*",
     "@trainers/theme": "workspace:*",
+    "react-native-url-polyfill": "^2.0.0",
     "expo": "~54.0.31",
     "expo-secure-store": "~15.0.1",
     "expo-constants": "~18.0.13",

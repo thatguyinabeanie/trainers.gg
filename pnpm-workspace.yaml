@@ -5,11 +5,12 @@ packages:
 
 # Centralized dependency versions - use "catalog:" prefix in package.json
 catalog:
-  # React ecosystem
-  react: 19.1.4
-  react-dom: 19.1.4
-  "@types/react": ^19.1.4
-  "@types/react-dom": ^19.1.4
+  # React ecosystem - pinned to Expo 54 compatible versions
+  # See: https://github.com/expo/expo/blob/sdk-54/packages/expo/bundledNativeModules.json
+  react: 19.1.0
+  react-dom: 19.1.0
+  "@types/react": ^19.1.0
+  "@types/react-dom": ^19.1.0
 
   # Core tooling
   typescript: ^5.9.3

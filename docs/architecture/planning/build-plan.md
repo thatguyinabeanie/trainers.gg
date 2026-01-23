@@ -32,7 +32,7 @@ and technical implementation details, as derived from the complete documentation
 
 ### 2.3. Roles & Permissions
 
-- Full matrix of roles (Owner, Admin, Tournament Director, Head Judge, Judge, Scorekeeper, etc.)
+- Full matrix of roles (org_owner, org_admin, org_tournament_organizer, org_judge, org_moderator)
 - Fine-grained permission matrix (see [[organizations/permissions/ORG_PERMISSIONS]]).
 - Support for custom roles, temporary/event-based roles, and audit logs.
 

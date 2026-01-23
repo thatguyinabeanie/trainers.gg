@@ -23,7 +23,7 @@ export async function isSiteAdmin(
     )
     .eq("user_id", userId)
     .eq("roles.scope", "site")
-    .eq("roles.name", "Site Admin")
+    .eq("roles.name", "site_admin")
     .maybeSingle();
 
   if (error) {
@@ -78,7 +78,7 @@ export async function getSiteAdmins(supabase: TypedClient) {
     `
     )
     .eq("roles.scope", "site")
-    .eq("roles.name", "Site Admin");
+    .eq("roles.name", "site_admin");
 
   if (error) {
     console.error("Error fetching site admins:", error);
