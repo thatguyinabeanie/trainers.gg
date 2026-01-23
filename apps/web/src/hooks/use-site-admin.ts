@@ -59,7 +59,7 @@ export function useSiteAdmin(): {
 
   return {
     siteRoles,
-    isSiteAdmin: siteRoles.includes("Site Admin"),
+    isSiteAdmin: siteRoles.includes("site_admin"),
     isLoading: userLoading || isLoading,
     user,
   };

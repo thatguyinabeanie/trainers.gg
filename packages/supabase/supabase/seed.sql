@@ -229,10 +229,10 @@ BEGIN
   -- Site Admin Role Assignment
   -- ==========================================================================
   
-  -- Get the Site Admin role ID (created by migration)
-  SELECT id INTO site_admin_role_id FROM public.roles WHERE name = 'Site Admin' AND scope = 'site';
+  -- Get the site_admin role ID (created by migration)
+  SELECT id INTO site_admin_role_id FROM public.roles WHERE name = 'site_admin' AND scope = 'site';
   
-  -- Grant Site Admin role to admin user
+  -- Grant site_admin role to admin user
   INSERT INTO public.user_roles (user_id, role_id) VALUES
     ('a1b2c3d4-e5f6-4a5b-8c9d-0e1f2a3b4c5d', site_admin_role_id);
 
@@ -522,7 +522,7 @@ END $$;
 -- 
 -- | Email                    | Username       | Role             |
 -- |--------------------------|----------------|------------------|
--- | admin@trainers.local     | admin_trainer  | Site Admin       |
+-- | admin@trainers.local     | admin_trainer  | site_admin       |
 -- | player@trainers.local    | ash_ketchum    | Player Pro       |
 -- | champion@trainers.local  | cynthia        | Player Pro       |
 -- | gymleader@trainers.local | brock          | Regular          |

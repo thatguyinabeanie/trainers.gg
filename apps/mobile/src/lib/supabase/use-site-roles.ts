@@ -43,7 +43,7 @@ export function useSiteRoles(): SiteRolesState {
             const roles = claims.site_roles ?? [];
             setState({
               siteRoles: roles,
-              isSiteAdmin: roles.includes("Site Admin"),
+              isSiteAdmin: roles.includes("site_admin"),
               isLoading: false,
             });
             return;

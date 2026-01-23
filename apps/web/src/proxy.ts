@@ -53,7 +53,7 @@ export async function proxy(request: NextRequest) {
         ) as {
           site_roles?: string[];
         };
-        isSiteAdmin = payload?.site_roles?.includes("Site Admin") ?? false;
+        isSiteAdmin = payload?.site_roles?.includes("site_admin") ?? false;
       } catch {
         isSiteAdmin = false;
       }
