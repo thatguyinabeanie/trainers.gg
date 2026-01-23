@@ -1,9 +1,10 @@
 import { View, Text, Pressable, ActivityIndicator } from "react-native";
 import { Link } from "expo-router";
-import { useAuth, getUserDisplayName } from "@/lib/supabase";
+import { useAuth, getUserDisplayName, useSiteRoles } from "@/lib/supabase";
 
 export default function ProfileScreen() {
   const { user, loading, isAuthenticated } = useAuth();
+  const { siteRoles } = useSiteRoles();
 
   if (loading) {
     return (
@@ -52,6 +53,18 @@ export default function ProfileScreen() {
         </Text>
         {username && <Text className="text-gray-600">@{username}</Text>}
         {email && <Text className="mt-1 text-sm text-gray-500">{email}</Text>}
+
+        {siteRoles.length > 0 && (
+          <View className="mt-3 flex-row flex-wrap gap-2">
+            {siteRoles.map((role) => (
+              <View key={role} className="rounded-full bg-green-100 px-3 py-1">
+                <Text className="text-xs font-medium text-green-700">
+                  {role}
+                </Text>
+              </View>
+            ))}
+          </View>
+        )}
       </View>
 
       <View className="gap-3">

@@ -1,10 +1,14 @@
 import { View, Text, Pressable, ActivityIndicator, Alert } from "react-native";
 import { useRouter } from "expo-router";
-import { useAuth } from "@/lib/supabase";
+import { useAuth, getUserDisplayName, useSiteRoles } from "@/lib/supabase";
 
 export default function SettingsScreen() {
   const { user, loading, isAuthenticated, signOut } = useAuth();
+  const { siteRoles } = useSiteRoles();
   const router = useRouter();
+
+  const displayName = getUserDisplayName(user);
+  const username = user?.user_metadata?.username as string | undefined;
 
   const handleSignOut = async () => {
     Alert.alert("Sign Out", "Are you sure you want to sign out?", [
@@ -41,7 +45,24 @@ export default function SettingsScreen() {
           <>
             <View className="mb-4 rounded-lg bg-gray-50 p-4">
               <Text className="text-sm text-gray-500">Signed in as</Text>
-              <Text className="font-medium text-gray-900">{user?.email}</Text>
+              <Text className="font-semibold text-gray-900">{displayName}</Text>
+              {username && <Text className="text-gray-600">@{username}</Text>}
+              <Text className="text-sm text-gray-500">{user?.email}</Text>
+
+              {siteRoles.length > 0 && (
+                <View className="mt-3 flex-row flex-wrap gap-2">
+                  {siteRoles.map((role) => (
+                    <View
+                      key={role}
+                      className="rounded-full bg-green-100 px-3 py-1"
+                    >
+                      <Text className="text-xs font-medium text-green-700">
+                        {role}
+                      </Text>
+                    </View>
+                  ))}
+                </View>
+              )}
             </View>
 
             <Pressable className="rounded-lg border border-gray-200 bg-white px-4 py-3">

@@ -48,8 +48,12 @@ export async function proxy(request: NextRequest) {
 
     if (session?.access_token) {
       try {
-        const payload = JSON.parse(atob(session.access_token.split(".")[1]!));
-        isSiteAdmin = payload?.is_site_admin === true;
+        const payload = JSON.parse(
+          atob(session.access_token.split(".")[1]!)
+        ) as {
+          site_roles?: string[];
+        };
+        isSiteAdmin = payload?.site_roles?.includes("Site Admin") ?? false;
       } catch {
         isSiteAdmin = false;
       }
