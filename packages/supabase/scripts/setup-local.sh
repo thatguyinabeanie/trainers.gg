@@ -168,6 +168,47 @@ generate_types() {
 }
 
 # =============================================================================
+# Get local IP address for mobile device testing
+# =============================================================================
+get_local_ip() {
+  # Try various methods to get the local IP address
+  LOCAL_IP=""
+  
+  # macOS: Try ipconfig (most reliable on Mac)
+  if command -v ipconfig &> /dev/null; then
+    LOCAL_IP=$(ipconfig getifaddr en0 2>/dev/null || ipconfig getifaddr en1 2>/dev/null || echo "")
+  fi
+  
+  # macOS/Linux: Try ifconfig (may be in /sbin)
+  if [ -z "$LOCAL_IP" ]; then
+    if command -v ifconfig &> /dev/null; then
+      LOCAL_IP=$(ifconfig 2>/dev/null | grep "inet " | grep -v 127.0.0.1 | head -1 | awk '{print $2}')
+    elif [ -x /sbin/ifconfig ]; then
+      LOCAL_IP=$(/sbin/ifconfig 2>/dev/null | grep "inet " | grep -v 127.0.0.1 | head -1 | awk '{print $2}')
+    fi
+  fi
+  
+  # Linux: Try hostname -I
+  if [ -z "$LOCAL_IP" ] && command -v hostname &> /dev/null; then
+    LOCAL_IP=$(hostname -I 2>/dev/null | awk '{print $1}' || echo "")
+  fi
+  
+  # Fallback: Try ip command (Linux)
+  if [ -z "$LOCAL_IP" ] && command -v ip &> /dev/null; then
+    LOCAL_IP=$(ip route get 1 2>/dev/null | awk '{print $7; exit}' || echo "")
+  fi
+  
+  # If still empty, fall back to localhost
+  if [ -z "$LOCAL_IP" ]; then
+    LOCAL_IP="127.0.0.1"
+    echo -e "${YELLOW}Could not detect local IP, using 127.0.0.1${NC}"
+    echo -e "${YELLOW}For physical device testing, manually update EXPO_PUBLIC_SUPABASE_URL in .env.local${NC}"
+  else
+    echo -e "${GREEN}Detected local IP: $LOCAL_IP${NC}"
+  fi
+}
+
+# =============================================================================
 # Create .env.local for web app
 # =============================================================================
 create_env_file() {
@@ -175,6 +216,9 @@ create_env_file() {
   
   # Always update .env.local with local credentials when using local Supabase
   echo -e "${YELLOW}Configuring web app environment...${NC}"
+  
+  # Get local IP for mobile device testing
+  get_local_ip
   
   # Get keys from supabase status using JSON output
   STATUS_JSON=$($SUPABASE_CMD status --output json 2>/dev/null || echo "{}")
@@ -192,12 +236,13 @@ create_env_file() {
 # project credentials from https://app.supabase.com/project/_/settings/api
 # =============================================================================
 
-# Web app (Next.js)
+# Web app (Next.js) - uses localhost for browser access
 NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321
 NEXT_PUBLIC_SUPABASE_ANON_KEY=$ANON_KEY
 
-# Mobile app (Expo)
-EXPO_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321
+# Mobile app (Expo) - uses local IP for physical device access
+# If testing on physical device, ensure your device is on the same network
+EXPO_PUBLIC_SUPABASE_URL=http://$LOCAL_IP:54321
 EXPO_PUBLIC_SUPABASE_ANON_KEY=$ANON_KEY
 
 # Server-side only (never expose to client)
@@ -220,7 +265,8 @@ print_success() {
   echo -e "${GREEN}========================================${NC}"
   echo ""
   echo -e "${BLUE}Supabase Studio:${NC} http://127.0.0.1:54323"
-  echo -e "${BLUE}API URL:${NC}         http://127.0.0.1:54321"
+  echo -e "${BLUE}API URL (web):${NC}   http://127.0.0.1:54321"
+  echo -e "${BLUE}API URL (mobile):${NC} http://$LOCAL_IP:54321"
   echo -e "${BLUE}Database:${NC}        postgresql://postgres:postgres@127.0.0.1:54322/postgres"
   echo ""
 }
