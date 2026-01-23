@@ -4,7 +4,7 @@
 -- Changes:
 --   - Removes is_site_admin boolean from JWT claims
 --   - Adds site_roles array containing all site-scoped role names
---   - Consumers can derive is_site_admin via: site_roles.includes("Site Admin")
+--   - Consumers can derive is_site_admin via: site_roles.includes("site_admin")
 -- =============================================================================
 
 CREATE OR REPLACE FUNCTION "public"."custom_access_token_hook"(event jsonb)

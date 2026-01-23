@@ -475,12 +475,12 @@ BEGIN
   -- Organization Roles and Permissions (scope = 'organization')
   -- ==========================================================================
   
-  INSERT INTO public.roles (name, description, scope) VALUES ('Owner', 'Full control over the organization', 'organization') RETURNING id INTO owner_role_id;
-  INSERT INTO public.roles (name, description, scope) VALUES ('Admin', 'Administrative privileges', 'organization') RETURNING id INTO admin_role_id;
-  INSERT INTO public.roles (name, description, scope) VALUES ('Moderator', 'Can moderate content and users', 'organization') RETURNING id INTO mod_role_id;
-  INSERT INTO public.roles (name, description, scope) VALUES ('Tournament Organizer', 'Can create and manage tournaments', 'organization') RETURNING id INTO to_role_id;
-  INSERT INTO public.roles (name, description, scope) VALUES ('Judge', 'Can resolve match disputes', 'organization') RETURNING id INTO judge_role_id;
-  INSERT INTO public.roles (name, description, scope) VALUES ('Member', 'Basic member access', 'organization') RETURNING id INTO member_role_id;
+  INSERT INTO public.roles (name, description, scope) VALUES ('owner', 'Full control over the organization', 'organization') RETURNING id INTO owner_role_id;
+  INSERT INTO public.roles (name, description, scope) VALUES ('admin', 'Administrative privileges', 'organization') RETURNING id INTO admin_role_id;
+  INSERT INTO public.roles (name, description, scope) VALUES ('moderator', 'Can moderate content and users', 'organization') RETURNING id INTO mod_role_id;
+  INSERT INTO public.roles (name, description, scope) VALUES ('tournament_organizer', 'Can create and manage tournaments', 'organization') RETURNING id INTO to_role_id;
+  INSERT INTO public.roles (name, description, scope) VALUES ('judge', 'Can resolve match disputes', 'organization') RETURNING id INTO judge_role_id;
+  INSERT INTO public.roles (name, description, scope) VALUES ('member', 'Basic member access', 'organization') RETURNING id INTO member_role_id;
 
   INSERT INTO public.permissions (key, name, description) VALUES ('org.manage', 'Manage Organization', 'Can modify organization settings') RETURNING id INTO perm_org_manage;
   INSERT INTO public.permissions (key, name, description) VALUES ('org.members.manage', 'Manage Members', 'Can add/remove organization members') RETURNING id INTO perm_members_manage;
