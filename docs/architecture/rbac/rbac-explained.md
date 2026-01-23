@@ -45,7 +45,7 @@ Assigning every permission to every user individually would be a nightmare to ma
 ### C. Groups
 
 - **Definition:** A group is a collection of users within an organization, often representing a department or function (e.g., "Judges", "Staff", "Players").
-- **Purpose:** Makes it easier to assign roles to many users at once. For example, everyone in the "Judges" group might get the "Judge" role.
+- **Purpose:** Makes it easier to assign roles to many users at once. For example, everyone in the "Judges" group might get the "org_judge" role.
 
 ---
 
@@ -56,12 +56,12 @@ Assigning every permission to every user individually would be a nightmare to ma
 1. **Define Permissions:**
    - `create_tournament`, `edit_tournament`, `enter_results`, `drop_player`, etc.
 2. **Define Roles:**
-   - **Admin:** All permissions.
-   - **Judge:** `enter_results`, `issue_penalty`.
-   - **Player:** `register_tournament`, `upload_team`.
+   - **org_admin:** All permissions.
+   - **org_judge:** `enter_results`, `issue_penalty`.
+   - **org_tournament_organizer:** `create_tournament`, `edit_tournament`.
 3. **Assign Roles to Groups:**
-   - The "Judges" group gets the "Judge" role.
-   - The "Admins" group gets the "Admin" role.
+   - The "Judges" group gets the "org_judge" role.
+   - The "Admins" group gets the "org_admin" role.
 4. **Add Users to Groups:**
    - Alice is added to the "Judges" group.
    - Bob is added to the "Admins" group.

@@ -12,6 +12,8 @@ obsidian_compatible: true
 
 Roles are granular, assignable permissions that determine what a user can do within an organization. Each role can be assigned to one or more users in any group, allowing for fine-tuned delegation and access control.
 
+> **Implementation Status:** Currently implemented roles are: `org_owner`, `org_admin`, `org_moderator`, `org_tournament_organizer`, and `org_judge`. Many roles listed below are planned for future implementation.
+
 ---
 
 ## 📋 List of Roles
@@ -132,22 +134,11 @@ Roles are granular, assignable permissions that determine what a user can do wit
 
 - Manage prize distribution, eligibility, and tracking
 
-### 🧑‍🎓 Player
-
-- Register for tournaments
-- View own matches, standings, and analytics
-- Drop from tournaments (if allowed)
-- Submit decklists/teamsheets (if required)
-
-### 👀 Spectator (Future)
-
-- View public brackets, standings, and streams
-- Follow favorite players or teams
-
 ---
 
 ## 🔗 Related Docs
 
+- [[../USER_TYPES|👤 User Types (Player, Spectator)]]
 - [[../ORGANIZATIONS|🏢 Organization System Overview]]
 - [[../groups/ORG_GROUPS|👥 Groups & Templates]]
 - [[../permissions/ORG_PERMISSIONS|🗂️ Permission Matrix & Advanced Topics]]
