@@ -1,85 +1,227 @@
-import { View, Text, Pressable, ActivityIndicator } from "react-native";
 import { Link } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
+import { YStack, XStack, Text, ScrollView, useTheme } from "tamagui";
 import { useAuth, getUserDisplayName, useSiteRoles } from "@/lib/supabase";
+import { Screen, Avatar, Badge, Button, ListItem } from "@/components/ui";
+
+const MOCK_STATS = {
+  tournaments: 12,
+  wins: 3,
+  teams: 8,
+};
+
+function StatItem({
+  label,
+  value,
+  icon,
+}: {
+  label: string;
+  value: number;
+  icon: keyof typeof Ionicons.glyphMap;
+}) {
+  const theme = useTheme();
+
+  return (
+    <YStack
+      flex={1}
+      alignItems="center"
+      paddingVertical="$4"
+      backgroundColor="$backgroundStrong"
+      borderRadius="$4"
+    >
+      <YStack
+        marginBottom="$2"
+        height={40}
+        width={40}
+        alignItems="center"
+        justifyContent="center"
+        borderRadius="$full"
+        backgroundColor="$primary"
+        opacity={0.15}
+      >
+        <Ionicons name={icon} size={20} color={theme.primary.val} />
+      </YStack>
+      <Text fontSize="$7" fontWeight="700" color="$color">
+        {value}
+      </Text>
+      <Text fontSize="$2" color="$mutedForeground" marginTop="$1">
+        {label}
+      </Text>
+    </YStack>
+  );
+}
 
 export default function ProfileScreen() {
   const { user, loading, isAuthenticated } = useAuth();
   const { siteRoles } = useSiteRoles();
+  const theme = useTheme();
 
   if (loading) {
-    return (
-      <View className="flex-1 items-center justify-center bg-white">
-        <ActivityIndicator size="large" color="#1b9388" />
-      </View>
-    );
+    return <Screen loading />;
   }
 
   if (!isAuthenticated) {
     return (
-      <View className="flex-1 bg-white p-4">
-        <Text className="mb-4 text-2xl font-bold text-gray-900">Profile</Text>
-        <Text className="mb-4 text-gray-600">
-          Sign in to view and edit your profile.
-        </Text>
-        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-        <Link href={"/(auth)/sign-in" as any} asChild>
-          <Pressable className="rounded-lg bg-primary-600 px-6 py-3">
-            <Text className="text-center font-semibold text-white">
-              Sign In
+      <Screen>
+        <YStack
+          flex={1}
+          alignItems="center"
+          justifyContent="center"
+          paddingHorizontal="$6"
+          gap="$4"
+        >
+          <YStack
+            height={96}
+            width={96}
+            alignItems="center"
+            justifyContent="center"
+            borderRadius="$full"
+            backgroundColor="$backgroundStrong"
+          >
+            <Ionicons
+              name="person-outline"
+              size={48}
+              color={theme.mutedForeground.val}
+            />
+          </YStack>
+
+          <YStack alignItems="center" gap="$2">
+            <Text fontSize="$7" fontWeight="600" color="$color">
+              Sign in to your account
             </Text>
-          </Pressable>
-        </Link>
-      </View>
+            <Text
+              textAlign="center"
+              color="$mutedForeground"
+              paddingHorizontal="$4"
+            >
+              View your profile, track tournaments, and manage your teams.
+            </Text>
+          </YStack>
+
+          <YStack width="100%" maxWidth={320} gap="$3" marginTop="$4">
+            <Link href="/(auth)/sign-in" asChild>
+              <Button width="100%">Sign In</Button>
+            </Link>
+            <Link href="/(auth)/sign-up" asChild>
+              <Button variant="outline" width="100%">
+                Create Account
+              </Button>
+            </Link>
+          </YStack>
+        </YStack>
+      </Screen>
     );
   }
 
   const displayName = getUserDisplayName(user);
   const username = user?.user_metadata?.username as string | undefined;
-  const email = user?.email;
 
   return (
-    <View className="flex-1 bg-white p-4">
-      <Text className="mb-6 text-2xl font-bold text-gray-900">Profile</Text>
-
-      <View className="mb-6 rounded-lg bg-gray-50 p-4">
-        <View className="mb-4 h-20 w-20 items-center justify-center rounded-full bg-primary-100">
-          <Text className="text-2xl font-bold text-primary-600">
-            {displayName.charAt(0).toUpperCase()}
-          </Text>
-        </View>
-
-        <Text className="text-xl font-semibold text-gray-900">
-          {displayName}
-        </Text>
-        {username && <Text className="text-gray-600">@{username}</Text>}
-        {email && <Text className="mt-1 text-sm text-gray-500">{email}</Text>}
-
-        {siteRoles.length > 0 && (
-          <View className="mt-3 flex-row flex-wrap gap-2">
-            {siteRoles.map((role) => (
-              <View key={role} className="rounded-full bg-green-100 px-3 py-1">
-                <Text className="text-xs font-medium text-green-700">
-                  {role}
+    <Screen>
+      <ScrollView flex={1} contentContainerStyle={{ paddingBottom: 32 }}>
+        {/* Profile Header */}
+        <YStack paddingHorizontal="$4" paddingVertical="$6" gap="$6">
+          <YStack alignItems="center" gap="$3">
+            <Avatar size="xl" fallback={displayName} />
+            <YStack alignItems="center" gap="$1">
+              <Text fontSize="$7" fontWeight="700" color="$color">
+                {displayName}
+              </Text>
+              {username && (
+                <Text color="$mutedForeground" fontSize="$4">
+                  @{username}
                 </Text>
-              </View>
-            ))}
-          </View>
-        )}
-      </View>
+              )}
+            </YStack>
+            {siteRoles.length > 0 && (
+              <XStack flexWrap="wrap" justifyContent="center" gap="$2">
+                {siteRoles.map((role) => (
+                  <Badge key={role} variant="default">
+                    {role}
+                  </Badge>
+                ))}
+              </XStack>
+            )}
+          </YStack>
 
-      <View className="gap-3">
-        <Pressable className="rounded-lg border border-gray-200 bg-white px-4 py-3">
-          <Text className="font-medium text-gray-900">Edit Profile</Text>
-        </Pressable>
+          {/* Stats Row */}
+          <XStack gap="$3">
+            <StatItem
+              label="Tournaments"
+              value={MOCK_STATS.tournaments}
+              icon="trophy-outline"
+            />
+            <StatItem
+              label="Wins"
+              value={MOCK_STATS.wins}
+              icon="medal-outline"
+            />
+            <StatItem
+              label="Teams"
+              value={MOCK_STATS.teams}
+              icon="layers-outline"
+            />
+          </XStack>
+        </YStack>
 
-        <Pressable className="rounded-lg border border-gray-200 bg-white px-4 py-3">
-          <Text className="font-medium text-gray-900">My Teams</Text>
-        </Pressable>
+        {/* Profile Actions */}
+        <YStack paddingHorizontal="$4" gap="$6">
+          <YStack
+            backgroundColor="$backgroundStrong"
+            borderRadius="$4"
+            overflow="hidden"
+          >
+            <ListItem
+              title="Edit Profile"
+              subtitle="Update your name, bio, and avatar"
+              icon="person-outline"
+            />
+            <ListItem
+              title="My Teams"
+              subtitle="View and manage your team builds"
+              icon="layers-outline"
+              rightText={`${MOCK_STATS.teams}`}
+            />
+            <ListItem
+              title="Tournament History"
+              subtitle="View your past tournament results"
+              icon="trophy-outline"
+              rightText={`${MOCK_STATS.tournaments}`}
+            />
+          </YStack>
 
-        <Pressable className="rounded-lg border border-gray-200 bg-white px-4 py-3">
-          <Text className="font-medium text-gray-900">Tournament History</Text>
-        </Pressable>
-      </View>
-    </View>
+          {/* Connections Section */}
+          <YStack gap="$3">
+            <Text
+              fontSize="$2"
+              fontWeight="500"
+              color="$mutedForeground"
+              textTransform="uppercase"
+              letterSpacing={0.5}
+              paddingHorizontal="$4"
+            >
+              Connections
+            </Text>
+            <YStack
+              backgroundColor="$backgroundStrong"
+              borderRadius="$4"
+              overflow="hidden"
+            >
+              <ListItem
+                title="Bluesky"
+                subtitle="Connect your Bluesky account"
+                icon="at-outline"
+                iconColor={theme.primary.val}
+              />
+              <ListItem
+                title="Pokemon Showdown"
+                subtitle="Link your Showdown username"
+                icon="game-controller-outline"
+              />
+            </YStack>
+          </YStack>
+        </YStack>
+      </ScrollView>
+    </Screen>
   );
 }
