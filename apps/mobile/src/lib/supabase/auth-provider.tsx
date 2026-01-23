@@ -7,7 +7,7 @@ import {
   useState,
 } from "react";
 import { type User, type Session } from "@supabase/supabase-js";
-import { supabase } from "./client";
+import { getSupabase } from "./client";
 
 interface AuthContextType {
   user: User | null;
@@ -46,7 +46,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const {
         data: { session },
         error,
-      } = await supabase.auth.getSession();
+      } = await getSupabase().auth.getSession();
       if (error) console.error("Error getting session:", error);
       setSession(session);
       setUser(session?.user ?? null);
@@ -64,7 +64,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (_event, session) => {
+    } = getSupabase().auth.onAuthStateChange(async (_event, session) => {
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
@@ -75,7 +75,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signOut = async () => {
     setLoading(true);
-    const { error } = await supabase.auth.signOut();
+    const { error } = await getSupabase().auth.signOut();
     if (error) {
       console.error("Error signing out:", error);
     }
@@ -84,7 +84,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signInWithEmail = async (email: string, password: string) => {
     setLoading(true);
-    const { error } = await supabase.auth.signInWithPassword({
+    const { error } = await getSupabase().auth.signInWithPassword({
       email,
       password,
     });
@@ -104,7 +104,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   ) => {
     setLoading(true);
-    const { error } = await supabase.auth.signUp({
+    const { error } = await getSupabase().auth.signUp({
       email,
       password,
       options: {
@@ -122,7 +122,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const resetPassword = async (email: string) => {
-    const { error } = await supabase.auth.resetPasswordForEmail(email);
+    const { error } = await getSupabase().auth.resetPasswordForEmail(email);
     return { error };
   };
 

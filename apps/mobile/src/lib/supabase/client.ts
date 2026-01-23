@@ -32,28 +32,50 @@ const ExpoSecureStoreAdapter = {
   },
 };
 
-const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
-const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
+// Lazy singleton - only created when first accessed
+let _supabase: ReturnType<typeof createSupabaseClient<Database>> | null = null;
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error(
-    "Missing EXPO_PUBLIC_SUPABASE_URL or EXPO_PUBLIC_SUPABASE_ANON_KEY. Please add them to your .env.local file."
-  );
-}
+/**
+ * Get the Supabase client instance.
+ * Uses lazy initialization to avoid throwing during build/SSR.
+ */
+export function getSupabase() {
+  if (_supabase) return _supabase;
 
-export const supabase = createSupabaseClient<Database>(
-  supabaseUrl,
-  supabaseAnonKey,
-  {
+  const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
+  const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
+
+  if (!supabaseUrl || !supabaseAnonKey) {
+    throw new Error(
+      "Missing EXPO_PUBLIC_SUPABASE_URL or EXPO_PUBLIC_SUPABASE_ANON_KEY. Please add them to your .env.local file."
+    );
+  }
+
+  _supabase = createSupabaseClient<Database>(supabaseUrl, supabaseAnonKey, {
     auth: {
       storage: ExpoSecureStoreAdapter,
       autoRefreshToken: true,
       persistSession: true,
       detectSessionInUrl: false, // Disable for React Native
     },
+  });
+
+  return _supabase;
+}
+
+/**
+ * @deprecated Use getSupabase() instead for lazy initialization.
+ * This export is kept for backwards compatibility but will throw during build if env vars are missing.
+ */
+export const supabase = new Proxy(
+  {} as ReturnType<typeof createSupabaseClient<Database>>,
+  {
+    get(_target, prop) {
+      return Reflect.get(getSupabase(), prop);
+    },
   }
 );
 
 export function createClient() {
-  return supabase;
+  return getSupabase();
 }

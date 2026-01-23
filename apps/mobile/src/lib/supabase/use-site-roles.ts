@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "./auth-provider";
-import { supabase } from "./client";
+import { getSupabase } from "./client";
 
 interface SiteRolesState {
   siteRoles: string[];
@@ -32,7 +32,7 @@ export function useSiteRoles(): SiteRolesState {
       try {
         const {
           data: { session },
-        } = await supabase.auth.getSession();
+        } = await getSupabase().auth.getSession();
 
         if (session?.access_token) {
           const payload = session.access_token.split(".")[1];
