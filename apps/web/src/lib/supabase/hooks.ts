@@ -95,7 +95,7 @@ export function useSupabaseQuery<T>(
         setIsLoading(false);
       }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // Dependencies are intentionally limited to supabase client and depsKey
   }, [supabase, depsKey]);
 
   useEffect(() => {

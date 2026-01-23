@@ -4,16 +4,18 @@ A Pokemon community platform for competitive players, tournament organizers, and
 
 ## Tech Stack
 
-| Layer              | Technology                                |
-| ------------------ | ----------------------------------------- |
-| **Web**            | Next.js 16 (React 19, App Router)         |
-| **Mobile**         | Expo 54 (React Native, React 19)          |
-| **Database**       | Supabase (PostgreSQL)                     |
-| **Auth**           | Supabase Auth                             |
-| **Realtime**       | Supabase Realtime                         |
-| **Edge Functions** | Supabase Edge Functions (Deno)            |
-| **Styling**        | Tailwind CSS 4 (web), NativeWind (mobile) |
-| **Monorepo**       | pnpm + Turborepo                          |
+| Layer                | Technology                          |
+| -------------------- | ----------------------------------- |
+| **Web**              | Next.js 16 (React 19, App Router)   |
+| **Mobile**           | Expo 54 (React Native, React 19)    |
+| **Database**         | Supabase (PostgreSQL)               |
+| **Auth**             | Supabase Auth                       |
+| **Realtime**         | Supabase Realtime                   |
+| **Edge Functions**   | Supabase Edge Functions (Deno)      |
+| **Styling (Web)**    | Tailwind CSS 4                      |
+| **Styling (Mobile)** | Tamagui                             |
+| **Theme**            | @trainers/theme (OKLCH, light/dark) |
+| **Monorepo**         | pnpm + Turborepo                    |
 
 ## Monorepo Structure
 

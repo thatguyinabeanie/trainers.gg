@@ -19,7 +19,6 @@ import {
   Trophy,
   Calendar,
   Users,
-  MapPin,
   Clock,
   Loader2,
   ArrowLeft,

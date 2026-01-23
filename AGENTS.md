@@ -27,14 +27,16 @@ tooling/
 
 ## Tech Stack
 
-| Layer          | Technology                                | Notes                                     |
-| -------------- | ----------------------------------------- | ----------------------------------------- |
-| Auth           | Supabase Auth                             | Native auth with email/password and OAuth |
-| Database       | Supabase (PostgreSQL)                     | Row Level Security with auth.uid()        |
-| Edge Functions | Supabase Edge Functions                   | Deno runtime                              |
-| Web            | Next.js 16                                | React 19, App Router, Server Components   |
-| Mobile         | Expo 54                                   | React Native with NativeWind              |
-| Styling        | Tailwind CSS 4 (web), NativeWind (mobile) |                                           |
+| Layer            | Technology              | Notes                                     |
+| ---------------- | ----------------------- | ----------------------------------------- |
+| Auth             | Supabase Auth           | Native auth with email/password and OAuth |
+| Database         | Supabase (PostgreSQL)   | Row Level Security with auth.uid()        |
+| Edge Functions   | Supabase Edge Functions | Deno runtime                              |
+| Web              | Next.js 16              | React 19, App Router, Server Components   |
+| Mobile           | Expo 54                 | React Native with Tamagui                 |
+| Styling (Web)    | Tailwind CSS 4          | Uses @tailwindcss/postcss                 |
+| Styling (Mobile) | Tamagui                 | Universal UI components with theme tokens |
+| Theme            | @trainers/theme         | OKLCH colors, light/dark mode support     |
 
 ---
 
@@ -356,7 +358,7 @@ Both web and mobile use **React 19.1** for consistency.
 ### Tailwind Versions
 
 - **Web**: Tailwind CSS 4.x (uses `@tailwindcss/postcss`)
-- **Mobile**: Tailwind CSS 3.x via NativeWind
+- **Mobile**: Tamagui (not Tailwind) with shared theme tokens from @trainers/theme
 
 ### Import Aliases
 
@@ -364,6 +366,120 @@ Both web and mobile use **React 19.1** for consistency.
 | ------ | ----- | --------- |
 | Web    | `@/*` | `./src/*` |
 | Mobile | `@/*` | `./src/*` |
+
+---
+
+## Theme System
+
+### Overview
+
+The `@trainers/theme` package provides a unified design token system for both web and mobile apps. Colors are defined in OKLCH color space for better perceptual uniformity, then converted to hex (mobile) and CSS variables (web) at build time.
+
+### Color Palette
+
+| Token       | Light Mode | Dark Mode | Usage                 |
+| ----------- | ---------- | --------- | --------------------- |
+| primary     | `#1b9388`  | `#1db6a5` | Teal - buttons, links |
+| background  | `#ffffff`  | `#0a0a0a` | Page backgrounds      |
+| foreground  | `#0a0a0a`  | `#fafafa` | Primary text          |
+| muted       | `#f5f5f5`  | `#262626` | Subtle backgrounds    |
+| card        | `#ffffff`  | `#171717` | Card backgrounds      |
+| destructive | `#df2225`  | `#ff6467` | Error states, delete  |
+
+### Key Files
+
+| File                                            | Purpose                                |
+| ----------------------------------------------- | -------------------------------------- |
+| `packages/theme/src/primitives/colors.oklch.ts` | OKLCH color definitions                |
+| `packages/theme/src/tokens/semantic.ts`         | Light/dark semantic token mappings     |
+| `packages/theme/scripts/generate.ts`            | Generates hex colors and CSS           |
+| `packages/theme/src/generated/mobile-theme.ts`  | Generated light/dark colors for mobile |
+| `packages/theme/src/generated/theme.css`        | Generated CSS variables for web        |
+
+### Regenerating Theme
+
+```bash
+cd packages/theme
+pnpm build   # Runs generate.ts script
+```
+
+### Usage in Mobile (Tamagui)
+
+```typescript
+import { lightColors, darkColors, type MobileColorScheme } from "@trainers/theme/mobile";
+
+// Colors are used to build Tamagui themes in apps/mobile/src/tamagui.config.ts
+// Access theme values in components via Tamagui's useTheme() or $token syntax:
+<YStack backgroundColor="$background">
+  <Text color="$primary">Teal text</Text>
+</YStack>
+```
+
+### Usage in Web (Tailwind CSS 4)
+
+```css
+/* Already imported in apps/web/src/styles/globals.css */
+@import "@trainers/theme/css";
+
+/* Use CSS variables directly or via Tailwind classes */
+.element {
+  background-color: var(--background);
+  color: var(--primary);
+}
+```
+
+---
+
+## Design Language
+
+### Minimal Flat Design
+
+Both web and mobile apps follow a **minimal flat design** philosophy:
+
+| Principle          | Implementation                                        |
+| ------------------ | ----------------------------------------------------- |
+| No borders         | Cards and inputs use background color differentiation |
+| Subtle backgrounds | Use `$muted` / `$backgroundStrong` for sections       |
+| Clean spacing      | Consistent `gap` and padding values                   |
+| Teal primary       | Single accent color across all interactive elements   |
+
+### Dark Mode
+
+| Platform | Implementation                                        |
+| -------- | ----------------------------------------------------- |
+| Web      | `next-themes` library with `.dark` class on `<html>`  |
+| Mobile   | `useColorScheme()` from React Native + Tamagui themes |
+
+Dark mode respects system preferences by default on both platforms.
+
+### Component Styling (Mobile)
+
+```typescript
+// Use Tamagui components with theme tokens
+import { YStack, XStack, Text, Button } from "tamagui";
+
+function Card({ children }) {
+  return (
+    <YStack
+      backgroundColor="$backgroundStrong"
+      padding="$4"
+      borderRadius="$4"
+      gap="$3"
+    >
+      {children}
+    </YStack>
+  );
+}
+```
+
+### Component Styling (Web)
+
+```tsx
+// Use Tailwind with CSS variables from theme
+function Card({ children }) {
+  return <div className="bg-card space-y-3 rounded-lg p-4">{children}</div>;
+}
+```
 
 ---
 

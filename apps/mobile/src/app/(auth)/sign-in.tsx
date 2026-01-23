@@ -1,15 +1,15 @@
 import { useState } from "react";
-import {
-  View,
-  Text,
-  TextInput,
-  Pressable,
-  ActivityIndicator,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-} from "react-native";
+import { KeyboardAvoidingView, Platform, Pressable } from "react-native";
 import { Link, useRouter } from "expo-router";
+import {
+  YStack,
+  XStack,
+  Text,
+  Input,
+  Button,
+  ScrollView,
+  Spinner,
+} from "tamagui";
 import { useAuth } from "@/lib/supabase";
 
 export default function SignInScreen() {
@@ -39,81 +39,117 @@ export default function SignInScreen() {
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : "height"}
-      className="flex-1"
+      style={{ flex: 1 }}
     >
       <ScrollView
+        flex={1}
+        backgroundColor="$background"
         contentContainerStyle={{ flexGrow: 1 }}
         keyboardShouldPersistTaps="handled"
       >
-        <View className="flex-1 justify-center bg-white p-6">
-          <Text className="mb-2 text-center text-3xl font-bold text-gray-900">
-            Welcome Back
-          </Text>
-          <Text className="mb-8 text-center text-gray-600">
-            Sign in to your trainers.gg account
-          </Text>
+        <YStack flex={1} justifyContent="center" padding="$6" gap="$4">
+          <YStack alignItems="center" marginBottom="$4">
+            <Text
+              fontSize={28}
+              fontWeight="700"
+              color="$color"
+              textAlign="center"
+            >
+              Welcome Back
+            </Text>
+            <Text
+              fontSize={15}
+              color="$colorTransparent"
+              textAlign="center"
+              marginTop="$2"
+              opacity={0.6}
+            >
+              Sign in to your account
+            </Text>
+          </YStack>
 
           {error && (
-            <View className="mb-4 rounded-lg bg-red-50 p-3">
-              <Text className="text-center text-red-600">{error}</Text>
-            </View>
+            <YStack backgroundColor="$red3" borderRadius="$4" padding="$3">
+              <Text color="$red10" textAlign="center" fontSize={14}>
+                {error}
+              </Text>
+            </YStack>
           )}
 
-          <View className="mb-4">
-            <Text className="mb-1 text-sm font-medium text-gray-700">
-              Email
-            </Text>
-            <TextInput
-              className="rounded-lg border border-gray-300 bg-white px-4 py-3 text-gray-900"
-              placeholder="trainer@example.com"
-              placeholderTextColor="#9CA3AF"
+          <YStack gap="$3">
+            <Input
+              backgroundColor="$backgroundStrong"
+              borderWidth={0}
+              borderRadius="$4"
+              paddingHorizontal="$4"
+              paddingVertical="$3.5"
+              fontSize={16}
+              color="$color"
+              placeholder="Email"
+              placeholderTextColor="$colorTransparent"
               value={email}
               onChangeText={setEmail}
               autoCapitalize="none"
               keyboardType="email-address"
               autoComplete="email"
             />
-          </View>
 
-          <View className="mb-6">
-            <Text className="mb-1 text-sm font-medium text-gray-700">
-              Password
-            </Text>
-            <TextInput
-              className="rounded-lg border border-gray-300 bg-white px-4 py-3 text-gray-900"
-              placeholder="Enter your password"
-              placeholderTextColor="#9CA3AF"
+            <Input
+              backgroundColor="$backgroundStrong"
+              borderWidth={0}
+              borderRadius="$4"
+              paddingHorizontal="$4"
+              paddingVertical="$3.5"
+              fontSize={16}
+              color="$color"
+              placeholder="Password"
+              placeholderTextColor="$colorTransparent"
               value={password}
               onChangeText={setPassword}
               secureTextEntry
               autoComplete="password"
             />
-          </View>
+          </YStack>
 
-          <Pressable
-            className="mb-4 rounded-lg bg-primary-600 py-4"
-            onPress={handleSignIn}
+          <Button
+            backgroundColor="$primary"
+            borderWidth={0}
+            borderRadius="$4"
+            paddingVertical="$3.5"
+            marginTop="$2"
+            pressStyle={{ opacity: 0.85 }}
+            opacity={loading ? 0.7 : 1}
             disabled={loading}
+            onPress={handleSignIn}
           >
             {loading ? (
-              <ActivityIndicator color="#fff" />
+              <Spinner color="$primaryForeground" />
             ) : (
-              <Text className="text-center font-semibold text-white">
+              <Text
+                color="$primaryForeground"
+                fontSize={16}
+                fontWeight="600"
+                textAlign="center"
+              >
                 Sign In
               </Text>
             )}
-          </Pressable>
+          </Button>
 
-          <View className="flex-row justify-center">
-            <Text className="text-gray-600">Don&apos;t have an account? </Text>
+          <XStack justifyContent="center" alignItems="center" marginTop="$2">
+            <Text color="$colorTransparent" fontSize={14} opacity={0.6}>
+              Don&apos;t have an account?{" "}
+            </Text>
             {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
             <Link href={"/(auth)/sign-up" as any} asChild>
               <Pressable>
-                <Text className="font-semibold text-primary-600">Sign Up</Text>
+                <Text color="$primary" fontSize={14} fontWeight="600">
+                  Sign Up
+                </Text>
               </Pressable>
             </Link>
-          </View>
-        </View>
+          </XStack>
+        </YStack>
       </ScrollView>
     </KeyboardAvoidingView>
   );

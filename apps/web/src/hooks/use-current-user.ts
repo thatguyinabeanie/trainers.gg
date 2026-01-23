@@ -1,6 +1,5 @@
 "use client";
 
-import { useCallback } from "react";
 import { getCurrentUser } from "@trainers/supabase";
 import { useSupabaseQuery } from "@/lib/supabase";
 import type { TypedSupabaseClient } from "@trainers/supabase";

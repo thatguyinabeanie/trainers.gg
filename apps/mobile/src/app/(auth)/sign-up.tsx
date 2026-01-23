@@ -1,15 +1,15 @@
 import { useState } from "react";
-import {
-  View,
-  Text,
-  TextInput,
-  Pressable,
-  ActivityIndicator,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-} from "react-native";
+import { KeyboardAvoidingView, Platform, Pressable } from "react-native";
 import { Link, useRouter } from "expo-router";
+import {
+  YStack,
+  XStack,
+  Text,
+  Input,
+  Button,
+  ScrollView,
+  Spinner,
+} from "tamagui";
 import { useAuth } from "@/lib/supabase";
 
 export default function SignUpScreen() {
@@ -62,164 +62,241 @@ export default function SignUpScreen() {
 
   if (success) {
     return (
-      <View className="flex-1 items-center justify-center bg-white p-6">
-        <Text className="mb-4 text-center text-2xl font-bold text-gray-900">
-          Check Your Email
-        </Text>
-        <Text className="mb-8 text-center text-gray-600">
-          We&apos;ve sent a confirmation link to {email}. Please check your
-          email to verify your account.
-        </Text>
-        <Pressable
-          className="rounded-lg bg-primary-600 px-6 py-3"
-          onPress={() =>
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            router.replace("/(auth)/sign-in" as any)
-          }
+      <YStack
+        flex={1}
+        alignItems="center"
+        justifyContent="center"
+        backgroundColor="$background"
+        padding="$6"
+      >
+        <YStack
+          backgroundColor="$backgroundStrong"
+          borderRadius="$6"
+          padding="$6"
+          alignItems="center"
+          maxWidth={320}
         >
-          <Text className="font-semibold text-white">Go to Sign In</Text>
-        </Pressable>
-      </View>
+          <Text
+            fontSize={24}
+            fontWeight="700"
+            color="$color"
+            textAlign="center"
+            marginBottom="$3"
+          >
+            Check Your Email
+          </Text>
+          <Text
+            fontSize={15}
+            color="$colorTransparent"
+            textAlign="center"
+            marginBottom="$6"
+            opacity={0.7}
+            lineHeight={22}
+          >
+            We&apos;ve sent a confirmation link to {email}. Please verify your
+            account to continue.
+          </Text>
+          <Button
+            backgroundColor="$primary"
+            borderWidth={0}
+            borderRadius="$4"
+            paddingHorizontal="$6"
+            paddingVertical="$3"
+            pressStyle={{ opacity: 0.85 }}
+            onPress={() =>
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              router.replace("/(auth)/sign-in" as any)
+            }
+          >
+            <Text color="$primaryForeground" fontSize={15} fontWeight="600">
+              Go to Sign In
+            </Text>
+          </Button>
+        </YStack>
+      </YStack>
     );
   }
 
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : "height"}
-      className="flex-1"
+      style={{ flex: 1 }}
     >
       <ScrollView
+        flex={1}
+        backgroundColor="$background"
         contentContainerStyle={{ flexGrow: 1 }}
         keyboardShouldPersistTaps="handled"
       >
-        <View className="flex-1 justify-center bg-white p-6">
-          <Text className="mb-2 text-center text-3xl font-bold text-gray-900">
-            Create Account
-          </Text>
-          <Text className="mb-8 text-center text-gray-600">
-            Join the trainers.gg community
-          </Text>
+        <YStack flex={1} justifyContent="center" padding="$6" gap="$4">
+          <YStack alignItems="center" marginBottom="$4">
+            <Text
+              fontSize={28}
+              fontWeight="700"
+              color="$color"
+              textAlign="center"
+            >
+              Create Account
+            </Text>
+            <Text
+              fontSize={15}
+              color="$colorTransparent"
+              textAlign="center"
+              marginTop="$2"
+              opacity={0.6}
+            >
+              Join the trainers.gg community
+            </Text>
+          </YStack>
 
           {error && (
-            <View className="mb-4 rounded-lg bg-red-50 p-3">
-              <Text className="text-center text-red-600">{error}</Text>
-            </View>
+            <YStack backgroundColor="$red3" borderRadius="$4" padding="$3">
+              <Text color="$red10" textAlign="center" fontSize={14}>
+                {error}
+              </Text>
+            </YStack>
           )}
 
-          <View className="mb-4">
-            <Text className="mb-1 text-sm font-medium text-gray-700">
-              Username *
-            </Text>
-            <TextInput
-              className="rounded-lg border border-gray-300 bg-white px-4 py-3 text-gray-900"
-              placeholder="trainer123"
-              placeholderTextColor="#9CA3AF"
+          <YStack gap="$3">
+            <Input
+              backgroundColor="$backgroundStrong"
+              borderWidth={0}
+              borderRadius="$4"
+              paddingHorizontal="$4"
+              paddingVertical="$3.5"
+              fontSize={16}
+              color="$color"
+              placeholder="Username *"
+              placeholderTextColor="$colorTransparent"
               value={username}
               onChangeText={setUsername}
               autoCapitalize="none"
               autoComplete="username"
             />
-          </View>
 
-          <View className="mb-4">
-            <Text className="mb-1 text-sm font-medium text-gray-700">
-              Email *
-            </Text>
-            <TextInput
-              className="rounded-lg border border-gray-300 bg-white px-4 py-3 text-gray-900"
-              placeholder="trainer@example.com"
-              placeholderTextColor="#9CA3AF"
+            <Input
+              backgroundColor="$backgroundStrong"
+              borderWidth={0}
+              borderRadius="$4"
+              paddingHorizontal="$4"
+              paddingVertical="$3.5"
+              fontSize={16}
+              color="$color"
+              placeholder="Email *"
+              placeholderTextColor="$colorTransparent"
               value={email}
               onChangeText={setEmail}
               autoCapitalize="none"
               keyboardType="email-address"
               autoComplete="email"
             />
-          </View>
 
-          <View className="mb-4 flex-row gap-4">
-            <View className="flex-1">
-              <Text className="mb-1 text-sm font-medium text-gray-700">
-                First Name
-              </Text>
-              <TextInput
-                className="rounded-lg border border-gray-300 bg-white px-4 py-3 text-gray-900"
-                placeholder="Ash"
-                placeholderTextColor="#9CA3AF"
+            <XStack gap="$3">
+              <Input
+                flex={1}
+                backgroundColor="$backgroundStrong"
+                borderWidth={0}
+                borderRadius="$4"
+                paddingHorizontal="$4"
+                paddingVertical="$3.5"
+                fontSize={16}
+                color="$color"
+                placeholder="First Name"
+                placeholderTextColor="$colorTransparent"
                 value={firstName}
                 onChangeText={setFirstName}
                 autoComplete="given-name"
               />
-            </View>
-            <View className="flex-1">
-              <Text className="mb-1 text-sm font-medium text-gray-700">
-                Last Name
-              </Text>
-              <TextInput
-                className="rounded-lg border border-gray-300 bg-white px-4 py-3 text-gray-900"
-                placeholder="Ketchum"
-                placeholderTextColor="#9CA3AF"
+
+              <Input
+                flex={1}
+                backgroundColor="$backgroundStrong"
+                borderWidth={0}
+                borderRadius="$4"
+                paddingHorizontal="$4"
+                paddingVertical="$3.5"
+                fontSize={16}
+                color="$color"
+                placeholder="Last Name"
+                placeholderTextColor="$colorTransparent"
                 value={lastName}
                 onChangeText={setLastName}
                 autoComplete="family-name"
               />
-            </View>
-          </View>
+            </XStack>
 
-          <View className="mb-4">
-            <Text className="mb-1 text-sm font-medium text-gray-700">
-              Password *
-            </Text>
-            <TextInput
-              className="rounded-lg border border-gray-300 bg-white px-4 py-3 text-gray-900"
-              placeholder="At least 6 characters"
-              placeholderTextColor="#9CA3AF"
+            <Input
+              backgroundColor="$backgroundStrong"
+              borderWidth={0}
+              borderRadius="$4"
+              paddingHorizontal="$4"
+              paddingVertical="$3.5"
+              fontSize={16}
+              color="$color"
+              placeholder="Password *"
+              placeholderTextColor="$colorTransparent"
               value={password}
               onChangeText={setPassword}
               secureTextEntry
               autoComplete="new-password"
             />
-          </View>
 
-          <View className="mb-6">
-            <Text className="mb-1 text-sm font-medium text-gray-700">
-              Confirm Password *
-            </Text>
-            <TextInput
-              className="rounded-lg border border-gray-300 bg-white px-4 py-3 text-gray-900"
-              placeholder="Confirm your password"
-              placeholderTextColor="#9CA3AF"
+            <Input
+              backgroundColor="$backgroundStrong"
+              borderWidth={0}
+              borderRadius="$4"
+              paddingHorizontal="$4"
+              paddingVertical="$3.5"
+              fontSize={16}
+              color="$color"
+              placeholder="Confirm Password *"
+              placeholderTextColor="$colorTransparent"
               value={confirmPassword}
               onChangeText={setConfirmPassword}
               secureTextEntry
               autoComplete="new-password"
             />
-          </View>
+          </YStack>
 
-          <Pressable
-            className="mb-4 rounded-lg bg-primary-600 py-4"
-            onPress={handleSignUp}
+          <Button
+            backgroundColor="$primary"
+            borderWidth={0}
+            borderRadius="$4"
+            paddingVertical="$3.5"
+            marginTop="$2"
+            pressStyle={{ opacity: 0.85 }}
+            opacity={loading ? 0.7 : 1}
             disabled={loading}
+            onPress={handleSignUp}
           >
             {loading ? (
-              <ActivityIndicator color="#fff" />
+              <Spinner color="$primaryForeground" />
             ) : (
-              <Text className="text-center font-semibold text-white">
+              <Text
+                color="$primaryForeground"
+                fontSize={16}
+                fontWeight="600"
+                textAlign="center"
+              >
                 Create Account
               </Text>
             )}
-          </Pressable>
+          </Button>
 
-          <View className="flex-row justify-center">
-            <Text className="text-gray-600">Already have an account? </Text>
+          <XStack justifyContent="center" alignItems="center" marginTop="$2">
+            <Text color="$colorTransparent" fontSize={14} opacity={0.6}>
+              Already have an account?{" "}
+            </Text>
             {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
             <Link href={"/(auth)/sign-in" as any} asChild>
               <Pressable>
-                <Text className="font-semibold text-primary-600">Sign In</Text>
+                <Text color="$primary" fontSize={14} fontWeight="600">
+                  Sign In
+                </Text>
               </Pressable>
             </Link>
-          </View>
-        </View>
+          </XStack>
+        </YStack>
       </ScrollView>
     </KeyboardAvoidingView>
   );

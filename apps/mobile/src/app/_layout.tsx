@@ -1,32 +1,68 @@
+import React from "react";
+import { useColorScheme } from "react-native";
 import { AuthProvider } from "@/lib/supabase";
 import { Stack } from "expo-router";
-import "../global.css";
+import { TamaguiProvider, Theme } from "tamagui";
+import tamaguiConfig from "@/tamagui.config";
+import { lightColors, darkColors } from "@/lib/theme";
 
 export default function RootLayout() {
+  const colorScheme = useColorScheme();
+  const isDark = colorScheme === "dark";
+  const colors = isDark ? darkColors : lightColors;
+
   return (
-    <AuthProvider>
-      <Stack
-        screenOptions={{
-          headerStyle: {
-            backgroundColor: "#1b9388", // teal primary
-          },
-          headerTintColor: "#f2fbf9", // primaryForeground
-          headerTitleStyle: {
-            fontWeight: "bold",
-          },
-        }}
-      >
-        <Stack.Screen name="index" options={{ title: "trainers.gg" }} />
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen
-          name="(auth)/sign-in"
-          options={{ title: "Sign In", presentation: "modal" }}
-        />
-        <Stack.Screen
-          name="(auth)/sign-up"
-          options={{ title: "Sign Up", presentation: "modal" }}
-        />
-      </Stack>
-    </AuthProvider>
+    <TamaguiProvider
+      config={tamaguiConfig}
+      defaultTheme={colorScheme ?? "light"}
+    >
+      <Theme name={colorScheme ?? "light"}>
+        <AuthProvider>
+          <Stack
+            screenOptions={{
+              headerStyle: {
+                backgroundColor: colors.background,
+              },
+              headerTintColor: colors.foreground,
+              headerTitleStyle: {
+                fontWeight: "600",
+              },
+              headerShadowVisible: false,
+              contentStyle: {
+                backgroundColor: colors.background,
+              },
+            }}
+          >
+            <Stack.Screen
+              name="index"
+              options={{
+                headerShown: false,
+              }}
+            />
+            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+            <Stack.Screen
+              name="(auth)/sign-in"
+              options={{
+                title: "Sign In",
+                presentation: "modal",
+                headerStyle: {
+                  backgroundColor: colors.background,
+                },
+              }}
+            />
+            <Stack.Screen
+              name="(auth)/sign-up"
+              options={{
+                title: "Sign Up",
+                presentation: "modal",
+                headerStyle: {
+                  backgroundColor: colors.background,
+                },
+              }}
+            />
+          </Stack>
+        </AuthProvider>
+      </Theme>
+    </TamaguiProvider>
   );
 }

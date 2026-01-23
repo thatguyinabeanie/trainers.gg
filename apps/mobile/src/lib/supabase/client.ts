@@ -1,13 +1,33 @@
 import "react-native-url-polyfill/auto";
+import { Platform } from "react-native";
 import * as SecureStore from "expo-secure-store";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@trainers/supabase/types";
 
 /**
- * Custom storage adapter using expo-secure-store for secure token persistence.
+ * Web storage adapter using localStorage.
+ * Used as fallback when running on web platform where SecureStore is not available.
+ */
+const WebStorageAdapter = {
+  getItem: async (key: string): Promise<string | null> => {
+    if (typeof localStorage === "undefined") return null;
+    return localStorage.getItem(key);
+  },
+  setItem: async (key: string, value: string): Promise<void> => {
+    if (typeof localStorage === "undefined") return;
+    localStorage.setItem(key, value);
+  },
+  removeItem: async (key: string): Promise<void> => {
+    if (typeof localStorage === "undefined") return;
+    localStorage.removeItem(key);
+  },
+};
+
+/**
+ * Native storage adapter using expo-secure-store for secure token persistence.
  * SecureStore has a 2048 byte limit per item, so we handle that gracefully.
  */
-const ExpoSecureStoreAdapter = {
+const NativeSecureStoreAdapter = {
   getItem: async (key: string): Promise<string | null> => {
     try {
       return await SecureStore.getItemAsync(key);
@@ -32,6 +52,14 @@ const ExpoSecureStoreAdapter = {
   },
 };
 
+/**
+ * Platform-aware storage adapter.
+ * - Uses SecureStore on native (iOS/Android) for encrypted storage
+ * - Falls back to localStorage on web
+ */
+const StorageAdapter =
+  Platform.OS === "web" ? WebStorageAdapter : NativeSecureStoreAdapter;
+
 // Lazy singleton - only created when first accessed
 let _supabase: ReturnType<typeof createSupabaseClient<Database>> | null = null;
 
@@ -53,7 +81,7 @@ export function getSupabase() {
 
   _supabase = createSupabaseClient<Database>(supabaseUrl, supabaseAnonKey, {
     auth: {
-      storage: ExpoSecureStoreAdapter,
+      storage: StorageAdapter,
       autoRefreshToken: true,
       persistSession: true,
       detectSessionInUrl: false, // Disable for React Native

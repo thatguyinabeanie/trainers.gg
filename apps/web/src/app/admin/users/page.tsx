@@ -11,12 +11,10 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useSupabaseQuery, useSupabase } from "@/lib/supabase";
+import { useSupabaseQuery } from "@/lib/supabase";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 export default function UsersPage() {
-  const supabase = useSupabase();
-
   const { data: users, isLoading } = useSupabaseQuery(async (supabase) => {
     const { data, error } = await supabase
       .from("users")
