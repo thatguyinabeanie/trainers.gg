@@ -1,35 +1,32 @@
-import { ClerkLoaded, ClerkProvider } from "@clerk/clerk-expo";
-import { tokenCache } from "@/lib/clerk-token-cache";
+import { AuthProvider } from "@/lib/supabase";
 import { Stack } from "expo-router";
 import "../global.css";
 
-const publishableKey = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY;
-
-if (!publishableKey) {
-  throw new Error(
-    "Missing EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY. Please add it to your .env file."
-  );
-}
-
 export default function RootLayout() {
   return (
-    <ClerkProvider publishableKey={publishableKey} tokenCache={tokenCache}>
-      <ClerkLoaded>
-        <Stack
-          screenOptions={{
-            headerStyle: {
-              backgroundColor: "#1b9388", // teal primary
-            },
-            headerTintColor: "#f2fbf9", // primaryForeground
-            headerTitleStyle: {
-              fontWeight: "bold",
-            },
-          }}
-        >
-          <Stack.Screen name="index" options={{ title: "trainers.gg" }} />
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        </Stack>
-      </ClerkLoaded>
-    </ClerkProvider>
+    <AuthProvider>
+      <Stack
+        screenOptions={{
+          headerStyle: {
+            backgroundColor: "#1b9388", // teal primary
+          },
+          headerTintColor: "#f2fbf9", // primaryForeground
+          headerTitleStyle: {
+            fontWeight: "bold",
+          },
+        }}
+      >
+        <Stack.Screen name="index" options={{ title: "trainers.gg" }} />
+        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen
+          name="(auth)/sign-in"
+          options={{ title: "Sign In", presentation: "modal" }}
+        />
+        <Stack.Screen
+          name="(auth)/sign-up"
+          options={{ title: "Sign Up", presentation: "modal" }}
+        />
+      </Stack>
+    </AuthProvider>
   );
 }
