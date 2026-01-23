@@ -192,8 +192,15 @@ create_env_file() {
 # project credentials from https://app.supabase.com/project/_/settings/api
 # =============================================================================
 
+# Web app (Next.js)
 NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321
 NEXT_PUBLIC_SUPABASE_ANON_KEY=$ANON_KEY
+
+# Mobile app (Expo)
+EXPO_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321
+EXPO_PUBLIC_SUPABASE_ANON_KEY=$ANON_KEY
+
+# Server-side only (never expose to client)
 SUPABASE_SERVICE_ROLE_KEY=$SERVICE_KEY
 EOF
     echo -e "${GREEN}Created $ENV_FILE${NC}"
