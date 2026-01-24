@@ -7,12 +7,19 @@
  * caching, optimistic updates, and background refetching.
  */
 
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+  useQuery,
+  useMutation,
+  useQueryClient,
+  useInfiniteQuery,
+} from "@tanstack/react-query";
 import type { ProfileView } from "@/lib/atproto/api";
 import { getProfileAction } from "@/actions/bluesky/profile-actions";
 import {
   followBlueskyUser,
   unfollowBlueskyUser,
+  getFollowersAction,
+  getFollowsAction,
 } from "@/actions/bluesky/social-actions";
 
 /**
@@ -21,6 +28,10 @@ import {
 export const profileKeys = {
   all: ["profile"] as const,
   detail: (actor: string) => [...profileKeys.all, "detail", actor] as const,
+  followers: (actor: string) =>
+    [...profileKeys.all, "followers", actor] as const,
+  following: (actor: string) =>
+    [...profileKeys.all, "following", actor] as const,
 };
 
 /**
@@ -141,4 +152,62 @@ export function useFollowMutation() {
       });
     },
   });
+}
+
+/**
+ * Hook for fetching a user's followers with infinite scroll
+ *
+ * @param actor - The handle or DID of the user
+ */
+export function useFollowers(actor: string) {
+  return useInfiniteQuery({
+    queryKey: profileKeys.followers(actor),
+    queryFn: async ({ pageParam }) => {
+      const result = await getFollowersAction(actor, {
+        cursor: pageParam,
+        limit: 50,
+      });
+      if (!result.success) throw new Error(result.error);
+      return result.data;
+    },
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: (lastPage) =>
+      lastPage.hasMore ? lastPage.cursor : undefined,
+    enabled: !!actor,
+    staleTime: 60 * 1000,
+  });
+}
+
+/**
+ * Hook for fetching users that a user follows with infinite scroll
+ *
+ * @param actor - The handle or DID of the user
+ */
+export function useFollowing(actor: string) {
+  return useInfiniteQuery({
+    queryKey: profileKeys.following(actor),
+    queryFn: async ({ pageParam }) => {
+      const result = await getFollowsAction(actor, {
+        cursor: pageParam,
+        limit: 50,
+      });
+      if (!result.success) throw new Error(result.error);
+      return result.data;
+    },
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: (lastPage) =>
+      lastPage.hasMore ? lastPage.cursor : undefined,
+    enabled: !!actor,
+    staleTime: 60 * 1000,
+  });
+}
+
+/**
+ * Flatten pages of follow list data into a single array of profiles
+ */
+export function flattenFollowPages(
+  pages: Array<{ profiles: ProfileView[] }> | undefined
+): ProfileView[] {
+  if (!pages) return [];
+  return pages.flatMap((page) => page.profiles);
 }

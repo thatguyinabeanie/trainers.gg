@@ -16,6 +16,9 @@ import {
   unblockUser as apiUnblockUser,
   muteUser as apiMuteUser,
   unmuteUser as apiUnmuteUser,
+  getFollowers as apiGetFollowers,
+  getFollows as apiGetFollows,
+  type ProfileView,
 } from "@/lib/atproto/api";
 
 /**
@@ -321,5 +324,88 @@ export async function toggleMuteBlueskyUser(
     return unmuteBlueskyUser(targetDid);
   } else {
     return muteBlueskyUser(targetDid);
+  }
+}
+
+/**
+ * Result type for followers/following lists
+ */
+export interface FollowListResult {
+  profiles: ProfileView[];
+  cursor?: string;
+  hasMore: boolean;
+}
+
+/**
+ * Get a user's followers
+ *
+ * @param actor - The DID or handle of the user
+ * @param cursor - Pagination cursor
+ * @param limit - Number of results
+ */
+export async function getFollowersAction(
+  actor: string,
+  options: { cursor?: string; limit?: number } = {}
+): Promise<ActionResult<FollowListResult>> {
+  try {
+    const { cursor, limit = 50 } = options;
+    const result = await apiGetFollowers(actor, cursor, limit);
+
+    return {
+      success: true,
+      data: {
+        profiles: result.followers,
+        cursor: result.cursor,
+        hasMore: !!result.cursor,
+      },
+    };
+  } catch (error) {
+    console.error("Failed to fetch followers:", error);
+
+    if (error instanceof Error) {
+      return { success: false, error: error.message };
+    }
+
+    return {
+      success: false,
+      error: "Failed to fetch followers. Please try again.",
+    };
+  }
+}
+
+/**
+ * Get users that a user follows
+ *
+ * @param actor - The DID or handle of the user
+ * @param cursor - Pagination cursor
+ * @param limit - Number of results
+ */
+export async function getFollowsAction(
+  actor: string,
+  options: { cursor?: string; limit?: number } = {}
+): Promise<ActionResult<FollowListResult>> {
+  try {
+    const { cursor, limit = 50 } = options;
+    const result = await apiGetFollows(actor, cursor, limit);
+
+    return {
+      success: true,
+      data: {
+        profiles: result.follows,
+        cursor: result.cursor,
+        hasMore: !!result.cursor,
+      },
+    };
+  } catch (error) {
+    console.error("Failed to fetch follows:", error);
+
+    if (error instanceof Error) {
+      return { success: false, error: error.message };
+    }
+
+    return {
+      success: false,
+      error: "Failed to fetch following. Please try again.",
+    };
   }
 }

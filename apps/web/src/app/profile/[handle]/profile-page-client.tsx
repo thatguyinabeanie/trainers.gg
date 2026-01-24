@@ -1,9 +1,8 @@
 "use client";
 
-import { useProfile, useAuthorFeed, flattenFeedPages } from "@/hooks/bluesky";
+import { useProfile } from "@/hooks/bluesky";
 import { useBlueskyUser } from "@/hooks/bluesky";
-import { ProfileCard } from "@/components/bluesky/profile";
-import { PostCard } from "@/components/bluesky/feed/post-card";
+import { ProfileCard, ProfileTabs } from "@/components/bluesky/profile";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AlertCircle } from "lucide-react";
 
@@ -23,15 +22,6 @@ export function ProfilePageClient({ handle }: ProfilePageClientProps) {
     error: profileError,
   } = useProfile(handle);
 
-  const {
-    data: feedData,
-    isLoading: isFeedLoading,
-    fetchNextPage,
-    hasNextPage,
-    isFetchingNextPage,
-  } = useAuthorFeed(handle);
-
-  const posts = flattenFeedPages(feedData?.pages);
   const isOwnProfile = blueskyDid === profile?.did;
 
   // Loading state
@@ -59,41 +49,8 @@ export function ProfilePageClient({ handle }: ProfilePageClientProps) {
       {/* Profile Card */}
       <ProfileCard profile={profile} isOwnProfile={isOwnProfile} />
 
-      {/* Posts Feed */}
-      <div className="space-y-4">
-        <h2 className="text-foreground px-4 text-lg font-semibold sm:px-0">
-          Posts
-        </h2>
-
-        {isFeedLoading ? (
-          <div className="space-y-4">
-            {[...Array(3)].map((_, i) => (
-              <PostSkeleton key={i} />
-            ))}
-          </div>
-        ) : posts.length === 0 ? (
-          <div className="text-muted-foreground py-8 text-center text-sm">
-            No posts yet.
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {posts.map((item) => (
-              <PostCard key={item.post.uri} feedViewPost={item} />
-            ))}
-
-            {/* Load more button */}
-            {hasNextPage && (
-              <button
-                onClick={() => fetchNextPage()}
-                disabled={isFetchingNextPage}
-                className="text-primary hover:text-primary/80 w-full py-4 text-center text-sm font-medium disabled:opacity-50"
-              >
-                {isFetchingNextPage ? "Loading..." : "Load more"}
-              </button>
-            )}
-          </div>
-        )}
-      </div>
+      {/* Profile Tabs (Posts, Replies, Media, Likes) */}
+      <ProfileTabs actor={handle} isOwnProfile={isOwnProfile} />
     </div>
   );
 }

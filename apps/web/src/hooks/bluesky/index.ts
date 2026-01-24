@@ -10,4 +10,11 @@ export {
 
 export { useBlueskyUser } from "./use-bluesky-user";
 
-export { useProfile, useFollowMutation, profileKeys } from "./use-profile";
+export {
+  useProfile,
+  useFollowMutation,
+  useFollowers,
+  useFollowing,
+  flattenFollowPages,
+  profileKeys,
+} from "./use-profile";
