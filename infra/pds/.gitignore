@@ -1,0 +1,9 @@
+# Sensitive files - never commit
+.env
+.env.local
+*.secret
+secrets.txt
+admin-password.txt
+
+# Fly.io local state
+.fly/
