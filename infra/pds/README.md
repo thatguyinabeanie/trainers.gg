@@ -2,6 +2,8 @@
 
 This directory contains the configuration and scripts for running the trainers.gg AT Protocol PDS.
 
+**Status:** ✅ Live at `https://pds.trainers.gg`
+
 ## Overview
 
 The PDS enables:
@@ -10,6 +12,19 @@ The PDS enables:
 - Full account creation and management
 - Federation with the Bluesky network
 - Complete data sovereignty
+
+## Quick Start
+
+```bash
+# Full deployment (creates app, volume, secrets, deploys, configures DNS)
+./deploy.sh
+
+# Or use the Makefile
+make deploy       # Deploy to Fly.io
+make status       # Check PDS status
+make logs         # Stream logs
+make health       # Check health endpoint
+```
 
 ## Architecture
 
@@ -57,23 +72,35 @@ The PDS enables:
 
 ## DNS Configuration
 
-Add these records to your DNS provider:
+DNS is configured via Vercel. The following records are set:
 
-```
-# A Records (point to Fly.io - get IP after deployment)
-trainers.gg.             A      <fly-app-ip>
-*.trainers.gg.           A      <fly-app-ip>
+| Record                        | Type  | Points To                        |
+| ----------------------------- | ----- | -------------------------------- |
+| `pds.trainers.gg`             | CNAME | `trainers-pds.fly.dev`           |
+| `*.trainers.gg`               | CNAME | `trainers-pds.fly.dev`           |
+| `_acme-challenge.trainers.gg` | CNAME | `trainers.gg.knxk1zo.flydns.net` |
 
-# OR use CNAME for Fly.io (recommended)
-pds.trainers.gg.         CNAME  trainers-pds.fly.dev.
-
-# IMPORTANT: Wildcard for user handles
-*.trainers.gg.           CNAME  trainers-pds.fly.dev.
-```
+The wildcard record enables user handles like `@username.trainers.gg`.
 
 ## Deployment Steps
 
-### 1. Install Fly CLI and Login
+### Option 1: Full Automated Deployment
+
+```bash
+# This handles everything: Fly app, volume, secrets, DNS, SSL, Supabase
+./deploy.sh
+
+# Skip specific steps if needed
+./deploy.sh --skip-fly       # Skip Fly.io deployment
+./deploy.sh --skip-dns       # Skip DNS configuration
+./deploy.sh --skip-supabase  # Skip Supabase secrets
+```
+
+### Option 2: Manual Step-by-Step
+
+#### 1. Install Fly CLI and Login
+
+#### 1. Install Fly CLI and Login
 
 ```bash
 # Install
@@ -83,21 +110,21 @@ brew install flyctl
 fly auth login
 ```
 
-### 2. Create Fly App
+#### 2. Create Fly App
 
 ```bash
 cd infra/pds
 fly apps create trainers-pds
 ```
 
-### 3. Create Persistent Volume
+#### 3. Create Persistent Volume
 
 ```bash
 # Create a 10GB volume for SQLite + blobs
 fly volumes create pds_data --size 10 --region sjc
 ```
 
-### 4. Set Secrets
+#### 4. Set Secrets
 
 ```bash
 # Generate a secure admin password
@@ -110,13 +137,13 @@ fly secrets set PDS_JWT_SECRET=$(openssl rand -hex 32)
 fly secrets set PDS_PLC_ROTATION_KEY_K256_PRIVATE_KEY_HEX=$(openssl rand -hex 32)
 ```
 
-### 5. Deploy
+#### 5. Deploy
 
 ```bash
 fly deploy
 ```
 
-### 6. Configure SSL
+#### 6. Configure SSL
 
 Fly.io handles SSL automatically. Verify with:
 
@@ -126,7 +153,7 @@ fly certs add trainers.gg
 fly certs add "*.trainers.gg"
 ```
 
-### 7. Connect to Bluesky Relay
+#### 7. Connect to Bluesky Relay
 
 Your PDS needs to connect to the Bluesky relay (BGS) to federate:
 
@@ -138,7 +165,29 @@ fly logs
 
 ## Creating User Accounts
 
-### Via Admin API
+### Via Script (Recommended for Testing)
+
+```bash
+# Set the admin password (saved to .admin-password by deploy.sh)
+export PDS_ADMIN_PASSWORD=$(cat .admin-password)
+
+# Create an account
+./create-account.sh <username> <email> <password>
+
+# Example
+./create-account.sh testuser test@example.com SecurePass123
+```
+
+### Via Edge Function (Production)
+
+The trainers.gg apps use the unified signup edge function:
+
+1. User enters email, username, password in web/mobile app
+2. Client calls `/functions/v1/signup` edge function
+3. Edge function creates both Supabase Auth and PDS accounts
+4. DID is stored in the users table
+
+### Via Admin API (Manual)
 
 ```bash
 # Get the admin password
@@ -155,14 +204,27 @@ curl -X POST https://pds.trainers.gg/xrpc/com.atproto.server.createAccount \
   }'
 ```
 
-### Via trainers.gg App (Recommended)
+### Via trainers.gg App
 
-The web/mobile apps will have an account creation flow that:
+The web/mobile apps have an integrated signup flow that:
 
 1. Collects user info (email, username, password)
-2. Calls PDS to create account
-3. Links to Supabase user record
-4. Returns session tokens
+2. Calls the `/functions/v1/signup` edge function
+3. Edge function creates PDS account via admin API
+4. Links DID to Supabase user record
+5. Returns session tokens
+
+## Files
+
+| File                | Description                                         |
+| ------------------- | --------------------------------------------------- |
+| `fly.toml`          | Fly.io container configuration                      |
+| `deploy.sh`         | Full deployment script (Fly + DNS + SSL + Supabase) |
+| `create-account.sh` | Create user accounts on the PDS                     |
+| `setup.sh`          | Initial setup script (creates app, volume, secrets) |
+| `Makefile`          | Common operations (deploy, status, logs, health)    |
+| `.admin-password`   | Saved admin password (gitignored)                   |
+| `.gitignore`        | Ignores sensitive files                             |
 
 ## Environment Variables
 

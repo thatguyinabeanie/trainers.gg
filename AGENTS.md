@@ -1,6 +1,6 @@
 # trainers.gg - Agent Guidelines
 
-A Pokemon community platform for competitive players. Monorepo with Next.js 16 web app, Expo 54 mobile app, and Supabase backend.
+A Pokemon community platform for competitive players. Monorepo with Next.js 16 web app, Expo 54 mobile app, Supabase backend, and **Bluesky PDS integration** for decentralized social features.
 
 ## Monorepo Structure
 
@@ -15,6 +15,9 @@ packages/
   ui/                  # Shared UI components - @trainers/ui
   theme/               # Shared theme tokens - @trainers/theme
   validators/          # Zod schemas - @trainers/validators
+
+infra/
+  pds/                 # Bluesky PDS deployment (Fly.io) - pds.trainers.gg
 
 tooling/
   eslint/              # @trainers/eslint-config
@@ -32,6 +35,8 @@ tooling/
 | Auth             | Supabase Auth           | Native auth with email/password and OAuth |
 | Database         | Supabase (PostgreSQL)   | Row Level Security with auth.uid()        |
 | Edge Functions   | Supabase Edge Functions | Deno runtime                              |
+| Social/Identity  | AT Protocol (Bluesky)   | Decentralized identity and federation     |
+| PDS              | Fly.io                  | Self-hosted at pds.trainers.gg            |
 | Web              | Next.js 16              | React 19, App Router, Server Components   |
 | Mobile           | Expo 54                 | React Native with Tamagui                 |
 | Styling (Web)    | Tailwind CSS 4          | Uses @tailwindcss/postcss                 |
@@ -105,39 +110,73 @@ This ensures:
 
 ## Authentication Architecture
 
-### Supabase Auth Integration
+### Unified Supabase + Bluesky Authentication
+
+Every user signup creates **both** a Supabase Auth account AND a Bluesky PDS account with an `@username.trainers.gg` handle.
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                        User Flow                            │
-├─────────────────────────────────────────────────────────────┤
-│  1. User signs in via Supabase Auth (email/password, OAuth) │
-│  2. Supabase issues session with auth.uid()                 │
-│  3. Web app uses createServerClient for server-side auth    │
-│  4. Client uses createBrowserClient for client-side auth    │
-│  5. RLS policies use auth.uid() for access control          │
-└─────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                           Signup Flow                                        │
+├─────────────────────────────────────────────────────────────────────────────┤
+│  1. User enters email, username, password in web/mobile app                 │
+│  2. Client calls /functions/v1/signup edge function                         │
+│  3. Edge function validates username availability (Supabase + PDS)          │
+│  4. Edge function creates Supabase Auth account                             │
+│  5. Edge function generates PDS invite code and creates PDS account         │
+│  6. Edge function stores DID in users table, sets pds_status = 'active'     │
+│  7. Client receives session tokens for both systems                         │
+└─────────────────────────────────────────────────────────────────────────────┘
 
-┌─────────────────────────────────────────────────────────────┐
-│                    User Creation Flow                       │
-├─────────────────────────────────────────────────────────────┤
-│  1. User signs up via Supabase Auth                         │
-│  2. Database trigger creates user + profile records         │
-│  3. User metadata (username, name) stored in user_metadata  │
-│  4. Trigger extracts metadata and populates tables          │
-└─────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                           Identity Mapping                                   │
+├─────────────────────────────────────────────────────────────────────────────┤
+│  auth.users.id  ←═══════╗                                                   │
+│                         ║                                                   │
+│  public.users ══════════╩══════════════════════════════════════════════════ │
+│    ├── id (= auth.uid())                                                    │
+│    ├── did: "did:plc:abc123..."     ← AT Protocol Decentralized Identifier  │
+│    ├── pds_handle: "@user.trainers.gg"                                      │
+│    └── pds_status: pending | active | failed | suspended                    │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+### Bluesky PDS Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                              Bluesky Network                                 │
+│   bsky.social ◄──────► Relay (bsky.network) ◄──────► pds.trainers.gg       │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                    ▲
+                                    │ Federation
+                                    │
+┌───────────────────────────────────┴─────────────────────────────────────────┐
+│                              trainers.gg                                     │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────────────────────┐  │
+│  │ Next.js Web │  │ Expo Mobile │  │ Supabase                            │  │
+│  │             │  │             │  │ ┌─────────────────────────────────┐ │  │
+│  │ signUp() ───┼──┼─────────────┼──┼─► Edge Function (/signup)         │ │  │
+│  │             │  │             │  │ │  ├─► Create Supabase Auth       │ │  │
+│  │             │  │             │  │ │  ├─► Create PDS Account         │ │  │
+│  │             │  │             │  │ │  └─► Store DID in users table   │ │  │
+│  │             │  │             │  │ └─────────────────────────────────┘ │  │
+│  └─────────────┘  └─────────────┘  └─────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ### Key Files
 
-| File                                             | Purpose                              |
-| ------------------------------------------------ | ------------------------------------ |
-| `apps/web/src/lib/supabase/server.ts`            | Server-side Supabase client          |
-| `apps/web/src/lib/supabase/client.ts`            | Client-side Supabase client          |
-| `apps/web/src/lib/supabase/middleware.ts`        | Session refresh middleware utilities |
-| `apps/web/src/hooks/use-auth.ts`                 | Client-side auth hook                |
-| `apps/web/src/components/auth/auth-provider.tsx` | Client-side auth state provider      |
-| `apps/web/middleware.ts`                         | Next.js middleware for session       |
+| File                                             | Purpose                                      |
+| ------------------------------------------------ | -------------------------------------------- |
+| `apps/web/src/lib/supabase/server.ts`            | Server-side Supabase client                  |
+| `apps/web/src/lib/supabase/client.ts`            | Client-side Supabase client                  |
+| `apps/web/src/lib/supabase/middleware.ts`        | Session refresh middleware utilities         |
+| `apps/web/src/hooks/use-auth.ts`                 | Client-side auth hook (calls signup edge fn) |
+| `apps/web/src/components/auth/auth-provider.tsx` | Client-side auth state provider              |
+| `apps/web/middleware.ts`                         | Next.js middleware for session               |
+| `apps/mobile/src/lib/supabase/auth-provider.tsx` | Mobile auth provider (calls signup edge fn)  |
+| `packages/supabase/supabase/functions/signup/`   | Unified signup edge function                 |
+| `infra/pds/`                                     | PDS deployment config (Fly.io)               |
 
 ### Database Helper Functions
 
@@ -282,17 +321,20 @@ const { data: profile } = await supabase
 
 Created via database trigger on auth signup.
 
-| Column          | Type | Description                         |
-| --------------- | ---- | ----------------------------------- |
-| id              | uuid | Primary key (matches auth.users.id) |
-| email           | text | Primary email                       |
-| first_name      | text | User's first name                   |
-| last_name       | text | User's last name                    |
-| username        | text | Unique username                     |
-| image           | text | Avatar URL                          |
-| birth_date      | date | User's date of birth                |
-| country         | text | Country code (ISO 3166-1 alpha-2)   |
-| main_profile_id | uuid | FK to profiles                      |
+| Column          | Type       | Description                              |
+| --------------- | ---------- | ---------------------------------------- |
+| id              | uuid       | Primary key (matches auth.users.id)      |
+| email           | text       | Primary email                            |
+| first_name      | text       | User's first name                        |
+| last_name       | text       | User's last name                         |
+| username        | text       | Unique username                          |
+| image           | text       | Avatar URL                               |
+| birth_date      | date       | User's date of birth                     |
+| country         | text       | Country code (ISO 3166-1 alpha-2)        |
+| main_profile_id | uuid       | FK to profiles                           |
+| did             | text       | AT Protocol Decentralized Identifier     |
+| pds_handle      | text       | Auto-generated as `username.trainers.gg` |
+| pds_status      | pds_status | pending, active, failed, or suspended    |
 
 ### profiles
 
@@ -334,6 +376,12 @@ apps/web/src/
 │   └── supabase/     # Supabase client setup
 └── styles/           # Global CSS
 
+apps/mobile/src/
+├── app/              # Expo Router pages
+├── components/       # Mobile UI components
+└── lib/
+    └── supabase/     # Supabase client + auth provider
+
 packages/supabase/
 ├── src/
 │   ├── client.ts     # Client creation functions
@@ -342,7 +390,17 @@ packages/supabase/
 │   └── mutations/    # Write operations
 └── supabase/
     ├── functions/    # Edge functions (Deno)
+    │   ├── signup/   # Unified Supabase + PDS signup
+    │   └── _shared/  # Shared utilities (CORS, etc.)
     └── migrations/   # SQL migration files
+
+infra/pds/
+├── fly.toml          # Fly.io container config
+├── deploy.sh         # Full deployment automation
+├── create-account.sh # Create PDS user accounts
+├── setup.sh          # Initial setup script
+├── Makefile          # Common operations
+└── README.md         # PDS documentation
 ```
 
 ---
