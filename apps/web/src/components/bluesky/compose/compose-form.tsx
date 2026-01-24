@@ -4,7 +4,7 @@ import { useState, useTransition, type FormEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
-import { getGraphemeLength, MAX_POST_LENGTH } from "@/lib/atproto/api/posts";
+import { getGraphemeLength, MAX_POST_LENGTH } from "@/lib/atproto/utils";
 import {
   createBlueskyPost,
   replyToBlueskyPost,
