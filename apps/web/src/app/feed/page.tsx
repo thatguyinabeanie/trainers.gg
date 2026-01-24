@@ -1,11 +1,6 @@
-import { type Metadata } from "next";
-import { FeedPageClient } from "./feed-page-client";
+import { redirect } from "next/navigation";
 
-export const metadata: Metadata = {
-  title: "Feed | trainers.gg",
-  description: "Your Pokemon community feed from Bluesky",
-};
-
+// Redirect /feed to home page where the feed now lives
 export default function FeedPage() {
-  return <FeedPageClient />;
+  redirect("/");
 }
