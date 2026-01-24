@@ -82,12 +82,45 @@ export async function getAuthorFeed(
   options: AuthorFeedOptions = {},
   agent?: Agent
 ): Promise<FeedResult> {
-  const { limit = 50, cursor } = options;
+  const { limit = 50, cursor, filter } = options;
 
   return withErrorHandling(async () => {
     const agentToUse = agent ?? getPublicAgent();
 
     const response = await agentToUse.getAuthorFeed({
+      actor,
+      limit,
+      cursor,
+      filter,
+    });
+
+    return {
+      posts: response.data.feed,
+      cursor: response.data.cursor,
+      hasMore: !!response.data.cursor,
+    };
+  });
+}
+
+/**
+ * Get posts liked by a specific user
+ *
+ * @param actor - The DID or handle of the user
+ * @param options - Pagination options
+ * @param agent - Optional agent to use (defaults to public agent)
+ * @returns Feed posts with pagination cursor
+ */
+export async function getActorLikes(
+  actor: string,
+  options: FeedCursor & { limit?: number } = {},
+  agent?: Agent
+): Promise<FeedResult> {
+  const { limit = 50, cursor } = options;
+
+  return withErrorHandling(async () => {
+    const agentToUse = agent ?? getPublicAgent();
+
+    const response = await agentToUse.app.bsky.feed.getActorLikes({
       actor,
       limit,
       cursor,

@@ -12,6 +12,7 @@ import {
   getTimeline,
   getPokemonFeed,
   getAuthorFeed,
+  getActorLikes,
   type FeedResult,
   type TimelineOptions,
   type AuthorFeedOptions,
@@ -111,6 +112,31 @@ export async function getAuthorFeedAction(
     return {
       success: false,
       error: "Failed to fetch author feed. Please try again.",
+    };
+  }
+}
+
+/**
+ * Get posts liked by a user (no authentication required)
+ */
+export async function getActorLikesAction(
+  actor: string,
+  options: { cursor?: string; limit?: number } = {}
+): Promise<ActionResult<FeedResult>> {
+  try {
+    const result = await getActorLikes(actor, options);
+
+    return { success: true, data: result };
+  } catch (error) {
+    console.error("Failed to fetch actor likes:", error);
+
+    if (error instanceof Error) {
+      return { success: false, error: error.message };
+    }
+
+    return {
+      success: false,
+      error: "Failed to fetch likes. Please try again.",
     };
   }
 }

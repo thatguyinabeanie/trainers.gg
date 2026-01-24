@@ -25,9 +25,17 @@ export function ProfileHeader({
   return (
     <div className={cn("relative", className)}>
       {/* Banner */}
-      <div className="bg-muted h-32 w-full sm:h-40 md:h-48">
-        {/* Placeholder gradient banner - can be replaced with actual banner image later */}
-        <div className="from-primary/20 to-primary/5 h-full w-full bg-gradient-to-br" />
+      <div className="bg-muted h-32 w-full overflow-hidden sm:h-40 md:h-48">
+        {profile.banner ? (
+          <img
+            src={profile.banner}
+            alt=""
+            className="h-full w-full object-cover"
+          />
+        ) : (
+          /* Fallback gradient banner when no banner is set */
+          <div className="from-primary/20 to-primary/5 h-full w-full bg-gradient-to-br" />
+        )}
       </div>
 
       {/* Avatar - positioned to overlap banner */}

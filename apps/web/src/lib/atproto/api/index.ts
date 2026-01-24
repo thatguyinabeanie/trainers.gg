@@ -1,8 +1,8 @@
 /**
- * AT Protocol API Layer
+ * AT Protocol API Layer - Web
  *
  * Centralized exports for all Bluesky API functions.
- * Import from this file for clean access to all API functions.
+ * These are web-specific wrappers that inject authenticated agents via OAuth.
  *
  * @example
  * ```typescript
@@ -26,6 +26,7 @@
 export {
   getTimeline,
   getAuthorFeed,
+  getActorLikes,
   getPost,
   getPosts,
   getPostThread,
@@ -35,7 +36,6 @@ export {
   type FeedResult,
   type TimelineOptions,
   type AuthorFeedOptions,
-  type ThreadResult,
 } from "./feed";
 
 // Posts API - creating and managing posts

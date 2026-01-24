@@ -8,6 +8,7 @@
 export {
   getTimeline,
   getAuthorFeed,
+  getActorLikes,
   getPost,
   getPosts,
   getPostThread,

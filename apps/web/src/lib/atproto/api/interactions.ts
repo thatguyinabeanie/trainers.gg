@@ -1,31 +1,23 @@
 /**
- * AT Protocol Interactions API
+ * AT Protocol Interactions API - Web Wrapper
  *
- * Functions for liking, reposting, and other engagement actions on Bluesky.
- * All operations require authentication.
+ * Thin wrapper around @trainers/atproto/api/interactions that injects
+ * web-specific authenticated agents via OAuth.
  */
 
-import { getAuthenticatedAgent, withErrorHandling } from "../agent";
+import {
+  likePost as likePostShared,
+  unlikePost as unlikePostShared,
+  repost as repostShared,
+  unrepost as unrepostShared,
+  getLikes as getLikesShared,
+  getRepostedBy as getRepostedByShared,
+} from "@trainers/atproto/api";
+import type { LikeResult, RepostResult } from "@trainers/atproto/api";
+import { getAuthenticatedAgent } from "../agent";
 
-/**
- * Result from a like operation
- */
-export interface LikeResult {
-  /** AT-URI of the like record */
-  uri: string;
-  /** Content hash of the like record */
-  cid: string;
-}
-
-/**
- * Result from a repost operation
- */
-export interface RepostResult {
-  /** AT-URI of the repost record */
-  uri: string;
-  /** Content hash of the repost record */
-  cid: string;
-}
+// Re-export types from shared package
+export type { LikeResult, RepostResult };
 
 /**
  * Like a post
@@ -36,32 +28,14 @@ export interface RepostResult {
  * @param postUri - The AT-URI of the post to like
  * @param postCid - The CID of the post to like
  * @returns The URI and CID of the created like record
- *
- * @example
- * ```typescript
- * const { uri } = await likePost(
- *   "did:plc:xxx",
- *   "at://did:plc:yyy/app.bsky.feed.post/abc",
- *   "bafyreiabc..."
- * );
- * // Store uri to allow unliking later
- * ```
  */
 export async function likePost(
   did: string,
   postUri: string,
   postCid: string
 ): Promise<LikeResult> {
-  return withErrorHandling(async () => {
-    const agent = await getAuthenticatedAgent(did);
-
-    const response = await agent.like(postUri, postCid);
-
-    return {
-      uri: response.uri,
-      cid: response.cid,
-    };
-  });
+  const agent = await getAuthenticatedAgent(did);
+  return likePostShared(agent, postUri, postCid);
 }
 
 /**
@@ -69,19 +43,10 @@ export async function likePost(
  *
  * @param did - The user's DID
  * @param likeUri - The AT-URI of the like record to delete
- *
- * @example
- * ```typescript
- * // likeUri is the URI returned when you liked the post
- * await unlikePost("did:plc:xxx", "at://did:plc:xxx/app.bsky.feed.like/abc");
- * ```
  */
 export async function unlikePost(did: string, likeUri: string): Promise<void> {
-  return withErrorHandling(async () => {
-    const agent = await getAuthenticatedAgent(did);
-
-    await agent.deleteLike(likeUri);
-  });
+  const agent = await getAuthenticatedAgent(did);
+  return unlikePostShared(agent, likeUri);
 }
 
 /**
@@ -93,31 +58,14 @@ export async function unlikePost(did: string, likeUri: string): Promise<void> {
  * @param postUri - The AT-URI of the post to repost
  * @param postCid - The CID of the post to repost
  * @returns The URI and CID of the created repost record
- *
- * @example
- * ```typescript
- * const { uri } = await repost(
- *   "did:plc:xxx",
- *   "at://did:plc:yyy/app.bsky.feed.post/abc",
- *   "bafyreiabc..."
- * );
- * ```
  */
 export async function repost(
   did: string,
   postUri: string,
   postCid: string
 ): Promise<RepostResult> {
-  return withErrorHandling(async () => {
-    const agent = await getAuthenticatedAgent(did);
-
-    const response = await agent.repost(postUri, postCid);
-
-    return {
-      uri: response.uri,
-      cid: response.cid,
-    };
-  });
+  const agent = await getAuthenticatedAgent(did);
+  return repostShared(agent, postUri, postCid);
 }
 
 /**
@@ -127,11 +75,8 @@ export async function repost(
  * @param repostUri - The AT-URI of the repost record to delete
  */
 export async function unrepost(did: string, repostUri: string): Promise<void> {
-  return withErrorHandling(async () => {
-    const agent = await getAuthenticatedAgent(did);
-
-    await agent.deleteRepost(repostUri);
-  });
+  const agent = await getAuthenticatedAgent(did);
+  return unrepostShared(agent, repostUri);
 }
 
 /**
@@ -158,30 +103,8 @@ export async function getLikes(
   }>;
   cursor?: string;
 }> {
-  return withErrorHandling(async () => {
-    // Import here to avoid circular dependencies
-    const { getPublicAgent } = await import("../agent");
-    const agent = getPublicAgent();
-
-    const response = await agent.getLikes({
-      uri: postUri,
-      limit,
-      cursor,
-    });
-
-    return {
-      likes: response.data.likes.map((like) => ({
-        actor: {
-          did: like.actor.did,
-          handle: like.actor.handle,
-          displayName: like.actor.displayName,
-          avatar: like.actor.avatar,
-        },
-        createdAt: like.createdAt,
-      })),
-      cursor: response.data.cursor,
-    };
-  });
+  // No auth needed - shared function uses public agent by default
+  return getLikesShared(postUri, cursor, limit);
 }
 
 /**
@@ -205,24 +128,6 @@ export async function getRepostedBy(
   }>;
   cursor?: string;
 }> {
-  return withErrorHandling(async () => {
-    const { getPublicAgent } = await import("../agent");
-    const agent = getPublicAgent();
-
-    const response = await agent.getRepostedBy({
-      uri: postUri,
-      limit,
-      cursor,
-    });
-
-    return {
-      repostedBy: response.data.repostedBy.map((actor) => ({
-        did: actor.did,
-        handle: actor.handle,
-        displayName: actor.displayName,
-        avatar: actor.avatar,
-      })),
-      cursor: response.data.cursor,
-    };
-  });
+  // No auth needed - shared function uses public agent by default
+  return getRepostedByShared(postUri, cursor, limit);
 }

@@ -58,6 +58,8 @@ export interface ProfileView {
   displayName?: string;
   description?: string;
   avatar?: string;
+  /** Banner image URL */
+  banner?: string;
   followersCount?: number;
   followsCount?: number;
   postsCount?: number;
@@ -161,6 +163,7 @@ export function mapProfile(
     displayName: profile.displayName,
     description: profile.description,
     avatar: profile.avatar,
+    banner: "banner" in profile ? profile.banner : undefined,
     followersCount:
       "followersCount" in profile ? profile.followersCount : undefined,
     followsCount: "followsCount" in profile ? profile.followsCount : undefined,

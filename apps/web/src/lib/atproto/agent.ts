@@ -1,39 +1,24 @@
 /**
- * AT Protocol Agent Factory
+ * AT Protocol Agent Factory (Web)
  *
- * Provides utilities for creating authenticated and public Bluesky Agents.
- * The Agent is the primary interface for making AT Protocol API calls.
+ * Web-specific agent utilities that integrate with Supabase auth and OAuth.
+ * Re-exports shared utilities from @trainers/atproto.
  */
 
 import { Agent } from "@atproto/api";
 import { getAtprotoSession } from "./oauth-client";
-import { BSKY_PUBLIC_URL } from "./config";
 import { createClient } from "@/lib/supabase/server";
 
-/**
- * Error thrown when authentication is required but not available
- */
-export class BlueskyAuthError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = "BlueskyAuthError";
-  }
-}
+// Re-export shared utilities
+export {
+  getPublicAgent,
+  withErrorHandling,
+  BlueskyAuthError,
+  BlueskyApiError,
+} from "@trainers/atproto";
 
-/**
- * Error thrown when a Bluesky API call fails
- */
-export class BlueskyApiError extends Error {
-  public readonly statusCode?: number;
-  public readonly errorType?: string;
-
-  constructor(message: string, statusCode?: number, errorType?: string) {
-    super(message);
-    this.name = "BlueskyApiError";
-    this.statusCode = statusCode;
-    this.errorType = errorType;
-  }
-}
+// Import for local use
+import { BlueskyAuthError } from "@trainers/atproto";
 
 /**
  * Get an authenticated Agent for a specific DID
@@ -44,12 +29,6 @@ export class BlueskyApiError extends Error {
  * @param did - The AT Protocol DID (e.g., "did:plc:xxx")
  * @returns An authenticated Agent instance
  * @throws BlueskyAuthError if no session exists for the DID
- *
- * @example
- * ```typescript
- * const agent = await getAuthenticatedAgent("did:plc:abc123");
- * await agent.post({ text: "Hello Bluesky!" });
- * ```
  */
 export async function getAuthenticatedAgent(did: string): Promise<Agent> {
   try {
@@ -97,14 +76,6 @@ export async function getAuthenticatedAgent(did: string): Promise<Agent> {
  * then returns an authenticated Agent for that DID.
  *
  * @returns An authenticated Agent for the current user, or null if not authenticated
- *
- * @example
- * ```typescript
- * const agent = await getCurrentUserAgent();
- * if (agent) {
- *   const timeline = await agent.getTimeline();
- * }
- * ```
  */
 export async function getCurrentUserAgent(): Promise<Agent | null> {
   const supabase = await createClient();
@@ -157,89 +128,4 @@ export async function getCurrentUserDid(): Promise<string | null> {
     .maybeSingle();
 
   return userData?.did ?? null;
-}
-
-/**
- * Get a public (unauthenticated) Agent
- *
- * This Agent can read public data from Bluesky but cannot perform
- * authenticated actions like posting, liking, or following.
- *
- * @returns A public Agent instance
- *
- * @example
- * ```typescript
- * const agent = getPublicAgent();
- * const profile = await agent.getProfile({ actor: "user.bsky.social" });
- * ```
- */
-export function getPublicAgent(): Agent {
-  return new Agent(BSKY_PUBLIC_URL);
-}
-
-/**
- * Wrap an API call with standard error handling
- *
- * @param apiCall - The async function that makes the API call
- * @returns The result of the API call
- * @throws BlueskyApiError with meaningful error message
- */
-export async function withErrorHandling<T>(
-  apiCall: () => Promise<T>
-): Promise<T> {
-  try {
-    return await apiCall();
-  } catch (error) {
-    if (error instanceof BlueskyAuthError || error instanceof BlueskyApiError) {
-      throw error;
-    }
-
-    // Handle XRPCError from @atproto/api
-    if (error && typeof error === "object" && "status" in error) {
-      const xrpcError = error as {
-        status?: number;
-        error?: string;
-        message?: string;
-      };
-
-      const statusCode = xrpcError.status;
-      const errorType = xrpcError.error;
-      const message = xrpcError.message || "An error occurred";
-
-      // Map common errors to user-friendly messages
-      switch (errorType) {
-        case "InvalidToken":
-        case "ExpiredToken":
-          throw new BlueskyAuthError(
-            "Your session has expired. Please sign in again."
-          );
-        case "RateLimitExceeded":
-          throw new BlueskyApiError(
-            "Too many requests. Please wait a moment and try again.",
-            statusCode,
-            errorType
-          );
-        case "RecordNotFound":
-          throw new BlueskyApiError(
-            "The requested content was not found.",
-            statusCode,
-            errorType
-          );
-        case "InvalidRequest":
-          throw new BlueskyApiError(
-            "Invalid request. Please check your input.",
-            statusCode,
-            errorType
-          );
-        default:
-          throw new BlueskyApiError(message, statusCode, errorType);
-      }
-    }
-
-    // Unknown error
-    console.error("Unknown Bluesky API error:", error);
-    throw new BlueskyApiError(
-      "An unexpected error occurred. Please try again."
-    );
-  }
 }

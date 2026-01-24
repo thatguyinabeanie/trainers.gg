@@ -1,48 +1,29 @@
 /**
- * AT Protocol Social Graph API
+ * AT Protocol Social Graph API - Web Wrapper
  *
- * Functions for managing follows, blocks, mutes, and other social connections.
- * Follow/block/mute operations require authentication.
+ * Thin wrapper around @trainers/atproto/api/social-graph that injects
+ * web-specific authenticated agents via OAuth.
  */
 
-import type { AppBskyActorDefs } from "@atproto/api";
 import {
-  getAuthenticatedAgent,
-  getPublicAgent,
-  withErrorHandling,
-} from "../agent";
+  follow as followShared,
+  unfollow as unfollowShared,
+  getProfile as getProfileShared,
+  getProfiles as getProfilesShared,
+  getFollowers as getFollowersShared,
+  getFollows as getFollowsShared,
+  blockUser as blockUserShared,
+  unblockUser as unblockUserShared,
+  muteUser as muteUserShared,
+  unmuteUser as unmuteUserShared,
+  searchUsers as searchUsersShared,
+  getSuggestedFollows as getSuggestedFollowsShared,
+} from "@trainers/atproto/api";
+import type { ProfileView, FollowResult } from "@trainers/atproto/api";
+import { getAuthenticatedAgent } from "../agent";
 
-/**
- * Result from a follow operation
- */
-export interface FollowResult {
-  /** AT-URI of the follow record */
-  uri: string;
-  /** Content hash of the follow record */
-  cid: string;
-}
-
-/**
- * Simplified profile view for social graph results
- */
-export interface ProfileView {
-  did: string;
-  handle: string;
-  displayName?: string;
-  description?: string;
-  avatar?: string;
-  followersCount?: number;
-  followsCount?: number;
-  postsCount?: number;
-  /** The viewer's relationship with this profile */
-  viewer?: {
-    muted?: boolean;
-    blockedBy?: boolean;
-    blocking?: string; // URI of block record
-    following?: string; // URI of follow record
-    followedBy?: string; // URI of their follow record
-  };
-}
+// Re-export types from shared package
+export type { ProfileView, FollowResult };
 
 /**
  * Follow a user
@@ -52,27 +33,13 @@ export interface ProfileView {
  * @param did - The user's DID (who is following)
  * @param targetDid - The DID of the user to follow
  * @returns The URI and CID of the created follow record
- *
- * @example
- * ```typescript
- * const { uri } = await follow("did:plc:xxx", "did:plc:yyy");
- * // Store uri to allow unfollowing later
- * ```
  */
 export async function follow(
   did: string,
   targetDid: string
 ): Promise<FollowResult> {
-  return withErrorHandling(async () => {
-    const agent = await getAuthenticatedAgent(did);
-
-    const response = await agent.follow(targetDid);
-
-    return {
-      uri: response.uri,
-      cid: response.cid,
-    };
-  });
+  const agent = await getAuthenticatedAgent(did);
+  return followShared(agent, targetDid);
 }
 
 /**
@@ -80,19 +47,10 @@ export async function follow(
  *
  * @param did - The user's DID
  * @param followUri - The AT-URI of the follow record to delete
- *
- * @example
- * ```typescript
- * // followUri is the URI returned when you followed the user
- * await unfollow("did:plc:xxx", "at://did:plc:xxx/app.bsky.graph.follow/abc");
- * ```
  */
 export async function unfollow(did: string, followUri: string): Promise<void> {
-  return withErrorHandling(async () => {
-    const agent = await getAuthenticatedAgent(did);
-
-    await agent.deleteFollow(followUri);
-  });
+  const agent = await getAuthenticatedAgent(did);
+  return unfollowShared(agent, followUri);
 }
 
 /**
@@ -102,13 +60,8 @@ export async function unfollow(did: string, followUri: string): Promise<void> {
  * @returns The profile view
  */
 export async function getProfile(actor: string): Promise<ProfileView | null> {
-  return withErrorHandling(async () => {
-    const agent = getPublicAgent();
-
-    const response = await agent.getProfile({ actor });
-
-    return mapProfile(response.data);
-  });
+  // No auth needed - shared function uses public agent by default
+  return getProfileShared(actor);
 }
 
 /**
@@ -118,25 +71,8 @@ export async function getProfile(actor: string): Promise<ProfileView | null> {
  * @returns Array of profile views
  */
 export async function getProfiles(actors: string[]): Promise<ProfileView[]> {
-  if (actors.length === 0) return [];
-
-  return withErrorHandling(async () => {
-    const agent = getPublicAgent();
-
-    // API limits to 25 actors per request
-    const chunks: string[][] = [];
-    for (let i = 0; i < actors.length; i += 25) {
-      chunks.push(actors.slice(i, i + 25));
-    }
-
-    const results: ProfileView[] = [];
-    for (const chunk of chunks) {
-      const response = await agent.getProfiles({ actors: chunk });
-      results.push(...response.data.profiles.map(mapProfile));
-    }
-
-    return results;
-  });
+  // No auth needed - shared function uses public agent by default
+  return getProfilesShared(actors);
 }
 
 /**
@@ -152,20 +88,8 @@ export async function getFollowers(
   cursor?: string,
   limit: number = 50
 ): Promise<{ followers: ProfileView[]; cursor?: string }> {
-  return withErrorHandling(async () => {
-    const agent = getPublicAgent();
-
-    const response = await agent.getFollowers({
-      actor,
-      limit,
-      cursor,
-    });
-
-    return {
-      followers: response.data.followers.map(mapProfile),
-      cursor: response.data.cursor,
-    };
-  });
+  // No auth needed - shared function uses public agent by default
+  return getFollowersShared(actor, cursor, limit);
 }
 
 /**
@@ -181,20 +105,8 @@ export async function getFollows(
   cursor?: string,
   limit: number = 50
 ): Promise<{ follows: ProfileView[]; cursor?: string }> {
-  return withErrorHandling(async () => {
-    const agent = getPublicAgent();
-
-    const response = await agent.getFollows({
-      actor,
-      limit,
-      cursor,
-    });
-
-    return {
-      follows: response.data.follows.map(mapProfile),
-      cursor: response.data.cursor,
-    };
-  });
+  // No auth needed - shared function uses public agent by default
+  return getFollowsShared(actor, cursor, limit);
 }
 
 /**
@@ -208,19 +120,8 @@ export async function blockUser(
   did: string,
   targetDid: string
 ): Promise<{ uri: string }> {
-  return withErrorHandling(async () => {
-    const agent = await getAuthenticatedAgent(did);
-
-    const response = await agent.app.bsky.graph.block.create(
-      { repo: did },
-      {
-        subject: targetDid,
-        createdAt: new Date().toISOString(),
-      }
-    );
-
-    return { uri: response.uri };
-  });
+  const agent = await getAuthenticatedAgent(did);
+  return blockUserShared(agent, targetDid);
 }
 
 /**
@@ -233,22 +134,8 @@ export async function unblockUser(
   did: string,
   blockUri: string
 ): Promise<void> {
-  return withErrorHandling(async () => {
-    const agent = await getAuthenticatedAgent(did);
-
-    // Parse the rkey from the URI
-    const parts = blockUri.split("/");
-    const rkey = parts[parts.length - 1];
-
-    if (!rkey) {
-      throw new Error("Invalid block URI");
-    }
-
-    await agent.app.bsky.graph.block.delete({
-      repo: did,
-      rkey,
-    });
-  });
+  const agent = await getAuthenticatedAgent(did);
+  return unblockUserShared(agent, blockUri);
 }
 
 /**
@@ -258,11 +145,8 @@ export async function unblockUser(
  * @param targetDid - The DID of the user to mute
  */
 export async function muteUser(did: string, targetDid: string): Promise<void> {
-  return withErrorHandling(async () => {
-    const agent = await getAuthenticatedAgent(did);
-
-    await agent.mute(targetDid);
-  });
+  const agent = await getAuthenticatedAgent(did);
+  return muteUserShared(agent, targetDid);
 }
 
 /**
@@ -275,11 +159,8 @@ export async function unmuteUser(
   did: string,
   targetDid: string
 ): Promise<void> {
-  return withErrorHandling(async () => {
-    const agent = await getAuthenticatedAgent(did);
-
-    await agent.unmute(targetDid);
-  });
+  const agent = await getAuthenticatedAgent(did);
+  return unmuteUserShared(agent, targetDid);
 }
 
 /**
@@ -295,20 +176,8 @@ export async function searchUsers(
   cursor?: string,
   limit: number = 25
 ): Promise<{ actors: ProfileView[]; cursor?: string }> {
-  return withErrorHandling(async () => {
-    const agent = getPublicAgent();
-
-    const response = await agent.searchActors({
-      q: query,
-      limit,
-      cursor,
-    });
-
-    return {
-      actors: response.data.actors.map(mapProfile),
-      cursor: response.data.cursor,
-    };
-  });
+  // No auth needed - shared function uses public agent by default
+  return searchUsersShared(query, cursor, limit);
 }
 
 /**
@@ -322,39 +191,6 @@ export async function getSuggestedFollows(
   did: string,
   limit: number = 10
 ): Promise<ProfileView[]> {
-  return withErrorHandling(async () => {
-    const agent = await getAuthenticatedAgent(did);
-
-    const response = await agent.getSuggestions({ limit });
-
-    return response.data.actors.map(mapProfile);
-  });
-}
-
-/**
- * Map API profile response to our ProfileView type
- */
-function mapProfile(
-  profile: AppBskyActorDefs.ProfileView | AppBskyActorDefs.ProfileViewDetailed
-): ProfileView {
-  return {
-    did: profile.did,
-    handle: profile.handle,
-    displayName: profile.displayName,
-    description: profile.description,
-    avatar: profile.avatar,
-    followersCount:
-      "followersCount" in profile ? profile.followersCount : undefined,
-    followsCount: "followsCount" in profile ? profile.followsCount : undefined,
-    postsCount: "postsCount" in profile ? profile.postsCount : undefined,
-    viewer: profile.viewer
-      ? {
-          muted: profile.viewer.muted,
-          blockedBy: profile.viewer.blockedBy,
-          blocking: profile.viewer.blocking,
-          following: profile.viewer.following,
-          followedBy: profile.viewer.followedBy,
-        }
-      : undefined,
-  };
+  const agent = await getAuthenticatedAgent(did);
+  return getSuggestedFollowsShared(agent, limit);
 }
