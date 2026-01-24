@@ -162,6 +162,42 @@ export type Database = {
         }
         Relationships: []
       }
+      follows: {
+        Row: {
+          created_at: string | null
+          follower_alt_id: number
+          following_alt_id: number
+          id: number
+        }
+        Insert: {
+          created_at?: string | null
+          follower_alt_id: number
+          following_alt_id: number
+          id?: never
+        }
+        Update: {
+          created_at?: string | null
+          follower_alt_id?: number
+          following_alt_id?: number
+          id?: never
+        }
+        Relationships: [
+          {
+            foreignKeyName: "follows_follower_alt_id_fkey"
+            columns: ["follower_alt_id"]
+            isOneToOne: false
+            referencedRelation: "alts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "follows_following_alt_id_fkey"
+            columns: ["following_alt_id"]
+            isOneToOne: false
+            referencedRelation: "alts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       group_roles: {
         Row: {
           created_at: string | null
@@ -578,6 +614,118 @@ export type Database = {
           tera_type?: string | null
         }
         Relationships: []
+      }
+      post_likes: {
+        Row: {
+          alt_id: number
+          created_at: string | null
+          id: number
+          post_id: number
+        }
+        Insert: {
+          alt_id: number
+          created_at?: string | null
+          id?: never
+          post_id: number
+        }
+        Update: {
+          alt_id?: number
+          created_at?: string | null
+          id?: never
+          post_id?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_likes_alt_id_fkey"
+            columns: ["alt_id"]
+            isOneToOne: false
+            referencedRelation: "alts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "post_likes_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      posts: {
+        Row: {
+          alt_id: number
+          content: string
+          created_at: string | null
+          deleted_at: string | null
+          id: number
+          is_deleted: boolean | null
+          is_pinned: boolean | null
+          likes_count: number | null
+          quote_content: string | null
+          replies_count: number | null
+          reply_to_id: number | null
+          repost_of_id: number | null
+          reposts_count: number | null
+          updated_at: string | null
+          views_count: number | null
+        }
+        Insert: {
+          alt_id: number
+          content: string
+          created_at?: string | null
+          deleted_at?: string | null
+          id?: never
+          is_deleted?: boolean | null
+          is_pinned?: boolean | null
+          likes_count?: number | null
+          quote_content?: string | null
+          replies_count?: number | null
+          reply_to_id?: number | null
+          repost_of_id?: number | null
+          reposts_count?: number | null
+          updated_at?: string | null
+          views_count?: number | null
+        }
+        Update: {
+          alt_id?: number
+          content?: string
+          created_at?: string | null
+          deleted_at?: string | null
+          id?: never
+          is_deleted?: boolean | null
+          is_pinned?: boolean | null
+          likes_count?: number | null
+          quote_content?: string | null
+          replies_count?: number | null
+          reply_to_id?: number | null
+          repost_of_id?: number | null
+          reposts_count?: number | null
+          updated_at?: string | null
+          views_count?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "posts_alt_id_fkey"
+            columns: ["alt_id"]
+            isOneToOne: false
+            referencedRelation: "alts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "posts_reply_to_id_fkey"
+            columns: ["reply_to_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "posts_repost_of_id_fkey"
+            columns: ["repost_of_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       rate_limits: {
         Row: {
