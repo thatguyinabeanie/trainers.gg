@@ -8,7 +8,28 @@
 import { NextResponse } from "next/server";
 import { startAtprotoAuth } from "@/lib/atproto/oauth-client";
 
+/**
+ * Check if running on a Vercel preview deployment.
+ * Bluesky OAuth is disabled on previews due to deployment protection.
+ */
+function isVercelPreview(): boolean {
+  const vercelUrl = process.env.VERCEL_URL;
+  if (!vercelUrl) return false;
+  return !vercelUrl.includes("trainers.gg");
+}
+
 export async function GET(request: Request) {
+  // Bluesky OAuth is not available on preview deployments
+  if (isVercelPreview()) {
+    return NextResponse.json(
+      {
+        error: "Bluesky login is not available on preview deployments.",
+        details: "Please use the production site at https://trainers.gg",
+      },
+      { status: 503 }
+    );
+  }
+
   const { searchParams } = new URL(request.url);
   const handle = searchParams.get("handle");
   const returnUrl = searchParams.get("returnUrl") || "/";

@@ -14,11 +14,15 @@ import { JoseKey } from "@atproto/jwk-jose";
 import { createAtprotoServiceClient } from "@/lib/supabase/server";
 import type { Json } from "@trainers/supabase";
 
+const PRODUCTION_URL = "https://trainers.gg";
+
 /**
- * Get the site URL, with automatic detection for different environments:
- * - Production: Uses NEXT_PUBLIC_SITE_URL or falls back to trainers.gg
- * - Vercel Previews: Auto-detected via VERCEL_URL
- * - Local Dev: Requires NEXT_PUBLIC_SITE_URL to be set to a tunnel URL (ngrok, etc.)
+ * Get the site URL for OAuth configuration.
+ *
+ * Environment behavior:
+ * - Production/Vercel: Always uses trainers.gg
+ * - Local Dev with tunnel: Uses NEXT_PUBLIC_SITE_URL (e.g., ngrok URL)
+ * - Local Dev without tunnel: Falls back to localhost (OAuth will fail)
  *
  * Note: AT Protocol OAuth does NOT allow localhost redirect URIs for web apps.
  * Local development requires using a tunnel service like ngrok.
@@ -29,14 +33,9 @@ function getSiteUrl(): string {
     return process.env.NEXT_PUBLIC_SITE_URL;
   }
 
-  // Vercel preview deployments
-  if (process.env.VERCEL_URL) {
-    return `https://${process.env.VERCEL_URL}`;
-  }
-
-  // Production fallback
-  if (process.env.NODE_ENV === "production") {
-    return "https://trainers.gg";
+  // Production (Vercel or NODE_ENV=production)
+  if (process.env.VERCEL_URL || process.env.NODE_ENV === "production") {
+    return PRODUCTION_URL;
   }
 
   // Local development - will fail OAuth but allows app to start
