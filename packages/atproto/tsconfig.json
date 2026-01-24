@@ -1,0 +1,12 @@
+{
+  "extends": "@trainers/typescript-config/library.json",
+  "compilerOptions": {
+    "composite": true,
+    "outDir": "dist",
+    "rootDir": "src",
+    "lib": ["ES2022", "DOM"],
+    "target": "ES2022"
+  },
+  "include": ["src/**/*.ts"],
+  "exclude": ["node_modules", "dist"]
+}

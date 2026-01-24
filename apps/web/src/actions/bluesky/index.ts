@@ -62,3 +62,6 @@ export {
   getPokemonFeedAction,
   getAuthorFeedAction,
 } from "./feed-actions";
+
+// Profile actions
+export { getProfileAction, getProfilesAction } from "./profile-actions";

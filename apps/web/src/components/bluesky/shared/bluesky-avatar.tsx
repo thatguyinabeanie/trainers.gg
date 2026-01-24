@@ -4,6 +4,9 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 
 interface BlueskyAvatarProps {
+  /** Avatar image URL */
+  avatar?: string;
+  /** Legacy prop name for avatar URL */
   src?: string;
   alt?: string;
   displayName?: string;
@@ -17,6 +20,7 @@ interface BlueskyAvatarProps {
  * Shows the user's avatar image with a fallback to initials.
  */
 export function BlueskyAvatar({
+  avatar,
   src,
   alt,
   displayName,
@@ -27,10 +31,11 @@ export function BlueskyAvatar({
   // Generate initials from display name or handle
   const initials = getInitials(displayName, handle);
   const altText = alt || displayName || handle || "User avatar";
+  const imageUrl = avatar || src;
 
   return (
     <Avatar size={size} className={cn(className)}>
-      {src && <AvatarImage src={src} alt={altText} />}
+      {imageUrl && <AvatarImage src={imageUrl} alt={altText} />}
       <AvatarFallback>{initials}</AvatarFallback>
     </Avatar>
   );
