@@ -1,11 +1,14 @@
 import React from "react";
-import { ActivityIndicator, Text, StyleSheet } from "react-native";
-import { Button as TamaguiButton, type GetProps } from "tamagui";
-import { colors } from "@/lib/theme";
+import { ActivityIndicator } from "react-native";
+import {
+  Button as TamaguiButton,
+  Text,
+  useTheme,
+  type GetProps,
+} from "tamagui";
 
 /**
- * Button component matching shadcn/ui design language
- * Built on Tamagui primitives
+ * Button component - minimal flat design with Tamagui theme support
  */
 
 type ButtonVariant =
@@ -27,80 +30,16 @@ interface ButtonProps extends Omit<
   children: React.ReactNode;
 }
 
-const getVariantStyles = (variant: ButtonVariant) => {
-  switch (variant) {
-    case "default":
-      return {
-        backgroundColor: colors.primary.DEFAULT,
-        pressStyle: { opacity: 0.9 },
-      };
-    case "secondary":
-      return {
-        backgroundColor: colors.secondary.DEFAULT,
-        pressStyle: { opacity: 0.8 },
-      };
-    case "destructive":
-      return {
-        backgroundColor: colors.destructive.DEFAULT + "1A", // 10% opacity
-        pressStyle: { backgroundColor: colors.destructive.DEFAULT + "33" }, // 20% opacity
-      };
-    case "outline":
-      return {
-        backgroundColor: colors.background,
-        borderWidth: 1,
-        borderColor: colors.border,
-        pressStyle: { backgroundColor: colors.muted.DEFAULT },
-      };
-    case "ghost":
-      return {
-        backgroundColor: "transparent",
-        pressStyle: { backgroundColor: colors.muted.DEFAULT },
-      };
-    case "link":
-      return {
-        backgroundColor: "transparent",
-        pressStyle: { opacity: 0.7 },
-      };
-  }
-};
-
-const getTextColor = (variant: ButtonVariant) => {
-  switch (variant) {
-    case "default":
-      return colors.primary.foreground;
-    case "secondary":
-      return colors.secondary.foreground;
-    case "destructive":
-      return colors.destructive.DEFAULT;
-    case "outline":
-    case "ghost":
-      return colors.foreground;
-    case "link":
-      return colors.primary.DEFAULT;
-  }
-};
-
 const getSizeStyles = (size: ButtonSize) => {
   switch (size) {
     case "sm":
-      return { height: 32, paddingHorizontal: 12, gap: 4 };
+      return { height: 32, paddingHorizontal: 12, gap: 4, fontSize: 12 };
     case "lg":
-      return { height: 48, paddingHorizontal: 24, gap: 8 };
+      return { height: 48, paddingHorizontal: 24, gap: 8, fontSize: 16 };
     case "icon":
-      return { height: 40, width: 40, padding: 0 };
+      return { height: 40, width: 40, padding: 0, fontSize: 14 };
     default:
-      return { height: 40, paddingHorizontal: 16, gap: 6 };
-  }
-};
-
-const getTextSize = (size: ButtonSize) => {
-  switch (size) {
-    case "sm":
-      return 12;
-    case "lg":
-      return 16;
-    default:
-      return 14;
+      return { height: 40, paddingHorizontal: 16, gap: 6, fontSize: 14 };
   }
 };
 
@@ -112,43 +51,92 @@ export function Button({
   disabled,
   ...props
 }: ButtonProps) {
+  const theme = useTheme();
   const isDisabled = disabled || loading;
-  const variantStyles = getVariantStyles(variant);
   const sizeStyles = getSizeStyles(size);
-  const textColor = getTextColor(variant);
-  const textSize = getTextSize(size);
+
+  const getVariantProps = () => {
+    switch (variant) {
+      case "default":
+        return {
+          backgroundColor: "$primary",
+          pressStyle: { opacity: 0.9 },
+          textColor: "$primaryForeground",
+        };
+      case "secondary":
+        return {
+          backgroundColor: "$secondary",
+          pressStyle: { opacity: 0.8 },
+          textColor: "$secondaryForeground",
+        };
+      case "destructive":
+        return {
+          backgroundColor: "$destructive",
+          pressStyle: { opacity: 0.9 },
+          textColor: "$destructiveForeground",
+        };
+      case "outline":
+        return {
+          backgroundColor: "$background",
+          borderWidth: 1,
+          borderColor: "$borderColor",
+          pressStyle: { backgroundColor: "$muted" },
+          textColor: "$color",
+        };
+      case "ghost":
+        return {
+          backgroundColor: "transparent",
+          pressStyle: { backgroundColor: "$muted" },
+          textColor: "$color",
+        };
+      case "link":
+        return {
+          backgroundColor: "transparent",
+          pressStyle: { opacity: 0.7 },
+          textColor: "$primary",
+        };
+    }
+  };
+
+  const variantProps = getVariantProps();
+  const { textColor, ...buttonProps } = variantProps;
 
   const spinnerColor =
     variant === "default"
-      ? colors.primary.foreground
+      ? String(theme.primaryForeground.get())
       : variant === "destructive"
-        ? colors.destructive.DEFAULT
-        : colors.primary.DEFAULT;
+        ? String(theme.destructiveForeground.get())
+        : String(theme.primary.get());
 
   return (
     <TamaguiButton
       flexDirection="row"
       alignItems="center"
       justifyContent="center"
-      borderRadius={8}
+      borderRadius="$2"
       opacity={isDisabled ? 0.5 : 1}
       disabled={isDisabled}
-      {...variantStyles}
-      {...sizeStyles}
+      height={sizeStyles.height}
+      paddingHorizontal={sizeStyles.paddingHorizontal}
+      gap={sizeStyles.gap}
+      {...buttonProps}
       {...props}
     >
       {loading ? (
         <ActivityIndicator size="small" color={spinnerColor} />
       ) : typeof children === "string" ? (
         <Text
-          style={[
-            styles.text,
-            {
-              color: textColor,
-              fontSize: textSize,
-              textDecorationLine: variant === "link" ? "underline" : "none",
-            },
-          ]}
+          fontSize={sizeStyles.fontSize}
+          fontWeight="500"
+          color={
+            textColor as
+              | "$primary"
+              | "$color"
+              | "$primaryForeground"
+              | "$secondaryForeground"
+              | "$destructiveForeground"
+          }
+          textDecorationLine={variant === "link" ? "underline" : "none"}
         >
           {children}
         </Text>
@@ -158,9 +146,3 @@ export function Button({
     </TamaguiButton>
   );
 }
-
-const styles = StyleSheet.create({
-  text: {
-    fontWeight: "500",
-  },
-});

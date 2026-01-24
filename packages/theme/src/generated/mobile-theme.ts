@@ -37,7 +37,7 @@ export const lightColors: MobileColorScheme = {
   "background": "#ffffff",
   "foreground": "#0a0a0a",
   "card": {
-    "DEFAULT": "#ffffff",
+    "DEFAULT": "#fafafa",
     "foreground": "#0a0a0a"
   },
   "popover": {

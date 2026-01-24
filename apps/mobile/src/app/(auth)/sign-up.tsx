@@ -20,7 +20,6 @@ export default function SignUpScreen() {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
   const { signUpWithEmail, loading } = useAuth();
   const router = useRouter();
 
@@ -37,13 +36,20 @@ export default function SignUpScreen() {
       return;
     }
 
-    if (password.length < 6) {
-      setError("Password must be at least 6 characters");
+    if (password.length < 8) {
+      setError("Password must be at least 8 characters");
       return;
     }
 
-    if (username.length < 3) {
-      setError("Username must be at least 3 characters");
+    if (username.length < 3 || username.length > 20) {
+      setError("Username must be 3-20 characters");
+      return;
+    }
+
+    if (!/^[a-zA-Z0-9_-]+$/.test(username)) {
+      setError(
+        "Username can only contain letters, numbers, underscores, and hyphens"
+      );
       return;
     }
 
@@ -56,66 +62,10 @@ export default function SignUpScreen() {
     if (signUpError) {
       setError(signUpError.message);
     } else {
-      setSuccess(true);
+      // Successfully signed up and logged in - redirect to home
+      router.replace("/(tabs)/home" as never);
     }
   };
-
-  if (success) {
-    return (
-      <YStack
-        flex={1}
-        alignItems="center"
-        justifyContent="center"
-        backgroundColor="$background"
-        padding="$6"
-      >
-        <YStack
-          backgroundColor="$backgroundStrong"
-          borderRadius="$6"
-          padding="$6"
-          alignItems="center"
-          maxWidth={320}
-        >
-          <Text
-            fontSize={24}
-            fontWeight="700"
-            color="$color"
-            textAlign="center"
-            marginBottom="$3"
-          >
-            Check Your Email
-          </Text>
-          <Text
-            fontSize={15}
-            color="$colorTransparent"
-            textAlign="center"
-            marginBottom="$6"
-            opacity={0.7}
-            lineHeight={22}
-          >
-            We&apos;ve sent a confirmation link to {email}. Please verify your
-            account to continue.
-          </Text>
-          <Button
-            backgroundColor="$primary"
-            borderWidth={0}
-            borderRadius="$4"
-            paddingHorizontal="$6"
-            paddingVertical="$3"
-            pressStyle={{ opacity: 0.85 }}
-            onPress={() =>
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              router.replace("/(auth)/sign-in" as any)
-            }
-          >
-            <Text color="$primaryForeground" fontSize={15} fontWeight="600">
-              Go to Sign In
-            </Text>
-          </Button>
-        </YStack>
-      </YStack>
-    );
-  }
 
   return (
     <KeyboardAvoidingView
@@ -140,10 +90,9 @@ export default function SignUpScreen() {
             </Text>
             <Text
               fontSize={15}
-              color="$colorTransparent"
+              color="$mutedForeground"
               textAlign="center"
               marginTop="$2"
-              opacity={0.6}
             >
               Join the trainers.gg community
             </Text>
@@ -158,24 +107,36 @@ export default function SignUpScreen() {
           )}
 
           <YStack gap="$3">
-            <Input
-              backgroundColor="$backgroundStrong"
-              borderWidth={0}
-              borderRadius="$4"
-              paddingHorizontal="$4"
-              paddingVertical="$3.5"
-              fontSize={16}
-              color="$color"
-              placeholder="Username *"
-              placeholderTextColor="$colorTransparent"
-              value={username}
-              onChangeText={setUsername}
-              autoCapitalize="none"
-              autoComplete="username"
-            />
+            <YStack gap="$1">
+              <Input
+                backgroundColor="$muted"
+                borderWidth={0}
+                borderRadius="$4"
+                paddingHorizontal="$4"
+                paddingVertical="$3.5"
+                fontSize={16}
+                color="$color"
+                placeholder="Username *"
+                placeholderTextColor="$mutedForeground"
+                value={username}
+                onChangeText={setUsername}
+                autoCapitalize="none"
+                autoComplete="username"
+              />
+              <Text
+                fontSize={12}
+                color="$mutedForeground"
+                paddingHorizontal="$1"
+              >
+                Your Bluesky handle:{" "}
+                <Text fontSize={12} color="$color" fontWeight="500">
+                  @{username.toLowerCase() || "username"}.trainers.gg
+                </Text>
+              </Text>
+            </YStack>
 
             <Input
-              backgroundColor="$backgroundStrong"
+              backgroundColor="$muted"
               borderWidth={0}
               borderRadius="$4"
               paddingHorizontal="$4"
@@ -183,7 +144,7 @@ export default function SignUpScreen() {
               fontSize={16}
               color="$color"
               placeholder="Email *"
-              placeholderTextColor="$colorTransparent"
+              placeholderTextColor="$mutedForeground"
               value={email}
               onChangeText={setEmail}
               autoCapitalize="none"
@@ -194,7 +155,7 @@ export default function SignUpScreen() {
             <XStack gap="$3">
               <Input
                 flex={1}
-                backgroundColor="$backgroundStrong"
+                backgroundColor="$muted"
                 borderWidth={0}
                 borderRadius="$4"
                 paddingHorizontal="$4"
@@ -202,7 +163,7 @@ export default function SignUpScreen() {
                 fontSize={16}
                 color="$color"
                 placeholder="First Name"
-                placeholderTextColor="$colorTransparent"
+                placeholderTextColor="$mutedForeground"
                 value={firstName}
                 onChangeText={setFirstName}
                 autoComplete="given-name"
@@ -210,7 +171,7 @@ export default function SignUpScreen() {
 
               <Input
                 flex={1}
-                backgroundColor="$backgroundStrong"
+                backgroundColor="$muted"
                 borderWidth={0}
                 borderRadius="$4"
                 paddingHorizontal="$4"
@@ -218,7 +179,7 @@ export default function SignUpScreen() {
                 fontSize={16}
                 color="$color"
                 placeholder="Last Name"
-                placeholderTextColor="$colorTransparent"
+                placeholderTextColor="$mutedForeground"
                 value={lastName}
                 onChangeText={setLastName}
                 autoComplete="family-name"
@@ -226,7 +187,7 @@ export default function SignUpScreen() {
             </XStack>
 
             <Input
-              backgroundColor="$backgroundStrong"
+              backgroundColor="$muted"
               borderWidth={0}
               borderRadius="$4"
               paddingHorizontal="$4"
@@ -234,7 +195,7 @@ export default function SignUpScreen() {
               fontSize={16}
               color="$color"
               placeholder="Password *"
-              placeholderTextColor="$colorTransparent"
+              placeholderTextColor="$mutedForeground"
               value={password}
               onChangeText={setPassword}
               secureTextEntry
@@ -242,7 +203,7 @@ export default function SignUpScreen() {
             />
 
             <Input
-              backgroundColor="$backgroundStrong"
+              backgroundColor="$muted"
               borderWidth={0}
               borderRadius="$4"
               paddingHorizontal="$4"
@@ -250,7 +211,7 @@ export default function SignUpScreen() {
               fontSize={16}
               color="$color"
               placeholder="Confirm Password *"
-              placeholderTextColor="$colorTransparent"
+              placeholderTextColor="$mutedForeground"
               value={confirmPassword}
               onChangeText={setConfirmPassword}
               secureTextEntry
@@ -262,7 +223,7 @@ export default function SignUpScreen() {
             backgroundColor="$primary"
             borderWidth={0}
             borderRadius="$4"
-            paddingVertical="$3.5"
+            height={52}
             marginTop="$2"
             pressStyle={{ opacity: 0.85 }}
             opacity={loading ? 0.7 : 1}
@@ -272,19 +233,14 @@ export default function SignUpScreen() {
             {loading ? (
               <Spinner color="$primaryForeground" />
             ) : (
-              <Text
-                color="$primaryForeground"
-                fontSize={16}
-                fontWeight="600"
-                textAlign="center"
-              >
+              <Text color="$primaryForeground" fontSize={16} fontWeight="600">
                 Create Account
               </Text>
             )}
           </Button>
 
           <XStack justifyContent="center" alignItems="center" marginTop="$2">
-            <Text color="$colorTransparent" fontSize={14} opacity={0.6}>
+            <Text color="$mutedForeground" fontSize={14}>
               Already have an account?{" "}
             </Text>
             {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}

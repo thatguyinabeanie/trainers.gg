@@ -1,14 +1,8 @@
 import React from "react";
-import {
-  View,
-  Text,
-  Pressable,
-  StyleSheet,
-  type ViewStyle,
-} from "react-native";
-import { colors } from "@/lib/theme";
+import { type ViewStyle } from "react-native";
+import { YStack, Text, Button, type YStackProps } from "tamagui";
 
-interface EmptyStateProps {
+interface EmptyStateProps extends Omit<YStackProps, "style"> {
   icon?: React.ReactNode;
   title: string;
   description?: string;
@@ -24,68 +18,60 @@ export function EmptyState({
   title,
   description,
   action,
-  style,
+  ...props
 }: EmptyStateProps) {
   return (
-    <View style={[styles.container, style]}>
-      {icon && <View style={styles.iconContainer}>{icon}</View>}
-      <Text style={styles.title}>{title}</Text>
-      {description && <Text style={styles.description}>{description}</Text>}
-      {action && (
-        <Pressable
-          onPress={action.onPress}
-          style={({ pressed }) => [
-            styles.button,
-            pressed && styles.buttonPressed,
-          ]}
+    <YStack
+      alignItems="center"
+      justifyContent="center"
+      paddingHorizontal="$8"
+      paddingVertical="$10"
+      {...props}
+    >
+      {icon && (
+        <YStack
+          marginBottom="$5"
+          padding="$4"
+          borderRadius="$12"
+          backgroundColor="$muted"
+          opacity={0.6}
         >
-          <Text style={styles.buttonText}>{action.label}</Text>
-        </Pressable>
+          {icon}
+        </YStack>
       )}
-    </View>
+
+      <Text textAlign="center" fontSize="$6" fontWeight="600" color="$color">
+        {title}
+      </Text>
+
+      {description && (
+        <Text
+          marginTop="$2"
+          maxWidth={280}
+          textAlign="center"
+          fontSize="$4"
+          lineHeight="$5"
+          color="$mutedForeground"
+        >
+          {description}
+        </Text>
+      )}
+
+      {action && (
+        <Button
+          marginTop="$6"
+          borderRadius="$4"
+          backgroundColor="$primaryMuted"
+          paddingHorizontal="$5"
+          paddingVertical="$3"
+          pressStyle={{ backgroundColor: "$primaryMuted", opacity: 0.8 }}
+          onPress={action.onPress}
+        >
+          <Text fontSize="$4" fontWeight="600" color="$primary">
+            {action.label}
+          </Text>
+        </Button>
+      )}
+    </YStack>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 32,
-    paddingVertical: 56,
-  },
-  iconContainer: {
-    marginBottom: 20,
-    padding: 16,
-    borderRadius: 999,
-    backgroundColor: colors.muted.DEFAULT + "60",
-  },
-  title: {
-    textAlign: "center",
-    fontSize: 18,
-    fontWeight: "600",
-    color: colors.foreground,
-  },
-  description: {
-    marginTop: 8,
-    maxWidth: 280,
-    textAlign: "center",
-    fontSize: 15,
-    lineHeight: 22,
-    color: colors.muted.foreground,
-  },
-  button: {
-    marginTop: 24,
-    borderRadius: 12,
-    backgroundColor: colors.primary.DEFAULT + "1A",
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-  },
-  buttonPressed: {
-    backgroundColor: colors.primary.DEFAULT + "26",
-  },
-  buttonText: {
-    fontSize: 15,
-    fontWeight: "600",
-    color: colors.primary.DEFAULT,
-  },
-});

@@ -10,10 +10,47 @@ import {
   ScrollView,
   Spinner,
 } from "tamagui";
-import { useAuth } from "@/lib/supabase";
+import { useAuth, getSupabase } from "@/lib/supabase";
+
+/**
+ * Resolves a login identifier (email or username) to an email address.
+ * If the identifier looks like an email, returns it as-is.
+ * Otherwise, looks up the username in the database.
+ */
+async function resolveLoginIdentifier(
+  identifier: string
+): Promise<{ email: string | null; error: string | null }> {
+  const trimmed = identifier.trim().toLowerCase();
+
+  // If it looks like an email, return as-is
+  if (trimmed.includes("@")) {
+    return { email: trimmed, error: null };
+  }
+
+  // Otherwise, look up username
+  try {
+    const { data, error } = await getSupabase()
+      .from("users")
+      .select("email")
+      .ilike("username", trimmed)
+      .maybeSingle();
+
+    if (error) {
+      return { email: null, error: "Failed to look up username" };
+    }
+
+    if (!data) {
+      return { email: null, error: "Username not found" };
+    }
+
+    return { email: data.email, error: null };
+  } catch {
+    return { email: null, error: "Failed to connect to server" };
+  }
+}
 
 export default function SignInScreen() {
-  const [email, setEmail] = useState("");
+  const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const { signInWithEmail, loading } = useAuth();
@@ -22,8 +59,17 @@ export default function SignInScreen() {
   const handleSignIn = async () => {
     setError(null);
 
-    if (!email || !password) {
+    if (!identifier || !password) {
       setError("Please fill in all fields");
+      return;
+    }
+
+    // Resolve username to email if needed
+    const { email, error: resolveError } =
+      await resolveLoginIdentifier(identifier);
+
+    if (resolveError || !email) {
+      setError(resolveError || "Could not find account");
       return;
     }
 
@@ -59,10 +105,9 @@ export default function SignInScreen() {
             </Text>
             <Text
               fontSize={15}
-              color="$colorTransparent"
+              color="$mutedForeground"
               textAlign="center"
               marginTop="$2"
-              opacity={0.6}
             >
               Sign in to your account
             </Text>
@@ -77,25 +122,34 @@ export default function SignInScreen() {
           )}
 
           <YStack gap="$3">
-            <Input
-              backgroundColor="$backgroundStrong"
-              borderWidth={0}
-              borderRadius="$4"
-              paddingHorizontal="$4"
-              paddingVertical="$3.5"
-              fontSize={16}
-              color="$color"
-              placeholder="Email"
-              placeholderTextColor="$colorTransparent"
-              value={email}
-              onChangeText={setEmail}
-              autoCapitalize="none"
-              keyboardType="email-address"
-              autoComplete="email"
-            />
+            <YStack gap="$1">
+              <Input
+                backgroundColor="$muted"
+                borderWidth={0}
+                borderRadius="$4"
+                paddingHorizontal="$4"
+                paddingVertical="$3.5"
+                fontSize={16}
+                color="$color"
+                placeholder="Email or Username"
+                placeholderTextColor="$mutedForeground"
+                value={identifier}
+                onChangeText={setIdentifier}
+                autoCapitalize="none"
+                keyboardType="email-address"
+                autoComplete="username"
+              />
+              <Text
+                fontSize={12}
+                color="$mutedForeground"
+                paddingHorizontal="$1"
+              >
+                No @trainers.gg needed for username
+              </Text>
+            </YStack>
 
             <Input
-              backgroundColor="$backgroundStrong"
+              backgroundColor="$muted"
               borderWidth={0}
               borderRadius="$4"
               paddingHorizontal="$4"
@@ -103,7 +157,7 @@ export default function SignInScreen() {
               fontSize={16}
               color="$color"
               placeholder="Password"
-              placeholderTextColor="$colorTransparent"
+              placeholderTextColor="$mutedForeground"
               value={password}
               onChangeText={setPassword}
               secureTextEntry
@@ -115,7 +169,7 @@ export default function SignInScreen() {
             backgroundColor="$primary"
             borderWidth={0}
             borderRadius="$4"
-            paddingVertical="$3.5"
+            height={52}
             marginTop="$2"
             pressStyle={{ opacity: 0.85 }}
             opacity={loading ? 0.7 : 1}
@@ -125,19 +179,14 @@ export default function SignInScreen() {
             {loading ? (
               <Spinner color="$primaryForeground" />
             ) : (
-              <Text
-                color="$primaryForeground"
-                fontSize={16}
-                fontWeight="600"
-                textAlign="center"
-              >
+              <Text color="$primaryForeground" fontSize={16} fontWeight="600">
                 Sign In
               </Text>
             )}
           </Button>
 
           <XStack justifyContent="center" alignItems="center" marginTop="$2">
-            <Text color="$colorTransparent" fontSize={14} opacity={0.6}>
+            <Text color="$mutedForeground" fontSize={14}>
               Don&apos;t have an account?{" "}
             </Text>
             {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}

@@ -9,7 +9,7 @@ export const semanticColors = {
   "light": {
     "background": "#ffffff",
     "foreground": "#0a0a0a",
-    "card": "#ffffff",
+    "card": "#fafafa",
     "cardForeground": "#0a0a0a",
     "popover": "#ffffff",
     "popoverForeground": "#0a0a0a",

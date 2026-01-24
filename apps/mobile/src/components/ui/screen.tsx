@@ -1,46 +1,36 @@
 import React from "react";
-import {
-  View,
-  ActivityIndicator,
-  type ViewProps,
-  StyleSheet,
-} from "react-native";
-import { colors } from "@/lib/theme";
+import { ActivityIndicator } from "react-native";
+import { YStack, type YStackProps, useTheme } from "tamagui";
 
 /**
- * Screen wrapper component matching shadcn/ui design language
+ * Screen wrapper component with Tamagui theming
  */
 
-interface ScreenProps extends ViewProps {
+interface ScreenProps extends YStackProps {
   children?: React.ReactNode;
   loading?: boolean;
 }
 
-export function Screen({ children, loading, style, ...props }: ScreenProps) {
+export function Screen({ children, loading, ...props }: ScreenProps) {
+  const theme = useTheme();
+
   if (loading) {
     return (
-      <View style={styles.loadingContainer} {...props}>
-        <ActivityIndicator size="large" color={colors.primary.DEFAULT} />
-      </View>
+      <YStack
+        flex={1}
+        alignItems="center"
+        justifyContent="center"
+        backgroundColor="$background"
+        {...props}
+      >
+        <ActivityIndicator size="large" color={theme.primary.val} />
+      </YStack>
     );
   }
 
   return (
-    <View style={[styles.container, style]} {...props}>
+    <YStack flex={1} backgroundColor="$background" {...props}>
       {children}
-    </View>
+    </YStack>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  loadingContainer: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: colors.background,
-  },
-});

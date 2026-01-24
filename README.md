@@ -1,21 +1,23 @@
 # trainers.gg
 
-A Pokemon community platform for competitive players, tournament organizers, and teams.
+A Pokemon community platform for competitive players, tournament organizers, and teams. Integrated with the **AT Protocol (Bluesky)** for decentralized social features.
 
 ## Tech Stack
 
-| Layer                | Technology                          |
-| -------------------- | ----------------------------------- |
-| **Web**              | Next.js 16 (React 19, App Router)   |
-| **Mobile**           | Expo 54 (React Native, React 19)    |
-| **Database**         | Supabase (PostgreSQL)               |
-| **Auth**             | Supabase Auth                       |
-| **Realtime**         | Supabase Realtime                   |
-| **Edge Functions**   | Supabase Edge Functions (Deno)      |
-| **Styling (Web)**    | Tailwind CSS 4                      |
-| **Styling (Mobile)** | Tamagui                             |
-| **Theme**            | @trainers/theme (OKLCH, light/dark) |
-| **Monorepo**         | pnpm + Turborepo                    |
+| Layer                 | Technology                          |
+| --------------------- | ----------------------------------- |
+| **Web**               | Next.js 16 (React 19, App Router)   |
+| **Mobile**            | Expo 54 (React Native, React 19)    |
+| **Database**          | Supabase (PostgreSQL)               |
+| **Auth**              | Supabase Auth + Bluesky PDS         |
+| **Social/Federation** | AT Protocol (Bluesky)               |
+| **PDS Hosting**       | Fly.io (`pds.trainers.gg`)          |
+| **Realtime**          | Supabase Realtime                   |
+| **Edge Functions**    | Supabase Edge Functions (Deno)      |
+| **Styling (Web)**     | Tailwind CSS 4                      |
+| **Styling (Mobile)**  | Tamagui                             |
+| **Theme**             | @trainers/theme (OKLCH, light/dark) |
+| **Monorepo**          | pnpm + Turborepo                    |
 
 ## Monorepo Structure
 
@@ -30,6 +32,9 @@ packages/
   ui/                  # Shared UI components (@trainers/ui)
   theme/               # Shared theme tokens (@trainers/theme)
   validators/          # Zod schemas (@trainers/validators)
+
+infra/
+  pds/                 # Bluesky PDS deployment config (Fly.io)
 
 tooling/
   eslint/              # Shared ESLint config (@trainers/eslint-config)
@@ -95,17 +100,45 @@ pnpm build:web
 
 ## Architecture
 
-### Authentication Flow
+### Authentication Flow (Unified Supabase + Bluesky)
 
 ```
-User → Supabase Auth (email/password, OAuth) → Session → RLS Policies
-                                             ↓
-                              Database trigger → users/alts tables
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                           Signup Flow                                        │
+├─────────────────────────────────────────────────────────────────────────────┤
+│  1. User enters email, username, password                                   │
+│  2. Client calls /functions/v1/signup edge function                         │
+│  3. Edge function creates Supabase Auth account                             │
+│  4. Edge function creates PDS account (@username.trainers.gg)               │
+│  5. Edge function stores DID in users table                                 │
+│  6. User receives session for both systems                                  │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                           Identity Architecture                              │
+├─────────────────────────────────────────────────────────────────────────────┤
+│  Supabase Auth ID  ←─────→  users.id  ←─────→  DID (AT Protocol)            │
+│                                  │                                           │
+│                                  ├── pds_handle: @username.trainers.gg      │
+│                                  └── pds_status: pending | active | failed  │
+└─────────────────────────────────────────────────────────────────────────────┘
 ```
 
-- **Supabase Auth** handles all authentication (sign-up, sign-in, OAuth)
+- **Supabase Auth** handles authentication (sign-up, sign-in, OAuth)
+- **Bluesky PDS** provides decentralized identity (`@username.trainers.gg`)
 - **Row Level Security (RLS)** uses `auth.uid()` for access control
-- **Database triggers** automatically create user and alt records on sign-up
+- **Edge function** orchestrates unified account creation
+
+### Bluesky Integration
+
+Every user gets a Bluesky identity:
+
+| Feature        | Description                                          |
+| -------------- | ---------------------------------------------------- |
+| **Handle**     | `@username.trainers.gg`                              |
+| **DID**        | Decentralized Identifier stored in users table       |
+| **Federation** | Posts visible on bsky.app and other AT Protocol apps |
+| **Login**      | Users can login to bsky.app with their handle        |
 
 ### Database
 
@@ -116,11 +149,14 @@ User → Supabase Auth (email/password, OAuth) → Session → RLS Policies
 
 | Table                      | Description                                      |
 | -------------------------- | ------------------------------------------------ |
-| `users`                    | User accounts (created via auth trigger)         |
+| `users`                    | User accounts with DID and PDS handle            |
 | `alts`                     | Player profiles (username, display name, avatar) |
 | `organizations`            | Tournament organizer accounts                    |
 | `tournaments`              | Tournament events                                |
 | `tournament_registrations` | Player registrations                             |
+| `posts`                    | Local activity feed (synced with PDS)            |
+| `follows`                  | Follow relationships                             |
+| `likes`                    | Post likes                                       |
 | `roles`                    | Role definitions (site and org scoped)           |
 | `user_roles`               | Site-scoped role assignments                     |
 
@@ -146,6 +182,28 @@ The web app auto-deploys to Vercel on push to `main`.
 ### Supabase
 
 Database migrations are automatically applied via Supabase Git Integration on PR creation/merge.
+
+### Bluesky PDS (Fly.io)
+
+The PDS is deployed to Fly.io and accessible at `https://pds.trainers.gg`.
+
+```bash
+cd infra/pds
+
+# Full deployment (Fly + DNS + SSL + Supabase secrets)
+./deploy.sh
+
+# Or use individual commands
+make deploy       # Deploy to Fly.io
+make status       # Check PDS status
+make logs         # Stream logs
+make health       # Check health endpoint
+
+# Create a user account
+./create-account.sh <username> <email> <password>
+```
+
+See [infra/pds/README.md](./infra/pds/README.md) for full documentation.
 
 ## Commands
 

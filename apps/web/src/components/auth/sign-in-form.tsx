@@ -101,7 +101,7 @@ export function SignInForm() {
             <Input
               id="identifier"
               type="text"
-              placeholder="you@example.com or username"
+              placeholder="you@example.com or ash"
               autoComplete="username"
               aria-invalid={errors.identifier ? "true" : undefined}
               {...register("identifier")}
@@ -111,6 +111,9 @@ export function SignInForm() {
                 {errors.identifier.message}
               </p>
             )}
+            <p className="text-muted-foreground text-xs">
+              Enter your email or username (no @trainers.gg needed)
+            </p>
           </div>
 
           <div className="flex flex-col gap-2">

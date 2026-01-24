@@ -1,0 +1,53 @@
+# Fly.io configuration for trainers.gg PDS
+# https://fly.io/docs/reference/configuration/
+
+app = "trainers-pds"
+primary_region = "sjc"
+
+[build]
+  image = "ghcr.io/bluesky-social/pds:0.4"
+
+[env]
+  PDS_HOSTNAME = "pds.trainers.gg"
+  PDS_DATA_DIRECTORY = "/pds"
+  PDS_BLOBSTORE_DISK_LOCATION = "/pds/blobs"
+  PDS_DID_PLC_URL = "https://plc.directory"
+  PDS_BSKY_APP_VIEW_URL = "https://api.bsky.app"
+  PDS_BSKY_APP_VIEW_DID = "did:web:api.bsky.app"
+  PDS_REPORT_SERVICE_URL = "https://mod.bsky.app"
+  PDS_REPORT_SERVICE_DID = "did:plc:ar7c4by46qjdydhdevvrndac"
+  PDS_CRAWLERS = "https://bsky.network"
+  LOG_ENABLED = "true"
+  NODE_ENV = "production"
+
+# Mount persistent volume for data
+[mounts]
+  source = "pds_data"
+  destination = "/pds"
+
+# HTTP service configuration
+[http_service]
+  internal_port = 3000
+  force_https = true
+  auto_stop_machines = false
+  auto_start_machines = true
+  min_machines_running = 1
+
+  [http_service.concurrency]
+    type = "connections"
+    hard_limit = 100
+    soft_limit = 80
+
+# Health check
+[[http_service.checks]]
+  grace_period = "30s"
+  interval = "30s"
+  method = "GET"
+  timeout = "5s"
+  path = "/xrpc/_health"
+
+# Machine configuration
+[[vm]]
+  memory = "1gb"
+  cpu_kind = "shared"
+  cpus = 1

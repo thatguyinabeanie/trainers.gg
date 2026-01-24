@@ -57,6 +57,10 @@ function buildTheme(colors: MobileColorScheme) {
     chart3: colors.chart["3"],
     chart4: colors.chart["4"],
     chart5: colors.chart["5"],
+
+    // Muted variants for subtle backgrounds (10% opacity approximation)
+    primaryMuted: colors.primary.DEFAULT + "1A",
+    destructiveMuted: colors.destructive.DEFAULT + "1A",
   } as const;
 }
 

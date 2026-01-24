@@ -1,9 +1,8 @@
 import React from "react";
-import { View, Text, StyleSheet, type ViewStyle } from "react-native";
-import { colors } from "@/lib/theme";
+import { XStack, Text } from "tamagui";
 
 /**
- * Badge component - minimal flat design
+ * Badge component - minimal flat design with Tamagui theme support
  */
 
 type BadgeVariant = "default" | "secondary" | "destructive" | "outline";
@@ -11,53 +10,52 @@ type BadgeVariant = "default" | "secondary" | "destructive" | "outline";
 interface BadgeProps {
   children: React.ReactNode;
   variant?: BadgeVariant;
-  style?: ViewStyle;
 }
 
-const getVariantStyles = (variant: BadgeVariant) => {
-  switch (variant) {
-    case "default":
-      return {
-        container: { backgroundColor: colors.primary.DEFAULT + "1A" },
-        text: { color: colors.primary.DEFAULT },
-      };
-    case "secondary":
-      return {
-        container: { backgroundColor: colors.muted.DEFAULT },
-        text: { color: colors.muted.foreground },
-      };
-    case "destructive":
-      return {
-        container: { backgroundColor: colors.destructive.DEFAULT + "1A" },
-        text: { color: colors.destructive.DEFAULT },
-      };
-    case "outline":
-      return {
-        container: { backgroundColor: colors.muted.DEFAULT + "80" },
-        text: { color: colors.foreground },
-      };
-  }
-};
+export function Badge({ children, variant = "default" }: BadgeProps) {
+  const getVariantStyles = () => {
+    switch (variant) {
+      case "default":
+        return {
+          backgroundColor: "$primary" as const,
+          opacity: 0.15,
+          textColor: "$primary" as const,
+        };
+      case "secondary":
+        return {
+          backgroundColor: "$muted" as const,
+          opacity: 1,
+          textColor: "$mutedForeground" as const,
+        };
+      case "destructive":
+        return {
+          backgroundColor: "$destructive" as const,
+          opacity: 0.15,
+          textColor: "$destructive" as const,
+        };
+      case "outline":
+        return {
+          backgroundColor: "$muted" as const,
+          opacity: 0.5,
+          textColor: "$color" as const,
+        };
+    }
+  };
 
-export function Badge({ children, variant = "default", style }: BadgeProps) {
-  const variantStyles = getVariantStyles(variant);
+  const styles = getVariantStyles();
 
   return (
-    <View style={[styles.container, variantStyles.container, style]}>
-      <Text style={[styles.text, variantStyles.text]}>{children}</Text>
-    </View>
+    <XStack
+      alignSelf="flex-start"
+      borderRadius="$10"
+      paddingHorizontal="$3"
+      paddingVertical="$1"
+      backgroundColor={styles.backgroundColor}
+      opacity={styles.opacity === 1 ? undefined : styles.opacity}
+    >
+      <Text fontSize="$2" fontWeight="500" color={styles.textColor}>
+        {children}
+      </Text>
+    </XStack>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    alignSelf: "flex-start",
-    borderRadius: 999,
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-  },
-  text: {
-    fontSize: 12,
-    fontWeight: "500",
-  },
-});

@@ -46,8 +46,8 @@ export const lightTokens: SemanticTokens = {
   background: { l: 1, c: 0, h: 0 },
   foreground: { l: 0.145, c: 0, h: 0 },
 
-  // Card
-  card: { l: 1, c: 0, h: 0 },
+  // Card (slightly off-white for separation from background)
+  card: colors.neutral[50], // oklch(0.985 0 0)
   cardForeground: { l: 0.145, c: 0, h: 0 },
 
   // Popover
