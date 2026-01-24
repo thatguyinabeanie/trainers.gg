@@ -16,11 +16,14 @@ import type { Json } from "@trainers/supabase";
 
 // Environment-aware configuration
 const isProduction = process.env.NODE_ENV === "production";
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://127.0.0.1:3000";
+const PRODUCTION_URL = "https://trainers.gg";
+const siteUrl =
+  process.env.NEXT_PUBLIC_SITE_URL ||
+  (isProduction ? PRODUCTION_URL : "http://127.0.0.1:3000");
 
 // Client metadata URL (must be publicly accessible)
 const CLIENT_ID = isProduction
-  ? "https://trainers.gg/oauth/client-metadata.json"
+  ? `${PRODUCTION_URL}/oauth/client-metadata.json`
   : `${siteUrl}/oauth/client-metadata.json`;
 
 // Redirect URI for OAuth callback
