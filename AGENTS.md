@@ -74,6 +74,7 @@ All DNS for `trainers.gg` is managed via **Vercel DNS**.
 | OAuth Client Metadata | Must return HTTP 200 (no redirects per AT Protocol spec)                   |
 | Handle Resolution     | `https://username.trainers.gg/.well-known/atproto-did` must resolve to PDS |
 | Apex Domain           | Must be primary in Vercel (not www) to avoid 308 redirects                 |
+| Preview Deployments   | Bluesky OAuth is disabled (Vercel SSO protection blocks metadata access)   |
 
 ---
 

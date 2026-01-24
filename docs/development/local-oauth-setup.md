@@ -106,11 +106,14 @@ The dynamic `/api/oauth/client-metadata` endpoint generates metadata based on th
 
 The OAuth client automatically detects the environment:
 
-| Environment    | URL Source                          |
-| -------------- | ----------------------------------- |
-| Local + Tunnel | `NEXT_PUBLIC_SITE_URL` env var      |
-| Vercel Preview | Auto-detected via `VERCEL_URL`      |
-| Production     | Falls back to `https://trainers.gg` |
+| Environment       | Behavior                                  |
+| ----------------- | ----------------------------------------- |
+| Production        | Uses `https://trainers.gg`                |
+| Vercel Preview    | OAuth disabled (returns 503 error)        |
+| Local + Tunnel    | Uses `NEXT_PUBLIC_SITE_URL` env var       |
+| Local (no tunnel) | Falls back to localhost (OAuth will fail) |
+
+**Note:** Bluesky OAuth is intentionally disabled on Vercel preview deployments because Vercel's deployment protection blocks external access to OAuth metadata endpoints.
 
 ---
 
@@ -136,4 +139,6 @@ Free ngrok accounts get a new URL each session. Update `NEXT_PUBLIC_SITE_URL` ac
 
 ## Production Note
 
-In production and Vercel preview deployments, no tunnel is needed. The system automatically uses the correct URLs.
+In production (`https://trainers.gg`), no tunnel is needed. The system automatically uses the correct URLs.
+
+**Vercel preview deployments do not support Bluesky OAuth** due to deployment protection. Test OAuth on production or use a local tunnel.

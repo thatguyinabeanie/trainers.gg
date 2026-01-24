@@ -11,11 +11,14 @@ import { startAtprotoAuth } from "@/lib/atproto/oauth-client";
 /**
  * Check if running on a Vercel preview deployment.
  * Bluesky OAuth is disabled on previews due to deployment protection.
+ *
+ * VERCEL_ENV is set by Vercel:
+ * - "production" for production deployments
+ * - "preview" for preview deployments
+ * - "development" for local dev (via vercel dev)
  */
 function isVercelPreview(): boolean {
-  const vercelUrl = process.env.VERCEL_URL;
-  if (!vercelUrl) return false;
-  return !vercelUrl.includes("trainers.gg");
+  return process.env.VERCEL_ENV === "preview";
 }
 
 export async function GET(request: Request) {
