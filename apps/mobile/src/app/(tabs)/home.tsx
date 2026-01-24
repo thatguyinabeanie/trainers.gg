@@ -1,12 +1,13 @@
 import { useState, useCallback } from "react";
 import { RefreshControl, Pressable } from "react-native";
-import { YStack, XStack, Text, ScrollView, useTheme } from "tamagui";
+import { YStack, XStack, Text, useTheme } from "tamagui";
 import { Ionicons } from "@expo/vector-icons";
 import { Link } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Screen, Avatar } from "@/components/ui";
 import { useAuth } from "@/lib/supabase";
-import { useDrawer } from "@/components/navigation";
+import { useDrawer, useScrollVisibilitySafe } from "@/components/navigation";
+import Animated from "react-native-reanimated";
 
 // Mock data - will be replaced with real data from database
 const MOCK_POSTS = [
@@ -562,52 +563,79 @@ function HomeHeader() {
   const theme = useTheme();
   const { openDrawer } = useDrawer();
   const { user, isAuthenticated } = useAuth();
+  const scrollVisibility = useScrollVisibilitySafe();
+
+  const HEADER_CONTENT_HEIGHT = 44;
 
   return (
-    <YStack backgroundColor="$background">
-      {/* Safe area spacer - accounts for Dynamic Island/notch */}
-      <YStack height={insets.top} />
+    <>
+      {/* Static safe area background - always visible under Dynamic Island */}
+      <YStack
+        position="absolute"
+        top={0}
+        left={0}
+        right={0}
+        height={insets.top}
+        backgroundColor="$background"
+        zIndex={101}
+      />
 
-      {/* Header content */}
-      <XStack
-        paddingHorizontal="$4"
-        paddingVertical="$2"
-        height={44}
-        alignItems="center"
-        justifyContent="center"
+      {/* Animated header content - slides under the safe area when hidden */}
+      <Animated.View
+        style={[
+          {
+            backgroundColor: theme.background.get(),
+            position: "absolute",
+            top: insets.top,
+            left: 0,
+            right: 0,
+            height: HEADER_CONTENT_HEIGHT,
+            zIndex: 100,
+          },
+          scrollVisibility?.headerAnimatedStyle as object,
+        ]}
       >
-        {/* Left: Avatar / Menu */}
-        <Pressable
-          onPress={openDrawer}
-          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-          style={{ position: "absolute", left: 16 }}
+        {/* Header content */}
+        <XStack
+          paddingHorizontal="$4"
+          paddingVertical="$2"
+          height={HEADER_CONTENT_HEIGHT}
+          alignItems="center"
+          justifyContent="center"
         >
-          {isAuthenticated ? (
-            <Avatar size="sm" fallback={user?.email || "U"} />
-          ) : (
-            <YStack
-              width={32}
-              height={32}
-              borderRadius={16}
-              backgroundColor="$muted"
-              alignItems="center"
-              justifyContent="center"
-            >
-              <Ionicons
-                name="menu"
-                size={20}
-                color={String(theme.color.get())}
-              />
-            </YStack>
-          )}
-        </Pressable>
+          {/* Left: Avatar / Menu */}
+          <Pressable
+            onPress={openDrawer}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            style={{ position: "absolute", left: 16 }}
+          >
+            {isAuthenticated ? (
+              <Avatar size="sm" fallback={user?.email || "U"} />
+            ) : (
+              <YStack
+                width={32}
+                height={32}
+                borderRadius={16}
+                backgroundColor="$muted"
+                alignItems="center"
+                justifyContent="center"
+              >
+                <Ionicons
+                  name="menu"
+                  size={20}
+                  color={String(theme.color.get())}
+                />
+              </YStack>
+            )}
+          </Pressable>
 
-        {/* Center: Logo */}
-        <Text fontSize="$5" fontWeight="700" color="$primary">
-          trainers.gg
-        </Text>
-      </XStack>
-    </YStack>
+          {/* Center: Logo */}
+          <Text fontSize="$5" fontWeight="700" color="$primary">
+            trainers.gg
+          </Text>
+        </XStack>
+      </Animated.View>
+    </>
   );
 }
 
@@ -616,32 +644,44 @@ export default function HomeScreen() {
   const [activeTab, setActiveTab] = useState<FeedTab>("forYou");
   const [refreshing, setRefreshing] = useState(false);
   const theme = useTheme();
+  const insets = useSafeAreaInsets();
+  const scrollVisibility = useScrollVisibilitySafe();
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
+    // Show the header when pull-to-refresh is triggered
+    scrollVisibility?.show();
     setTimeout(() => setRefreshing(false), 1500);
-  }, []);
+  }, [scrollVisibility]);
 
   const posts = activeTab === "following" ? MOCK_POSTS : MOCK_FOR_YOU_POSTS;
 
+  // Header height for content offset
+  const headerHeight = insets.top + 44;
+
   return (
     <Screen>
-      {/* Custom Header with Avatar */}
+      {/* Custom Header with Avatar - now animated and absolute positioned */}
       <HomeHeader />
 
-      {/* Feed Tab Switcher */}
-      <FeedTabSwitcher activeTab={activeTab} onTabChange={setActiveTab} />
-
-      <ScrollView
-        flex={1}
+      {/* Content area with proper padding for header */}
+      <Animated.ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={{ paddingTop: headerHeight }}
+        scrollEventThrottle={16}
+        onScroll={scrollVisibility?.handleScroll}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
             tintColor={String(theme.primary.get())}
+            progressViewOffset={headerHeight}
           />
         }
       >
+        {/* Feed Tab Switcher - now inside scroll content */}
+        <FeedTabSwitcher activeTab={activeTab} onTabChange={setActiveTab} />
+
         {/* Unauthenticated Banner */}
         {!isAuthenticated && <UnauthenticatedBanner />}
 
@@ -656,7 +696,7 @@ export default function HomeScreen() {
             You&apos;re all caught up!
           </Text>
         </YStack>
-      </ScrollView>
+      </Animated.ScrollView>
 
       {/* Floating Compose Button */}
       <ComposeButton />

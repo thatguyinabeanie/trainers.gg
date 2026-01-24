@@ -1,8 +1,14 @@
 import React from "react";
-import { useColorScheme } from "react-native";
+import { useColorScheme, Pressable, Text, StyleSheet } from "react-native";
 import { Tabs } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { lightColors, darkColors } from "@/lib/theme";
+import {
+  ScrollVisibilityProvider,
+  useScrollVisibilitySafe,
+} from "@/components/navigation";
+import Animated from "react-native-reanimated";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 type TabIconProps = {
   name: keyof typeof Ionicons.glyphMap;
@@ -14,28 +20,133 @@ function TabIcon({ name, color, focused: _focused }: TabIconProps) {
   return <Ionicons name={name} size={24} color={color} />;
 }
 
-export default function TabLayout() {
+const TAB_BAR_HEIGHT = 88;
+const HEADER_CONTENT_HEIGHT = 44; // Only the content, not the safe area
+
+// Custom tab bar that supports scroll-based hide/show animation
+function CustomTabBar(props: {
+  state: {
+    routes: Array<{ key: string; name: string; params?: object }>;
+    index: number;
+  };
+  descriptors: Record<string, { options: Record<string, unknown> } | undefined>;
+  navigation: {
+    emit: (event: {
+      type: string;
+      target: string;
+      canPreventDefault?: boolean;
+    }) => { defaultPrevented: boolean };
+    navigate: (name: string, params?: object) => void;
+  };
+}) {
+  const { state, descriptors, navigation } = props;
+  const colorScheme = useColorScheme();
+  const colors = colorScheme === "dark" ? darkColors : lightColors;
+  const insets = useSafeAreaInsets();
+  const scrollVisibility = useScrollVisibilitySafe();
+
+  return (
+    <Animated.View
+      style={[
+        styles.tabBar,
+        {
+          backgroundColor: colors.background,
+          paddingBottom: insets.bottom > 0 ? insets.bottom : 8,
+        },
+        scrollVisibility?.tabBarAnimatedStyle as object,
+      ]}
+    >
+      {state.routes.map((route, index) => {
+        const descriptor = descriptors[route.key];
+        if (!descriptor) return null;
+
+        const { options } = descriptor;
+
+        // Skip hidden tabs (settings)
+        if ((options as { href?: string | null }).href === null) {
+          return null;
+        }
+
+        const label =
+          options.tabBarLabel !== undefined
+            ? options.tabBarLabel
+            : options.title !== undefined
+              ? options.title
+              : route.name;
+
+        const isFocused = state.index === index;
+
+        const onPress = () => {
+          const event = navigation.emit({
+            type: "tabPress",
+            target: route.key,
+            canPreventDefault: true,
+          });
+
+          if (!isFocused && !event.defaultPrevented) {
+            navigation.navigate(route.name, route.params);
+          }
+        };
+
+        const onLongPress = () => {
+          navigation.emit({
+            type: "tabLongPress",
+            target: route.key,
+          });
+        };
+
+        const color = isFocused
+          ? colors.primary.DEFAULT
+          : colors.muted.foreground;
+
+        // Get the icon from options
+        const tabBarIcon = options.tabBarIcon as
+          | ((props: {
+              focused: boolean;
+              color: string;
+              size: number;
+            }) => React.ReactNode)
+          | undefined;
+
+        return (
+          <Pressable
+            key={route.key}
+            accessibilityRole="button"
+            accessibilityState={isFocused ? { selected: true } : {}}
+            accessibilityLabel={
+              options.tabBarAccessibilityLabel as string | undefined
+            }
+            onPress={onPress}
+            onLongPress={onLongPress}
+            style={styles.tabItem}
+          >
+            {tabBarIcon?.({
+              focused: isFocused,
+              color,
+              size: 24,
+            })}
+            <Text style={[styles.tabLabel, { color }]}>
+              {typeof label === "string" ? label : route.name}
+            </Text>
+          </Pressable>
+        );
+      })}
+    </Animated.View>
+  );
+}
+
+function TabLayoutContent() {
   const colorScheme = useColorScheme();
   const colors = colorScheme === "dark" ? darkColors : lightColors;
 
   return (
     <Tabs
+      tabBar={(props) => (
+        <CustomTabBar {...(props as Parameters<typeof CustomTabBar>[0])} />
+      )}
       screenOptions={{
         tabBarActiveTintColor: colors.primary.DEFAULT,
         tabBarInactiveTintColor: colors.muted.foreground,
-        tabBarStyle: {
-          backgroundColor: colors.background,
-          borderTopColor: "transparent",
-          borderTopWidth: 0,
-          paddingTop: 8,
-          paddingBottom: 8,
-          height: 88,
-        },
-        tabBarLabelStyle: {
-          fontSize: 12,
-          fontWeight: "500",
-          marginTop: 4,
-        },
         headerStyle: {
           backgroundColor: colors.background,
           shadowColor: "transparent",
@@ -106,3 +217,39 @@ export default function TabLayout() {
     </Tabs>
   );
 }
+
+export default function TabLayout() {
+  return (
+    <ScrollVisibilityProvider
+      headerHeight={HEADER_CONTENT_HEIGHT}
+      tabBarHeight={TAB_BAR_HEIGHT}
+    >
+      <TabLayoutContent />
+    </ScrollVisibilityProvider>
+  );
+}
+
+const styles = StyleSheet.create({
+  tabBar: {
+    flexDirection: "row",
+    borderTopColor: "transparent",
+    borderTopWidth: 0,
+    paddingTop: 8,
+    height: TAB_BAR_HEIGHT,
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+  },
+  tabItem: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 8,
+  },
+  tabLabel: {
+    fontSize: 12,
+    fontWeight: "500",
+    marginTop: 4,
+  },
+});
