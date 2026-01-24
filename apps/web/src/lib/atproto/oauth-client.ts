@@ -148,7 +148,30 @@ export async function getAtprotoOAuthClient(): Promise<NodeOAuthClient> {
   }
 
   // Handle escaped newlines from environment variables (e.g., Vercel)
-  const privateKeyPem = privateKeyRaw.replace(/\\n/g, "\n");
+  // Try multiple escape patterns that might occur
+  let privateKeyPem = privateKeyRaw
+    .replace(/\\n/g, "\n") // Literal \n (backslash + n)
+    .replace(/\\\\n/g, "\n") // Double-escaped \\n
+    .trim();
+
+  // Remove surrounding quotes if present
+  if (
+    (privateKeyPem.startsWith('"') && privateKeyPem.endsWith('"')) ||
+    (privateKeyPem.startsWith("'") && privateKeyPem.endsWith("'"))
+  ) {
+    privateKeyPem = privateKeyPem.slice(1, -1).replace(/\\n/g, "\n");
+  }
+
+  // Validate the key format
+  if (!privateKeyPem.includes("-----BEGIN PRIVATE KEY-----")) {
+    console.error(
+      "Invalid key format. Expected PKCS#8. Key starts with:",
+      privateKeyPem.substring(0, 50)
+    );
+    throw new Error(
+      "ATPROTO_PRIVATE_KEY must be in PKCS#8 PEM format (-----BEGIN PRIVATE KEY-----)"
+    );
+  }
 
   // Parse the private key (must be PKCS#8 PEM format)
   const privateKey = await JoseKey.fromImportable(privateKeyPem, "key-1");
