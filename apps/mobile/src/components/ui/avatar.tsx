@@ -1,24 +1,23 @@
-import { View, Text, StyleSheet, type ViewStyle } from "react-native";
-import { colors } from "@/lib/theme";
+import React from "react";
+import { XStack, Text, type XStackProps } from "tamagui";
 
 /**
- * Avatar component - minimal flat design
+ * Avatar component - minimal flat design with Tamagui theme support
  */
 
-interface AvatarProps {
+interface AvatarProps extends Omit<XStackProps, "size"> {
   size?: "sm" | "md" | "lg" | "xl";
   fallback?: string;
-  style?: ViewStyle;
 }
 
 const sizes = {
-  sm: { container: 32, text: 12 },
-  md: { container: 40, text: 14 },
-  lg: { container: 56, text: 18 },
-  xl: { container: 80, text: 24 },
+  sm: { container: 32, text: 12, radius: 16 },
+  md: { container: 40, text: 14, radius: 20 },
+  lg: { container: 56, text: 18, radius: 28 },
+  xl: { container: 80, text: 24, radius: 40 },
 };
 
-export function Avatar({ size = "md", fallback, style }: AvatarProps) {
+export function Avatar({ size = "md", fallback, ...props }: AvatarProps) {
   const initials = fallback
     ? fallback
         .split(" ")
@@ -31,32 +30,22 @@ export function Avatar({ size = "md", fallback, style }: AvatarProps) {
   const sizeConfig = sizes[size];
 
   return (
-    <View
-      style={[
-        styles.container,
-        {
-          width: sizeConfig.container,
-          height: sizeConfig.container,
-        },
-        style,
-      ]}
+    <XStack
+      alignItems="center"
+      justifyContent="center"
+      width={sizeConfig.container}
+      height={sizeConfig.container}
+      borderRadius={sizeConfig.radius}
+      backgroundColor="$muted"
+      {...props}
     >
-      <Text style={[styles.text, { fontSize: sizeConfig.text }]}>
+      <Text
+        fontSize={sizeConfig.text}
+        fontWeight="600"
+        color="$mutedForeground"
+      >
         {initials}
       </Text>
-    </View>
+    </XStack>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: 999,
-    backgroundColor: colors.muted.DEFAULT,
-  },
-  text: {
-    fontWeight: "600",
-    color: colors.muted.foreground,
-  },
-});

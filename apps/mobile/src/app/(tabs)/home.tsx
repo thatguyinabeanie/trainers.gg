@@ -92,19 +92,24 @@ function PostCard({ post }: { post: (typeof MOCK_POSTS)[0] }) {
   const theme = useTheme();
 
   return (
-    <YStack marginBottom="$4" gap="$3">
+    <YStack
+      marginBottom="$3"
+      backgroundColor="$card"
+      borderRadius="$4"
+      padding="$4"
+    >
       <XStack alignItems="flex-start" gap="$3">
         <Avatar size="md" fallback={post.author} />
         <YStack flex={1} gap="$1">
           <XStack alignItems="center" gap="$2">
-            <Text fontSize="$4" fontWeight="600" color="$color">
+            <Text fontSize="$4" fontWeight="600" color="$cardForeground">
               {post.author}
             </Text>
             <Text fontSize="$2" color="$mutedForeground">
               {post.timestamp}
             </Text>
           </XStack>
-          <Text fontSize="$3" color="$color" lineHeight="$4">
+          <Text fontSize="$3" color="$cardForeground" lineHeight="$4">
             {post.content}
           </Text>
           <XStack alignItems="center" gap="$5" marginTop="$2">

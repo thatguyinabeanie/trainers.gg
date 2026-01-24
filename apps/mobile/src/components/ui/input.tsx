@@ -1,88 +1,53 @@
-import { useState } from "react";
+import { type ViewStyle } from "react-native";
 import {
-  View,
-  TextInput,
-  type TextInputProps,
+  YStack,
   Text,
-  StyleSheet,
-  type ViewStyle,
-} from "react-native";
-import { colors } from "@/lib/theme";
+  Input as TamaguiInput,
+  type InputProps as TamaguiInputProps,
+} from "tamagui";
 
 /**
- * Input component - minimal flat design
+ * Input component - minimal flat design with Tamagui
  */
 
-interface InputProps extends TextInputProps {
+interface InputProps extends Omit<TamaguiInputProps, "style"> {
   label?: string;
   error?: string;
   containerStyle?: ViewStyle;
 }
 
-export function Input({
-  label,
-  error,
-  containerStyle,
-  style,
-  onFocus,
-  onBlur,
-  ...props
-}: InputProps) {
-  const [isFocused, setIsFocused] = useState(false);
-
+export function Input({ label, error, containerStyle, ...props }: InputProps) {
   return (
-    <View style={[styles.container, containerStyle]}>
-      {label && <Text style={styles.label}>{label}</Text>}
-      <TextInput
-        style={[
-          styles.input,
-          isFocused && styles.inputFocused,
-          error && styles.inputError,
-          style,
-        ]}
-        placeholderTextColor={colors.muted.foreground + "80"}
-        onFocus={(e) => {
-          setIsFocused(true);
-          onFocus?.(e);
+    <YStack width="100%" style={containerStyle}>
+      {label && (
+        <Text marginBottom="$2" fontSize="$3" fontWeight="500" color="$color">
+          {label}
+        </Text>
+      )}
+
+      <TamaguiInput
+        height={48}
+        borderRadius="$4"
+        backgroundColor={error ? "$destructiveMuted" : "$muted"}
+        paddingHorizontal="$4"
+        fontSize="$4"
+        color="$color"
+        borderWidth={0}
+        placeholderTextColor="$mutedForeground"
+        focusStyle={{
+          backgroundColor: "$muted",
+          opacity: 0.8,
         }}
-        onBlur={(e) => {
-          setIsFocused(false);
-          onBlur?.(e);
-        }}
+        onFocus={props.onFocus}
+        onBlur={props.onBlur}
         {...props}
       />
-      {error && <Text style={styles.error}>{error}</Text>}
-    </View>
+
+      {error && (
+        <Text marginTop="$1.5" fontSize="$2" color="$destructive">
+          {error}
+        </Text>
+      )}
+    </YStack>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    width: "100%",
-  },
-  label: {
-    marginBottom: 8,
-    fontSize: 14,
-    fontWeight: "500",
-    color: colors.foreground,
-  },
-  input: {
-    height: 48,
-    borderRadius: 12,
-    backgroundColor: colors.muted.DEFAULT,
-    paddingHorizontal: 16,
-    fontSize: 15,
-    color: colors.foreground,
-  },
-  inputFocused: {
-    backgroundColor: colors.muted.DEFAULT + "CC",
-  },
-  inputError: {
-    backgroundColor: colors.destructive.DEFAULT + "1A",
-  },
-  error: {
-    marginTop: 6,
-    fontSize: 13,
-    color: colors.destructive.DEFAULT,
-  },
-});
