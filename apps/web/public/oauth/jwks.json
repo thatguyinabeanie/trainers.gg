@@ -3,8 +3,8 @@
     {
       "kty": "EC",
       "crv": "P-256",
-      "x": "ii1io3Z9Lxphbnlxlzfzg2dFnBlo8vFCcewxnNCJJ4U",
-      "y": "aJBMIH3X8-nP4ryWFzQioCBoNmg-pRBRdcG-BqTaPE0",
+      "x": "P_XWHYmUKN169rUwuQxkSWPESOI2qK11dULxLFvneHQ",
+      "y": "UKk_otbRN8k85Isg3wkXHKmDBFEZpoWnujlLaFKcZQ4",
       "kid": "key-1",
       "use": "sig",
       "alg": "ES256"

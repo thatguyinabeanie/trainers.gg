@@ -34,8 +34,8 @@ const publicJwk = {
   alg: "ES256",
 };
 
-// Export private key as PEM
-const privatePem = privateKey.export({ type: "sec1", format: "pem" });
+// Export private key as PKCS#8 PEM (required by @atproto/jwk-jose)
+const privatePem = privateKey.export({ type: "pkcs8", format: "pem" });
 
 // JWKS structure
 const jwks = {

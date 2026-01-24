@@ -140,14 +140,17 @@ export async function getAtprotoOAuthClient(): Promise<NodeOAuthClient> {
   }
 
   // Get private key from environment
-  const privateKeyPem = process.env.ATPROTO_PRIVATE_KEY;
-  if (!privateKeyPem) {
+  const privateKeyRaw = process.env.ATPROTO_PRIVATE_KEY;
+  if (!privateKeyRaw) {
     throw new Error(
       "ATPROTO_PRIVATE_KEY environment variable is required for AT Protocol OAuth"
     );
   }
 
-  // Parse the private key
+  // Handle escaped newlines from environment variables (e.g., Vercel)
+  const privateKeyPem = privateKeyRaw.replace(/\\n/g, "\n");
+
+  // Parse the private key (must be PKCS#8 PEM format)
   const privateKey = await JoseKey.fromImportable(privateKeyPem, "key-1");
 
   oauthClient = new NodeOAuthClient({
