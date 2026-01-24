@@ -85,6 +85,156 @@ const MOCK_POSTS = [
     liked: true,
     reposted: false,
   },
+  {
+    id: "7",
+    author: {
+      username: "pokemon_professor",
+      displayName: "Professor Pokemon",
+      avatarUrl: null,
+      verified: true,
+    },
+    content:
+      "Reminder: Registration for NAIC closes next Friday! Make sure you have your Player ID ready and hotel booked. It's going to be a massive event this year.",
+    createdAt: "14h",
+    stats: { likes: 1823, replies: 145, reposts: 289, views: 67000 },
+    liked: false,
+    reposted: false,
+  },
+  {
+    id: "8",
+    author: {
+      username: "VGC_Memes",
+      displayName: "VGC Memes",
+      avatarUrl: null,
+      verified: false,
+    },
+    content:
+      "POV: You're about to win game 3 and your opponent reveals Tera Fairy on their Amoonguss",
+    createdAt: "16h",
+    stats: { likes: 4521, replies: 312, reposts: 823, views: 156000 },
+    liked: true,
+    reposted: true,
+  },
+  {
+    id: "9",
+    author: {
+      username: "TeamBuildingTips",
+      displayName: "Team Building Tips",
+      avatarUrl: null,
+      verified: true,
+    },
+    content:
+      "Thread: How to build a consistent tournament team\n\n1. Start with a proven core\n2. Identify your win conditions\n3. Cover common threats\n4. Test against the top 10 Pokemon\n5. Have a plan for Trick Room\n\nMore details below...",
+    createdAt: "18h",
+    stats: { likes: 2876, replies: 198, reposts: 654, views: 98000 },
+    liked: false,
+    reposted: false,
+  },
+  {
+    id: "10",
+    author: {
+      username: "RegionalChamp2024",
+      displayName: "Sarah Miller",
+      avatarUrl: null,
+      verified: false,
+    },
+    content:
+      "Just won my first Regional! I can't stop shaking. Huge thanks to my testing group - you all believed in me when I didn't believe in myself. Next stop: Worlds qualification!",
+    createdAt: "20h",
+    stats: { likes: 5678, replies: 432, reposts: 234, views: 145000 },
+    liked: false,
+    reposted: false,
+  },
+  {
+    id: "11",
+    author: {
+      username: "MetaMonitor",
+      displayName: "Meta Monitor",
+      avatarUrl: null,
+      verified: true,
+    },
+    content:
+      "Top 5 most common leads this week:\n\n1. Flutter Mane + Fake Out user (34%)\n2. Torkoal + Lilligant (22%)\n3. Chi-Yu + Arcanine (18%)\n4. Iron Hands + Amoonguss (15%)\n5. Palafin + Support (11%)",
+    createdAt: "22h",
+    stats: { likes: 3234, replies: 187, reposts: 567, views: 112000 },
+    liked: true,
+    reposted: false,
+  },
+  {
+    id: "12",
+    author: {
+      username: "RentalTeams",
+      displayName: "Rental Teams",
+      avatarUrl: null,
+      verified: true,
+    },
+    content:
+      "New rental code alert! This Flutter Mane + Dondozo team just got Top 8 at Liverpool Regionals. Perfect for ladder grinding this weekend.\n\nCode: 8X7K-2M4N-9P3L",
+    createdAt: "1d",
+    stats: { likes: 4123, replies: 234, reposts: 789, views: 178000 },
+    liked: false,
+    reposted: true,
+  },
+  {
+    id: "13",
+    author: {
+      username: "TCG_Crossover",
+      displayName: "TCG & VGC Player",
+      avatarUrl: null,
+      verified: false,
+    },
+    content:
+      "Anyone else playing both TCG and VGC this season? Managing two different metas is exhausting but I love both formats too much to choose!",
+    createdAt: "1d",
+    stats: { likes: 876, replies: 123, reposts: 45, views: 34000 },
+    liked: false,
+    reposted: false,
+  },
+  {
+    id: "14",
+    author: {
+      username: "CompetitiveCoach",
+      displayName: "VGC Coach",
+      avatarUrl: null,
+      verified: true,
+    },
+    content:
+      "Coaching session slots for January are now open! Whether you're prepping for your first local or grinding for Worlds, I can help you level up. DM for rates.",
+    createdAt: "1d",
+    stats: { likes: 567, replies: 89, reposts: 123, views: 23000 },
+    liked: false,
+    reposted: false,
+  },
+  {
+    id: "15",
+    author: {
+      username: "TournamentOrganizer",
+      displayName: "Local TO",
+      avatarUrl: null,
+      verified: false,
+    },
+    content:
+      "Reminder: Our monthly MSS is this Saturday at 11am! 32 player cap, best of 3 swiss into top cut. Prizing includes CP and store credit. Sign up link in bio!",
+    createdAt: "1d",
+    stats: { likes: 234, replies: 45, reposts: 67, views: 8900 },
+    liked: true,
+    reposted: false,
+  },
+  {
+    id: "16",
+    author: {
+      username: "StreamerVGC",
+      displayName: "VGC Streamer",
+      avatarUrl: null,
+      verified: true,
+    },
+    content:
+      "Going live in 10 minutes with some high ladder games! Currently at 1850 trying to push for that sweet top 100 finish. Come hang out and backseat my plays!",
+    createdAt: "2d",
+    stats: { likes: 892, replies: 67, reposts: 45, views: 28000 },
+    liked: false,
+    reposted: false,
+  },
 ];
 
 const MOCK_FOR_YOU_POSTS = [
@@ -103,7 +253,7 @@ const MOCK_FOR_YOU_POSTS = [
     liked: false,
     reposted: false,
   },
-  ...MOCK_POSTS.slice(0, 3),
+  ...MOCK_POSTS,
 ];
 
 type FeedTab = "following" | "forYou";
