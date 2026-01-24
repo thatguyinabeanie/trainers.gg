@@ -46,7 +46,7 @@ export function PostCard({
   return (
     <article
       className={cn(
-        "bg-card hover:bg-muted/50 border-border border-b px-4 py-3 transition-colors",
+        "bg-background hover:bg-muted/30 border-border cursor-pointer border-b px-4 py-3 transition-colors",
         className
       )}
     >
@@ -95,7 +95,7 @@ export function PostCard({
             src={author.avatar}
             displayName={author.displayName}
             handle={author.handle}
-            size="default"
+            size="md"
           />
         </Link>
 
@@ -122,7 +122,7 @@ export function PostCard({
             <PostText
               text={record.text}
               facets={record.facets}
-              className="text-foreground whitespace-pre-wrap break-words"
+              className="text-foreground break-words whitespace-pre-wrap"
             />
           </div>
 
@@ -140,7 +140,7 @@ export function PostCard({
               viewerLike={viewerLike}
               viewerRepost={viewerRepost}
               onReply={onReply ? () => onReply(post) : undefined}
-              className="-ml-2 mt-2"
+              className="mt-2 -ml-2"
             />
           )}
         </div>
@@ -288,17 +288,17 @@ export function PostCardSkeleton() {
   return (
     <div className="border-border animate-pulse border-b px-4 py-3">
       <div className="flex gap-3">
-        <div className="bg-muted size-8 shrink-0 rounded-full" />
+        <div className="bg-muted size-10 shrink-0 rounded-full" />
         <div className="flex-1 space-y-2">
           <div className="flex items-center gap-2">
             <div className="bg-muted h-4 w-24 rounded" />
             <div className="bg-muted h-4 w-20 rounded" />
           </div>
-          <div className="space-y-1">
+          <div className="space-y-1.5">
             <div className="bg-muted h-4 w-full rounded" />
             <div className="bg-muted h-4 w-3/4 rounded" />
           </div>
-          <div className="flex gap-4 pt-2">
+          <div className="flex gap-8 pt-2">
             <div className="bg-muted h-4 w-12 rounded" />
             <div className="bg-muted h-4 w-12 rounded" />
             <div className="bg-muted h-4 w-12 rounded" />

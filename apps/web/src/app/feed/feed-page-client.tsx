@@ -93,42 +93,44 @@ export function FeedPageClient() {
 
   return (
     <main className="min-h-screen">
-      {/* Header */}
-      <header className="border-border bg-background/95 supports-[backdrop-filter]:bg-background/60 sticky top-0 z-10 border-b backdrop-blur">
-        <div className="container flex h-14 items-center justify-between px-4">
-          <h1 className="text-xl font-semibold">Feed</h1>
-          <Button onClick={handleNewPost} size="sm" className="gap-2">
-            <PenSquare className="size-4" />
-            <span className="hidden sm:inline">New Post</span>
-          </Button>
-        </div>
+      {/* Two-column layout like Twitter/Bluesky */}
+      <div className="border-border mx-auto min-h-screen max-w-2xl border-x">
+        {/* Header */}
+        <header className="bg-background/95 supports-[backdrop-filter]:bg-background/60 sticky top-0 z-10 backdrop-blur">
+          <div className="flex h-14 items-center justify-between px-4">
+            <h1 className="text-xl font-bold">Feed</h1>
+            <Button onClick={handleNewPost} size="sm" className="gap-2">
+              <PenSquare className="size-4" />
+              <span className="hidden sm:inline">New Post</span>
+            </Button>
+          </div>
 
-        {/* Tab switcher */}
-        <Tabs
-          value={selectedTab}
-          onValueChange={(v) => setSelectedTab(v as "pokemon" | "all")}
-          className="border-border border-b"
-        >
-          <TabsList className="w-full justify-start gap-0 rounded-none border-none bg-transparent p-0">
-            <TabsTrigger
-              value="pokemon"
-              className="data-[state=active]:border-primary relative rounded-none border-b-2 border-transparent px-4 py-3 font-medium data-[state=active]:bg-transparent"
-            >
-              Pokemon
-            </TabsTrigger>
-            <TabsTrigger
-              value="all"
-              className="data-[state=active]:border-primary relative rounded-none border-b-2 border-transparent px-4 py-3 font-medium data-[state=active]:bg-transparent"
-              disabled
-            >
-              All (Coming Soon)
-            </TabsTrigger>
-          </TabsList>
-        </Tabs>
-      </header>
+          {/* Tab switcher */}
+          <Tabs
+            value={selectedTab}
+            onValueChange={(v) => setSelectedTab(v as "pokemon" | "all")}
+          >
+            <TabsList className="h-auto w-full justify-start gap-0 rounded-none border-none bg-transparent p-0">
+              <TabsTrigger
+                value="pokemon"
+                className="data-[state=active]:border-primary hover:bg-muted/50 flex-1 rounded-none border-b-2 border-transparent px-4 py-3 font-semibold transition-colors data-[state=active]:bg-transparent"
+              >
+                Pokemon
+              </TabsTrigger>
+              <TabsTrigger
+                value="all"
+                className="data-[state=active]:border-primary hover:bg-muted/50 flex-1 rounded-none border-b-2 border-transparent px-4 py-3 font-semibold transition-colors data-[state=active]:bg-transparent"
+                disabled
+              >
+                All (Coming Soon)
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
+          {/* Bottom border for header */}
+          <div className="border-border border-b" />
+        </header>
 
-      {/* Feed content */}
-      <div className="container px-0 sm:px-4">
+        {/* Feed content */}
         <FeedContainer
           posts={posts}
           isLoading={pokemonFeed.isLoading || isLoading}

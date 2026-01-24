@@ -8,7 +8,7 @@ interface BlueskyAvatarProps {
   alt?: string;
   displayName?: string;
   handle?: string;
-  size?: "sm" | "default" | "lg";
+  size?: "sm" | "default" | "md" | "lg" | "xl";
   className?: string;
 }
 
