@@ -2,7 +2,7 @@
 # https://fly.io/docs/reference/configuration/
 
 app = "trainers-pds"
-primary_region = "sjc"
+primary_region = "ord"
 
 [build]
   image = "ghcr.io/bluesky-social/pds:0.4"
