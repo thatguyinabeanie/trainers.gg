@@ -14,20 +14,45 @@ import { JoseKey } from "@atproto/jwk-jose";
 import { createAtprotoServiceClient } from "@/lib/supabase/server";
 import type { Json } from "@trainers/supabase";
 
-// Environment-aware configuration
-const isProduction = process.env.NODE_ENV === "production";
-const PRODUCTION_URL = "https://trainers.gg";
-const siteUrl =
-  process.env.NEXT_PUBLIC_SITE_URL ||
-  (isProduction ? PRODUCTION_URL : "http://127.0.0.1:3000");
+/**
+ * Get the site URL, with automatic detection for different environments:
+ * - Production: Uses NEXT_PUBLIC_SITE_URL or falls back to trainers.gg
+ * - Vercel Previews: Auto-detected via VERCEL_URL
+ * - Local Dev: Requires NEXT_PUBLIC_SITE_URL to be set to a tunnel URL (ngrok, etc.)
+ *
+ * Note: AT Protocol OAuth does NOT allow localhost redirect URIs for web apps.
+ * Local development requires using a tunnel service like ngrok.
+ */
+function getSiteUrl(): string {
+  // Explicit override takes precedence (used for local dev with tunnels)
+  if (process.env.NEXT_PUBLIC_SITE_URL) {
+    return process.env.NEXT_PUBLIC_SITE_URL;
+  }
 
-// Client metadata URL (must be publicly accessible)
-const CLIENT_ID = isProduction
-  ? `${PRODUCTION_URL}/oauth/client-metadata.json`
-  : `${siteUrl}/oauth/client-metadata.json`;
+  // Vercel preview deployments
+  if (process.env.VERCEL_URL) {
+    return `https://${process.env.VERCEL_URL}`;
+  }
+
+  // Production fallback
+  if (process.env.NODE_ENV === "production") {
+    return "https://trainers.gg";
+  }
+
+  // Local development - will fail OAuth but allows app to start
+  return "http://127.0.0.1:3000";
+}
+
+const siteUrl = getSiteUrl();
+
+// Client ID is now the dynamic metadata endpoint URL
+const CLIENT_ID = `${siteUrl}/api/oauth/client-metadata`;
 
 // Redirect URI for OAuth callback
 const REDIRECT_URI = `${siteUrl}/api/oauth/callback`;
+
+// JWKS URI for public key discovery
+const JWKS_URI = `${siteUrl}/oauth/jwks.json`;
 
 // Singleton client instance
 let oauthClient: NodeOAuthClient | null = null;
@@ -180,7 +205,7 @@ export async function getAtprotoOAuthClient(): Promise<NodeOAuthClient> {
       token_endpoint_auth_method: "private_key_jwt",
       token_endpoint_auth_signing_alg: "ES256",
       dpop_bound_access_tokens: true,
-      jwks_uri: `${isProduction ? "https://trainers.gg" : siteUrl}/oauth/jwks.json`,
+      jwks_uri: JWKS_URI,
     },
     keyset: [privateKey],
     stateStore,
