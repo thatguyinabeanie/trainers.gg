@@ -11,7 +11,7 @@ import {
   type NodeSavedState,
 } from "@atproto/oauth-client-node";
 import { JoseKey } from "@atproto/jwk-jose";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, createServiceRoleClient } from "@/lib/supabase/server";
 
 // Environment-aware configuration
 const isProduction = process.env.NODE_ENV === "production";
@@ -31,12 +31,13 @@ let oauthClient: NodeOAuthClient | null = null;
 /**
  * State store implementation using Supabase
  * Stores temporary OAuth state during authorization flow
+ * Uses service role client since atproto_oauth_state has no user-facing RLS policies
  *
  * Note: Tables are created via migration. Type assertions used until types regenerated.
  */
 const stateStore = {
   async set(key: string, state: NodeSavedState): Promise<void> {
-    const supabase = await createClient();
+    const supabase = createServiceRoleClient();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error } = await (supabase as any)
       .from("atproto_oauth_state")
@@ -53,7 +54,7 @@ const stateStore = {
   },
 
   async get(key: string): Promise<NodeSavedState | undefined> {
-    const supabase = await createClient();
+    const supabase = createServiceRoleClient();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data, error } = await (supabase as any)
       .from("atproto_oauth_state")
@@ -71,7 +72,7 @@ const stateStore = {
   },
 
   async del(key: string): Promise<void> {
-    const supabase = await createClient();
+    const supabase = createServiceRoleClient();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await (supabase as any)
       .from("atproto_oauth_state")
@@ -83,12 +84,13 @@ const stateStore = {
 /**
  * Session store implementation using Supabase
  * Stores OAuth tokens per DID
+ * Uses service role client since atproto_sessions has limited user-facing RLS policies
  *
  * Note: Tables are created via migration. Type assertions used until types regenerated.
  */
 const sessionStore = {
   async set(sub: string, session: NodeSavedSession): Promise<void> {
-    const supabase = await createClient();
+    const supabase = createServiceRoleClient();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error } = await (supabase as any).from("atproto_sessions").upsert(
       {
@@ -108,7 +110,7 @@ const sessionStore = {
   },
 
   async get(sub: string): Promise<NodeSavedSession | undefined> {
-    const supabase = await createClient();
+    const supabase = createServiceRoleClient();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data, error } = await (supabase as any)
       .from("atproto_sessions")
@@ -125,7 +127,7 @@ const sessionStore = {
   },
 
   async del(sub: string): Promise<void> {
-    const supabase = await createClient();
+    const supabase = createServiceRoleClient();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await (supabase as any).from("atproto_sessions").delete().eq("did", sub);
   },
@@ -214,7 +216,7 @@ export async function startAtprotoAuth(
 
   // Store return URL in state if provided
   if (returnUrl) {
-    const supabase = await createClient();
+    const supabase = createServiceRoleClient();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await (supabase as any).from("atproto_oauth_state").upsert({
       state_key: `return:${state}`,
@@ -246,7 +248,7 @@ export async function handleAtprotoCallback(params: URLSearchParams): Promise<{
   // Get the return URL if we stored one
   let returnUrl: string | undefined;
   if (state) {
-    const supabase = await createClient();
+    const supabase = createServiceRoleClient();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data } = await (supabase as any)
       .from("atproto_oauth_state")
@@ -284,7 +286,7 @@ export async function getAtprotoSession(did: string) {
  * Revoke/logout an AT Protocol session
  */
 export async function revokeAtprotoSession(did: string): Promise<void> {
-  const supabase = await createClient();
+  const supabase = createServiceRoleClient();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   await (supabase as any).from("atproto_sessions").delete().eq("did", did);
 }

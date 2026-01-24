@@ -1,4 +1,5 @@
 import { createServerClient } from "@supabase/ssr";
+import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import { cookies } from "next/headers";
 import type { Database } from "@trainers/supabase/types";
 import type { User } from "@supabase/supabase-js";
@@ -74,4 +75,27 @@ export async function isAuthenticated(): Promise<boolean> {
 export async function getUserId(): Promise<string | null> {
   const user = await getUser();
   return user?.id ?? null;
+}
+
+/**
+ * Create a Supabase client with service role privileges.
+ * USE WITH CAUTION: This bypasses RLS policies.
+ * Only use for system operations like OAuth state management.
+ */
+export function createServiceRoleClient() {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  if (!supabaseUrl || !serviceRoleKey) {
+    throw new Error(
+      "Missing SUPABASE_SERVICE_ROLE_KEY environment variable for service role client"
+    );
+  }
+
+  return createSupabaseClient<Database>(supabaseUrl, serviceRoleKey, {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false,
+    },
+  });
 }
