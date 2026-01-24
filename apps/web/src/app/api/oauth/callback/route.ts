@@ -18,7 +18,10 @@ import {
   getBlueskyProfile,
   extractUsernameFromHandle,
 } from "@/lib/atproto/oauth-client";
-import { createServiceRoleClient } from "@/lib/supabase/server";
+import {
+  createServiceRoleClient,
+  createAtprotoServiceClient,
+} from "@/lib/supabase/server";
 
 /**
  * Generate a unique username by appending numbers if needed
@@ -75,20 +78,58 @@ export async function GET(request: Request) {
     // Step 1: Exchange auth code for tokens, get DID
     const { did, returnUrl } = await handleAtprotoCallback(searchParams);
 
+    // Use service role client for auth operations
     const supabase = createServiceRoleClient();
+    // Use atproto client for user table operations (has extended types)
+    const supabaseAtproto = createAtprotoServiceClient();
 
-    // Step 2: Check if user already exists with this DID
-    const { data: existingUser } = await supabase
+    // Generate placeholder email for lookups
+    const didSlug = did.replace(/[^a-zA-Z0-9]/g, "_").slice(0, 50);
+    const placeholderEmail = `${didSlug}@bluesky.trainers.gg`;
+
+    // Step 2: Check if user already exists with this DID or placeholder email
+    // Note: Using separate queries since .or() with special characters in DID can be tricky
+    let existingUser: {
+      id: string;
+      email: string | null;
+      did: string | null;
+    } | null = null;
+
+    // First, check by DID (most reliable)
+    const { data: userByDid } = await supabaseAtproto
       .from("users")
-      .select("id, email")
+      .select("id, email, did")
       .eq("did", did)
       .maybeSingle();
+
+    if (userByDid) {
+      existingUser = userByDid;
+    } else {
+      // If not found by DID, check by placeholder email
+      const { data: userByEmail } = await supabaseAtproto
+        .from("users")
+        .select("id, email, did")
+        .ilike("email", placeholderEmail)
+        .maybeSingle();
+
+      if (userByEmail) {
+        existingUser = userByEmail;
+      }
+    }
 
     let userEmail: string;
 
     if (existingUser && existingUser.email) {
       // Existing user - use their email
       userEmail = existingUser.email;
+
+      // If DID wasn't set on the user record, update it now
+      if (!existingUser.did) {
+        await supabaseAtproto
+          .from("users")
+          .update({ did, pds_status: "active" })
+          .eq("id", existingUser.id);
+      }
     } else {
       // New user - create account from Bluesky profile
       const profile = await getBlueskyProfile(did);
@@ -101,9 +142,7 @@ export async function GET(request: Request) {
       const baseUsername = extractUsernameFromHandle(profile.handle);
       const username = await generateUniqueUsername(baseUsername, supabase);
 
-      // Generate placeholder email using DID
-      const didSlug = did.replace(/[^a-zA-Z0-9]/g, "_").slice(0, 50);
-      userEmail = `${didSlug}@bluesky.trainers.gg`;
+      userEmail = placeholderEmail;
 
       // Create Supabase Auth account
       const { data: authData, error: authError } =
@@ -126,7 +165,7 @@ export async function GET(request: Request) {
       }
 
       // Update user record with Bluesky info
-      await supabase
+      await supabaseAtproto
         .from("users")
         .update({
           did,
