@@ -10,10 +10,47 @@ import {
   ScrollView,
   Spinner,
 } from "tamagui";
-import { useAuth } from "@/lib/supabase";
+import { useAuth, getSupabase } from "@/lib/supabase";
+
+/**
+ * Resolves a login identifier (email or username) to an email address.
+ * If the identifier looks like an email, returns it as-is.
+ * Otherwise, looks up the username in the database.
+ */
+async function resolveLoginIdentifier(
+  identifier: string
+): Promise<{ email: string | null; error: string | null }> {
+  const trimmed = identifier.trim().toLowerCase();
+
+  // If it looks like an email, return as-is
+  if (trimmed.includes("@")) {
+    return { email: trimmed, error: null };
+  }
+
+  // Otherwise, look up username
+  try {
+    const { data, error } = await getSupabase()
+      .from("users")
+      .select("email")
+      .ilike("username", trimmed)
+      .maybeSingle();
+
+    if (error) {
+      return { email: null, error: "Failed to look up username" };
+    }
+
+    if (!data) {
+      return { email: null, error: "Username not found" };
+    }
+
+    return { email: data.email, error: null };
+  } catch {
+    return { email: null, error: "Failed to connect to server" };
+  }
+}
 
 export default function SignInScreen() {
-  const [email, setEmail] = useState("");
+  const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const { signInWithEmail, loading } = useAuth();
@@ -22,8 +59,17 @@ export default function SignInScreen() {
   const handleSignIn = async () => {
     setError(null);
 
-    if (!email || !password) {
+    if (!identifier || !password) {
       setError("Please fill in all fields");
+      return;
+    }
+
+    // Resolve username to email if needed
+    const { email, error: resolveError } =
+      await resolveLoginIdentifier(identifier);
+
+    if (resolveError || !email) {
+      setError(resolveError || "Could not find account");
       return;
     }
 
@@ -76,22 +122,31 @@ export default function SignInScreen() {
           )}
 
           <YStack gap="$3">
-            <Input
-              backgroundColor="$muted"
-              borderWidth={0}
-              borderRadius="$4"
-              paddingHorizontal="$4"
-              paddingVertical="$3.5"
-              fontSize={16}
-              color="$color"
-              placeholder="Email"
-              placeholderTextColor="$mutedForeground"
-              value={email}
-              onChangeText={setEmail}
-              autoCapitalize="none"
-              keyboardType="email-address"
-              autoComplete="email"
-            />
+            <YStack gap="$1">
+              <Input
+                backgroundColor="$muted"
+                borderWidth={0}
+                borderRadius="$4"
+                paddingHorizontal="$4"
+                paddingVertical="$3.5"
+                fontSize={16}
+                color="$color"
+                placeholder="Email or Username"
+                placeholderTextColor="$mutedForeground"
+                value={identifier}
+                onChangeText={setIdentifier}
+                autoCapitalize="none"
+                keyboardType="email-address"
+                autoComplete="username"
+              />
+              <Text
+                fontSize={12}
+                color="$mutedForeground"
+                paddingHorizontal="$1"
+              >
+                No @trainers.gg needed for username
+              </Text>
+            </YStack>
 
             <Input
               backgroundColor="$muted"

@@ -104,21 +104,62 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   ) => {
     setLoading(true);
-    const { error } = await getSupabase().auth.signUp({
-      email,
-      password,
-      options: {
-        data: {
-          username: metadata?.username?.toLowerCase(),
-          first_name: metadata?.firstName,
-          last_name: metadata?.lastName,
-          birth_date: metadata?.birthDate,
-          country: metadata?.country?.toUpperCase(),
+
+    try {
+      // Call the unified signup edge function that creates both
+      // Supabase Auth + Bluesky PDS accounts
+      const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
+      const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
+
+      if (!supabaseUrl || !supabaseAnonKey) {
+        setLoading(false);
+        return { error: new Error("Missing Supabase configuration") };
+      }
+
+      const response = await fetch(`${supabaseUrl}/functions/v1/signup`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${supabaseAnonKey}`,
         },
-      },
-    });
-    setLoading(false);
-    return { error };
+        body: JSON.stringify({
+          email,
+          password,
+          username: metadata?.username?.toLowerCase(),
+          firstName: metadata?.firstName,
+          lastName: metadata?.lastName,
+          birthDate: metadata?.birthDate,
+          country: metadata?.country?.toUpperCase(),
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!result.success) {
+        setLoading(false);
+        return {
+          error: new Error(result.error || "Signup failed"),
+        };
+      }
+
+      // Sign in the user after successful signup
+      // The edge function created the account, now we need a session
+      const { error } = await getSupabase().auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      setLoading(false);
+      return { error };
+    } catch (err) {
+      setLoading(false);
+      return {
+        error:
+          err instanceof Error
+            ? err
+            : new Error("An unexpected error occurred"),
+      };
+    }
   };
 
   const resetPassword = async (email: string) => {

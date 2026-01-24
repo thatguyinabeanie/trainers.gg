@@ -20,7 +20,6 @@ export default function SignUpScreen() {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
   const { signUpWithEmail, loading } = useAuth();
   const router = useRouter();
 
@@ -37,13 +36,20 @@ export default function SignUpScreen() {
       return;
     }
 
-    if (password.length < 6) {
-      setError("Password must be at least 6 characters");
+    if (password.length < 8) {
+      setError("Password must be at least 8 characters");
       return;
     }
 
-    if (username.length < 3) {
-      setError("Username must be at least 3 characters");
+    if (username.length < 3 || username.length > 20) {
+      setError("Username must be 3-20 characters");
+      return;
+    }
+
+    if (!/^[a-zA-Z0-9_-]+$/.test(username)) {
+      setError(
+        "Username can only contain letters, numbers, underscores, and hyphens"
+      );
       return;
     }
 
@@ -56,65 +62,10 @@ export default function SignUpScreen() {
     if (signUpError) {
       setError(signUpError.message);
     } else {
-      setSuccess(true);
+      // Successfully signed up and logged in - redirect to home
+      router.replace("/(tabs)/home" as never);
     }
   };
-
-  if (success) {
-    return (
-      <YStack
-        flex={1}
-        alignItems="center"
-        justifyContent="center"
-        backgroundColor="$background"
-        padding="$6"
-      >
-        <YStack
-          backgroundColor="$backgroundStrong"
-          borderRadius="$6"
-          padding="$6"
-          alignItems="center"
-          maxWidth={320}
-        >
-          <Text
-            fontSize={24}
-            fontWeight="700"
-            color="$color"
-            textAlign="center"
-            marginBottom="$3"
-          >
-            Check Your Email
-          </Text>
-          <Text
-            fontSize={15}
-            color="$mutedForeground"
-            textAlign="center"
-            marginBottom="$6"
-            lineHeight={22}
-          >
-            We&apos;ve sent a confirmation link to {email}. Please verify your
-            account to continue.
-          </Text>
-          <Button
-            backgroundColor="$primary"
-            borderWidth={0}
-            borderRadius="$4"
-            height={48}
-            paddingHorizontal="$6"
-            pressStyle={{ opacity: 0.85 }}
-            onPress={() =>
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              router.replace("/(auth)/sign-in" as any)
-            }
-          >
-            <Text color="$primaryForeground" fontSize={15} fontWeight="600">
-              Go to Sign In
-            </Text>
-          </Button>
-        </YStack>
-      </YStack>
-    );
-  }
 
   return (
     <KeyboardAvoidingView
@@ -156,21 +107,33 @@ export default function SignUpScreen() {
           )}
 
           <YStack gap="$3">
-            <Input
-              backgroundColor="$muted"
-              borderWidth={0}
-              borderRadius="$4"
-              paddingHorizontal="$4"
-              paddingVertical="$3.5"
-              fontSize={16}
-              color="$color"
-              placeholder="Username *"
-              placeholderTextColor="$mutedForeground"
-              value={username}
-              onChangeText={setUsername}
-              autoCapitalize="none"
-              autoComplete="username"
-            />
+            <YStack gap="$1">
+              <Input
+                backgroundColor="$muted"
+                borderWidth={0}
+                borderRadius="$4"
+                paddingHorizontal="$4"
+                paddingVertical="$3.5"
+                fontSize={16}
+                color="$color"
+                placeholder="Username *"
+                placeholderTextColor="$mutedForeground"
+                value={username}
+                onChangeText={setUsername}
+                autoCapitalize="none"
+                autoComplete="username"
+              />
+              <Text
+                fontSize={12}
+                color="$mutedForeground"
+                paddingHorizontal="$1"
+              >
+                Your Bluesky handle:{" "}
+                <Text fontSize={12} color="$color" fontWeight="500">
+                  @{username.toLowerCase() || "username"}.trainers.gg
+                </Text>
+              </Text>
+            </YStack>
 
             <Input
               backgroundColor="$muted"
