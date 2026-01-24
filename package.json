@@ -27,13 +27,21 @@
     "db:lint": "pnpm --filter=@trainers/supabase run db:lint",
     "db:seed": "pnpm --filter=@trainers/supabase run db:seed",
     "db:dump": "pnpm --filter=@trainers/supabase run db:dump",
-    "db:status": "pnpm --filter=@trainers/supabase run db:status"
+    "db:status": "pnpm --filter=@trainers/supabase run db:status",
+    "prepare": "husky"
   },
   "devDependencies": {
     "@trainers/prettier-config": "workspace:*",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.2.7",
     "prettier": "catalog:",
     "prettier-plugin-tailwindcss": "^0.6.9",
     "turbo": "^2.7.5",
     "typescript": "catalog:"
+  },
+  "lint-staged": {
+    "*.{js,jsx,ts,tsx,json,md,css,html,yml,yaml}": [
+      "prettier --write"
+    ]
   }
 }

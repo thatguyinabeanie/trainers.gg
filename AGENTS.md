@@ -96,6 +96,34 @@ pnpm format:check         # Check formatting without fixing
 pnpm clean                # Remove all build artifacts and node_modules
 ```
 
+### Pre-commit Hooks (Husky + lint-staged)
+
+All commits are validated via Husky pre-commit hooks:
+
+1. **lint-staged** runs on staged files:
+   - Prettier formatting (auto-fix)
+   - ESLint (auto-fix where possible)
+2. **TypeScript** check runs on the full codebase
+
+**Commit workflow:**
+
+```bash
+# Before committing, ensure these pass:
+pnpm lint                 # Fix any lint errors
+pnpm typecheck            # Fix any type errors
+pnpm format               # Format all files
+
+# Then commit - hooks will verify
+git add .
+git commit -m "feat: add new feature"
+```
+
+**If pre-commit hooks fail:**
+
+- Fix the reported errors
+- Stage the fixes: `git add .`
+- Retry the commit
+
 ### Single Package Commands
 
 ```bash

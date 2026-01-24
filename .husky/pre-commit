@@ -1,0 +1,5 @@
+# Run lint-staged for formatting and linting
+pnpm exec lint-staged
+
+# Run typecheck on the full codebase
+pnpm typecheck
