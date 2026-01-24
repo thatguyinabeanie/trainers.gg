@@ -87,21 +87,63 @@ export function useAuth() {
     }
   ) => {
     setLoading(true);
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: {
-          username: metadata?.username?.toLowerCase(),
-          first_name: metadata?.firstName,
-          last_name: metadata?.lastName,
-          birth_date: metadata?.birthDate,
-          country: metadata?.country?.toUpperCase(),
+
+    try {
+      // Call the unified signup edge function that creates both
+      // Supabase Auth + Bluesky PDS accounts
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/signup`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`,
+          },
+          body: JSON.stringify({
+            email,
+            password,
+            username: metadata?.username?.toLowerCase(),
+            firstName: metadata?.firstName,
+            lastName: metadata?.lastName,
+            birthDate: metadata?.birthDate,
+            country: metadata?.country?.toUpperCase(),
+          }),
+        }
+      );
+
+      const result = await response.json();
+
+      if (!result.success) {
+        setLoading(false);
+        return {
+          data: null,
+          error: {
+            message: result.error || "Signup failed",
+            code: result.code,
+          },
+        };
+      }
+
+      // Sign in the user after successful signup
+      // The edge function created the account, now we need a session
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      setLoading(false);
+      return { data, error };
+    } catch (err) {
+      setLoading(false);
+      return {
+        data: null,
+        error: {
+          message:
+            err instanceof Error ? err.message : "An unexpected error occurred",
+          code: "NETWORK_ERROR",
         },
-      },
-    });
-    setLoading(false);
-    return { data, error };
+      };
+    }
   };
 
   const resetPassword = async (email: string) => {

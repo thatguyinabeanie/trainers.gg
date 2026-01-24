@@ -5,6 +5,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -75,10 +76,10 @@ const signUpSchema = z
 type SignUpFormData = z.infer<typeof signUpSchema>;
 
 export function SignUpForm() {
+  const router = useRouter();
   const { signUpWithEmail } = useAuth();
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isSuccess, setIsSuccess] = useState(false);
   const [detectedCountry, setDetectedCountry] = useState<string | null>(null);
 
   const {
@@ -153,7 +154,8 @@ export function SignUpForm() {
         return;
       }
 
-      setIsSuccess(true);
+      // Successfully signed up and logged in - redirect to home
+      router.push("/");
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "An unexpected error occurred"
@@ -162,28 +164,6 @@ export function SignUpForm() {
       setIsSubmitting(false);
     }
   };
-
-  if (isSuccess) {
-    return (
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <CardTitle className="text-2xl">Check Your Email</CardTitle>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-4 text-center">
-          <p className="text-muted-foreground">
-            We&apos;ve sent you a verification link. Please check your email and
-            click the link to verify your account.
-          </p>
-          <p className="text-muted-foreground text-sm">
-            Already verified?{" "}
-            <Link href="/sign-in" className="text-primary hover:underline">
-              Sign in
-            </Link>
-          </p>
-        </CardContent>
-      </Card>
-    );
-  }
 
   return (
     <Card className="w-full max-w-md">
@@ -250,7 +230,10 @@ export function SignUpForm() {
               </p>
             )}
             <p className="text-muted-foreground text-xs">
-              3-20 characters. Letters, numbers, underscores, and hyphens only.
+              Your Bluesky handle will be{" "}
+              <span className="text-foreground font-medium">
+                @{watch("username")?.toLowerCase() || "username"}.trainers.gg
+              </span>
             </p>
           </div>
 
