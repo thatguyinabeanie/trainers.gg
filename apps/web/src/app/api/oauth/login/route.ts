@@ -12,13 +12,25 @@ import { startAtprotoAuth } from "@/lib/atproto/oauth-client";
  * Check if running on a Vercel preview deployment.
  * Bluesky OAuth is disabled on previews due to deployment protection.
  *
- * VERCEL_ENV is set by Vercel:
- * - "production" for production deployments
- * - "preview" for preview deployments
- * - "development" for local dev (via vercel dev)
+ * Detection strategy:
+ * 1. VERCEL_ENV is the most reliable - set by Vercel to:
+ *    - "production" for production deployments
+ *    - "preview" for preview deployments
+ *    - "development" for local dev (via vercel dev)
+ * 2. Fallback: if on Vercel (VERCEL_URL set) but NODE_ENV isn't production
  */
 function isVercelPreview(): boolean {
-  return process.env.VERCEL_ENV === "preview";
+  // VERCEL_ENV is the most reliable indicator
+  if (process.env.VERCEL_ENV) {
+    return process.env.VERCEL_ENV === "preview";
+  }
+
+  // Fallback: if we're on Vercel (VERCEL_URL set) but not in production NODE_ENV
+  if (process.env.VERCEL_URL && process.env.NODE_ENV !== "production") {
+    return true;
+  }
+
+  return false;
 }
 
 export async function GET(request: Request) {
