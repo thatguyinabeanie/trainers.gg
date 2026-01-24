@@ -7,7 +7,7 @@
   "policy_uri": "https://trainers.gg/privacy",
   "redirect_uris": [
     "https://trainers.gg/api/oauth/callback",
-    "http://localhost:3000/api/oauth/callback"
+    "http://127.0.0.1:3000/api/oauth/callback"
   ],
   "scope": "atproto transition:generic",
   "grant_types": ["authorization_code", "refresh_token"],

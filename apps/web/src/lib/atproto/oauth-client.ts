@@ -15,7 +15,7 @@ import { createClient } from "@/lib/supabase/server";
 
 // Environment-aware configuration
 const isProduction = process.env.NODE_ENV === "production";
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://127.0.0.1:3000";
 
 // Client metadata URL (must be publicly accessible)
 const CLIENT_ID = isProduction
