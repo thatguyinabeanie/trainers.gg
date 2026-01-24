@@ -3,8 +3,16 @@
 import * as React from "react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { useAuth } from "@/hooks/use-auth";
-import { oauthProviders } from "@/lib/supabase/auth";
+import { oauthProviders, blueskyProvider } from "@/lib/supabase/auth";
 
 interface SocialAuthButtonsProps {
   mode: "signin" | "signup";
@@ -66,16 +74,31 @@ function TwitterIcon() {
   );
 }
 
+function BlueskyIcon() {
+  return (
+    <svg viewBox="0 0 568 501" className="size-4" aria-hidden="true">
+      <path
+        fill="currentColor"
+        d="M123.121 33.6637C188.241 82.5526 258.281 181.681 284 234.873C309.719 181.681 379.759 82.5526 444.879 33.6637C491.866 -1.61183 568 -28.9064 568 57.9464C568 75.2916 558.055 203.659 552.222 224.501C531.947 296.954 458.067 315.434 392.347 304.249C507.222 323.8 536.444 388.56 473.333 453.32C353.473 576.312 301.061 422.461 287.631 googl383.039C285.169 375.812 284.017 372.431 284 375.306C283.983 372.431 282.831 375.812 280.369 383.039C266.939 422.461 214.527 576.312 94.6667 453.32C31.5556 388.56 60.7778 323.8 175.653 304.249C109.933 315.434 36.0533 296.954 15.7778 224.501C9.94525 203.659 0 75.2916 0 57.9464C0 -28.9064 76.1345 -1.61183 123.121 33.6637Z"
+      />
+    </svg>
+  );
+}
+
 const providerIcons: Record<string, () => React.ReactNode> = {
   google: GoogleIcon,
   discord: DiscordIcon,
   github: GitHubIcon,
   twitter: TwitterIcon,
+  bluesky: BlueskyIcon,
 };
 
 export function SocialAuthButtons({ mode }: SocialAuthButtonsProps) {
   const { signInWithOAuth } = useAuth();
   const [loadingProvider, setLoadingProvider] = useState<string | null>(null);
+  const [showBlueskyDialog, setShowBlueskyDialog] = useState(false);
+  const [blueskyHandle, setBlueskyHandle] = useState("");
+  const [blueskyError, setBlueskyError] = useState<string | null>(null);
 
   const handleOAuthSignIn = async (provider: string) => {
     setLoadingProvider(provider);
@@ -84,6 +107,34 @@ export function SocialAuthButtons({ mode }: SocialAuthButtonsProps) {
         provider as "google" | "discord" | "github" | "twitter"
       );
     } finally {
+      setLoadingProvider(null);
+    }
+  };
+
+  const handleBlueskyClick = () => {
+    setBlueskyError(null);
+    setBlueskyHandle("");
+    setShowBlueskyDialog(true);
+  };
+
+  const handleBlueskySubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setBlueskyError(null);
+
+    const handle = blueskyHandle.trim();
+    if (!handle) {
+      setBlueskyError("Please enter your Bluesky handle");
+      return;
+    }
+
+    setLoadingProvider("bluesky");
+
+    try {
+      // Redirect to the Bluesky OAuth login endpoint
+      const params = new URLSearchParams({ handle });
+      window.location.href = `/api/oauth/login?${params.toString()}`;
+    } catch {
+      setBlueskyError("Failed to start Bluesky login");
       setLoadingProvider(null);
     }
   };
@@ -116,6 +167,74 @@ export function SocialAuthButtons({ mode }: SocialAuthButtonsProps) {
           </Button>
         );
       })}
+
+      {/* Bluesky Button */}
+      <Button
+        type="button"
+        variant="outline"
+        className="w-full"
+        disabled={loadingProvider !== null}
+        onClick={handleBlueskyClick}
+      >
+        {loadingProvider === "bluesky" ? (
+          <span className="size-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+        ) : (
+          <BlueskyIcon />
+        )}
+        <span>
+          {actionText} with {blueskyProvider.displayName}
+        </span>
+      </Button>
+
+      {/* Bluesky Handle Input Dialog */}
+      <Dialog open={showBlueskyDialog} onOpenChange={setShowBlueskyDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <BlueskyIcon />
+              {actionText} with Bluesky
+            </DialogTitle>
+            <DialogDescription>
+              Enter your Bluesky handle to continue. This can be your
+              trainers.gg handle or any Bluesky account.
+            </DialogDescription>
+          </DialogHeader>
+
+          <form onSubmit={handleBlueskySubmit} className="flex flex-col gap-4">
+            <div className="flex flex-col gap-2">
+              <Input
+                type="text"
+                placeholder="username.bsky.social or username.trainers.gg"
+                value={blueskyHandle}
+                onChange={(e) => setBlueskyHandle(e.target.value)}
+                disabled={loadingProvider === "bluesky"}
+                autoFocus
+              />
+              {blueskyError && (
+                <p className="text-destructive text-sm">{blueskyError}</p>
+              )}
+            </div>
+
+            <div className="flex justify-end gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setShowBlueskyDialog(false)}
+                disabled={loadingProvider === "bluesky"}
+              >
+                Cancel
+              </Button>
+              <Button type="submit" disabled={loadingProvider === "bluesky"}>
+                {loadingProvider === "bluesky" ? (
+                  <span className="size-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                ) : (
+                  "Continue"
+                )}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -34,12 +34,34 @@ export const getAuthUrls = () => {
 
 /**
  * OAuth provider configurations.
+ * Includes both Supabase OAuth providers and AT Protocol (Bluesky).
  */
 export const oauthProviders = [
-  { name: "google", displayName: "Google", icon: "🔍" },
-  { name: "discord", displayName: "Discord", icon: "🎮" },
-  { name: "github", displayName: "GitHub", icon: "🐙" },
-  { name: "twitter", displayName: "Twitter", icon: "🐦" },
+  { name: "google", displayName: "Google", icon: "google", type: "supabase" },
+  {
+    name: "discord",
+    displayName: "Discord",
+    icon: "discord",
+    type: "supabase",
+  },
+  { name: "github", displayName: "GitHub", icon: "github", type: "supabase" },
+  {
+    name: "twitter",
+    displayName: "Twitter",
+    icon: "twitter",
+    type: "supabase",
+  },
 ] as const;
 
+/**
+ * Bluesky/AT Protocol provider (separate from Supabase OAuth)
+ */
+export const blueskyProvider = {
+  name: "bluesky",
+  displayName: "Bluesky",
+  icon: "bluesky",
+  type: "atproto",
+} as const;
+
 export type OAuthProvider = (typeof oauthProviders)[number]["name"];
+export type BlueskyProvider = typeof blueskyProvider;

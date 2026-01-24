@@ -15,6 +15,7 @@
   },
   "dependencies": {
     "@atproto/api": "^0.18.17",
+    "@atproto/jwk-jose": "^0.1.11",
     "@atproto/oauth-client-node": "^0.3.15",
     "@base-ui/react": "^1.1.0",
     "@hookform/resolvers": "^5.2.2",
