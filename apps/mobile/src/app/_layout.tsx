@@ -5,6 +5,7 @@ import { Stack } from "expo-router";
 import { TamaguiProvider, Theme } from "tamagui";
 import tamaguiConfig from "@/tamagui.config";
 import { lightColors, darkColors } from "@/lib/theme";
+import { DrawerProvider } from "@/components/navigation";
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
@@ -18,49 +19,51 @@ export default function RootLayout() {
     >
       <Theme name={colorScheme ?? "light"}>
         <AuthProvider>
-          <Stack
-            screenOptions={{
-              headerStyle: {
-                backgroundColor: colors.background,
-              },
-              headerTintColor: colors.foreground,
-              headerTitleStyle: {
-                fontWeight: "600",
-              },
-              headerShadowVisible: false,
-              contentStyle: {
-                backgroundColor: colors.background,
-              },
-            }}
-          >
-            <Stack.Screen
-              name="index"
-              options={{
-                headerShown: false,
-              }}
-            />
-            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-            <Stack.Screen
-              name="(auth)/sign-in"
-              options={{
-                title: "Sign In",
-                presentation: "modal",
+          <DrawerProvider>
+            <Stack
+              screenOptions={{
                 headerStyle: {
                   backgroundColor: colors.background,
                 },
-              }}
-            />
-            <Stack.Screen
-              name="(auth)/sign-up"
-              options={{
-                title: "Sign Up",
-                presentation: "modal",
-                headerStyle: {
+                headerTintColor: colors.foreground,
+                headerTitleStyle: {
+                  fontWeight: "600",
+                },
+                headerShadowVisible: false,
+                contentStyle: {
                   backgroundColor: colors.background,
                 },
               }}
-            />
-          </Stack>
+            >
+              <Stack.Screen
+                name="index"
+                options={{
+                  headerShown: false,
+                }}
+              />
+              <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+              <Stack.Screen
+                name="(auth)/sign-in"
+                options={{
+                  title: "Sign In",
+                  presentation: "modal",
+                  headerStyle: {
+                    backgroundColor: colors.background,
+                  },
+                }}
+              />
+              <Stack.Screen
+                name="(auth)/sign-up"
+                options={{
+                  title: "Sign Up",
+                  presentation: "modal",
+                  headerStyle: {
+                    backgroundColor: colors.background,
+                  },
+                }}
+              />
+            </Stack>
+          </DrawerProvider>
         </AuthProvider>
       </Theme>
     </TamaguiProvider>

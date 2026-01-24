@@ -59,10 +59,9 @@ export default function SignInScreen() {
             </Text>
             <Text
               fontSize={15}
-              color="$colorTransparent"
+              color="$mutedForeground"
               textAlign="center"
               marginTop="$2"
-              opacity={0.6}
             >
               Sign in to your account
             </Text>
@@ -78,7 +77,7 @@ export default function SignInScreen() {
 
           <YStack gap="$3">
             <Input
-              backgroundColor="$backgroundStrong"
+              backgroundColor="$muted"
               borderWidth={0}
               borderRadius="$4"
               paddingHorizontal="$4"
@@ -86,7 +85,7 @@ export default function SignInScreen() {
               fontSize={16}
               color="$color"
               placeholder="Email"
-              placeholderTextColor="$colorTransparent"
+              placeholderTextColor="$mutedForeground"
               value={email}
               onChangeText={setEmail}
               autoCapitalize="none"
@@ -95,7 +94,7 @@ export default function SignInScreen() {
             />
 
             <Input
-              backgroundColor="$backgroundStrong"
+              backgroundColor="$muted"
               borderWidth={0}
               borderRadius="$4"
               paddingHorizontal="$4"
@@ -103,7 +102,7 @@ export default function SignInScreen() {
               fontSize={16}
               color="$color"
               placeholder="Password"
-              placeholderTextColor="$colorTransparent"
+              placeholderTextColor="$mutedForeground"
               value={password}
               onChangeText={setPassword}
               secureTextEntry
@@ -115,7 +114,7 @@ export default function SignInScreen() {
             backgroundColor="$primary"
             borderWidth={0}
             borderRadius="$4"
-            paddingVertical="$3.5"
+            height={52}
             marginTop="$2"
             pressStyle={{ opacity: 0.85 }}
             opacity={loading ? 0.7 : 1}
@@ -125,19 +124,14 @@ export default function SignInScreen() {
             {loading ? (
               <Spinner color="$primaryForeground" />
             ) : (
-              <Text
-                color="$primaryForeground"
-                fontSize={16}
-                fontWeight="600"
-                textAlign="center"
-              >
+              <Text color="$primaryForeground" fontSize={16} fontWeight="600">
                 Sign In
               </Text>
             )}
           </Button>
 
           <XStack justifyContent="center" alignItems="center" marginTop="$2">
-            <Text color="$colorTransparent" fontSize={14} opacity={0.6}>
+            <Text color="$mutedForeground" fontSize={14}>
               Don&apos;t have an account?{" "}
             </Text>
             {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}

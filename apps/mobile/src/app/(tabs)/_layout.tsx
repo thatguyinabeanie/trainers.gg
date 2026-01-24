@@ -53,6 +53,7 @@ export default function TabLayout() {
         name="home"
         options={{
           title: "Home",
+          headerShown: false,
           tabBarIcon: ({ color, focused }) => (
             <TabIcon
               name={focused ? "home" : "home-outline"}
@@ -92,6 +93,7 @@ export default function TabLayout() {
         name="settings"
         options={{
           title: "Settings",
+          href: null, // Hidden from tab bar - accessible via drawer
           tabBarIcon: ({ color, focused }) => (
             <TabIcon
               name={focused ? "settings" : "settings-outline"}
