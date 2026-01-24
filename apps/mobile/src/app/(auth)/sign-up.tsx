@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { KeyboardAvoidingView, Platform, Pressable } from "react-native";
-import { Link, useRouter } from "expo-router";
+import { Link, useRouter, type Href } from "expo-router";
 import {
   YStack,
   XStack,
@@ -243,8 +243,7 @@ export default function SignUpScreen() {
             <Text color="$mutedForeground" fontSize={14}>
               Already have an account?{" "}
             </Text>
-            {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-            <Link href={"/(auth)/sign-in" as any} asChild>
+            <Link href={"/(auth)/sign-in" as Href} asChild>
               <Pressable>
                 <Text color="$primary" fontSize={14} fontWeight="600">
                   Sign In

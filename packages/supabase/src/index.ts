@@ -28,3 +28,14 @@ export type {
   Enums,
   Json,
 } from "./types";
+
+// AT Protocol extended types
+export type {
+  AtprotoDatabase,
+  DatabaseWithAtproto,
+  AtprotoSessionsTable,
+  AtprotoOauthStateTable,
+  LinkedAtprotoAccountsTable,
+  UsersTableWithAtproto,
+  PdsAccountStatus,
+} from "./types-atproto";

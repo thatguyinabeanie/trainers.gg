@@ -2,6 +2,7 @@ import { createServerClient } from "@supabase/ssr";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import { cookies } from "next/headers";
 import type { Database } from "@trainers/supabase/types";
+import type { AtprotoDatabase } from "@trainers/supabase";
 import type { User } from "@supabase/supabase-js";
 
 export async function createClient() {
@@ -98,4 +99,56 @@ export function createServiceRoleClient() {
       persistSession: false,
     },
   });
+}
+
+/**
+ * Create a Supabase client with service role privileges and AT Protocol types.
+ * USE WITH CAUTION: This bypasses RLS policies.
+ * Use for AT Protocol OAuth operations that access atproto_sessions and atproto_oauth_state tables.
+ */
+export function createAtprotoServiceClient() {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  if (!supabaseUrl || !serviceRoleKey) {
+    throw new Error(
+      "Missing SUPABASE_SERVICE_ROLE_KEY environment variable for service role client"
+    );
+  }
+
+  return createSupabaseClient<AtprotoDatabase>(supabaseUrl, serviceRoleKey, {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false,
+    },
+  });
+}
+
+/**
+ * Create a Supabase client with AT Protocol types using the user's session.
+ * Use this for operations that need to access AT Protocol fields on the users table
+ * while respecting RLS policies.
+ */
+export async function createAtprotoClient() {
+  const cookieStore = await cookies();
+  return createServerClient<AtprotoDatabase>(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return cookieStore.getAll();
+        },
+        setAll(cookiesToSet) {
+          try {
+            cookiesToSet.forEach(({ name, value, options }) => {
+              cookieStore.set(name, value, options);
+            });
+          } catch (error) {
+            console.warn("Failed to set cookies in Server Component:", error);
+          }
+        },
+      },
+    }
+  );
 }

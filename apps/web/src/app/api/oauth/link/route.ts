@@ -7,7 +7,7 @@
 
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
-import { createClient } from "@/lib/supabase/server";
+import { createAtprotoClient } from "@/lib/supabase/server";
 
 export async function POST(request: Request) {
   try {
@@ -21,7 +21,7 @@ export async function POST(request: Request) {
     }
 
     // Get the current authenticated user
-    const supabase = await createClient();
+    const supabase = await createAtprotoClient();
     const {
       data: { user },
       error: authError,
@@ -52,9 +52,7 @@ export async function POST(request: Request) {
     }
 
     // Link the DID to the current user
-    // Note: Type assertion used until types are regenerated after migration
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error: updateError } = await (supabase as any)
+    const { error: updateError } = await supabase
       .from("users")
       .update({
         did,

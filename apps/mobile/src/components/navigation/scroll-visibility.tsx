@@ -10,7 +10,6 @@ import {
   useAnimatedStyle,
   withTiming,
   type SharedValue,
-  runOnJS,
   interpolate,
   Extrapolation,
 } from "react-native-reanimated";
