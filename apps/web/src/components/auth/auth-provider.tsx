@@ -122,12 +122,33 @@ export const useAuth = useAuthContext;
 
 /**
  * Helper to get user's display name from Supabase auth user.
- * Checks user_metadata for full_name or name, falls back to email.
+ * Checks user_metadata for various name fields, falls back to email.
  */
 export function getUserDisplayName(user: AuthUser | null): string {
   if (!user) return "Trainer";
-  const fullName =
-    (user.user_metadata?.full_name as string | undefined) ??
-    (user.user_metadata?.name as string | undefined);
-  return user.profile?.displayName ?? fullName ?? user.email ?? "Trainer";
+
+  // Check profile first (from database)
+  if (user.profile?.displayName) {
+    return user.profile.displayName;
+  }
+
+  // Check user_metadata (from auth)
+  const metadata = user.user_metadata;
+  const displayName =
+    (metadata?.display_name as string | undefined) ??
+    (metadata?.full_name as string | undefined) ??
+    (metadata?.name as string | undefined) ??
+    (metadata?.username as string | undefined) ??
+    (metadata?.bluesky_handle as string | undefined);
+
+  if (displayName) {
+    return displayName;
+  }
+
+  // Don't show placeholder emails as display name
+  if (user.email && !user.email.includes("@bluesky.trainers.gg")) {
+    return user.email;
+  }
+
+  return "Trainer";
 }

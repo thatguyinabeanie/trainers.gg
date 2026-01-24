@@ -1,6 +1,6 @@
 "use client";
 
-import { useAuth } from "@/components/auth/auth-provider";
+import { useAuth, getUserDisplayName } from "@/components/auth/auth-provider";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -63,18 +63,12 @@ export function TopNavAuthSection({ themeSwitcher }: TopNavAuthSectionProps) {
     );
   }
 
-  // Get display info from Supabase user
-  const fullName =
-    (user.user_metadata?.full_name as string | undefined) ??
-    (user.user_metadata?.name as string | undefined);
-  const avatarUrl = user.user_metadata?.avatar_url as string | undefined;
-  const displayName =
-    user.profile?.displayName ?? fullName ?? user.email ?? "Trainer";
-  const userInitial =
-    user.profile?.displayName?.charAt(0).toUpperCase() ??
-    fullName?.charAt(0).toUpperCase() ??
-    user.email?.charAt(0).toUpperCase() ??
-    "T";
+  // Get display info using shared helper
+  const displayName = getUserDisplayName(user);
+  const avatarUrl =
+    user.profile?.avatarUrl ??
+    (user.user_metadata?.avatar_url as string | undefined);
+  const userInitial = displayName.charAt(0).toUpperCase();
 
   return (
     <div className="flex items-center gap-2">
@@ -91,12 +85,7 @@ export function TopNavAuthSection({ themeSwitcher }: TopNavAuthSectionProps) {
       <DropdownMenu>
         <DropdownMenuTrigger className="hover:bg-accent focus-visible:ring-ring inline-flex cursor-pointer items-center justify-center gap-2 rounded-md bg-transparent px-2 py-1.5 text-sm font-medium whitespace-nowrap transition-colors focus-visible:ring-1 focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50">
           <Avatar className="h-8 w-8">
-            {(user.profile?.avatarUrl ?? avatarUrl) && (
-              <AvatarImage
-                src={user.profile?.avatarUrl ?? avatarUrl}
-                alt={displayName}
-              />
-            )}
+            {avatarUrl && <AvatarImage src={avatarUrl} alt={displayName} />}
             <AvatarFallback className="bg-primary/10 text-primary text-sm font-semibold">
               {userInitial}
             </AvatarFallback>
@@ -107,12 +96,12 @@ export function TopNavAuthSection({ themeSwitcher }: TopNavAuthSectionProps) {
         </DropdownMenuTrigger>
         <DropdownMenuContent className="w-56" align="end">
           <div className="px-1.5 py-1.5">
-            <p className="text-sm leading-none font-medium">
-              {user.profile?.displayName ?? fullName ?? "User"}
-            </p>
-            <p className="text-muted-foreground mt-1 text-xs leading-none">
-              {user.email}
-            </p>
+            <p className="text-sm leading-none font-medium">{displayName}</p>
+            {user.email && !user.email.includes("@bluesky.trainers.gg") && (
+              <p className="text-muted-foreground mt-1 text-xs leading-none">
+                {user.email}
+              </p>
+            )}
           </div>
           <DropdownMenuSeparator />
           <DropdownMenuItem onClick={() => router.push("/dashboard")}>
