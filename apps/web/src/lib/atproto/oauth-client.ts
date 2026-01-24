@@ -11,8 +11,20 @@ import {
   type NodeSavedState,
 } from "@atproto/oauth-client-node";
 import { JoseKey } from "@atproto/jwk-jose";
+import { Agent } from "@atproto/api";
 import { createAtprotoServiceClient } from "@/lib/supabase/server";
 import type { Json } from "@trainers/supabase";
+
+/**
+ * Bluesky profile data retrieved from the API
+ */
+export interface BlueskyProfile {
+  did: string;
+  handle: string;
+  displayName?: string;
+  avatar?: string;
+  description?: string;
+}
 
 const PRODUCTION_URL = "https://trainers.gg";
 
@@ -298,4 +310,46 @@ export async function getAtprotoSession(did: string) {
 export async function revokeAtprotoSession(did: string): Promise<void> {
   const supabase = createAtprotoServiceClient();
   await supabase.from("atproto_sessions").delete().eq("did", did);
+}
+
+/**
+ * Fetch a Bluesky profile by DID or handle
+ * Uses the public Bluesky API - no authentication required
+ */
+export async function getBlueskyProfile(
+  actor: string
+): Promise<BlueskyProfile | null> {
+  try {
+    // Use the public Bluesky AppView API
+    const agent = new Agent("https://public.api.bsky.app");
+
+    const response = await agent.getProfile({ actor });
+
+    if (!response.success) {
+      console.error("Failed to fetch Bluesky profile:", response);
+      return null;
+    }
+
+    return {
+      did: response.data.did,
+      handle: response.data.handle,
+      displayName: response.data.displayName,
+      avatar: response.data.avatar,
+      description: response.data.description,
+    };
+  } catch (error) {
+    console.error("Error fetching Bluesky profile:", error);
+    return null;
+  }
+}
+
+/**
+ * Extract username from a Bluesky handle
+ * e.g., "thatguyinabeanie.bsky.social" -> "thatguyinabeanie"
+ * e.g., "user.trainers.gg" -> "user"
+ */
+export function extractUsernameFromHandle(handle: string): string {
+  // Remove the domain suffix to get the username part
+  const parts = handle.split(".");
+  return parts[0] || handle;
 }
