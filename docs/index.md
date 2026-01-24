@@ -16,6 +16,7 @@ This documentation is designed for both users and developers, and is fully compa
 - [[site/index.md|Site Organization]] — User flows, dashboards, analytics, teams, articles
 - [[tournaments/index.md|Tournaments]] — Tournament ownership, creation, structure
 - [[organizations/ORGANIZATIONS.md|Organizations]] — Org structure, groups, roles, permissions
+- [[pds/production-setup.md|PDS Production Setup]] — Bluesky PDS hosting, scaling, backups
 - [[ideas/index.md|Ideas & Features]] — Must-haves, analytics, dashboard, subscriptions, future ideas
 - [[inspirations/index.md|Inspirations]] — External sites and design inspiration
 - [[questions/index.md|Project Q&A]] — Vision, requirements, FAQ
