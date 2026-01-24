@@ -12,6 +12,7 @@ A Pokemon community platform for competitive players, tournament organizers, and
 | **Auth**              | Supabase Auth + Bluesky PDS         |
 | **Social/Federation** | AT Protocol (Bluesky)               |
 | **PDS Hosting**       | Fly.io (`pds.trainers.gg`)          |
+| **DNS**               | Vercel DNS                          |
 | **Realtime**          | Supabase Realtime                   |
 | **Edge Functions**    | Supabase Edge Functions (Deno)      |
 | **Styling (Web)**     | Tailwind CSS 4                      |

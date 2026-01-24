@@ -45,6 +45,38 @@ tooling/
 
 ---
 
+## Infrastructure & Hosting
+
+### DNS Configuration (Vercel DNS)
+
+All DNS for `trainers.gg` is managed via **Vercel DNS**.
+
+| Record         | Type  | Points To              | Purpose                                   |
+| -------------- | ----- | ---------------------- | ----------------------------------------- |
+| `@` (apex)     | A     | Vercel IPs             | Web app (trainers.gg)                     |
+| `www`          | CNAME | `cname.vercel-dns.com` | Web app (www.trainers.gg)                 |
+| `pds`          | CNAME | `trainers-pds.fly.dev` | PDS API                                   |
+| `*` (wildcard) | CNAME | `trainers-pds.fly.dev` | Handle resolution (@username.trainers.gg) |
+
+### Domain Configuration
+
+| Domain            | Host   | Purpose                                     |
+| ----------------- | ------ | ------------------------------------------- |
+| `trainers.gg`     | Vercel | Web app (primary, no redirect)              |
+| `www.trainers.gg` | Vercel | Web app (redirects to apex)                 |
+| `pds.trainers.gg` | Fly.io | Bluesky PDS API                             |
+| `*.trainers.gg`   | Fly.io | Handle resolution for @username.trainers.gg |
+
+### AT Protocol Requirements
+
+| Requirement           | Description                                                                |
+| --------------------- | -------------------------------------------------------------------------- |
+| OAuth Client Metadata | Must return HTTP 200 (no redirects per AT Protocol spec)                   |
+| Handle Resolution     | `https://username.trainers.gg/.well-known/atproto-did` must resolve to PDS |
+| Apex Domain           | Must be primary in Vercel (not www) to avoid 308 redirects                 |
+
+---
+
 ## Build / Lint / Test Commands
 
 ### Root Commands

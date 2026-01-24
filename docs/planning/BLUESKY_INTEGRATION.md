@@ -69,7 +69,7 @@ Bluesky uses a custom OAuth 2.0 profile with additional security requirements:
 
 ### Client Metadata
 
-trainers.gg must host a client metadata file at a public URL (e.g., `https://trainers.gg/.well-known/oauth-client-metadata`):
+trainers.gg hosts a client metadata file at `https://trainers.gg/oauth/client-metadata.json`:
 
 ```json
 {
@@ -79,18 +79,38 @@ trainers.gg must host a client metadata file at a public URL (e.g., `https://tra
   "client_uri": "https://trainers.gg",
   "dpop_bound_access_tokens": true,
   "grant_types": ["authorization_code", "refresh_token"],
-  "redirect_uris": ["https://trainers.gg/oauth/callback"],
+  "redirect_uris": ["https://trainers.gg/api/oauth/callback"],
   "response_types": ["code"],
   "scope": "atproto transition:generic",
   "token_endpoint_auth_method": "none"
 }
 ```
 
+**CRITICAL:** Per the AT Protocol OAuth spec, this URL must return HTTP 200 directly. Any redirect (301, 302, 308) will cause OAuth to fail with `invalid_client_metadata`. This is why `trainers.gg` must be the primary domain in Vercel (not `www.trainers.gg`).
+
+### Handle Resolution
+
+Users get handles like `@username.trainers.gg`. For these to work, the AT Protocol needs to resolve the handle to a DID.
+
+**Resolution methods:**
+
+1. **HTTPS method:** `https://username.trainers.gg/.well-known/atproto-did` returns the DID
+2. **DNS TXT method:** `_atproto.username.trainers.gg` TXT record contains `did=did:plc:xxx`
+
+The PDS handles this automatically when wildcard DNS (`*.trainers.gg`) points to Fly.io.
+
+**Required DNS configuration:**
+
+- `*.trainers.gg` CNAME → `trainers-pds.fly.dev`
+- Wildcard SSL certificate on Fly.io: `fly certs add "*.trainers.gg" -a trainers-pds`
+
+````
+
 ### Recommended Packages
 
 ```bash
 pnpm add @atproto/oauth-client-browser @atproto/api
-```
+````
 
 | Package                         | Purpose                                 |
 | ------------------------------- | --------------------------------------- |

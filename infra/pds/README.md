@@ -72,15 +72,38 @@ make health       # Check health endpoint
 
 ## DNS Configuration
 
-DNS is configured via Vercel. The following records are set:
+DNS is managed via **Vercel DNS** (dashboard: Vercel → Domains → trainers.gg → DNS Records).
 
-| Record                        | Type  | Points To                        |
-| ----------------------------- | ----- | -------------------------------- |
-| `pds.trainers.gg`             | CNAME | `trainers-pds.fly.dev`           |
-| `*.trainers.gg`               | CNAME | `trainers-pds.fly.dev`           |
-| `_acme-challenge.trainers.gg` | CNAME | `trainers.gg.knxk1zo.flydns.net` |
+### Required DNS Records
 
-The wildcard record enables user handles like `@username.trainers.gg`.
+| Type  | Name  | Value                  | Purpose                               |
+| ----- | ----- | ---------------------- | ------------------------------------- |
+| A     | `@`   | (Vercel IPs)           | Web app apex domain                   |
+| CNAME | `www` | `cname.vercel-dns.com` | Web app www subdomain                 |
+| CNAME | `pds` | `trainers-pds.fly.dev` | PDS API endpoint                      |
+| CNAME | `*`   | `trainers-pds.fly.dev` | Handle resolution (@user.trainers.gg) |
+
+### Vercel Domain Configuration
+
+**CRITICAL:** The apex domain (`trainers.gg`) must be set as the **primary domain** in Vercel, NOT `www.trainers.gg`.
+
+AT Protocol OAuth requires that `https://trainers.gg/oauth/client-metadata.json` returns HTTP 200 directly. If `www` is primary, the apex will 308 redirect to www, which breaks OAuth per the AT Protocol spec.
+
+To fix:
+
+1. Vercel Dashboard → Project → Settings → Domains
+2. Set `trainers.gg` as primary (not `www.trainers.gg`)
+
+### Fly.io SSL Certificates
+
+The PDS requires SSL certificates for both the subdomain and wildcard:
+
+```bash
+fly certs add pds.trainers.gg -a trainers-pds
+fly certs add "*.trainers.gg" -a trainers-pds
+```
+
+Fly.io may require DNS validation. Check `fly certs list -a trainers-pds` for status.
 
 ## Deployment Steps
 
