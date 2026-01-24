@@ -131,7 +131,7 @@ export async function GET(request: Request) {
           .eq("id", existingUser.id);
       }
     } else {
-      // New user - create account from Bluesky profile
+      // User not found in public.users - try to create or sign in
       const profile = await getBlueskyProfile(did);
 
       if (!profile) {
@@ -144,7 +144,7 @@ export async function GET(request: Request) {
 
       userEmail = placeholderEmail;
 
-      // Create Supabase Auth account
+      // Try to create Supabase Auth account
       const { data: authData, error: authError } =
         await supabase.auth.admin.createUser({
           email: userEmail,
@@ -159,21 +159,45 @@ export async function GET(request: Request) {
           },
         });
 
-      if (authError || !authData.user) {
-        console.error("Failed to create user:", authError);
-        throw new Error(authError?.message || "Failed to create account");
-      }
+      if (authError) {
+        // Check if user already exists in auth (email already registered)
+        if (authError.message?.includes("already been registered")) {
+          // User exists in auth - just update their public.users record with DID
+          // The public.users record should exist due to auth trigger
+          const { data: userByPlaceholderEmail } = await supabaseAtproto
+            .from("users")
+            .select("id")
+            .ilike("email", placeholderEmail)
+            .maybeSingle();
 
-      // Update user record with Bluesky info
-      await supabaseAtproto
-        .from("users")
-        .update({
-          did,
-          pds_handle: profile.handle,
-          pds_status: "active",
-          image: profile.avatar,
-        })
-        .eq("id", authData.user.id);
+          if (userByPlaceholderEmail) {
+            await supabaseAtproto
+              .from("users")
+              .update({
+                did,
+                pds_handle: profile.handle,
+                pds_status: "active",
+                image: profile.avatar,
+              })
+              .eq("id", userByPlaceholderEmail.id);
+          }
+          // userEmail is already set to placeholderEmail, proceed to magic link
+        } else {
+          console.error("Failed to create user:", authError);
+          throw new Error(authError.message || "Failed to create account");
+        }
+      } else if (authData?.user) {
+        // New user created successfully - update their public.users record
+        await supabaseAtproto
+          .from("users")
+          .update({
+            did,
+            pds_handle: profile.handle,
+            pds_status: "active",
+            image: profile.avatar,
+          })
+          .eq("id", authData.user.id);
+      }
     }
 
     // Step 3: Generate magic link for immediate sign-in
