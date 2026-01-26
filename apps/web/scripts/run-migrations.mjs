@@ -18,15 +18,17 @@
  */
 
 import { execSync } from "node:child_process";
-import { existsSync, readdirSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
+import postgres from "postgres";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 // Configuration
 const SUPABASE_DIR = resolve(__dirname, "../../../packages/supabase");
 const MIGRATIONS_DIR = resolve(SUPABASE_DIR, "supabase/migrations");
+const SEED_FILE = resolve(SUPABASE_DIR, "supabase/seed.sql");
 
 /**
  * Execute a command and stream output
@@ -142,6 +144,91 @@ function countMigrations() {
 }
 
 /**
+ * Get database connection URL for seeding
+ *
+ * IMPORTANT: For seeding that writes to auth.users, we need a NON-POOLING connection.
+ * The pooler (PgBouncer) can't handle multi-statement transactions or auth schema writes.
+ *
+ * Priority:
+ * 1. SUPABASE_POSTGRES_URL_NON_POOLING - Direct connection (preferred for seeding)
+ * 2. SUPABASE_POSTGRES_URL - Pooled connection (may work for simple seeds)
+ * 3. Build URL from project ref and password (uses direct connection on port 5432)
+ */
+function getDatabaseUrl(projectRef) {
+  // Prefer non-pooling URL for seeding (required for auth.users writes)
+  if (process.env.SUPABASE_POSTGRES_URL_NON_POOLING) {
+    console.log(`   Using non-pooling connection (direct)`);
+    return process.env.SUPABASE_POSTGRES_URL_NON_POOLING;
+  }
+
+  // Fall back to pooled URL (may not work for auth schema)
+  if (process.env.SUPABASE_POSTGRES_URL) {
+    console.log(`   ⚠️  Using pooled connection (may fail for auth.users)`);
+    return process.env.SUPABASE_POSTGRES_URL;
+  }
+
+  // Build direct connection URL (port 5432, not pooler)
+  const password = process.env.SUPABASE_POSTGRES_PASSWORD;
+  if (!password) {
+    return null;
+  }
+
+  console.log(`   Building direct connection URL`);
+  // Use direct connection (port 5432) for seeding, not pooler (port 6543)
+  return `postgresql://postgres.${projectRef}:${password}@aws-0-us-east-1.pooler.supabase.com:5432/postgres`;
+}
+
+/**
+ * Run seed.sql against the database using postgres client
+ */
+async function runSeedSql(projectRef) {
+  if (!existsSync(SEED_FILE)) {
+    console.log(`   Seed file not found: ${SEED_FILE}`);
+    return false;
+  }
+
+  const connectionUrl = getDatabaseUrl(projectRef);
+  if (!connectionUrl) {
+    console.log(`   ❌ No database connection URL available`);
+    return false;
+  }
+
+  const seedSql = readFileSync(SEED_FILE, "utf-8");
+
+  console.log(`   Connecting to database...`);
+
+  const sql = postgres(connectionUrl, {
+    // Increase timeout for seed operations
+    connect_timeout: 30,
+    idle_timeout: 30,
+    max_lifetime: 60,
+  });
+
+  try {
+    // Execute the seed SQL
+    await sql.unsafe(seedSql);
+    console.log(`   ✅ Seed data applied successfully!`);
+    return true;
+  } catch (error) {
+    // Log detailed error info
+    console.error(`   ❌ Seed failed: ${error.message}`);
+    console.error(`   Error code: ${error.code}`);
+    console.error(`   Error detail: ${error.detail || "none"}`);
+    console.error(`   Error hint: ${error.hint || "none"}`);
+    // Log first 200 chars of query that failed if available
+    if (error.query) {
+      console.error(
+        `   Failed query (truncated): ${error.query.substring(0, 200)}...`
+      );
+    }
+    // Don't fail the build for seed errors
+    return false;
+  } finally {
+    await sql.end();
+  }
+}
+
+/**
  * Main migration runner
  */
 async function runMigrations() {
@@ -197,15 +284,12 @@ async function runMigrations() {
 
   // Push migrations
   console.log("\n📤 Applying migrations...");
-  exec("npx supabase db push --linked", { env: cliEnv });
+  exec("npx supabase db push --linked --include-all", { env: cliEnv });
 
-  // Run seeds for preview environments only
+  // Run seed data for preview environments
   if (env.shouldSeed) {
     console.log("\n🌱 Running seed data...");
-    exec("npx supabase db seed --linked", {
-      env: cliEnv,
-      ignoreError: true,
-    });
+    await runSeedSql(projectRef);
   }
 
   console.log("\n" + "=".repeat(50));
