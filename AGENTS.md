@@ -453,6 +453,31 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
 SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
 ```
 
+### Turborepo Environment Variables (turbo.json)
+
+**IMPORTANT:** When adding new environment variables that are used during builds, you MUST declare them in `turbo.json` under the appropriate task's `env` array. Turborepo uses these declarations for cache invalidation and to pass variables to build processes.
+
+```json
+// turbo.json example
+{
+  "tasks": {
+    "build": {
+      "env": ["SUPABASE_ACCESS_TOKEN", "SUPABASE_URL", "..."]
+    }
+  }
+}
+```
+
+**Common mistakes:**
+
+- Adding env vars to Vercel but forgetting to add them to `turbo.json`
+- Build fails with "environment variables are set on your Vercel project, but missing from turbo.json"
+
+**When to update turbo.json:**
+
+- Adding new env vars used in `prebuild`, `build`, or other Turborepo tasks
+- Adding env vars read by build-time scripts (like `run-migrations.mjs`)
+
 ---
 
 ## File Organization
