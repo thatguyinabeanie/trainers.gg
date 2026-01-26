@@ -203,9 +203,9 @@ export function OrganizationDetailClient({
             <Trophy className="h-4 w-4" />
             Tournaments
           </TabsTrigger>
-          <TabsTrigger value="members" className="gap-2">
+          <TabsTrigger value="staff" className="gap-2">
             <Users className="h-4 w-4" />
-            Members
+            Staff
           </TabsTrigger>
         </TabsList>
 
@@ -283,17 +283,17 @@ export function OrganizationDetailClient({
           )}
         </TabsContent>
 
-        <TabsContent value="members">
+        <TabsContent value="staff">
           <Card>
             <CardHeader>
-              <CardTitle>Members</CardTitle>
+              <CardTitle>Staff</CardTitle>
               <CardDescription>
                 People who are part of this organization
               </CardDescription>
             </CardHeader>
             <CardContent>
               <p className="text-muted-foreground py-8 text-center">
-                Member list coming soon
+                Staff list coming soon
               </p>
             </CardContent>
           </Card>

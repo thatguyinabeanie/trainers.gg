@@ -265,7 +265,6 @@ create_env_symlinks() {
   APP_DIRS=(
     "$ROOT_DIR/apps/web"
     "$ROOT_DIR/apps/mobile"
-    "$ROOT_DIR/packages/backend"
   )
   
   for APP_DIR in "${APP_DIRS[@]}"; do

@@ -3,7 +3,7 @@ import { redirect, notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import {
   getOrganizationBySlug,
-  isOrganizationMember,
+  hasOrganizationAccess,
 } from "@trainers/supabase";
 import { TODashboardNav } from "./to-dashboard-nav";
 
@@ -37,8 +37,8 @@ export default async function OrgDashboardLayout({
   }
 
   // Check if user has access (owner or staff)
-  // isOrganizationMember returns true for owners and staff
-  const hasAccess = await isOrganizationMember(
+  // hasOrganizationAccess returns true for owners and staff
+  const hasAccess = await hasOrganizationAccess(
     supabase,
     organization.id,
     user.id

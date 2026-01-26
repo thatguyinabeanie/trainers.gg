@@ -139,7 +139,7 @@ export default function OrganizationDetailScreen() {
                 {organization.followerCount}
               </Text>
               <Text fontSize="$2" color="$mutedForeground">
-                Members
+                Staff
               </Text>
             </YStack>
             {organization.stats.primaryFormat && (

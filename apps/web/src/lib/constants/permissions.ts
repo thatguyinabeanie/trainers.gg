@@ -11,10 +11,10 @@ export type PermissionKey =
   | "organization.view.own"
   | "organization.update"
   | "organization.delete"
-  | "organization.invite_members"
-  | "organization.view_members"
+  | "organization.invite_staff"
+  | "organization.view_staff"
   | "organization.manage_group_assignments"
-  | "organization.remove_member"
+  | "organization.remove_staff"
   | "organization.request_join"
   | "organization.manage_requests"
   | "role.create"
@@ -32,7 +32,7 @@ export type PermissionKey =
   | "group.view.detail"
   | "group.update"
   | "group.delete"
-  | "group.manage_members"
+  | "group.manage_staff"
   | "group.manage_available_roles"
   | "user_profile.list"
   | "user_profile.view.detail"
@@ -76,10 +76,10 @@ export const PERMISSIONS = {
   ORG_VIEW_OWN: "organization.view.own",
   ORG_UPDATE: "organization.update",
   ORG_DELETE: "organization.delete",
-  ORG_INVITE_MEMBERS: "organization.invite_members",
-  ORG_VIEW_MEMBERS: "organization.view_members",
+  ORG_INVITE_STAFF: "organization.invite_staff",
+  ORG_VIEW_STAFF: "organization.view_staff",
   ORG_MANAGE_GROUP_ASSIGNMENTS: "organization.manage_group_assignments",
-  ORG_REMOVE_MEMBER: "organization.remove_member",
+  ORG_REMOVE_STAFF: "organization.remove_staff",
   ORG_REQUEST_JOIN: "organization.request_join",
   ORG_MANAGE_REQUESTS: "organization.manage_requests",
 
@@ -103,7 +103,7 @@ export const PERMISSIONS = {
   GROUP_VIEW_DETAIL: "group.view.detail",
   GROUP_UPDATE: "group.update",
   GROUP_DELETE: "group.delete",
-  GROUP_MANAGE_MEMBERS: "group.manage_members",
+  GROUP_MANAGE_STAFF: "group.manage_staff",
   GROUP_MANAGE_AVAILABLE_ROLES: "group.manage_available_roles",
 
   // User Profile Permissions

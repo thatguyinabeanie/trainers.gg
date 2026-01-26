@@ -20,7 +20,7 @@ export {
   acceptOrganizationInvitation,
   declineOrganizationInvitation,
   leaveOrganization,
-  removeMember,
+  removeStaff,
 } from "./organizations";
 
 // Tournament mutations

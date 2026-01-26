@@ -27,8 +27,8 @@ export {
   getOrganizationWithTournamentStats,
   listOrganizationTournaments,
   canManageOrganization,
-  listOrganizationMembers,
-  isOrganizationMember,
+  listOrganizationStaff,
+  hasOrganizationAccess,
   getMyOrganizationInvitations,
   getOrganizationInvitations,
 } from "./organizations";
