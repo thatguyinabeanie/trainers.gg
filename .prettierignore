@@ -10,7 +10,6 @@ dist/
 
 # Generated files
 packages/supabase/src/types.ts
-packages/backend-convex/convex/_generated/
 
 # Lock files
 pnpm-lock.yaml

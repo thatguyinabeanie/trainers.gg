@@ -29,7 +29,7 @@ apps/
 
 packages/
   supabase/            # Supabase client, queries, mutations, edge functions (@trainers/supabase)
-  backend-convex/      # Convex backend (legacy/migration) (@trainers/backend)
+  atproto/             # AT Protocol / Bluesky utilities (@trainers/atproto)
   ui/                  # Shared UI components (@trainers/ui)
   theme/               # Shared theme tokens (@trainers/theme)
   validators/          # Zod schemas (@trainers/validators)
