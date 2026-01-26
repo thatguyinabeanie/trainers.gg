@@ -269,18 +269,34 @@ BEGIN
   END IF;
 
   -- ==========================================================================
+  -- Ensure Required Roles Exist
+  -- ==========================================================================
+  -- Create roles if they don't exist (migrations should create these, but
+  -- we ensure they exist for preview branches and fresh databases)
+  
+  INSERT INTO public.roles (name, description, scope) VALUES
+    ('Site Admin', 'Full administrative access to the entire platform', 'site'),
+    ('org_owner', 'Full control over the organization', 'organization'),
+    ('org_admin', 'Administrative privileges', 'organization'),
+    ('org_moderator', 'Can moderate content and users', 'organization'),
+    ('org_tournament_organizer', 'Can create and manage tournaments', 'organization'),
+    ('org_judge', 'Can resolve match disputes', 'organization')
+  ON CONFLICT (name, scope) DO NOTHING;
+
+  -- ==========================================================================
   -- Site Admin Role Assignment
   -- ==========================================================================
   
-  -- Get the site_admin role ID (created by migration)
-  SELECT id INTO site_admin_role_id FROM public.roles WHERE name = 'site_admin' AND scope = 'site';
+  -- Get the Site Admin role ID
+  SELECT id INTO site_admin_role_id FROM public.roles WHERE name = 'Site Admin' AND scope = 'site';
   
-  -- Grant site_admin role to admin user (only if role exists)
+  -- Grant Site Admin role to admin user
   IF site_admin_role_id IS NOT NULL THEN
     INSERT INTO public.user_roles (user_id, role_id) VALUES
-      ('a1b2c3d4-e5f6-4a5b-8c9d-0e1f2a3b4c5d', site_admin_role_id);
+      ('a1b2c3d4-e5f6-4a5b-8c9d-0e1f2a3b4c5d', site_admin_role_id)
+    ON CONFLICT DO NOTHING;
   ELSE
-    RAISE NOTICE 'site_admin role not found, skipping role assignment';
+    RAISE NOTICE 'Site Admin role not found, skipping role assignment';
   END IF;
 
   -- ==========================================================================
