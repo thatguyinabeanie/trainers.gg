@@ -109,10 +109,10 @@ COMMENT ON COLUMN public.group_roles.role_id IS 'Role being assigned to the grou
 COMMENT ON COLUMN public.group_roles.created_at IS 'Assignment creation timestamp';
 
 -- =============================================================================
--- user_group_roles table
+-- user_group_roles table (renamed from alt_group_roles in later migration)
 -- =============================================================================
-COMMENT ON COLUMN public.user_group_roles.id IS 'Primary key';
-COMMENT ON COLUMN public.user_group_roles.created_at IS 'Assignment creation timestamp';
+COMMENT ON COLUMN public.alt_group_roles.id IS 'Primary key';
+COMMENT ON COLUMN public.alt_group_roles.created_at IS 'Assignment creation timestamp';
 
 -- =============================================================================
 -- roles table
