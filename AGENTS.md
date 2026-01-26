@@ -756,3 +756,28 @@ The `docs/` directory contains planning documents, architecture decisions, and f
 - Many docs reference "Battle Stadium" which was the project's previous name (now trainers.gg)
 - Some docs reference Convex as the backend; the project has migrated to Supabase
 - Compass artifact files (`compass_artifact_*.md`) are research exports - one is a Florida travel guide (misplaced), two cover Pokemon Showdown replay scraping
+
+---
+
+## Glossary
+
+| Term                          | Definition                                                                                                                                          |
+| ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **User**                      | Any authenticated account in the system (Supabase Auth + optional Bluesky PDS identity)                                                             |
+| **Alt**                       | A player identity linked to a user account. Users can have multiple alts for different competitive formats or personas. Stored in the `alts` table. |
+| **Staff**                     | Organization personnel who help run events (TOs, moderators, admins). Staff are **not** tournament participants.                                    |
+| **Player / Participant**      | Someone registered for a tournament. Players compete in events; staff run them.                                                                     |
+| **Organization**              | A group that hosts tournaments (e.g., "VGC League", "Sinnoh Champions"). Organizations have staff and can create tournaments.                       |
+| **TO (Tournament Organizer)** | A staff role with permissions to create and manage tournaments for an organization.                                                                 |
+| **DID**                       | Decentralized Identifier - a unique AT Protocol identity (e.g., `did:plc:abc123`). Stored in the `users` table.                                     |
+| **PDS**                       | Personal Data Server - self-hosted Bluesky server at `pds.trainers.gg` that stores user data and federates with the AT Protocol network.            |
+| **Handle**                    | A human-readable Bluesky identity (e.g., `@username.trainers.gg`).                                                                                  |
+| **RLS**                       | Row Level Security - PostgreSQL feature used by Supabase to enforce access control at the database level using `auth.uid()`.                        |
+
+### Terminology Decisions
+
+**Why "Staff" instead of "Member":**
+
+- "Member" is ambiguous - it could mean organization staff OR tournament participants
+- "Staff" clearly indicates people who **run** the organization, not people who **participate** in events
+- This distinction is important for permissions: staff can manage tournaments, participants can only register for them
