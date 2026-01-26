@@ -28,6 +28,7 @@
     "db:seed": "pnpm --filter=@trainers/supabase run db:seed",
     "db:dump": "pnpm --filter=@trainers/supabase run db:dump",
     "generate-types": "pnpm --filter=@trainers/supabase run generate-types",
+    "supabase": "pnpm --filter=@trainers/supabase run supabase",
     "prepare": "husky"
   },
   "devDependencies": {

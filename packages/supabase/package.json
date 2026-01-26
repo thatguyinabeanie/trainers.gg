@@ -25,7 +25,8 @@
     "db:diff": "supabase db diff",
     "db:lint": "supabase db lint",
     "db:seed": "supabase db seed",
-    "db:dump": "supabase db dump"
+    "db:dump": "supabase db dump",
+    "supabase": "supabase"
   },
   "dependencies": {
     "@supabase/supabase-js": "catalog:",
