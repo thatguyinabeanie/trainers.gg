@@ -44,5 +44,11 @@
     "*.{js,jsx,ts,tsx,json,md,css,html,yml,yaml}": [
       "prettier --write"
     ]
+  },
+  "pnpm": {
+    "overrides": {
+      "lodash@<4.17.21": ">=4.17.21",
+      "tar@<=7.5.3": ">=7.5.4"
+    }
   }
 }
