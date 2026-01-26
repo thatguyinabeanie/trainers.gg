@@ -2,7 +2,7 @@ import { type NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/middleware";
 
 /**
- * Maintenance Mode Middleware
+ * Maintenance Mode Proxy (Next.js 16)
  *
  * When MAINTENANCE_MODE=true:
  * - Unauthenticated users are redirected to /maintenance
@@ -70,7 +70,7 @@ function isNextInternal(pathname: string): boolean {
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Skip middleware for static files and Next.js internals
+  // Skip proxy for static files and Next.js internals
   if (isStaticFile(pathname) || isNextInternal(pathname)) {
     return NextResponse.next();
   }
@@ -108,12 +108,15 @@ export async function proxy(request: NextRequest) {
 export const config = {
   matcher: [
     /*
-     * Match all request paths except:
+     * Match all request paths except for the ones starting with:
      * - _next/static (static files)
      * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * - public folder files
+     * - favicon.ico, sitemap.xml, robots.txt (metadata files)
+     * - Static assets (svg, png, jpg, etc.)
+     *
+     * Note: /api routes are included so Supabase session refresh runs.
+     * Maintenance mode exclusions are handled in the proxy function.
      */
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    "/((?!_next/static|_next/image|favicon.ico|sitemap.xml|robots.txt|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)",
   ],
 };
