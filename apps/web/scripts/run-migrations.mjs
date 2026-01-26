@@ -144,24 +144,38 @@ function countMigrations() {
 }
 
 /**
- * Get database connection URL
- * Prefers SUPABASE_POSTGRES_URL (provided by Vercel integration)
- * Falls back to building URL from project ref and password
+ * Get database connection URL for seeding
+ *
+ * IMPORTANT: For seeding that writes to auth.users, we need a NON-POOLING connection.
+ * The pooler (PgBouncer) can't handle multi-statement transactions or auth schema writes.
+ *
+ * Priority:
+ * 1. SUPABASE_POSTGRES_URL_NON_POOLING - Direct connection (preferred for seeding)
+ * 2. SUPABASE_POSTGRES_URL - Pooled connection (may work for simple seeds)
+ * 3. Build URL from project ref and password (uses direct connection on port 5432)
  */
 function getDatabaseUrl(projectRef) {
-  // Prefer the direct URL if available
+  // Prefer non-pooling URL for seeding (required for auth.users writes)
+  if (process.env.SUPABASE_POSTGRES_URL_NON_POOLING) {
+    console.log(`   Using non-pooling connection (direct)`);
+    return process.env.SUPABASE_POSTGRES_URL_NON_POOLING;
+  }
+
+  // Fall back to pooled URL (may not work for auth schema)
   if (process.env.SUPABASE_POSTGRES_URL) {
+    console.log(`   ⚠️  Using pooled connection (may fail for auth.users)`);
     return process.env.SUPABASE_POSTGRES_URL;
   }
 
-  // Fall back to building from components
+  // Build direct connection URL (port 5432, not pooler)
   const password = process.env.SUPABASE_POSTGRES_PASSWORD;
   if (!password) {
     return null;
   }
 
-  // Use transaction pooler (port 6543) for serverless compatibility
-  return `postgresql://postgres.${projectRef}:${password}@aws-0-us-east-1.pooler.supabase.com:6543/postgres`;
+  console.log(`   Building direct connection URL`);
+  // Use direct connection (port 5432) for seeding, not pooler (port 6543)
+  return `postgresql://postgres.${projectRef}:${password}@aws-0-us-east-1.pooler.supabase.com:5432/postgres`;
 }
 
 /**
@@ -202,6 +216,15 @@ async function runSeedSql(projectRef) {
       return true;
     }
     console.error(`   ❌ Seed failed: ${error.message}`);
+    console.error(`   Error code: ${error.code}`);
+    console.error(`   Error detail: ${error.detail || "none"}`);
+    console.error(`   Error hint: ${error.hint || "none"}`);
+    // Log first 200 chars of query that failed if available
+    if (error.query) {
+      console.error(
+        `   Failed query (truncated): ${error.query.substring(0, 200)}...`
+      );
+    }
     // Don't fail the build for seed errors
     return false;
   } finally {
