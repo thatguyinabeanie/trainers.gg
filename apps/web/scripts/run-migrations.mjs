@@ -199,13 +199,16 @@ async function runMigrations() {
   console.log("\n📤 Applying migrations...");
   exec("npx supabase db push --linked --include-all", { env: cliEnv });
 
-  // Run seeds for preview environments only
+  // Note: Seeding remote databases via CLI is not currently supported.
+  // The `supabase seed` command only works with local databases.
+  // Preview branches inherit production schema but start with empty data.
+  // For preview seeding, consider using a migration with seed data or
+  // running seed.sql via direct database connection in the future.
   if (env.shouldSeed) {
-    console.log("\n🌱 Running seed data...");
-    exec("npx supabase seed --linked", {
-      env: cliEnv,
-      ignoreError: true,
-    });
+    console.log(
+      "\n🌱 Seed data: Skipped (CLI seeding not supported for remote databases)"
+    );
+    console.log("   Preview branches start with empty data.");
   }
 
   console.log("\n" + "=".repeat(50));

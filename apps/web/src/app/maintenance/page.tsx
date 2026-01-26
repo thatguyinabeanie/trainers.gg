@@ -1,3 +1,5 @@
+"use client";
+
 import Link from "next/link";
 import { PageContainer } from "@/components/layout/page-container";
 import { buttonVariants } from "@/components/ui/button";
