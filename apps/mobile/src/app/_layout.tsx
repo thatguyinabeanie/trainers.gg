@@ -43,23 +43,10 @@ export default function RootLayout() {
               />
               <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
               <Stack.Screen
-                name="(auth)/sign-in"
+                name="(auth)"
                 options={{
-                  title: "Sign In",
+                  headerShown: false,
                   presentation: "modal",
-                  headerStyle: {
-                    backgroundColor: colors.background,
-                  },
-                }}
-              />
-              <Stack.Screen
-                name="(auth)/sign-up"
-                options={{
-                  title: "Sign Up",
-                  presentation: "modal",
-                  headerStyle: {
-                    backgroundColor: colors.background,
-                  },
                 }}
               />
             </Stack>

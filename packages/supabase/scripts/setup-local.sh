@@ -256,6 +256,41 @@ EOF
 }
 
 # =============================================================================
+# Create symlinks to .env.local in apps/web and apps/mobile
+# =============================================================================
+create_env_symlinks() {
+  echo -e "${YELLOW}Creating .env.local symlinks...${NC}"
+  
+  # Define app directories that need symlinks
+  APP_DIRS=(
+    "$ROOT_DIR/apps/web"
+    "$ROOT_DIR/apps/mobile"
+    "$ROOT_DIR/packages/backend"
+  )
+  
+  for APP_DIR in "${APP_DIRS[@]}"; do
+    if [ -d "$APP_DIR" ]; then
+      APP_ENV="$APP_DIR/.env.local"
+      
+      # Remove existing file or symlink
+      if [ -L "$APP_ENV" ]; then
+        rm "$APP_ENV"
+        echo -e "${YELLOW}  Removed existing symlink: $APP_ENV${NC}"
+      elif [ -f "$APP_ENV" ]; then
+        # Backup existing file if it's not a symlink
+        mv "$APP_ENV" "$APP_ENV.backup"
+        echo -e "${YELLOW}  Backed up existing file: $APP_ENV -> $APP_ENV.backup${NC}"
+      fi
+      
+      # Create symlink (relative path for portability)
+      cd "$APP_DIR"
+      ln -s "../../.env.local" ".env.local"
+      echo -e "${GREEN}  Created symlink: $APP_ENV -> $ENV_FILE${NC}"
+    fi
+  done
+}
+
+# =============================================================================
 # Print success message
 # =============================================================================
 print_success() {
@@ -288,6 +323,7 @@ main() {
   run_seed
   generate_types
   create_env_file
+  create_env_symlinks
   print_success
 }
 
