@@ -28,7 +28,20 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 // Configuration
 const SUPABASE_DIR = resolve(__dirname, "../../../packages/supabase");
 const MIGRATIONS_DIR = resolve(SUPABASE_DIR, "supabase/migrations");
-const SEED_FILE = resolve(SUPABASE_DIR, "supabase/seed.sql");
+const SEEDS_DIR = resolve(SUPABASE_DIR, "supabase/seeds");
+
+// Ordered seed files (must match config.toml sql_paths order)
+const SEED_FILES = [
+  "01_extensions.sql",
+  "02_roles.sql",
+  "03_users.sql",
+  "04_organizations.sql",
+  "05_invitations.sql",
+  "06_pokemon.sql",
+  "07_teams.sql",
+  "08_tournaments.sql",
+  "09_social.sql",
+];
 
 /**
  * Execute a command and stream output
@@ -179,21 +192,31 @@ function getDatabaseUrl(projectRef) {
 }
 
 /**
- * Run seed.sql against the database using postgres client
+ * Run seed files against the database using postgres client
  */
 async function runSeedSql(projectRef) {
-  if (!existsSync(SEED_FILE)) {
-    console.log(`   Seed file not found: ${SEED_FILE}`);
+  if (!existsSync(SEEDS_DIR)) {
+    console.log(`   Seeds directory not found: ${SEEDS_DIR}`);
     return false;
   }
+
+  // Filter to only existing seed files
+  const existingSeeds = SEED_FILES.filter((file) =>
+    existsSync(resolve(SEEDS_DIR, file))
+  );
+
+  if (existingSeeds.length === 0) {
+    console.log(`   No seed files found in: ${SEEDS_DIR}`);
+    return false;
+  }
+
+  console.log(`   Found ${existingSeeds.length} seed files`);
 
   const connectionUrl = getDatabaseUrl(projectRef);
   if (!connectionUrl) {
     console.log(`   ❌ No database connection URL available`);
     return false;
   }
-
-  const seedSql = readFileSync(SEED_FILE, "utf-8");
 
   console.log(`   Connecting to database...`);
 
@@ -205,9 +228,16 @@ async function runSeedSql(projectRef) {
   });
 
   try {
-    // Execute the seed SQL
-    await sql.unsafe(seedSql);
-    console.log(`   ✅ Seed data applied successfully!`);
+    // Execute each seed file in order
+    for (const seedFile of existingSeeds) {
+      const seedPath = resolve(SEEDS_DIR, seedFile);
+      const seedSql = readFileSync(seedPath, "utf-8");
+
+      console.log(`   Running ${seedFile}...`);
+      await sql.unsafe(seedSql);
+    }
+
+    console.log(`   ✅ All seed data applied successfully!`);
     return true;
   } catch (error) {
     // Log detailed error info

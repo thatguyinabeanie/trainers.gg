@@ -9,7 +9,10 @@
       "path": "./apps/mobile"
     },
     {
-      "path": "./packages/backend"
+      "path": "./packages/supabase"
+    },
+    {
+      "path": "./packages/atproto"
     },
     {
       "path": "./packages/ui"

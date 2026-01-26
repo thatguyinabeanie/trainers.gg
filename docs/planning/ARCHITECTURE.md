@@ -1,5 +1,7 @@
 # Architecture - trainers.gg
 
+> **⚠️ OUTDATED:** This document describes the original planned architecture with Convex backend. The project has migrated to **Supabase**. See [AGENTS.md](../../AGENTS.md) for the current architecture.
+
 This document describes the monorepo structure and architecture for trainers.gg.
 
 ## Monorepo Structure

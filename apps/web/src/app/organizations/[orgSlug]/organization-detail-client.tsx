@@ -143,7 +143,7 @@ export function OrganizationDetailClient({
 
         <div className="flex gap-2">
           {isOwner && (
-            <Link href={`/dashboard/organizations/${orgSlug}`}>
+            <Link href={`/to-dashboard/${orgSlug}`}>
               <Button variant="outline">
                 <Settings className="mr-2 h-4 w-4" />
                 Manage Organization
@@ -203,9 +203,9 @@ export function OrganizationDetailClient({
             <Trophy className="h-4 w-4" />
             Tournaments
           </TabsTrigger>
-          <TabsTrigger value="members" className="gap-2">
+          <TabsTrigger value="staff" className="gap-2">
             <Users className="h-4 w-4" />
-            Members
+            Staff
           </TabsTrigger>
         </TabsList>
 
@@ -221,9 +221,7 @@ export function OrganizationDetailClient({
                   This organization hasn&apos;t created any tournaments
                 </p>
                 {isOwner && (
-                  <Link
-                    href={`/dashboard/organizations/${orgSlug}/tournaments/create`}
-                  >
+                  <Link href={`/to-dashboard/${orgSlug}/tournaments/create`}>
                     <Button>
                       <Trophy className="mr-2 h-4 w-4" />
                       Create Tournament
@@ -285,17 +283,17 @@ export function OrganizationDetailClient({
           )}
         </TabsContent>
 
-        <TabsContent value="members">
+        <TabsContent value="staff">
           <Card>
             <CardHeader>
-              <CardTitle>Members</CardTitle>
+              <CardTitle>Staff</CardTitle>
               <CardDescription>
                 People who are part of this organization
               </CardDescription>
             </CardHeader>
             <CardContent>
               <p className="text-muted-foreground py-8 text-center">
-                Member list coming soon
+                Staff list coming soon
               </p>
             </CardContent>
           </Card>

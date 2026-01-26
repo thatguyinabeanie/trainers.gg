@@ -2188,6 +2188,44 @@ export type Database = {
           },
         ]
       }
+      waitlist: {
+        Row: {
+          converted_user_id: string | null
+          created_at: string
+          email: string
+          id: number
+          metadata: Json | null
+          notified_at: string | null
+          source: string | null
+        }
+        Insert: {
+          converted_user_id?: string | null
+          created_at?: string
+          email: string
+          id?: never
+          metadata?: Json | null
+          notified_at?: string | null
+          source?: string | null
+        }
+        Update: {
+          converted_user_id?: string | null
+          created_at?: string
+          email?: string
+          id?: never
+          metadata?: Json | null
+          notified_at?: string | null
+          source?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "waitlist_converted_user_id_fkey"
+            columns: ["converted_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never

@@ -29,48 +29,48 @@ This documentation explains how these community-driven tournament organizations,
 
 ## Core Concepts: Membership & Administration
 
-This section outlines how profiles become members of organizations and how administrative privileges are managed.
+This section outlines how users become staff of organizations and how administrative privileges are managed.
 
-### 🔑 Organization Membership (`organization_members` table)
+### 🔑 Organization Staff (`organization_staff` table)
 
-- **Core Principle:** A user's profile becomes an official member of an organization through an entry in the `organization_members` table. This table simply links an `organization_id` to a `profile_id`.
-- **No Org-Level Roles Here:** This table does not store organization-level roles. Its sole purpose is to signify that a profile is part of the organization's roster.
-- **Prerequisite:** Being listed in `organization_members` is a prerequisite for a profile to be added to any specific groups within that organization.
-- **Public Visibility:** The list of members for any given organization (i.e., profiles in its `organization_members` list) is considered public information. Detailed group memberships and specific roles within those groups for each member will also be publicly queryable for an organization.
+- **Core Principle:** A user becomes an official staff member of an organization through an entry in the `organization_staff` table. This table links an `organization_id` to a `user_id`.
+- **No Org-Level Roles Here:** This table does not store organization-level roles. Its sole purpose is to signify that a user is part of the organization's staff roster.
+- **Prerequisite:** Being listed in `organization_staff` is a prerequisite for a user to be added to any specific groups within that organization.
+- **Public Visibility:** The list of staff for any given organization (i.e., users in its `organization_staff` list) is considered public information. Detailed group memberships and specific roles within those groups for each staff member will also be publicly queryable for an organization.
 
-### 📨 Inviting Members to an Organization
+### 📨 Inviting Staff to an Organization
 
-- **Invitation Process:** Profiles are invited to join an organization by existing members who have the `PERMISSIONS.ORG_INVITE_MEMBERS` permission for that specific organization.
-- **Existing Profiles Only:** Invitations can currently only be sent to profiles that already exist on the platform.
-- **Tracking Invitations:** Invitations are tracked in an `organization_invitations` table, which records the organization, the invited profile, the inviting profile, a status (e.g., 'pending', 'accepted', 'declined', 'revoked'), and an optional expiration date.
-- **Accepting an Invitation:** When a profile accepts an invitation to join an organization:
-  1. An entry is created in the `organization_members` table for that profile and organization.
-  2. No default group placement occurs. The profile is now an org member and can be subsequently added to specific groups by authorized users.
+- **Invitation Process:** Users are invited to join an organization by existing staff who have the `PERMISSIONS.ORG_INVITE_STAFF` permission for that specific organization.
+- **Existing Users Only:** Invitations can currently only be sent to users that already exist on the platform.
+- **Tracking Invitations:** Invitations are tracked in an `organization_invitations` table, which records the organization, the invited user, the inviting user, a status (e.g., 'pending', 'accepted', 'declined', 'revoked'), and an optional expiration date.
+- **Accepting an Invitation:** When a user accepts an invitation to join an organization:
+  1. An entry is created in the `organization_staff` table for that user and organization.
+  2. No default group placement occurs. The user is now an org staff member and can be subsequently added to specific groups by authorized users.
 
 ### 👑 Organization Ownership & Implicit Admin Rights
 
-- **Owner as Administrator:** The profile designated as the `owner_profile_id` of an organization inherently has full administrative rights over that organization. This includes the ability to invite members, manage group assignments, remove members, and perform all other administrative actions, bypassing standard permission checks for their own organization.
-- **Delegation:** While the owner has full control, they are encouraged to delegate responsibilities by creating groups and assigning roles with specific permissions to other members of the organization.
+- **Owner as Administrator:** The user designated as the `owner_user_id` of an organization inherently has full administrative rights over that organization. This includes the ability to invite staff, manage group assignments, remove staff, and perform all other administrative actions, bypassing standard permission checks for their own organization.
+- **Delegation:** While the owner has full control, they are encouraged to delegate responsibilities by creating groups and assigning roles with specific permissions to other staff members of the organization.
 
 ### 🛡️ Granting Administrative Permissions for an Organization
 
 - **Group-Based Permissions:** All specific administrative permissions for managing an organization (beyond the owner's implicit rights) are granted through group-based role assignments.
 - **Mechanism:**
   1. **Global Roles:** Define global `Roles` (in the main `roles` table) that encapsulate specific sets of permissions. For example, a global role named "Organization Manager" might be granted permissions like:
-     - `PERMISSIONS.ORG_INVITE_MEMBERS` (to invite new members to the org)
-     - `PERMISSIONS.ORG_MANAGE_GROUP_ASSIGNMENTS` (to add/remove org members to/from groups and manage their roles within those groups)
-     - `PERMISSIONS.ORG_REMOVE_MEMBER` (to remove a member from the organization entirely)
+     - `PERMISSIONS.ORG_INVITE_STAFF` (to invite new staff to the org)
+     - `PERMISSIONS.ORG_MANAGE_GROUP_ASSIGNMENTS` (to add/remove org staff to/from groups and manage their roles within those groups)
+     - `PERMISSIONS.ORG_REMOVE_STAFF` (to remove a staff member from the organization entirely)
      - `PERMISSIONS.GROUP_CREATE` (to create new groups within this org)
      - `PERMISSIONS.GROUP_DELETE` (to delete groups within this org)
      - `PERMISSIONS.GROUP_MANAGE_AVAILABLE_ROLES` (to manage which global roles are usable within a specific group in this org)
   2. **Privileged Groups:** Within an organization, create a specific group (e.g., "Org Staff," "Administrators").
   3. **Linking Global Role to Group:** Link the powerful global role (e.g., "Organization Manager") to this privileged group within the organization (this creates an entry in the `group_roles` table).
-  4. **Assigning Profiles:** Add trusted profiles (who are already members of the organization via `organization_members`) to this privileged group, assigning them the linked powerful role (this creates an entry in `profile_group_roles`).
-- **Result:** Members of this privileged group now effectively have the administrative permissions for that specific organization, as defined by the global role they were assigned within that group.
+  4. **Assigning Users:** Add trusted users (who are already staff of the organization via `organization_staff`) to this privileged group, assigning them the linked powerful role (this creates an entry in `user_group_roles`).
+- **Result:** Staff in this privileged group now effectively have the administrative permissions for that specific organization, as defined by the global role they were assigned within that group.
 
 ### 📄 Listing Your Organization Memberships
 
-- Authenticated users can retrieve a list of all organizations they are a member of (i.e., where their profile is listed in the `organization_members` table). This is typically achieved via a dedicated Convex query function (e.g., `organizations.listMyMemberOrganizations`).
+- Authenticated users can retrieve a list of all organizations they are staff of (i.e., where their user ID is listed in the `organization_staff` table). This is typically achieved via a dedicated query function.
 
 ---
 

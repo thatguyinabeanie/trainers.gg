@@ -71,10 +71,10 @@ export async function listOrganizations(
 
   if (error) throw error;
 
-  // Add member and tournament counts
+  // Add staff and tournament counts
   const orgsWithCounts = await Promise.all(
     (data ?? []).map(async (org) => {
-      const { count: memberCount } = await supabase
+      const { count: staffCount } = await supabase
         .from("organization_staff")
         .select("*", { count: "exact", head: true })
         .eq("organization_id", org.id);
@@ -88,7 +88,7 @@ export async function listOrganizations(
       return {
         ...org,
         _count: {
-          members: memberCount ?? 0,
+          staff: staffCount ?? 0,
           tournaments: tournamentCount ?? 0,
         },
       };
@@ -226,8 +226,7 @@ export async function getOrganizationById(supabase: TypedClient, id: number) {
 }
 
 /**
- * List organizations where user is owner or member
- * Organizations are owned by users (not alts), but members join via their alt
+ * List organizations where user is owner or staff
  */
 export async function listMyOrganizations(
   supabase: TypedClient,
@@ -243,7 +242,7 @@ export async function listMyOrganizations(
     targetUserId = user.id;
   }
 
-  // Get the user's alt for checking membership
+  // Get the user's alt for checking staff status
   const { data: alt } = await supabase
     .from("alts")
     .select("id")
@@ -258,10 +257,10 @@ export async function listMyOrganizations(
     .select("*")
     .eq("owner_user_id", targetUserId);
 
-  // Get organizations where user is a staff member (user-level)
-  let memberOrgs: typeof ownedOrgs = [];
+  // Get organizations where user is staff (user-level)
+  let staffOrgs: typeof ownedOrgs = [];
   if (userId) {
-    const { data: memberships } = await supabase
+    const { data: staffRecords } = await supabase
       .from("organization_staff")
       .select(
         `
@@ -270,7 +269,7 @@ export async function listMyOrganizations(
       )
       .eq("user_id", userId);
 
-    memberOrgs = (memberships ?? [])
+    staffOrgs = (staffRecords ?? [])
       .map((m) => m.organization)
       .filter(
         (org): org is NonNullable<typeof org> =>
@@ -283,13 +282,13 @@ export async function listMyOrganizations(
     isOwner: true,
   }));
 
-  const memberOrgsWithFlag = (memberOrgs ?? []).map((org) => ({
+  const staffOrgsWithFlag = (staffOrgs ?? []).map((org) => ({
     ...org,
     isOwner: org.owner_user_id === targetUserId,
   }));
 
   // Combine and deduplicate
-  const allOrgs = [...ownedOrgsWithFlag, ...memberOrgsWithFlag];
+  const allOrgs = [...ownedOrgsWithFlag, ...staffOrgsWithFlag];
   const uniqueOrgs = allOrgs.filter(
     (org, index, self) => index === self.findIndex((o) => o.id === org.id)
   );
@@ -324,20 +323,20 @@ export async function canManageOrganization(
   // TODO: Implement full permission checking via group_roles → groups → organization
 
   // For now, just check if user is staff in the organization
-  const { data: staffMembership } = await supabase
+  const { data: staffRecord } = await supabase
     .from("organization_staff")
     .select("id")
     .eq("organization_id", organizationId)
     .eq("user_id", userId)
     .single();
 
-  return !!staffMembership;
+  return !!staffRecord;
 }
 
 /**
  * List organization staff with user details
  */
-export async function listOrganizationMembers(
+export async function listOrganizationStaff(
   supabase: TypedClient,
   organizationId: number
 ) {
@@ -356,9 +355,9 @@ export async function listOrganizationMembers(
 }
 
 /**
- * Check if user is member of organization (owner or staff member)
+ * Check if user has access to organization (owner or staff)
  */
-export async function isOrganizationMember(
+export async function hasOrganizationAccess(
   supabase: TypedClient,
   organizationId: number,
   userId: string
@@ -374,7 +373,7 @@ export async function isOrganizationMember(
     return true;
   }
 
-  // Check if staff member (now uses user_id directly, not via alt)
+  // Check if staff (now uses user_id directly, not via alt)
   const { data } = await supabase
     .from("organization_staff")
     .select("id")
@@ -429,4 +428,158 @@ export async function getOrganizationInvitations(
 
   if (error) throw error;
   return invitations ?? [];
+}
+
+/**
+ * List organizations where user is the owner (for TO dashboard access in Phase 1)
+ */
+export async function listMyOwnedOrganizations(
+  supabase: TypedClient,
+  userId?: string
+) {
+  let targetUserId: string | undefined = userId;
+
+  if (!targetUserId) {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return [];
+    targetUserId = user.id;
+  }
+
+  const { data: ownedOrgs, error } = await supabase
+    .from("organizations")
+    .select("*")
+    .eq("owner_user_id", targetUserId)
+    .order("name", { ascending: true });
+
+  if (error) throw error;
+  return ownedOrgs ?? [];
+}
+
+/**
+ * Get organization by slug with tournament statistics for TO dashboard
+ */
+export async function getOrganizationWithTournamentStats(
+  supabase: TypedClient,
+  orgSlug: string
+) {
+  const { data: organization, error } = await supabase
+    .from("organizations")
+    .select("*")
+    .eq("slug", orgSlug)
+    .single();
+
+  if (error) return null;
+  if (!organization) return null;
+
+  // Get all non-archived tournaments in a single query
+  const { data: tournaments } = await supabase
+    .from("tournaments")
+    .select("id, status")
+    .eq("organization_id", organization.id)
+    .is("archived_at", null);
+
+  // Count by status in memory (avoids N+1 queries)
+  const tournamentCounts: Record<string, number> = {
+    draft: 0,
+    upcoming: 0,
+    active: 0,
+    completed: 0,
+    cancelled: 0,
+  };
+
+  const tournamentIds: number[] = [];
+  for (const t of tournaments ?? []) {
+    const status = t.status;
+    if (
+      status &&
+      Object.prototype.hasOwnProperty.call(tournamentCounts, status)
+    ) {
+      tournamentCounts[status] = (tournamentCounts[status] ?? 0) + 1;
+    }
+    tournamentIds.push(t.id);
+  }
+
+  // Get total participant count across all tournaments in a single query
+  let totalParticipants = 0;
+  if (tournamentIds.length > 0) {
+    const { count } = await supabase
+      .from("tournament_registrations")
+      .select("*", { count: "exact", head: true })
+      .in("tournament_id", tournamentIds);
+    totalParticipants = count ?? 0;
+  }
+
+  // Get staff count
+  const { count: staffCount } = await supabase
+    .from("organization_staff")
+    .select("*", { count: "exact", head: true })
+    .eq("organization_id", organization.id);
+
+  return {
+    ...organization,
+    tournamentCounts,
+    totalTournaments: Object.values(tournamentCounts).reduce(
+      (a, b) => a + b,
+      0
+    ),
+    totalParticipants,
+    staffCount: staffCount ?? 0,
+  };
+}
+
+/**
+ * List tournaments for an organization with optional status filter
+ */
+export async function listOrganizationTournaments(
+  supabase: TypedClient,
+  organizationId: number,
+  options: {
+    status?: "draft" | "upcoming" | "active" | "completed" | "cancelled";
+    limit?: number;
+    offset?: number;
+  } = {}
+) {
+  const { status, limit = 50, offset = 0 } = options;
+
+  let query = supabase
+    .from("tournaments")
+    .select("*", { count: "exact" })
+    .eq("organization_id", organizationId)
+    .is("archived_at", null)
+    .order("created_at", { ascending: false });
+
+  if (status) {
+    query = query.eq("status", status);
+  }
+
+  const {
+    data: tournaments,
+    error,
+    count,
+  } = await query.range(offset, offset + limit - 1);
+
+  if (error) throw error;
+
+  // Get registration counts for each tournament
+  const tournamentsWithCounts = await Promise.all(
+    (tournaments ?? []).map(async (tournament) => {
+      const { count: registrationCount } = await supabase
+        .from("tournament_registrations")
+        .select("*", { count: "exact", head: true })
+        .eq("tournament_id", tournament.id);
+
+      return {
+        ...tournament,
+        registrationCount: registrationCount ?? 0,
+      };
+    })
+  );
+
+  return {
+    tournaments: tournamentsWithCounts,
+    total: count ?? 0,
+    hasMore: (count ?? 0) > offset + limit,
+  };
 }

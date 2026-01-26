@@ -119,8 +119,8 @@ If we used `alt_id` for social features (posts, follows, likes):
    - Posts couldn't federate (no DID)
    - Users would have broken Bluesky presence
 
-3. **Profile confusion**
-   - Which alt's followers count on the profile?
+3. **Display confusion**
+   - Which alt's followers count on the user page?
    - Which alt's posts show on the feed?
 
 ---
@@ -274,25 +274,25 @@ CREATE TABLE posts (
 
 **Why it's wrong:** Posts federate to Bluesky. Alts don't have DIDs.
 
-### Mistake 2: Querying Alt Data for Social Profiles
+### Mistake 2: Querying Alt Data for User Display
 
 ```typescript
-// ❌ WRONG: Getting profile data from alt
-const profile = await supabase
+// ❌ WRONG: Getting display data from alt for social features
+const userData = await supabase
   .from("alts")
   .select("username, display_name")
   .eq("id", altId)
   .single();
 
-// ✅ CORRECT: Getting profile data from user
-const profile = await supabase
+// ✅ CORRECT: Getting display data from user for social features
+const userData = await supabase
   .from("users")
   .select("username, name, image, did")
   .eq("id", userId)
   .single();
 ```
 
-**Why it's wrong:** Social profiles are user-level, not alt-level.
+**Why it's wrong:** Social features use user-level data, not alt-level.
 
 ### Mistake 3: Using `alt_id` for Follow Relationships
 

@@ -142,7 +142,7 @@ export async function inviteToOrganization(
   const user = await getCurrentUser(supabase);
   if (!user) throw new Error("Not authenticated");
 
-  // Check if already a staff member
+  // Check if already staff
   const { data: existingStaff } = await supabase
     .from("organization_staff")
     .select("id")
@@ -151,7 +151,7 @@ export async function inviteToOrganization(
     .single();
 
   if (existingStaff) {
-    throw new Error("User is already a staff member of this organization");
+    throw new Error("User is already staff of this organization");
   }
 
   // Check for existing pending invitation
@@ -297,9 +297,9 @@ export async function leaveOrganization(
 }
 
 /**
- * Remove staff member from organization
+ * Remove staff from organization
  */
-export async function removeMember(
+export async function removeStaff(
   supabase: TypedClient,
   organizationId: number,
   userId: string
@@ -316,7 +316,7 @@ export async function removeMember(
 
   if (!org) throw new Error("Organization not found");
   if (org.owner_user_id !== currentUser.id) {
-    throw new Error("Only the owner can remove staff members");
+    throw new Error("Only the owner can remove staff");
   }
 
   // Cannot remove the owner

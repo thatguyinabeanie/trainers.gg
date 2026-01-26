@@ -1,28 +1,32 @@
 "use client";
 
+import { useCallback } from "react";
 import { useAuth, getUserDisplayName } from "@/components/auth/auth-provider";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
+  DropdownMenuLabel,
 } from "@/components/ui/dropdown-menu";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
-  Bell,
   LogOut,
   Settings,
-  Trophy,
   UserCircle,
-  Users,
   LayoutDashboard,
+  Building2,
+  ChevronRight,
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { ReactNode } from "react";
+import { NotificationBell } from "@/components/notification-bell";
+import { useSupabaseQuery } from "@/lib/supabase";
+import { listMyOrganizations } from "@trainers/supabase";
+import type { TypedSupabaseClient } from "@trainers/supabase";
 
 interface TopNavAuthSectionProps {
   themeSwitcher?: ReactNode;
@@ -31,6 +35,18 @@ interface TopNavAuthSectionProps {
 export function TopNavAuthSection({ themeSwitcher }: TopNavAuthSectionProps) {
   const router = useRouter();
   const { user, signOut, loading } = useAuth();
+
+  const userId = user?.id;
+
+  const myOrganizationsQueryFn = useCallback(
+    (client: TypedSupabaseClient) =>
+      userId ? listMyOrganizations(client, userId) : Promise.resolve([]),
+    [userId]
+  );
+
+  const { data: myOrganizations } = useSupabaseQuery(myOrganizationsQueryFn, [
+    userId,
+  ]);
 
   const handleSignOut = async () => {
     await signOut();
@@ -52,12 +68,14 @@ export function TopNavAuthSection({ themeSwitcher }: TopNavAuthSectionProps) {
       <div className="flex items-center gap-2">
         {themeSwitcher}
         <Link href="/sign-in">
-          <Button variant="ghost" size="sm">
+          <button className="hover:bg-accent rounded-md px-3 py-1.5 text-sm font-medium">
             Sign In
-          </Button>
+          </button>
         </Link>
         <Link href="/sign-up">
-          <Button size="sm">Sign Up</Button>
+          <button className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-md px-3 py-1.5 text-sm font-medium">
+            Sign Up
+          </button>
         </Link>
       </div>
     );
@@ -70,13 +88,12 @@ export function TopNavAuthSection({ themeSwitcher }: TopNavAuthSectionProps) {
     (user.user_metadata?.avatar_url as string | undefined);
   const userInitial = displayName.charAt(0).toUpperCase();
 
+  const hasOrganizations = myOrganizations && myOrganizations.length > 0;
+
   return (
     <div className="flex items-center gap-2">
       {/* Notification Bell */}
-      <Button variant="ghost" size="icon" className="relative">
-        <Bell className="h-5 w-5" />
-        <span className="sr-only">Notifications</span>
-      </Button>
+      <NotificationBell userId={user.id} />
 
       {/* Theme Switcher */}
       {themeSwitcher}
@@ -112,16 +129,30 @@ export function TopNavAuthSection({ themeSwitcher }: TopNavAuthSectionProps) {
             <UserCircle className="mr-2 h-4 w-4" />
             <span>My Profile</span>
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => router.push("/tournaments")}>
-            <Trophy className="mr-2 h-4 w-4" />
-            <span>My Tournaments</span>
-          </DropdownMenuItem>
-          <DropdownMenuItem
-            onClick={() => router.push("/dashboard/organizations")}
-          >
-            <Users className="mr-2 h-4 w-4" />
-            <span>My Organizations</span>
-          </DropdownMenuItem>
+
+          {/* My Organizations Section - Only show if user has orgs */}
+          {hasOrganizations && (
+            <>
+              <DropdownMenuSeparator />
+              <DropdownMenuLabel className="text-muted-foreground text-xs font-normal">
+                My Organizations
+              </DropdownMenuLabel>
+              {myOrganizations.map((org) => (
+                <DropdownMenuItem
+                  key={org.id}
+                  onClick={() => router.push(`/to-dashboard/${org.slug}`)}
+                  className="justify-between"
+                >
+                  <div className="flex items-center">
+                    <Building2 className="mr-2 h-4 w-4" />
+                    <span className="truncate">{org.name}</span>
+                  </div>
+                  <ChevronRight className="text-muted-foreground h-4 w-4" />
+                </DropdownMenuItem>
+              ))}
+            </>
+          )}
+
           <DropdownMenuSeparator />
           <DropdownMenuItem onClick={() => router.push("/settings")} disabled>
             <Settings className="mr-2 h-4 w-4" />
