@@ -293,13 +293,6 @@ export type Database = {
             foreignKeyName: "groups_organization_id_fkey"
             columns: ["organization_id"]
             isOneToOne: false
-            referencedRelation: "organization_with_owner"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "groups_organization_id_fkey"
-            columns: ["organization_id"]
-            isOneToOne: false
             referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
@@ -396,13 +389,6 @@ export type Database = {
             foreignKeyName: "organization_invitations_organization_id_fkey"
             columns: ["organization_id"]
             isOneToOne: false
-            referencedRelation: "organization_with_owner"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "organization_invitations_organization_id_fkey"
-            columns: ["organization_id"]
-            isOneToOne: false
             referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
@@ -453,13 +439,6 @@ export type Database = {
             foreignKeyName: "organization_requests_created_organization_id_fkey"
             columns: ["created_organization_id"]
             isOneToOne: false
-            referencedRelation: "organization_with_owner"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "organization_requests_created_organization_id_fkey"
-            columns: ["created_organization_id"]
-            isOneToOne: false
             referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
@@ -499,13 +478,6 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
-          {
-            foreignKeyName: "organization_staff_organization_id_fkey"
-            columns: ["organization_id"]
-            isOneToOne: false
-            referencedRelation: "organization_with_owner"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "organization_staff_organization_id_fkey"
             columns: ["organization_id"]
@@ -1922,13 +1894,6 @@ export type Database = {
             foreignKeyName: "tournament_templates_organization_id_fkey"
             columns: ["organization_id"]
             isOneToOne: false
-            referencedRelation: "organization_with_owner"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "tournament_templates_organization_id_fkey"
-            columns: ["organization_id"]
-            isOneToOne: false
             referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
@@ -2050,13 +2015,6 @@ export type Database = {
             columns: ["current_phase_id"]
             isOneToOne: false
             referencedRelation: "tournament_phases"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "tournaments_organization_id_fkey"
-            columns: ["organization_id"]
-            isOneToOne: false
-            referencedRelation: "organization_with_owner"
             referencedColumns: ["id"]
           },
           {
@@ -2232,42 +2190,7 @@ export type Database = {
       }
     }
     Views: {
-      organization_with_owner: {
-        Row: {
-          created_at: string | null
-          description: string | null
-          discord_url: string | null
-          icon: string | null
-          id: number | null
-          logo_url: string | null
-          name: string | null
-          owner_image: string | null
-          owner_name: string | null
-          owner_user_id: string | null
-          owner_username: string | null
-          platform_fee_percentage: number | null
-          slug: string | null
-          status: Database["public"]["Enums"]["organization_status"] | null
-          subscription_expires_at: string | null
-          subscription_started_at: string | null
-          subscription_tier:
-            | Database["public"]["Enums"]["organization_subscription_tier"]
-            | null
-          tier: Database["public"]["Enums"]["organization_tier"] | null
-          twitter_url: string | null
-          updated_at: string | null
-          website_url: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "organizations_owner_user_id_fkey"
-            columns: ["owner_user_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
+      [_ in never]: never
     }
     Functions: {
       custom_access_token_hook: { Args: { event: Json }; Returns: Json }
