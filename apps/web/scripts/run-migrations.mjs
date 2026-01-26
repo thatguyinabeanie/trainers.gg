@@ -200,12 +200,10 @@ async function runMigrations() {
   exec("npx supabase db push --linked --include-all", { env: cliEnv });
 
   // Run seeds for preview environments only
+  // Note: Seeding on remote requires executing SQL directly, not `db seed`
+  // which only works for local databases. Skip for now.
   if (env.shouldSeed) {
-    console.log("\n🌱 Running seed data...");
-    exec("npx supabase db seed --linked", {
-      env: cliEnv,
-      ignoreError: true,
-    });
+    console.log("\n🌱 Seeding: Skipped (remote seeding not yet implemented)");
   }
 
   console.log("\n" + "=".repeat(50));
