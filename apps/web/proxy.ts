@@ -79,9 +79,21 @@ export async function proxy(request: NextRequest) {
   const { supabase, response } = createClient(request);
 
   // Get current user (this also refreshes the session)
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  let user = null;
+  try {
+    const {
+      data: { user: authUser },
+      error,
+    } = await supabase.auth.getUser();
+
+    if (error) {
+      console.error("Failed to get user in proxy:", error);
+    } else {
+      user = authUser;
+    }
+  } catch (err) {
+    console.error("Exception in proxy getUser():", err);
+  }
 
   // If not in maintenance mode, just refresh session and continue
   if (!MAINTENANCE_MODE) {
