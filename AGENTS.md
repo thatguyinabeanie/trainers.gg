@@ -279,11 +279,12 @@ RETURNS uuid AS $$
   SELECT auth.uid();
 $$ LANGUAGE SQL STABLE SECURITY DEFINER;
 
--- Get the current user's profile ID
-CREATE OR REPLACE FUNCTION public.get_current_profile_id()
-RETURNS uuid AS $$
-  SELECT p.id FROM profiles p
-  WHERE p.user_id = auth.uid()
+-- Get the current user's main alt ID
+CREATE OR REPLACE FUNCTION public.get_current_alt_id()
+RETURNS bigint AS $$
+  SELECT a.id FROM alts a
+  WHERE a.user_id = auth.uid()
+  LIMIT 1
 $$ LANGUAGE SQL STABLE SECURITY DEFINER;
 ```
 
@@ -384,10 +385,10 @@ const { data: user } = await supabase
   .maybeSingle(); // Returns null if not found, no error
 
 // Use single() only when record MUST exist
-const { data: profile } = await supabase
-  .from("profiles")
+const { data: alt } = await supabase
+  .from("alts")
   .select("*")
-  .eq("id", profileId)
+  .eq("id", altId)
   .single(); // Throws 406 error if not found
 ```
 
@@ -413,32 +414,35 @@ const { data: profile } = await supabase
 
 Created via database trigger on auth signup.
 
-| Column          | Type       | Description                              |
-| --------------- | ---------- | ---------------------------------------- |
-| id              | uuid       | Primary key (matches auth.users.id)      |
-| email           | text       | Primary email                            |
-| first_name      | text       | User's first name                        |
-| last_name       | text       | User's last name                         |
-| username        | text       | Unique username                          |
-| image           | text       | Avatar URL                               |
-| birth_date      | date       | User's date of birth                     |
-| country         | text       | Country code (ISO 3166-1 alpha-2)        |
-| main_profile_id | uuid       | FK to profiles                           |
-| did             | text       | AT Protocol Decentralized Identifier     |
-| pds_handle      | text       | Auto-generated as `username.trainers.gg` |
-| pds_status      | pds_status | pending, active, failed, or suspended    |
+| Column      | Type       | Description                              |
+| ----------- | ---------- | ---------------------------------------- |
+| id          | uuid       | Primary key (matches auth.users.id)      |
+| email       | text       | Primary email                            |
+| first_name  | text       | User's first name                        |
+| last_name   | text       | User's last name                         |
+| username    | text       | Unique username                          |
+| image       | text       | Avatar URL                               |
+| birth_date  | date       | User's date of birth                     |
+| country     | text       | Country code (ISO 3166-1 alpha-2)        |
+| main_alt_id | uuid       | FK to alts (user's primary alt)          |
+| did         | text       | AT Protocol Decentralized Identifier     |
+| pds_handle  | text       | Auto-generated as `username.trainers.gg` |
+| pds_status  | pds_status | pending, active, failed, or suspended    |
 
-### profiles
+### alts
 
-Player profiles linked to users.
+Alternate player identities for tournaments. A user can have multiple alts for different competitive formats, anonymity, or personas.
 
-| Column       | Type | Description         |
-| ------------ | ---- | ------------------- |
-| id           | uuid | Primary key         |
-| user_id      | uuid | FK to users         |
-| username     | text | Unique username     |
-| display_name | text | Public display name |
-| avatar_url   | text | Profile avatar      |
+| Column       | Type   | Description                       |
+| ------------ | ------ | --------------------------------- |
+| id           | bigint | Primary key                       |
+| user_id      | uuid   | FK to users                       |
+| username     | text   | Unique username for this alt      |
+| display_name | text   | Public display name               |
+| avatar_url   | text   | Alt avatar                        |
+| bio          | text   | Alt biography/description         |
+| battle_tag   | text   | In-game battle tag or player ID   |
+| tier         | enum   | Subscription tier (free, premium) |
 
 ---
 

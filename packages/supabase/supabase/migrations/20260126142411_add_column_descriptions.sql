@@ -24,20 +24,23 @@ COMMENT ON COLUMN public.users.birth_date IS 'Date of birth for age verification
 COMMENT ON COLUMN public.users.country IS 'Country code (ISO 3166-1 alpha-2)';
 
 -- =============================================================================
--- alts table (player profiles)
+-- alts table
+-- Alts are alternate player identities for tournaments. A user can have multiple
+-- alts for different competitive formats, anonymity, or personas. Alts are NOT
+-- the same as "profiles" - that term is reserved for a future feature.
 -- =============================================================================
 COMMENT ON COLUMN public.alts.id IS 'Primary key';
 COMMENT ON COLUMN public.alts.user_id IS 'Owner user ID (references users.id)';
-COMMENT ON COLUMN public.alts.display_name IS 'Public display name for this profile';
-COMMENT ON COLUMN public.alts.username IS 'Unique username for this alt profile';
-COMMENT ON COLUMN public.alts.bio IS 'Profile biography/description';
-COMMENT ON COLUMN public.alts.avatar_url IS 'Profile avatar image URL';
+COMMENT ON COLUMN public.alts.display_name IS 'Public display name for this alt';
+COMMENT ON COLUMN public.alts.username IS 'Unique username for this alt';
+COMMENT ON COLUMN public.alts.bio IS 'Alt biography/description';
+COMMENT ON COLUMN public.alts.avatar_url IS 'Alt avatar image URL';
 COMMENT ON COLUMN public.alts.battle_tag IS 'In-game battle tag or player ID';
-COMMENT ON COLUMN public.alts.tier IS 'Subscription tier for this profile';
+COMMENT ON COLUMN public.alts.tier IS 'Subscription tier for this alt';
 COMMENT ON COLUMN public.alts.tier_expires_at IS 'When the subscription tier expires';
 COMMENT ON COLUMN public.alts.tier_started_at IS 'When the subscription tier started';
-COMMENT ON COLUMN public.alts.created_at IS 'Profile creation timestamp';
-COMMENT ON COLUMN public.alts.updated_at IS 'Last profile update timestamp';
+COMMENT ON COLUMN public.alts.created_at IS 'Alt creation timestamp';
+COMMENT ON COLUMN public.alts.updated_at IS 'Last alt update timestamp';
 
 -- =============================================================================
 -- organizations table

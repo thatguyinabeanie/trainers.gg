@@ -18,30 +18,30 @@ Generated: 2026-01-26
 
 These tables are actively queried by the application:
 
-| Table                      | Usage Count | Purpose                               |
-| -------------------------- | ----------- | ------------------------------------- |
-| `alts`                     | 27          | Player profiles/tournament identities |
-| `atproto_oauth_state`      | 6           | AT Protocol OAuth state management    |
-| `atproto_sessions`         | 4           | AT Protocol session tracking          |
-| `follows`                  | 1           | Social following relationships        |
-| `organization_invitations` | 8           | Org staff invitations                 |
-| `organization_staff`       | 10          | Org staff membership                  |
-| `organizations`            | 20          | Organizations                         |
-| `post_likes`               | 4           | Social post likes                     |
-| `posts`                    | 5           | Social posts                          |
-| `roles`                    | 2           | Site-level roles                      |
-| `team_pokemon`             | 1           | Pokemon team compositions             |
-| `teams`                    | 1           | Tournament teams                      |
-| `tournament_invitations`   | 6           | Tournament player invitations         |
-| `tournament_matches`       | 8           | Tournament match records              |
-| `tournament_phases`        | 8           | Tournament phase management           |
-| `tournament_player_stats`  | 2           | Player tournament statistics          |
-| `tournament_registrations` | 27          | Tournament player registrations       |
-| `tournament_rounds`        | 2           | Tournament round tracking             |
-| `tournament_standings`     | 1           | Tournament leaderboards               |
-| `tournaments`              | 26          | Tournaments                           |
-| `user_roles`               | 6           | User site-level role assignments      |
-| `users`                    | 26          | User accounts                         |
+| Table                      | Usage Count | Purpose                            |
+| -------------------------- | ----------- | ---------------------------------- |
+| `alts`                     | 27          | Alternate player identities        |
+| `atproto_oauth_state`      | 6           | AT Protocol OAuth state management |
+| `atproto_sessions`         | 4           | AT Protocol session tracking       |
+| `follows`                  | 1           | Social following relationships     |
+| `organization_invitations` | 8           | Org staff invitations              |
+| `organization_staff`       | 10          | Org staff membership               |
+| `organizations`            | 20          | Organizations                      |
+| `post_likes`               | 4           | Social post likes                  |
+| `posts`                    | 5           | Social posts                       |
+| `roles`                    | 2           | Site-level roles                   |
+| `team_pokemon`             | 1           | Pokemon team compositions          |
+| `teams`                    | 1           | Tournament teams                   |
+| `tournament_invitations`   | 6           | Tournament player invitations      |
+| `tournament_matches`       | 8           | Tournament match records           |
+| `tournament_phases`        | 8           | Tournament phase management        |
+| `tournament_player_stats`  | 2           | Player tournament statistics       |
+| `tournament_registrations` | 27          | Tournament player registrations    |
+| `tournament_rounds`        | 2           | Tournament round tracking          |
+| `tournament_standings`     | 1           | Tournament leaderboards            |
+| `tournaments`              | 26          | Tournaments                        |
+| `user_roles`               | 6           | User site-level role assignments   |
+| `users`                    | 26          | User accounts                      |
 
 ---
 

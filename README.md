@@ -148,18 +148,18 @@ Every user gets a Bluesky identity:
 
 ### Key Tables
 
-| Table                      | Description                                      |
-| -------------------------- | ------------------------------------------------ |
-| `users`                    | User accounts with DID and PDS handle            |
-| `alts`                     | Player profiles (username, display name, avatar) |
-| `organizations`            | Tournament organizer accounts                    |
-| `tournaments`              | Tournament events                                |
-| `tournament_registrations` | Player registrations                             |
-| `posts`                    | Local activity feed (synced with PDS)            |
-| `follows`                  | Follow relationships                             |
-| `likes`                    | Post likes                                       |
-| `roles`                    | Role definitions (site and org scoped)           |
-| `user_roles`               | Site-scoped role assignments                     |
+| Table                      | Description                                 |
+| -------------------------- | ------------------------------------------- |
+| `users`                    | User accounts with DID and PDS handle       |
+| `alts`                     | Alternate player identities for tournaments |
+| `organizations`            | Tournament organizer accounts               |
+| `tournaments`              | Tournament events                           |
+| `tournament_registrations` | Player registrations                        |
+| `posts`                    | Local activity feed (synced with PDS)       |
+| `follows`                  | Follow relationships                        |
+| `likes`                    | Post likes                                  |
+| `roles`                    | Role definitions (site and org scoped)      |
+| `user_roles`               | Site-scoped role assignments                |
 
 ## Test Users (Local Development)
 

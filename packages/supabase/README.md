@@ -120,8 +120,8 @@ ON public.users FOR SELECT
 USING (id = auth.uid());
 
 -- Example for related tables
-CREATE POLICY "Users can view own profiles"
-ON public.profiles FOR SELECT
+CREATE POLICY "Users can view own alts"
+ON public.alts FOR SELECT
 USING (user_id = auth.uid());
 ```
 
@@ -136,10 +136,10 @@ const { data: user } = await supabase
   .maybeSingle(); // Returns null, no error
 
 // Use single() only when record MUST exist
-const { data: profile } = await supabase
-  .from("profiles")
+const { data: alt } = await supabase
+  .from("alts")
   .select("*")
-  .eq("id", profileId)
+  .eq("id", altId)
   .single(); // Throws 406 if not found
 ```
 
@@ -147,13 +147,13 @@ const { data: profile } = await supabase
 
 Key tables:
 
-| Table                      | Description                        |
-| -------------------------- | ---------------------------------- |
-| `users`                    | User accounts (created on signup)  |
-| `profiles`                 | Player profiles (username, avatar) |
-| `organizations`            | Tournament organizer accounts      |
-| `tournaments`              | Tournament events                  |
-| `tournament_registrations` | Player registrations               |
+| Table                      | Description                                 |
+| -------------------------- | ------------------------------------------- |
+| `users`                    | User accounts (created on signup)           |
+| `alts`                     | Alternate player identities for tournaments |
+| `organizations`            | Tournament organizer accounts               |
+| `tournaments`              | Tournament events                           |
+| `tournament_registrations` | Player registrations                        |
 
 ## Auth Flow
 
@@ -161,5 +161,5 @@ Key tables:
 2. Supabase creates auth user in `auth.users`
 3. Database trigger (`handle_new_user`) automatically creates:
    - `public.users` record with auth user ID
-   - `public.profiles` record with username from signup
+   - `public.alts` record with username from signup
 4. User is authenticated and can access protected resources
