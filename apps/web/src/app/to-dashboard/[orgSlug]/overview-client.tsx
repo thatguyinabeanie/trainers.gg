@@ -130,7 +130,7 @@ export function OverviewClient({
             </div>
             <div>
               <p className="text-2xl font-bold">{organization.staffCount}</p>
-              <p className="text-muted-foreground text-sm">Staff Members</p>
+              <p className="text-muted-foreground text-sm">Staff</p>
             </div>
           </CardContent>
         </Card>

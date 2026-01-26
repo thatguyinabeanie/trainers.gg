@@ -13,7 +13,7 @@ export default function StaffPage() {
       <div>
         <h2 className="text-2xl font-bold">Staff Management</h2>
         <p className="text-muted-foreground text-sm">
-          Manage your organization&apos;s staff members and permissions
+          Manage your organization&apos;s staff and permissions
         </p>
       </div>
 
@@ -33,8 +33,8 @@ export default function StaffPage() {
             Staff Management Coming Soon
           </h3>
           <p className="text-muted-foreground max-w-md text-center">
-            Soon you&apos;ll be able to invite staff members, assign roles, and
-            manage permissions for your organization. Stay tuned!
+            Soon you&apos;ll be able to invite staff, assign roles, and manage
+            permissions for your organization. Stay tuned!
           </p>
         </CardContent>
       </Card>
