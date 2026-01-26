@@ -1,5 +1,6 @@
 "use client";
 
+import type { MouseEvent } from "react";
 import Link from "next/link";
 import type { ProfileView } from "@/lib/atproto/api";
 import { BlueskyAvatar } from "@/components/bluesky/shared/bluesky-avatar";
@@ -23,7 +24,7 @@ export function ProfileListItem({ profile, className }: ProfileListItemProps) {
   const isOwnProfile = blueskyDid === profile.did;
   const isFollowing = !!profile.viewer?.following;
 
-  const handleFollowClick = (e: React.MouseEvent) => {
+  const handleFollowClick = (e: MouseEvent) => {
     e.preventDefault(); // Prevent navigation when clicking button inside link
     e.stopPropagation();
 
