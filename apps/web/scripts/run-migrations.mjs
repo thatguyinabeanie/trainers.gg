@@ -210,11 +210,7 @@ async function runSeedSql(projectRef) {
     console.log(`   ✅ Seed data applied successfully!`);
     return true;
   } catch (error) {
-    // Check if it's a duplicate key error (seed already ran)
-    if (error.code === "23505") {
-      console.log(`   ⚠️  Seed data already exists (duplicate key), skipping.`);
-      return true;
-    }
+    // Log detailed error info
     console.error(`   ❌ Seed failed: ${error.message}`);
     console.error(`   Error code: ${error.code}`);
     console.error(`   Error detail: ${error.detail || "none"}`);
