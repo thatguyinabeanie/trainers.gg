@@ -1,190 +1,153 @@
 # First User Setup Guide
 
-This guide explains how to set up the first user account on a fresh Battle Stadium installation.
+This guide explains how to set up user accounts on trainers.gg, including local development and production environments.
 
 ## Overview
 
-When you first deploy Battle Stadium, you'll need to create an initial user account that can access the platform and set up organizations, tournaments, and other features.
+trainers.gg uses Supabase Auth for authentication. When a user signs up:
 
-## Prerequisites
+1. Supabase creates an entry in `auth.users`
+2. A database trigger creates a corresponding `public.users` record
+3. An alt is automatically created in the `alts` table
+4. Optionally, a Bluesky PDS account is created for federation
 
-- Battle Stadium application deployed and running
-- Access to Convex dashboard
-- Environment variables configured correctly
+## Local Development Setup
 
-## Setup Methods
+### Prerequisites
 
-### Method 1: Sign Up Through UI (Recommended)
+- Docker (for local Supabase)
+- Node.js 20+
+- pnpm 9+
 
-1. **Navigate to the application**
+### Quick Start
 
-   ```text
-   https://your-domain.com/sign-up
-   ```
-
-2. **Create your account**
-   - Fill in email, password, and profile information
-   - Complete the sign-up process
-   - Your profile will be automatically created via Convex Auth
-
-3. **Access the platform**
-   - Sign in at `/sign-in`
-   - You'll be redirected to the main application
-
-### Method 2: Database Seeding (Development)
-
-For development environments, you can use the seed script:
-
-1. **Run the seed script**
+1. **Start local Supabase and reset the database**
 
    ```bash
-   bun run seed
+   pnpm db:reset
    ```
 
-2. **Default seeded permissions**
-   The seed script creates:
-   - Default permissions defined in `lib/constants/permissions.ts`
-   - Initial role templates (org_owner, org_admin, org_moderator, org_tournament_organizer, org_judge)
-   - Role-permission mappings
+   This applies all migrations and runs the seed script, creating test users.
 
-3. **Create test users**
-   Currently, user seeding needs to be implemented. You'll need to sign up through the UI.
+2. **Start the development server**
 
-### Method 3: Convex Dashboard (Advanced)
+   ```bash
+   pnpm dev
+   ```
 
-If you need to modify data directly:
+3. **Sign in with a test account**
 
-1. **Access Convex Dashboard**
-   - Go to your Convex project dashboard
-   - Navigate to Data tab
+   | Email                   | Password    | Username      | Site Admin |
+   | ----------------------- | ----------- | ------------- | ---------- |
+   | admin@trainers.local    | password123 | admin_trainer | Yes        |
+   | player@trainers.local   | password123 | ash_ketchum   | No         |
+   | champion@trainers.local | password123 | cynthia       | No         |
 
-2. **View existing data**
-   - Check `users` table for auth users
-   - Check `profiles` table for user profiles
-   - View `organizations` and related RBAC tables
+### Manual User Creation (Local)
 
-## Post-Setup Configuration
+If you need to create additional users locally:
 
-### 1. Create Your First Organization
+1. **Via Supabase Studio**
+   - Open http://localhost:54323 (Supabase Studio)
+   - Go to Authentication > Users
+   - Click "Add User" and fill in details
+   - The trigger will create the `users` and `alts` records
 
-After signing up, create an organization:
+2. **Via the Sign-Up UI**
+   - Navigate to http://localhost:3000/sign-up
+   - Complete the registration form
 
-1. Navigate to `/organizations/create` (once UI is implemented)
-2. Fill in organization details:
-   - Name: Your organization name
-   - Slug: URL-friendly identifier
-   - Description: Optional description
+## Production Setup
 
-Note: Organization creation UI is not yet implemented. Currently, you can only view existing organizations.
+### First Admin User
 
-### 2. Understanding Permissions
+For a fresh production deployment:
 
-The RBAC system is defined but not yet implemented:
+1. **Sign up through the UI**
+   - Navigate to `https://trainers.gg/sign-up`
+   - Create your account with email and password
 
-- **Roles**: Owner, Admin, Manager, Member (predefined)
-- **Permissions**: Defined in `lib/constants/permissions.ts`
-- **Groups**: Organizations have groups (e.g., "Members" group)
-- **Assignment**: Role assignment functionality needs implementation
+2. **Assign site admin role**
+   - Connect to the production database via Supabase Dashboard
+   - Run the following SQL:
 
-### 3. Create Your First Tournament
+   ```sql
+   -- Find the site_admin role ID
+   SELECT id FROM roles WHERE name = 'site_admin' AND scope = 'site';
 
-Tournament functionality is planned but not yet implemented:
+   -- Assign the role to your user (replace with your user ID)
+   INSERT INTO user_roles (user_id, role_id)
+   VALUES ('your-user-uuid', (SELECT id FROM roles WHERE name = 'site_admin' AND scope = 'site'));
+   ```
 
-1. Tournament CRUD operations
-2. Registration and check-in flows
-3. Team submission with validation
+### Verifying Setup
+
+Check that the user was created correctly:
+
+```sql
+-- Check users table
+SELECT id, username, email, main_alt_id FROM users WHERE email = 'your@email.com';
+
+-- Check alts table
+SELECT id, username, display_name FROM alts WHERE user_id = 'your-user-uuid';
+
+-- Check user_roles for site admin
+SELECT ur.*, r.name as role_name
+FROM user_roles ur
+JOIN roles r ON r.id = ur.role_id
+WHERE ur.user_id = 'your-user-uuid';
+```
+
+## Database Schema
+
+### Key Tables
+
+| Table        | Purpose                                         |
+| ------------ | ----------------------------------------------- |
+| `users`      | User accounts (linked to auth.users)            |
+| `alts`       | Alternate player identities for tournaments     |
+| `user_roles` | Site-level role assignments (e.g., site_admin)  |
+| `roles`      | Role definitions with scope (site/organization) |
+
+### Automatic Record Creation
+
+When a user signs up, the `handle_new_user` trigger automatically:
+
+1. Creates a `public.users` record with the auth user ID
+2. Creates an initial `alts` record with the username from signup
+3. Sets `main_alt_id` on the user to point to the created alt
 
 ## Troubleshooting
 
-### Authentication Issues
+### User Not Created in public.users
 
-If you can't sign in:
+If sign-up succeeds but no user appears in `public.users`:
 
-1. **Check Convex Auth configuration**
-   - Verify `NEXT_PUBLIC_CONVEX_URL` is set correctly
-   - Check Convex dashboard for auth errors
+1. Check the trigger exists:
 
-2. **Verify profile creation**
-   - Check if profile was created in `profiles` table
-   - Profile should be created automatically on signup
-
-### Permission Errors
-
-Currently, all permission checks return `true` (bypassed). When implemented:
-
-1. **Check user's groups**
-   - Verify user is member of organization groups
-   - Check `profileGroupRoles` for role assignments
-
-2. **Verify role permissions**
-   - Check `rolePermissions` table
-   - Ensure role has required permissions
-
-### Database Connection Issues
-
-If the application can't connect to Convex:
-
-1. **Verify environment variables**
-
-   ```bash
-   # Check this is set correctly
-   echo $NEXT_PUBLIC_CONVEX_URL
+   ```sql
+   SELECT * FROM pg_trigger WHERE tgname = 'on_auth_user_created';
    ```
 
-2. **Check Convex deployment**
-   - Verify Convex is deployed: `bunx convex deploy`
-   - Check Convex dashboard for errors
+2. Check for trigger function errors in Supabase logs
 
-## Security Considerations
+### Can't Sign In
 
-### Production Deployments
+1. Verify the user exists in `auth.users` (via Supabase Dashboard)
+2. Check environment variables are set correctly:
+   - `NEXT_PUBLIC_SUPABASE_URL`
+   - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 
-1. **Implement permission checks**
-   - Complete `convex/permissions.ts` implementation
-   - Remove hardcoded `true` returns in mutations
+### Permission Denied Errors
 
-2. **Set up proper RBAC**
-   - Assign appropriate roles to users
-   - Configure role permissions correctly
+1. Check RLS policies are enabled on relevant tables
+2. Verify the user has the correct roles assigned
+3. Use `is_site_admin()` helper to check admin status:
+   ```sql
+   SELECT is_site_admin();  -- Returns true if current user is site admin
+   ```
 
-3. **Monitor user creation**
-   - Add audit logging for user actions
-   - Review organization membership regularly
+## Related Documentation
 
-## Current Limitations
-
-Based on the current implementation:
-
-1. **No permission enforcement** - All checks return true
-2. **No role assignment UI** - Can't assign roles to users
-3. **No group management** - Can't manage organization groups
-4. **Limited organization features** - Can only view, not create
-5. **No tournament system** - Not yet implemented
-
-## Next Steps
-
-Priority implementation tasks:
-
-1. **Implement RBAC system**
-   - Complete permission checking logic
-   - Add role assignment functionality
-   - Build group management
-
-2. **Build organization features**
-   - Organization creation UI
-   - Member invitation system
-   - Role management interface
-
-3. **Develop tournament system**
-   - Tournament creation and management
-   - Team submission and validation
-   - Registration flows
-
-## Support
-
-If you encounter issues during setup:
-
-1. Check the [TODO.md](../../TODO.md) for current implementation status
-2. Review Convex logs in the dashboard
-3. Verify database schema in `convex/schema.ts`
-4. Contact the development team for additional support
+- [AGENTS.md](../../AGENTS.md) - Full architecture and coding guidelines
+- [packages/supabase/README.md](../../packages/supabase/README.md) - Supabase package documentation
