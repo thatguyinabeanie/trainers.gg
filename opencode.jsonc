@@ -12,17 +12,27 @@
         "chrome",
         "--extension",
       ],
-      "enabled": true
+      "enabled": true,
     },
     "vercel": {
       "type": "remote",
       "url": "https://mcp.vercel.com/beanie-gg/trainers-gg",
-      "enabled": true
+      "enabled": true,
     },
     "supabase": {
       "type": "remote",
-      "url": "https://mcp.supabase.com/mcp",
-      "enabled": true
+      "url": "http://127.0.0.1:54321/mcp",
+      "oauth": false,
+      "enabled": true,
+    },
+    "supabase-cloud": {
+      "type": "remote",
+      "url": "https://mcp.supabase.com/mcp?project_ref=shsijtmbiibknwygcdtc&read_only=true",
+      "oauth": false,
+      "headers": {
+        "Authorization": "Bearer {env:SUPABASE_ACCESS_TOKEN}",
+      },
+      "enabled": true,
     },
   },
 }
