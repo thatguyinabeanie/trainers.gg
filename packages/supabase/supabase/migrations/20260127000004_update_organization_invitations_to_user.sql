@@ -48,6 +48,7 @@ DROP POLICY IF EXISTS "Users can view invitations sent to them" ON organization_
 DROP POLICY IF EXISTS "Org admins can create invitations" ON organization_invitations;
 DROP POLICY IF EXISTS "Invited users can update their invitation status" ON organization_invitations;
 DROP POLICY IF EXISTS "Org admins can delete pending invitations" ON organization_invitations;
+DROP POLICY IF EXISTS "Org invitations viewable by involved parties" ON organization_invitations;
 
 -- =============================================================================
 -- UPDATE invited_alt_id → invited_user_id
@@ -141,16 +142,10 @@ COMMENT ON TABLE organization_invitations IS
 'Invitations to join an organization as staff. Uses user_id (staff identity), not alt_id (tournament identity). Acceptance automatically creates organization_staff record via trigger.';
 
 COMMENT ON COLUMN organization_invitations.invited_user_id IS 
-'References users table - the user being invited to join the organization staff (optional for email-only invitations)';
+'References users table - the user being invited to join the organization staff';
 
 COMMENT ON COLUMN organization_invitations.invited_by_user_id IS 
-'References users table - the staff member who sent the invitation (required)';
-
-COMMENT ON COLUMN organization_invitations.invited_email IS 
-'Email address of invitee (required if invited_user_id is NULL, allows inviting non-registered users)';
+'References users table - the staff member who sent the invitation';
 
 COMMENT ON COLUMN organization_invitations.status IS 
 'Invitation status: pending (default), accepted, declined, expired';
-
-COMMENT ON COLUMN organization_invitations.role IS 
-'Role to assign upon acceptance (org_admin, org_moderator, etc.)';

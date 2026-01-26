@@ -34,42 +34,6 @@ export type Database = {
   }
   public: {
     Tables: {
-      alt_group_roles: {
-        Row: {
-          alt_id: number
-          created_at: string | null
-          group_role_id: number
-          id: number
-        }
-        Insert: {
-          alt_id: number
-          created_at?: string | null
-          group_role_id: number
-          id?: never
-        }
-        Update: {
-          alt_id?: number
-          created_at?: string | null
-          group_role_id?: number
-          id?: never
-        }
-        Relationships: [
-          {
-            foreignKeyName: "alt_group_roles_alt_id_fkey"
-            columns: ["alt_id"]
-            isOneToOne: false
-            referencedRelation: "alts"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "alt_group_roles_group_role_id_fkey"
-            columns: ["group_role_id"]
-            isOneToOne: false
-            referencedRelation: "group_roles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       alts: {
         Row: {
           avatar_url: string | null
@@ -387,8 +351,8 @@ export type Database = {
           created_at: string | null
           expires_at: string | null
           id: number
-          invited_alt_id: number
-          invited_by_alt_id: number
+          invited_by_user_id: string
+          invited_user_id: string
           organization_id: number
           responded_at: string | null
           status: Database["public"]["Enums"]["invitation_status"] | null
@@ -397,8 +361,8 @@ export type Database = {
           created_at?: string | null
           expires_at?: string | null
           id?: never
-          invited_alt_id: number
-          invited_by_alt_id: number
+          invited_by_user_id: string
+          invited_user_id: string
           organization_id: number
           responded_at?: string | null
           status?: Database["public"]["Enums"]["invitation_status"] | null
@@ -407,25 +371,25 @@ export type Database = {
           created_at?: string | null
           expires_at?: string | null
           id?: never
-          invited_alt_id?: number
-          invited_by_alt_id?: number
+          invited_by_user_id?: string
+          invited_user_id?: string
           organization_id?: number
           responded_at?: string | null
           status?: Database["public"]["Enums"]["invitation_status"] | null
         }
         Relationships: [
           {
-            foreignKeyName: "organization_invitations_invited_alt_id_fkey"
-            columns: ["invited_alt_id"]
+            foreignKeyName: "organization_invitations_invited_by_user_id_fkey"
+            columns: ["invited_by_user_id"]
             isOneToOne: false
-            referencedRelation: "alts"
+            referencedRelation: "users"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "organization_invitations_invited_by_alt_id_fkey"
-            columns: ["invited_by_alt_id"]
+            foreignKeyName: "organization_invitations_invited_user_id_fkey"
+            columns: ["invited_user_id"]
             isOneToOne: false
-            referencedRelation: "alts"
+            referencedRelation: "users"
             referencedColumns: ["id"]
           },
           {
@@ -437,49 +401,6 @@ export type Database = {
           },
           {
             foreignKeyName: "organization_invitations_organization_id_fkey"
-            columns: ["organization_id"]
-            isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      organization_members: {
-        Row: {
-          alt_id: number
-          created_at: string | null
-          id: number
-          organization_id: number
-        }
-        Insert: {
-          alt_id: number
-          created_at?: string | null
-          id?: never
-          organization_id: number
-        }
-        Update: {
-          alt_id?: number
-          created_at?: string | null
-          id?: never
-          organization_id?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "organization_members_alt_id_fkey"
-            columns: ["alt_id"]
-            isOneToOne: false
-            referencedRelation: "alts"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "organization_members_organization_id_fkey"
-            columns: ["organization_id"]
-            isOneToOne: false
-            referencedRelation: "organization_with_owner"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "organization_members_organization_id_fkey"
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
@@ -554,6 +475,49 @@ export type Database = {
             columns: ["reviewed_by_alt_id"]
             isOneToOne: false
             referencedRelation: "alts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      organization_staff: {
+        Row: {
+          created_at: string | null
+          id: number
+          organization_id: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: never
+          organization_id: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: never
+          organization_id?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organization_staff_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organization_with_owner"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "organization_staff_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "organization_staff_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
             referencedColumns: ["id"]
           },
         ]
@@ -2111,6 +2075,42 @@ export type Database = {
           },
         ]
       }
+      user_group_roles: {
+        Row: {
+          created_at: string | null
+          group_role_id: number
+          id: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          group_role_id: number
+          id?: never
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          group_role_id?: number
+          id?: never
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "alt_group_roles_group_role_id_fkey"
+            columns: ["group_role_id"]
+            isOneToOne: false
+            referencedRelation: "group_roles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_group_roles_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string | null
@@ -2273,6 +2273,10 @@ export type Database = {
       custom_access_token_hook: { Args: { event: Json }; Returns: Json }
       get_current_alt_id: { Args: never; Returns: number }
       get_current_user_id: { Args: never; Returns: string }
+      has_org_permission: {
+        Args: { org_id: number; permission_key: string }
+        Returns: boolean
+      }
       is_site_admin: { Args: never; Returns: boolean }
     }
     Enums: {

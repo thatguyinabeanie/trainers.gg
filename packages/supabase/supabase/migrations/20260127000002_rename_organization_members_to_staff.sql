@@ -43,6 +43,11 @@ DROP POLICY IF EXISTS "Org members are viewable by everyone" ON public.organizat
 DROP POLICY IF EXISTS "Org owners can add members" ON public.organization_members;
 DROP POLICY IF EXISTS "Org owners can remove members" ON public.organization_members;
 
+-- Drop tournament policies that reference organization_members/organization_staff
+-- These will be recreated after the table/column migration completes
+DROP POLICY IF EXISTS "Org members can create tournaments" ON public.tournaments;
+DROP POLICY IF EXISTS "Org members can update tournaments" ON public.tournaments;
+
 -- =============================================================================
 -- Rename Table
 -- =============================================================================
@@ -137,6 +142,39 @@ COMMENT ON TABLE public.organization_staff IS
 
 COMMENT ON COLUMN public.organization_staff.user_id IS 
   'The user who is a staff member. Uses user_id (not alt_id) because staff roles are person-level.';
+
+-- =============================================================================
+-- Recreate Tournament Policies
+-- =============================================================================
+-- Recreate tournament policies that were dropped earlier with updated table name
+
+CREATE POLICY "Org members can create tournaments" ON public.tournaments 
+    FOR INSERT WITH CHECK (EXISTS ( 
+        SELECT 1 FROM public.organizations o
+        WHERE o.id = tournaments.organization_id 
+        AND (
+            o.owner_user_id = auth.uid()
+            OR EXISTS ( 
+                SELECT 1 FROM public.organization_staff os
+                WHERE os.organization_id = tournaments.organization_id 
+                AND os.user_id = auth.uid()
+            )
+        )
+    ));
+
+CREATE POLICY "Org members can update tournaments" ON public.tournaments
+    FOR UPDATE USING (EXISTS ( 
+        SELECT 1 FROM public.organizations o
+        WHERE o.id = tournaments.organization_id 
+        AND (
+            o.owner_user_id = auth.uid()
+            OR EXISTS ( 
+                SELECT 1 FROM public.organization_staff os
+                WHERE os.organization_id = tournaments.organization_id 
+                AND os.user_id = auth.uid()
+            )
+        )
+    ));
 
 -- =============================================================================
 -- Migration Complete

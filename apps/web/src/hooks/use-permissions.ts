@@ -15,19 +15,19 @@ export function usePermission(permission: PermissionKey, enabled = true) {
   // Use shared hook to get current user (prevents duplicate queries)
   const { user, isLoading: userLoading } = useCurrentUser();
 
-  // Check permission if user is loaded and has an alt
+  // Check permission if user is loaded
   const { data: permissionCheck, isLoading: permissionLoading } =
     useSupabaseQuery(
       async (supabase) => {
-        if (!user?.alt?.id || !enabled) return false;
-        return hasPermission(supabase, user.alt.id, permission);
+        if (!user?.id || !enabled) return false;
+        return hasPermission(supabase, user.id, permission);
       },
-      [user?.alt?.id, enabled, permission]
+      [user?.id, enabled, permission]
     );
 
   return {
     hasPermission: permissionCheck === true,
-    isLoading: userLoading || (user?.alt?.id && enabled && permissionLoading),
+    isLoading: userLoading || (user?.id && enabled && permissionLoading),
     user,
   };
 }
@@ -46,10 +46,10 @@ export function usePermissions(permissions: PermissionKey[], enabled = true) {
   const { data: userPermissions, isLoading: permissionsLoading } =
     useSupabaseQuery(
       async (supabase) => {
-        if (!user?.alt?.id || !enabled) return [];
-        return getUserPermissions(supabase, user.alt.id);
+        if (!user?.id || !enabled) return [];
+        return getUserPermissions(supabase, user.id);
       },
-      [user?.alt?.id, enabled]
+      [user?.id, enabled]
     );
 
   // Create permissions map by checking if each requested permission is in the user's permissions

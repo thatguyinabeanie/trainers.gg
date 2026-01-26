@@ -77,8 +77,7 @@ ALTER INDEX IF EXISTS alt_group_roles_pkey RENAME TO user_group_roles_pkey;
 
 -- Rename indexes
 ALTER INDEX IF EXISTS idx_alt_group_roles_alt_id RENAME TO idx_user_group_roles_user_id;
-ALTER INDEX IF EXISTS idx_alt_group_roles_group_id RENAME TO idx_user_group_roles_group_id;
-ALTER INDEX IF EXISTS idx_alt_group_roles_organization_id RENAME TO idx_user_group_roles_organization_id;
+ALTER INDEX IF EXISTS idx_alt_group_roles_group_role_id RENAME TO idx_user_group_roles_group_role_id;
 
 -- =============================================================================
 -- UPDATE UNIQUE CONSTRAINTS
@@ -86,19 +85,19 @@ ALTER INDEX IF EXISTS idx_alt_group_roles_organization_id RENAME TO idx_user_gro
 
 -- Drop old constraint
 ALTER TABLE user_group_roles
-DROP CONSTRAINT IF EXISTS alt_group_roles_alt_id_group_id_key;
+DROP CONSTRAINT IF EXISTS alt_group_roles_alt_id_group_role_id_key;
 
 -- Add new constraint with updated column name
 ALTER TABLE user_group_roles
-ADD CONSTRAINT user_group_roles_user_id_group_id_key 
-  UNIQUE (user_id, group_id);
+ADD CONSTRAINT user_group_roles_user_id_group_role_id_key 
+  UNIQUE (user_id, group_role_id);
 
 -- =============================================================================
 -- UPDATE GRANTS
 -- =============================================================================
 
--- Revoke old grants (if any)
-REVOKE ALL ON alt_group_roles FROM authenticated;
+-- Revoke old grants (use new table name since table was already renamed)
+REVOKE ALL ON user_group_roles FROM authenticated;
 
 -- Grant new permissions
 GRANT SELECT, INSERT, DELETE ON user_group_roles TO authenticated;
@@ -113,8 +112,5 @@ COMMENT ON TABLE user_group_roles IS
 COMMENT ON COLUMN user_group_roles.user_id IS 
 'References users table - the staff member receiving this role';
 
-COMMENT ON COLUMN user_group_roles.group_id IS 
-'References permission_groups - the role being assigned (e.g., org_admin, org_moderator)';
-
-COMMENT ON COLUMN user_group_roles.organization_id IS 
-'References organizations - scopes this role assignment to a specific organization';
+COMMENT ON COLUMN user_group_roles.group_role_id IS 
+'References group_roles - the role being assigned (e.g., org_admin, org_moderator)';

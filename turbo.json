@@ -53,6 +53,20 @@
     "format:check": {
       "outputs": []
     },
+    "db:start": {
+      "cache": false,
+      "persistent": true
+    },
+    "db:stop": {
+      "cache": false
+    },
+    "db:restart": {
+      "cache": false,
+      "persistent": true
+    },
+    "db:status": {
+      "cache": false
+    },
     "db:reset": {
       "cache": false
     },
@@ -69,9 +83,6 @@
       "cache": false
     },
     "db:dump": {
-      "cache": false
-    },
-    "db:status": {
       "cache": false
     }
   }

@@ -209,19 +209,6 @@ DECLARE
   
   -- Role IDs (bigint)
   site_admin_role_id bigint;
-  owner_role_id bigint;
-  admin_role_id bigint;
-  mod_role_id bigint;
-  to_role_id bigint;
-  judge_role_id bigint;
-  
-  -- Permission IDs (bigint)
-  perm_org_manage bigint;
-  perm_members_manage bigint;
-  perm_tournament_create bigint;
-  perm_tournament_manage bigint;
-  perm_tournament_judge bigint;
-  perm_content_mod bigint;
   
   -- Post IDs (bigint) for social feed seed data
   post_cynthia_1 bigint;
@@ -267,44 +254,46 @@ BEGIN
   -- ==========================================================================
   
   INSERT INTO public.organizations (
-    name, slug, description, status, owner_alt_id, tier, subscription_tier,
+    name, slug, description, status, owner_user_id, tier, subscription_tier,
     discord_url, twitter_url, website_url
   ) VALUES (
     'VGC League', 'vgc-league',
     'Premier Pokemon VGC tournament organization. Weekly locals and monthly championships.',
-    'active', admin_alt_id, 'partner', 'organization_plus',
+    'active', 'a1b2c3d4-e5f6-4a5b-8c9d-0e1f2a3b4c5d', 'partner', 'organization_plus',
     'https://discord.gg/vgcleague', 'https://twitter.com/vgcleague', 'https://vgcleague.com'
   ) RETURNING id INTO vgc_league_id;
   
   INSERT INTO public.organizations (
-    name, slug, description, status, owner_alt_id, tier, subscription_tier,
+    name, slug, description, status, owner_user_id, tier, subscription_tier,
     discord_url, twitter_url, website_url
   ) VALUES (
     'Pallet Town Trainers', 'pallet-town',
     'A friendly community for trainers from Pallet Town and beyond. Casual and competitive events.',
-    'active', ash_alt_id, 'regular', 'free',
+    'active', 'b2c3d4e5-f6a7-5b6c-9d0e-1f2a3b4c5d6e', 'regular', 'free',
     NULL, NULL, NULL
   ) RETURNING id INTO pallet_town_id;
   
   INSERT INTO public.organizations (
-    name, slug, description, status, owner_alt_id, tier, subscription_tier,
+    name, slug, description, status, owner_user_id, tier, subscription_tier,
     discord_url, twitter_url, website_url
   ) VALUES (
     'Sinnoh Champions', 'sinnoh-champions',
     'Elite tournament series for Sinnoh region trainers. High-level competitive play.',
-    'active', cynthia_alt_id, 'verified', 'organization_plus',
+    'active', 'c3d4e5f6-a7b8-6c7d-0e1f-2a3b4c5d6e7f', 'verified', 'organization_plus',
     'https://discord.gg/sinnoh', NULL, NULL
   ) RETURNING id INTO sinnoh_champs_id;
 
-  -- Organization members
-  INSERT INTO public.organization_members (organization_id, alt_id) VALUES
-    (vgc_league_id, admin_alt_id),
-    (vgc_league_id, ash_alt_id),
-    (vgc_league_id, cynthia_alt_id),
-    (pallet_town_id, ash_alt_id),
-    (pallet_town_id, admin_alt_id),
-    (sinnoh_champs_id, cynthia_alt_id),
-    (sinnoh_champs_id, admin_alt_id);
+  -- Organization staff (user-level, not alt-level)
+  -- Note: Owners are implicitly staff members and have all permissions
+  -- These are additional staff members beyond the owners
+  INSERT INTO public.organization_staff (organization_id, user_id) VALUES
+    -- VGC League: Admin (owner) + Ash and Cynthia as staff
+    (vgc_league_id, 'b2c3d4e5-f6a7-5b6c-9d0e-1f2a3b4c5d6e'), -- Ash
+    (vgc_league_id, 'c3d4e5f6-a7b8-6c7d-0e1f-2a3b4c5d6e7f'), -- Cynthia
+    -- Pallet Town: Ash (owner) + Admin as staff
+    (pallet_town_id, 'a1b2c3d4-e5f6-4a5b-8c9d-0e1f2a3b4c5d'), -- Admin
+    -- Sinnoh Champions: Cynthia (owner) + Admin as staff
+    (sinnoh_champs_id, 'a1b2c3d4-e5f6-4a5b-8c9d-0e1f2a3b4c5d'); -- Admin
 
   -- ==========================================================================
   -- Pokemon
@@ -498,80 +487,44 @@ BEGIN
     (monthly_id, red_alt_id, 'checked_in', NULL, NOW() - INTERVAL '30 minutes');
 
   -- ==========================================================================
-  -- Organization Roles and Permissions (scope = 'organization')
-  -- ==========================================================================
-  
-  INSERT INTO public.roles (name, description, scope) VALUES ('org_owner', 'Full control over the organization', 'organization') RETURNING id INTO owner_role_id;
-  INSERT INTO public.roles (name, description, scope) VALUES ('org_admin', 'Administrative privileges', 'organization') RETURNING id INTO admin_role_id;
-  INSERT INTO public.roles (name, description, scope) VALUES ('org_moderator', 'Can moderate content and users', 'organization') RETURNING id INTO mod_role_id;
-  INSERT INTO public.roles (name, description, scope) VALUES ('org_tournament_organizer', 'Can create and manage tournaments', 'organization') RETURNING id INTO to_role_id;
-  INSERT INTO public.roles (name, description, scope) VALUES ('org_judge', 'Can resolve match disputes', 'organization') RETURNING id INTO judge_role_id;
-
-  INSERT INTO public.permissions (key, name, description) VALUES ('org.manage', 'Manage Organization', 'Can modify organization settings') RETURNING id INTO perm_org_manage;
-  INSERT INTO public.permissions (key, name, description) VALUES ('org.members.manage', 'Manage Members', 'Can add/remove organization members') RETURNING id INTO perm_members_manage;
-  INSERT INTO public.permissions (key, name, description) VALUES ('tournament.create', 'Create Tournament', 'Can create new tournaments') RETURNING id INTO perm_tournament_create;
-  INSERT INTO public.permissions (key, name, description) VALUES ('tournament.manage', 'Manage Tournament', 'Can edit and manage tournaments') RETURNING id INTO perm_tournament_manage;
-  INSERT INTO public.permissions (key, name, description) VALUES ('tournament.judge', 'Judge Matches', 'Can resolve match disputes') RETURNING id INTO perm_tournament_judge;
-  INSERT INTO public.permissions (key, name, description) VALUES ('content.moderate', 'Moderate Content', 'Can moderate user content') RETURNING id INTO perm_content_mod;
-
-  -- Link permissions to roles
-  INSERT INTO public.role_permissions (role_id, permission_id) VALUES
-    -- Owner gets everything
-    (owner_role_id, perm_org_manage),
-    (owner_role_id, perm_members_manage),
-    (owner_role_id, perm_tournament_create),
-    (owner_role_id, perm_tournament_manage),
-    (owner_role_id, perm_tournament_judge),
-    (owner_role_id, perm_content_mod),
-    -- Admin gets most things
-    (admin_role_id, perm_members_manage),
-    (admin_role_id, perm_tournament_create),
-    (admin_role_id, perm_tournament_manage),
-    (admin_role_id, perm_tournament_judge),
-    (admin_role_id, perm_content_mod),
-    -- Moderator
-    (mod_role_id, perm_content_mod),
-    -- Tournament Organizer
-    (to_role_id, perm_tournament_create),
-    (to_role_id, perm_tournament_manage),
-    -- Judge
-    (judge_role_id, perm_tournament_judge);
-
-  -- ==========================================================================
   -- Follows (social graph)
   -- ==========================================================================
+  -- Note: Follows now uses user_id (not alt_id) as follows are user-level, not alt-level
   
   -- Create a diverse follow graph
-  INSERT INTO public.follows (follower_alt_id, following_alt_id) VALUES
-    -- Ash follows everyone
-    (ash_alt_id, cynthia_alt_id),
-    (ash_alt_id, brock_alt_id),
-    (ash_alt_id, karen_alt_id),
-    (ash_alt_id, red_alt_id),
-    (ash_alt_id, admin_alt_id),
-    -- Cynthia follows select people
-    (cynthia_alt_id, ash_alt_id),
-    (cynthia_alt_id, karen_alt_id),
-    (cynthia_alt_id, admin_alt_id),
-    -- Brock follows
-    (brock_alt_id, ash_alt_id),
-    (brock_alt_id, cynthia_alt_id),
-    -- Karen follows
-    (karen_alt_id, cynthia_alt_id),
-    (karen_alt_id, red_alt_id),
-    -- Red follows minimal people (staying in character)
-    (red_alt_id, cynthia_alt_id),
-    -- Admin follows everyone
-    (admin_alt_id, ash_alt_id),
-    (admin_alt_id, cynthia_alt_id),
-    (admin_alt_id, brock_alt_id),
-    (admin_alt_id, karen_alt_id),
-    (admin_alt_id, red_alt_id);
+  INSERT INTO public.follows (follower_user_id, following_user_id) VALUES
+    -- Ash (b2c3...) follows everyone
+    ('b2c3d4e5-f6a7-5b6c-9d0e-1f2a3b4c5d6e', 'c3d4e5f6-a7b8-6c7d-0e1f-2a3b4c5d6e7f'), -- Ash → Cynthia
+    ('b2c3d4e5-f6a7-5b6c-9d0e-1f2a3b4c5d6e', 'd4e5f6a7-b8c9-7d8e-1f2a-3b4c5d6e7f8a'), -- Ash → Brock
+    ('b2c3d4e5-f6a7-5b6c-9d0e-1f2a3b4c5d6e', 'e5f6a7b8-c9d0-8e9f-2a3b-4c5d6e7f8a9b'), -- Ash → Karen
+    ('b2c3d4e5-f6a7-5b6c-9d0e-1f2a3b4c5d6e', 'f6a7b8c9-d0e1-9f0a-3b4c-5d6e7f8a9b0c'), -- Ash → Red
+    ('b2c3d4e5-f6a7-5b6c-9d0e-1f2a3b4c5d6e', 'a1b2c3d4-e5f6-4a5b-8c9d-0e1f2a3b4c5d'), -- Ash → Admin
+    -- Cynthia (c3d4...) follows select people
+    ('c3d4e5f6-a7b8-6c7d-0e1f-2a3b4c5d6e7f', 'b2c3d4e5-f6a7-5b6c-9d0e-1f2a3b4c5d6e'), -- Cynthia → Ash
+    ('c3d4e5f6-a7b8-6c7d-0e1f-2a3b4c5d6e7f', 'e5f6a7b8-c9d0-8e9f-2a3b-4c5d6e7f8a9b'), -- Cynthia → Karen
+    ('c3d4e5f6-a7b8-6c7d-0e1f-2a3b4c5d6e7f', 'a1b2c3d4-e5f6-4a5b-8c9d-0e1f2a3b4c5d'), -- Cynthia → Admin
+    -- Brock (d4e5...) follows
+    ('d4e5f6a7-b8c9-7d8e-1f2a-3b4c5d6e7f8a', 'b2c3d4e5-f6a7-5b6c-9d0e-1f2a3b4c5d6e'), -- Brock → Ash
+    ('d4e5f6a7-b8c9-7d8e-1f2a-3b4c5d6e7f8a', 'c3d4e5f6-a7b8-6c7d-0e1f-2a3b4c5d6e7f'), -- Brock → Cynthia
+    -- Karen (e5f6...) follows
+    ('e5f6a7b8-c9d0-8e9f-2a3b-4c5d6e7f8a9b', 'c3d4e5f6-a7b8-6c7d-0e1f-2a3b4c5d6e7f'), -- Karen → Cynthia
+    ('e5f6a7b8-c9d0-8e9f-2a3b-4c5d6e7f8a9b', 'f6a7b8c9-d0e1-9f0a-3b4c-5d6e7f8a9b0c'), -- Karen → Red
+    -- Red (f6a7...) follows minimal people (staying in character)
+    ('f6a7b8c9-d0e1-9f0a-3b4c-5d6e7f8a9b0c', 'c3d4e5f6-a7b8-6c7d-0e1f-2a3b4c5d6e7f'), -- Red → Cynthia
+    -- Admin (a1b2...) follows everyone
+    ('a1b2c3d4-e5f6-4a5b-8c9d-0e1f2a3b4c5d', 'b2c3d4e5-f6a7-5b6c-9d0e-1f2a3b4c5d6e'), -- Admin → Ash
+    ('a1b2c3d4-e5f6-4a5b-8c9d-0e1f2a3b4c5d', 'c3d4e5f6-a7b8-6c7d-0e1f-2a3b4c5d6e7f'), -- Admin → Cynthia
+    ('a1b2c3d4-e5f6-4a5b-8c9d-0e1f2a3b4c5d', 'd4e5f6a7-b8c9-7d8e-1f2a-3b4c5d6e7f8a'), -- Admin → Brock
+    ('a1b2c3d4-e5f6-4a5b-8c9d-0e1f2a3b4c5d', 'e5f6a7b8-c9d0-8e9f-2a3b-4c5d6e7f8a9b'), -- Admin → Karen
+    ('a1b2c3d4-e5f6-4a5b-8c9d-0e1f2a3b4c5d', 'f6a7b8c9-d0e1-9f0a-3b4c-5d6e7f8a9b0c'); -- Admin → Red
 
   -- ==========================================================================
-  -- Posts (social feed content)
+  -- Posts (social feed content)  
   -- ==========================================================================
+  -- TEMPORARILY COMMENTED OUT - needs migration to user_id
+  -- TODO: Update posts to use user_id instead of alt_id
   
+  /*
   -- Cynthia's posts (champion-level insights)
   INSERT INTO public.posts (alt_id, content, created_at)
   VALUES (cynthia_alt_id, 'Just finished analyzing the Regulation G metagame. Flutter Mane usage is at 47% - we need to adapt our teambuilding. My Garchomp set has been putting in work against it.', NOW() - INTERVAL '2 hours')
@@ -704,6 +657,9 @@ BEGIN
     (post_reply_1, ash_alt_id),
     (post_reply_2, ash_alt_id),
     (post_reply_2, brock_alt_id);
+  */
+  
+  RAISE NOTICE 'Seed data loading complete (posts section temporarily disabled)';
 
 END $$;
 

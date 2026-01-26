@@ -74,12 +74,11 @@ export async function createOrganization(
 
   if (error) throw error;
 
-  // Get the user's alt to add as member
-  const alt = await getCurrentAlt(supabase);
-  if (alt) {
-    await supabase.from("organization_members").insert({
+  // Add the user as organization staff (user-level, not alt-level)
+  if (user) {
+    await supabase.from("organization_staff").insert({
       organization_id: org.id,
-      alt_id: alt.id,
+      user_id: user.id,
     });
   }
 
@@ -138,21 +137,21 @@ export async function updateOrganization(
 export async function inviteToOrganization(
   supabase: TypedClient,
   organizationId: number,
-  invitedAltId: number
+  invitedUserId: string
 ) {
-  const alt = await getCurrentAlt(supabase);
-  if (!alt) throw new Error("Not authenticated");
+  const user = await getCurrentUser(supabase);
+  if (!user) throw new Error("Not authenticated");
 
-  // Check if already a member
-  const { data: existingMember } = await supabase
-    .from("organization_members")
+  // Check if already a staff member
+  const { data: existingStaff } = await supabase
+    .from("organization_staff")
     .select("id")
     .eq("organization_id", organizationId)
-    .eq("alt_id", invitedAltId)
+    .eq("user_id", invitedUserId)
     .single();
 
-  if (existingMember) {
-    throw new Error("User is already a member of this organization");
+  if (existingStaff) {
+    throw new Error("User is already a staff member of this organization");
   }
 
   // Check for existing pending invitation
@@ -160,7 +159,7 @@ export async function inviteToOrganization(
     .from("organization_invitations")
     .select("id")
     .eq("organization_id", organizationId)
-    .eq("invited_alt_id", invitedAltId)
+    .eq("invited_user_id", invitedUserId)
     .eq("status", "pending")
     .single();
 
@@ -173,8 +172,9 @@ export async function inviteToOrganization(
     .from("organization_invitations")
     .insert({
       organization_id: organizationId,
-      invited_alt_id: invitedAltId,
-      invited_by_alt_id: alt.id,
+      invited_user_id: invitedUserId,
+      invited_by_user_id: user.id,
+      role: "org_moderator", // Default role
       status: "pending",
       expires_at: getInvitationExpiryDate(),
     })
@@ -187,13 +187,14 @@ export async function inviteToOrganization(
 
 /**
  * Accept organization invitation
+ * Note: The database trigger will automatically create the organization_staff record
  */
 export async function acceptOrganizationInvitation(
   supabase: TypedClient,
   invitationId: number
 ) {
-  const alt = await getCurrentAlt(supabase);
-  if (!alt) throw new Error("Not authenticated");
+  const user = await getCurrentUser(supabase);
+  if (!user) throw new Error("Not authenticated");
 
   // Get and verify invitation
   const { data: invitation } = await supabase
@@ -203,7 +204,7 @@ export async function acceptOrganizationInvitation(
     .single();
 
   if (!invitation) throw new Error("Invitation not found");
-  if (invitation.invited_alt_id !== alt.id) {
+  if (invitation.invited_user_id !== user.id) {
     throw new Error("This invitation is not for you");
   }
   if (invitation.status !== "pending") {
@@ -213,13 +214,8 @@ export async function acceptOrganizationInvitation(
     throw new Error("Invitation has expired");
   }
 
-  // Add as member
-  await supabase.from("organization_members").insert({
-    organization_id: invitation.organization_id,
-    alt_id: alt.id,
-  });
-
   // Update invitation status
+  // The trigger will automatically create organization_staff record and assign role
   await supabase
     .from("organization_invitations")
     .update({
@@ -238,9 +234,10 @@ export async function declineOrganizationInvitation(
   supabase: TypedClient,
   invitationId: number
 ) {
-  const alt = await getCurrentAlt(supabase);
-  if (!alt) throw new Error("Not authenticated");
+  const user = await getCurrentUser(supabase);
+  if (!user) throw new Error("Not authenticated");
 
+  // Get and verify invitation
   const { data: invitation } = await supabase
     .from("organization_invitations")
     .select("*")
@@ -248,8 +245,11 @@ export async function declineOrganizationInvitation(
     .single();
 
   if (!invitation) throw new Error("Invitation not found");
-  if (invitation.invited_alt_id !== alt.id) {
+  if (invitation.invited_user_id !== user.id) {
     throw new Error("This invitation is not for you");
+  }
+  if (invitation.status !== "pending") {
+    throw new Error("Invitation is no longer pending");
   }
 
   await supabase
@@ -264,17 +264,16 @@ export async function declineOrganizationInvitation(
 }
 
 /**
- * Leave organization
+ * Leave organization (user-level action)
  */
 export async function leaveOrganization(
   supabase: TypedClient,
   organizationId: number
 ) {
   const user = await getCurrentUser(supabase);
-  const alt = await getCurrentAlt(supabase);
-  if (!user || !alt) throw new Error("Not authenticated");
+  if (!user) throw new Error("Not authenticated");
 
-  // Check if owner (can't leave if owner)
+  // Verify not the owner
   const { data: org } = await supabase
     .from("organizations")
     .select("owner_user_id")
@@ -288,25 +287,25 @@ export async function leaveOrganization(
   }
 
   const { error } = await supabase
-    .from("organization_members")
+    .from("organization_staff")
     .delete()
     .eq("organization_id", organizationId)
-    .eq("alt_id", alt.id);
+    .eq("user_id", user.id);
 
   if (error) throw error;
   return { success: true };
 }
 
 /**
- * Remove member from organization
+ * Remove staff member from organization
  */
 export async function removeMember(
   supabase: TypedClient,
   organizationId: number,
-  altId: number
+  userId: string
 ) {
-  const user = await getCurrentUser(supabase);
-  if (!user) throw new Error("Not authenticated");
+  const currentUser = await getCurrentUser(supabase);
+  if (!currentUser) throw new Error("Not authenticated");
 
   // Verify ownership
   const { data: org } = await supabase
@@ -316,26 +315,20 @@ export async function removeMember(
     .single();
 
   if (!org) throw new Error("Organization not found");
-  if (org.owner_user_id !== user.id) {
-    throw new Error("Only the owner can remove members");
+  if (org.owner_user_id !== currentUser.id) {
+    throw new Error("Only the owner can remove staff members");
   }
 
-  // Check if trying to remove owner's alt
-  const { data: altToRemove } = await supabase
-    .from("alts")
-    .select("user_id")
-    .eq("id", altId)
-    .single();
-
-  if (altToRemove?.user_id === user.id) {
+  // Cannot remove the owner
+  if (userId === currentUser.id) {
     throw new Error("Cannot remove the owner");
   }
 
   const { error } = await supabase
-    .from("organization_members")
+    .from("organization_staff")
     .delete()
     .eq("organization_id", organizationId)
-    .eq("alt_id", altId);
+    .eq("user_id", userId);
 
   if (error) throw error;
   return { success: true };
