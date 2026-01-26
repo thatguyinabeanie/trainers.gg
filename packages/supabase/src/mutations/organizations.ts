@@ -5,12 +5,20 @@ import { getInvitationExpiryDate } from "../constants";
 type TypedClient = SupabaseClient<Database>;
 
 /**
- * Helper to get current alt
+ * Helper to get current user
  */
-async function getCurrentAlt(supabase: TypedClient) {
+async function getCurrentUser(supabase: TypedClient) {
   const {
     data: { user },
   } = await supabase.auth.getUser();
+  return user;
+}
+
+/**
+ * Helper to get current alt
+ */
+async function getCurrentAlt(supabase: TypedClient) {
+  const user = await getCurrentUser(supabase);
   if (!user) return null;
 
   const { data: alt } = await supabase
@@ -24,6 +32,7 @@ async function getCurrentAlt(supabase: TypedClient) {
 
 /**
  * Create a new organization
+ * Organizations are owned by users (not alts) for Bluesky federation
  */
 export async function createOrganization(
   supabase: TypedClient,
@@ -35,8 +44,8 @@ export async function createOrganization(
     logoUrl?: string;
   }
 ) {
-  const alt = await getCurrentAlt(supabase);
-  if (!alt) throw new Error("Not authenticated");
+  const user = await getCurrentUser(supabase);
+  if (!user) throw new Error("Not authenticated");
 
   // Check slug uniqueness
   const { data: existing } = await supabase
@@ -49,7 +58,7 @@ export async function createOrganization(
     throw new Error("Organization slug is already taken");
   }
 
-  // Create organization
+  // Create organization with user as owner
   const { data: org, error } = await supabase
     .from("organizations")
     .insert({
@@ -58,18 +67,21 @@ export async function createOrganization(
       description: data.description,
       website_url: data.website,
       logo_url: data.logoUrl,
-      owner_alt_id: alt.id,
+      owner_user_id: user.id,
     })
     .select()
     .single();
 
   if (error) throw error;
 
-  // Add owner as member
-  await supabase.from("organization_members").insert({
-    organization_id: org.id,
-    alt_id: alt.id,
-  });
+  // Get the user's alt to add as member
+  const alt = await getCurrentAlt(supabase);
+  if (alt) {
+    await supabase.from("organization_members").insert({
+      organization_id: org.id,
+      alt_id: alt.id,
+    });
+  }
 
   return org;
 }
@@ -87,18 +99,18 @@ export async function updateOrganization(
     logoUrl?: string;
   }
 ) {
-  const alt = await getCurrentAlt(supabase);
-  if (!alt) throw new Error("Not authenticated");
+  const user = await getCurrentUser(supabase);
+  if (!user) throw new Error("Not authenticated");
 
   // Verify ownership or admin permission
   const { data: org } = await supabase
     .from("organizations")
-    .select("owner_alt_id")
+    .select("owner_user_id")
     .eq("id", organizationId)
     .single();
 
   if (!org) throw new Error("Organization not found");
-  if (org.owner_alt_id !== alt.id) {
+  if (org.owner_user_id !== user.id) {
     // TODO: Check for admin role through RBAC
     throw new Error("You don't have permission to update this organization");
   }
@@ -258,17 +270,18 @@ export async function leaveOrganization(
   supabase: TypedClient,
   organizationId: number
 ) {
+  const user = await getCurrentUser(supabase);
   const alt = await getCurrentAlt(supabase);
-  if (!alt) throw new Error("Not authenticated");
+  if (!user || !alt) throw new Error("Not authenticated");
 
   // Check if owner (can't leave if owner)
   const { data: org } = await supabase
     .from("organizations")
-    .select("owner_alt_id")
+    .select("owner_user_id")
     .eq("id", organizationId)
     .single();
 
-  if (org?.owner_alt_id === alt.id) {
+  if (org?.owner_user_id === user.id) {
     throw new Error(
       "Organization owner cannot leave. Transfer ownership first."
     );
@@ -292,21 +305,29 @@ export async function removeMember(
   organizationId: number,
   altId: number
 ) {
-  const alt = await getCurrentAlt(supabase);
-  if (!alt) throw new Error("Not authenticated");
+  const user = await getCurrentUser(supabase);
+  if (!user) throw new Error("Not authenticated");
 
   // Verify ownership
   const { data: org } = await supabase
     .from("organizations")
-    .select("owner_alt_id")
+    .select("owner_user_id")
     .eq("id", organizationId)
     .single();
 
   if (!org) throw new Error("Organization not found");
-  if (org.owner_alt_id !== alt.id) {
+  if (org.owner_user_id !== user.id) {
     throw new Error("Only the owner can remove members");
   }
-  if (org.owner_alt_id === altId) {
+
+  // Check if trying to remove owner's alt
+  const { data: altToRemove } = await supabase
+    .from("alts")
+    .select("user_id")
+    .eq("id", altId)
+    .single();
+
+  if (altToRemove?.user_id === user.id) {
     throw new Error("Cannot remove the owner");
   }
 

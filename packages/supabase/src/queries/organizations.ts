@@ -57,7 +57,7 @@ export async function listOrganizations(
     .select(
       `
       *,
-      owner:alts!organizations_owner_alt_id_fkey(*)
+      owner:users!organizations_owner_user_id_fkey(*)
     `,
       { count: "exact" }
     )
@@ -114,7 +114,7 @@ export async function getOrganizationBySlug(
     .select(
       `
       *,
-      owner:alts!organizations_owner_alt_id_fkey(*)
+      owner:users!organizations_owner_user_id_fkey(*)
     `
     )
     .eq("slug", slug)
@@ -215,7 +215,7 @@ export async function getOrganizationById(supabase: TypedClient, id: number) {
     .select(
       `
       *,
-      owner:alts!organizations_owner_alt_id_fkey(*)
+      owner:users!organizations_owner_user_id_fkey(*)
     `
     )
     .eq("id", id)
@@ -227,66 +227,69 @@ export async function getOrganizationById(supabase: TypedClient, id: number) {
 
 /**
  * List organizations where user is owner or member
- * If no altId is provided, returns organizations for the current authenticated user
+ * Organizations are owned by users (not alts), but members join via their alt
  */
 export async function listMyOrganizations(
   supabase: TypedClient,
-  altId?: number
+  userId?: string
 ) {
-  let targetAltId: number | undefined = altId;
+  let targetUserId: string | undefined = userId;
 
-  if (!targetAltId) {
+  if (!targetUserId) {
     const {
       data: { user },
     } = await supabase.auth.getUser();
     if (!user) return [];
-
-    const { data: alt } = await supabase
-      .from("alts")
-      .select("id")
-      .eq("user_id", user.id)
-      .single();
-
-    if (!alt) return [];
-    targetAltId = alt.id as number;
+    targetUserId = user.id;
   }
+
+  // Get the user's alt for checking membership
+  const { data: alt } = await supabase
+    .from("alts")
+    .select("id")
+    .eq("user_id", targetUserId)
+    .single();
+
+  const altId = alt?.id as number | undefined;
 
   // Get organizations where user is owner
   const { data: ownedOrgs } = await supabase
     .from("organizations")
     .select("*")
-    .eq("owner_alt_id", targetAltId);
+    .eq("owner_user_id", targetUserId);
 
-  // Get organizations where user is a member
-  const { data: memberships } = await supabase
-    .from("organization_members")
-    .select(
+  // Get organizations where user is a member (via their alt)
+  let memberOrgs: typeof ownedOrgs = [];
+  if (altId) {
+    const { data: memberships } = await supabase
+      .from("organization_members")
+      .select(
+        `
+        organization:organizations(*)
       `
-      organization:organizations(*)
-    `
-    )
-    .eq("alt_id", targetAltId!);
+      )
+      .eq("alt_id", altId);
+
+    memberOrgs = (memberships ?? [])
+      .map((m) => m.organization)
+      .filter(
+        (org): org is NonNullable<typeof org> =>
+          org !== null && org !== undefined
+      );
+  }
 
   const ownedOrgsWithFlag = (ownedOrgs ?? []).map((org) => ({
     ...org,
     isOwner: true,
   }));
 
-  const memberOrgs = (memberships ?? [])
-    .map((m) => m.organization)
-    .filter(
-      (org): org is NonNullable<typeof org> => org !== null && org !== undefined
-    )
-    .map((org) => {
-      const typedOrg = org as { id: number; owner_alt_id: number };
-      return {
-        ...org,
-        isOwner: typedOrg.owner_alt_id === targetAltId,
-      };
-    });
+  const memberOrgsWithFlag = (memberOrgs ?? []).map((org) => ({
+    ...org,
+    isOwner: org.owner_user_id === targetUserId,
+  }));
 
   // Combine and deduplicate
-  const allOrgs = [...ownedOrgsWithFlag, ...memberOrgs];
+  const allOrgs = [...ownedOrgsWithFlag, ...memberOrgsWithFlag];
   const uniqueOrgs = allOrgs.filter(
     (org, index, self) => index === self.findIndex((o) => o.id === org.id)
   );
@@ -296,22 +299,33 @@ export async function listMyOrganizations(
 
 /**
  * Check if user can manage organization (owner or has permission)
+ * Note: Ownership is now at the user level, but RBAC permissions are still via alts
  */
 export async function canManageOrganization(
   supabase: TypedClient,
   organizationId: number,
-  altId: number
+  userId: string
 ) {
-  // Check if owner
+  // Check if owner (owner_user_id is now a uuid)
   const { data: org } = await supabase
     .from("organizations")
-    .select("owner_alt_id")
+    .select("owner_user_id")
     .eq("id", organizationId)
     .single();
 
-  if (org?.owner_alt_id === altId) {
+  if (org?.owner_user_id === userId) {
     return true;
   }
+
+  // Get the user's alt for RBAC permission checks
+  const { data: alt } = await supabase
+    .from("alts")
+    .select("id")
+    .eq("user_id", userId)
+    .single();
+
+  if (!alt) return false;
+  const altId = alt.id as number;
 
   // Check if member with ORG_MANAGE permission through RBAC
   const { data: altGroupRoles } = await supabase
@@ -375,30 +389,39 @@ export async function listOrganizationMembers(
 }
 
 /**
- * Check if alt is member of organization
+ * Check if user is member of organization (owner or member via alt)
  */
 export async function isOrganizationMember(
   supabase: TypedClient,
   organizationId: number,
-  altId: number
+  userId: string
 ) {
-  // Check if owner
+  // Check if owner (owner_user_id is now a uuid)
   const { data: org } = await supabase
     .from("organizations")
-    .select("owner_alt_id")
+    .select("owner_user_id")
     .eq("id", organizationId)
     .single();
 
-  if (org?.owner_alt_id === altId) {
+  if (org?.owner_user_id === userId) {
     return true;
   }
 
-  // Check if member
+  // Get the user's alt for checking membership
+  const { data: alt } = await supabase
+    .from("alts")
+    .select("id")
+    .eq("user_id", userId)
+    .single();
+
+  if (!alt) return false;
+
+  // Check if member via alt
   const { data } = await supabase
     .from("organization_members")
     .select("id")
     .eq("organization_id", organizationId)
-    .eq("alt_id", altId)
+    .eq("alt_id", alt.id)
     .single();
 
   return !!data;

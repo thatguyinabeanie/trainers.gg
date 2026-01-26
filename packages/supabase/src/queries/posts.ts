@@ -5,6 +5,7 @@ type TypedClient = SupabaseClient<Database>;
 
 /**
  * Post with author information for feed display
+ * Author is now at the user level (not alt level) for Bluesky federation
  */
 export interface FeedPost {
   id: number;
@@ -19,7 +20,7 @@ export interface FeedPost {
   repostOfId: number | null;
   quoteContent: string | null;
   author: {
-    id: number;
+    id: string; // uuid - user ID
     username: string;
     displayName: string | null;
     avatarUrl: string | null;
@@ -36,14 +37,14 @@ export async function getFeedPosts(
   options: {
     limit?: number;
     cursor?: number | null;
-    currentAltId?: number | null;
+    currentUserId?: string | null;
   } = {}
 ): Promise<{
   posts: FeedPost[];
   nextCursor: number | null;
   hasMore: boolean;
 }> {
-  const { limit = 20, cursor = null, currentAltId = null } = options;
+  const { limit = 20, cursor = null, currentUserId = null } = options;
   const offset = cursor ?? 0;
 
   const { data, error, count } = await supabase
@@ -61,11 +62,11 @@ export async function getFeedPosts(
       reply_to_id,
       repost_of_id,
       quote_content,
-      alt:alts!posts_alt_id_fkey(
+      user:users!posts_user_id_fkey(
         id,
         username,
-        display_name,
-        avatar_url
+        name,
+        image
       )
     `,
       { count: "exact" }
@@ -79,23 +80,23 @@ export async function getFeedPosts(
 
   // Get likes by current user if logged in
   let likedPostIds = new Set<number>();
-  if (currentAltId && data?.length) {
+  if (currentUserId && data?.length) {
     const postIds = data.map((p) => p.id);
     const { data: likes } = await supabase
       .from("post_likes")
       .select("post_id")
-      .eq("alt_id", currentAltId)
+      .eq("user_id", currentUserId)
       .in("post_id", postIds);
 
     likedPostIds = new Set(likes?.map((l) => l.post_id) ?? []);
   }
 
   const posts: FeedPost[] = (data ?? []).map((post) => {
-    const alt = post.alt as {
-      id: number;
-      username: string;
-      display_name: string | null;
-      avatar_url: string | null;
+    const user = post.user as {
+      id: string;
+      username: string | null;
+      name: string | null;
+      image: string | null;
     } | null;
 
     return {
@@ -111,10 +112,10 @@ export async function getFeedPosts(
       repostOfId: post.repost_of_id,
       quoteContent: post.quote_content,
       author: {
-        id: alt?.id ?? 0,
-        username: alt?.username ?? "unknown",
-        displayName: alt?.display_name ?? null,
-        avatarUrl: alt?.avatar_url ?? null,
+        id: user?.id ?? "",
+        username: user?.username ?? "unknown",
+        displayName: user?.name ?? null,
+        avatarUrl: user?.image ?? null,
       },
       isLikedByMe: likedPostIds.has(post.id),
     };
@@ -135,7 +136,7 @@ export async function getFeedPosts(
  */
 export async function getFollowingFeedPosts(
   supabase: TypedClient,
-  currentAltId: number,
+  currentUserId: string,
   options: {
     limit?: number;
     cursor?: number | null;
@@ -148,16 +149,16 @@ export async function getFollowingFeedPosts(
   const { limit = 20, cursor = null } = options;
   const offset = cursor ?? 0;
 
-  // First get the list of alt IDs the user follows
+  // First get the list of user IDs the current user follows
   const { data: follows } = await supabase
     .from("follows")
-    .select("following_alt_id")
-    .eq("follower_alt_id", currentAltId);
+    .select("following_user_id")
+    .eq("follower_user_id", currentUserId);
 
-  const followingIds = follows?.map((f) => f.following_alt_id) ?? [];
+  const followingIds = follows?.map((f) => f.following_user_id) ?? [];
 
   // Include the user's own posts in the following feed
-  followingIds.push(currentAltId);
+  followingIds.push(currentUserId);
 
   if (followingIds.length === 0) {
     return { posts: [], nextCursor: null, hasMore: false };
@@ -178,18 +179,18 @@ export async function getFollowingFeedPosts(
       reply_to_id,
       repost_of_id,
       quote_content,
-      alt:alts!posts_alt_id_fkey(
+      user:users!posts_user_id_fkey(
         id,
         username,
-        display_name,
-        avatar_url
+        name,
+        image
       )
     `,
       { count: "exact" }
     )
     .eq("is_deleted", false)
     .is("reply_to_id", null) // Only top-level posts
-    .in("alt_id", followingIds)
+    .in("user_id", followingIds)
     .order("created_at", { ascending: false })
     .range(offset, offset + limit - 1);
 
@@ -202,18 +203,18 @@ export async function getFollowingFeedPosts(
     const { data: likes } = await supabase
       .from("post_likes")
       .select("post_id")
-      .eq("alt_id", currentAltId)
+      .eq("user_id", currentUserId)
       .in("post_id", postIds);
 
     likedPostIds = new Set(likes?.map((l) => l.post_id) ?? []);
   }
 
   const posts: FeedPost[] = (data ?? []).map((post) => {
-    const alt = post.alt as {
-      id: number;
-      username: string;
-      display_name: string | null;
-      avatar_url: string | null;
+    const user = post.user as {
+      id: string;
+      username: string | null;
+      name: string | null;
+      image: string | null;
     } | null;
 
     return {
@@ -229,10 +230,10 @@ export async function getFollowingFeedPosts(
       repostOfId: post.repost_of_id,
       quoteContent: post.quote_content,
       author: {
-        id: alt?.id ?? 0,
-        username: alt?.username ?? "unknown",
-        displayName: alt?.display_name ?? null,
-        avatarUrl: alt?.avatar_url ?? null,
+        id: user?.id ?? "",
+        username: user?.username ?? "unknown",
+        displayName: user?.name ?? null,
+        avatarUrl: user?.image ?? null,
       },
       isLikedByMe: likedPostIds.has(post.id),
     };
@@ -255,14 +256,14 @@ export async function getPostWithReplies(
   supabase: TypedClient,
   postId: number,
   options: {
-    currentAltId?: number | null;
+    currentUserId?: string | null;
     repliesLimit?: number;
   } = {}
 ): Promise<{
   post: FeedPost | null;
   replies: FeedPost[];
 }> {
-  const { currentAltId = null, repliesLimit = 50 } = options;
+  const { currentUserId = null, repliesLimit = 50 } = options;
 
   // Get the main post
   const { data: postData, error: postError } = await supabase
@@ -280,11 +281,11 @@ export async function getPostWithReplies(
       reply_to_id,
       repost_of_id,
       quote_content,
-      alt:alts!posts_alt_id_fkey(
+      user:users!posts_user_id_fkey(
         id,
         username,
-        display_name,
-        avatar_url
+        name,
+        image
       )
     `
     )
@@ -312,11 +313,11 @@ export async function getPostWithReplies(
       reply_to_id,
       repost_of_id,
       quote_content,
-      alt:alts!posts_alt_id_fkey(
+      user:users!posts_user_id_fkey(
         id,
         username,
-        display_name,
-        avatar_url
+        name,
+        image
       )
     `
     )
@@ -329,23 +330,23 @@ export async function getPostWithReplies(
 
   // Get likes by current user
   let likedPostIds = new Set<number>();
-  if (currentAltId) {
+  if (currentUserId) {
     const allPostIds = [postData.id, ...(repliesData?.map((r) => r.id) ?? [])];
     const { data: likes } = await supabase
       .from("post_likes")
       .select("post_id")
-      .eq("alt_id", currentAltId)
+      .eq("user_id", currentUserId)
       .in("post_id", allPostIds);
 
     likedPostIds = new Set(likes?.map((l) => l.post_id) ?? []);
   }
 
   const mapPost = (post: typeof postData): FeedPost => {
-    const alt = post.alt as {
-      id: number;
-      username: string;
-      display_name: string | null;
-      avatar_url: string | null;
+    const user = post.user as {
+      id: string;
+      username: string | null;
+      name: string | null;
+      image: string | null;
     } | null;
 
     return {
@@ -361,10 +362,10 @@ export async function getPostWithReplies(
       repostOfId: post.repost_of_id,
       quoteContent: post.quote_content,
       author: {
-        id: alt?.id ?? 0,
-        username: alt?.username ?? "unknown",
-        displayName: alt?.display_name ?? null,
-        avatarUrl: alt?.avatar_url ?? null,
+        id: user?.id ?? "",
+        username: user?.username ?? "unknown",
+        displayName: user?.name ?? null,
+        avatarUrl: user?.image ?? null,
       },
       isLikedByMe: likedPostIds.has(post.id),
     };
@@ -377,15 +378,15 @@ export async function getPostWithReplies(
 }
 
 /**
- * Get posts by a specific user/alt
+ * Get posts by a specific user
  */
 export async function getUserPosts(
   supabase: TypedClient,
-  altId: number,
+  userId: string,
   options: {
     limit?: number;
     cursor?: number | null;
-    currentAltId?: number | null;
+    currentUserId?: string | null;
     includeReplies?: boolean;
   } = {}
 ): Promise<{
@@ -396,7 +397,7 @@ export async function getUserPosts(
   const {
     limit = 20,
     cursor = null,
-    currentAltId = null,
+    currentUserId = null,
     includeReplies = false,
   } = options;
   const offset = cursor ?? 0;
@@ -416,16 +417,16 @@ export async function getUserPosts(
       reply_to_id,
       repost_of_id,
       quote_content,
-      alt:alts!posts_alt_id_fkey(
+      user:users!posts_user_id_fkey(
         id,
         username,
-        display_name,
-        avatar_url
+        name,
+        image
       )
     `,
       { count: "exact" }
     )
-    .eq("alt_id", altId)
+    .eq("user_id", userId)
     .eq("is_deleted", false)
     .order("created_at", { ascending: false })
     .range(offset, offset + limit - 1);
@@ -440,23 +441,23 @@ export async function getUserPosts(
 
   // Get likes by current user
   let likedPostIds = new Set<number>();
-  if (currentAltId && data?.length) {
+  if (currentUserId && data?.length) {
     const postIds = data.map((p) => p.id);
     const { data: likes } = await supabase
       .from("post_likes")
       .select("post_id")
-      .eq("alt_id", currentAltId)
+      .eq("user_id", currentUserId)
       .in("post_id", postIds);
 
     likedPostIds = new Set(likes?.map((l) => l.post_id) ?? []);
   }
 
   const posts: FeedPost[] = (data ?? []).map((post) => {
-    const alt = post.alt as {
-      id: number;
-      username: string;
-      display_name: string | null;
-      avatar_url: string | null;
+    const user = post.user as {
+      id: string;
+      username: string | null;
+      name: string | null;
+      image: string | null;
     } | null;
 
     return {
@@ -472,10 +473,10 @@ export async function getUserPosts(
       repostOfId: post.repost_of_id,
       quoteContent: post.quote_content,
       author: {
-        id: alt?.id ?? 0,
-        username: alt?.username ?? "unknown",
-        displayName: alt?.display_name ?? null,
-        avatarUrl: alt?.avatar_url ?? null,
+        id: user?.id ?? "",
+        username: user?.username ?? "unknown",
+        displayName: user?.name ?? null,
+        avatarUrl: user?.image ?? null,
       },
       isLikedByMe: likedPostIds.has(post.id),
     };

@@ -93,7 +93,7 @@ export function OrganizationDetailClient({
     );
   }
 
-  const isOwner = currentUser?.alt?.id === organization.owner_alt_id;
+  const isOwner = currentUser?.id === organization.owner_user_id;
 
   // Combine all tournament types from the organization query
   const tournaments = [

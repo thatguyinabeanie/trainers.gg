@@ -233,35 +233,35 @@ export type Database = {
       follows: {
         Row: {
           created_at: string | null
-          follower_alt_id: number
-          following_alt_id: number
+          follower_user_id: string
+          following_user_id: string
           id: number
         }
         Insert: {
           created_at?: string | null
-          follower_alt_id: number
-          following_alt_id: number
+          follower_user_id: string
+          following_user_id: string
           id?: never
         }
         Update: {
           created_at?: string | null
-          follower_alt_id?: number
-          following_alt_id?: number
+          follower_user_id?: string
+          following_user_id?: string
           id?: never
         }
         Relationships: [
           {
-            foreignKeyName: "follows_follower_alt_id_fkey"
-            columns: ["follower_alt_id"]
+            foreignKeyName: "follows_follower_user_id_fkey"
+            columns: ["follower_user_id"]
             isOneToOne: false
-            referencedRelation: "alts"
+            referencedRelation: "users"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "follows_following_alt_id_fkey"
-            columns: ["following_alt_id"]
+            foreignKeyName: "follows_following_user_id_fkey"
+            columns: ["following_user_id"]
             isOneToOne: false
-            referencedRelation: "alts"
+            referencedRelation: "users"
             referencedColumns: ["id"]
           },
         ]
@@ -325,6 +325,13 @@ export type Database = {
           organization_id?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "groups_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organization_with_owner"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "groups_organization_id_fkey"
             columns: ["organization_id"]
@@ -425,6 +432,13 @@ export type Database = {
             foreignKeyName: "organization_invitations_organization_id_fkey"
             columns: ["organization_id"]
             isOneToOne: false
+            referencedRelation: "organization_with_owner"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "organization_invitations_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
             referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
@@ -455,6 +469,13 @@ export type Database = {
             columns: ["alt_id"]
             isOneToOne: false
             referencedRelation: "alts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "organization_members_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organization_with_owner"
             referencedColumns: ["id"]
           },
           {
@@ -511,6 +532,13 @@ export type Database = {
             foreignKeyName: "organization_requests_created_organization_id_fkey"
             columns: ["created_organization_id"]
             isOneToOne: false
+            referencedRelation: "organization_with_owner"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "organization_requests_created_organization_id_fkey"
+            columns: ["created_organization_id"]
+            isOneToOne: false
             referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
@@ -539,7 +567,7 @@ export type Database = {
           id: number
           logo_url: string | null
           name: string
-          owner_alt_id: number
+          owner_user_id: string
           platform_fee_percentage: number | null
           slug: string
           status: Database["public"]["Enums"]["organization_status"] | null
@@ -561,7 +589,7 @@ export type Database = {
           id?: never
           logo_url?: string | null
           name: string
-          owner_alt_id: number
+          owner_user_id: string
           platform_fee_percentage?: number | null
           slug: string
           status?: Database["public"]["Enums"]["organization_status"] | null
@@ -583,7 +611,7 @@ export type Database = {
           id?: never
           logo_url?: string | null
           name?: string
-          owner_alt_id?: number
+          owner_user_id?: string
           platform_fee_percentage?: number | null
           slug?: string
           status?: Database["public"]["Enums"]["organization_status"] | null
@@ -599,10 +627,10 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "organizations_owner_alt_id_fkey"
-            columns: ["owner_alt_id"]
+            foreignKeyName: "organizations_owner_user_id_fkey"
+            columns: ["owner_user_id"]
             isOneToOne: false
-            referencedRelation: "alts"
+            referencedRelation: "users"
             referencedColumns: ["id"]
           },
         ]
@@ -726,31 +754,24 @@ export type Database = {
       }
       post_likes: {
         Row: {
-          alt_id: number
           created_at: string | null
           id: number
           post_id: number
+          user_id: string
         }
         Insert: {
-          alt_id: number
           created_at?: string | null
           id?: never
           post_id: number
+          user_id: string
         }
         Update: {
-          alt_id?: number
           created_at?: string | null
           id?: never
           post_id?: number
+          user_id?: string
         }
         Relationships: [
-          {
-            foreignKeyName: "post_likes_alt_id_fkey"
-            columns: ["alt_id"]
-            isOneToOne: false
-            referencedRelation: "alts"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "post_likes_post_id_fkey"
             columns: ["post_id"]
@@ -758,11 +779,17 @@ export type Database = {
             referencedRelation: "posts"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "post_likes_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
         ]
       }
       posts: {
         Row: {
-          alt_id: number
           content: string
           created_at: string | null
           deleted_at: string | null
@@ -776,10 +803,10 @@ export type Database = {
           repost_of_id: number | null
           reposts_count: number | null
           updated_at: string | null
+          user_id: string
           views_count: number | null
         }
         Insert: {
-          alt_id: number
           content: string
           created_at?: string | null
           deleted_at?: string | null
@@ -793,10 +820,10 @@ export type Database = {
           repost_of_id?: number | null
           reposts_count?: number | null
           updated_at?: string | null
+          user_id: string
           views_count?: number | null
         }
         Update: {
-          alt_id?: number
           content?: string
           created_at?: string | null
           deleted_at?: string | null
@@ -810,16 +837,10 @@ export type Database = {
           repost_of_id?: number | null
           reposts_count?: number | null
           updated_at?: string | null
+          user_id?: string
           views_count?: number | null
         }
         Relationships: [
-          {
-            foreignKeyName: "posts_alt_id_fkey"
-            columns: ["alt_id"]
-            isOneToOne: false
-            referencedRelation: "alts"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "posts_reply_to_id_fkey"
             columns: ["reply_to_id"]
@@ -832,6 +853,13 @@ export type Database = {
             columns: ["repost_of_id"]
             isOneToOne: false
             referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "posts_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
             referencedColumns: ["id"]
           },
         ]
@@ -1930,6 +1958,13 @@ export type Database = {
             foreignKeyName: "tournament_templates_organization_id_fkey"
             columns: ["organization_id"]
             isOneToOne: false
+            referencedRelation: "organization_with_owner"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tournament_templates_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
             referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
@@ -2057,6 +2092,13 @@ export type Database = {
             foreignKeyName: "tournaments_organization_id_fkey"
             columns: ["organization_id"]
             isOneToOne: false
+            referencedRelation: "organization_with_owner"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tournaments_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
             referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
@@ -2107,6 +2149,7 @@ export type Database = {
       }
       users: {
         Row: {
+          bio: string | null
           birth_date: string | null
           country: string | null
           created_at: string | null
@@ -2130,6 +2173,7 @@ export type Database = {
           username: string | null
         }
         Insert: {
+          bio?: string | null
           birth_date?: string | null
           country?: string | null
           created_at?: string | null
@@ -2153,6 +2197,7 @@ export type Database = {
           username?: string | null
         }
         Update: {
+          bio?: string | null
           birth_date?: string | null
           country?: string | null
           created_at?: string | null
@@ -2187,7 +2232,42 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      organization_with_owner: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          discord_url: string | null
+          icon: string | null
+          id: number | null
+          logo_url: string | null
+          name: string | null
+          owner_image: string | null
+          owner_name: string | null
+          owner_user_id: string | null
+          owner_username: string | null
+          platform_fee_percentage: number | null
+          slug: string | null
+          status: Database["public"]["Enums"]["organization_status"] | null
+          subscription_expires_at: string | null
+          subscription_started_at: string | null
+          subscription_tier:
+            | Database["public"]["Enums"]["organization_subscription_tier"]
+            | null
+          tier: Database["public"]["Enums"]["organization_tier"] | null
+          twitter_url: string | null
+          updated_at: string | null
+          website_url: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organizations_owner_user_id_fkey"
+            columns: ["owner_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       custom_access_token_hook: { Args: { event: Json }; Returns: Json }

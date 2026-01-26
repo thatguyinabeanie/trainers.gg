@@ -241,7 +241,7 @@ export function CreateTournamentClient({
   }
 
   // Permission check
-  const isOwner = currentUser.alt?.id === organization.owner_alt_id;
+  const isOwner = currentUser.id === organization.owner_user_id;
 
   if (!isOwner) {
     return (
