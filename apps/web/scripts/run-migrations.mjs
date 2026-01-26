@@ -197,7 +197,7 @@ async function runMigrations() {
 
   // Push migrations
   console.log("\n📤 Applying migrations...");
-  exec("npx supabase db push --linked", { env: cliEnv });
+  exec("npx supabase db push --linked --include-all", { env: cliEnv });
 
   // Run seeds for preview environments only
   if (env.shouldSeed) {
