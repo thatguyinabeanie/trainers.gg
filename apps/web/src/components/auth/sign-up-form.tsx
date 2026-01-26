@@ -22,13 +22,11 @@ import { SocialAuthButtons } from "./social-auth-buttons";
 import { useAuth } from "@/hooks/use-auth";
 import { checkUsernameAvailability } from "@/app/(auth-pages)/actions";
 import { COUNTRIES } from "@/lib/countries";
-
-const passwordRequirements = z
-  .string()
-  .min(8, "Password must be at least 8 characters")
-  .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
-  .regex(/[a-z]/, "Password must contain at least one lowercase letter")
-  .regex(/[0-9]/, "Password must contain at least one number");
+import {
+  passwordSchema,
+  usernameSchema,
+  emailSchema,
+} from "@trainers/validators";
 
 const signUpSchema = z
   .object({
@@ -40,14 +38,7 @@ const signUpSchema = z
       .string()
       .min(1, "Last name is required")
       .max(50, "Last name must be at most 50 characters"),
-    username: z
-      .string()
-      .min(3, "Username must be at least 3 characters")
-      .max(20, "Username must be at most 20 characters")
-      .regex(
-        /^[a-zA-Z0-9_-]+$/,
-        "Username can only contain letters, numbers, underscores, and hyphens"
-      ),
+    username: usernameSchema,
     birthDate: z
       .string()
       .min(1, "Date of birth is required")
@@ -61,11 +52,8 @@ const signUpSchema = z
         { message: "You must be at least 13 years old to create an account" }
       ),
     country: z.string().min(1, "Country is required"),
-    email: z
-      .string()
-      .min(1, "Email is required")
-      .email("Please enter a valid email address"),
-    password: passwordRequirements,
+    email: emailSchema,
+    password: passwordSchema,
     confirmPassword: z.string().min(1, "Please confirm your password"),
   })
   .refine((data) => data.password === data.confirmPassword, {
@@ -322,6 +310,7 @@ export function SignUpForm() {
               <li>At least one uppercase letter</li>
               <li>At least one lowercase letter</li>
               <li>At least one number</li>
+              <li>At least one symbol (!@#$%^&*...)</li>
             </ul>
           </div>
 

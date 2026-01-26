@@ -186,12 +186,30 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Validate password strength
+    // Validate password strength (must match Supabase Auth settings)
+    // Requirements: 8+ chars, lowercase, uppercase, digit, symbol
+    const passwordErrors: string[] = [];
     if (password.length < 8) {
+      passwordErrors.push("at least 8 characters");
+    }
+    if (!/[a-z]/.test(password)) {
+      passwordErrors.push("one lowercase letter");
+    }
+    if (!/[A-Z]/.test(password)) {
+      passwordErrors.push("one uppercase letter");
+    }
+    if (!/[0-9]/.test(password)) {
+      passwordErrors.push("one number");
+    }
+    if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) {
+      passwordErrors.push("one symbol");
+    }
+
+    if (passwordErrors.length > 0) {
       return new Response(
         JSON.stringify({
           success: false,
-          error: "Password must be at least 8 characters",
+          error: `Password must contain: ${passwordErrors.join(", ")}`,
           code: "WEAK_PASSWORD",
         } satisfies SignupResponse),
         {

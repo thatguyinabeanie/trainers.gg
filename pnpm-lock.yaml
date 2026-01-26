@@ -87,6 +87,9 @@ importers:
       '@trainers/theme':
         specifier: workspace:*
         version: link:../../packages/theme
+      '@trainers/validators':
+        specifier: workspace:*
+        version: link:../../packages/validators
       expo:
         specifier: ~54.0.32
         version: 54.0.32(@babel/core@7.28.6)(@expo/metro-runtime@6.1.2)(bufferutil@4.1.0)(expo-router@6.0.22)(graphql@16.12.0)(react-native@0.81.5(@babel/core@7.28.6)(@types/react@19.1.17)(bufferutil@4.1.0)(react@19.1.0)(utf-8-validate@5.0.10))(react@19.1.0)(utf-8-validate@5.0.10)
@@ -223,6 +226,9 @@ importers:
       '@trainers/theme':
         specifier: workspace:*
         version: link:../../packages/theme
+      '@trainers/validators':
+        specifier: workspace:*
+        version: link:../../packages/validators
       class-variance-authority:
         specifier: ^0.7.1
         version: 0.7.1

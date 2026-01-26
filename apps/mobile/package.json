@@ -21,6 +21,7 @@
     "@tamagui/web": "^1.144.3",
     "@trainers/supabase": "workspace:*",
     "@trainers/theme": "workspace:*",
+    "@trainers/validators": "workspace:*",
     "expo": "~54.0.32",
     "expo-constants": "~18.0.13",
     "expo-font": "~14.0.11",

@@ -1,3 +1,14 @@
+// Auth validators
+export {
+  passwordSchema,
+  usernameSchema,
+  emailSchema,
+  validatePassword,
+  type Password,
+  type Username,
+  type Email,
+} from "./auth";
+
 // User validators
 export {
   socialLinksSchema,

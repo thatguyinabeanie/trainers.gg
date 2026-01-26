@@ -11,6 +11,7 @@ import {
   Spinner,
 } from "tamagui";
 import { useAuth } from "@/lib/supabase";
+import { validatePassword, usernameSchema } from "@trainers/validators";
 
 export default function SignUpScreen() {
   const [email, setEmail] = useState("");
@@ -36,20 +37,17 @@ export default function SignUpScreen() {
       return;
     }
 
-    if (password.length < 8) {
-      setError("Password must be at least 8 characters");
+    // Validate password using shared schema
+    const passwordValidation = validatePassword(password);
+    if (!passwordValidation.isValid) {
+      setError(`Password requires: ${passwordValidation.errors.join(", ")}`);
       return;
     }
 
-    if (username.length < 3 || username.length > 20) {
-      setError("Username must be 3-20 characters");
-      return;
-    }
-
-    if (!/^[a-zA-Z0-9_-]+$/.test(username)) {
-      setError(
-        "Username can only contain letters, numbers, underscores, and hyphens"
-      );
+    // Validate username using shared schema
+    const usernameResult = usernameSchema.safeParse(username);
+    if (!usernameResult.success) {
+      setError(usernameResult.error.errors[0]?.message ?? "Invalid username");
       return;
     }
 
@@ -186,21 +184,30 @@ export default function SignUpScreen() {
               />
             </XStack>
 
-            <Input
-              backgroundColor="$muted"
-              borderWidth={0}
-              borderRadius="$4"
-              paddingHorizontal="$4"
-              paddingVertical="$3.5"
-              fontSize={16}
-              color="$color"
-              placeholder="Password *"
-              placeholderTextColor="$mutedForeground"
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry
-              autoComplete="new-password"
-            />
+            <YStack gap="$1">
+              <Input
+                backgroundColor="$muted"
+                borderWidth={0}
+                borderRadius="$4"
+                paddingHorizontal="$4"
+                paddingVertical="$3.5"
+                fontSize={16}
+                color="$color"
+                placeholder="Password *"
+                placeholderTextColor="$mutedForeground"
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry
+                autoComplete="new-password"
+              />
+              <Text
+                fontSize={11}
+                color="$mutedForeground"
+                paddingHorizontal="$1"
+              >
+                8+ chars, uppercase, lowercase, number, and symbol
+              </Text>
+            </YStack>
 
             <Input
               backgroundColor="$muted"
