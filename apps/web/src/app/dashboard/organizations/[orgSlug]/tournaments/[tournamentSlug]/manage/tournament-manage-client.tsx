@@ -140,7 +140,7 @@ export function TournamentManageClient({
   }
 
   // Permission check - must be org owner
-  const isOwner = currentUser.alt?.id === organization.owner_alt_id;
+  const isOwner = currentUser.id === organization.owner_user_id;
 
   if (!isOwner) {
     return (

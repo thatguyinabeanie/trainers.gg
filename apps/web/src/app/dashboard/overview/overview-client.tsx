@@ -15,14 +15,13 @@ import {
 
 export function OverviewClient() {
   const { user } = useAuth();
+  const userId = user?.id;
   const profileId = user?.profile?.id;
 
   const myOrganizationsQueryFn = useCallback(
     (supabase: Parameters<typeof listMyOrganizations>[0]) =>
-      profileId
-        ? listMyOrganizations(supabase, profileId)
-        : Promise.resolve([]),
-    [profileId]
+      userId ? listMyOrganizations(supabase, userId) : Promise.resolve([]),
+    [userId]
   );
 
   const dashboardDataQueryFn = useCallback(
@@ -47,7 +46,7 @@ export function OverviewClient() {
   );
 
   const { data: myOrganizations } = useSupabaseQuery(myOrganizationsQueryFn, [
-    profileId,
+    userId,
   ]);
   const { data: dashboardData } = useSupabaseQuery(dashboardDataQueryFn, [
     profileId,

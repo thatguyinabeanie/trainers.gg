@@ -1,5 +1,6 @@
 {
   "$schema": "https://opencode.ai/config.json",
+  "model": "github-copilot/claude-opus-4.5",
   "mcp": {
     "playwright": {
       "type": "local",
@@ -11,19 +12,17 @@
         "chrome",
         "--extension",
       ],
-      "enabled": true,
+      "enabled": true
     },
     "vercel": {
       "type": "remote",
       "url": "https://mcp.vercel.com/beanie-gg/trainers-gg",
-      "enabled": true,
-      "oauth": {},
+      "enabled": true
     },
     "supabase": {
       "type": "remote",
       "url": "https://mcp.supabase.com/mcp",
-      "enabled": true,
-      "oauth": {},
+      "enabled": true
     },
   },
 }

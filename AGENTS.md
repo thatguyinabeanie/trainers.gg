@@ -83,16 +83,28 @@ All DNS for `trainers.gg` is managed via **Vercel DNS**.
 ### Root Commands
 
 ```bash
+# 📦 Setup & Installation
 pnpm install              # Install all dependencies
-pnpm dev                  # Run all apps in parallel
+pnpm setup                # Run Supabase setup (auto-runs before dev)
+
+# 🚀 Development
+pnpm dev                  # Run all apps in parallel (includes setup)
 pnpm dev:web              # Run web app only
 pnpm dev:mobile           # Run mobile app only
+pnpm dev:backend          # Run Supabase backend only
+pnpm dev:web+backend      # Run web + Supabase in parallel
+
+# 🏗️ Build
 pnpm build                # Build all packages
 pnpm build:web            # Build web app only
+
+# ✅ Quality Checks
 pnpm lint                 # Lint all packages
 pnpm typecheck            # TypeScript check all packages
 pnpm format               # Format all files with Prettier
 pnpm format:check         # Check formatting without fixing
+
+# 🧹 Cleanup
 pnpm clean                # Remove all build artifacts and node_modules
 ```
 
@@ -101,9 +113,8 @@ pnpm clean                # Remove all build artifacts and node_modules
 All commits are validated via Husky pre-commit hooks:
 
 1. **lint-staged** runs on staged files:
-   - Prettier formatting (auto-fix)
-   - ESLint (auto-fix where possible)
-2. **TypeScript** check runs on the full codebase
+   - Prettier formatting (auto-fix) for `.js`, `.jsx`, `.ts`, `.tsx`, `.json`, `.md`, `.css`, `.html`, `.yml`, `.yaml` files
+2. **TypeScript** check may run depending on repository configuration
 
 **Commit workflow:**
 
@@ -135,13 +146,33 @@ pnpm turbo run <task> --filter=@trainers/supabase
 ### Supabase Commands
 
 ```bash
-cd packages/supabase
-pnpm local:start          # Start local Supabase (requires Docker)
-pnpm local:stop           # Stop local Supabase
-pnpm generate-types       # Generate TypeScript types from schema
-pnpm db:migrate           # Push migrations to local database
+# 🚀 Service Management
+pnpm db:start             # Start local Supabase (requires Docker)
+pnpm db:stop              # Stop local Supabase
+pnpm db:restart           # Restart local Supabase
+pnpm db:status            # Check Supabase service status
+
+# 🗄️ Database Operations
 pnpm db:reset             # Reset local database
+pnpm db:migrate           # Push migrations to local database
+pnpm db:diff              # Generate migration from database changes
+pnpm db:lint              # Lint SQL migration files
+pnpm db:seed              # Seed database with test data
+pnpm db:dump              # Dump database schema and data
+
+# 🔧 Development Tools
+pnpm generate-types       # Generate TypeScript types from schema
+
+# 🔗 Supabase CLI (any command)
+pnpm supabase <command>   # Run any Supabase CLI command from repo root
+                          # Automatically runs in packages/supabase directory
+                          # Examples:
+                          #   pnpm supabase link --project-ref <id>
+                          #   pnpm supabase migration list --linked
+                          #   pnpm supabase branches list
 ```
+
+**IMPORTANT:** Always use `pnpm supabase` from the repo root instead of `cd packages/supabase && supabase`. This prevents the CLI from creating unwanted directories in the repo root.
 
 ### Database Schema Changes
 

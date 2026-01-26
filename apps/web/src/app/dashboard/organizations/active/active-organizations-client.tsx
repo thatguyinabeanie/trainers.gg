@@ -12,17 +12,15 @@ import Link from "next/link";
 
 export function ActiveOrganizationsClient() {
   const { user } = useAuth();
-  const profileId = user?.profile?.id;
+  const userId = user?.id;
 
   const queryFn = useCallback(
     (supabase: Parameters<typeof listMyOrganizations>[0]) =>
-      profileId
-        ? listMyOrganizations(supabase, profileId)
-        : Promise.resolve([]),
-    [profileId]
+      userId ? listMyOrganizations(supabase, userId) : Promise.resolve([]),
+    [userId]
   );
 
-  const { data: myOrganizations } = useSupabaseQuery(queryFn, [profileId]);
+  const { data: myOrganizations } = useSupabaseQuery(queryFn, [userId]);
 
   const ownedOrgs = myOrganizations?.filter((org) => org.isOwner) || [];
   const staffOrgs = myOrganizations?.filter((org) => !org.isOwner) || [];

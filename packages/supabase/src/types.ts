@@ -34,42 +34,6 @@ export type Database = {
   }
   public: {
     Tables: {
-      alt_group_roles: {
-        Row: {
-          alt_id: number
-          created_at: string | null
-          group_role_id: number
-          id: number
-        }
-        Insert: {
-          alt_id: number
-          created_at?: string | null
-          group_role_id: number
-          id?: never
-        }
-        Update: {
-          alt_id?: number
-          created_at?: string | null
-          group_role_id?: number
-          id?: never
-        }
-        Relationships: [
-          {
-            foreignKeyName: "alt_group_roles_alt_id_fkey"
-            columns: ["alt_id"]
-            isOneToOne: false
-            referencedRelation: "alts"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "alt_group_roles_group_role_id_fkey"
-            columns: ["group_role_id"]
-            isOneToOne: false
-            referencedRelation: "group_roles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       alts: {
         Row: {
           avatar_url: string | null
@@ -233,35 +197,35 @@ export type Database = {
       follows: {
         Row: {
           created_at: string | null
-          follower_alt_id: number
-          following_alt_id: number
+          follower_user_id: string
+          following_user_id: string
           id: number
         }
         Insert: {
           created_at?: string | null
-          follower_alt_id: number
-          following_alt_id: number
+          follower_user_id: string
+          following_user_id: string
           id?: never
         }
         Update: {
           created_at?: string | null
-          follower_alt_id?: number
-          following_alt_id?: number
+          follower_user_id?: string
+          following_user_id?: string
           id?: never
         }
         Relationships: [
           {
-            foreignKeyName: "follows_follower_alt_id_fkey"
-            columns: ["follower_alt_id"]
+            foreignKeyName: "follows_follower_user_id_fkey"
+            columns: ["follower_user_id"]
             isOneToOne: false
-            referencedRelation: "alts"
+            referencedRelation: "users"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "follows_following_alt_id_fkey"
-            columns: ["following_alt_id"]
+            foreignKeyName: "follows_following_user_id_fkey"
+            columns: ["following_user_id"]
             isOneToOne: false
-            referencedRelation: "alts"
+            referencedRelation: "users"
             referencedColumns: ["id"]
           },
         ]
@@ -380,8 +344,8 @@ export type Database = {
           created_at: string | null
           expires_at: string | null
           id: number
-          invited_alt_id: number
-          invited_by_alt_id: number
+          invited_by_user_id: string
+          invited_user_id: string
           organization_id: number
           responded_at: string | null
           status: Database["public"]["Enums"]["invitation_status"] | null
@@ -390,8 +354,8 @@ export type Database = {
           created_at?: string | null
           expires_at?: string | null
           id?: never
-          invited_alt_id: number
-          invited_by_alt_id: number
+          invited_by_user_id: string
+          invited_user_id: string
           organization_id: number
           responded_at?: string | null
           status?: Database["public"]["Enums"]["invitation_status"] | null
@@ -400,65 +364,29 @@ export type Database = {
           created_at?: string | null
           expires_at?: string | null
           id?: never
-          invited_alt_id?: number
-          invited_by_alt_id?: number
+          invited_by_user_id?: string
+          invited_user_id?: string
           organization_id?: number
           responded_at?: string | null
           status?: Database["public"]["Enums"]["invitation_status"] | null
         }
         Relationships: [
           {
-            foreignKeyName: "organization_invitations_invited_alt_id_fkey"
-            columns: ["invited_alt_id"]
+            foreignKeyName: "organization_invitations_invited_by_user_id_fkey"
+            columns: ["invited_by_user_id"]
             isOneToOne: false
-            referencedRelation: "alts"
+            referencedRelation: "users"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "organization_invitations_invited_by_alt_id_fkey"
-            columns: ["invited_by_alt_id"]
+            foreignKeyName: "organization_invitations_invited_user_id_fkey"
+            columns: ["invited_user_id"]
             isOneToOne: false
-            referencedRelation: "alts"
+            referencedRelation: "users"
             referencedColumns: ["id"]
           },
           {
             foreignKeyName: "organization_invitations_organization_id_fkey"
-            columns: ["organization_id"]
-            isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      organization_members: {
-        Row: {
-          alt_id: number
-          created_at: string | null
-          id: number
-          organization_id: number
-        }
-        Insert: {
-          alt_id: number
-          created_at?: string | null
-          id?: never
-          organization_id: number
-        }
-        Update: {
-          alt_id?: number
-          created_at?: string | null
-          id?: never
-          organization_id?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "organization_members_alt_id_fkey"
-            columns: ["alt_id"]
-            isOneToOne: false
-            referencedRelation: "alts"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "organization_members_organization_id_fkey"
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
@@ -530,6 +458,42 @@ export type Database = {
           },
         ]
       }
+      organization_staff: {
+        Row: {
+          created_at: string | null
+          id: number
+          organization_id: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: never
+          organization_id: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: never
+          organization_id?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organization_staff_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "organization_staff_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       organizations: {
         Row: {
           created_at: string | null
@@ -539,7 +503,7 @@ export type Database = {
           id: number
           logo_url: string | null
           name: string
-          owner_alt_id: number
+          owner_user_id: string
           platform_fee_percentage: number | null
           slug: string
           status: Database["public"]["Enums"]["organization_status"] | null
@@ -561,7 +525,7 @@ export type Database = {
           id?: never
           logo_url?: string | null
           name: string
-          owner_alt_id: number
+          owner_user_id: string
           platform_fee_percentage?: number | null
           slug: string
           status?: Database["public"]["Enums"]["organization_status"] | null
@@ -583,7 +547,7 @@ export type Database = {
           id?: never
           logo_url?: string | null
           name?: string
-          owner_alt_id?: number
+          owner_user_id?: string
           platform_fee_percentage?: number | null
           slug?: string
           status?: Database["public"]["Enums"]["organization_status"] | null
@@ -599,10 +563,10 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "organizations_owner_alt_id_fkey"
-            columns: ["owner_alt_id"]
+            foreignKeyName: "organizations_owner_user_id_fkey"
+            columns: ["owner_user_id"]
             isOneToOne: false
-            referencedRelation: "alts"
+            referencedRelation: "users"
             referencedColumns: ["id"]
           },
         ]
@@ -726,31 +690,24 @@ export type Database = {
       }
       post_likes: {
         Row: {
-          alt_id: number
           created_at: string | null
           id: number
           post_id: number
+          user_id: string
         }
         Insert: {
-          alt_id: number
           created_at?: string | null
           id?: never
           post_id: number
+          user_id: string
         }
         Update: {
-          alt_id?: number
           created_at?: string | null
           id?: never
           post_id?: number
+          user_id?: string
         }
         Relationships: [
-          {
-            foreignKeyName: "post_likes_alt_id_fkey"
-            columns: ["alt_id"]
-            isOneToOne: false
-            referencedRelation: "alts"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "post_likes_post_id_fkey"
             columns: ["post_id"]
@@ -758,11 +715,17 @@ export type Database = {
             referencedRelation: "posts"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "post_likes_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
         ]
       }
       posts: {
         Row: {
-          alt_id: number
           content: string
           created_at: string | null
           deleted_at: string | null
@@ -776,10 +739,10 @@ export type Database = {
           repost_of_id: number | null
           reposts_count: number | null
           updated_at: string | null
+          user_id: string
           views_count: number | null
         }
         Insert: {
-          alt_id: number
           content: string
           created_at?: string | null
           deleted_at?: string | null
@@ -793,10 +756,10 @@ export type Database = {
           repost_of_id?: number | null
           reposts_count?: number | null
           updated_at?: string | null
+          user_id: string
           views_count?: number | null
         }
         Update: {
-          alt_id?: number
           content?: string
           created_at?: string | null
           deleted_at?: string | null
@@ -810,16 +773,10 @@ export type Database = {
           repost_of_id?: number | null
           reposts_count?: number | null
           updated_at?: string | null
+          user_id?: string
           views_count?: number | null
         }
         Relationships: [
-          {
-            foreignKeyName: "posts_alt_id_fkey"
-            columns: ["alt_id"]
-            isOneToOne: false
-            referencedRelation: "alts"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "posts_reply_to_id_fkey"
             columns: ["reply_to_id"]
@@ -832,6 +789,13 @@ export type Database = {
             columns: ["repost_of_id"]
             isOneToOne: false
             referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "posts_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
             referencedColumns: ["id"]
           },
         ]
@@ -2069,6 +2033,42 @@ export type Database = {
           },
         ]
       }
+      user_group_roles: {
+        Row: {
+          created_at: string | null
+          group_role_id: number
+          id: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          group_role_id: number
+          id?: never
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          group_role_id?: number
+          id?: never
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "alt_group_roles_group_role_id_fkey"
+            columns: ["group_role_id"]
+            isOneToOne: false
+            referencedRelation: "group_roles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_group_roles_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string | null
@@ -2107,6 +2107,7 @@ export type Database = {
       }
       users: {
         Row: {
+          bio: string | null
           birth_date: string | null
           country: string | null
           created_at: string | null
@@ -2130,6 +2131,7 @@ export type Database = {
           username: string | null
         }
         Insert: {
+          bio?: string | null
           birth_date?: string | null
           country?: string | null
           created_at?: string | null
@@ -2153,6 +2155,7 @@ export type Database = {
           username?: string | null
         }
         Update: {
+          bio?: string | null
           birth_date?: string | null
           country?: string | null
           created_at?: string | null
@@ -2193,6 +2196,10 @@ export type Database = {
       custom_access_token_hook: { Args: { event: Json }; Returns: Json }
       get_current_alt_id: { Args: never; Returns: number }
       get_current_user_id: { Args: never; Returns: string }
+      has_org_permission: {
+        Args: { org_id: number; permission_key: string }
+        Returns: boolean
+      }
       is_site_admin: { Args: never; Returns: boolean }
     }
     Enums: {
