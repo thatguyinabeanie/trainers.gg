@@ -33,6 +33,8 @@ const PUBLIC_ROUTES = [
   "/reset-password",
   "/auth",
   "/api",
+  "/oauth", // OAuth JWKS and well-known files (AT Protocol requires no redirects)
+  "/.well-known", // AT Protocol well-known paths (handle resolution)
 ];
 
 // Static file extensions to skip
@@ -50,6 +52,7 @@ const STATIC_FILE_EXTENSIONS = [
   ".woff2",
   ".ttf",
   ".eot",
+  ".json", // Include JSON for OAuth JWKS and other static config files
 ];
 
 function isStaticFile(pathname: string): boolean {
@@ -124,11 +127,11 @@ export const config = {
      * - _next/static (static files)
      * - _next/image (image optimization files)
      * - favicon.ico, sitemap.xml, robots.txt (metadata files)
-     * - Static assets (svg, png, jpg, etc.)
+     * - Static assets (svg, png, jpg, json, etc.)
      *
      * Note: /api routes are included so Supabase session refresh runs.
      * Maintenance mode exclusions are handled in the proxy function.
      */
-    "/((?!_next/static|_next/image|favicon.ico|sitemap.xml|robots.txt|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)",
+    "/((?!_next/static|_next/image|favicon.ico|sitemap.xml|robots.txt|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|json)$).*)",
   ],
 };
