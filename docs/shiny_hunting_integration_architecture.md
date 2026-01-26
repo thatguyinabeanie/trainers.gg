@@ -11,6 +11,8 @@
 Before implementing shiny hunting features, the social system needs a migration from `alt_id` to `user_id`.
 
 > 📄 **See full migration plan:** [SOCIAL_MIGRATION_PLAN.md](./planning/SOCIAL_MIGRATION_PLAN.md)
+>
+> 📄 **See architecture guide:** [USER_VS_ALT_ARCHITECTURE.md](./architecture/USER_VS_ALT_ARCHITECTURE.md)
 
 ### Summary
 
@@ -23,15 +25,51 @@ Before implementing shiny hunting features, the social system needs a migration 
 
 ### Rationale
 
-- Social profiles are **user-level**, not alt-level
-- Alts are for tournament anonymity only, not social features
-- Users post as themselves, not as tournament personas
-- Bluesky federation requires user-level content ownership
-- Shiny dex is a user-level profile feature
+#### 🌐 Bluesky Federation (Critical Constraint)
+
+trainers.gg uses the AT Protocol (Bluesky) for decentralized social features. Every user has:
+
+- A DID (Decentralized Identifier): `did:plc:abc123...`
+- A handle: `@username.trainers.gg`
+
+**Why this matters for shiny dex:**
+
+When a user shares a shiny catch, that post federates to the entire Bluesky network. Users on bsky.app, other PDS instances, and AT Protocol clients will see this content. These external systems have no concept of "alts" or tournament personas—they only know about the user's DID and handle.
+
+If we used `alt_id` for shiny posts:
+
+- ❌ The post would have no valid DID for federation
+- ❌ External clients couldn't attribute content correctly
+- ❌ The user's Bluesky identity would be disconnected from their content
+
+By using `user_id`:
+
+- ✅ Posts federate with proper DID attribution
+- ✅ Content appears correctly on bsky.app and other clients
+- ✅ User's handle (`@username.trainers.gg`) is consistent everywhere
+
+#### 🎭 Tournament Anonymity Preservation
+
+Using `alt_id` for social features would **break** tournament anonymity—the opposite of what alts are designed for:
+
+- Posting patterns would link multiple alts to the same person
+- Social graphs would reveal alt relationships
+- Tournament opponents could track players across events
+
+#### 🌟 Shiny Dex is a User-Level Feature
+
+- One shiny collection per person (not per tournament identity)
+- Displays on the user's social profile
+- Collection persists regardless of tournament participation
+- Users collect shinies as themselves, not as tournament personas
 
 ### Timeline
 
-The social migration should be completed **before** starting shiny hunting implementation. Estimated effort: ~7 days.
+The social migration should be completed **before** starting shiny hunting implementation.
+
+**Current Status:** Database is empty (no production data), so we can use a simplified drop-and-recreate approach.
+
+**Estimated effort:** 2-3 elapsed days (streamlined migration)
 
 ---
 

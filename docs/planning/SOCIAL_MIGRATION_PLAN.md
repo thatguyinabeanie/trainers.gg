@@ -7,14 +7,62 @@
 
 ---
 
+## Critical Constraint: Bluesky Federation
+
+### Why Posts MUST Use user_id (Not alt_id)
+
+**The AT Protocol / Bluesky federation model makes this decision mandatory:**
+
+1. **Federation = Loss of Control**
+   - Posts federate to other AT Protocol clients (bsky.app, Graysky, etc.)
+   - Other clients have no concept of "alts" or tournament personas
+   - They will always display the user's DID and handle (`username.trainers.gg`)
+   - We cannot control how federated content is rendered in other apps
+
+2. **Anonymity Would Be Broken**
+   - Using `alt_id` for posts would **defeat tournament anonymity**
+   - Posting patterns could link multiple alts to the same person
+   - Example: "@CompPlayer" and "@CasualPlayer" post at same times, similar content → obviously same person
+   - This breaks the core value proposition of the alt system
+
+3. **AT Protocol Design Philosophy**
+   - DIDs are permanent, verifiable identifiers
+   - Designed for persistent identity, not pseudonymous personas
+   - One person = one DID = one social identity
+
+**Therefore:** All social features (posts, follows, likes, profile) MUST be user-level.
+
+> 📄 **See also:** [USER_VS_ALT_ARCHITECTURE.md](../architecture/USER_VS_ALT_ARCHITECTURE.md) for comprehensive guidelines
+
+### Clear Separation of Concerns
+
+| Feature Type                      | Uses      | Reason                                             |
+| --------------------------------- | --------- | -------------------------------------------------- |
+| **Social** (Federates to Bluesky) | `user_id` | Real identity, visible across all AT Protocol apps |
+| **Tournament** (Internal only)    | `alt_id`  | Anonymous personas for competitive play            |
+
+**User-Level Features:**
+
+- Posts, replies, quotes
+- Follows, followers
+- Post likes
+- Social profile (`/:username`)
+- Organizations (owned by real people)
+- Shiny dex (personal collection)
+
+**Alt-Level Features:**
+
+- Tournament registrations
+- Tournament matches
+- Tournament standings
+- Team memberships (different teams per alt)
+- Organization memberships (can join with different alts)
+
+---
+
 ## Overview
 
-The current social system incorrectly uses `alt_id` (tournament personas) as the owner/actor for social features. This needs to migrate to `user_id` for several reasons:
-
-1. **Social features are user-level** - Users post as themselves, not as tournament personas
-2. **Bluesky federation** - AT Protocol requires user-level identity for content federation
-3. **Shiny hunting integration** - The upcoming shiny dex is a user-level profile feature
-4. **Semantic correctness** - Alts are for tournament anonymity only
+The current social system incorrectly uses `alt_id` (tournament personas) as the owner/actor for social features. This needs to migrate to `user_id` for the reasons outlined above.
 
 ---
 
@@ -69,24 +117,42 @@ After migration, the ownership model will be:
 
 ## Migration Strategy
 
-### Option A: Phased Column Migration (Recommended)
+### Simplified Approach for Empty Database
 
-Migrate in phases to avoid breaking changes:
+Since the database currently has **no production data**, we can use a **clean migration** approach instead of the gradual phased migration.
+
+**Original Plan (for databases with data):**
+
+1. Phase 1: Add `user_id` columns alongside `alt_id`
+2. Phase 2: Migrate data from alts to users
+3. Phase 3: Update application code
+4. Phase 4: Drop `alt_id` columns
+
+**Simplified Plan (for empty database):**
+
+1. Drop existing social tables (`posts`, `post_likes`, `follows`)
+2. Recreate with `user_id` from the start
+3. ALTER `organizations` table to use `owner_user_id`
+4. Add `bio` field to `users` table
+5. Update RLS policies in same migration
+6. Update application code
+
+**Benefits:**
+
+- Single migration instead of three
+- No complex data migration queries
+- Cleaner schema (no leftover columns)
+- Faster implementation
+
+### Legacy Approach: Phased Column Migration
+
+If you need to preserve existing data, use this approach instead:
 
 1. **Phase 1:** Add new `user_id` columns alongside existing `alt_id` columns
 2. **Phase 2:** Populate `user_id` from `alts.user_id` relationship
 3. **Phase 3:** Update application code to use new columns
 4. **Phase 4:** Update RLS policies to use `user_id`
 5. **Phase 5:** Drop old `alt_id` columns
-
-### Option B: Single Migration with Views
-
-1. Create the migration with column renames and data migration
-2. Create compatibility views for any legacy code
-3. Update application code
-4. Drop views
-
-**Recommendation:** Option A is safer for production, but Option B is simpler if no users exist yet.
 
 ---
 
@@ -452,17 +518,31 @@ This migration **depends on**:
 
 ## Timeline Estimate
 
-| Phase | Task                     | Effort  |
-| ----- | ------------------------ | ------- |
-| 1     | Create migration files   | 1 day   |
-| 2     | Test on local Supabase   | 1 day   |
-| 3     | Update application code  | 2 days  |
-| 4     | Test full flow           | 1 day   |
-| 5     | Deploy to preview branch | 0.5 day |
-| 6     | QA on preview            | 1 day   |
-| 7     | Deploy to production     | 0.5 day |
+### Empty Database (Current Situation)
 
-**Total:** ~7 days
+| Phase | Task                                     | Duration |
+| ----- | ---------------------------------------- | -------- |
+| 1     | Update planning documentation            | 30 min   |
+| 2     | Create single migration SQL file         | 1 hour   |
+| 3     | Test migration locally                   | 30 min   |
+| 4     | Update queries/posts.ts                  | 1 hour   |
+| 5     | Update queries/organizations.ts          | 30 min   |
+| 6     | Update web components                    | 1 hour   |
+| 7     | Regenerate types & fix TypeScript errors | 30 min   |
+| 8     | Local testing (full flow)                | 1 hour   |
+| 9     | Deploy to preview & QA                   | 1 hour   |
+| 10    | Deploy to production                     | 30 min   |
+
+**Total active work:** ~7 hours  
+**Total elapsed time:** 2-3 days
+
+### Database with Production Data
+
+If the database had existing data, this would require ~7 days due to:
+
+- Careful data migration testing
+- Phased rollout
+- Extended monitoring period
 
 ---
 
