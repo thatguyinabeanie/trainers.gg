@@ -9,7 +9,6 @@ const tabs = [
   { href: "/dashboard/history", label: "History" },
   { href: "/dashboard/analytics", label: "Analytics" },
   { href: "/dashboard/profiles", label: "Profiles" },
-  { href: "/dashboard/organizations", label: "Organizations" },
 ];
 
 export function DashboardNav() {

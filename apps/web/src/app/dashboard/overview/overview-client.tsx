@@ -3,26 +3,18 @@
 import { useCallback } from "react";
 import { useAuth } from "@/components/auth/auth-provider";
 import { useSupabaseQuery } from "@/lib/supabase";
-import { listMyOrganizations, getMyDashboardData } from "@trainers/supabase";
+import { getMyDashboardData } from "@trainers/supabase";
 import {
   QuickActions,
   UpcomingTournaments,
   RecentActivity,
   StatsOverview,
-  OrganizerAccess,
   RecentAchievements,
 } from "@/components/dashboard";
 
 export function OverviewClient() {
   const { user } = useAuth();
-  const userId = user?.id;
   const profileId = user?.profile?.id;
-
-  const myOrganizationsQueryFn = useCallback(
-    (supabase: Parameters<typeof listMyOrganizations>[0]) =>
-      userId ? listMyOrganizations(supabase, userId) : Promise.resolve([]),
-    [userId]
-  );
 
   const dashboardDataQueryFn = useCallback(
     (supabase: Parameters<typeof getMyDashboardData>[0]) =>
@@ -45,9 +37,6 @@ export function OverviewClient() {
     [profileId]
   );
 
-  const { data: myOrganizations } = useSupabaseQuery(myOrganizationsQueryFn, [
-    userId,
-  ]);
   const { data: dashboardData } = useSupabaseQuery(dashboardDataQueryFn, [
     profileId,
   ]);
@@ -107,15 +96,6 @@ export function OverviewClient() {
           <UpcomingTournaments myTournaments={transformedTournaments} />
         </div>
         <div>
-          <OrganizerAccess
-            organizations={
-              myOrganizations?.map((org) => ({
-                id: org.id,
-                name: org.name,
-                role: org.isOwner ? "Owner" : "Staff",
-              })) || []
-            }
-          />
           <RecentActivity activities={transformedActivities} />
           <RecentAchievements
             achievements={dashboardData?.achievements || []}

@@ -430,3 +430,159 @@ export async function getOrganizationInvitations(
   if (error) throw error;
   return invitations ?? [];
 }
+
+/**
+ * List organizations where user is the owner (for TO dashboard access in Phase 1)
+ */
+export async function listMyOwnedOrganizations(
+  supabase: TypedClient,
+  userId?: string
+) {
+  let targetUserId: string | undefined = userId;
+
+  if (!targetUserId) {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return [];
+    targetUserId = user.id;
+  }
+
+  const { data: ownedOrgs, error } = await supabase
+    .from("organizations")
+    .select("*")
+    .eq("owner_user_id", targetUserId)
+    .order("name", { ascending: true });
+
+  if (error) throw error;
+  return ownedOrgs ?? [];
+}
+
+/**
+ * Get organization by slug with tournament statistics for TO dashboard
+ */
+export async function getOrganizationWithTournamentStats(
+  supabase: TypedClient,
+  orgSlug: string
+) {
+  const { data: organization, error } = await supabase
+    .from("organizations")
+    .select("*")
+    .eq("slug", orgSlug)
+    .single();
+
+  if (error) return null;
+  if (!organization) return null;
+
+  // Get tournament counts by status
+  const statuses = [
+    "draft",
+    "upcoming",
+    "active",
+    "completed",
+    "cancelled",
+  ] as const;
+  const tournamentCounts: Record<string, number> = {};
+
+  for (const status of statuses) {
+    const { count } = await supabase
+      .from("tournaments")
+      .select("*", { count: "exact", head: true })
+      .eq("organization_id", organization.id)
+      .eq("status", status)
+      .is("archived_at", null);
+
+    tournamentCounts[status] = count ?? 0;
+  }
+
+  // Get total participant count across all tournaments
+  const { data: tournaments } = await supabase
+    .from("tournaments")
+    .select("id")
+    .eq("organization_id", organization.id)
+    .is("archived_at", null);
+
+  let totalParticipants = 0;
+  if (tournaments && tournaments.length > 0) {
+    const { count } = await supabase
+      .from("tournament_registrations")
+      .select("*", { count: "exact", head: true })
+      .in(
+        "tournament_id",
+        tournaments.map((t) => t.id)
+      );
+    totalParticipants = count ?? 0;
+  }
+
+  // Get staff count
+  const { count: staffCount } = await supabase
+    .from("organization_staff")
+    .select("*", { count: "exact", head: true })
+    .eq("organization_id", organization.id);
+
+  return {
+    ...organization,
+    tournamentCounts,
+    totalTournaments: Object.values(tournamentCounts).reduce(
+      (a, b) => a + b,
+      0
+    ),
+    totalParticipants,
+    staffCount: staffCount ?? 0,
+  };
+}
+
+/**
+ * List tournaments for an organization with optional status filter
+ */
+export async function listOrganizationTournaments(
+  supabase: TypedClient,
+  organizationId: number,
+  options: {
+    status?: "draft" | "upcoming" | "active" | "completed" | "cancelled";
+    limit?: number;
+    offset?: number;
+  } = {}
+) {
+  const { status, limit = 50, offset = 0 } = options;
+
+  let query = supabase
+    .from("tournaments")
+    .select("*", { count: "exact" })
+    .eq("organization_id", organizationId)
+    .is("archived_at", null)
+    .order("created_at", { ascending: false });
+
+  if (status) {
+    query = query.eq("status", status);
+  }
+
+  const {
+    data: tournaments,
+    error,
+    count,
+  } = await query.range(offset, offset + limit - 1);
+
+  if (error) throw error;
+
+  // Get registration counts for each tournament
+  const tournamentsWithCounts = await Promise.all(
+    (tournaments ?? []).map(async (tournament) => {
+      const { count: registrationCount } = await supabase
+        .from("tournament_registrations")
+        .select("*", { count: "exact", head: true })
+        .eq("tournament_id", tournament.id);
+
+      return {
+        ...tournament,
+        registrationCount: registrationCount ?? 0,
+      };
+    })
+  );
+
+  return {
+    tournaments: tournamentsWithCounts,
+    total: count ?? 0,
+    hasMore: (count ?? 0) > offset + limit,
+  };
+}
