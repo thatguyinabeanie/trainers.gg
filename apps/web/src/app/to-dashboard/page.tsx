@@ -18,7 +18,7 @@ export default async function TODashboardPage() {
 
   // If user has no organizations, show empty state
   if (organizations.length === 0) {
-    return <OrgSelectorClient organizations={[]} userId={user.id} />;
+    return <OrgSelectorClient organizations={[]} />;
   }
 
   // If user has exactly 1 organization, redirect directly to it
@@ -27,5 +27,5 @@ export default async function TODashboardPage() {
   }
 
   // Otherwise show the org selector
-  return <OrgSelectorClient organizations={organizations} userId={user.id} />;
+  return <OrgSelectorClient organizations={organizations} />;
 }

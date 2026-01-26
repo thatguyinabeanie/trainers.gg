@@ -18,7 +18,7 @@ export default function MaintenancePage() {
         </CardHeader>
         <CardContent className="flex flex-col gap-6 text-center">
           <p className="text-muted-foreground">
-            trainers.gg is currently in private beta. We're working hard to
+            trainers.gg is currently in private beta. We&apos;re working hard to
             build the best platform for competitive Pokemon players.
           </p>
 

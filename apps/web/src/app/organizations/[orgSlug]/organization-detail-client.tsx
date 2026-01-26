@@ -143,7 +143,7 @@ export function OrganizationDetailClient({
 
         <div className="flex gap-2">
           {isOwner && (
-            <Link href={`/dashboard/organizations/${orgSlug}`}>
+            <Link href={`/to-dashboard/${orgSlug}`}>
               <Button variant="outline">
                 <Settings className="mr-2 h-4 w-4" />
                 Manage Organization
@@ -221,9 +221,7 @@ export function OrganizationDetailClient({
                   This organization hasn&apos;t created any tournaments
                 </p>
                 {isOwner && (
-                  <Link
-                    href={`/dashboard/organizations/${orgSlug}/tournaments/create`}
-                  >
+                  <Link href={`/to-dashboard/${orgSlug}/tournaments/create`}>
                     <Button>
                       <Trophy className="mr-2 h-4 w-4" />
                       Create Tournament

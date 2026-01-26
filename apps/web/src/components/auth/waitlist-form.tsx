@@ -59,12 +59,12 @@ export function WaitlistForm() {
     return (
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl">You're on the list!</CardTitle>
+          <CardTitle className="text-2xl">You&apos;re on the list!</CardTitle>
         </CardHeader>
         <CardContent className="flex flex-col gap-4 text-center">
           <p className="text-muted-foreground">
-            Thanks for your interest in trainers.gg! We'll notify you as soon as
-            we're ready to launch.
+            Thanks for your interest in trainers.gg! We&apos;ll notify you as
+            soon as we&apos;re ready to launch.
           </p>
           <p className="text-muted-foreground text-sm">
             Already have an account?{" "}
@@ -84,8 +84,8 @@ export function WaitlistForm() {
       </CardHeader>
       <CardContent className="flex flex-col gap-6">
         <p className="text-muted-foreground text-center">
-          We're currently in private beta. Sign up to be notified when we launch
-          publicly.
+          We&apos;re currently in private beta. Sign up to be notified when we
+          launch publicly.
         </p>
 
         <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">

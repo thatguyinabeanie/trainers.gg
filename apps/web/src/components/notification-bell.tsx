@@ -7,8 +7,9 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { useSupabase, useSupabaseQuery } from "@/lib/supabase";
+import { useSupabaseQuery } from "@/lib/supabase";
 import { getMyOrganizationInvitations } from "@trainers/supabase";
+import type { TypedSupabaseClient } from "@trainers/supabase";
 import { NotificationPopup } from "@/components/notifications/notification-popup";
 
 interface NotificationBellProps {
@@ -16,16 +17,15 @@ interface NotificationBellProps {
 }
 
 export function NotificationBell({ userId }: NotificationBellProps) {
-  const supabase = useSupabase();
   const [open, setOpen] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
 
   const invitationsQueryFn = useCallback(
-    (client: typeof supabase) => {
+    (client: TypedSupabaseClient) => {
       if (!userId) return Promise.resolve([]);
       return getMyOrganizationInvitations(client, userId);
     },
-    [userId, supabase]
+    [userId]
   );
 
   const { data: invitations, refetch } = useSupabaseQuery(invitationsQueryFn, [

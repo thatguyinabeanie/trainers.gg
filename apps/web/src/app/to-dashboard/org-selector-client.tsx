@@ -10,14 +10,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import {
-  Building2,
-  Trophy,
-  Plus,
-  Crown,
-  Users,
-  ArrowRight,
-} from "lucide-react";
+import { Building2, Plus, Crown, Users, ArrowRight } from "lucide-react";
 
 interface Organization {
   id: number;
@@ -31,13 +24,9 @@ interface Organization {
 
 interface OrgSelectorClientProps {
   organizations: Organization[];
-  userId: string;
 }
 
-export function OrgSelectorClient({
-  organizations,
-  userId,
-}: OrgSelectorClientProps) {
+export function OrgSelectorClient({ organizations }: OrgSelectorClientProps) {
   // Empty state - user has no organizations
   if (organizations.length === 0) {
     return (

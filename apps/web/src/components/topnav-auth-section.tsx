@@ -24,8 +24,9 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { ReactNode } from "react";
 import { NotificationBell } from "@/components/notification-bell";
-import { useSupabase, useSupabaseQuery } from "@/lib/supabase";
+import { useSupabaseQuery } from "@/lib/supabase";
 import { listMyOrganizations } from "@trainers/supabase";
+import type { TypedSupabaseClient } from "@trainers/supabase";
 
 interface TopNavAuthSectionProps {
   themeSwitcher?: ReactNode;
@@ -34,14 +35,13 @@ interface TopNavAuthSectionProps {
 export function TopNavAuthSection({ themeSwitcher }: TopNavAuthSectionProps) {
   const router = useRouter();
   const { user, signOut, loading } = useAuth();
-  const supabase = useSupabase();
 
   const userId = user?.id;
 
   const myOrganizationsQueryFn = useCallback(
-    (client: typeof supabase) =>
+    (client: TypedSupabaseClient) =>
       userId ? listMyOrganizations(client, userId) : Promise.resolve([]),
-    [userId, supabase]
+    [userId]
   );
 
   const { data: myOrganizations } = useSupabaseQuery(myOrganizationsQueryFn, [
