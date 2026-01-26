@@ -61,11 +61,11 @@ COMMENT ON COLUMN public.organizations.created_at IS 'Organization creation time
 COMMENT ON COLUMN public.organizations.updated_at IS 'Last update timestamp';
 
 -- =============================================================================
--- organization_staff table
+-- organization_members table (renamed to organization_staff in later migration)
 -- =============================================================================
-COMMENT ON COLUMN public.organization_staff.id IS 'Primary key';
-COMMENT ON COLUMN public.organization_staff.organization_id IS 'Organization this staff member belongs to';
-COMMENT ON COLUMN public.organization_staff.created_at IS 'When staff membership was created';
+COMMENT ON COLUMN public.organization_members.id IS 'Primary key';
+COMMENT ON COLUMN public.organization_members.organization_id IS 'Organization this member belongs to';
+COMMENT ON COLUMN public.organization_members.created_at IS 'When membership was created';
 
 -- =============================================================================
 -- organization_invitations table
@@ -109,10 +109,10 @@ COMMENT ON COLUMN public.group_roles.role_id IS 'Role being assigned to the grou
 COMMENT ON COLUMN public.group_roles.created_at IS 'Assignment creation timestamp';
 
 -- =============================================================================
--- user_group_roles table
+-- alt_group_roles table (renamed to user_group_roles in later migration)
 -- =============================================================================
-COMMENT ON COLUMN public.user_group_roles.id IS 'Primary key';
-COMMENT ON COLUMN public.user_group_roles.created_at IS 'Assignment creation timestamp';
+COMMENT ON COLUMN public.alt_group_roles.id IS 'Primary key';
+COMMENT ON COLUMN public.alt_group_roles.created_at IS 'Assignment creation timestamp';
 
 -- =============================================================================
 -- roles table
