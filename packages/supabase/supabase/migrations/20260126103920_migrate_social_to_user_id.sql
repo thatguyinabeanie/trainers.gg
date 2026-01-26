@@ -322,9 +322,17 @@ DROP INDEX IF EXISTS "public"."idx_organizations_owner";
 -- Rename the column
 ALTER TABLE "public"."organizations" RENAME COLUMN "owner_alt_id" TO "owner_user_id";
 
+-- Drop NOT NULL constraint before type change
+ALTER TABLE "public"."organizations" 
+    ALTER COLUMN "owner_user_id" DROP NOT NULL;
+
 -- Change column type from bigint to uuid
 ALTER TABLE "public"."organizations" 
     ALTER COLUMN "owner_user_id" TYPE uuid USING NULL;
+
+-- Re-add NOT NULL constraint
+ALTER TABLE "public"."organizations" 
+    ALTER COLUMN "owner_user_id" SET NOT NULL;
 
 -- Add new foreign key constraint to users table
 ALTER TABLE "public"."organizations" 

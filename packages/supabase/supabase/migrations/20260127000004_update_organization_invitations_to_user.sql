@@ -85,6 +85,10 @@ DROP CONSTRAINT IF EXISTS organization_invitations_invited_by_alt_id_fkey;
 ALTER TABLE organization_invitations
 RENAME COLUMN invited_by_alt_id TO invited_by_user_id;
 
+-- Drop NOT NULL constraint before type change
+ALTER TABLE organization_invitations
+ALTER COLUMN invited_by_user_id DROP NOT NULL;
+
 -- Change type from bigint to uuid
 ALTER TABLE organization_invitations
 ALTER COLUMN invited_by_user_id TYPE uuid USING NULL; -- Set all to NULL first (we have no production data)

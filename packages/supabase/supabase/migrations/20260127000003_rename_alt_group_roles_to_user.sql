@@ -54,6 +54,10 @@ DROP CONSTRAINT IF EXISTS alt_group_roles_alt_id_fkey;
 ALTER TABLE user_group_roles
 RENAME COLUMN alt_id TO user_id;
 
+-- Drop NOT NULL constraint before type change
+ALTER TABLE user_group_roles
+ALTER COLUMN user_id DROP NOT NULL;
+
 ALTER TABLE user_group_roles
 ALTER COLUMN user_id TYPE uuid USING NULL; -- Set all to NULL first (we have no production data)
 

@@ -99,8 +99,16 @@ ALTER TABLE public.organization_staff
 -- =============================================================================
 -- Using NULL since there's no production data to migrate
 
+-- Drop NOT NULL constraint before type change
+ALTER TABLE public.organization_staff 
+  ALTER COLUMN user_id DROP NOT NULL;
+
 ALTER TABLE public.organization_staff 
   ALTER COLUMN user_id TYPE uuid USING NULL;
+
+-- Re-add NOT NULL constraint after type change
+ALTER TABLE public.organization_staff 
+  ALTER COLUMN user_id SET NOT NULL;
 
 -- =============================================================================
 -- Update Constraints - Add New
