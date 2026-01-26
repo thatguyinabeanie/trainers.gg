@@ -162,7 +162,17 @@ pnpm db:dump              # Dump database schema and data
 
 # 🔧 Development Tools
 pnpm generate-types       # Generate TypeScript types from schema
+
+# 🔗 Supabase CLI (any command)
+pnpm supabase <command>   # Run any Supabase CLI command from repo root
+                          # Automatically runs in packages/supabase directory
+                          # Examples:
+                          #   pnpm supabase link --project-ref <id>
+                          #   pnpm supabase migration list --linked
+                          #   pnpm supabase branches list
 ```
+
+**IMPORTANT:** Always use `pnpm supabase` from the repo root instead of `cd packages/supabase && supabase`. This prevents the CLI from creating unwanted directories in the repo root.
 
 ### Database Schema Changes
 
