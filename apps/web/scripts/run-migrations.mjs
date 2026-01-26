@@ -18,15 +18,17 @@
  */
 
 import { execSync } from "node:child_process";
-import { existsSync, readdirSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
+import postgres from "postgres";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 // Configuration
 const SUPABASE_DIR = resolve(__dirname, "../../../packages/supabase");
 const MIGRATIONS_DIR = resolve(SUPABASE_DIR, "supabase/migrations");
+const SEED_FILE = resolve(SUPABASE_DIR, "supabase/seed.sql");
 
 /**
  * Execute a command and stream output
@@ -142,6 +144,72 @@ function countMigrations() {
 }
 
 /**
+ * Get database connection URL
+ * Prefers SUPABASE_POSTGRES_URL (provided by Vercel integration)
+ * Falls back to building URL from project ref and password
+ */
+function getDatabaseUrl(projectRef) {
+  // Prefer the direct URL if available
+  if (process.env.SUPABASE_POSTGRES_URL) {
+    return process.env.SUPABASE_POSTGRES_URL;
+  }
+
+  // Fall back to building from components
+  const password = process.env.SUPABASE_POSTGRES_PASSWORD;
+  if (!password) {
+    return null;
+  }
+
+  // Use transaction pooler (port 6543) for serverless compatibility
+  return `postgresql://postgres.${projectRef}:${password}@aws-0-us-east-1.pooler.supabase.com:6543/postgres`;
+}
+
+/**
+ * Run seed.sql against the database using postgres client
+ */
+async function runSeedSql(projectRef) {
+  if (!existsSync(SEED_FILE)) {
+    console.log(`   Seed file not found: ${SEED_FILE}`);
+    return false;
+  }
+
+  const connectionUrl = getDatabaseUrl(projectRef);
+  if (!connectionUrl) {
+    console.log(`   ❌ No database connection URL available`);
+    return false;
+  }
+
+  const seedSql = readFileSync(SEED_FILE, "utf-8");
+
+  console.log(`   Connecting to database...`);
+
+  const sql = postgres(connectionUrl, {
+    // Increase timeout for seed operations
+    connect_timeout: 30,
+    idle_timeout: 30,
+    max_lifetime: 60,
+  });
+
+  try {
+    // Execute the seed SQL
+    await sql.unsafe(seedSql);
+    console.log(`   ✅ Seed data applied successfully!`);
+    return true;
+  } catch (error) {
+    // Check if it's a duplicate key error (seed already ran)
+    if (error.code === "23505") {
+      console.log(`   ⚠️  Seed data already exists (duplicate key), skipping.`);
+      return true;
+    }
+    console.error(`   ❌ Seed failed: ${error.message}`);
+    // Don't fail the build for seed errors
+    return false;
+  } finally {
+    await sql.end();
+  }
+}
+
+/**
  * Main migration runner
  */
 async function runMigrations() {
@@ -199,16 +267,10 @@ async function runMigrations() {
   console.log("\n📤 Applying migrations...");
   exec("npx supabase db push --linked --include-all", { env: cliEnv });
 
-  // Note: Seeding remote databases via CLI is not currently supported.
-  // The `supabase seed` command only works with local databases.
-  // Preview branches inherit production schema but start with empty data.
-  // For preview seeding, consider using a migration with seed data or
-  // running seed.sql via direct database connection in the future.
+  // Run seed data for preview environments
   if (env.shouldSeed) {
-    console.log(
-      "\n🌱 Seed data: Skipped (CLI seeding not supported for remote databases)"
-    );
-    console.log("   Preview branches start with empty data.");
+    console.log("\n🌱 Running seed data...");
+    await runSeedSql(projectRef);
   }
 
   console.log("\n" + "=".repeat(50));
