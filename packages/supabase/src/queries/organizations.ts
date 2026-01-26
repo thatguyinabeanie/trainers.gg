@@ -474,43 +474,41 @@ export async function getOrganizationWithTournamentStats(
   if (error) return null;
   if (!organization) return null;
 
-  // Get tournament counts by status
-  const statuses = [
-    "draft",
-    "upcoming",
-    "active",
-    "completed",
-    "cancelled",
-  ] as const;
-  const tournamentCounts: Record<string, number> = {};
-
-  for (const status of statuses) {
-    const { count } = await supabase
-      .from("tournaments")
-      .select("*", { count: "exact", head: true })
-      .eq("organization_id", organization.id)
-      .eq("status", status)
-      .is("archived_at", null);
-
-    tournamentCounts[status] = count ?? 0;
-  }
-
-  // Get total participant count across all tournaments
+  // Get all non-archived tournaments in a single query
   const { data: tournaments } = await supabase
     .from("tournaments")
-    .select("id")
+    .select("id, status")
     .eq("organization_id", organization.id)
     .is("archived_at", null);
 
+  // Count by status in memory (avoids N+1 queries)
+  const tournamentCounts: Record<string, number> = {
+    draft: 0,
+    upcoming: 0,
+    active: 0,
+    completed: 0,
+    cancelled: 0,
+  };
+
+  const tournamentIds: number[] = [];
+  for (const t of tournaments ?? []) {
+    const status = t.status;
+    if (
+      status &&
+      Object.prototype.hasOwnProperty.call(tournamentCounts, status)
+    ) {
+      tournamentCounts[status] = (tournamentCounts[status] ?? 0) + 1;
+    }
+    tournamentIds.push(t.id);
+  }
+
+  // Get total participant count across all tournaments in a single query
   let totalParticipants = 0;
-  if (tournaments && tournaments.length > 0) {
+  if (tournamentIds.length > 0) {
     const { count } = await supabase
       .from("tournament_registrations")
       .select("*", { count: "exact", head: true })
-      .in(
-        "tournament_id",
-        tournaments.map((t) => t.id)
-      );
+      .in("tournament_id", tournamentIds);
     totalParticipants = count ?? 0;
   }
 

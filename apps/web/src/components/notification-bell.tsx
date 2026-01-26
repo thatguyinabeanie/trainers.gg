@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useState } from "react";
-import { Bell } from "lucide-react";
+import { Bell, Loader2, AlertCircle } from "lucide-react";
 import {
   Popover,
   PopoverContent,
@@ -28,13 +28,16 @@ export function NotificationBell({ userId }: NotificationBellProps) {
     [userId]
   );
 
-  const { data: invitations, refetch } = useSupabaseQuery(invitationsQueryFn, [
-    userId,
-    refreshKey,
-  ]);
+  const {
+    data: invitations,
+    refetch,
+    isLoading,
+    error,
+  } = useSupabaseQuery(invitationsQueryFn, [userId, refreshKey]);
 
   const count = invitations?.length ?? 0;
   const hasNotifications = count > 0;
+  const hasError = !!error;
 
   const handleInvitationHandled = () => {
     setRefreshKey((k) => k + 1);
@@ -64,10 +67,29 @@ export function NotificationBell({ userId }: NotificationBellProps) {
         <div className="border-b px-4 py-3">
           <h4 className="text-sm font-semibold">Notifications</h4>
         </div>
-        <NotificationPopup
-          invitations={invitations ?? []}
-          onInvitationHandled={handleInvitationHandled}
-        />
+        {isLoading ? (
+          <div className="flex items-center justify-center py-8">
+            <Loader2 className="text-muted-foreground h-6 w-6 animate-spin" />
+          </div>
+        ) : hasError ? (
+          <div className="flex flex-col items-center justify-center gap-2 py-8">
+            <AlertCircle className="h-6 w-6 text-red-500" />
+            <p className="text-muted-foreground text-sm">
+              Failed to load notifications
+            </p>
+            <button
+              onClick={() => refetch()}
+              className="text-primary text-sm hover:underline"
+            >
+              Retry
+            </button>
+          </div>
+        ) : (
+          <NotificationPopup
+            invitations={invitations ?? []}
+            onInvitationHandled={handleInvitationHandled}
+          />
+        )}
       </PopoverContent>
     </Popover>
   );

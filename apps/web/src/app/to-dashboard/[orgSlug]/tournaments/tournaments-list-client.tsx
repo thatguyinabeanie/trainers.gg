@@ -102,13 +102,14 @@ export function TournamentsListClient({
     [organizationId, currentStatus]
   );
 
-  const { data, isLoading } = useSupabaseQuery(queryFn, [
+  const { data, isLoading, error } = useSupabaseQuery(queryFn, [
     organizationId,
     currentStatus,
   ]);
 
   const tournaments = data?.tournaments ?? [];
   const basePath = `/to-dashboard/${orgSlug}`;
+  const hasError = !!error;
 
   const handleStatusChange = (status: string) => {
     const params = new URLSearchParams(searchParams.toString());
@@ -175,6 +176,19 @@ export function TournamentsListClient({
         <div className="flex min-h-[40vh] items-center justify-center">
           <Loader2 className="text-muted-foreground h-8 w-8 animate-spin" />
         </div>
+      ) : hasError ? (
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center py-12">
+            <XCircle className="mb-4 h-12 w-12 text-red-500" />
+            <h3 className="mb-2 text-lg font-semibold">
+              Failed to load tournaments
+            </h3>
+            <p className="text-muted-foreground mb-4 text-center">
+              There was a problem fetching your tournaments. Please try again.
+            </p>
+            <Button onClick={() => window.location.reload()}>Retry</Button>
+          </CardContent>
+        </Card>
       ) : tournaments.length === 0 ? (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">

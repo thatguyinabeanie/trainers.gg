@@ -37,16 +37,19 @@ export default async function OrgDashboardLayout({
   }
 
   // Check if user has access (owner or staff)
-  const isMember = await isOrganizationMember(
+  // isOrganizationMember returns true for owners and staff
+  const hasAccess = await isOrganizationMember(
     supabase,
     organization.id,
     user.id
   );
-  const isOwner = organization.owner_user_id === user.id;
 
-  if (!isMember && !isOwner) {
+  if (!hasAccess) {
     redirect(`/organizations/${orgSlug}`);
   }
+
+  // isOwner is needed for UI (to show owner-only features in nav)
+  const isOwner = organization.owner_user_id === user.id;
 
   return (
     <div className="space-y-6">
