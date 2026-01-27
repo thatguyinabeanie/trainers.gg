@@ -171,17 +171,44 @@ export async function completeProfile(data: {
 
       // Call the provision-pds edge function
       const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-      const provisionResponse = await fetch(
-        `${supabaseUrl}/functions/v1/provision-pds`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${session.access_token}`,
-          },
-          body: JSON.stringify({ username: data.username.toLowerCase() }),
+      if (!supabaseUrl) {
+        console.error("NEXT_PUBLIC_SUPABASE_URL is not configured");
+        return { success: false, error: "Server configuration error" };
+      }
+
+      // Use AbortController for timeout (30s - enough for PDS operations)
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30_000);
+
+      let provisionResponse: Response;
+      try {
+        provisionResponse = await fetch(
+          `${supabaseUrl}/functions/v1/provision-pds`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${session.access_token}`,
+            },
+            body: JSON.stringify({ username: data.username.toLowerCase() }),
+            signal: controller.signal,
+          }
+        );
+      } catch (fetchError) {
+        if (fetchError instanceof Error && fetchError.name === "AbortError") {
+          return {
+            success: false,
+            error: "Request timed out. Please try again.",
+          };
         }
-      );
+        console.error("Failed to call provision-pds:", fetchError);
+        return {
+          success: false,
+          error: "Failed to connect to server. Please try again.",
+        };
+      } finally {
+        clearTimeout(timeoutId);
+      }
 
       const provisionResult = await provisionResponse.json();
 
