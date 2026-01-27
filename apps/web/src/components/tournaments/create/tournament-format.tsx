@@ -2,6 +2,7 @@
 
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Field, FieldLabel, FieldDescription } from "@/components/ui/field";
 import {
   Select,
   SelectContent,
@@ -207,15 +208,15 @@ export function TournamentFormat({
   return (
     <div className="space-y-6">
       {/* Game Format */}
-      <div className="space-y-2">
-        <Label htmlFor="format">Game Format</Label>
+      <Field>
+        <FieldLabel htmlFor="format">Game Format</FieldLabel>
         <Select
           value={formData.format}
           onValueChange={(value) =>
             updateFormData({ format: value || undefined })
           }
         >
-          <SelectTrigger className="w-full max-w-xs">
+          <SelectTrigger id="format" className="w-full max-w-xs">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -226,7 +227,7 @@ export function TournamentFormat({
             ))}
           </SelectContent>
         </Select>
-      </div>
+      </Field>
 
       <Separator />
 
@@ -432,8 +433,8 @@ export function TournamentFormat({
       <Separator />
 
       {/* Global Tournament Settings */}
-      <div className="space-y-2">
-        <Label htmlFor="maxParticipants">Max Participants</Label>
+      <Field>
+        <FieldLabel htmlFor="maxParticipants">Max Participants</FieldLabel>
         <Input
           id="maxParticipants"
           type="number"
@@ -448,10 +449,10 @@ export function TournamentFormat({
           max="512"
           className="w-full max-w-xs"
         />
-        <p className="text-muted-foreground text-sm">
+        <FieldDescription>
           Leave empty for unlimited registrations
-        </p>
-      </div>
+        </FieldDescription>
+      </Field>
 
       <Separator />
 
@@ -459,36 +460,38 @@ export function TournamentFormat({
       <div className="space-y-4">
         <h3 className="text-lg font-medium">Team Requirements</h3>
 
-        <div className="flex items-center justify-between">
-          <div className="space-y-0.5">
-            <Label>Enable Rental Team Photos</Label>
-            <p className="text-muted-foreground text-sm">
-              Allow players to submit photos of their rental teams
-            </p>
-          </div>
+        <Field orientation="horizontal">
           <Switch
+            id="rentalTeamPhotosEnabled"
             checked={formData.rentalTeamPhotosEnabled}
             onCheckedChange={(checked: boolean) =>
               updateFormData({ rentalTeamPhotosEnabled: checked })
             }
           />
-        </div>
+          <FieldLabel htmlFor="rentalTeamPhotosEnabled">
+            Enable Rental Team Photos
+            <FieldDescription>
+              Allow players to submit photos of their rental teams
+            </FieldDescription>
+          </FieldLabel>
+        </Field>
 
         {formData.rentalTeamPhotosEnabled && (
-          <div className="flex items-center justify-between">
-            <div className="space-y-0.5">
-              <Label>Require Rental Team Photos</Label>
-              <p className="text-muted-foreground text-sm">
-                Make rental team photos mandatory for registration
-              </p>
-            </div>
+          <Field orientation="horizontal">
             <Switch
+              id="rentalTeamPhotosRequired"
               checked={formData.rentalTeamPhotosRequired}
               onCheckedChange={(checked: boolean) =>
                 updateFormData({ rentalTeamPhotosRequired: checked })
               }
             />
-          </div>
+            <FieldLabel htmlFor="rentalTeamPhotosRequired">
+              Require Rental Team Photos
+              <FieldDescription>
+                Make rental team photos mandatory for registration
+              </FieldDescription>
+            </FieldLabel>
+          </Field>
         )}
       </div>
     </div>
