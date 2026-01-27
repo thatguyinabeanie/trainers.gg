@@ -14,7 +14,12 @@ import type { Database as BaseDatabase, Json } from "./types";
  * PDS Account Status enum
  * Represents the status of a user's PDS account
  */
-export type PdsAccountStatus = "pending" | "active" | "failed" | "suspended";
+export type PdsAccountStatus =
+  | "pending"
+  | "active"
+  | "failed"
+  | "suspended"
+  | "external";
 
 /**
  * Extended Users Table with AT Protocol fields

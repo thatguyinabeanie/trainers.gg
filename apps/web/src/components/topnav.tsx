@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { MobileNav } from "@/components/mobile-nav";
-import { ThemeSwitcher } from "@/components/theme-switcher";
 import { TopNavAuthSection } from "@/components/topnav-auth-section";
 
 export function TopNav() {
@@ -51,7 +50,7 @@ export function TopNav() {
 
         {/* Right: Auth & Theme */}
         <div className="flex items-center">
-          <TopNavAuthSection themeSwitcher={<ThemeSwitcher />} />
+          <TopNavAuthSection />
         </div>
       </div>
     </header>

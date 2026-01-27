@@ -7,3 +7,10 @@ admin-password.txt
 
 # Fly.io local state
 .fly/
+
+# Local development (ngrok + PDS)
+.ngrok.pid
+.ngrok.log
+.ngrok-hostname
+.ngrok-url
+.pds-local.env

@@ -2,6 +2,9 @@
 .branches
 .temp
 
+# JWT signing keys (generated for local dev)
+signing_key.json
+
 # dotenvx
 .env.keys
 .env.local

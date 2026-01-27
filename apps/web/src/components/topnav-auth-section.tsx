@@ -3,6 +3,7 @@
 import { useCallback } from "react";
 import { useAuth, getUserDisplayName } from "@/components/auth/auth-provider";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { ThemeSwitcher } from "@/components/theme-switcher";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -28,11 +29,7 @@ import { useSupabaseQuery } from "@/lib/supabase";
 import { listMyOrganizations } from "@trainers/supabase";
 import type { TypedSupabaseClient } from "@trainers/supabase";
 
-interface TopNavAuthSectionProps {
-  themeSwitcher?: ReactNode;
-}
-
-export function TopNavAuthSection({ themeSwitcher }: TopNavAuthSectionProps) {
+export function TopNavAuthSection() {
   const router = useRouter();
   const { user, signOut, loading } = useAuth();
 
@@ -66,7 +63,7 @@ export function TopNavAuthSection({ themeSwitcher }: TopNavAuthSectionProps) {
   if (!user) {
     return (
       <div className="flex items-center gap-2">
-        {themeSwitcher}
+        <ThemeSwitcher />
         <Link href="/sign-in">
           <button className="hover:bg-accent rounded-md px-3 py-1.5 text-sm font-medium">
             Sign In
@@ -96,7 +93,8 @@ export function TopNavAuthSection({ themeSwitcher }: TopNavAuthSectionProps) {
       <NotificationBell userId={user.id} />
 
       {/* Theme Switcher */}
-      {themeSwitcher}
+
+      <ThemeSwitcher />
 
       {/* User Dropdown */}
       <DropdownMenu>
@@ -114,11 +112,6 @@ export function TopNavAuthSection({ themeSwitcher }: TopNavAuthSectionProps) {
         <DropdownMenuContent className="w-56" align="end">
           <div className="px-1.5 py-1.5">
             <p className="text-sm leading-none font-medium">{displayName}</p>
-            {user.email && !user.email.includes("@bluesky.trainers.gg") && (
-              <p className="text-muted-foreground mt-1 text-xs leading-none">
-                {user.email}
-              </p>
-            )}
           </div>
           <DropdownMenuSeparator />
           <DropdownMenuItem onClick={() => router.push("/dashboard")}>

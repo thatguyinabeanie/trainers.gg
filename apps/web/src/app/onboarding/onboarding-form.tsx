@@ -18,7 +18,11 @@ import {
 } from "@/components/ui/select";
 import { useAuth } from "@/hooks/use-auth";
 import { COUNTRIES } from "@/lib/countries";
-import { completeProfile, checkUsernameAvailability } from "./actions";
+import {
+  completeProfile,
+  checkUsernameAvailability,
+  getCurrentUserData,
+} from "./actions";
 
 const onboardingSchema = z.object({
   username: z
@@ -46,12 +50,18 @@ const onboardingSchema = z.object({
 
 type OnboardingFormData = z.infer<typeof onboardingSchema>;
 
+type PdsStatus = "pending" | "active" | "failed" | "suspended" | "external";
+
 export function OnboardingForm() {
   const router = useRouter();
   const { user } = useAuth();
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isProvisioning, setIsProvisioning] = useState(false);
   const [detectedCountry, setDetectedCountry] = useState<string | null>(null);
+  const [pdsStatus, setPdsStatus] = useState<PdsStatus | null>(null);
+  const [blueskyHandle, setBlueskyHandle] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   const {
     register,
@@ -64,6 +74,37 @@ export function OnboardingForm() {
   });
 
   const selectedCountry = watch("country");
+
+  // Fetch user data including pds_status on mount
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        const userData = await getCurrentUserData();
+        if (userData) {
+          setPdsStatus(userData.pdsStatus);
+          setBlueskyHandle(
+            userData.blueskyHandle || userData.pdsHandle || null
+          );
+
+          // Pre-fill form fields from user data
+          if (userData.username) {
+            setValue("username", userData.username);
+          }
+          if (userData.birthDate) {
+            setValue("birthDate", userData.birthDate);
+          }
+          if (userData.country) {
+            setValue("country", userData.country);
+          }
+        }
+      } catch (err) {
+        console.error("Failed to fetch user data:", err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchUserData();
+  }, [setValue]);
 
   // Auto-detect country on mount
   useEffect(() => {
@@ -86,9 +127,9 @@ export function OnboardingForm() {
     detectCountry();
   }, [setValue, selectedCountry]);
 
-  // Pre-fill username from OAuth metadata if available
+  // Pre-fill username from OAuth metadata if available (only for non-external users)
   useEffect(() => {
-    if (user?.user_metadata) {
+    if (user?.user_metadata && pdsStatus !== "external") {
       const suggestedUsername =
         user.user_metadata.preferred_username ||
         user.user_metadata.user_name ||
@@ -100,28 +141,49 @@ export function OnboardingForm() {
         );
       }
     }
-  }, [user, setValue]);
+  }, [user, setValue, pdsStatus]);
+
+  // For Bluesky OAuth users, pre-fill with their handle
+  useEffect(() => {
+    if (pdsStatus === "external" && blueskyHandle) {
+      // Extract username from handle (e.g., "pikachu" from "pikachu.bsky.social")
+      const username = blueskyHandle.split(".")[0]?.toLowerCase() || "";
+      if (username) {
+        setValue("username", username.replace(/[^a-z0-9_-]/g, ""));
+      }
+    }
+  }, [pdsStatus, blueskyHandle, setValue]);
+
+  const isBlueskyUser = pdsStatus === "external";
+  const isSocialOAuthUser = pdsStatus === "pending" || pdsStatus === null;
 
   const onSubmit = async (data: OnboardingFormData) => {
     setError(null);
     setIsSubmitting(true);
 
+    // Show provisioning state for Social OAuth users
+    if (isSocialOAuthUser) {
+      setIsProvisioning(true);
+    }
+
     try {
-      // Check username availability
-      const { available, error: usernameError } =
-        await checkUsernameAvailability(data.username);
+      // Only check username availability if the user can change it
+      if (!isBlueskyUser) {
+        const { available, error: usernameError } =
+          await checkUsernameAvailability(data.username);
 
-      if (usernameError) {
-        setError(usernameError);
-        return;
+        if (usernameError) {
+          setError(usernameError);
+          return;
+        }
+
+        if (!available) {
+          setError("Username is already taken");
+          return;
+        }
       }
 
-      if (!available) {
-        setError("Username is already taken");
-        return;
-      }
-
-      // Complete profile
+      // Complete profile (this will also provision PDS for Social OAuth users)
       const result = await completeProfile({
         username: data.username.toLowerCase(),
         birthDate: data.birthDate,
@@ -142,15 +204,28 @@ export function OnboardingForm() {
       );
     } finally {
       setIsSubmitting(false);
+      setIsProvisioning(false);
     }
   };
+
+  if (isLoading) {
+    return (
+      <Card className="w-full max-w-md">
+        <CardContent className="flex items-center justify-center p-8">
+          <div className="text-muted-foreground">Loading...</div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card className="w-full max-w-md">
       <CardHeader className="text-center">
         <CardTitle className="text-2xl">Complete Your Profile</CardTitle>
         <p className="text-muted-foreground text-sm">
-          Just a few more details to get you started
+          {isBlueskyUser
+            ? "Just a few more details to get you started"
+            : "Choose your username and complete your profile"}
         </p>
       </CardHeader>
       <CardContent>
@@ -158,6 +233,12 @@ export function OnboardingForm() {
           {error && (
             <div className="bg-destructive/10 text-destructive rounded-lg p-3 text-sm">
               {error}
+            </div>
+          )}
+
+          {isProvisioning && (
+            <div className="bg-primary/10 text-primary rounded-lg p-3 text-sm">
+              Creating your Bluesky account...
             </div>
           )}
 
@@ -169,6 +250,8 @@ export function OnboardingForm() {
               placeholder="cooltrainer123"
               autoComplete="username"
               aria-invalid={errors.username ? "true" : undefined}
+              disabled={isBlueskyUser}
+              className={isBlueskyUser ? "bg-muted cursor-not-allowed" : ""}
               {...register("username")}
             />
             {errors.username && (
@@ -176,9 +259,18 @@ export function OnboardingForm() {
                 {errors.username.message}
               </p>
             )}
-            <p className="text-muted-foreground text-xs">
-              3-20 characters. Letters, numbers, underscores, and hyphens only.
-            </p>
+            {isBlueskyUser ? (
+              <p className="text-muted-foreground text-xs">
+                Your Bluesky handle ({blueskyHandle}) will be used as your
+                username
+              </p>
+            ) : (
+              <p className="text-muted-foreground text-xs">
+                3-20 characters. Letters, numbers, underscores, and hyphens
+                only. This will also be your @username.trainers.gg Bluesky
+                handle.
+              </p>
+            )}
           </div>
 
           <div className="flex flex-col gap-2">
@@ -229,8 +321,16 @@ export function OnboardingForm() {
             )}
           </div>
 
-          <Button type="submit" className="w-full" disabled={isSubmitting}>
-            {isSubmitting ? "Completing profile..." : "Continue"}
+          <Button
+            type="submit"
+            className="w-full"
+            disabled={isSubmitting || isProvisioning}
+          >
+            {isProvisioning
+              ? "Creating Bluesky account..."
+              : isSubmitting
+                ? "Completing profile..."
+                : "Continue"}
           </Button>
         </form>
       </CardContent>
