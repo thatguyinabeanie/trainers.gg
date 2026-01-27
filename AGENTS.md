@@ -2,6 +2,8 @@
 
 A Pokemon community platform for competitive players. Monorepo with Next.js 16 web app, Expo 54 mobile app, Supabase backend, and **Bluesky PDS integration** for decentralized social features.
 
+> 📖 **[Project Vision & Roadmap](./docs/planning/PROJECT_BRIEF.md)** — The north star document outlining features, target audience, and phased rollout plan. Always keep this vision in mind when making decisions.
+
 ## Monorepo Structure
 
 ```

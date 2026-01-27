@@ -28,6 +28,8 @@
     "db:seed": "pnpm --filter=@trainers/supabase run db:seed",
     "db:dump": "pnpm --filter=@trainers/supabase run db:dump",
     "generate-types": "pnpm --filter=@trainers/supabase run generate-types",
+    "generate-seed-json": "pnpm --filter=@trainers/supabase run generate-seed-json",
+    "generate-seeds": "pnpm --filter=@trainers/supabase run generate-seeds",
     "supabase": "pnpm --filter=@trainers/supabase run supabase",
     "prepare": "husky"
   },

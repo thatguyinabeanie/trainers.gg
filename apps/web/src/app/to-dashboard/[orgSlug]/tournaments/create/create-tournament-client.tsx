@@ -97,9 +97,22 @@ export function CreateTournamentClient({
         organizationId: number;
         name: string;
         slug: string;
+        description?: string;
         format?: string;
         startDate?: string;
         endDate?: string;
+        registrationDeadline?: string;
+        maxParticipants?: number;
+        topCutSize?: number;
+        swissRounds?: number;
+        tournamentFormat?:
+          | "swiss_only"
+          | "swiss_with_cut"
+          | "single_elimination"
+          | "double_elimination";
+        roundTimeMinutes?: number;
+        rentalTeamPhotosEnabled?: boolean;
+        rentalTeamPhotosRequired?: boolean;
       }
     ) => createTournament(supabase, args)
   );
@@ -173,12 +186,23 @@ export function CreateTournamentClient({
         organizationId: formData.organizationId,
         name: formData.name,
         slug: formData.slug,
+        description: formData.description,
         format: formData.format,
+        tournamentFormat: formData.tournamentFormat,
+        maxParticipants: formData.maxParticipants,
+        swissRounds: formData.swissRounds,
+        topCutSize: formData.topCutSize,
+        roundTimeMinutes: formData.roundTimeMinutes,
+        rentalTeamPhotosEnabled: formData.rentalTeamPhotosEnabled,
+        rentalTeamPhotosRequired: formData.rentalTeamPhotosRequired,
         startDate: formData.startDate
           ? new Date(formData.startDate).toISOString()
           : undefined,
         endDate: formData.endDate
           ? new Date(formData.endDate).toISOString()
+          : undefined,
+        registrationDeadline: formData.registrationDeadline
+          ? new Date(formData.registrationDeadline).toISOString()
           : undefined,
       });
 

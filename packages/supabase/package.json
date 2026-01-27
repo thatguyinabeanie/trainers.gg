@@ -20,6 +20,8 @@
     "format": "prettier --write \"src/**/*.{ts,tsx,js,jsx,json,md}\"",
     "format:check": "prettier --check \"src/**/*.{ts,tsx,js,jsx,json,md}\"",
     "generate-types": "supabase gen types typescript --local 2>/dev/null > src/types.ts",
+    "generate-seed-json": "tsx scripts/generate-seed-data/generate-user-data.ts",
+    "generate-seeds": "tsx scripts/generate-seed-data/index.ts",
     "db:migrate": "supabase db push",
     "db:reset": "supabase db reset",
     "db:diff": "supabase db diff",
@@ -33,10 +35,12 @@
     "zod": "catalog:"
   },
   "devDependencies": {
+    "@faker-js/faker": "^10.2.0",
     "@trainers/prettier-config": "workspace:*",
     "@trainers/typescript-config": "workspace:*",
     "@types/node": "catalog:",
     "supabase": "^2.72.8",
+    "tsx": "^4.21.0",
     "typescript": "catalog:"
   },
   "prettier": "@trainers/prettier-config"

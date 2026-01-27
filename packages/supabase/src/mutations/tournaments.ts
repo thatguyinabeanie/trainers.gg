@@ -43,14 +43,18 @@ export async function createTournament(
     organizationId: number;
     name: string;
     slug: string;
+    description?: string;
     format?: string;
     startDate?: string;
     endDate?: string;
+    registrationDeadline?: string;
     maxParticipants?: number;
     topCutSize?: number;
     swissRounds?: number;
     tournamentFormat?: TournamentFormat;
     roundTimeMinutes?: number;
+    rentalTeamPhotosEnabled?: boolean;
+    rentalTeamPhotosRequired?: boolean;
   }
 ) {
   const user = await getCurrentUser(supabase);
@@ -90,17 +94,19 @@ export async function createTournament(
       organization_id: data.organizationId,
       name: data.name,
       slug: data.slug.toLowerCase(),
+      description: data.description,
       format: data.format,
       status: "draft",
       start_date: data.startDate,
       end_date: data.endDate,
+      registration_deadline: data.registrationDeadline,
       max_participants: data.maxParticipants,
       top_cut_size: data.topCutSize,
       swiss_rounds: data.swissRounds,
       tournament_format: data.tournamentFormat,
       round_time_minutes: data.roundTimeMinutes ?? 50,
-      rental_team_photos_enabled: true,
-      rental_team_photos_required: false,
+      rental_team_photos_enabled: data.rentalTeamPhotosEnabled ?? false,
+      rental_team_photos_required: data.rentalTeamPhotosRequired ?? false,
       current_round: 0,
     })
     .select()
