@@ -2,7 +2,7 @@
 -- 10_tournaments.sql - Create Tournaments, Phases, and Registrations
 -- =============================================================================
 -- GENERATED FILE - DO NOT EDIT MANUALLY
--- Generated at: 2026-01-27T02:49:05.453Z
+-- Generated at: 2026-01-27T03:22:20.092Z
 -- IDEMPOTENT: Uses ON CONFLICT and existence checks
 -- =============================================================================
 
@@ -38525,7 +38525,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:33:57.794Z'::timestamptz,
+      '2026-01-24T23:07:13.532Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-09'
@@ -38535,7 +38535,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:33:57.183Z'::timestamptz,
+      '2026-01-24T23:07:12.921Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-09'
@@ -38545,7 +38545,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:33:59.365Z'::timestamptz,
+      '2026-01-24T23:07:15.103Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-09'
@@ -38555,7 +38555,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-26T03:19:15.001Z'::timestamptz,
+      '2026-01-26T03:52:30.739Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-09'
@@ -38565,7 +38565,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:33:57.235Z'::timestamptz,
+      '2026-01-24T23:07:12.973Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-09'
@@ -38575,7 +38575,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:33:57.300Z'::timestamptz,
+      '2026-01-24T23:07:13.038Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-09'
@@ -38585,7 +38585,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:33:56.299Z'::timestamptz,
+      '2026-01-24T23:07:12.037Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-09'
@@ -38595,7 +38595,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:33:59.355Z'::timestamptz,
+      '2026-01-24T23:07:15.093Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-09'
@@ -38605,7 +38605,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:33:56.668Z'::timestamptz,
+      '2026-01-24T23:07:12.406Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-09'
@@ -38615,7 +38615,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:33:56.586Z'::timestamptz,
+      '2026-01-24T23:07:12.324Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-09'
@@ -38625,7 +38625,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:33:57.263Z'::timestamptz,
+      '2026-01-24T23:07:13.001Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-09'
@@ -38635,7 +38635,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:34:00.284Z'::timestamptz,
+      '2026-01-24T23:07:16.022Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-09'
@@ -38645,7 +38645,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:33:56.315Z'::timestamptz,
+      '2026-01-24T23:07:12.053Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-09'
@@ -38655,7 +38655,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:34:00.257Z'::timestamptz,
+      '2026-01-24T23:07:15.995Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-09'
@@ -38665,7 +38665,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:33:56.297Z'::timestamptz,
+      '2026-01-24T23:07:12.035Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-09'
@@ -38675,7 +38675,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-22T19:24:58.607Z'::timestamptz,
+      '2026-01-22T19:58:14.345Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-09'
@@ -38685,7 +38685,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:33:57.812Z'::timestamptz,
+      '2026-01-24T23:07:13.550Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-09'
@@ -38695,7 +38695,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:33:56.650Z'::timestamptz,
+      '2026-01-24T23:07:12.388Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-09'
@@ -38705,7 +38705,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:34:00.258Z'::timestamptz,
+      '2026-01-24T23:07:15.996Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-09'
@@ -38715,7 +38715,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:33:57.298Z'::timestamptz,
+      '2026-01-24T23:07:13.036Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-09'
@@ -38725,7 +38725,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:34:00.283Z'::timestamptz,
+      '2026-01-24T23:07:16.021Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-09'
@@ -38735,7 +38735,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:33:57.181Z'::timestamptz,
+      '2026-01-24T23:07:12.919Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-09'
@@ -38745,7 +38745,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:33:55.713Z'::timestamptz,
+      '2026-01-24T23:07:11.451Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-09'
@@ -38755,7 +38755,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:34:00.256Z'::timestamptz,
+      '2026-01-24T23:07:15.994Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-09'
@@ -38765,7 +38765,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:33:59.374Z'::timestamptz,
+      '2026-01-24T23:07:15.112Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-09'
@@ -38775,7 +38775,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:33:56.650Z'::timestamptz,
+      '2026-01-24T23:07:12.388Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-09'
@@ -38785,7 +38785,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:33:57.886Z'::timestamptz,
+      '2026-01-24T23:07:13.624Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-09'
@@ -38795,7 +38795,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:33:57.301Z'::timestamptz,
+      '2026-01-24T23:07:13.039Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-09'
@@ -38805,7 +38805,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:33:59.400Z'::timestamptz,
+      '2026-01-24T23:07:15.138Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-09'
@@ -38815,7 +38815,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:33:58.527Z'::timestamptz,
+      '2026-01-24T23:07:14.265Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-09'
@@ -38825,7 +38825,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:33:59.362Z'::timestamptz,
+      '2026-01-24T23:07:15.100Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-09'
@@ -38835,7 +38835,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:33:57.887Z'::timestamptz,
+      '2026-01-24T23:07:13.625Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-09'
@@ -38845,7 +38845,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:33:58.451Z'::timestamptz,
+      '2026-01-24T23:07:14.189Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-09'
@@ -38855,7 +38855,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:33:56.623Z'::timestamptz,
+      '2026-01-24T23:07:12.361Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-09'
@@ -38865,7 +38865,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:34:00.294Z'::timestamptz,
+      '2026-01-24T23:07:16.032Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-09'
@@ -38875,7 +38875,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:33:57.857Z'::timestamptz,
+      '2026-01-24T23:07:13.595Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-09'
@@ -38885,7 +38885,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:33:56.642Z'::timestamptz,
+      '2026-01-24T23:07:12.380Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-09'
@@ -38895,7 +38895,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:33:57.821Z'::timestamptz,
+      '2026-01-24T23:07:13.559Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-09'
@@ -38905,7 +38905,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:33:57.813Z'::timestamptz,
+      '2026-01-24T23:07:13.551Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-09'
@@ -38915,7 +38915,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:33:56.640Z'::timestamptz,
+      '2026-01-24T23:07:12.378Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-09'
@@ -38925,7 +38925,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:33:55.739Z'::timestamptz,
+      '2026-01-24T23:07:11.477Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-09'
@@ -38935,7 +38935,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:33:55.777Z'::timestamptz,
+      '2026-01-24T23:07:11.515Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-09'
@@ -38945,7 +38945,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:33:59.343Z'::timestamptz,
+      '2026-01-24T23:07:15.081Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-09'
@@ -38955,7 +38955,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:33:59.307Z'::timestamptz,
+      '2026-01-24T23:07:15.045Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-09'
@@ -38965,7 +38965,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:33:57.829Z'::timestamptz,
+      '2026-01-24T23:07:13.567Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-09'
@@ -38975,7 +38975,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:33:58.498Z'::timestamptz,
+      '2026-01-24T23:07:14.236Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-09'
@@ -38990,7 +38990,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:50:37.459Z'::timestamptz,
+      '2026-01-24T23:23:53.197Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-practice-week-09'
@@ -39000,7 +39000,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:50:37.367Z'::timestamptz,
+      '2026-01-24T23:23:53.105Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-practice-week-09'
@@ -39010,7 +39010,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:50:41.928Z'::timestamptz,
+      '2026-01-24T23:23:57.666Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-practice-week-09'
@@ -39020,7 +39020,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-22T19:25:29.040Z'::timestamptz,
+      '2026-01-22T19:58:44.778Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-practice-week-09'
@@ -39030,7 +39030,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:50:41.864Z'::timestamptz,
+      '2026-01-24T23:23:57.602Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-practice-week-09'
@@ -39040,7 +39040,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:50:36.847Z'::timestamptz,
+      '2026-01-24T23:23:52.585Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-practice-week-09'
@@ -39050,7 +39050,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:50:37.378Z'::timestamptz,
+      '2026-01-24T23:23:53.116Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-practice-week-09'
@@ -39060,7 +39060,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:50:37.748Z'::timestamptz,
+      '2026-01-24T23:23:53.486Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-practice-week-09'
@@ -39070,7 +39070,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:50:38.321Z'::timestamptz,
+      '2026-01-24T23:23:54.059Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-practice-week-09'
@@ -39080,7 +39080,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:50:36.826Z'::timestamptz,
+      '2026-01-24T23:23:52.564Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-practice-week-09'
@@ -39090,7 +39090,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:50:38.862Z'::timestamptz,
+      '2026-01-24T23:23:54.600Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-practice-week-09'
@@ -39100,7 +39100,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:50:38.546Z'::timestamptz,
+      '2026-01-24T23:23:54.284Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-practice-week-09'
@@ -39110,7 +39110,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:50:37.700Z'::timestamptz,
+      '2026-01-24T23:23:53.438Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-practice-week-09'
@@ -39120,7 +39120,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:50:38.072Z'::timestamptz,
+      '2026-01-24T23:23:53.810Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-practice-week-09'
@@ -39130,7 +39130,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:50:37.673Z'::timestamptz,
+      '2026-01-24T23:23:53.411Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-practice-week-09'
@@ -39140,7 +39140,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:50:37.421Z'::timestamptz,
+      '2026-01-24T23:23:53.159Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-practice-week-09'
@@ -39150,7 +39150,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:50:37.395Z'::timestamptz,
+      '2026-01-24T23:23:53.133Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-practice-week-09'
@@ -39165,7 +39165,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:45:07.350Z'::timestamptz,
+      '2026-01-24T23:18:23.063Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-09'
@@ -39175,7 +39175,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:45:07.367Z'::timestamptz,
+      '2026-01-24T23:18:23.080Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-09'
@@ -39185,7 +39185,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:45:04.013Z'::timestamptz,
+      '2026-01-24T23:18:19.726Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-09'
@@ -39195,7 +39195,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:45:03.102Z'::timestamptz,
+      '2026-01-24T23:18:18.815Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-09'
@@ -39205,7 +39205,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:45:03.987Z'::timestamptz,
+      '2026-01-24T23:18:19.700Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-09'
@@ -39215,7 +39215,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-22T19:25:18.880Z'::timestamptz,
+      '2026-01-22T19:58:34.593Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-09'
@@ -39225,7 +39225,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:45:08.266Z'::timestamptz,
+      '2026-01-24T23:18:23.979Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-09'
@@ -39235,7 +39235,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:45:04.411Z'::timestamptz,
+      '2026-01-24T23:18:20.124Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-09'
@@ -39245,7 +39245,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:45:04.004Z'::timestamptz,
+      '2026-01-24T23:18:19.717Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-09'
@@ -39255,7 +39255,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:45:03.796Z'::timestamptz,
+      '2026-01-24T23:18:19.509Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-09'
@@ -39265,7 +39265,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:45:04.014Z'::timestamptz,
+      '2026-01-24T23:18:19.727Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-09'
@@ -39275,7 +39275,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:45:05.815Z'::timestamptz,
+      '2026-01-24T23:18:21.528Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-09'
@@ -39285,7 +39285,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:45:03.724Z'::timestamptz,
+      '2026-01-24T23:18:19.437Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-09'
@@ -39295,7 +39295,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-22T19:25:18.880Z'::timestamptz,
+      '2026-01-22T19:58:34.593Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-09'
@@ -39305,7 +39305,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:45:04.674Z'::timestamptz,
+      '2026-01-24T23:18:20.387Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-09'
@@ -39315,7 +39315,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:45:04.625Z'::timestamptz,
+      '2026-01-24T23:18:20.338Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-09'
@@ -39325,7 +39325,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:45:07.395Z'::timestamptz,
+      '2026-01-24T23:18:23.108Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-09'
@@ -39335,7 +39335,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-22T19:25:18.817Z'::timestamptz,
+      '2026-01-22T19:58:34.530Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-09'
@@ -39345,7 +39345,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:45:04.700Z'::timestamptz,
+      '2026-01-24T23:18:20.413Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-09'
@@ -39355,7 +39355,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:45:04.599Z'::timestamptz,
+      '2026-01-24T23:18:20.312Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-09'
@@ -39365,7 +39365,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:45:03.698Z'::timestamptz,
+      '2026-01-24T23:18:19.411Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-09'
@@ -39375,7 +39375,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:45:05.900Z'::timestamptz,
+      '2026-01-24T23:18:21.613Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-09'
@@ -39385,7 +39385,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:45:07.365Z'::timestamptz,
+      '2026-01-24T23:18:23.078Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-09'
@@ -39395,7 +39395,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:45:04.060Z'::timestamptz,
+      '2026-01-24T23:18:19.773Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-09'
@@ -39405,7 +39405,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:45:07.329Z'::timestamptz,
+      '2026-01-24T23:18:23.042Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-09'
@@ -39415,7 +39415,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:45:08.243Z'::timestamptz,
+      '2026-01-24T23:18:23.956Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-09'
@@ -39425,7 +39425,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:45:04.068Z'::timestamptz,
+      '2026-01-24T23:18:19.781Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-09'
@@ -39435,7 +39435,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:45:08.223Z'::timestamptz,
+      '2026-01-24T23:18:23.936Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-09'
@@ -39445,7 +39445,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:45:08.231Z'::timestamptz,
+      '2026-01-24T23:18:23.944Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-09'
@@ -39455,7 +39455,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:45:04.607Z'::timestamptz,
+      '2026-01-24T23:18:20.320Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-09'
@@ -39465,7 +39465,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:45:05.823Z'::timestamptz,
+      '2026-01-24T23:18:21.536Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-09'
@@ -39475,7 +39475,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:45:07.377Z'::timestamptz,
+      '2026-01-24T23:18:23.090Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-09'
@@ -39485,7 +39485,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:45:04.412Z'::timestamptz,
+      '2026-01-24T23:18:20.125Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-09'
@@ -39495,7 +39495,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:45:04.302Z'::timestamptz,
+      '2026-01-24T23:18:20.015Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-09'
@@ -39505,7 +39505,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:45:04.087Z'::timestamptz,
+      '2026-01-24T23:18:19.800Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-09'
@@ -39515,7 +39515,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:45:04.618Z'::timestamptz,
+      '2026-01-24T23:18:20.331Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-09'
@@ -39525,7 +39525,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:45:04.067Z'::timestamptz,
+      '2026-01-24T23:18:19.780Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-09'
@@ -39535,7 +39535,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:45:03.174Z'::timestamptz,
+      '2026-01-24T23:18:18.887Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-09'
@@ -39545,7 +39545,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:45:04.013Z'::timestamptz,
+      '2026-01-24T23:18:19.726Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-09'
@@ -39555,7 +39555,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:45:03.706Z'::timestamptz,
+      '2026-01-24T23:18:19.419Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-09'
@@ -39565,7 +39565,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:45:03.734Z'::timestamptz,
+      '2026-01-24T23:18:19.447Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-09'
@@ -39575,7 +39575,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:45:05.852Z'::timestamptz,
+      '2026-01-24T23:18:21.565Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-09'
@@ -39585,7 +39585,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:45:04.598Z'::timestamptz,
+      '2026-01-24T23:18:20.311Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-09'
@@ -39595,7 +39595,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:45:07.329Z'::timestamptz,
+      '2026-01-24T23:18:23.042Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-09'
@@ -39605,7 +39605,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:45:08.277Z'::timestamptz,
+      '2026-01-24T23:18:23.990Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-09'
@@ -39615,7 +39615,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:45:03.111Z'::timestamptz,
+      '2026-01-24T23:18:18.824Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-09'
@@ -39625,7 +39625,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:45:03.103Z'::timestamptz,
+      '2026-01-24T23:18:18.816Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-09'
@@ -39635,7 +39635,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:45:07.359Z'::timestamptz,
+      '2026-01-24T23:18:23.072Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-09'
@@ -39645,7 +39645,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:45:05.925Z'::timestamptz,
+      '2026-01-24T23:18:21.638Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-09'
@@ -39655,7 +39655,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-22T19:25:18.845Z'::timestamptz,
+      '2026-01-22T19:58:34.558Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-09'
@@ -39665,7 +39665,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:45:04.608Z'::timestamptz,
+      '2026-01-24T23:18:20.321Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-09'
@@ -39675,7 +39675,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:45:08.221Z'::timestamptz,
+      '2026-01-24T23:18:23.934Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-09'
@@ -39685,7 +39685,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:45:03.176Z'::timestamptz,
+      '2026-01-24T23:18:18.889Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-09'
@@ -39695,7 +39695,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:45:05.806Z'::timestamptz,
+      '2026-01-24T23:18:21.519Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-09'
@@ -39705,7 +39705,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:45:07.384Z'::timestamptz,
+      '2026-01-24T23:18:23.097Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-09'
@@ -39715,7 +39715,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:45:04.697Z'::timestamptz,
+      '2026-01-24T23:18:20.410Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-09'
@@ -39725,7 +39725,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:45:05.228Z'::timestamptz,
+      '2026-01-24T23:18:20.941Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-09'
@@ -39735,7 +39735,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:45:07.367Z'::timestamptz,
+      '2026-01-24T23:18:23.080Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-09'
@@ -39745,7 +39745,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-22T19:25:18.838Z'::timestamptz,
+      '2026-01-22T19:58:34.551Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-09'
@@ -39755,7 +39755,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:45:04.300Z'::timestamptz,
+      '2026-01-24T23:18:20.013Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-09'
@@ -39765,7 +39765,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:45:03.716Z'::timestamptz,
+      '2026-01-24T23:18:19.429Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-09'
@@ -39775,7 +39775,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:45:07.349Z'::timestamptz,
+      '2026-01-24T23:18:23.062Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-09'
@@ -39785,7 +39785,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:45:03.715Z'::timestamptz,
+      '2026-01-24T23:18:19.428Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-09'
@@ -39795,7 +39795,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-22T19:25:18.862Z'::timestamptz,
+      '2026-01-22T19:58:34.575Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-09'
@@ -39805,7 +39805,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:45:05.833Z'::timestamptz,
+      '2026-01-24T23:18:21.546Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-09'
@@ -39815,7 +39815,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:45:03.986Z'::timestamptz,
+      '2026-01-24T23:18:19.699Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-09'
@@ -39825,7 +39825,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:45:04.673Z'::timestamptz,
+      '2026-01-24T23:18:20.386Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-09'
@@ -39835,7 +39835,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:45:03.111Z'::timestamptz,
+      '2026-01-24T23:18:18.824Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-09'
@@ -39845,7 +39845,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:45:05.796Z'::timestamptz,
+      '2026-01-24T23:18:21.509Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-09'
@@ -39855,7 +39855,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:45:04.672Z'::timestamptz,
+      '2026-01-24T23:18:20.385Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-09'
@@ -39865,7 +39865,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:45:08.285Z'::timestamptz,
+      '2026-01-24T23:18:23.998Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-09'
@@ -39875,7 +39875,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:45:04.048Z'::timestamptz,
+      '2026-01-24T23:18:19.761Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-09'
@@ -39885,7 +39885,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:45:08.287Z'::timestamptz,
+      '2026-01-24T23:18:24.000Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-09'
@@ -39895,7 +39895,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:45:04.580Z'::timestamptz,
+      '2026-01-24T23:18:20.293Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-09'
@@ -39905,7 +39905,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-26T03:19:15.638Z'::timestamptz,
+      '2026-01-26T03:52:31.351Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-09'
@@ -39915,7 +39915,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:45:04.616Z'::timestamptz,
+      '2026-01-24T23:18:20.329Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-09'
@@ -39925,7 +39925,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:45:04.626Z'::timestamptz,
+      '2026-01-24T23:18:20.339Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-09'
@@ -39935,7 +39935,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:45:04.580Z'::timestamptz,
+      '2026-01-24T23:18:20.293Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-09'
@@ -39945,7 +39945,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:45:03.121Z'::timestamptz,
+      '2026-01-24T23:18:18.834Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-09'
@@ -39955,7 +39955,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:45:03.742Z'::timestamptz,
+      '2026-01-24T23:18:19.455Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-09'
@@ -39965,7 +39965,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:45:04.644Z'::timestamptz,
+      '2026-01-24T23:18:20.357Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-09'
@@ -39975,7 +39975,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:45:03.743Z'::timestamptz,
+      '2026-01-24T23:18:19.456Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-09'
@@ -39985,7 +39985,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-22T19:25:18.954Z'::timestamptz,
+      '2026-01-22T19:58:34.667Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-09'
@@ -39995,7 +39995,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:45:03.696Z'::timestamptz,
+      '2026-01-24T23:18:19.409Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-09'
@@ -40005,7 +40005,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:45:08.304Z'::timestamptz,
+      '2026-01-24T23:18:24.017Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-09'
@@ -40015,7 +40015,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:45:04.607Z'::timestamptz,
+      '2026-01-24T23:18:20.320Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-09'
@@ -40025,7 +40025,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:45:03.156Z'::timestamptz,
+      '2026-01-24T23:18:18.869Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-09'
@@ -40035,7 +40035,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:45:04.636Z'::timestamptz,
+      '2026-01-24T23:18:20.349Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-09'
@@ -40045,7 +40045,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:45:05.807Z'::timestamptz,
+      '2026-01-24T23:18:21.520Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-09'
@@ -40055,7 +40055,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:45:04.328Z'::timestamptz,
+      '2026-01-24T23:18:20.041Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-09'
@@ -40065,7 +40065,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:45:05.193Z'::timestamptz,
+      '2026-01-24T23:18:20.906Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-09'
@@ -40075,7 +40075,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:45:04.006Z'::timestamptz,
+      '2026-01-24T23:18:19.719Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-09'
@@ -40085,7 +40085,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:45:03.177Z'::timestamptz,
+      '2026-01-24T23:18:18.890Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-09'
@@ -40345,7 +40345,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:54:53.288Z'::timestamptz,
+      '2026-01-24T23:28:08.984Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-09'
@@ -40355,7 +40355,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-22T19:25:36.724Z'::timestamptz,
+      '2026-01-22T19:58:52.420Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-09'
@@ -40365,7 +40365,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-26T03:19:16.196Z'::timestamptz,
+      '2026-01-26T03:52:31.892Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-09'
@@ -40375,7 +40375,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:54:54.773Z'::timestamptz,
+      '2026-01-24T23:28:10.469Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-09'
@@ -40385,7 +40385,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:54:54.466Z'::timestamptz,
+      '2026-01-24T23:28:10.162Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-09'
@@ -40395,7 +40395,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:54:54.442Z'::timestamptz,
+      '2026-01-24T23:28:10.138Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-09'
@@ -40405,7 +40405,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:54:52.626Z'::timestamptz,
+      '2026-01-24T23:28:08.322Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-09'
@@ -40415,7 +40415,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:54:54.682Z'::timestamptz,
+      '2026-01-24T23:28:10.378Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-09'
@@ -40425,7 +40425,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:54:52.897Z'::timestamptz,
+      '2026-01-24T23:28:08.593Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-09'
@@ -40435,7 +40435,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:54:52.618Z'::timestamptz,
+      '2026-01-24T23:28:08.314Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-09'
@@ -40445,7 +40445,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:54:53.213Z'::timestamptz,
+      '2026-01-24T23:28:08.909Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-09'
@@ -40455,7 +40455,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:54:53.773Z'::timestamptz,
+      '2026-01-24T23:28:09.469Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-09'
@@ -40465,7 +40465,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:54:53.807Z'::timestamptz,
+      '2026-01-24T23:28:09.503Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-09'
@@ -40475,7 +40475,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:54:54.476Z'::timestamptz,
+      '2026-01-24T23:28:10.172Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-09'
@@ -40485,7 +40485,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:54:54.357Z'::timestamptz,
+      '2026-01-24T23:28:10.053Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-09'
@@ -40495,7 +40495,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:54:52.906Z'::timestamptz,
+      '2026-01-24T23:28:08.602Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-09'
@@ -40505,7 +40505,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:54:53.763Z'::timestamptz,
+      '2026-01-24T23:28:09.459Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-09'
@@ -40515,7 +40515,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-22T19:25:36.696Z'::timestamptz,
+      '2026-01-22T19:58:52.392Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-09'
@@ -40525,7 +40525,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:54:53.288Z'::timestamptz,
+      '2026-01-24T23:28:08.984Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-09'
@@ -40535,7 +40535,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:54:53.484Z'::timestamptz,
+      '2026-01-24T23:28:09.180Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-09'
@@ -40545,7 +40545,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:54:54.709Z'::timestamptz,
+      '2026-01-24T23:28:10.405Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-09'
@@ -40555,7 +40555,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:54:54.079Z'::timestamptz,
+      '2026-01-24T23:28:09.775Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-09'
@@ -40565,7 +40565,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:54:54.440Z'::timestamptz,
+      '2026-01-24T23:28:10.136Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-09'
@@ -40575,7 +40575,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-22T19:25:36.687Z'::timestamptz,
+      '2026-01-22T19:58:52.383Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-09'
@@ -40585,7 +40585,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:54:52.591Z'::timestamptz,
+      '2026-01-24T23:28:08.287Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-09'
@@ -40595,7 +40595,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:54:54.475Z'::timestamptz,
+      '2026-01-24T23:28:10.171Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-09'
@@ -40605,7 +40605,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-22T19:25:36.705Z'::timestamptz,
+      '2026-01-22T19:58:52.401Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-09'
@@ -40615,7 +40615,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:54:54.106Z'::timestamptz,
+      '2026-01-24T23:28:09.802Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-09'
@@ -40625,7 +40625,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:54:54.187Z'::timestamptz,
+      '2026-01-24T23:28:09.883Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-09'
@@ -40635,7 +40635,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:54:54.051Z'::timestamptz,
+      '2026-01-24T23:28:09.747Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-09'
@@ -40645,7 +40645,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:54:53.810Z'::timestamptz,
+      '2026-01-24T23:28:09.506Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-09'
@@ -40655,7 +40655,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:54:54.681Z'::timestamptz,
+      '2026-01-24T23:28:10.377Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-09'
@@ -40665,7 +40665,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:54:53.167Z'::timestamptz,
+      '2026-01-24T23:28:08.863Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-09'
@@ -40675,7 +40675,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:54:54.646Z'::timestamptz,
+      '2026-01-24T23:28:10.342Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-09'
@@ -40685,7 +40685,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:54:53.781Z'::timestamptz,
+      '2026-01-24T23:28:09.477Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-09'
@@ -40695,7 +40695,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:54:54.432Z'::timestamptz,
+      '2026-01-24T23:28:10.128Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-09'
@@ -40705,7 +40705,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:54:54.495Z'::timestamptz,
+      '2026-01-24T23:28:10.191Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-09'
@@ -40715,7 +40715,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:54:53.455Z'::timestamptz,
+      '2026-01-24T23:28:09.151Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-09'
@@ -40725,7 +40725,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:54:54.691Z'::timestamptz,
+      '2026-01-24T23:28:10.387Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-09'
@@ -40735,7 +40735,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:54:55.351Z'::timestamptz,
+      '2026-01-24T23:28:11.047Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-09'
@@ -40745,7 +40745,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:54:53.809Z'::timestamptz,
+      '2026-01-24T23:28:09.505Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-09'
@@ -40755,7 +40755,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:54:53.457Z'::timestamptz,
+      '2026-01-24T23:28:09.153Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-09'
@@ -40765,7 +40765,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:54:55.396Z'::timestamptz,
+      '2026-01-24T23:28:11.092Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-09'
@@ -40775,7 +40775,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:54:53.482Z'::timestamptz,
+      '2026-01-24T23:28:09.178Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-09'
@@ -40785,7 +40785,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:54:53.825Z'::timestamptz,
+      '2026-01-24T23:28:09.521Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-09'
@@ -40795,7 +40795,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T22:54:53.900Z'::timestamptz,
+      '2026-01-24T23:28:09.596Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-09'
@@ -40810,7 +40810,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T23:11:35.155Z'::timestamptz,
+      '2026-01-24T23:44:50.851Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-practice-week-09'
@@ -40820,7 +40820,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T23:11:35.246Z'::timestamptz,
+      '2026-01-24T23:44:50.942Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-practice-week-09'
@@ -40830,7 +40830,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T23:11:34.281Z'::timestamptz,
+      '2026-01-24T23:44:49.977Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-practice-week-09'
@@ -40840,7 +40840,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T23:11:35.768Z'::timestamptz,
+      '2026-01-24T23:44:51.464Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-practice-week-09'
@@ -40850,7 +40850,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T23:11:35.139Z'::timestamptz,
+      '2026-01-24T23:44:50.835Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-practice-week-09'
@@ -40860,7 +40860,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T23:11:34.290Z'::timestamptz,
+      '2026-01-24T23:44:49.986Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-practice-week-09'
@@ -40870,7 +40870,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T23:11:36.122Z'::timestamptz,
+      '2026-01-24T23:44:51.818Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-practice-week-09'
@@ -40880,7 +40880,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T23:11:36.150Z'::timestamptz,
+      '2026-01-24T23:44:51.846Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-practice-week-09'
@@ -40890,7 +40890,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T23:11:36.039Z'::timestamptz,
+      '2026-01-24T23:44:51.735Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-practice-week-09'
@@ -40900,7 +40900,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T23:11:33.651Z'::timestamptz,
+      '2026-01-24T23:44:49.347Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-practice-week-09'
@@ -40910,7 +40910,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T23:11:37.032Z'::timestamptz,
+      '2026-01-24T23:44:52.728Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-practice-week-09'
@@ -40920,7 +40920,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T23:11:35.192Z'::timestamptz,
+      '2026-01-24T23:44:50.888Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-practice-week-09'
@@ -40930,7 +40930,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T23:11:35.110Z'::timestamptz,
+      '2026-01-24T23:44:50.806Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-practice-week-09'
@@ -40940,7 +40940,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T23:11:36.123Z'::timestamptz,
+      '2026-01-24T23:44:51.819Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-practice-week-09'
@@ -40950,7 +40950,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T23:11:34.857Z'::timestamptz,
+      '2026-01-24T23:44:50.553Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-practice-week-09'
@@ -40960,7 +40960,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T23:11:35.724Z'::timestamptz,
+      '2026-01-24T23:44:51.420Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-practice-week-09'
@@ -40970,7 +40970,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T23:11:36.114Z'::timestamptz,
+      '2026-01-24T23:44:51.810Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-practice-week-09'
@@ -40980,7 +40980,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T23:11:35.165Z'::timestamptz,
+      '2026-01-24T23:44:50.861Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-practice-week-09'
@@ -40990,7 +40990,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T23:11:34.832Z'::timestamptz,
+      '2026-01-24T23:44:50.528Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-practice-week-09'
@@ -41000,7 +41000,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T23:11:34.229Z'::timestamptz,
+      '2026-01-24T23:44:49.925Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-practice-week-09'
@@ -41010,7 +41010,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-22T19:26:07.032Z'::timestamptz,
+      '2026-01-22T19:59:22.728Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-practice-week-09'
@@ -41020,7 +41020,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T23:11:36.120Z'::timestamptz,
+      '2026-01-24T23:44:51.816Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-practice-week-09'
@@ -41030,7 +41030,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-22T19:26:06.995Z'::timestamptz,
+      '2026-01-22T19:59:22.691Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-practice-week-09'
@@ -41045,7 +41045,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T23:06:00.587Z'::timestamptz,
+      '2026-01-24T23:39:16.283Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-09'
@@ -41055,7 +41055,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T23:06:00.855Z'::timestamptz,
+      '2026-01-24T23:39:16.551Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-09'
@@ -41065,7 +41065,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T23:06:00.561Z'::timestamptz,
+      '2026-01-24T23:39:16.257Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-09'
@@ -41075,7 +41075,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T23:06:00.875Z'::timestamptz,
+      '2026-01-24T23:39:16.571Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-09'
@@ -41085,7 +41085,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T23:06:02.100Z'::timestamptz,
+      '2026-01-24T23:39:17.796Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-09'
@@ -41095,7 +41095,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T23:06:02.148Z'::timestamptz,
+      '2026-01-24T23:39:17.844Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-09'
@@ -41105,7 +41105,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T23:06:00.911Z'::timestamptz,
+      '2026-01-24T23:39:16.607Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-09'
@@ -41115,7 +41115,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T23:06:02.055Z'::timestamptz,
+      '2026-01-24T23:39:17.751Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-09'
@@ -41125,7 +41125,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T23:06:01.262Z'::timestamptz,
+      '2026-01-24T23:39:16.958Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-09'
@@ -41135,7 +41135,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T23:06:02.099Z'::timestamptz,
+      '2026-01-24T23:39:17.795Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-09'
@@ -41145,7 +41145,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T23:06:00.550Z'::timestamptz,
+      '2026-01-24T23:39:16.246Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-09'
@@ -41155,7 +41155,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T23:06:01.452Z'::timestamptz,
+      '2026-01-24T23:39:17.148Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-09'
@@ -41165,7 +41165,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T23:06:02.436Z'::timestamptz,
+      '2026-01-24T23:39:18.132Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-09'
@@ -41175,7 +41175,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T23:05:59.350Z'::timestamptz,
+      '2026-01-24T23:39:15.046Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-09'
@@ -41185,7 +41185,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T23:06:01.535Z'::timestamptz,
+      '2026-01-24T23:39:17.231Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-09'
@@ -41195,7 +41195,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T23:06:01.488Z'::timestamptz,
+      '2026-01-24T23:39:17.184Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-09'
@@ -41205,7 +41205,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T23:06:02.424Z'::timestamptz,
+      '2026-01-24T23:39:18.120Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-09'
@@ -41215,7 +41215,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T23:06:02.408Z'::timestamptz,
+      '2026-01-24T23:39:18.104Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-09'
@@ -41225,7 +41225,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T23:06:03.307Z'::timestamptz,
+      '2026-01-24T23:39:19.003Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-09'
@@ -41235,7 +41235,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T23:06:01.460Z'::timestamptz,
+      '2026-01-24T23:39:17.156Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-09'
@@ -41245,7 +41245,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T23:06:02.426Z'::timestamptz,
+      '2026-01-24T23:39:18.122Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-09'
@@ -41255,7 +41255,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T23:05:59.387Z'::timestamptz,
+      '2026-01-24T23:39:15.083Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-09'
@@ -41265,7 +41265,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T23:06:00.603Z'::timestamptz,
+      '2026-01-24T23:39:16.299Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-09'
@@ -41275,7 +41275,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T23:06:00.568Z'::timestamptz,
+      '2026-01-24T23:39:16.264Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-09'
@@ -41285,7 +41285,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-22T19:25:56.976Z'::timestamptz,
+      '2026-01-22T19:59:12.672Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-09'
@@ -41295,7 +41295,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T23:06:03.302Z'::timestamptz,
+      '2026-01-24T23:39:18.998Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-09'
@@ -41305,7 +41305,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T23:06:00.337Z'::timestamptz,
+      '2026-01-24T23:39:16.033Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-09'
@@ -41315,7 +41315,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T23:06:00.595Z'::timestamptz,
+      '2026-01-24T23:39:16.291Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-09'
@@ -41325,7 +41325,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T23:06:02.046Z'::timestamptz,
+      '2026-01-24T23:39:17.742Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-09'
@@ -41335,7 +41335,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T23:06:01.508Z'::timestamptz,
+      '2026-01-24T23:39:17.204Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-09'
@@ -41345,7 +41345,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T23:06:03.329Z'::timestamptz,
+      '2026-01-24T23:39:19.025Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-09'
@@ -41355,7 +41355,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T23:06:03.362Z'::timestamptz,
+      '2026-01-24T23:39:19.058Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-09'
@@ -41365,7 +41365,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T23:06:02.037Z'::timestamptz,
+      '2026-01-24T23:39:17.733Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-09'
@@ -41375,7 +41375,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T23:06:01.265Z'::timestamptz,
+      '2026-01-24T23:39:16.961Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-09'
@@ -41385,7 +41385,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T23:06:00.578Z'::timestamptz,
+      '2026-01-24T23:39:16.274Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-09'
@@ -41395,7 +41395,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T23:06:02.076Z'::timestamptz,
+      '2026-01-24T23:39:17.772Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-09'
@@ -41405,7 +41405,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T23:06:00.589Z'::timestamptz,
+      '2026-01-24T23:39:16.285Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-09'
@@ -41415,7 +41415,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T23:06:03.309Z'::timestamptz,
+      '2026-01-24T23:39:19.005Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-09'
@@ -41425,7 +41425,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T23:06:01.272Z'::timestamptz,
+      '2026-01-24T23:39:16.968Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-09'
@@ -41435,7 +41435,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-22T19:25:56.929Z'::timestamptz,
+      '2026-01-22T19:59:12.625Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-09'
@@ -41445,7 +41445,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T23:06:02.464Z'::timestamptz,
+      '2026-01-24T23:39:18.160Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-09'
@@ -41455,7 +41455,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T23:06:02.408Z'::timestamptz,
+      '2026-01-24T23:39:18.104Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-09'
@@ -41465,7 +41465,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T23:06:01.198Z'::timestamptz,
+      '2026-01-24T23:39:16.894Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-09'
@@ -41475,7 +41475,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T23:06:00.830Z'::timestamptz,
+      '2026-01-24T23:39:16.526Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-09'
@@ -41485,7 +41485,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T23:06:01.200Z'::timestamptz,
+      '2026-01-24T23:39:16.896Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-09'
@@ -41495,7 +41495,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T23:06:01.424Z'::timestamptz,
+      '2026-01-24T23:39:17.120Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-09'
@@ -41505,7 +41505,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T23:05:59.415Z'::timestamptz,
+      '2026-01-24T23:39:15.111Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-09'
@@ -41515,7 +41515,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T23:06:00.649Z'::timestamptz,
+      '2026-01-24T23:39:16.345Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-09'
@@ -41525,7 +41525,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T23:06:00.287Z'::timestamptz,
+      '2026-01-24T23:39:15.983Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-09'
@@ -41535,7 +41535,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T23:06:00.297Z'::timestamptz,
+      '2026-01-24T23:39:15.993Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-09'
@@ -41545,7 +41545,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T23:06:02.173Z'::timestamptz,
+      '2026-01-24T23:39:17.869Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-09'
@@ -41555,7 +41555,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T23:06:01.426Z'::timestamptz,
+      '2026-01-24T23:39:17.122Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-09'
@@ -41565,7 +41565,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T23:06:00.650Z'::timestamptz,
+      '2026-01-24T23:39:16.346Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-09'
@@ -41575,7 +41575,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T23:06:01.487Z'::timestamptz,
+      '2026-01-24T23:39:17.183Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-09'
@@ -41585,7 +41585,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T23:05:59.405Z'::timestamptz,
+      '2026-01-24T23:39:15.101Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-09'
@@ -41595,7 +41595,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T23:06:01.180Z'::timestamptz,
+      '2026-01-24T23:39:16.876Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-09'
@@ -41605,7 +41605,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T23:06:00.604Z'::timestamptz,
+      '2026-01-24T23:39:16.300Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-09'
@@ -41615,7 +41615,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T23:06:02.147Z'::timestamptz,
+      '2026-01-24T23:39:17.843Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-09'
@@ -41625,7 +41625,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T23:06:02.018Z'::timestamptz,
+      '2026-01-24T23:39:17.714Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-09'
@@ -41635,7 +41635,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-22T19:25:57.003Z'::timestamptz,
+      '2026-01-22T19:59:12.699Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-09'
@@ -41645,7 +41645,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T23:06:01.469Z'::timestamptz,
+      '2026-01-24T23:39:17.165Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-09'
@@ -41655,7 +41655,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T23:06:02.353Z'::timestamptz,
+      '2026-01-24T23:39:18.049Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-09'
@@ -41665,7 +41665,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T23:06:00.828Z'::timestamptz,
+      '2026-01-24T23:39:16.524Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-09'
@@ -41675,7 +41675,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T23:06:00.921Z'::timestamptz,
+      '2026-01-24T23:39:16.617Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-09'
@@ -41685,7 +41685,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T23:06:00.252Z'::timestamptz,
+      '2026-01-24T23:39:15.948Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-09'
@@ -41695,7 +41695,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T23:06:02.175Z'::timestamptz,
+      '2026-01-24T23:39:17.871Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-09'
@@ -41705,7 +41705,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T23:06:02.064Z'::timestamptz,
+      '2026-01-24T23:39:17.760Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-09'
@@ -41715,7 +41715,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T23:06:01.145Z'::timestamptz,
+      '2026-01-24T23:39:16.841Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-09'
@@ -41725,7 +41725,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T23:06:00.542Z'::timestamptz,
+      '2026-01-24T23:39:16.238Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-09'
@@ -41735,7 +41735,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T23:06:02.083Z'::timestamptz,
+      '2026-01-24T23:39:17.779Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-09'
@@ -41745,7 +41745,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T23:06:00.661Z'::timestamptz,
+      '2026-01-24T23:39:16.357Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-09'
@@ -41755,7 +41755,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T23:06:00.576Z'::timestamptz,
+      '2026-01-24T23:39:16.272Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-09'
@@ -41765,7 +41765,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T23:06:03.300Z'::timestamptz,
+      '2026-01-24T23:39:18.996Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-09'
@@ -41775,7 +41775,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T23:06:02.072Z'::timestamptz,
+      '2026-01-24T23:39:17.768Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-09'
@@ -41785,7 +41785,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T23:05:59.427Z'::timestamptz,
+      '2026-01-24T23:39:15.123Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-09'
@@ -41795,7 +41795,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T23:06:03.253Z'::timestamptz,
+      '2026-01-24T23:39:18.949Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-09'
@@ -41805,7 +41805,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T23:06:00.271Z'::timestamptz,
+      '2026-01-24T23:39:15.967Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-09'
@@ -41815,7 +41815,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T23:06:02.103Z'::timestamptz,
+      '2026-01-24T23:39:17.799Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-09'
@@ -41825,7 +41825,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T23:06:01.487Z'::timestamptz,
+      '2026-01-24T23:39:17.183Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-09'
@@ -41835,7 +41835,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T23:06:01.459Z'::timestamptz,
+      '2026-01-24T23:39:17.155Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-09'
@@ -41845,7 +41845,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T23:06:01.154Z'::timestamptz,
+      '2026-01-24T23:39:16.850Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-09'
@@ -41855,7 +41855,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T23:06:00.260Z'::timestamptz,
+      '2026-01-24T23:39:15.956Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-09'
@@ -41865,7 +41865,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T23:06:00.559Z'::timestamptz,
+      '2026-01-24T23:39:16.255Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-09'
@@ -41875,7 +41875,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-22T19:25:56.910Z'::timestamptz,
+      '2026-01-22T19:59:12.606Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-09'
@@ -41885,7 +41885,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T23:06:02.174Z'::timestamptz,
+      '2026-01-24T23:39:17.870Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-09'
@@ -41895,7 +41895,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T23:06:01.452Z'::timestamptz,
+      '2026-01-24T23:39:17.148Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-09'
@@ -41905,7 +41905,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T23:06:00.866Z'::timestamptz,
+      '2026-01-24T23:39:16.562Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-09'
@@ -41915,7 +41915,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T23:06:00.661Z'::timestamptz,
+      '2026-01-24T23:39:16.357Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-09'
@@ -41925,7 +41925,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T23:06:02.081Z'::timestamptz,
+      '2026-01-24T23:39:17.777Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-09'
@@ -41935,7 +41935,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-22T19:25:56.919Z'::timestamptz,
+      '2026-01-22T19:59:12.615Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-09'
@@ -41945,7 +41945,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T23:06:00.577Z'::timestamptz,
+      '2026-01-24T23:39:16.273Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-09'
@@ -41955,7 +41955,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T23:06:02.352Z'::timestamptz,
+      '2026-01-24T23:39:18.048Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-09'
@@ -41965,7 +41965,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T23:06:02.173Z'::timestamptz,
+      '2026-01-24T23:39:17.869Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-09'
@@ -42225,7 +42225,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T21:52:07.268Z'::timestamptz,
+      '2026-01-24T22:25:22.964Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-week-09'
@@ -42235,7 +42235,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T21:52:06.347Z'::timestamptz,
+      '2026-01-24T22:25:22.043Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-week-09'
@@ -42245,7 +42245,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T21:52:07.890Z'::timestamptz,
+      '2026-01-24T22:25:23.586Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-week-09'
@@ -42255,7 +42255,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T21:52:07.233Z'::timestamptz,
+      '2026-01-24T22:25:22.929Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-week-09'
@@ -42265,7 +42265,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T21:52:07.845Z'::timestamptz,
+      '2026-01-24T22:25:23.541Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-week-09'
@@ -42275,7 +42275,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T21:52:05.438Z'::timestamptz,
+      '2026-01-24T22:25:21.134Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-week-09'
@@ -42285,7 +42285,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T21:52:08.430Z'::timestamptz,
+      '2026-01-24T22:25:24.126Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-week-09'
@@ -42295,7 +42295,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T21:52:06.283Z'::timestamptz,
+      '2026-01-24T22:25:21.979Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-week-09'
@@ -42305,7 +42305,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T21:52:05.413Z'::timestamptz,
+      '2026-01-24T22:25:21.109Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-week-09'
@@ -42315,7 +42315,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T21:52:06.674Z'::timestamptz,
+      '2026-01-24T22:25:22.370Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-week-09'
@@ -42325,7 +42325,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T21:52:05.419Z'::timestamptz,
+      '2026-01-24T22:25:21.115Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-week-09'
@@ -42335,7 +42335,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T21:52:07.809Z'::timestamptz,
+      '2026-01-24T22:25:23.505Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-week-09'
@@ -42345,7 +42345,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T21:52:05.764Z'::timestamptz,
+      '2026-01-24T22:25:21.460Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-week-09'
@@ -42355,7 +42355,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T21:52:06.366Z'::timestamptz,
+      '2026-01-24T22:25:22.062Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-week-09'
@@ -42365,7 +42365,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T21:52:07.891Z'::timestamptz,
+      '2026-01-24T22:25:23.587Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-week-09'
@@ -42375,7 +42375,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T21:52:04.491Z'::timestamptz,
+      '2026-01-24T22:25:20.187Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-week-09'
@@ -42385,7 +42385,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T21:52:07.771Z'::timestamptz,
+      '2026-01-24T22:25:23.467Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-week-09'
@@ -42395,7 +42395,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-22T19:23:42.550Z'::timestamptz,
+      '2026-01-22T19:56:58.246Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-week-09'
@@ -42405,7 +42405,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T21:52:08.467Z'::timestamptz,
+      '2026-01-24T22:25:24.163Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-week-09'
@@ -42415,7 +42415,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T21:52:08.383Z'::timestamptz,
+      '2026-01-24T22:25:24.079Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-week-09'
@@ -42425,7 +42425,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T21:52:06.393Z'::timestamptz,
+      '2026-01-24T22:25:22.089Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-week-09'
@@ -42435,7 +42435,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T21:52:06.377Z'::timestamptz,
+      '2026-01-24T22:25:22.073Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-week-09'
@@ -42445,7 +42445,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T21:52:06.635Z'::timestamptz,
+      '2026-01-24T22:25:22.331Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-week-09'
@@ -42455,7 +42455,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-22T19:23:42.521Z'::timestamptz,
+      '2026-01-22T19:56:58.217Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-week-09'
@@ -42465,7 +42465,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T21:52:06.647Z'::timestamptz,
+      '2026-01-24T22:25:22.343Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-week-09'
@@ -42475,7 +42475,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T21:52:07.520Z'::timestamptz,
+      '2026-01-24T22:25:23.216Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-week-09'
@@ -42485,7 +42485,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T21:52:06.358Z'::timestamptz,
+      '2026-01-24T22:25:22.054Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-week-09'
@@ -42495,7 +42495,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-26T03:19:12.737Z'::timestamptz,
+      '2026-01-26T03:52:28.433Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-week-09'
@@ -42505,7 +42505,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T21:52:06.385Z'::timestamptz,
+      '2026-01-24T22:25:22.081Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-week-09'
@@ -42515,7 +42515,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-22T19:23:42.577Z'::timestamptz,
+      '2026-01-22T19:56:58.273Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-week-09'
@@ -42525,7 +42525,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T21:52:06.700Z'::timestamptz,
+      '2026-01-24T22:25:22.396Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-week-09'
@@ -42535,7 +42535,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T21:52:04.472Z'::timestamptz,
+      '2026-01-24T22:25:20.168Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-week-09'
@@ -42545,7 +42545,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T21:52:07.242Z'::timestamptz,
+      '2026-01-24T22:25:22.938Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-week-09'
@@ -42555,7 +42555,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T21:52:07.278Z'::timestamptz,
+      '2026-01-24T22:25:22.974Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-week-09'
@@ -42565,7 +42565,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T21:52:07.232Z'::timestamptz,
+      '2026-01-24T22:25:22.928Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-week-09'
@@ -42575,7 +42575,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T21:52:07.294Z'::timestamptz,
+      '2026-01-24T22:25:22.990Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-week-09'
@@ -42585,7 +42585,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T21:52:07.500Z'::timestamptz,
+      '2026-01-24T22:25:23.196Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-week-09'
@@ -42595,7 +42595,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T21:52:04.472Z'::timestamptz,
+      '2026-01-24T22:25:20.168Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-week-09'
@@ -42605,7 +42605,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T21:52:05.419Z'::timestamptz,
+      '2026-01-24T22:25:21.115Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-week-09'
@@ -42615,7 +42615,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T21:52:04.536Z'::timestamptz,
+      '2026-01-24T22:25:20.232Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-week-09'
@@ -42625,7 +42625,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T21:52:07.798Z'::timestamptz,
+      '2026-01-24T22:25:23.494Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-week-09'
@@ -42635,7 +42635,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T21:52:04.517Z'::timestamptz,
+      '2026-01-24T22:25:20.213Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-week-09'
@@ -42645,7 +42645,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T21:52:08.385Z'::timestamptz,
+      '2026-01-24T22:25:24.081Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-week-09'
@@ -42655,7 +42655,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T21:52:07.251Z'::timestamptz,
+      '2026-01-24T22:25:22.947Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-week-09'
@@ -42665,7 +42665,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T21:52:06.359Z'::timestamptz,
+      '2026-01-24T22:25:22.055Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-week-09'
@@ -42675,7 +42675,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T21:52:06.375Z'::timestamptz,
+      '2026-01-24T22:25:22.071Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-week-09'
@@ -42690,7 +42690,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:38:51.442Z'::timestamptz,
+      '2026-01-25T08:12:07.138Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-practice-week-09'
@@ -42700,7 +42700,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:38:51.208Z'::timestamptz,
+      '2026-01-25T08:12:06.904Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-practice-week-09'
@@ -42710,7 +42710,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:38:48.456Z'::timestamptz,
+      '2026-01-25T08:12:04.152Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-practice-week-09'
@@ -42720,7 +42720,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:38:47.565Z'::timestamptz,
+      '2026-01-25T08:12:03.261Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-practice-week-09'
@@ -42730,7 +42730,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:38:48.420Z'::timestamptz,
+      '2026-01-25T08:12:04.116Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-practice-week-09'
@@ -42740,7 +42740,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:38:49.350Z'::timestamptz,
+      '2026-01-25T08:12:05.046Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-practice-week-09'
@@ -42750,7 +42750,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:38:51.191Z'::timestamptz,
+      '2026-01-25T08:12:06.887Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-practice-week-09'
@@ -42760,7 +42760,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:38:49.629Z'::timestamptz,
+      '2026-01-25T08:12:05.325Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-practice-week-09'
@@ -42770,7 +42770,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-22T19:41:29.279Z'::timestamptz,
+      '2026-01-22T20:14:44.975Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-practice-week-09'
@@ -42780,7 +42780,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-22T19:41:29.253Z'::timestamptz,
+      '2026-01-22T20:14:44.949Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-practice-week-09'
@@ -42790,7 +42790,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:38:47.881Z'::timestamptz,
+      '2026-01-25T08:12:03.577Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-practice-week-09'
@@ -42800,7 +42800,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:38:51.486Z'::timestamptz,
+      '2026-01-25T08:12:07.182Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-practice-week-09'
@@ -42810,7 +42810,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:38:51.443Z'::timestamptz,
+      '2026-01-25T08:12:07.139Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-practice-week-09'
@@ -42820,7 +42820,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:38:47.529Z'::timestamptz,
+      '2026-01-25T08:12:03.225Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-practice-week-09'
@@ -42830,7 +42830,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:38:48.457Z'::timestamptz,
+      '2026-01-25T08:12:04.153Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-practice-week-09'
@@ -42840,7 +42840,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:38:51.217Z'::timestamptz,
+      '2026-01-25T08:12:06.913Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-practice-week-09'
@@ -42850,7 +42850,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:38:51.216Z'::timestamptz,
+      '2026-01-25T08:12:06.912Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-practice-week-09'
@@ -42865,7 +42865,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:22:46.077Z'::timestamptz,
+      '2026-01-25T07:56:01.773Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-10'
@@ -42875,7 +42875,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:22:49.348Z'::timestamptz,
+      '2026-01-25T07:56:05.044Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-10'
@@ -42885,7 +42885,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-22T19:41:00.151Z'::timestamptz,
+      '2026-01-22T20:14:15.847Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-10'
@@ -42895,7 +42895,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:22:49.668Z'::timestamptz,
+      '2026-01-25T07:56:05.364Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-10'
@@ -42905,7 +42905,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:22:46.015Z'::timestamptz,
+      '2026-01-25T07:56:01.711Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-10'
@@ -42915,7 +42915,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:22:46.340Z'::timestamptz,
+      '2026-01-25T07:56:02.036Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-10'
@@ -42925,7 +42925,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:22:49.684Z'::timestamptz,
+      '2026-01-25T07:56:05.380Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-10'
@@ -42935,7 +42935,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-22T19:41:00.217Z'::timestamptz,
+      '2026-01-22T20:14:15.913Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-10'
@@ -42945,7 +42945,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:22:49.667Z'::timestamptz,
+      '2026-01-25T07:56:05.363Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-10'
@@ -42955,7 +42955,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:22:46.095Z'::timestamptz,
+      '2026-01-25T07:56:01.791Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-10'
@@ -42965,7 +42965,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:22:49.361Z'::timestamptz,
+      '2026-01-25T07:56:05.057Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-10'
@@ -42975,7 +42975,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:22:46.014Z'::timestamptz,
+      '2026-01-25T07:56:01.710Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-10'
@@ -42985,7 +42985,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:22:46.611Z'::timestamptz,
+      '2026-01-25T07:56:02.307Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-10'
@@ -42995,7 +42995,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:22:49.405Z'::timestamptz,
+      '2026-01-25T07:56:05.101Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-10'
@@ -43005,7 +43005,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:22:45.792Z'::timestamptz,
+      '2026-01-25T07:56:01.488Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-10'
@@ -43015,7 +43015,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:22:47.212Z'::timestamptz,
+      '2026-01-25T07:56:02.908Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-10'
@@ -43025,7 +43025,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:22:46.672Z'::timestamptz,
+      '2026-01-25T07:56:02.368Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-10'
@@ -43035,7 +43035,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:22:45.735Z'::timestamptz,
+      '2026-01-25T07:56:01.431Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-10'
@@ -43045,7 +43045,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:22:46.405Z'::timestamptz,
+      '2026-01-25T07:56:02.101Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-10'
@@ -43055,7 +43055,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:22:46.712Z'::timestamptz,
+      '2026-01-25T07:56:02.408Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-10'
@@ -43065,7 +43065,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-22T19:41:00.155Z'::timestamptz,
+      '2026-01-22T20:14:15.851Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-10'
@@ -43075,7 +43075,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:22:46.349Z'::timestamptz,
+      '2026-01-25T07:56:02.045Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-10'
@@ -43085,7 +43085,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:22:49.667Z'::timestamptz,
+      '2026-01-25T07:56:05.363Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-10'
@@ -43095,7 +43095,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:22:47.232Z'::timestamptz,
+      '2026-01-25T07:56:02.928Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-10'
@@ -43105,7 +43105,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:22:47.799Z'::timestamptz,
+      '2026-01-25T07:56:03.495Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-10'
@@ -43115,7 +43115,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:22:47.827Z'::timestamptz,
+      '2026-01-25T07:56:03.523Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-10'
@@ -43125,7 +43125,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:22:46.079Z'::timestamptz,
+      '2026-01-25T07:56:01.775Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-10'
@@ -43135,7 +43135,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:22:45.727Z'::timestamptz,
+      '2026-01-25T07:56:01.423Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-10'
@@ -43145,7 +43145,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:22:46.041Z'::timestamptz,
+      '2026-01-25T07:56:01.737Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-10'
@@ -43155,7 +43155,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:22:46.035Z'::timestamptz,
+      '2026-01-25T07:56:01.731Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-10'
@@ -43165,7 +43165,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:22:49.405Z'::timestamptz,
+      '2026-01-25T07:56:05.101Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-10'
@@ -43175,7 +43175,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:22:45.762Z'::timestamptz,
+      '2026-01-25T07:56:01.458Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-10'
@@ -43185,7 +43185,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:22:47.909Z'::timestamptz,
+      '2026-01-25T07:56:03.605Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-10'
@@ -43195,7 +43195,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:22:49.664Z'::timestamptz,
+      '2026-01-25T07:56:05.360Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-10'
@@ -43205,7 +43205,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:22:46.357Z'::timestamptz,
+      '2026-01-25T07:56:02.053Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-10'
@@ -43215,7 +43215,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:22:46.645Z'::timestamptz,
+      '2026-01-25T07:56:02.341Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-10'
@@ -43225,7 +43225,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:22:49.376Z'::timestamptz,
+      '2026-01-25T07:56:05.072Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-10'
@@ -43235,7 +43235,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:22:45.753Z'::timestamptz,
+      '2026-01-25T07:56:01.449Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-10'
@@ -43245,7 +43245,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:22:49.657Z'::timestamptz,
+      '2026-01-25T07:56:05.353Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-10'
@@ -43255,7 +43255,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:22:46.342Z'::timestamptz,
+      '2026-01-25T07:56:02.038Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-10'
@@ -43265,7 +43265,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:22:47.555Z'::timestamptz,
+      '2026-01-25T07:56:03.251Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-10'
@@ -43275,7 +43275,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:22:46.673Z'::timestamptz,
+      '2026-01-25T07:56:02.369Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-10'
@@ -43285,7 +43285,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:22:49.387Z'::timestamptz,
+      '2026-01-25T07:56:05.083Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-10'
@@ -43295,7 +43295,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:22:49.352Z'::timestamptz,
+      '2026-01-25T07:56:05.048Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-10'
@@ -43305,7 +43305,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:22:46.097Z'::timestamptz,
+      '2026-01-25T07:56:01.793Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-10'
@@ -43315,7 +43315,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:22:47.844Z'::timestamptz,
+      '2026-01-25T07:56:03.540Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-10'
@@ -43330,7 +43330,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:49:54.893Z'::timestamptz,
+      '2026-01-25T08:23:10.589Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-practice-week-10'
@@ -43340,7 +43340,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:49:54.910Z'::timestamptz,
+      '2026-01-25T08:23:10.606Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-practice-week-10'
@@ -43350,7 +43350,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:49:55.523Z'::timestamptz,
+      '2026-01-25T08:23:11.219Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-practice-week-10'
@@ -43360,7 +43360,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:49:56.732Z'::timestamptz,
+      '2026-01-25T08:23:12.428Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-practice-week-10'
@@ -43370,7 +43370,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:49:56.074Z'::timestamptz,
+      '2026-01-25T08:23:11.770Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-practice-week-10'
@@ -43380,7 +43380,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:49:59.157Z'::timestamptz,
+      '2026-01-25T08:23:14.853Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-practice-week-10'
@@ -43390,7 +43390,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:49:59.140Z'::timestamptz,
+      '2026-01-25T08:23:14.836Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-practice-week-10'
@@ -43400,7 +43400,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:49:56.669Z'::timestamptz,
+      '2026-01-25T08:23:12.365Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-practice-week-10'
@@ -43410,7 +43410,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:49:55.246Z'::timestamptz,
+      '2026-01-25T08:23:10.942Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-practice-week-10'
@@ -43420,7 +43420,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:49:55.543Z'::timestamptz,
+      '2026-01-25T08:23:11.239Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-practice-week-10'
@@ -43430,7 +43430,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:49:59.409Z'::timestamptz,
+      '2026-01-25T08:23:15.105Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-practice-week-10'
@@ -43445,7 +43445,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:33:57.374Z'::timestamptz,
+      '2026-01-25T08:07:13.070Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-10'
@@ -43455,7 +43455,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:33:53.777Z'::timestamptz,
+      '2026-01-25T08:07:09.473Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-10'
@@ -43465,7 +43465,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:33:55.217Z'::timestamptz,
+      '2026-01-25T08:07:10.913Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-10'
@@ -43475,7 +43475,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:33:53.109Z'::timestamptz,
+      '2026-01-25T08:07:08.805Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-10'
@@ -43485,7 +43485,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:33:53.129Z'::timestamptz,
+      '2026-01-25T08:07:08.825Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-10'
@@ -43495,7 +43495,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:33:53.091Z'::timestamptz,
+      '2026-01-25T08:07:08.787Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-10'
@@ -43505,7 +43505,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:33:53.370Z'::timestamptz,
+      '2026-01-25T08:07:09.066Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-10'
@@ -43515,7 +43515,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:33:57.347Z'::timestamptz,
+      '2026-01-25T08:07:13.043Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-10'
@@ -43525,7 +43525,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-22T19:41:20.365Z'::timestamptz,
+      '2026-01-22T20:14:36.061Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-10'
@@ -43535,7 +43535,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:33:54.027Z'::timestamptz,
+      '2026-01-25T08:07:09.723Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-10'
@@ -43545,7 +43545,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:33:57.308Z'::timestamptz,
+      '2026-01-25T08:07:13.004Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-10'
@@ -43555,7 +43555,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:33:57.661Z'::timestamptz,
+      '2026-01-25T08:07:13.357Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-10'
@@ -43565,7 +43565,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:33:53.406Z'::timestamptz,
+      '2026-01-25T08:07:09.102Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-10'
@@ -43575,7 +43575,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:33:54.001Z'::timestamptz,
+      '2026-01-25T08:07:09.697Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-10'
@@ -43585,7 +43585,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:33:57.328Z'::timestamptz,
+      '2026-01-25T08:07:13.024Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-10'
@@ -43595,7 +43595,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:33:57.381Z'::timestamptz,
+      '2026-01-25T08:07:13.077Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-10'
@@ -43605,7 +43605,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:33:53.722Z'::timestamptz,
+      '2026-01-25T08:07:09.418Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-10'
@@ -43615,7 +43615,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:33:53.145Z'::timestamptz,
+      '2026-01-25T08:07:08.841Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-10'
@@ -43625,7 +43625,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-22T19:41:20.392Z'::timestamptz,
+      '2026-01-22T20:14:36.088Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-10'
@@ -43635,7 +43635,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:33:57.346Z'::timestamptz,
+      '2026-01-25T08:07:13.042Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-10'
@@ -43645,7 +43645,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:33:54.279Z'::timestamptz,
+      '2026-01-25T08:07:09.975Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-10'
@@ -43655,7 +43655,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:33:54.381Z'::timestamptz,
+      '2026-01-25T08:07:10.077Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-10'
@@ -43665,7 +43665,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:33:53.414Z'::timestamptz,
+      '2026-01-25T08:07:09.110Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-10'
@@ -43675,7 +43675,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-22T19:41:20.458Z'::timestamptz,
+      '2026-01-22T20:14:36.154Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-10'
@@ -43685,7 +43685,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:33:57.299Z'::timestamptz,
+      '2026-01-25T08:07:12.995Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-10'
@@ -43695,7 +43695,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:33:53.695Z'::timestamptz,
+      '2026-01-25T08:07:09.391Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-10'
@@ -43705,7 +43705,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:33:54.391Z'::timestamptz,
+      '2026-01-25T08:07:10.087Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-10'
@@ -43715,7 +43715,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:33:54.057Z'::timestamptz,
+      '2026-01-25T08:07:09.753Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-10'
@@ -43725,7 +43725,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:33:57.318Z'::timestamptz,
+      '2026-01-25T08:07:13.014Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-10'
@@ -43735,7 +43735,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:33:54.640Z'::timestamptz,
+      '2026-01-25T08:07:10.336Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-10'
@@ -43745,7 +43745,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:33:53.390Z'::timestamptz,
+      '2026-01-25T08:07:09.086Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-10'
@@ -43755,7 +43755,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:33:53.423Z'::timestamptz,
+      '2026-01-25T08:07:09.119Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-10'
@@ -43765,7 +43765,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:33:53.991Z'::timestamptz,
+      '2026-01-25T08:07:09.687Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-10'
@@ -43775,7 +43775,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:33:53.082Z'::timestamptz,
+      '2026-01-25T08:07:08.778Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-10'
@@ -43785,7 +43785,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:33:54.002Z'::timestamptz,
+      '2026-01-25T08:07:09.698Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-10'
@@ -43795,7 +43795,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:33:57.365Z'::timestamptz,
+      '2026-01-25T08:07:13.061Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-10'
@@ -43805,7 +43805,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:33:57.588Z'::timestamptz,
+      '2026-01-25T08:07:13.284Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-10'
@@ -43815,7 +43815,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:33:53.427Z'::timestamptz,
+      '2026-01-25T08:07:09.123Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-10'
@@ -43825,7 +43825,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:33:54.324Z'::timestamptz,
+      '2026-01-25T08:07:10.020Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-10'
@@ -43835,7 +43835,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:33:54.316Z'::timestamptz,
+      '2026-01-25T08:07:10.012Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-10'
@@ -43845,7 +43845,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:33:53.118Z'::timestamptz,
+      '2026-01-25T08:07:08.814Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-10'
@@ -43855,7 +43855,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:33:54.605Z'::timestamptz,
+      '2026-01-25T08:07:10.301Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-10'
@@ -43865,7 +43865,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:33:57.302Z'::timestamptz,
+      '2026-01-25T08:07:12.998Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-10'
@@ -43875,7 +43875,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:33:53.685Z'::timestamptz,
+      '2026-01-25T08:07:09.381Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-10'
@@ -43885,7 +43885,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:33:54.057Z'::timestamptz,
+      '2026-01-25T08:07:09.753Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-10'
@@ -43895,7 +43895,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:33:53.109Z'::timestamptz,
+      '2026-01-25T08:07:08.805Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-10'
@@ -43905,7 +43905,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:33:57.662Z'::timestamptz,
+      '2026-01-25T08:07:13.358Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-10'
@@ -43915,7 +43915,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:33:57.338Z'::timestamptz,
+      '2026-01-25T08:07:13.034Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-10'
@@ -43925,7 +43925,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:33:54.298Z'::timestamptz,
+      '2026-01-25T08:07:09.994Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-10'
@@ -43935,7 +43935,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:33:55.236Z'::timestamptz,
+      '2026-01-25T08:07:10.932Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-10'
@@ -43945,7 +43945,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:33:53.388Z'::timestamptz,
+      '2026-01-25T08:07:09.084Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-10'
@@ -43955,7 +43955,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:33:57.670Z'::timestamptz,
+      '2026-01-25T08:07:13.366Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-10'
@@ -43965,7 +43965,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:33:57.661Z'::timestamptz,
+      '2026-01-25T08:07:13.357Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-10'
@@ -43975,7 +43975,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:33:55.182Z'::timestamptz,
+      '2026-01-25T08:07:10.878Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-10'
@@ -43985,7 +43985,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:33:53.409Z'::timestamptz,
+      '2026-01-25T08:07:09.105Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-10'
@@ -43995,7 +43995,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:33:53.452Z'::timestamptz,
+      '2026-01-25T08:07:09.148Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-10'
@@ -44005,7 +44005,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:33:53.443Z'::timestamptz,
+      '2026-01-25T08:07:09.139Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-10'
@@ -44015,7 +44015,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:33:53.396Z'::timestamptz,
+      '2026-01-25T08:07:09.092Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-10'
@@ -44025,7 +44025,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:33:53.444Z'::timestamptz,
+      '2026-01-25T08:07:09.140Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-10'
@@ -44035,7 +44035,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:33:53.134Z'::timestamptz,
+      '2026-01-25T08:07:08.830Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-10'
@@ -44045,7 +44045,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:33:54.009Z'::timestamptz,
+      '2026-01-25T08:07:09.705Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-10'
@@ -44055,7 +44055,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:33:53.144Z'::timestamptz,
+      '2026-01-25T08:07:08.840Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-10'
@@ -44065,7 +44065,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:33:53.406Z'::timestamptz,
+      '2026-01-25T08:07:09.102Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-10'
@@ -44075,7 +44075,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:33:54.058Z'::timestamptz,
+      '2026-01-25T08:07:09.754Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-10'
@@ -44085,7 +44085,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:33:53.703Z'::timestamptz,
+      '2026-01-25T08:07:09.399Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-10'
@@ -44095,7 +44095,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:33:57.634Z'::timestamptz,
+      '2026-01-25T08:07:13.330Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-10'
@@ -44105,7 +44105,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:33:54.000Z'::timestamptz,
+      '2026-01-25T08:07:09.696Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-10'
@@ -44115,7 +44115,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:33:53.082Z'::timestamptz,
+      '2026-01-25T08:07:08.778Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-10'
@@ -44125,7 +44125,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-22T19:41:20.369Z'::timestamptz,
+      '2026-01-22T20:14:36.065Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-10'
@@ -44135,7 +44135,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:33:53.451Z'::timestamptz,
+      '2026-01-25T08:07:09.147Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-10'
@@ -44145,7 +44145,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:33:53.116Z'::timestamptz,
+      '2026-01-25T08:07:08.812Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-10'
@@ -44155,7 +44155,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:33:57.634Z'::timestamptz,
+      '2026-01-25T08:07:13.330Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-10'
@@ -44165,7 +44165,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:33:53.985Z'::timestamptz,
+      '2026-01-25T08:07:09.681Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-10'
@@ -44175,7 +44175,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:33:53.445Z'::timestamptz,
+      '2026-01-25T08:07:09.141Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-10'
@@ -44185,7 +44185,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:33:53.100Z'::timestamptz,
+      '2026-01-25T08:07:08.796Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-10'
@@ -44195,7 +44195,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-22T19:41:20.340Z'::timestamptz,
+      '2026-01-22T20:14:36.036Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-10'
@@ -44205,7 +44205,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-22T19:41:20.329Z'::timestamptz,
+      '2026-01-22T20:14:36.025Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-10'
@@ -44215,7 +44215,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:33:54.697Z'::timestamptz,
+      '2026-01-25T08:07:10.393Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-10'
@@ -44225,7 +44225,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-22T19:41:20.349Z'::timestamptz,
+      '2026-01-22T20:14:36.045Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-10'
@@ -44235,7 +44235,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:33:53.166Z'::timestamptz,
+      '2026-01-25T08:07:08.862Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-10'
@@ -44245,7 +44245,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-22T19:41:20.394Z'::timestamptz,
+      '2026-01-22T20:14:36.090Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-10'
@@ -44255,7 +44255,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:33:55.199Z'::timestamptz,
+      '2026-01-25T08:07:10.895Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-10'
@@ -44265,7 +44265,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:33:55.172Z'::timestamptz,
+      '2026-01-25T08:07:10.868Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-10'
@@ -44275,7 +44275,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:33:54.003Z'::timestamptz,
+      '2026-01-25T08:07:09.699Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-10'
@@ -44285,7 +44285,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:33:53.153Z'::timestamptz,
+      '2026-01-25T08:07:08.849Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-10'
@@ -44295,7 +44295,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:33:57.320Z'::timestamptz,
+      '2026-01-25T08:07:13.016Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-10'
@@ -44305,7 +44305,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:33:53.108Z'::timestamptz,
+      '2026-01-25T08:07:08.804Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-10'
@@ -44315,7 +44315,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:33:53.964Z'::timestamptz,
+      '2026-01-25T08:07:09.660Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-10'
@@ -44325,7 +44325,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:33:53.371Z'::timestamptz,
+      '2026-01-25T08:07:09.067Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-10'
@@ -44335,7 +44335,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:33:54.587Z'::timestamptz,
+      '2026-01-25T08:07:10.283Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-10'
@@ -44345,7 +44345,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:33:57.372Z'::timestamptz,
+      '2026-01-25T08:07:13.068Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-10'
@@ -44355,7 +44355,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:33:57.607Z'::timestamptz,
+      '2026-01-25T08:07:13.303Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-10'
@@ -44365,7 +44365,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:33:57.588Z'::timestamptz,
+      '2026-01-25T08:07:13.284Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-10'
@@ -44380,7 +44380,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:59:46.512Z'::timestamptz,
+      '2026-01-25T08:33:02.207Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-practice-week-10'
@@ -44390,7 +44390,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:59:44.995Z'::timestamptz,
+      '2026-01-25T08:33:00.690Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-practice-week-10'
@@ -44400,7 +44400,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:59:46.410Z'::timestamptz,
+      '2026-01-25T08:33:02.105Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-practice-week-10'
@@ -44410,7 +44410,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:59:45.655Z'::timestamptz,
+      '2026-01-25T08:33:01.350Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-practice-week-10'
@@ -44420,7 +44420,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:59:45.592Z'::timestamptz,
+      '2026-01-25T08:33:01.287Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-practice-week-10'
@@ -44430,7 +44430,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:59:46.233Z'::timestamptz,
+      '2026-01-25T08:33:01.928Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-practice-week-10'
@@ -44440,7 +44440,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:59:45.855Z'::timestamptz,
+      '2026-01-25T08:33:01.550Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-practice-week-10'
@@ -44450,7 +44450,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:59:44.746Z'::timestamptz,
+      '2026-01-25T08:33:00.441Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-practice-week-10'
@@ -44460,7 +44460,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:59:46.504Z'::timestamptz,
+      '2026-01-25T08:33:02.199Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-practice-week-10'
@@ -44470,7 +44470,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:59:46.567Z'::timestamptz,
+      '2026-01-25T08:33:02.262Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-practice-week-10'
@@ -44480,7 +44480,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-22T19:42:07.322Z'::timestamptz,
+      '2026-01-22T20:15:23.017Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-practice-week-10'
@@ -44495,7 +44495,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:43:43.132Z'::timestamptz,
+      '2026-01-25T08:16:58.827Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-10'
@@ -44505,7 +44505,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:43:43.500Z'::timestamptz,
+      '2026-01-25T08:16:59.195Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-10'
@@ -44515,7 +44515,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-22T19:41:38.258Z'::timestamptz,
+      '2026-01-22T20:14:53.953Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-10'
@@ -44525,7 +44525,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-22T19:41:38.239Z'::timestamptz,
+      '2026-01-22T20:14:53.934Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-10'
@@ -44535,7 +44535,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:43:42.870Z'::timestamptz,
+      '2026-01-25T08:16:58.565Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-10'
@@ -44545,7 +44545,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:43:43.139Z'::timestamptz,
+      '2026-01-25T08:16:58.834Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-10'
@@ -44555,7 +44555,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:43:43.742Z'::timestamptz,
+      '2026-01-25T08:16:59.437Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-10'
@@ -44565,7 +44565,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:43:43.529Z'::timestamptz,
+      '2026-01-25T08:16:59.224Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-10'
@@ -44575,7 +44575,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-22T19:41:38.183Z'::timestamptz,
+      '2026-01-22T20:14:53.878Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-10'
@@ -44585,7 +44585,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:43:42.600Z'::timestamptz,
+      '2026-01-25T08:16:58.295Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-10'
@@ -44595,7 +44595,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:43:44.061Z'::timestamptz,
+      '2026-01-25T08:16:59.756Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-10'
@@ -44605,7 +44605,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:43:43.528Z'::timestamptz,
+      '2026-01-25T08:16:59.223Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-10'
@@ -44615,7 +44615,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:43:44.329Z'::timestamptz,
+      '2026-01-25T08:17:00.024Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-10'
@@ -44625,7 +44625,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:43:43.853Z'::timestamptz,
+      '2026-01-25T08:16:59.548Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-10'
@@ -44635,7 +44635,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:43:44.053Z'::timestamptz,
+      '2026-01-25T08:16:59.748Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-10'
@@ -44645,7 +44645,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:43:44.169Z'::timestamptz,
+      '2026-01-25T08:16:59.864Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-10'
@@ -44655,7 +44655,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:43:43.446Z'::timestamptz,
+      '2026-01-25T08:16:59.141Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-10'
@@ -44665,7 +44665,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:43:43.855Z'::timestamptz,
+      '2026-01-25T08:16:59.550Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-10'
@@ -44675,7 +44675,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:43:42.303Z'::timestamptz,
+      '2026-01-25T08:16:57.998Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-10'
@@ -44685,7 +44685,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:43:44.320Z'::timestamptz,
+      '2026-01-25T08:17:00.015Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-10'
@@ -44695,7 +44695,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:43:43.149Z'::timestamptz,
+      '2026-01-25T08:16:58.844Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-10'
@@ -44705,7 +44705,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:43:44.448Z'::timestamptz,
+      '2026-01-25T08:17:00.143Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-10'
@@ -44715,7 +44715,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-22T19:41:38.185Z'::timestamptz,
+      '2026-01-22T20:14:53.880Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-10'
@@ -44725,7 +44725,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:43:42.292Z'::timestamptz,
+      '2026-01-25T08:16:57.987Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-10'
@@ -44735,7 +44735,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:43:44.412Z'::timestamptz,
+      '2026-01-25T08:17:00.107Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-10'
@@ -44745,7 +44745,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:43:42.877Z'::timestamptz,
+      '2026-01-25T08:16:58.572Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-10'
@@ -44755,7 +44755,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-22T19:41:38.259Z'::timestamptz,
+      '2026-01-22T20:14:53.954Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-10'
@@ -44765,7 +44765,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:43:43.852Z'::timestamptz,
+      '2026-01-25T08:16:59.547Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-10'
@@ -44775,7 +44775,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:43:42.293Z'::timestamptz,
+      '2026-01-25T08:16:57.988Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-10'
@@ -44785,7 +44785,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:43:44.608Z'::timestamptz,
+      '2026-01-25T08:17:00.303Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-10'
@@ -44795,7 +44795,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:43:42.917Z'::timestamptz,
+      '2026-01-25T08:16:58.612Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-10'
@@ -44805,7 +44805,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:43:43.727Z'::timestamptz,
+      '2026-01-25T08:16:59.422Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-10'
@@ -44815,7 +44815,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:43:43.167Z'::timestamptz,
+      '2026-01-25T08:16:58.862Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-10'
@@ -44825,7 +44825,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:43:43.482Z'::timestamptz,
+      '2026-01-25T08:16:59.177Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-10'
@@ -44835,7 +44835,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:43:44.719Z'::timestamptz,
+      '2026-01-25T08:17:00.414Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-10'
@@ -44845,7 +44845,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:43:44.014Z'::timestamptz,
+      '2026-01-25T08:16:59.709Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-10'
@@ -44855,7 +44855,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:43:44.728Z'::timestamptz,
+      '2026-01-25T08:17:00.423Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-10'
@@ -44865,7 +44865,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:43:44.069Z'::timestamptz,
+      '2026-01-25T08:16:59.764Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-10'
@@ -44875,7 +44875,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:43:42.629Z'::timestamptz,
+      '2026-01-25T08:16:58.324Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-10'
@@ -44885,7 +44885,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:43:43.158Z'::timestamptz,
+      '2026-01-25T08:16:58.853Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-10'
@@ -44895,7 +44895,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-22T19:41:38.230Z'::timestamptz,
+      '2026-01-22T20:14:53.925Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-10'
@@ -44905,7 +44905,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:43:44.096Z'::timestamptz,
+      '2026-01-25T08:16:59.791Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-10'
@@ -44915,7 +44915,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:43:44.068Z'::timestamptz,
+      '2026-01-25T08:16:59.763Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-10'
@@ -44925,7 +44925,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:43:43.556Z'::timestamptz,
+      '2026-01-25T08:16:59.251Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-10'
@@ -44935,7 +44935,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:43:42.637Z'::timestamptz,
+      '2026-01-25T08:16:58.332Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-10'
@@ -44945,7 +44945,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:43:44.142Z'::timestamptz,
+      '2026-01-25T08:16:59.837Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-10'
@@ -44960,7 +44960,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T08:10:54.227Z'::timestamptz,
+      '2026-01-25T08:44:09.922Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-practice-week-10'
@@ -44970,7 +44970,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T08:10:52.317Z'::timestamptz,
+      '2026-01-25T08:44:08.012Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-practice-week-10'
@@ -44980,7 +44980,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T08:10:51.766Z'::timestamptz,
+      '2026-01-25T08:44:07.461Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-practice-week-10'
@@ -44990,7 +44990,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T08:10:54.487Z'::timestamptz,
+      '2026-01-25T08:44:10.182Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-practice-week-10'
@@ -45000,7 +45000,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T08:10:52.731Z'::timestamptz,
+      '2026-01-25T08:44:08.426Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-practice-week-10'
@@ -45010,7 +45010,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T08:10:52.918Z'::timestamptz,
+      '2026-01-25T08:44:08.613Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-practice-week-10'
@@ -45020,7 +45020,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T08:10:54.228Z'::timestamptz,
+      '2026-01-25T08:44:09.923Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-practice-week-10'
@@ -45030,7 +45030,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T08:10:52.902Z'::timestamptz,
+      '2026-01-25T08:44:08.597Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-practice-week-10'
@@ -45040,7 +45040,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T08:10:52.417Z'::timestamptz,
+      '2026-01-25T08:44:08.112Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-practice-week-10'
@@ -45050,7 +45050,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T08:10:51.406Z'::timestamptz,
+      '2026-01-25T08:44:07.101Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-practice-week-10'
@@ -45060,7 +45060,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T08:10:52.958Z'::timestamptz,
+      '2026-01-25T08:44:08.653Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-practice-week-10'
@@ -45070,7 +45070,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T08:10:51.756Z'::timestamptz,
+      '2026-01-25T08:44:07.451Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-practice-week-10'
@@ -45080,7 +45080,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T08:10:54.217Z'::timestamptz,
+      '2026-01-25T08:44:09.912Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-practice-week-10'
@@ -45090,7 +45090,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T08:10:52.332Z'::timestamptz,
+      '2026-01-25T08:44:08.027Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-practice-week-10'
@@ -45100,7 +45100,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T08:10:51.773Z'::timestamptz,
+      '2026-01-25T08:44:07.468Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-practice-week-10'
@@ -45110,7 +45110,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T08:10:54.193Z'::timestamptz,
+      '2026-01-25T08:44:09.888Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-practice-week-10'
@@ -45120,7 +45120,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T08:10:54.498Z'::timestamptz,
+      '2026-01-25T08:44:10.193Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-practice-week-10'
@@ -45130,7 +45130,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T08:10:52.964Z'::timestamptz,
+      '2026-01-25T08:44:08.659Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-practice-week-10'
@@ -45140,7 +45140,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T08:10:51.126Z'::timestamptz,
+      '2026-01-25T08:44:06.821Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-practice-week-10'
@@ -45150,7 +45150,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T08:10:53.343Z'::timestamptz,
+      '2026-01-25T08:44:09.038Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-practice-week-10'
@@ -45160,7 +45160,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T08:10:52.920Z'::timestamptz,
+      '2026-01-25T08:44:08.615Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-practice-week-10'
@@ -45170,7 +45170,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T08:10:52.354Z'::timestamptz,
+      '2026-01-25T08:44:08.049Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-practice-week-10'
@@ -45180,7 +45180,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T08:10:54.201Z'::timestamptz,
+      '2026-01-25T08:44:09.896Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-practice-week-10'
@@ -45195,7 +45195,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:54:49.389Z'::timestamptz,
+      '2026-01-25T08:28:05.084Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-10'
@@ -45205,7 +45205,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:54:52.651Z'::timestamptz,
+      '2026-01-25T08:28:08.346Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-10'
@@ -45215,7 +45215,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:54:50.874Z'::timestamptz,
+      '2026-01-25T08:28:06.569Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-10'
@@ -45225,7 +45225,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:54:49.369Z'::timestamptz,
+      '2026-01-25T08:28:05.064Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-10'
@@ -45235,7 +45235,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:54:50.223Z'::timestamptz,
+      '2026-01-25T08:28:05.918Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-10'
@@ -45245,7 +45245,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:54:52.669Z'::timestamptz,
+      '2026-01-25T08:28:08.364Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-10'
@@ -45255,7 +45255,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-22T19:41:58.461Z'::timestamptz,
+      '2026-01-22T20:15:14.156Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-10'
@@ -45265,7 +45265,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:54:49.639Z'::timestamptz,
+      '2026-01-25T08:28:05.334Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-10'
@@ -45275,7 +45275,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:54:50.514Z'::timestamptz,
+      '2026-01-25T08:28:06.209Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-10'
@@ -45285,7 +45285,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:54:52.380Z'::timestamptz,
+      '2026-01-25T08:28:08.075Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-10'
@@ -45295,7 +45295,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:54:52.305Z'::timestamptz,
+      '2026-01-25T08:28:08.000Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-10'
@@ -45305,7 +45305,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:54:50.854Z'::timestamptz,
+      '2026-01-25T08:28:06.549Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-10'
@@ -45315,7 +45315,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:54:51.406Z'::timestamptz,
+      '2026-01-25T08:28:07.101Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-10'
@@ -45325,7 +45325,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:54:49.367Z'::timestamptz,
+      '2026-01-25T08:28:05.062Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-10'
@@ -45335,7 +45335,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:54:49.621Z'::timestamptz,
+      '2026-01-25T08:28:05.316Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-10'
@@ -45345,7 +45345,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:54:51.452Z'::timestamptz,
+      '2026-01-25T08:28:07.147Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-10'
@@ -45355,7 +45355,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:54:50.613Z'::timestamptz,
+      '2026-01-25T08:28:06.308Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-10'
@@ -45365,7 +45365,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:54:52.407Z'::timestamptz,
+      '2026-01-25T08:28:08.102Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-10'
@@ -45375,7 +45375,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:54:51.236Z'::timestamptz,
+      '2026-01-25T08:28:06.931Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-10'
@@ -45385,7 +45385,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:54:50.793Z'::timestamptz,
+      '2026-01-25T08:28:06.488Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-10'
@@ -45395,7 +45395,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:54:50.621Z'::timestamptz,
+      '2026-01-25T08:28:06.316Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-10'
@@ -45405,7 +45405,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:54:51.515Z'::timestamptz,
+      '2026-01-25T08:28:07.210Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-10'
@@ -45415,7 +45415,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:54:52.677Z'::timestamptz,
+      '2026-01-25T08:28:08.372Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-10'
@@ -45425,7 +45425,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:54:52.688Z'::timestamptz,
+      '2026-01-25T08:28:08.383Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-10'
@@ -45435,7 +45435,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:54:49.341Z'::timestamptz,
+      '2026-01-25T08:28:05.036Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-10'
@@ -45445,7 +45445,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:54:52.652Z'::timestamptz,
+      '2026-01-25T08:28:08.347Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-10'
@@ -45455,7 +45455,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:54:50.820Z'::timestamptz,
+      '2026-01-25T08:28:06.515Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-10'
@@ -45465,7 +45465,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:54:50.622Z'::timestamptz,
+      '2026-01-25T08:28:06.317Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-10'
@@ -45475,7 +45475,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:54:49.665Z'::timestamptz,
+      '2026-01-25T08:28:05.360Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-10'
@@ -45485,7 +45485,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:54:50.903Z'::timestamptz,
+      '2026-01-25T08:28:06.598Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-10'
@@ -45495,7 +45495,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:54:49.676Z'::timestamptz,
+      '2026-01-25T08:28:05.371Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-10'
@@ -45505,7 +45505,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-22T19:41:58.435Z'::timestamptz,
+      '2026-01-22T20:15:14.130Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-10'
@@ -45515,7 +45515,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:54:51.117Z'::timestamptz,
+      '2026-01-25T08:28:06.812Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-10'
@@ -45525,7 +45525,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-22T19:41:58.399Z'::timestamptz,
+      '2026-01-22T20:15:14.094Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-10'
@@ -45535,7 +45535,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:54:51.514Z'::timestamptz,
+      '2026-01-25T08:28:07.209Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-10'
@@ -45545,7 +45545,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:54:51.228Z'::timestamptz,
+      '2026-01-25T08:28:06.923Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-10'
@@ -45555,7 +45555,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:54:50.856Z'::timestamptz,
+      '2026-01-25T08:28:06.551Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-10'
@@ -45565,7 +45565,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:54:51.426Z'::timestamptz,
+      '2026-01-25T08:28:07.121Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-10'
@@ -45575,7 +45575,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:54:52.372Z'::timestamptz,
+      '2026-01-25T08:28:08.067Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-10'
@@ -45585,7 +45585,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:54:52.306Z'::timestamptz,
+      '2026-01-25T08:28:08.001Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-10'
@@ -45595,7 +45595,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:54:50.278Z'::timestamptz,
+      '2026-01-25T08:28:05.973Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-10'
@@ -45605,7 +45605,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:54:51.433Z'::timestamptz,
+      '2026-01-25T08:28:07.128Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-10'
@@ -45615,7 +45615,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:54:50.531Z'::timestamptz,
+      '2026-01-25T08:28:06.226Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-10'
@@ -45625,7 +45625,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:54:50.855Z'::timestamptz,
+      '2026-01-25T08:28:06.550Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-10'
@@ -45635,7 +45635,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:54:52.417Z'::timestamptz,
+      '2026-01-25T08:28:08.112Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-10'
@@ -45645,7 +45645,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:54:50.902Z'::timestamptz,
+      '2026-01-25T08:28:06.597Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-10'
@@ -45655,7 +45655,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-22T19:41:58.443Z'::timestamptz,
+      '2026-01-22T20:15:14.138Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-10'
@@ -45665,7 +45665,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:54:50.902Z'::timestamptz,
+      '2026-01-25T08:28:06.597Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-10'
@@ -45675,7 +45675,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:54:52.594Z'::timestamptz,
+      '2026-01-25T08:28:08.289Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-10'
@@ -45685,7 +45685,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:54:50.858Z'::timestamptz,
+      '2026-01-25T08:28:06.553Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-10'
@@ -45695,7 +45695,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:54:51.432Z'::timestamptz,
+      '2026-01-25T08:28:07.127Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-10'
@@ -45705,7 +45705,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:54:52.651Z'::timestamptz,
+      '2026-01-25T08:28:08.346Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-10'
@@ -45715,7 +45715,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:54:50.530Z'::timestamptz,
+      '2026-01-25T08:28:06.225Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-10'
@@ -45725,7 +45725,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:54:50.197Z'::timestamptz,
+      '2026-01-25T08:28:05.892Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-10'
@@ -45735,7 +45735,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:54:52.426Z'::timestamptz,
+      '2026-01-25T08:28:08.121Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-10'
@@ -45745,7 +45745,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:54:52.670Z'::timestamptz,
+      '2026-01-25T08:28:08.365Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-10'
@@ -45755,7 +45755,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:54:51.542Z'::timestamptz,
+      '2026-01-25T08:28:07.237Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-10'
@@ -45765,7 +45765,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:54:52.387Z'::timestamptz,
+      '2026-01-25T08:28:08.082Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-10'
@@ -45775,7 +45775,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:54:52.363Z'::timestamptz,
+      '2026-01-25T08:28:08.058Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-10'
@@ -45785,7 +45785,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:54:52.398Z'::timestamptz,
+      '2026-01-25T08:28:08.093Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-10'
@@ -45795,7 +45795,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:54:50.513Z'::timestamptz,
+      '2026-01-25T08:28:06.208Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-10'
@@ -45805,7 +45805,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:54:51.405Z'::timestamptz,
+      '2026-01-25T08:28:07.100Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-10'
@@ -45815,7 +45815,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:54:49.315Z'::timestamptz,
+      '2026-01-25T08:28:05.010Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-10'
@@ -45825,7 +45825,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:54:49.705Z'::timestamptz,
+      '2026-01-25T08:28:05.400Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-10'
@@ -45835,7 +45835,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:54:49.647Z'::timestamptz,
+      '2026-01-25T08:28:05.342Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-10'
@@ -45845,7 +45845,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:54:51.516Z'::timestamptz,
+      '2026-01-25T08:28:07.211Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-10'
@@ -45855,7 +45855,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:54:51.226Z'::timestamptz,
+      '2026-01-25T08:28:06.921Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-10'
@@ -45865,7 +45865,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:54:50.839Z'::timestamptz,
+      '2026-01-25T08:28:06.534Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-10'
@@ -45875,7 +45875,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:54:51.424Z'::timestamptz,
+      '2026-01-25T08:28:07.119Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-10'
@@ -45885,7 +45885,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:54:52.307Z'::timestamptz,
+      '2026-01-25T08:28:08.002Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-10'
@@ -45895,7 +45895,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:54:51.161Z'::timestamptz,
+      '2026-01-25T08:28:06.856Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-10'
@@ -45905,7 +45905,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:54:52.704Z'::timestamptz,
+      '2026-01-25T08:28:08.399Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-10'
@@ -45915,7 +45915,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:54:50.317Z'::timestamptz,
+      '2026-01-25T08:28:06.012Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-10'
@@ -45925,7 +45925,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:54:50.567Z'::timestamptz,
+      '2026-01-25T08:28:06.262Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-10'
@@ -45935,7 +45935,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:54:52.697Z'::timestamptz,
+      '2026-01-25T08:28:08.392Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-10'
@@ -45945,7 +45945,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:54:49.397Z'::timestamptz,
+      '2026-01-25T08:28:05.092Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-10'
@@ -45955,7 +45955,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:54:51.423Z'::timestamptz,
+      '2026-01-25T08:28:07.118Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-10'
@@ -45965,7 +45965,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:54:52.362Z'::timestamptz,
+      '2026-01-25T08:28:08.057Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-10'
@@ -45975,7 +45975,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:54:52.713Z'::timestamptz,
+      '2026-01-25T08:28:08.408Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-10'
@@ -45985,7 +45985,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:54:51.541Z'::timestamptz,
+      '2026-01-25T08:28:07.236Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-10'
@@ -45995,7 +45995,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:54:51.434Z'::timestamptz,
+      '2026-01-25T08:28:07.129Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-10'
@@ -46005,7 +46005,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:54:50.829Z'::timestamptz,
+      '2026-01-25T08:28:06.524Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-10'
@@ -46015,7 +46015,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:54:50.557Z'::timestamptz,
+      '2026-01-25T08:28:06.252Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-10'
@@ -46025,7 +46025,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:54:52.424Z'::timestamptz,
+      '2026-01-25T08:28:08.119Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-10'
@@ -46035,7 +46035,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:54:49.678Z'::timestamptz,
+      '2026-01-25T08:28:05.373Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-10'
@@ -46045,7 +46045,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:54:52.389Z'::timestamptz,
+      '2026-01-25T08:28:08.084Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-10'
@@ -46055,7 +46055,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:54:51.407Z'::timestamptz,
+      '2026-01-25T08:28:07.102Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-10'
@@ -46065,7 +46065,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:54:50.873Z'::timestamptz,
+      '2026-01-25T08:28:06.568Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-10'
@@ -46075,7 +46075,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:54:52.693Z'::timestamptz,
+      '2026-01-25T08:28:08.388Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-10'
@@ -46085,7 +46085,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-22T19:41:58.409Z'::timestamptz,
+      '2026-01-22T20:15:14.104Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-10'
@@ -46095,7 +46095,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:54:50.836Z'::timestamptz,
+      '2026-01-25T08:28:06.531Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-10'
@@ -46105,7 +46105,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-22T19:41:58.426Z'::timestamptz,
+      '2026-01-22T20:15:14.121Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-10'
@@ -46115,7 +46115,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T07:54:52.308Z'::timestamptz,
+      '2026-01-25T08:28:08.003Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-10'
@@ -46130,7 +46130,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T06:56:57.528Z'::timestamptz,
+      '2026-01-25T07:30:13.223Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-practice-week-10'
@@ -46140,7 +46140,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T06:56:56.286Z'::timestamptz,
+      '2026-01-25T07:30:11.981Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-practice-week-10'
@@ -46150,7 +46150,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-22T19:40:13.229Z'::timestamptz,
+      '2026-01-22T20:13:28.924Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-practice-week-10'
@@ -46160,7 +46160,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T06:56:56.292Z'::timestamptz,
+      '2026-01-25T07:30:11.987Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-practice-week-10'
@@ -46170,7 +46170,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T06:56:58.140Z'::timestamptz,
+      '2026-01-25T07:30:13.835Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-practice-week-10'
@@ -46180,7 +46180,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T06:56:56.275Z'::timestamptz,
+      '2026-01-25T07:30:11.970Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-practice-week-10'
@@ -46190,7 +46190,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T06:56:56.581Z'::timestamptz,
+      '2026-01-25T07:30:12.276Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-practice-week-10'
@@ -46200,7 +46200,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T06:56:56.348Z'::timestamptz,
+      '2026-01-25T07:30:12.043Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-practice-week-10'
@@ -46210,7 +46210,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T06:56:57.565Z'::timestamptz,
+      '2026-01-25T07:30:13.260Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-practice-week-10'
@@ -46220,7 +46220,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T06:56:56.590Z'::timestamptz,
+      '2026-01-25T07:30:12.285Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-practice-week-10'
@@ -46230,7 +46230,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T06:56:59.348Z'::timestamptz,
+      '2026-01-25T07:30:15.043Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-practice-week-10'
@@ -46245,7 +46245,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T06:40:56.291Z'::timestamptz,
+      '2026-01-25T07:14:11.986Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-week-10'
@@ -46255,7 +46255,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T06:40:56.246Z'::timestamptz,
+      '2026-01-25T07:14:11.941Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-week-10'
@@ -46265,7 +46265,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T06:40:57.778Z'::timestamptz,
+      '2026-01-25T07:14:13.473Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-week-10'
@@ -46275,7 +46275,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T06:40:54.436Z'::timestamptz,
+      '2026-01-25T07:14:10.131Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-week-10'
@@ -46285,7 +46285,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T06:40:56.527Z'::timestamptz,
+      '2026-01-25T07:14:12.222Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-week-10'
@@ -46295,7 +46295,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T06:40:55.636Z'::timestamptz,
+      '2026-01-25T07:14:11.331Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-week-10'
@@ -46305,7 +46305,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T06:40:56.238Z'::timestamptz,
+      '2026-01-25T07:14:11.933Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-week-10'
@@ -46315,7 +46315,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T06:40:56.645Z'::timestamptz,
+      '2026-01-25T07:14:12.340Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-week-10'
@@ -46325,7 +46325,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T06:40:54.455Z'::timestamptz,
+      '2026-01-25T07:14:10.150Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-week-10'
@@ -46335,7 +46335,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T06:40:55.989Z'::timestamptz,
+      '2026-01-25T07:14:11.684Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-week-10'
@@ -46345,7 +46345,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T06:40:56.609Z'::timestamptz,
+      '2026-01-25T07:14:12.304Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-week-10'
@@ -46355,7 +46355,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T06:40:56.007Z'::timestamptz,
+      '2026-01-25T07:14:11.702Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-week-10'
@@ -46365,7 +46365,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T06:40:56.032Z'::timestamptz,
+      '2026-01-25T07:14:11.727Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-week-10'
@@ -46375,7 +46375,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T06:40:56.662Z'::timestamptz,
+      '2026-01-25T07:14:12.357Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-week-10'
@@ -46385,7 +46385,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T06:40:56.322Z'::timestamptz,
+      '2026-01-25T07:14:12.017Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-week-10'
@@ -46395,7 +46395,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T06:40:56.583Z'::timestamptz,
+      '2026-01-25T07:14:12.278Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-week-10'
@@ -46405,7 +46405,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T06:40:56.322Z'::timestamptz,
+      '2026-01-25T07:14:12.017Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-week-10'
@@ -46415,7 +46415,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T06:40:57.529Z'::timestamptz,
+      '2026-01-25T07:14:13.224Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-week-10'
@@ -46425,7 +46425,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T06:40:54.500Z'::timestamptz,
+      '2026-01-25T07:14:10.195Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-week-10'
@@ -46435,7 +46435,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T06:40:55.915Z'::timestamptz,
+      '2026-01-25T07:14:11.610Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-week-10'
@@ -46445,7 +46445,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T06:40:57.854Z'::timestamptz,
+      '2026-01-25T07:14:13.549Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-week-10'
@@ -46455,7 +46455,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T06:40:54.498Z'::timestamptz,
+      '2026-01-25T07:14:10.193Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-week-10'
@@ -46465,7 +46465,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T06:40:57.772Z'::timestamptz,
+      '2026-01-25T07:14:13.467Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-week-10'
@@ -46480,7 +46480,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:01:22.189Z'::timestamptz,
+      '2026-01-25T04:34:37.884Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-practice-week-10'
@@ -46490,7 +46490,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:01:22.291Z'::timestamptz,
+      '2026-01-25T04:34:37.986Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-practice-week-10'
@@ -46500,7 +46500,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:01:20.153Z'::timestamptz,
+      '2026-01-25T04:34:35.848Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-practice-week-10'
@@ -46510,7 +46510,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:01:21.296Z'::timestamptz,
+      '2026-01-25T04:34:36.991Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-practice-week-10'
@@ -46520,7 +46520,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:01:21.603Z'::timestamptz,
+      '2026-01-25T04:34:37.298Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-practice-week-10'
@@ -46530,7 +46530,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:01:23.453Z'::timestamptz,
+      '2026-01-25T04:34:39.148Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-practice-week-10'
@@ -46540,7 +46540,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:01:23.134Z'::timestamptz,
+      '2026-01-25T04:34:38.829Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-practice-week-10'
@@ -46550,7 +46550,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T07:13:04.859Z'::timestamptz,
+      '2026-01-24T07:46:20.554Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-practice-week-10'
@@ -46560,7 +46560,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:01:22.300Z'::timestamptz,
+      '2026-01-25T04:34:37.995Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-practice-week-10'
@@ -46570,7 +46570,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:01:22.290Z'::timestamptz,
+      '2026-01-25T04:34:37.985Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-practice-week-10'
@@ -46580,7 +46580,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:01:22.616Z'::timestamptz,
+      '2026-01-25T04:34:38.311Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-practice-week-10'
@@ -46590,7 +46590,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:01:21.406Z'::timestamptz,
+      '2026-01-25T04:34:37.101Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-practice-week-10'
@@ -46600,7 +46600,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:01:22.308Z'::timestamptz,
+      '2026-01-25T04:34:38.003Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-practice-week-10'
@@ -46610,7 +46610,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:01:21.958Z'::timestamptz,
+      '2026-01-25T04:34:37.653Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-practice-week-10'
@@ -46625,7 +46625,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T03:45:19.800Z'::timestamptz,
+      '2026-01-25T04:18:35.495Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-11'
@@ -46635,7 +46635,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T03:45:20.108Z'::timestamptz,
+      '2026-01-25T04:18:35.803Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-11'
@@ -46645,7 +46645,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T03:45:20.488Z'::timestamptz,
+      '2026-01-25T04:18:36.183Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-11'
@@ -46655,7 +46655,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T03:45:19.882Z'::timestamptz,
+      '2026-01-25T04:18:35.577Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-11'
@@ -46665,7 +46665,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T03:45:18.586Z'::timestamptz,
+      '2026-01-25T04:18:34.281Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-11'
@@ -46675,7 +46675,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T03:45:19.800Z'::timestamptz,
+      '2026-01-25T04:18:35.495Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-11'
@@ -46685,7 +46685,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T07:12:35.725Z'::timestamptz,
+      '2026-01-24T07:45:51.420Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-11'
@@ -46695,7 +46695,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T03:45:18.621Z'::timestamptz,
+      '2026-01-25T04:18:34.316Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-11'
@@ -46705,7 +46705,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T03:45:18.630Z'::timestamptz,
+      '2026-01-25T04:18:34.325Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-11'
@@ -46715,7 +46715,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T03:45:20.443Z'::timestamptz,
+      '2026-01-25T04:18:36.138Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-11'
@@ -46725,7 +46725,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T07:12:35.707Z'::timestamptz,
+      '2026-01-24T07:45:51.402Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-11'
@@ -46735,7 +46735,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T03:45:20.198Z'::timestamptz,
+      '2026-01-25T04:18:35.893Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-11'
@@ -46745,7 +46745,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T03:45:19.902Z'::timestamptz,
+      '2026-01-25T04:18:35.597Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-11'
@@ -46755,7 +46755,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T03:45:21.363Z'::timestamptz,
+      '2026-01-25T04:18:37.058Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-11'
@@ -46765,7 +46765,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T03:45:18.611Z'::timestamptz,
+      '2026-01-25T04:18:34.306Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-11'
@@ -46775,7 +46775,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T03:45:18.353Z'::timestamptz,
+      '2026-01-25T04:18:34.048Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-11'
@@ -46785,7 +46785,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T03:45:20.471Z'::timestamptz,
+      '2026-01-25T04:18:36.166Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-11'
@@ -46795,7 +46795,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T03:45:21.714Z'::timestamptz,
+      '2026-01-25T04:18:37.409Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-11'
@@ -46805,7 +46805,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T03:45:18.406Z'::timestamptz,
+      '2026-01-25T04:18:34.101Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-11'
@@ -46815,7 +46815,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T07:12:35.706Z'::timestamptz,
+      '2026-01-24T07:45:51.401Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-11'
@@ -46825,7 +46825,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T03:45:19.929Z'::timestamptz,
+      '2026-01-25T04:18:35.624Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-11'
@@ -46835,7 +46835,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T03:45:20.507Z'::timestamptz,
+      '2026-01-25T04:18:36.202Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-11'
@@ -46845,7 +46845,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T03:45:18.358Z'::timestamptz,
+      '2026-01-25T04:18:34.053Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-11'
@@ -46855,7 +46855,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T03:45:21.120Z'::timestamptz,
+      '2026-01-25T04:18:36.815Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-11'
@@ -46865,7 +46865,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T03:45:18.646Z'::timestamptz,
+      '2026-01-25T04:18:34.341Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-11'
@@ -46875,7 +46875,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T07:12:35.641Z'::timestamptz,
+      '2026-01-24T07:45:51.336Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-11'
@@ -46885,7 +46885,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T03:45:18.341Z'::timestamptz,
+      '2026-01-25T04:18:34.036Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-11'
@@ -46895,7 +46895,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T03:45:18.414Z'::timestamptz,
+      '2026-01-25T04:18:34.109Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-11'
@@ -46905,7 +46905,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T03:45:19.892Z'::timestamptz,
+      '2026-01-25T04:18:35.587Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-11'
@@ -46915,7 +46915,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T03:45:20.199Z'::timestamptz,
+      '2026-01-25T04:18:35.894Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-11'
@@ -46925,7 +46925,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T03:45:18.601Z'::timestamptz,
+      '2026-01-25T04:18:34.296Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-11'
@@ -46935,7 +46935,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T03:45:19.849Z'::timestamptz,
+      '2026-01-25T04:18:35.544Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-11'
@@ -46945,7 +46945,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T03:45:21.026Z'::timestamptz,
+      '2026-01-25T04:18:36.721Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-11'
@@ -46955,7 +46955,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T03:45:21.074Z'::timestamptz,
+      '2026-01-25T04:18:36.769Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-11'
@@ -46965,7 +46965,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T03:45:18.665Z'::timestamptz,
+      '2026-01-25T04:18:34.360Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-11'
@@ -46975,7 +46975,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T03:45:18.404Z'::timestamptz,
+      '2026-01-25T04:18:34.099Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-11'
@@ -46985,7 +46985,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T03:45:20.155Z'::timestamptz,
+      '2026-01-25T04:18:35.850Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-11'
@@ -46995,7 +46995,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T03:45:20.467Z'::timestamptz,
+      '2026-01-25T04:18:36.162Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-11'
@@ -47010,7 +47010,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:12:29.330Z'::timestamptz,
+      '2026-01-25T04:45:45.025Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-practice-week-11'
@@ -47020,7 +47020,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:12:29.961Z'::timestamptz,
+      '2026-01-25T04:45:45.656Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-practice-week-11'
@@ -47030,7 +47030,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:12:29.589Z'::timestamptz,
+      '2026-01-25T04:45:45.284Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-practice-week-11'
@@ -47040,7 +47040,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:12:29.591Z'::timestamptz,
+      '2026-01-25T04:45:45.286Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-practice-week-11'
@@ -47050,7 +47050,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:12:29.043Z'::timestamptz,
+      '2026-01-25T04:45:44.738Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-practice-week-11'
@@ -47060,7 +47060,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:12:29.059Z'::timestamptz,
+      '2026-01-25T04:45:44.754Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-practice-week-11'
@@ -47070,7 +47070,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:12:28.951Z'::timestamptz,
+      '2026-01-25T04:45:44.646Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-practice-week-11'
@@ -47080,7 +47080,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:12:29.068Z'::timestamptz,
+      '2026-01-25T04:45:44.763Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-practice-week-11'
@@ -47090,7 +47090,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:12:28.790Z'::timestamptz,
+      '2026-01-25T04:45:44.485Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-practice-week-11'
@@ -47105,7 +47105,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T03:56:26.392Z'::timestamptz,
+      '2026-01-25T04:29:42.087Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-11'
@@ -47115,7 +47115,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T03:56:27.527Z'::timestamptz,
+      '2026-01-25T04:29:43.222Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-11'
@@ -47125,7 +47125,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T03:56:27.573Z'::timestamptz,
+      '2026-01-25T04:29:43.268Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-11'
@@ -47135,7 +47135,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T03:56:27.276Z'::timestamptz,
+      '2026-01-25T04:29:42.971Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-11'
@@ -47145,7 +47145,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T03:56:27.285Z'::timestamptz,
+      '2026-01-25T04:29:42.980Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-11'
@@ -47155,7 +47155,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T03:56:26.867Z'::timestamptz,
+      '2026-01-25T04:29:42.562Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-11'
@@ -47165,7 +47165,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T03:56:27.869Z'::timestamptz,
+      '2026-01-25T04:29:43.564Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-11'
@@ -47175,7 +47175,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T03:56:27.869Z'::timestamptz,
+      '2026-01-25T04:29:43.564Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-11'
@@ -47185,7 +47185,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T03:56:26.572Z'::timestamptz,
+      '2026-01-25T04:29:42.267Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-11'
@@ -47195,7 +47195,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T07:12:55.892Z'::timestamptz,
+      '2026-01-24T07:46:11.587Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-11'
@@ -47205,7 +47205,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T03:56:26.943Z'::timestamptz,
+      '2026-01-25T04:29:42.638Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-11'
@@ -47215,7 +47215,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T03:56:26.614Z'::timestamptz,
+      '2026-01-25T04:29:42.309Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-11'
@@ -47225,7 +47225,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T03:56:26.977Z'::timestamptz,
+      '2026-01-25T04:29:42.672Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-11'
@@ -47235,7 +47235,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T03:56:26.636Z'::timestamptz,
+      '2026-01-25T04:29:42.331Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-11'
@@ -47245,7 +47245,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T03:56:26.281Z'::timestamptz,
+      '2026-01-25T04:29:41.976Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-11'
@@ -47255,7 +47255,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T03:56:26.932Z'::timestamptz,
+      '2026-01-25T04:29:42.627Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-11'
@@ -47265,7 +47265,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T03:56:26.402Z'::timestamptz,
+      '2026-01-25T04:29:42.097Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-11'
@@ -47275,7 +47275,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T03:56:26.291Z'::timestamptz,
+      '2026-01-25T04:29:41.986Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-11'
@@ -47285,7 +47285,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T03:56:26.995Z'::timestamptz,
+      '2026-01-25T04:29:42.690Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-11'
@@ -47295,7 +47295,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T03:56:27.816Z'::timestamptz,
+      '2026-01-25T04:29:43.511Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-11'
@@ -47305,7 +47305,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T03:56:27.870Z'::timestamptz,
+      '2026-01-25T04:29:43.565Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-11'
@@ -47315,7 +47315,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T03:56:27.301Z'::timestamptz,
+      '2026-01-25T04:29:42.996Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-11'
@@ -47325,7 +47325,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T03:56:27.545Z'::timestamptz,
+      '2026-01-25T04:29:43.240Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-11'
@@ -47335,7 +47335,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T03:56:27.852Z'::timestamptz,
+      '2026-01-25T04:29:43.547Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-11'
@@ -47345,7 +47345,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T03:56:26.328Z'::timestamptz,
+      '2026-01-25T04:29:42.023Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-11'
@@ -47355,7 +47355,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T03:56:27.844Z'::timestamptz,
+      '2026-01-25T04:29:43.539Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-11'
@@ -47365,7 +47365,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T03:56:27.301Z'::timestamptz,
+      '2026-01-25T04:29:42.996Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-11'
@@ -47375,7 +47375,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T03:56:27.248Z'::timestamptz,
+      '2026-01-25T04:29:42.943Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-11'
@@ -47385,7 +47385,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T03:56:26.987Z'::timestamptz,
+      '2026-01-25T04:29:42.682Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-11'
@@ -47395,7 +47395,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T03:56:27.786Z'::timestamptz,
+      '2026-01-25T04:29:43.481Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-11'
@@ -47405,7 +47405,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T03:56:26.986Z'::timestamptz,
+      '2026-01-25T04:29:42.681Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-11'
@@ -47415,7 +47415,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T03:56:28.084Z'::timestamptz,
+      '2026-01-25T04:29:43.779Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-11'
@@ -47425,7 +47425,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T03:56:28.121Z'::timestamptz,
+      '2026-01-25T04:29:43.816Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-11'
@@ -47435,7 +47435,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T03:56:26.274Z'::timestamptz,
+      '2026-01-25T04:29:41.969Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-11'
@@ -47445,7 +47445,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T03:56:27.861Z'::timestamptz,
+      '2026-01-25T04:29:43.556Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-11'
@@ -47455,7 +47455,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T03:56:27.258Z'::timestamptz,
+      '2026-01-25T04:29:42.953Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-11'
@@ -47465,7 +47465,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T03:56:28.491Z'::timestamptz,
+      '2026-01-25T04:29:44.186Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-11'
@@ -47475,7 +47475,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T03:56:27.247Z'::timestamptz,
+      '2026-01-25T04:29:42.942Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-11'
@@ -47485,7 +47485,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T03:56:27.257Z'::timestamptz,
+      '2026-01-25T04:29:42.952Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-11'
@@ -47495,7 +47495,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T07:12:55.965Z'::timestamptz,
+      '2026-01-24T07:46:11.660Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-11'
@@ -47505,7 +47505,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T03:56:26.681Z'::timestamptz,
+      '2026-01-25T04:29:42.376Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-11'
@@ -47515,7 +47515,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T03:56:26.948Z'::timestamptz,
+      '2026-01-25T04:29:42.643Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-11'
@@ -47525,7 +47525,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T03:56:27.220Z'::timestamptz,
+      '2026-01-25T04:29:42.915Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-11'
@@ -47535,7 +47535,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T03:56:26.618Z'::timestamptz,
+      '2026-01-25T04:29:42.313Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-11'
@@ -47545,7 +47545,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T03:56:26.274Z'::timestamptz,
+      '2026-01-25T04:29:41.969Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-11'
@@ -47555,7 +47555,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T03:56:26.292Z'::timestamptz,
+      '2026-01-25T04:29:41.987Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-11'
@@ -47565,7 +47565,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T07:12:55.921Z'::timestamptz,
+      '2026-01-24T07:46:11.616Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-11'
@@ -47575,7 +47575,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T03:56:26.264Z'::timestamptz,
+      '2026-01-25T04:29:41.959Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-11'
@@ -47585,7 +47585,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T03:56:28.986Z'::timestamptz,
+      '2026-01-25T04:29:44.681Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-11'
@@ -47595,7 +47595,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T03:56:27.148Z'::timestamptz,
+      '2026-01-25T04:29:42.843Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-11'
@@ -47605,7 +47605,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T03:56:27.871Z'::timestamptz,
+      '2026-01-25T04:29:43.566Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-11'
@@ -47615,7 +47615,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T03:56:26.300Z'::timestamptz,
+      '2026-01-25T04:29:41.995Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-11'
@@ -47625,7 +47625,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T03:56:27.257Z'::timestamptz,
+      '2026-01-25T04:29:42.952Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-11'
@@ -47635,7 +47635,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T03:56:26.979Z'::timestamptz,
+      '2026-01-25T04:29:42.674Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-11'
@@ -47645,7 +47645,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T03:56:27.879Z'::timestamptz,
+      '2026-01-25T04:29:43.574Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-11'
@@ -47655,7 +47655,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T03:56:27.470Z'::timestamptz,
+      '2026-01-25T04:29:43.165Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-11'
@@ -47665,7 +47665,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T03:56:27.833Z'::timestamptz,
+      '2026-01-25T04:29:43.528Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-11'
@@ -47675,7 +47675,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T03:56:27.258Z'::timestamptz,
+      '2026-01-25T04:29:42.953Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-11'
@@ -47685,7 +47685,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T03:56:26.950Z'::timestamptz,
+      '2026-01-25T04:29:42.645Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-11'
@@ -47695,7 +47695,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T03:56:26.551Z'::timestamptz,
+      '2026-01-25T04:29:42.246Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-11'
@@ -47705,7 +47705,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T03:56:27.536Z'::timestamptz,
+      '2026-01-25T04:29:43.231Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-11'
@@ -47715,7 +47715,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T03:56:27.582Z'::timestamptz,
+      '2026-01-25T04:29:43.277Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-11'
@@ -47725,7 +47725,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T03:56:26.632Z'::timestamptz,
+      '2026-01-25T04:29:42.327Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-11'
@@ -47735,7 +47735,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T03:56:26.587Z'::timestamptz,
+      '2026-01-25T04:29:42.282Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-11'
@@ -47745,7 +47745,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T03:56:27.146Z'::timestamptz,
+      '2026-01-25T04:29:42.841Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-11'
@@ -47755,7 +47755,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T03:56:29.051Z'::timestamptz,
+      '2026-01-25T04:29:44.746Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-11'
@@ -47765,7 +47765,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T03:56:27.843Z'::timestamptz,
+      '2026-01-25T04:29:43.538Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-11'
@@ -47775,7 +47775,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T03:56:27.898Z'::timestamptz,
+      '2026-01-25T04:29:43.593Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-11'
@@ -47785,7 +47785,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T03:56:27.878Z'::timestamptz,
+      '2026-01-25T04:29:43.573Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-11'
@@ -47795,7 +47795,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T03:56:26.950Z'::timestamptz,
+      '2026-01-25T04:29:42.645Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-11'
@@ -47805,7 +47805,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T03:56:27.471Z'::timestamptz,
+      '2026-01-25T04:29:43.166Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-11'
@@ -47815,7 +47815,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T03:56:26.265Z'::timestamptz,
+      '2026-01-25T04:29:41.960Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-11'
@@ -47825,7 +47825,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T03:56:26.605Z'::timestamptz,
+      '2026-01-25T04:29:42.300Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-11'
@@ -47835,7 +47835,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T03:56:27.815Z'::timestamptz,
+      '2026-01-25T04:29:43.510Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-11'
@@ -47845,7 +47845,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T07:12:55.930Z'::timestamptz,
+      '2026-01-24T07:46:11.625Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-11'
@@ -47855,7 +47855,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T03:56:27.471Z'::timestamptz,
+      '2026-01-25T04:29:43.166Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-11'
@@ -47870,7 +47870,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:22:18.448Z'::timestamptz,
+      '2026-01-25T04:55:34.142Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-practice-week-11'
@@ -47880,7 +47880,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:22:17.605Z'::timestamptz,
+      '2026-01-25T04:55:33.299Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-practice-week-11'
@@ -47890,7 +47890,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:22:15.187Z'::timestamptz,
+      '2026-01-25T04:55:30.881Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-practice-week-11'
@@ -47900,7 +47900,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:22:15.466Z'::timestamptz,
+      '2026-01-25T04:55:31.160Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-practice-week-11'
@@ -47910,7 +47910,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:22:15.180Z'::timestamptz,
+      '2026-01-25T04:55:30.874Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-practice-week-11'
@@ -47920,7 +47920,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:22:19.378Z'::timestamptz,
+      '2026-01-25T04:55:35.072Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-practice-week-11'
@@ -47930,7 +47930,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:22:19.388Z'::timestamptz,
+      '2026-01-25T04:55:35.082Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-practice-week-11'
@@ -47940,7 +47940,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:22:18.496Z'::timestamptz,
+      '2026-01-25T04:55:34.190Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-practice-week-11'
@@ -47950,7 +47950,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:22:15.510Z'::timestamptz,
+      '2026-01-25T04:55:31.204Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-practice-week-11'
@@ -47965,7 +47965,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:06:16.442Z'::timestamptz,
+      '2026-01-25T04:39:32.136Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-11'
@@ -47975,7 +47975,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:06:16.702Z'::timestamptz,
+      '2026-01-25T04:39:32.396Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-11'
@@ -47985,7 +47985,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:06:16.943Z'::timestamptz,
+      '2026-01-25T04:39:32.637Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-11'
@@ -47995,7 +47995,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:06:17.613Z'::timestamptz,
+      '2026-01-25T04:39:33.307Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-11'
@@ -48005,7 +48005,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:06:17.612Z'::timestamptz,
+      '2026-01-25T04:39:33.306Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-11'
@@ -48015,7 +48015,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:06:16.619Z'::timestamptz,
+      '2026-01-25T04:39:32.313Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-11'
@@ -48025,7 +48025,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:06:17.323Z'::timestamptz,
+      '2026-01-25T04:39:33.017Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-11'
@@ -48035,7 +48035,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:06:17.557Z'::timestamptz,
+      '2026-01-25T04:39:33.251Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-11'
@@ -48045,7 +48045,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:06:13.359Z'::timestamptz,
+      '2026-01-25T04:39:29.053Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-11'
@@ -48055,7 +48055,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:06:13.413Z'::timestamptz,
+      '2026-01-25T04:39:29.107Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-11'
@@ -48065,7 +48065,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:06:17.946Z'::timestamptz,
+      '2026-01-25T04:39:33.640Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-11'
@@ -48075,7 +48075,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:06:17.009Z'::timestamptz,
+      '2026-01-25T04:39:32.703Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-11'
@@ -48085,7 +48085,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:06:16.731Z'::timestamptz,
+      '2026-01-25T04:39:32.425Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-11'
@@ -48095,7 +48095,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:06:16.739Z'::timestamptz,
+      '2026-01-25T04:39:32.433Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-11'
@@ -48105,7 +48105,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:06:17.235Z'::timestamptz,
+      '2026-01-25T04:39:32.929Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-11'
@@ -48115,7 +48115,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:06:13.347Z'::timestamptz,
+      '2026-01-25T04:39:29.041Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-11'
@@ -48125,7 +48125,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:06:17.351Z'::timestamptz,
+      '2026-01-25T04:39:33.045Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-11'
@@ -48135,7 +48135,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:06:17.623Z'::timestamptz,
+      '2026-01-25T04:39:33.317Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-11'
@@ -48145,7 +48145,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-22T18:57:04.595Z'::timestamptz,
+      '2026-01-22T19:30:20.289Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-11'
@@ -48155,7 +48155,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:06:17.893Z'::timestamptz,
+      '2026-01-25T04:39:33.587Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-11'
@@ -48165,7 +48165,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:06:17.306Z'::timestamptz,
+      '2026-01-25T04:39:33.000Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-11'
@@ -48175,7 +48175,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:06:17.604Z'::timestamptz,
+      '2026-01-25T04:39:33.298Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-11'
@@ -48185,7 +48185,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:06:17.316Z'::timestamptz,
+      '2026-01-25T04:39:33.010Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-11'
@@ -48195,7 +48195,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:06:17.289Z'::timestamptz,
+      '2026-01-25T04:39:32.983Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-11'
@@ -48205,7 +48205,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:06:13.349Z'::timestamptz,
+      '2026-01-25T04:39:29.043Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-11'
@@ -48215,7 +48215,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:06:17.000Z'::timestamptz,
+      '2026-01-25T04:39:32.694Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-11'
@@ -48225,7 +48225,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:06:16.163Z'::timestamptz,
+      '2026-01-25T04:39:31.857Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-11'
@@ -48235,7 +48235,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:06:17.557Z'::timestamptz,
+      '2026-01-25T04:39:33.251Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-11'
@@ -48245,7 +48245,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:06:13.664Z'::timestamptz,
+      '2026-01-25T04:39:29.358Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-11'
@@ -48255,7 +48255,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:06:17.566Z'::timestamptz,
+      '2026-01-25T04:39:33.260Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-11'
@@ -48265,7 +48265,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:06:17.315Z'::timestamptz,
+      '2026-01-25T04:39:33.009Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-11'
@@ -48275,7 +48275,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:06:16.007Z'::timestamptz,
+      '2026-01-25T04:39:31.701Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-11'
@@ -48285,7 +48285,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:06:17.333Z'::timestamptz,
+      '2026-01-25T04:39:33.027Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-11'
@@ -48295,7 +48295,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:06:17.027Z'::timestamptz,
+      '2026-01-25T04:39:32.721Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-11'
@@ -48305,7 +48305,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:06:17.871Z'::timestamptz,
+      '2026-01-25T04:39:33.565Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-11'
@@ -48315,7 +48315,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:06:17.883Z'::timestamptz,
+      '2026-01-25T04:39:33.577Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-11'
@@ -48325,7 +48325,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:06:16.944Z'::timestamptz,
+      '2026-01-25T04:39:32.638Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-11'
@@ -48335,7 +48335,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:06:13.663Z'::timestamptz,
+      '2026-01-25T04:39:29.357Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-11'
@@ -48350,7 +48350,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:33:26.222Z'::timestamptz,
+      '2026-01-25T05:06:41.916Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-practice-week-11'
@@ -48360,7 +48360,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:33:26.527Z'::timestamptz,
+      '2026-01-25T05:06:42.221Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-practice-week-11'
@@ -48370,7 +48370,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T07:14:03.162Z'::timestamptz,
+      '2026-01-24T07:47:18.856Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-practice-week-11'
@@ -48380,7 +48380,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:33:23.146Z'::timestamptz,
+      '2026-01-25T05:06:38.840Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-practice-week-11'
@@ -48390,7 +48390,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:33:26.499Z'::timestamptz,
+      '2026-01-25T05:06:42.193Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-practice-week-11'
@@ -48400,7 +48400,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:33:26.167Z'::timestamptz,
+      '2026-01-25T05:06:41.861Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-practice-week-11'
@@ -48410,7 +48410,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:33:25.625Z'::timestamptz,
+      '2026-01-25T05:06:41.319Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-practice-week-11'
@@ -48420,7 +48420,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:33:26.186Z'::timestamptz,
+      '2026-01-25T05:06:41.880Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-practice-week-11'
@@ -48430,7 +48430,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:33:26.491Z'::timestamptz,
+      '2026-01-25T05:06:42.185Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-practice-week-11'
@@ -48440,7 +48440,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:33:26.434Z'::timestamptz,
+      '2026-01-25T05:06:42.128Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-practice-week-11'
@@ -48450,7 +48450,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:33:23.426Z'::timestamptz,
+      '2026-01-25T05:06:39.120Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-practice-week-11'
@@ -48460,7 +48460,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:33:26.407Z'::timestamptz,
+      '2026-01-25T05:06:42.101Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-practice-week-11'
@@ -48470,7 +48470,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:33:23.135Z'::timestamptz,
+      '2026-01-25T05:06:38.829Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-practice-week-11'
@@ -48480,7 +48480,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:33:23.398Z'::timestamptz,
+      '2026-01-25T05:06:39.092Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-practice-week-11'
@@ -48495,7 +48495,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:17:21.316Z'::timestamptz,
+      '2026-01-25T04:50:37.010Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-11'
@@ -48505,7 +48505,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:17:21.657Z'::timestamptz,
+      '2026-01-25T04:50:37.351Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-11'
@@ -48515,7 +48515,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:17:24.606Z'::timestamptz,
+      '2026-01-25T04:50:40.300Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-11'
@@ -48525,7 +48525,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T07:13:34.016Z'::timestamptz,
+      '2026-01-24T07:46:49.710Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-11'
@@ -48535,7 +48535,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:17:24.408Z'::timestamptz,
+      '2026-01-25T04:50:40.102Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-11'
@@ -48545,7 +48545,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T07:13:34.026Z'::timestamptz,
+      '2026-01-24T07:46:49.720Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-11'
@@ -48555,7 +48555,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:17:24.328Z'::timestamptz,
+      '2026-01-25T04:50:40.022Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-11'
@@ -48565,7 +48565,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T07:13:34.007Z'::timestamptz,
+      '2026-01-24T07:46:49.701Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-11'
@@ -48575,7 +48575,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:17:24.930Z'::timestamptz,
+      '2026-01-25T04:50:40.624Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-11'
@@ -48585,7 +48585,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T07:13:34.017Z'::timestamptz,
+      '2026-01-24T07:46:49.711Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-11'
@@ -48595,7 +48595,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:17:25.273Z'::timestamptz,
+      '2026-01-25T04:50:40.967Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-11'
@@ -48605,7 +48605,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:17:24.372Z'::timestamptz,
+      '2026-01-25T04:50:40.066Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-11'
@@ -48615,7 +48615,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:17:21.370Z'::timestamptz,
+      '2026-01-25T04:50:37.064Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-11'
@@ -48625,7 +48625,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:17:24.643Z'::timestamptz,
+      '2026-01-25T04:50:40.337Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-11'
@@ -48635,7 +48635,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:17:21.687Z'::timestamptz,
+      '2026-01-25T04:50:37.381Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-11'
@@ -48645,7 +48645,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:17:24.326Z'::timestamptz,
+      '2026-01-25T04:50:40.020Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-11'
@@ -48655,7 +48655,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:17:21.342Z'::timestamptz,
+      '2026-01-25T04:50:37.036Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-11'
@@ -48665,7 +48665,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:17:21.317Z'::timestamptz,
+      '2026-01-25T04:50:37.011Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-11'
@@ -48675,7 +48675,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T07:13:33.980Z'::timestamptz,
+      '2026-01-24T07:46:49.674Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-11'
@@ -48685,7 +48685,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:17:25.284Z'::timestamptz,
+      '2026-01-25T04:50:40.978Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-11'
@@ -48695,7 +48695,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:17:24.604Z'::timestamptz,
+      '2026-01-25T04:50:40.298Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-11'
@@ -48705,7 +48705,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:17:23.379Z'::timestamptz,
+      '2026-01-25T04:50:39.073Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-11'
@@ -48715,7 +48715,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:17:21.612Z'::timestamptz,
+      '2026-01-25T04:50:37.306Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-11'
@@ -48725,7 +48725,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:17:24.724Z'::timestamptz,
+      '2026-01-25T04:50:40.418Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-11'
@@ -48735,7 +48735,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-22T18:57:05.209Z'::timestamptz,
+      '2026-01-22T19:30:20.903Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-11'
@@ -48745,7 +48745,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:17:21.325Z'::timestamptz,
+      '2026-01-25T04:50:37.019Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-11'
@@ -48755,7 +48755,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:17:21.658Z'::timestamptz,
+      '2026-01-25T04:50:37.352Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-11'
@@ -48765,7 +48765,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:17:25.217Z'::timestamptz,
+      '2026-01-25T04:50:40.911Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-11'
@@ -48775,7 +48775,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:17:24.419Z'::timestamptz,
+      '2026-01-25T04:50:40.113Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-11'
@@ -48785,7 +48785,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:17:21.675Z'::timestamptz,
+      '2026-01-25T04:50:37.369Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-11'
@@ -48795,7 +48795,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:17:21.623Z'::timestamptz,
+      '2026-01-25T04:50:37.317Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-11'
@@ -48805,7 +48805,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:17:21.334Z'::timestamptz,
+      '2026-01-25T04:50:37.028Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-11'
@@ -48815,7 +48815,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:17:21.315Z'::timestamptz,
+      '2026-01-25T04:50:37.009Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-11'
@@ -48825,7 +48825,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T07:13:33.915Z'::timestamptz,
+      '2026-01-24T07:46:49.609Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-11'
@@ -48835,7 +48835,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:17:24.661Z'::timestamptz,
+      '2026-01-25T04:50:40.355Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-11'
@@ -48845,7 +48845,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:17:24.942Z'::timestamptz,
+      '2026-01-25T04:50:40.636Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-11'
@@ -48855,7 +48855,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:17:25.248Z'::timestamptz,
+      '2026-01-25T04:50:40.942Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-11'
@@ -48865,7 +48865,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:17:24.688Z'::timestamptz,
+      '2026-01-25T04:50:40.382Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-11'
@@ -48875,7 +48875,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:17:25.244Z'::timestamptz,
+      '2026-01-25T04:50:40.938Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-11'
@@ -48885,7 +48885,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:17:24.085Z'::timestamptz,
+      '2026-01-25T04:50:39.779Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-11'
@@ -48895,7 +48895,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:17:21.615Z'::timestamptz,
+      '2026-01-25T04:50:37.309Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-11'
@@ -48905,7 +48905,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:17:25.319Z'::timestamptz,
+      '2026-01-25T04:50:41.013Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-11'
@@ -48915,7 +48915,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:17:24.679Z'::timestamptz,
+      '2026-01-25T04:50:40.373Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-11'
@@ -48925,7 +48925,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:17:24.608Z'::timestamptz,
+      '2026-01-25T04:50:40.302Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-11'
@@ -48935,7 +48935,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T07:13:33.924Z'::timestamptz,
+      '2026-01-24T07:46:49.618Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-11'
@@ -48945,7 +48945,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:17:21.317Z'::timestamptz,
+      '2026-01-25T04:50:37.011Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-11'
@@ -48955,7 +48955,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:17:24.112Z'::timestamptz,
+      '2026-01-25T04:50:39.806Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-11'
@@ -48965,7 +48965,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:17:23.230Z'::timestamptz,
+      '2026-01-25T04:50:38.924Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-11'
@@ -48975,7 +48975,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:17:25.257Z'::timestamptz,
+      '2026-01-25T04:50:40.951Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-11'
@@ -48985,7 +48985,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:17:25.238Z'::timestamptz,
+      '2026-01-25T04:50:40.932Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-11'
@@ -48995,7 +48995,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:17:24.419Z'::timestamptz,
+      '2026-01-25T04:50:40.113Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-11'
@@ -49005,7 +49005,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:17:23.472Z'::timestamptz,
+      '2026-01-25T04:50:39.166Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-11'
@@ -49015,7 +49015,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:17:21.658Z'::timestamptz,
+      '2026-01-25T04:50:37.352Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-11'
@@ -49025,7 +49025,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:17:23.183Z'::timestamptz,
+      '2026-01-25T04:50:38.877Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-11'
@@ -49035,7 +49035,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:17:25.219Z'::timestamptz,
+      '2026-01-25T04:50:40.913Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-11'
@@ -49045,7 +49045,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:17:23.992Z'::timestamptz,
+      '2026-01-25T04:50:39.686Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-11'
@@ -49055,7 +49055,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:17:21.679Z'::timestamptz,
+      '2026-01-25T04:50:37.373Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-11'
@@ -49065,7 +49065,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:17:24.410Z'::timestamptz,
+      '2026-01-25T04:50:40.104Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-11'
@@ -49075,7 +49075,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:17:24.326Z'::timestamptz,
+      '2026-01-25T04:50:40.020Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-11'
@@ -49085,7 +49085,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:17:21.596Z'::timestamptz,
+      '2026-01-25T04:50:37.290Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-11'
@@ -49095,7 +49095,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:17:24.707Z'::timestamptz,
+      '2026-01-25T04:50:40.401Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-11'
@@ -49105,7 +49105,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:17:24.938Z'::timestamptz,
+      '2026-01-25T04:50:40.632Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-11'
@@ -49115,7 +49115,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:17:24.319Z'::timestamptz,
+      '2026-01-25T04:50:40.013Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-11'
@@ -49125,7 +49125,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:17:21.396Z'::timestamptz,
+      '2026-01-25T04:50:37.090Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-11'
@@ -49135,7 +49135,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:17:24.686Z'::timestamptz,
+      '2026-01-25T04:50:40.380Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-11'
@@ -49145,7 +49145,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:17:24.104Z'::timestamptz,
+      '2026-01-25T04:50:39.798Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-11'
@@ -49155,7 +49155,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:17:21.400Z'::timestamptz,
+      '2026-01-25T04:50:37.094Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-11'
@@ -49165,7 +49165,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:17:24.381Z'::timestamptz,
+      '2026-01-25T04:50:40.075Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-11'
@@ -49175,7 +49175,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:17:24.662Z'::timestamptz,
+      '2026-01-25T04:50:40.356Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-11'
@@ -49185,7 +49185,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:17:25.239Z'::timestamptz,
+      '2026-01-25T04:50:40.933Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-11'
@@ -49195,7 +49195,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:17:24.644Z'::timestamptz,
+      '2026-01-25T04:50:40.338Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-11'
@@ -49205,7 +49205,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:17:24.400Z'::timestamptz,
+      '2026-01-25T04:50:40.094Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-11'
@@ -49215,7 +49215,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T07:13:33.971Z'::timestamptz,
+      '2026-01-24T07:46:49.665Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-11'
@@ -49225,7 +49225,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:17:21.308Z'::timestamptz,
+      '2026-01-25T04:50:37.002Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-11'
@@ -49235,7 +49235,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:17:25.275Z'::timestamptz,
+      '2026-01-25T04:50:40.969Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-11'
@@ -49245,7 +49245,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:17:24.380Z'::timestamptz,
+      '2026-01-25T04:50:40.074Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-11'
@@ -49260,7 +49260,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:43:11.399Z'::timestamptz,
+      '2026-01-25T05:16:27.093Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-practice-week-11'
@@ -49270,7 +49270,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:43:12.581Z'::timestamptz,
+      '2026-01-25T05:16:28.275Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-practice-week-11'
@@ -49280,7 +49280,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:43:12.302Z'::timestamptz,
+      '2026-01-25T05:16:27.996Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-practice-week-11'
@@ -49290,7 +49290,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:43:15.050Z'::timestamptz,
+      '2026-01-25T05:16:30.744Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-practice-week-11'
@@ -49300,7 +49300,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:43:11.427Z'::timestamptz,
+      '2026-01-25T05:16:27.121Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-practice-week-11'
@@ -49310,7 +49310,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:43:12.313Z'::timestamptz,
+      '2026-01-25T05:16:28.007Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-practice-week-11'
@@ -49320,7 +49320,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:43:15.320Z'::timestamptz,
+      '2026-01-25T05:16:31.014Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-practice-week-11'
@@ -49330,7 +49330,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T07:14:20.924Z'::timestamptz,
+      '2026-01-24T07:47:36.618Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-practice-week-11'
@@ -49340,7 +49340,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:43:13.464Z'::timestamptz,
+      '2026-01-25T05:16:29.158Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-practice-week-11'
@@ -49355,7 +49355,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:27:10.219Z'::timestamptz,
+      '2026-01-25T05:00:25.913Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-week-11'
@@ -49365,7 +49365,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:27:09.933Z'::timestamptz,
+      '2026-01-25T05:00:25.627Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-week-11'
@@ -49375,7 +49375,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:27:11.698Z'::timestamptz,
+      '2026-01-25T05:00:27.392Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-week-11'
@@ -49385,7 +49385,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T07:13:51.852Z'::timestamptz,
+      '2026-01-24T07:47:07.546Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-week-11'
@@ -49395,7 +49395,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:27:10.492Z'::timestamptz,
+      '2026-01-25T05:00:26.186Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-week-11'
@@ -49405,7 +49405,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:27:13.268Z'::timestamptz,
+      '2026-01-25T05:00:28.962Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-week-11'
@@ -49415,7 +49415,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:27:11.419Z'::timestamptz,
+      '2026-01-25T05:00:27.113Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-week-11'
@@ -49425,7 +49425,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:27:10.192Z'::timestamptz,
+      '2026-01-25T05:00:25.886Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-week-11'
@@ -49435,7 +49435,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:27:13.499Z'::timestamptz,
+      '2026-01-25T05:00:29.193Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-week-11'
@@ -49445,7 +49445,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:27:10.453Z'::timestamptz,
+      '2026-01-25T05:00:26.147Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-week-11'
@@ -49455,7 +49455,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:27:13.557Z'::timestamptz,
+      '2026-01-25T05:00:29.251Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-week-11'
@@ -49465,7 +49465,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:27:13.241Z'::timestamptz,
+      '2026-01-25T05:00:28.935Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-week-11'
@@ -49475,7 +49475,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:27:13.187Z'::timestamptz,
+      '2026-01-25T05:00:28.881Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-week-11'
@@ -49485,7 +49485,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:27:10.536Z'::timestamptz,
+      '2026-01-25T05:00:26.230Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-week-11'
@@ -49495,7 +49495,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:27:13.582Z'::timestamptz,
+      '2026-01-25T05:00:29.276Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-week-11'
@@ -49505,7 +49505,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:27:10.498Z'::timestamptz,
+      '2026-01-25T05:00:26.192Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-week-11'
@@ -49515,7 +49515,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:27:11.067Z'::timestamptz,
+      '2026-01-25T05:00:26.761Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-week-11'
@@ -49525,7 +49525,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:27:13.521Z'::timestamptz,
+      '2026-01-25T05:00:29.215Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-week-11'
@@ -49535,7 +49535,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T04:27:11.696Z'::timestamptz,
+      '2026-01-25T05:00:27.390Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-week-11'
@@ -49550,7 +49550,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:02:03.835Z'::timestamptz,
+      '2026-01-24T19:35:19.529Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-practice-week-11'
@@ -49560,7 +49560,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:02:04.781Z'::timestamptz,
+      '2026-01-24T19:35:20.475Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-practice-week-11'
@@ -49570,7 +49570,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:02:03.899Z'::timestamptz,
+      '2026-01-24T19:35:19.593Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-practice-week-11'
@@ -49580,7 +49580,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:02:04.825Z'::timestamptz,
+      '2026-01-24T19:35:20.519Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-practice-week-11'
@@ -49590,7 +49590,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:02:04.537Z'::timestamptz,
+      '2026-01-24T19:35:20.231Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-practice-week-11'
@@ -49600,7 +49600,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:02:02.943Z'::timestamptz,
+      '2026-01-24T19:35:18.637Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-practice-week-11'
@@ -49610,7 +49610,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:02:02.020Z'::timestamptz,
+      '2026-01-24T19:35:17.714Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-practice-week-11'
@@ -49620,7 +49620,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:02:04.800Z'::timestamptz,
+      '2026-01-24T19:35:20.494Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-practice-week-11'
@@ -49630,7 +49630,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:02:04.121Z'::timestamptz,
+      '2026-01-24T19:35:19.815Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-practice-week-11'
@@ -49640,7 +49640,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:02:03.016Z'::timestamptz,
+      '2026-01-24T19:35:18.710Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-practice-week-11'
@@ -49650,7 +49650,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:02:04.445Z'::timestamptz,
+      '2026-01-24T19:35:20.139Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-practice-week-11'
@@ -49660,7 +49660,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:02:03.303Z'::timestamptz,
+      '2026-01-24T19:35:18.997Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-practice-week-11'
@@ -49670,7 +49670,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:02:04.437Z'::timestamptz,
+      '2026-01-24T19:35:20.131Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-practice-week-11'
@@ -49680,7 +49680,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:02:04.789Z'::timestamptz,
+      '2026-01-24T19:35:20.483Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-practice-week-11'
@@ -49695,7 +49695,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T18:56:29.280Z'::timestamptz,
+      '2026-01-24T19:29:44.974Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-12'
@@ -49705,7 +49705,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T18:56:28.345Z'::timestamptz,
+      '2026-01-24T19:29:44.039Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-12'
@@ -49715,7 +49715,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T18:56:30.255Z'::timestamptz,
+      '2026-01-24T19:29:45.949Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-12'
@@ -49725,7 +49725,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T18:56:32.272Z'::timestamptz,
+      '2026-01-24T19:29:47.966Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-12'
@@ -49735,7 +49735,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T18:56:31.122Z'::timestamptz,
+      '2026-01-24T19:29:46.816Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-12'
@@ -49745,7 +49745,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T18:56:31.114Z'::timestamptz,
+      '2026-01-24T19:29:46.808Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-12'
@@ -49755,7 +49755,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T18:56:30.248Z'::timestamptz,
+      '2026-01-24T19:29:45.942Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-12'
@@ -49765,7 +49765,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T18:56:31.112Z'::timestamptz,
+      '2026-01-24T19:29:46.806Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-12'
@@ -49775,7 +49775,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T18:56:28.364Z'::timestamptz,
+      '2026-01-24T19:29:44.058Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-12'
@@ -49785,7 +49785,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T18:56:29.237Z'::timestamptz,
+      '2026-01-24T19:29:44.931Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-12'
@@ -49795,7 +49795,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T18:56:29.356Z'::timestamptz,
+      '2026-01-24T19:29:45.050Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-12'
@@ -49805,7 +49805,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T18:56:30.481Z'::timestamptz,
+      '2026-01-24T19:29:46.175Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-12'
@@ -49815,7 +49815,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T18:56:28.445Z'::timestamptz,
+      '2026-01-24T19:29:44.139Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-12'
@@ -49825,7 +49825,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T18:56:30.203Z'::timestamptz,
+      '2026-01-24T19:29:45.897Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-12'
@@ -49835,7 +49835,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T18:56:31.101Z'::timestamptz,
+      '2026-01-24T19:29:46.795Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-12'
@@ -49845,7 +49845,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T18:56:28.361Z'::timestamptz,
+      '2026-01-24T19:29:44.055Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-12'
@@ -49855,7 +49855,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T18:56:31.428Z'::timestamptz,
+      '2026-01-24T19:29:47.122Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-12'
@@ -49865,7 +49865,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T18:56:29.257Z'::timestamptz,
+      '2026-01-24T19:29:44.951Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-12'
@@ -49875,7 +49875,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T18:56:31.384Z'::timestamptz,
+      '2026-01-24T19:29:47.078Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-12'
@@ -49885,7 +49885,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T18:56:31.130Z'::timestamptz,
+      '2026-01-24T19:29:46.824Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-12'
@@ -49895,7 +49895,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T18:56:32.267Z'::timestamptz,
+      '2026-01-24T19:29:47.961Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-12'
@@ -49905,7 +49905,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T18:56:31.121Z'::timestamptz,
+      '2026-01-24T19:29:46.815Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-12'
@@ -49915,7 +49915,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T18:56:30.518Z'::timestamptz,
+      '2026-01-24T19:29:46.212Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-12'
@@ -49925,7 +49925,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T18:56:28.455Z'::timestamptz,
+      '2026-01-24T19:29:44.149Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-12'
@@ -49935,7 +49935,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T18:56:32.285Z'::timestamptz,
+      '2026-01-24T19:29:47.979Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-12'
@@ -49945,7 +49945,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T18:56:30.434Z'::timestamptz,
+      '2026-01-24T19:29:46.128Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-12'
@@ -49955,7 +49955,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T18:56:30.527Z'::timestamptz,
+      '2026-01-24T19:29:46.221Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-12'
@@ -49965,7 +49965,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T18:56:30.246Z'::timestamptz,
+      '2026-01-24T19:29:45.940Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-12'
@@ -49975,7 +49975,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T18:56:31.437Z'::timestamptz,
+      '2026-01-24T19:29:47.131Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-12'
@@ -49985,7 +49985,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T18:56:31.131Z'::timestamptz,
+      '2026-01-24T19:29:46.825Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-12'
@@ -49995,7 +49995,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T18:56:30.409Z'::timestamptz,
+      '2026-01-24T19:29:46.103Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-12'
@@ -50005,7 +50005,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T18:56:29.643Z'::timestamptz,
+      '2026-01-24T19:29:45.337Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-12'
@@ -50015,7 +50015,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T18:56:28.354Z'::timestamptz,
+      '2026-01-24T19:29:44.048Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-12'
@@ -50025,7 +50025,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T18:56:31.698Z'::timestamptz,
+      '2026-01-24T19:29:47.392Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-12'
@@ -50035,7 +50035,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T18:56:30.190Z'::timestamptz,
+      '2026-01-24T19:29:45.884Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-12'
@@ -50045,7 +50045,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T18:56:31.095Z'::timestamptz,
+      '2026-01-24T19:29:46.789Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-12'
@@ -50055,7 +50055,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T18:56:32.303Z'::timestamptz,
+      '2026-01-24T19:29:47.997Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-12'
@@ -50065,7 +50065,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T18:56:32.266Z'::timestamptz,
+      '2026-01-24T19:29:47.960Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-12'
@@ -50080,7 +50080,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:13:11.207Z'::timestamptz,
+      '2026-01-24T19:46:26.901Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-practice-week-12'
@@ -50090,7 +50090,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:13:10.007Z'::timestamptz,
+      '2026-01-24T19:46:25.701Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-practice-week-12'
@@ -50100,7 +50100,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:13:09.998Z'::timestamptz,
+      '2026-01-24T19:46:25.692Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-practice-week-12'
@@ -50110,7 +50110,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-22T18:56:35.223Z'::timestamptz,
+      '2026-01-22T19:29:50.917Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-practice-week-12'
@@ -50120,7 +50120,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:13:11.622Z'::timestamptz,
+      '2026-01-24T19:46:27.316Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-practice-week-12'
@@ -50130,7 +50130,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:13:10.893Z'::timestamptz,
+      '2026-01-24T19:46:26.587Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-practice-week-12'
@@ -50140,7 +50140,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:13:12.107Z'::timestamptz,
+      '2026-01-24T19:46:27.801Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-practice-week-12'
@@ -50150,7 +50150,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:13:12.081Z'::timestamptz,
+      '2026-01-24T19:46:27.775Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-practice-week-12'
@@ -50160,7 +50160,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:13:12.192Z'::timestamptz,
+      '2026-01-24T19:46:27.886Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-practice-week-12'
@@ -50170,7 +50170,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:13:11.576Z'::timestamptz,
+      '2026-01-24T19:46:27.270Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-practice-week-12'
@@ -50180,7 +50180,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:13:12.498Z'::timestamptz,
+      '2026-01-24T19:46:28.192Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-practice-week-12'
@@ -50190,7 +50190,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:13:12.759Z'::timestamptz,
+      '2026-01-24T19:46:28.453Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-practice-week-12'
@@ -50200,7 +50200,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:13:11.901Z'::timestamptz,
+      '2026-01-24T19:46:27.595Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-practice-week-12'
@@ -50210,7 +50210,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:13:11.253Z'::timestamptz,
+      '2026-01-24T19:46:26.947Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-practice-week-12'
@@ -50220,7 +50220,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:13:11.001Z'::timestamptz,
+      '2026-01-24T19:46:26.695Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-practice-week-12'
@@ -50230,7 +50230,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:13:11.622Z'::timestamptz,
+      '2026-01-24T19:46:27.316Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-practice-week-12'
@@ -50240,7 +50240,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:13:11.288Z'::timestamptz,
+      '2026-01-24T19:46:26.982Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-practice-week-12'
@@ -50250,7 +50250,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:13:12.433Z'::timestamptz,
+      '2026-01-24T19:46:28.127Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-practice-week-12'
@@ -50260,7 +50260,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:13:12.794Z'::timestamptz,
+      '2026-01-24T19:46:28.488Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-practice-week-12'
@@ -50275,7 +50275,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:07:37.882Z'::timestamptz,
+      '2026-01-24T19:40:53.576Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-12'
@@ -50285,7 +50285,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:07:36.430Z'::timestamptz,
+      '2026-01-24T19:40:52.124Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-12'
@@ -50295,7 +50295,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:07:37.034Z'::timestamptz,
+      '2026-01-24T19:40:52.728Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-12'
@@ -50305,7 +50305,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:07:37.243Z'::timestamptz,
+      '2026-01-24T19:40:52.937Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-12'
@@ -50315,7 +50315,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:07:36.998Z'::timestamptz,
+      '2026-01-24T19:40:52.692Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-12'
@@ -50325,7 +50325,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:07:38.393Z'::timestamptz,
+      '2026-01-24T19:40:54.087Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-12'
@@ -50335,7 +50335,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:07:36.313Z'::timestamptz,
+      '2026-01-24T19:40:52.007Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-12'
@@ -50345,7 +50345,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:07:37.248Z'::timestamptz,
+      '2026-01-24T19:40:52.942Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-12'
@@ -50355,7 +50355,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:07:37.594Z'::timestamptz,
+      '2026-01-24T19:40:53.288Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-12'
@@ -50365,7 +50365,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:07:37.512Z'::timestamptz,
+      '2026-01-24T19:40:53.206Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-12'
@@ -50375,7 +50375,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:07:37.000Z'::timestamptz,
+      '2026-01-24T19:40:52.694Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-12'
@@ -50385,7 +50385,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:07:36.366Z'::timestamptz,
+      '2026-01-24T19:40:52.060Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-12'
@@ -50395,7 +50395,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:07:37.239Z'::timestamptz,
+      '2026-01-24T19:40:52.933Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-12'
@@ -50405,7 +50405,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:07:36.302Z'::timestamptz,
+      '2026-01-24T19:40:51.996Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-12'
@@ -50415,7 +50415,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:07:36.999Z'::timestamptz,
+      '2026-01-24T19:40:52.693Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-12'
@@ -50425,7 +50425,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:07:36.906Z'::timestamptz,
+      '2026-01-24T19:40:52.600Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-12'
@@ -50435,7 +50435,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:07:38.421Z'::timestamptz,
+      '2026-01-24T19:40:54.115Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-12'
@@ -50445,7 +50445,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:07:36.349Z'::timestamptz,
+      '2026-01-24T19:40:52.043Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-12'
@@ -50455,7 +50455,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T06:56:54.424Z'::timestamptz,
+      '2026-01-24T07:30:10.118Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-12'
@@ -50470,7 +50470,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:23:01.291Z'::timestamptz,
+      '2026-01-24T19:56:16.986Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-practice-week-12'
@@ -50480,7 +50480,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:23:00.735Z'::timestamptz,
+      '2026-01-24T19:56:16.430Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-practice-week-12'
@@ -50490,7 +50490,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:23:01.302Z'::timestamptz,
+      '2026-01-24T19:56:16.997Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-practice-week-12'
@@ -50500,7 +50500,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:23:00.994Z'::timestamptz,
+      '2026-01-24T19:56:16.689Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-practice-week-12'
@@ -50510,7 +50510,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:22:59.572Z'::timestamptz,
+      '2026-01-24T19:56:15.267Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-practice-week-12'
@@ -50520,7 +50520,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:23:01.338Z'::timestamptz,
+      '2026-01-24T19:56:17.033Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-practice-week-12'
@@ -50530,7 +50530,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:22:57.967Z'::timestamptz,
+      '2026-01-24T19:56:13.662Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-practice-week-12'
@@ -50540,7 +50540,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:23:01.356Z'::timestamptz,
+      '2026-01-24T19:56:17.051Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-practice-week-12'
@@ -50550,7 +50550,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:22:59.518Z'::timestamptz,
+      '2026-01-24T19:56:15.213Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-practice-week-12'
@@ -50560,7 +50560,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:23:01.282Z'::timestamptz,
+      '2026-01-24T19:56:16.977Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-practice-week-12'
@@ -50570,7 +50570,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:22:59.579Z'::timestamptz,
+      '2026-01-24T19:56:15.274Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-practice-week-12'
@@ -50580,7 +50580,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:23:02.248Z'::timestamptz,
+      '2026-01-24T19:56:17.943Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-practice-week-12'
@@ -50590,7 +50590,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:22:58.009Z'::timestamptz,
+      '2026-01-24T19:56:13.704Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-practice-week-12'
@@ -50600,7 +50600,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T06:57:22.346Z'::timestamptz,
+      '2026-01-24T07:30:38.041Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-practice-week-12'
@@ -50615,7 +50615,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:17:24.296Z'::timestamptz,
+      '2026-01-24T19:50:39.991Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-12'
@@ -50625,7 +50625,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:17:27.661Z'::timestamptz,
+      '2026-01-24T19:50:43.356Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-12'
@@ -50635,7 +50635,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T06:57:12.253Z'::timestamptz,
+      '2026-01-24T07:30:27.948Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-12'
@@ -50645,7 +50645,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:17:28.504Z'::timestamptz,
+      '2026-01-24T19:50:44.199Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-12'
@@ -50655,7 +50655,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:17:27.677Z'::timestamptz,
+      '2026-01-24T19:50:43.372Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-12'
@@ -50665,7 +50665,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:17:23.395Z'::timestamptz,
+      '2026-01-24T19:50:39.090Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-12'
@@ -50675,7 +50675,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:17:24.323Z'::timestamptz,
+      '2026-01-24T19:50:40.018Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-12'
@@ -50685,7 +50685,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:17:24.341Z'::timestamptz,
+      '2026-01-24T19:50:40.036Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-12'
@@ -50695,7 +50695,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:17:27.660Z'::timestamptz,
+      '2026-01-24T19:50:43.355Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-12'
@@ -50705,7 +50705,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:17:27.939Z'::timestamptz,
+      '2026-01-24T19:50:43.634Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-12'
@@ -50715,7 +50715,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:17:26.759Z'::timestamptz,
+      '2026-01-24T19:50:42.454Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-12'
@@ -50725,7 +50725,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:17:27.670Z'::timestamptz,
+      '2026-01-24T19:50:43.365Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-12'
@@ -50735,7 +50735,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:17:23.397Z'::timestamptz,
+      '2026-01-24T19:50:39.092Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-12'
@@ -50745,7 +50745,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:17:27.967Z'::timestamptz,
+      '2026-01-24T19:50:43.662Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-12'
@@ -50755,7 +50755,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:17:27.327Z'::timestamptz,
+      '2026-01-24T19:50:43.022Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-12'
@@ -50765,7 +50765,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:17:26.434Z'::timestamptz,
+      '2026-01-24T19:50:42.129Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-12'
@@ -50775,7 +50775,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:17:26.378Z'::timestamptz,
+      '2026-01-24T19:50:42.073Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-12'
@@ -50785,7 +50785,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:17:28.508Z'::timestamptz,
+      '2026-01-24T19:50:44.203Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-12'
@@ -50795,7 +50795,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:17:28.505Z'::timestamptz,
+      '2026-01-24T19:50:44.200Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-12'
@@ -50805,7 +50805,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:17:23.403Z'::timestamptz,
+      '2026-01-24T19:50:39.098Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-12'
@@ -50815,7 +50815,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:17:27.891Z'::timestamptz,
+      '2026-01-24T19:50:43.586Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-12'
@@ -50825,7 +50825,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:17:23.451Z'::timestamptz,
+      '2026-01-24T19:50:39.146Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-12'
@@ -50835,7 +50835,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:17:26.480Z'::timestamptz,
+      '2026-01-24T19:50:42.175Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-12'
@@ -50845,7 +50845,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:17:27.958Z'::timestamptz,
+      '2026-01-24T19:50:43.653Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-12'
@@ -50855,7 +50855,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:17:28.533Z'::timestamptz,
+      '2026-01-24T19:50:44.228Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-12'
@@ -50865,7 +50865,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:17:26.740Z'::timestamptz,
+      '2026-01-24T19:50:42.435Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-12'
@@ -50875,7 +50875,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:17:27.966Z'::timestamptz,
+      '2026-01-24T19:50:43.661Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-12'
@@ -50885,7 +50885,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:17:28.541Z'::timestamptz,
+      '2026-01-24T19:50:44.236Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-12'
@@ -50895,7 +50895,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:17:26.452Z'::timestamptz,
+      '2026-01-24T19:50:42.147Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-12'
@@ -50905,7 +50905,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:17:27.946Z'::timestamptz,
+      '2026-01-24T19:50:43.641Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-12'
@@ -50915,7 +50915,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:17:23.431Z'::timestamptz,
+      '2026-01-24T19:50:39.126Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-12'
@@ -50925,7 +50925,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:17:27.985Z'::timestamptz,
+      '2026-01-24T19:50:43.680Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-12'
@@ -50935,7 +50935,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:17:26.994Z'::timestamptz,
+      '2026-01-24T19:50:42.689Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-12'
@@ -50945,7 +50945,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:17:23.404Z'::timestamptz,
+      '2026-01-24T19:50:39.099Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-12'
@@ -50955,7 +50955,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:17:23.404Z'::timestamptz,
+      '2026-01-24T19:50:39.099Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-12'
@@ -50965,7 +50965,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:17:28.561Z'::timestamptz,
+      '2026-01-24T19:50:44.256Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-12'
@@ -50975,7 +50975,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:17:23.461Z'::timestamptz,
+      '2026-01-24T19:50:39.156Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-12'
@@ -50985,7 +50985,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:17:27.929Z'::timestamptz,
+      '2026-01-24T19:50:43.624Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-12'
@@ -51000,7 +51000,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:34:09.594Z'::timestamptz,
+      '2026-01-24T20:07:25.289Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-practice-week-12'
@@ -51010,7 +51010,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:34:05.952Z'::timestamptz,
+      '2026-01-24T20:07:21.647Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-practice-week-12'
@@ -51020,7 +51020,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:34:07.429Z'::timestamptz,
+      '2026-01-24T20:07:23.124Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-practice-week-12'
@@ -51030,7 +51030,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:34:09.565Z'::timestamptz,
+      '2026-01-24T20:07:25.260Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-practice-week-12'
@@ -51040,7 +51040,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:34:06.926Z'::timestamptz,
+      '2026-01-24T20:07:22.621Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-practice-week-12'
@@ -51050,7 +51050,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:34:05.098Z'::timestamptz,
+      '2026-01-24T20:07:20.793Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-practice-week-12'
@@ -51060,7 +51060,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:34:08.708Z'::timestamptz,
+      '2026-01-24T20:07:24.403Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-practice-week-12'
@@ -51070,7 +51070,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:34:05.067Z'::timestamptz,
+      '2026-01-24T20:07:20.762Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-practice-week-12'
@@ -51080,7 +51080,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:34:09.537Z'::timestamptz,
+      '2026-01-24T20:07:25.232Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-practice-week-12'
@@ -51090,7 +51090,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:34:09.043Z'::timestamptz,
+      '2026-01-24T20:07:24.738Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-practice-week-12'
@@ -51100,7 +51100,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-22T18:56:36.378Z'::timestamptz,
+      '2026-01-22T19:29:52.073Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-practice-week-12'
@@ -51110,7 +51110,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:34:05.959Z'::timestamptz,
+      '2026-01-24T20:07:21.654Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-practice-week-12'
@@ -51120,7 +51120,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:34:05.935Z'::timestamptz,
+      '2026-01-24T20:07:21.630Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-practice-week-12'
@@ -51130,7 +51130,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:34:08.981Z'::timestamptz,
+      '2026-01-24T20:07:24.676Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-practice-week-12'
@@ -51145,7 +51145,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T06:57:32.512Z'::timestamptz,
+      '2026-01-24T07:30:48.207Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-12'
@@ -51155,7 +51155,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:28:34.625Z'::timestamptz,
+      '2026-01-24T20:01:50.320Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-12'
@@ -51165,7 +51165,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:28:34.967Z'::timestamptz,
+      '2026-01-24T20:01:50.662Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-12'
@@ -51175,7 +51175,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:28:35.850Z'::timestamptz,
+      '2026-01-24T20:01:51.545Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-12'
@@ -51185,7 +51185,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:28:35.302Z'::timestamptz,
+      '2026-01-24T20:01:50.997Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-12'
@@ -51195,7 +51195,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:28:34.427Z'::timestamptz,
+      '2026-01-24T20:01:50.122Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-12'
@@ -51205,7 +51205,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:28:35.926Z'::timestamptz,
+      '2026-01-24T20:01:51.621Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-12'
@@ -51215,7 +51215,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:28:34.390Z'::timestamptz,
+      '2026-01-24T20:01:50.085Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-12'
@@ -51225,7 +51225,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:28:35.319Z'::timestamptz,
+      '2026-01-24T20:01:51.014Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-12'
@@ -51235,7 +51235,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:28:31.372Z'::timestamptz,
+      '2026-01-24T20:01:47.067Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-12'
@@ -51245,7 +51245,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T06:57:32.538Z'::timestamptz,
+      '2026-01-24T07:30:48.233Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-12'
@@ -51255,7 +51255,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:28:31.344Z'::timestamptz,
+      '2026-01-24T20:01:47.039Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-12'
@@ -51265,7 +51265,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:28:32.282Z'::timestamptz,
+      '2026-01-24T20:01:47.977Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-12'
@@ -51275,7 +51275,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:28:35.952Z'::timestamptz,
+      '2026-01-24T20:01:51.647Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-12'
@@ -51285,7 +51285,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:28:34.980Z'::timestamptz,
+      '2026-01-24T20:01:50.675Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-12'
@@ -51295,7 +51295,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:28:32.245Z'::timestamptz,
+      '2026-01-24T20:01:47.940Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-12'
@@ -51305,7 +51305,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:28:34.455Z'::timestamptz,
+      '2026-01-24T20:01:50.150Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-12'
@@ -51315,7 +51315,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:28:32.246Z'::timestamptz,
+      '2026-01-24T20:01:47.941Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-12'
@@ -51325,7 +51325,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:28:31.437Z'::timestamptz,
+      '2026-01-24T20:01:47.132Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-12'
@@ -51335,7 +51335,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:28:34.420Z'::timestamptz,
+      '2026-01-24T20:01:50.115Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-12'
@@ -51345,7 +51345,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:28:35.356Z'::timestamptz,
+      '2026-01-24T20:01:51.051Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-12'
@@ -51355,7 +51355,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:28:32.273Z'::timestamptz,
+      '2026-01-24T20:01:47.968Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-12'
@@ -51365,7 +51365,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:28:35.339Z'::timestamptz,
+      '2026-01-24T20:01:51.034Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-12'
@@ -51375,7 +51375,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:28:34.708Z'::timestamptz,
+      '2026-01-24T20:01:50.403Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-12'
@@ -51385,7 +51385,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:28:35.331Z'::timestamptz,
+      '2026-01-24T20:01:51.026Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-12'
@@ -51395,7 +51395,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:28:32.275Z'::timestamptz,
+      '2026-01-24T20:01:47.970Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-12'
@@ -51405,7 +51405,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:28:34.745Z'::timestamptz,
+      '2026-01-24T20:01:50.440Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-12'
@@ -51415,7 +51415,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T06:57:32.429Z'::timestamptz,
+      '2026-01-24T07:30:48.124Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-12'
@@ -51425,7 +51425,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:28:34.132Z'::timestamptz,
+      '2026-01-24T20:01:49.827Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-12'
@@ -51435,7 +51435,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:28:31.390Z'::timestamptz,
+      '2026-01-24T20:01:47.085Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-12'
@@ -51445,7 +51445,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:28:31.345Z'::timestamptz,
+      '2026-01-24T20:01:47.040Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-12'
@@ -51455,7 +51455,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:28:31.438Z'::timestamptz,
+      '2026-01-24T20:01:47.133Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-12'
@@ -51465,7 +51465,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:28:34.428Z'::timestamptz,
+      '2026-01-24T20:01:50.123Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-12'
@@ -51475,7 +51475,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-22T18:56:36.071Z'::timestamptz,
+      '2026-01-22T19:29:51.766Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-12'
@@ -51485,7 +51485,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:28:34.446Z'::timestamptz,
+      '2026-01-24T20:01:50.141Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-12'
@@ -51495,7 +51495,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:28:34.013Z'::timestamptz,
+      '2026-01-24T20:01:49.708Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-12'
@@ -51505,7 +51505,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:28:34.403Z'::timestamptz,
+      '2026-01-24T20:01:50.098Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-12'
@@ -51515,7 +51515,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:28:34.652Z'::timestamptz,
+      '2026-01-24T20:01:50.347Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-12'
@@ -51525,7 +51525,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:28:34.122Z'::timestamptz,
+      '2026-01-24T20:01:49.817Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-12'
@@ -51535,7 +51535,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:28:32.309Z'::timestamptz,
+      '2026-01-24T20:01:48.004Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-12'
@@ -51545,7 +51545,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:28:34.105Z'::timestamptz,
+      '2026-01-24T20:01:49.800Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-12'
@@ -51555,7 +51555,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:28:35.357Z'::timestamptz,
+      '2026-01-24T20:01:51.052Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-12'
@@ -51565,7 +51565,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:28:32.272Z'::timestamptz,
+      '2026-01-24T20:01:47.967Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-12'
@@ -51575,7 +51575,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:28:32.294Z'::timestamptz,
+      '2026-01-24T20:01:47.989Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-12'
@@ -51585,7 +51585,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:28:35.265Z'::timestamptz,
+      '2026-01-24T20:01:50.960Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-12'
@@ -51595,7 +51595,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T06:57:32.483Z'::timestamptz,
+      '2026-01-24T07:30:48.178Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-12'
@@ -51605,7 +51605,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:28:34.012Z'::timestamptz,
+      '2026-01-24T20:01:49.707Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-12'
@@ -51615,7 +51615,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:28:31.353Z'::timestamptz,
+      '2026-01-24T20:01:47.048Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-12'
@@ -51625,7 +51625,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:28:35.933Z'::timestamptz,
+      '2026-01-24T20:01:51.628Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-12'
@@ -51635,7 +51635,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:28:35.312Z'::timestamptz,
+      '2026-01-24T20:01:51.007Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-12'
@@ -51645,7 +51645,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:28:33.138Z'::timestamptz,
+      '2026-01-24T20:01:48.833Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-12'
@@ -51655,7 +51655,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:28:34.355Z'::timestamptz,
+      '2026-01-24T20:01:50.050Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-12'
@@ -51665,7 +51665,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-22T18:56:36.072Z'::timestamptz,
+      '2026-01-22T19:29:51.767Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-12'
@@ -51675,7 +51675,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:28:35.897Z'::timestamptz,
+      '2026-01-24T20:01:51.592Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-12'
@@ -51685,7 +51685,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:28:35.052Z'::timestamptz,
+      '2026-01-24T20:01:50.747Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-12'
@@ -51695,7 +51695,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:28:31.408Z'::timestamptz,
+      '2026-01-24T20:01:47.103Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-12'
@@ -51705,7 +51705,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:28:32.290Z'::timestamptz,
+      '2026-01-24T20:01:47.985Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-12'
@@ -51715,7 +51715,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:28:31.447Z'::timestamptz,
+      '2026-01-24T20:01:47.142Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-12'
@@ -51725,7 +51725,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:28:35.953Z'::timestamptz,
+      '2026-01-24T20:01:51.648Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-12'
@@ -51735,7 +51735,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:28:35.889Z'::timestamptz,
+      '2026-01-24T20:01:51.584Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-12'
@@ -51745,7 +51745,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:28:35.339Z'::timestamptz,
+      '2026-01-24T20:01:51.034Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-12'
@@ -51755,7 +51755,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:28:34.420Z'::timestamptz,
+      '2026-01-24T20:01:50.115Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-12'
@@ -51765,7 +51765,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:28:35.304Z'::timestamptz,
+      '2026-01-24T20:01:50.999Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-12'
@@ -51775,7 +51775,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:28:34.354Z'::timestamptz,
+      '2026-01-24T20:01:50.049Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-12'
@@ -51785,7 +51785,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:28:35.877Z'::timestamptz,
+      '2026-01-24T20:01:51.572Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-12'
@@ -51795,7 +51795,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:28:35.276Z'::timestamptz,
+      '2026-01-24T20:01:50.971Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-12'
@@ -51805,7 +51805,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:28:34.456Z'::timestamptz,
+      '2026-01-24T20:01:50.151Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-12'
@@ -51815,7 +51815,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:28:31.354Z'::timestamptz,
+      '2026-01-24T20:01:47.049Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-12'
@@ -51825,7 +51825,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:28:35.934Z'::timestamptz,
+      '2026-01-24T20:01:51.629Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-12'
@@ -51835,7 +51835,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:28:35.916Z'::timestamptz,
+      '2026-01-24T20:01:51.611Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-12'
@@ -51845,7 +51845,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T06:57:32.521Z'::timestamptz,
+      '2026-01-24T07:30:48.216Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-12'
@@ -51855,7 +51855,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:28:34.410Z'::timestamptz,
+      '2026-01-24T20:01:50.105Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-12'
@@ -51865,7 +51865,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:28:32.247Z'::timestamptz,
+      '2026-01-24T20:01:47.942Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-12'
@@ -51875,7 +51875,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:28:34.150Z'::timestamptz,
+      '2026-01-24T20:01:49.845Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-12'
@@ -51885,7 +51885,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:28:35.907Z'::timestamptz,
+      '2026-01-24T20:01:51.602Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-12'
@@ -51895,7 +51895,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:28:35.273Z'::timestamptz,
+      '2026-01-24T20:01:50.968Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-12'
@@ -51910,7 +51910,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:43:57.868Z'::timestamptz,
+      '2026-01-24T20:17:13.562Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-practice-week-12'
@@ -51920,7 +51920,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:43:57.876Z'::timestamptz,
+      '2026-01-24T20:17:13.570Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-practice-week-12'
@@ -51930,7 +51930,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:43:56.967Z'::timestamptz,
+      '2026-01-24T20:17:12.661Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-practice-week-12'
@@ -51940,7 +51940,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:43:54.773Z'::timestamptz,
+      '2026-01-24T20:17:10.467Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-practice-week-12'
@@ -51950,7 +51950,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:43:53.927Z'::timestamptz,
+      '2026-01-24T20:17:09.621Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-practice-week-12'
@@ -51960,7 +51960,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:43:53.379Z'::timestamptz,
+      '2026-01-24T20:17:09.073Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-practice-week-12'
@@ -51970,7 +51970,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:43:54.548Z'::timestamptz,
+      '2026-01-24T20:17:10.242Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-practice-week-12'
@@ -51980,7 +51980,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:43:53.335Z'::timestamptz,
+      '2026-01-24T20:17:09.029Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-practice-week-12'
@@ -51990,7 +51990,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:43:55.126Z'::timestamptz,
+      '2026-01-24T20:17:10.820Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-practice-week-12'
@@ -52000,7 +52000,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:43:53.992Z'::timestamptz,
+      '2026-01-24T20:17:09.686Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-practice-week-12'
@@ -52010,7 +52010,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:43:54.197Z'::timestamptz,
+      '2026-01-24T20:17:09.891Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-practice-week-12'
@@ -52020,7 +52020,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:43:53.982Z'::timestamptz,
+      '2026-01-24T20:17:09.676Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-practice-week-12'
@@ -52030,7 +52030,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-22T18:56:36.916Z'::timestamptz,
+      '2026-01-22T19:29:52.610Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-practice-week-12'
@@ -52040,7 +52040,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:43:56.964Z'::timestamptz,
+      '2026-01-24T20:17:12.658Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-practice-week-12'
@@ -52055,7 +52055,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:38:20.494Z'::timestamptz,
+      '2026-01-24T20:11:36.188Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-week-12'
@@ -52065,7 +52065,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:38:20.231Z'::timestamptz,
+      '2026-01-24T20:11:35.925Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-week-12'
@@ -52075,7 +52075,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:38:20.564Z'::timestamptz,
+      '2026-01-24T20:11:36.258Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-week-12'
@@ -52085,7 +52085,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:38:21.430Z'::timestamptz,
+      '2026-01-24T20:11:37.124Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-week-12'
@@ -52095,7 +52095,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:38:23.280Z'::timestamptz,
+      '2026-01-24T20:11:38.974Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-week-12'
@@ -52105,7 +52105,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:38:19.646Z'::timestamptz,
+      '2026-01-24T20:11:35.340Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-week-12'
@@ -52115,7 +52115,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:38:23.226Z'::timestamptz,
+      '2026-01-24T20:11:38.920Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-week-12'
@@ -52125,7 +52125,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T06:57:50.292Z'::timestamptz,
+      '2026-01-24T07:31:05.986Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-week-12'
@@ -52135,7 +52135,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:38:21.180Z'::timestamptz,
+      '2026-01-24T20:11:36.874Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-week-12'
@@ -52145,7 +52145,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:38:19.637Z'::timestamptz,
+      '2026-01-24T20:11:35.331Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-week-12'
@@ -52155,7 +52155,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:38:23.224Z'::timestamptz,
+      '2026-01-24T20:11:38.918Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-week-12'
@@ -52165,7 +52165,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:38:23.296Z'::timestamptz,
+      '2026-01-24T20:11:38.990Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-week-12'
@@ -52175,7 +52175,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:38:21.458Z'::timestamptz,
+      '2026-01-24T20:11:37.152Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-week-12'
@@ -52185,7 +52185,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:38:23.268Z'::timestamptz,
+      '2026-01-24T20:11:38.962Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-week-12'
@@ -52195,7 +52195,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:38:19.693Z'::timestamptz,
+      '2026-01-24T20:11:35.387Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-week-12'
@@ -52205,7 +52205,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T06:57:50.339Z'::timestamptz,
+      '2026-01-24T07:31:06.033Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-week-12'
@@ -52215,7 +52215,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:38:21.179Z'::timestamptz,
+      '2026-01-24T20:11:36.873Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-week-12'
@@ -52225,7 +52225,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T19:38:21.143Z'::timestamptz,
+      '2026-01-24T20:11:36.837Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-week-12'
@@ -52235,7 +52235,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T06:57:50.273Z'::timestamptz,
+      '2026-01-24T07:31:05.967Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-week-12'
@@ -52250,7 +52250,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:08:45.539Z'::timestamptz,
+      '2026-01-25T10:42:01.233Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-practice-week-12'
@@ -52260,7 +52260,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:08:44.311Z'::timestamptz,
+      '2026-01-25T10:42:00.005Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-practice-week-12'
@@ -52270,7 +52270,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:08:44.619Z'::timestamptz,
+      '2026-01-25T10:42:00.313Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-practice-week-12'
@@ -52280,7 +52280,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:08:44.341Z'::timestamptz,
+      '2026-01-25T10:42:00.035Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-practice-week-12'
@@ -52290,7 +52290,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:08:44.926Z'::timestamptz,
+      '2026-01-25T10:42:00.620Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-practice-week-12'
@@ -52300,7 +52300,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:08:45.206Z'::timestamptz,
+      '2026-01-25T10:42:00.900Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-practice-week-12'
@@ -52310,7 +52310,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:08:45.800Z'::timestamptz,
+      '2026-01-25T10:42:01.494Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-practice-week-12'
@@ -52320,7 +52320,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:08:44.315Z'::timestamptz,
+      '2026-01-25T10:42:00.009Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-practice-week-12'
@@ -52330,7 +52330,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:08:44.918Z'::timestamptz,
+      '2026-01-25T10:42:00.612Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-practice-week-12'
@@ -52345,7 +52345,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T09:52:42.437Z'::timestamptz,
+      '2026-01-25T10:25:58.131Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-13'
@@ -52355,7 +52355,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T09:52:43.447Z'::timestamptz,
+      '2026-01-25T10:25:59.141Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-13'
@@ -52365,7 +52365,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T09:52:43.098Z'::timestamptz,
+      '2026-01-25T10:25:58.792Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-13'
@@ -52375,7 +52375,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T09:52:43.941Z'::timestamptz,
+      '2026-01-25T10:25:59.635Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-13'
@@ -52385,7 +52385,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T07:23:43.676Z'::timestamptz,
+      '2026-01-24T07:56:59.370Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-13'
@@ -52395,7 +52395,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T09:52:44.062Z'::timestamptz,
+      '2026-01-25T10:25:59.756Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-13'
@@ -52405,7 +52405,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T09:52:42.853Z'::timestamptz,
+      '2026-01-25T10:25:58.547Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-13'
@@ -52415,7 +52415,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T09:52:42.529Z'::timestamptz,
+      '2026-01-25T10:25:58.223Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-13'
@@ -52425,7 +52425,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T09:52:42.510Z'::timestamptz,
+      '2026-01-25T10:25:58.204Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-13'
@@ -52435,7 +52435,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T09:52:42.165Z'::timestamptz,
+      '2026-01-25T10:25:57.859Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-13'
@@ -52445,7 +52445,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T09:52:43.052Z'::timestamptz,
+      '2026-01-25T10:25:58.746Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-13'
@@ -52455,7 +52455,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T09:52:43.133Z'::timestamptz,
+      '2026-01-25T10:25:58.827Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-13'
@@ -52465,7 +52465,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T09:52:44.556Z'::timestamptz,
+      '2026-01-25T10:26:00.250Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-13'
@@ -52475,7 +52475,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T09:52:42.845Z'::timestamptz,
+      '2026-01-25T10:25:58.539Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-13'
@@ -52485,7 +52485,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T09:52:43.736Z'::timestamptz,
+      '2026-01-25T10:25:59.430Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-13'
@@ -52495,7 +52495,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T09:52:43.413Z'::timestamptz,
+      '2026-01-25T10:25:59.107Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-13'
@@ -52505,7 +52505,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T09:52:43.105Z'::timestamptz,
+      '2026-01-25T10:25:58.799Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-13'
@@ -52515,7 +52515,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T09:52:42.835Z'::timestamptz,
+      '2026-01-25T10:25:58.529Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-13'
@@ -52525,7 +52525,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T09:52:44.620Z'::timestamptz,
+      '2026-01-25T10:26:00.314Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-13'
@@ -52535,7 +52535,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T09:52:43.719Z'::timestamptz,
+      '2026-01-25T10:25:59.413Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-13'
@@ -52545,7 +52545,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T09:52:42.183Z'::timestamptz,
+      '2026-01-25T10:25:57.877Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-13'
@@ -52555,7 +52555,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T07:23:43.659Z'::timestamptz,
+      '2026-01-24T07:56:59.353Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-13'
@@ -52565,7 +52565,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T07:23:43.694Z'::timestamptz,
+      '2026-01-24T07:56:59.388Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-13'
@@ -52575,7 +52575,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T09:52:42.538Z'::timestamptz,
+      '2026-01-25T10:25:58.232Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-13'
@@ -52585,7 +52585,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T09:52:42.844Z'::timestamptz,
+      '2026-01-25T10:25:58.538Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-13'
@@ -52595,7 +52595,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T09:52:44.593Z'::timestamptz,
+      '2026-01-25T10:26:00.287Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-13'
@@ -52605,7 +52605,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T09:52:42.202Z'::timestamptz,
+      '2026-01-25T10:25:57.896Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-13'
@@ -52615,7 +52615,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T09:52:43.329Z'::timestamptz,
+      '2026-01-25T10:25:59.023Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-13'
@@ -52625,7 +52625,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T09:52:42.556Z'::timestamptz,
+      '2026-01-25T10:25:58.250Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-13'
@@ -52635,7 +52635,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T09:52:42.139Z'::timestamptz,
+      '2026-01-25T10:25:57.833Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-13'
@@ -52645,7 +52645,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T09:52:42.157Z'::timestamptz,
+      '2026-01-25T10:25:57.851Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-13'
@@ -52655,7 +52655,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T09:52:43.355Z'::timestamptz,
+      '2026-01-25T10:25:59.049Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-13'
@@ -52665,7 +52665,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-22T18:57:23.684Z'::timestamptz,
+      '2026-01-22T19:30:39.378Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-13'
@@ -52675,7 +52675,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T09:52:44.655Z'::timestamptz,
+      '2026-01-25T10:26:00.349Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-13'
@@ -52685,7 +52685,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T09:52:43.142Z'::timestamptz,
+      '2026-01-25T10:25:58.836Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-13'
@@ -52695,7 +52695,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T09:52:41.888Z'::timestamptz,
+      '2026-01-25T10:25:57.582Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-13'
@@ -52705,7 +52705,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T09:52:41.971Z'::timestamptz,
+      '2026-01-25T10:25:57.665Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-13'
@@ -52715,7 +52715,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T09:52:42.167Z'::timestamptz,
+      '2026-01-25T10:25:57.861Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-13'
@@ -52730,7 +52730,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T07:23:52.542Z'::timestamptz,
+      '2026-01-24T07:57:08.236Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-practice-week-13'
@@ -52740,7 +52740,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T09:57:35.984Z'::timestamptz,
+      '2026-01-25T10:30:51.678Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-practice-week-13'
@@ -52750,7 +52750,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T07:23:52.598Z'::timestamptz,
+      '2026-01-24T07:57:08.292Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-practice-week-13'
@@ -52760,7 +52760,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T07:23:52.572Z'::timestamptz,
+      '2026-01-24T07:57:08.266Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-practice-week-13'
@@ -52770,7 +52770,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T09:57:37.553Z'::timestamptz,
+      '2026-01-25T10:30:53.247Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-practice-week-13'
@@ -52780,7 +52780,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T09:57:36.003Z'::timestamptz,
+      '2026-01-25T10:30:51.697Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-practice-week-13'
@@ -52790,7 +52790,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T09:57:37.283Z'::timestamptz,
+      '2026-01-25T10:30:52.977Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-practice-week-13'
@@ -52800,7 +52800,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T09:57:38.166Z'::timestamptz,
+      '2026-01-25T10:30:53.860Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-practice-week-13'
@@ -52810,7 +52810,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T09:57:37.478Z'::timestamptz,
+      '2026-01-25T10:30:53.172Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-practice-week-13'
@@ -52820,7 +52820,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T09:57:37.812Z'::timestamptz,
+      '2026-01-25T10:30:53.506Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-practice-week-13'
@@ -52830,7 +52830,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T09:57:38.734Z'::timestamptz,
+      '2026-01-25T10:30:54.428Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-practice-week-13'
@@ -52840,7 +52840,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T09:57:37.784Z'::timestamptz,
+      '2026-01-25T10:30:53.478Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-practice-week-13'
@@ -52850,7 +52850,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T09:57:37.787Z'::timestamptz,
+      '2026-01-25T10:30:53.481Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-practice-week-13'
@@ -52860,7 +52860,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T09:57:37.816Z'::timestamptz,
+      '2026-01-25T10:30:53.510Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-practice-week-13'
@@ -52870,7 +52870,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T09:57:37.581Z'::timestamptz,
+      '2026-01-25T10:30:53.275Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-practice-week-13'
@@ -52880,7 +52880,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T09:57:36.066Z'::timestamptz,
+      '2026-01-25T10:30:51.760Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-practice-week-13'
@@ -52890,7 +52890,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T09:57:39.040Z'::timestamptz,
+      '2026-01-25T10:30:54.734Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-practice-week-13'
@@ -52900,7 +52900,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T09:57:37.553Z'::timestamptz,
+      '2026-01-25T10:30:53.247Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-practice-week-13'
@@ -52910,7 +52910,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T09:57:35.974Z'::timestamptz,
+      '2026-01-25T10:30:51.668Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-practice-week-13'
@@ -52925,7 +52925,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T09:41:37.181Z'::timestamptz,
+      '2026-01-25T10:14:52.875Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-13'
@@ -52935,7 +52935,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T09:41:35.165Z'::timestamptz,
+      '2026-01-25T10:14:50.859Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-13'
@@ -52945,7 +52945,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T09:41:36.940Z'::timestamptz,
+      '2026-01-25T10:14:52.634Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-13'
@@ -52955,7 +52955,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T09:41:36.040Z'::timestamptz,
+      '2026-01-25T10:14:51.734Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-13'
@@ -52965,7 +52965,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T09:41:36.670Z'::timestamptz,
+      '2026-01-25T10:14:52.364Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-13'
@@ -52975,7 +52975,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T09:41:34.174Z'::timestamptz,
+      '2026-01-25T10:14:49.868Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-13'
@@ -52985,7 +52985,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T09:41:34.154Z'::timestamptz,
+      '2026-01-25T10:14:49.848Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-13'
@@ -52995,7 +52995,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T09:41:34.192Z'::timestamptz,
+      '2026-01-25T10:14:49.886Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-13'
@@ -53005,7 +53005,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T09:41:35.767Z'::timestamptz,
+      '2026-01-25T10:14:51.461Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-13'
@@ -53015,7 +53015,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T09:41:35.788Z'::timestamptz,
+      '2026-01-25T10:14:51.482Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-13'
@@ -53025,7 +53025,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T09:41:35.462Z'::timestamptz,
+      '2026-01-25T10:14:51.156Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-13'
@@ -53035,7 +53035,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T09:41:35.065Z'::timestamptz,
+      '2026-01-25T10:14:50.759Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-13'
@@ -53045,7 +53045,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T09:41:36.959Z'::timestamptz,
+      '2026-01-25T10:14:52.653Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-13'
@@ -53055,7 +53055,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T09:41:35.480Z'::timestamptz,
+      '2026-01-25T10:14:51.174Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-13'
@@ -53065,7 +53065,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T09:41:33.876Z'::timestamptz,
+      '2026-01-25T10:14:49.570Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-13'
@@ -53075,7 +53075,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T09:41:36.643Z'::timestamptz,
+      '2026-01-25T10:14:52.337Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-13'
@@ -53085,7 +53085,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T09:41:33.931Z'::timestamptz,
+      '2026-01-25T10:14:49.625Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-13'
@@ -53095,7 +53095,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T09:41:35.786Z'::timestamptz,
+      '2026-01-25T10:14:51.480Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-13'
@@ -53105,7 +53105,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T09:41:33.904Z'::timestamptz,
+      '2026-01-25T10:14:49.598Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-13'
@@ -53115,7 +53115,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T09:41:34.207Z'::timestamptz,
+      '2026-01-25T10:14:49.901Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-13'
@@ -53125,7 +53125,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T09:41:35.054Z'::timestamptz,
+      '2026-01-25T10:14:50.748Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-13'
@@ -53135,7 +53135,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T09:41:34.207Z'::timestamptz,
+      '2026-01-25T10:14:49.901Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-13'
@@ -53145,7 +53145,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T09:41:37.282Z'::timestamptz,
+      '2026-01-25T10:14:52.976Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-13'
@@ -53155,7 +53155,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T09:41:35.498Z'::timestamptz,
+      '2026-01-25T10:14:51.192Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-13'
@@ -53165,7 +53165,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T09:41:35.768Z'::timestamptz,
+      '2026-01-25T10:14:51.462Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-13'
@@ -53175,7 +53175,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T09:41:37.201Z'::timestamptz,
+      '2026-01-25T10:14:52.895Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-13'
@@ -53185,7 +53185,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T09:41:33.910Z'::timestamptz,
+      '2026-01-25T10:14:49.604Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-13'
@@ -53195,7 +53195,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T09:41:35.750Z'::timestamptz,
+      '2026-01-25T10:14:51.444Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-13'
@@ -53205,7 +53205,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T09:41:33.913Z'::timestamptz,
+      '2026-01-25T10:14:49.607Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-13'
@@ -53215,7 +53215,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T07:23:23.387Z'::timestamptz,
+      '2026-01-24T07:56:39.081Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-13'
@@ -53225,7 +53225,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T09:41:35.499Z'::timestamptz,
+      '2026-01-25T10:14:51.193Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-13'
@@ -53235,7 +53235,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T09:41:33.882Z'::timestamptz,
+      '2026-01-25T10:14:49.576Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-13'
@@ -53245,7 +53245,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T09:41:36.048Z'::timestamptz,
+      '2026-01-25T10:14:51.742Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-13'
@@ -53255,7 +53255,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T09:41:35.956Z'::timestamptz,
+      '2026-01-25T10:14:51.650Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-13'
@@ -53265,7 +53265,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T09:41:37.284Z'::timestamptz,
+      '2026-01-25T10:14:52.978Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-13'
@@ -53275,7 +53275,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T09:41:34.189Z'::timestamptz,
+      '2026-01-25T10:14:49.883Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-13'
@@ -53285,7 +53285,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T09:41:35.433Z'::timestamptz,
+      '2026-01-25T10:14:51.127Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-13'
@@ -53295,7 +53295,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T09:41:35.724Z'::timestamptz,
+      '2026-01-25T10:14:51.418Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-13'
@@ -53305,7 +53305,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T09:41:36.633Z'::timestamptz,
+      '2026-01-25T10:14:52.327Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-13'
@@ -53315,7 +53315,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T09:41:35.343Z'::timestamptz,
+      '2026-01-25T10:14:51.037Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-13'
@@ -53325,7 +53325,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T09:41:33.909Z'::timestamptz,
+      '2026-01-25T10:14:49.603Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-13'
@@ -53335,7 +53335,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T09:41:34.180Z'::timestamptz,
+      '2026-01-25T10:14:49.874Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-13'
@@ -53345,7 +53345,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T09:41:35.478Z'::timestamptz,
+      '2026-01-25T10:14:51.172Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-13'
@@ -53355,7 +53355,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T09:41:36.093Z'::timestamptz,
+      '2026-01-25T10:14:51.787Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-13'
@@ -53365,7 +53365,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T09:41:36.568Z'::timestamptz,
+      '2026-01-25T10:14:52.262Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-13'
@@ -53375,7 +53375,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T09:41:35.345Z'::timestamptz,
+      '2026-01-25T10:14:51.039Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-13'
@@ -53385,7 +53385,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T09:41:33.866Z'::timestamptz,
+      '2026-01-25T10:14:49.560Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-13'
@@ -53395,7 +53395,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T09:41:36.092Z'::timestamptz,
+      '2026-01-25T10:14:51.786Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-13'
@@ -53405,7 +53405,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T09:41:36.950Z'::timestamptz,
+      '2026-01-25T10:14:52.644Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-13'
@@ -53415,7 +53415,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T09:41:35.452Z'::timestamptz,
+      '2026-01-25T10:14:51.146Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-13'
@@ -53425,7 +53425,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T09:41:33.883Z'::timestamptz,
+      '2026-01-25T10:14:49.577Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-13'
@@ -53435,7 +53435,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T09:41:33.875Z'::timestamptz,
+      '2026-01-25T10:14:49.569Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-13'
@@ -53445,7 +53445,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T09:41:37.265Z'::timestamptz,
+      '2026-01-25T10:14:52.959Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-13'
@@ -53455,7 +53455,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T09:41:35.444Z'::timestamptz,
+      '2026-01-25T10:14:51.138Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-13'
@@ -53465,7 +53465,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T09:41:34.209Z'::timestamptz,
+      '2026-01-25T10:14:49.903Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-13'
@@ -53475,7 +53475,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T09:41:36.978Z'::timestamptz,
+      '2026-01-25T10:14:52.672Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-13'
@@ -53485,7 +53485,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T07:23:23.444Z'::timestamptz,
+      '2026-01-24T07:56:39.138Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-13'
@@ -53495,7 +53495,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T09:41:36.949Z'::timestamptz,
+      '2026-01-25T10:14:52.643Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-13'
@@ -53505,7 +53505,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T09:41:35.739Z'::timestamptz,
+      '2026-01-25T10:14:51.433Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-13'
@@ -53515,7 +53515,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T09:41:37.237Z'::timestamptz,
+      '2026-01-25T10:14:52.931Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-13'
@@ -53525,7 +53525,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T09:41:36.039Z'::timestamptz,
+      '2026-01-25T10:14:51.733Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-13'
@@ -53535,7 +53535,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T09:41:36.892Z'::timestamptz,
+      '2026-01-25T10:14:52.586Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-13'
@@ -53545,7 +53545,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T09:41:34.180Z'::timestamptz,
+      '2026-01-25T10:14:49.874Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-13'
@@ -53555,7 +53555,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T09:41:36.076Z'::timestamptz,
+      '2026-01-25T10:14:51.770Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-13'
@@ -53565,7 +53565,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T09:41:35.463Z'::timestamptz,
+      '2026-01-25T10:14:51.157Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-13'
@@ -53575,7 +53575,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T09:41:36.932Z'::timestamptz,
+      '2026-01-25T10:14:52.626Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-13'
@@ -53585,7 +53585,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T09:41:34.190Z'::timestamptz,
+      '2026-01-25T10:14:49.884Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-13'
@@ -53595,7 +53595,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T09:41:35.743Z'::timestamptz,
+      '2026-01-25T10:14:51.437Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-13'
@@ -53605,7 +53605,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T09:41:36.569Z'::timestamptz,
+      '2026-01-25T10:14:52.263Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-13'
@@ -53615,7 +53615,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T09:41:34.189Z'::timestamptz,
+      '2026-01-25T10:14:49.883Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-13'
@@ -53625,7 +53625,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T09:41:33.911Z'::timestamptz,
+      '2026-01-25T10:14:49.605Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-13'
@@ -53635,7 +53635,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T09:41:36.036Z'::timestamptz,
+      '2026-01-25T10:14:51.730Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-13'
@@ -53645,7 +53645,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T09:41:36.012Z'::timestamptz,
+      '2026-01-25T10:14:51.706Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-13'
@@ -53655,7 +53655,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T09:41:34.181Z'::timestamptz,
+      '2026-01-25T10:14:49.875Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-13'
@@ -53665,7 +53665,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T09:41:36.894Z'::timestamptz,
+      '2026-01-25T10:14:52.588Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-13'
@@ -53675,7 +53675,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T09:41:35.418Z'::timestamptz,
+      '2026-01-25T10:14:51.112Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-13'
@@ -53690,7 +53690,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:29:39.013Z'::timestamptz,
+      '2026-01-25T11:02:54.707Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-practice-week-13'
@@ -53700,7 +53700,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:29:41.976Z'::timestamptz,
+      '2026-01-25T11:02:57.670Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-practice-week-13'
@@ -53710,7 +53710,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:29:42.299Z'::timestamptz,
+      '2026-01-25T11:02:57.993Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-practice-week-13'
@@ -53720,7 +53720,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:29:42.384Z'::timestamptz,
+      '2026-01-25T11:02:58.078Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-practice-week-13'
@@ -53730,7 +53730,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:29:40.906Z'::timestamptz,
+      '2026-01-25T11:02:56.600Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-practice-week-13'
@@ -53740,7 +53740,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:29:39.047Z'::timestamptz,
+      '2026-01-25T11:02:54.741Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-practice-week-13'
@@ -53750,7 +53750,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:29:42.051Z'::timestamptz,
+      '2026-01-25T11:02:57.745Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-practice-week-13'
@@ -53760,7 +53760,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:29:42.038Z'::timestamptz,
+      '2026-01-25T11:02:57.732Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-practice-week-13'
@@ -53770,7 +53770,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:29:39.020Z'::timestamptz,
+      '2026-01-25T11:02:54.714Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-practice-week-13'
@@ -53785,7 +53785,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T07:24:21.670Z'::timestamptz,
+      '2026-01-24T07:57:37.364Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-13'
@@ -53795,7 +53795,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:13:40.209Z'::timestamptz,
+      '2026-01-25T10:46:55.903Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-13'
@@ -53805,7 +53805,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:13:40.499Z'::timestamptz,
+      '2026-01-25T10:46:56.193Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-13'
@@ -53815,7 +53815,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T07:24:21.727Z'::timestamptz,
+      '2026-01-24T07:57:37.421Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-13'
@@ -53825,7 +53825,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T07:24:21.779Z'::timestamptz,
+      '2026-01-24T07:57:37.473Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-13'
@@ -53835,7 +53835,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:13:40.807Z'::timestamptz,
+      '2026-01-25T10:46:56.501Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-13'
@@ -53845,7 +53845,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:13:36.895Z'::timestamptz,
+      '2026-01-25T10:46:52.589Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-13'
@@ -53855,7 +53855,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:13:39.059Z'::timestamptz,
+      '2026-01-25T10:46:54.753Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-13'
@@ -53865,7 +53865,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:13:40.851Z'::timestamptz,
+      '2026-01-25T10:46:56.545Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-13'
@@ -53875,7 +53875,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:13:39.697Z'::timestamptz,
+      '2026-01-25T10:46:55.391Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-13'
@@ -53885,7 +53885,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:13:39.968Z'::timestamptz,
+      '2026-01-25T10:46:55.662Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-13'
@@ -53895,7 +53895,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:13:39.635Z'::timestamptz,
+      '2026-01-25T10:46:55.329Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-13'
@@ -53905,7 +53905,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:13:40.843Z'::timestamptz,
+      '2026-01-25T10:46:56.537Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-13'
@@ -53915,7 +53915,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:13:37.182Z'::timestamptz,
+      '2026-01-25T10:46:52.876Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-13'
@@ -53925,7 +53925,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:13:37.209Z'::timestamptz,
+      '2026-01-25T10:46:52.903Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-13'
@@ -53935,7 +53935,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:13:39.920Z'::timestamptz,
+      '2026-01-25T10:46:55.614Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-13'
@@ -53945,7 +53945,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:13:36.903Z'::timestamptz,
+      '2026-01-25T10:46:52.597Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-13'
@@ -53955,7 +53955,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:13:40.786Z'::timestamptz,
+      '2026-01-25T10:46:56.480Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-13'
@@ -53965,7 +53965,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:13:40.852Z'::timestamptz,
+      '2026-01-25T10:46:56.546Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-13'
@@ -53975,7 +53975,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:13:39.957Z'::timestamptz,
+      '2026-01-25T10:46:55.651Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-13'
@@ -53985,7 +53985,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:13:37.200Z'::timestamptz,
+      '2026-01-25T10:46:52.894Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-13'
@@ -53995,7 +53995,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:13:38.770Z'::timestamptz,
+      '2026-01-25T10:46:54.464Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-13'
@@ -54005,7 +54005,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:13:40.849Z'::timestamptz,
+      '2026-01-25T10:46:56.543Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-13'
@@ -54015,7 +54015,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:13:40.888Z'::timestamptz,
+      '2026-01-25T10:46:56.582Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-13'
@@ -54025,7 +54025,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:13:39.978Z'::timestamptz,
+      '2026-01-25T10:46:55.672Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-13'
@@ -54035,7 +54035,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:13:40.564Z'::timestamptz,
+      '2026-01-25T10:46:56.258Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-13'
@@ -54045,7 +54045,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:13:37.244Z'::timestamptz,
+      '2026-01-25T10:46:52.938Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-13'
@@ -54055,7 +54055,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:13:40.266Z'::timestamptz,
+      '2026-01-25T10:46:55.960Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-13'
@@ -54065,7 +54065,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:13:40.852Z'::timestamptz,
+      '2026-01-25T10:46:56.546Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-13'
@@ -54075,7 +54075,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:13:39.969Z'::timestamptz,
+      '2026-01-25T10:46:55.663Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-13'
@@ -54085,7 +54085,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:13:39.986Z'::timestamptz,
+      '2026-01-25T10:46:55.680Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-13'
@@ -54095,7 +54095,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:13:40.822Z'::timestamptz,
+      '2026-01-25T10:46:56.516Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-13'
@@ -54105,7 +54105,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:13:39.103Z'::timestamptz,
+      '2026-01-25T10:46:54.797Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-13'
@@ -54115,7 +54115,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:13:39.969Z'::timestamptz,
+      '2026-01-25T10:46:55.663Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-13'
@@ -54125,7 +54125,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:13:36.876Z'::timestamptz,
+      '2026-01-25T10:46:52.570Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-13'
@@ -54135,7 +54135,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:13:39.888Z'::timestamptz,
+      '2026-01-25T10:46:55.582Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-13'
@@ -54145,7 +54145,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:13:40.843Z'::timestamptz,
+      '2026-01-25T10:46:56.537Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-13'
@@ -54155,7 +54155,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:13:37.199Z'::timestamptz,
+      '2026-01-25T10:46:52.893Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-week-13'
@@ -54170,7 +54170,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:18:31.099Z'::timestamptz,
+      '2026-01-25T10:51:46.793Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-practice-week-13'
@@ -54180,7 +54180,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:18:34.406Z'::timestamptz,
+      '2026-01-25T10:51:50.100Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-practice-week-13'
@@ -54190,7 +54190,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:18:34.631Z'::timestamptz,
+      '2026-01-25T10:51:50.325Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-practice-week-13'
@@ -54200,7 +54200,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:18:33.785Z'::timestamptz,
+      '2026-01-25T10:51:49.479Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-practice-week-13'
@@ -54210,7 +54210,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:18:34.965Z'::timestamptz,
+      '2026-01-25T10:51:50.659Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-practice-week-13'
@@ -54220,7 +54220,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:18:34.984Z'::timestamptz,
+      '2026-01-25T10:51:50.678Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-practice-week-13'
@@ -54230,7 +54230,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:18:35.264Z'::timestamptz,
+      '2026-01-25T10:51:50.958Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-practice-week-13'
@@ -54240,7 +54240,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:18:35.219Z'::timestamptz,
+      '2026-01-25T10:51:50.913Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-practice-week-13'
@@ -54250,7 +54250,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:18:30.710Z'::timestamptz,
+      '2026-01-25T10:51:46.404Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-practice-week-13'
@@ -54260,7 +54260,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:18:34.091Z'::timestamptz,
+      '2026-01-25T10:51:49.785Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-practice-week-13'
@@ -54270,7 +54270,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:18:33.811Z'::timestamptz,
+      '2026-01-25T10:51:49.505Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-practice-week-13'
@@ -54280,7 +54280,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:18:33.766Z'::timestamptz,
+      '2026-01-25T10:51:49.460Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-practice-week-13'
@@ -54290,7 +54290,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:18:30.739Z'::timestamptz,
+      '2026-01-25T10:51:46.433Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-practice-week-13'
@@ -54300,7 +54300,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:18:35.260Z'::timestamptz,
+      '2026-01-25T10:51:50.954Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'sinnoh-champions-practice-week-13'
@@ -54315,7 +54315,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:02:29.258Z'::timestamptz,
+      '2026-01-25T10:35:44.952Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-13'
@@ -54325,7 +54325,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:02:31.900Z'::timestamptz,
+      '2026-01-25T10:35:47.594Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-13'
@@ -54335,7 +54335,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T07:24:01.529Z'::timestamptz,
+      '2026-01-24T07:57:17.223Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-13'
@@ -54345,7 +54345,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:02:29.249Z'::timestamptz,
+      '2026-01-25T10:35:44.943Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-13'
@@ -54355,7 +54355,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:02:31.712Z'::timestamptz,
+      '2026-01-25T10:35:47.406Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-13'
@@ -54365,7 +54365,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T07:24:01.521Z'::timestamptz,
+      '2026-01-24T07:57:17.215Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-13'
@@ -54375,7 +54375,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:02:32.010Z'::timestamptz,
+      '2026-01-25T10:35:47.704Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-13'
@@ -54385,7 +54385,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:02:29.270Z'::timestamptz,
+      '2026-01-25T10:35:44.964Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-13'
@@ -54395,7 +54395,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:02:33.208Z'::timestamptz,
+      '2026-01-25T10:35:48.902Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-13'
@@ -54405,7 +54405,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:02:33.198Z'::timestamptz,
+      '2026-01-25T10:35:48.892Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-13'
@@ -54415,7 +54415,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:02:29.240Z'::timestamptz,
+      '2026-01-25T10:35:44.934Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-13'
@@ -54425,7 +54425,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:02:32.018Z'::timestamptz,
+      '2026-01-25T10:35:47.712Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-13'
@@ -54435,7 +54435,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T07:24:01.556Z'::timestamptz,
+      '2026-01-24T07:57:17.250Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-13'
@@ -54445,7 +54445,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:02:32.884Z'::timestamptz,
+      '2026-01-25T10:35:48.578Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-13'
@@ -54455,7 +54455,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:02:33.495Z'::timestamptz,
+      '2026-01-25T10:35:49.189Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-13'
@@ -54465,7 +54465,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:02:33.489Z'::timestamptz,
+      '2026-01-25T10:35:49.183Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-13'
@@ -54475,7 +54475,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:02:28.924Z'::timestamptz,
+      '2026-01-25T10:35:44.618Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-13'
@@ -54485,7 +54485,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:02:32.522Z'::timestamptz,
+      '2026-01-25T10:35:48.216Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-13'
@@ -54495,7 +54495,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:02:32.920Z'::timestamptz,
+      '2026-01-25T10:35:48.614Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-13'
@@ -54505,7 +54505,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:02:33.161Z'::timestamptz,
+      '2026-01-25T10:35:48.855Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-13'
@@ -54515,7 +54515,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:02:32.578Z'::timestamptz,
+      '2026-01-25T10:35:48.272Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-13'
@@ -54525,7 +54525,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:02:33.172Z'::timestamptz,
+      '2026-01-25T10:35:48.866Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-13'
@@ -54535,7 +54535,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:02:31.694Z'::timestamptz,
+      '2026-01-25T10:35:47.388Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-13'
@@ -54545,7 +54545,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:02:32.856Z'::timestamptz,
+      '2026-01-25T10:35:48.550Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-13'
@@ -54555,7 +54555,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:02:33.457Z'::timestamptz,
+      '2026-01-25T10:35:49.151Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-13'
@@ -54565,7 +54565,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:02:32.893Z'::timestamptz,
+      '2026-01-25T10:35:48.587Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-13'
@@ -54575,7 +54575,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T07:24:01.503Z'::timestamptz,
+      '2026-01-24T07:57:17.197Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-13'
@@ -54585,7 +54585,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:02:33.190Z'::timestamptz,
+      '2026-01-25T10:35:48.884Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-13'
@@ -54595,7 +54595,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:02:32.605Z'::timestamptz,
+      '2026-01-25T10:35:48.299Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-13'
@@ -54605,7 +54605,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:02:29.261Z'::timestamptz,
+      '2026-01-25T10:35:44.955Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-13'
@@ -54615,7 +54615,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:02:31.965Z'::timestamptz,
+      '2026-01-25T10:35:47.659Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-13'
@@ -54625,7 +54625,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:02:32.854Z'::timestamptz,
+      '2026-01-25T10:35:48.548Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-13'
@@ -54635,7 +54635,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:02:33.433Z'::timestamptz,
+      '2026-01-25T10:35:49.127Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-13'
@@ -54645,7 +54645,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:02:32.838Z'::timestamptz,
+      '2026-01-25T10:35:48.532Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-13'
@@ -54655,7 +54655,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:02:28.934Z'::timestamptz,
+      '2026-01-25T10:35:44.628Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-13'
@@ -54665,7 +54665,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:02:33.443Z'::timestamptz,
+      '2026-01-25T10:35:49.137Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-13'
@@ -54675,7 +54675,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:02:33.440Z'::timestamptz,
+      '2026-01-25T10:35:49.134Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-13'
@@ -54685,7 +54685,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:02:29.196Z'::timestamptz,
+      '2026-01-25T10:35:44.890Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-13'
@@ -54695,7 +54695,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:02:33.200Z'::timestamptz,
+      '2026-01-25T10:35:48.894Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-13'
@@ -54705,7 +54705,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:02:28.946Z'::timestamptz,
+      '2026-01-25T10:35:44.640Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-13'
@@ -54715,7 +54715,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:02:29.195Z'::timestamptz,
+      '2026-01-25T10:35:44.889Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-13'
@@ -54725,7 +54725,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:02:29.231Z'::timestamptz,
+      '2026-01-25T10:35:44.925Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-13'
@@ -54735,7 +54735,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:02:33.478Z'::timestamptz,
+      '2026-01-25T10:35:49.172Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-13'
@@ -54745,7 +54745,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:02:32.866Z'::timestamptz,
+      '2026-01-25T10:35:48.560Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-13'
@@ -54755,7 +54755,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:02:33.209Z'::timestamptz,
+      '2026-01-25T10:35:48.903Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-13'
@@ -54765,7 +54765,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:02:32.885Z'::timestamptz,
+      '2026-01-25T10:35:48.579Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-13'
@@ -54775,7 +54775,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:02:33.188Z'::timestamptz,
+      '2026-01-25T10:35:48.882Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-13'
@@ -54785,7 +54785,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:02:32.297Z'::timestamptz,
+      '2026-01-25T10:35:47.991Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-13'
@@ -54795,7 +54795,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:02:29.232Z'::timestamptz,
+      '2026-01-25T10:35:44.926Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-13'
@@ -54805,7 +54805,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:02:32.569Z'::timestamptz,
+      '2026-01-25T10:35:48.263Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-13'
@@ -54815,7 +54815,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:02:29.259Z'::timestamptz,
+      '2026-01-25T10:35:44.953Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-13'
@@ -54825,7 +54825,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:02:32.324Z'::timestamptz,
+      '2026-01-25T10:35:48.018Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-13'
@@ -54835,7 +54835,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:02:33.486Z'::timestamptz,
+      '2026-01-25T10:35:49.180Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-13'
@@ -54845,7 +54845,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:02:33.155Z'::timestamptz,
+      '2026-01-25T10:35:48.849Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-13'
@@ -54855,7 +54855,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:02:29.224Z'::timestamptz,
+      '2026-01-25T10:35:44.918Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-13'
@@ -54865,7 +54865,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:02:32.245Z'::timestamptz,
+      '2026-01-25T10:35:47.939Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-13'
@@ -54875,7 +54875,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:02:32.549Z'::timestamptz,
+      '2026-01-25T10:35:48.243Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-13'
@@ -54885,7 +54885,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:02:31.712Z'::timestamptz,
+      '2026-01-25T10:35:47.406Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-13'
@@ -54895,7 +54895,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:02:33.179Z'::timestamptz,
+      '2026-01-25T10:35:48.873Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-13'
@@ -54905,7 +54905,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:02:29.213Z'::timestamptz,
+      '2026-01-25T10:35:44.907Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-13'
@@ -54915,7 +54915,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:02:28.925Z'::timestamptz,
+      '2026-01-25T10:35:44.619Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-13'
@@ -54925,7 +54925,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:02:33.471Z'::timestamptz,
+      '2026-01-25T10:35:49.165Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-13'
@@ -54935,7 +54935,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:02:33.164Z'::timestamptz,
+      '2026-01-25T10:35:48.858Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-13'
@@ -54945,7 +54945,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:02:32.865Z'::timestamptz,
+      '2026-01-25T10:35:48.559Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-13'
@@ -54955,7 +54955,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:02:28.926Z'::timestamptz,
+      '2026-01-25T10:35:44.620Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-13'
@@ -54965,7 +54965,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:02:33.479Z'::timestamptz,
+      '2026-01-25T10:35:49.173Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-13'
@@ -54975,7 +54975,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:02:32.801Z'::timestamptz,
+      '2026-01-25T10:35:48.495Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-13'
@@ -54985,7 +54985,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:02:33.449Z'::timestamptz,
+      '2026-01-25T10:35:49.143Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-13'
@@ -54995,7 +54995,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:02:28.971Z'::timestamptz,
+      '2026-01-25T10:35:44.665Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-13'
@@ -55005,7 +55005,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:02:29.213Z'::timestamptz,
+      '2026-01-25T10:35:44.907Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-13'
@@ -55015,7 +55015,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:02:28.943Z'::timestamptz,
+      '2026-01-25T10:35:44.637Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-13'
@@ -55025,7 +55025,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:02:32.020Z'::timestamptz,
+      '2026-01-25T10:35:47.714Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-13'
@@ -55035,7 +55035,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:02:33.181Z'::timestamptz,
+      '2026-01-25T10:35:48.875Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-13'
@@ -55045,7 +55045,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:02:32.187Z'::timestamptz,
+      '2026-01-25T10:35:47.881Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-13'
@@ -55055,7 +55055,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:02:32.902Z'::timestamptz,
+      '2026-01-25T10:35:48.596Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-13'
@@ -55065,7 +55065,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:02:32.299Z'::timestamptz,
+      '2026-01-25T10:35:47.993Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-week-13'
@@ -55080,7 +55080,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T07:25:28.855Z'::timestamptz,
+      '2026-01-24T07:58:44.549Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-practice-week-13'
@@ -55090,7 +55090,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:50:34.603Z'::timestamptz,
+      '2026-01-25T11:23:50.297Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-practice-week-13'
@@ -55100,7 +55100,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T07:25:28.883Z'::timestamptz,
+      '2026-01-24T07:58:44.577Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-practice-week-13'
@@ -55110,7 +55110,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:50:35.224Z'::timestamptz,
+      '2026-01-25T11:23:50.918Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-practice-week-13'
@@ -55120,7 +55120,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:50:34.657Z'::timestamptz,
+      '2026-01-25T11:23:50.351Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-practice-week-13'
@@ -55130,7 +55130,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T07:25:28.864Z'::timestamptz,
+      '2026-01-24T07:58:44.558Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-practice-week-13'
@@ -55140,7 +55140,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:50:34.314Z'::timestamptz,
+      '2026-01-25T11:23:50.008Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-practice-week-13'
@@ -55150,7 +55150,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:50:35.855Z'::timestamptz,
+      '2026-01-25T11:23:51.549Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-practice-week-13'
@@ -55160,7 +55160,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:50:36.237Z'::timestamptz,
+      '2026-01-25T11:23:51.931Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-practice-week-13'
@@ -55170,7 +55170,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:50:34.936Z'::timestamptz,
+      '2026-01-25T11:23:50.630Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-practice-week-13'
@@ -55180,7 +55180,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:50:38.902Z'::timestamptz,
+      '2026-01-25T11:23:54.596Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-practice-week-13'
@@ -55190,7 +55190,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:50:35.930Z'::timestamptz,
+      '2026-01-25T11:23:51.624Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-practice-week-13'
@@ -55200,7 +55200,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-24T07:25:28.994Z'::timestamptz,
+      '2026-01-24T07:58:44.688Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-practice-week-13'
@@ -55210,7 +55210,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:50:34.953Z'::timestamptz,
+      '2026-01-25T11:23:50.647Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'kanto-elite-practice-week-13'
@@ -55225,7 +55225,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:34:34.714Z'::timestamptz,
+      '2026-01-25T11:07:50.408Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-week-13'
@@ -55235,7 +55235,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:34:32.800Z'::timestamptz,
+      '2026-01-25T11:07:48.494Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-week-13'
@@ -55245,7 +55245,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:34:32.539Z'::timestamptz,
+      '2026-01-25T11:07:48.233Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-week-13'
@@ -55255,7 +55255,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:34:33.151Z'::timestamptz,
+      '2026-01-25T11:07:48.845Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-week-13'
@@ -55265,7 +55265,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:34:32.596Z'::timestamptz,
+      '2026-01-25T11:07:48.290Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-week-13'
@@ -55275,7 +55275,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:34:33.199Z'::timestamptz,
+      '2026-01-25T11:07:48.893Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-week-13'
@@ -55285,7 +55285,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:34:37.035Z'::timestamptz,
+      '2026-01-25T11:07:52.729Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-week-13'
@@ -55295,7 +55295,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:34:36.751Z'::timestamptz,
+      '2026-01-25T11:07:52.445Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-week-13'
@@ -55305,7 +55305,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:34:33.431Z'::timestamptz,
+      '2026-01-25T11:07:49.125Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-week-13'
@@ -55315,7 +55315,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:34:32.858Z'::timestamptz,
+      '2026-01-25T11:07:48.552Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-week-13'
@@ -55325,7 +55325,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:34:32.827Z'::timestamptz,
+      '2026-01-25T11:07:48.521Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-week-13'
@@ -55335,7 +55335,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:34:33.430Z'::timestamptz,
+      '2026-01-25T11:07:49.124Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-week-13'
@@ -55345,7 +55345,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:34:32.558Z'::timestamptz,
+      '2026-01-25T11:07:48.252Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-week-13'
@@ -55355,7 +55355,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:34:34.026Z'::timestamptz,
+      '2026-01-25T11:07:49.720Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-week-13'
@@ -55365,7 +55365,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:34:34.740Z'::timestamptz,
+      '2026-01-25T11:07:50.434Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-week-13'
@@ -55375,7 +55375,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:34:32.538Z'::timestamptz,
+      '2026-01-25T11:07:48.232Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-week-13'
@@ -55385,7 +55385,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:34:36.760Z'::timestamptz,
+      '2026-01-25T11:07:52.454Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-week-13'
@@ -55395,7 +55395,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:34:33.440Z'::timestamptz,
+      '2026-01-25T11:07:49.134Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-week-13'
@@ -55405,7 +55405,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T10:34:33.421Z'::timestamptz,
+      '2026-01-25T11:07:49.115Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-week-13'
@@ -55420,7 +55420,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T01:09:28.010Z'::timestamptz,
+      '2026-01-25T01:42:43.704Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-practice-week-13'
@@ -55430,7 +55430,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T01:09:26.830Z'::timestamptz,
+      '2026-01-25T01:42:42.524Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-practice-week-13'
@@ -55440,7 +55440,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T01:09:26.441Z'::timestamptz,
+      '2026-01-25T01:42:42.135Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-practice-week-13'
@@ -55450,7 +55450,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T01:09:25.585Z'::timestamptz,
+      '2026-01-25T01:42:41.279Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-practice-week-13'
@@ -55460,7 +55460,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T01:09:26.227Z'::timestamptz,
+      '2026-01-25T01:42:41.921Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-practice-week-13'
@@ -55470,7 +55470,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T01:09:27.063Z'::timestamptz,
+      '2026-01-25T01:42:42.757Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-practice-week-13'
@@ -55480,7 +55480,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T01:09:27.740Z'::timestamptz,
+      '2026-01-25T01:42:43.434Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-practice-week-13'
@@ -55490,7 +55490,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T01:09:27.109Z'::timestamptz,
+      '2026-01-25T01:42:42.803Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-practice-week-13'
@@ -55500,7 +55500,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      '2026-01-25T01:09:25.612Z'::timestamptz,
+      '2026-01-25T01:42:41.306Z'::timestamptz,
       NULL::timestamptz
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'johto-masters-practice-week-13'

@@ -39,8 +39,9 @@ const SEED_FILES = [
   "05_invitations.sql",
   "06_pokemon.sql",
   "07_teams.sql",
-  "08_tournaments.sql",
-  "09_social.sql",
+  "10_tournaments.sql",
+  "11_matches.sql",
+  "12_standings.sql",
 ];
 
 /**

@@ -772,30 +772,46 @@ function generateMatchesSql(
  */
 function generateStandingsSql(
   standings: GeneratedStanding[],
-  tournaments: GeneratedTournament[]
+  tournaments: GeneratedTournament[],
+  matches: GeneratedMatch[],
+  alts: GeneratedAlt[]
 ): string {
   const lines: string[] = [];
 
   lines.push(generateHeader("12_standings.sql", "Create Tournament Standings"));
   lines.push(`-- IDEMPOTENT: Uses ON CONFLICT DO NOTHING`);
-  lines.push(`-- Depends on: 10_tournaments.sql`);
+  lines.push(`-- Depends on: 11_matches.sql`);
   lines.push(`-- Generated: ${standings.length} standings entries`);
   lines.push(
     `-- =============================================================================\n`
   );
 
-  lines.push(`-- Note: Standings are calculated from match results.`);
-  lines.push(
-    `-- This file provides a summary; actual standings should be derived from matches.\n`
-  );
+  // Build lookup maps
+  const tournamentById = new Map<number, GeneratedTournament>();
+  for (const t of tournaments) {
+    tournamentById.set(t.id, t);
+  }
 
-  lines.push(`DO $$`);
-  lines.push(`BEGIN`);
-  lines.push(
-    `  RAISE NOTICE 'Standing seed data: ${standings.length} entries ready';`
-  );
+  const altUsernameById = new Map<number, string>();
+  for (const a of alts) {
+    altUsernameById.set(a.id, a.username);
+  }
 
-  // Summary by tournament
+  // Get max round per tournament (for round_number field)
+  const maxRoundByTournament = new Map<number, number>();
+  for (const match of matches) {
+    const tournament = tournaments.find((t) =>
+      standings.some((s) => s.tournamentId === t.id && s.altId === match.alt1Id)
+    );
+    if (tournament) {
+      const current = maxRoundByTournament.get(tournament.id) || 0;
+      if (match.round > current) {
+        maxRoundByTournament.set(tournament.id, match.round);
+      }
+    }
+  }
+
+  // Group standings by tournament
   const standingsByTournament = new Map<number, GeneratedStanding[]>();
   for (const s of standings) {
     if (!standingsByTournament.has(s.tournamentId)) {
@@ -804,7 +820,86 @@ function generateStandingsSql(
     standingsByTournament.get(s.tournamentId)!.push(s);
   }
 
-  lines.push(`  -- ${standingsByTournament.size} tournaments with standings`);
+  // Start the main DO block
+  lines.push(`DO $$`);
+  lines.push(`DECLARE`);
+  lines.push(`  standings_exist boolean;`);
+  lines.push(`  t_id bigint;`);
+  lines.push(`BEGIN`);
+  lines.push(`  -- Check if standings already exist`);
+  lines.push(
+    `  SELECT EXISTS(SELECT 1 FROM public.tournament_standings LIMIT 1) INTO standings_exist;`
+  );
+  lines.push(`  IF standings_exist THEN`);
+  lines.push(`    RAISE NOTICE 'Standings already exist, skipping';`);
+  lines.push(`    RETURN;`);
+  lines.push(`  END IF;\n`);
+
+  let totalStandings = 0;
+
+  // Only process completed tournaments
+  const completedTournaments = tournaments.filter(
+    (t) => t.status === "completed"
+  );
+
+  for (const tournament of completedTournaments) {
+    const tournamentStandings = standingsByTournament.get(tournament.id);
+    if (!tournamentStandings || tournamentStandings.length === 0) continue;
+
+    const finalRound = maxRoundByTournament.get(tournament.id) || 1;
+
+    lines.push(`  -- Tournament: ${tournament.name}`);
+    lines.push(`  SELECT t.id INTO t_id FROM public.tournaments t`);
+    lines.push(`    WHERE t.slug = '${escapeString(tournament.slug)}';`);
+    lines.push(`  IF t_id IS NOT NULL THEN`);
+
+    // Insert standings for this tournament
+    for (const standing of tournamentStandings) {
+      const altUsername = altUsernameById.get(standing.altId);
+      if (!altUsername) continue;
+
+      const totalMatches = standing.wins + standing.losses;
+      // numeric(5,4) = max 9.9999, so percentages must be 0.0-1.0 decimals
+      const matchWinPct =
+        totalMatches > 0
+          ? Math.round((standing.wins / totalMatches) * 10000) / 10000
+          : 0;
+      const totalGames = standing.gameWins + standing.gameLosses;
+      const gameWinPct =
+        totalGames > 0
+          ? Math.round((standing.gameWins / totalGames) * 10000) / 10000
+          : 0;
+      // Resistance percentage also needs to be 0-1 decimal
+      const resistancePct = Math.round(standing.resistancePct * 100) / 10000;
+
+      // Match points: 3 for win, 0 for loss (standard Swiss)
+      const matchPoints = standing.wins * 3;
+
+      lines.push(`    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = '${escapeString(altUsername)}'),
+      ${finalRound},
+      ${matchPoints},
+      ${standing.gameWins},
+      ${standing.gameLosses},
+      ${matchWinPct},
+      ${gameWinPct},
+      ${resistancePct},
+      ${standing.placement}
+    );`);
+
+      totalStandings++;
+    }
+
+    lines.push(`  END IF;\n`);
+  }
+
+  lines.push(
+    `  RAISE NOTICE 'Created ${totalStandings} standings entries for ${completedTournaments.length} tournaments';`
+  );
   lines.push(`END $$;\n`);
 
   return lines.join("\n");
@@ -882,7 +977,7 @@ async function main() {
     },
     {
       name: "12_standings.sql",
-      content: generateStandingsSql(standings, tournaments),
+      content: generateStandingsSql(standings, tournaments, matches, alts),
     },
   ];
 
