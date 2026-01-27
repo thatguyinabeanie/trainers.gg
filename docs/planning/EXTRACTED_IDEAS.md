@@ -1,6 +1,37 @@
 # Extracted Feature Ideas
 
-> **Purpose:** Consolidated list of feature ideas extracted from archived brainstorming docs. Ready for prioritization and Linear ticket creation.
+> **Status:** ✅ **PROCESSED** — All ideas reviewed and synced to Linear on 2026-01-27
+>
+> **Purpose:** Consolidated list of feature ideas extracted from archived brainstorming docs.
+
+## Processing Summary
+
+| Metric                            | Count |
+| --------------------------------- | ----- |
+| Total Ideas in File               | ~197  |
+| Already Covered by Existing Epics | ~170  |
+| New Issues Created                | 14    |
+
+### New Issues Created
+
+| ID     | Title                                    | Project             | Phase          |
+| ------ | ---------------------------------------- | ------------------- | -------------- |
+| BEA-78 | Subscription Tiers & Monetization System | Infrastructure      | phase:2-growth |
+| BEA-79 | B2B Tournament Organizer Packages        | Tournaments         | phase:3-future |
+| BEA-80 | Creator Marketplace & Content Economy    | Content & Streaming | phase:3-future |
+| BEA-81 | Hardware Partnerships Program            | Infrastructure      | phase:3-future |
+| BEA-82 | Discord Integration                      | Social & Feed       | phase:2-growth |
+| BEA-83 | International Expansion & Localization   | Infrastructure      | phase:3-future |
+| BEA-84 | Apple App Store Featuring Strategy       | Mobile App          | phase:3-future |
+| BEA-85 | Pokemon Unite Integration                | Multi-Game          | phase:3-future |
+| BEA-86 | QR Rental Team Scanner                   | Team Builder        | phase:2-growth |
+| BEA-87 | Notification System                      | Infrastructure      | phase:2-growth |
+| BEA-88 | Accessibility (WCAG Compliance)          | Infrastructure      | phase:1-mvp    |
+| BEA-89 | Pokemon Sprites & Assets Integration     | Infrastructure      | phase:1-mvp    |
+| BEA-90 | Performance Optimization                 | Infrastructure      | phase:2-growth |
+| BEA-91 | Battle Stat Calculator                   | Team Builder        | phase:2-growth |
+
+---
 
 ---
 
@@ -514,8 +545,10 @@
 
 ## Next Steps
 
-1. Review and deduplicate similar ideas
-2. Prioritize by Phase (see PROJECT_BRIEF.md)
-3. Verify audit items against current implementation
-4. Create Linear labels matching categories above
-5. Create Linear tickets with appropriate labels and priorities
+~~1. Review and deduplicate similar ideas~~ ✅ Done
+~~2. Prioritize by Phase (see PROJECT_BRIEF.md)~~ ✅ Done (labels applied)
+~~3. Verify audit items against current implementation~~ ✅ Most covered by existing epics
+~~4. Create Linear labels matching categories above~~ ✅ Using existing labels
+~~5. Create Linear tickets with appropriate labels and priorities~~ ✅ Done (14 new issues created)
+
+**This file has been fully processed.** All ideas are now tracked in Linear across 16 projects.

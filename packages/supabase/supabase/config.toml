@@ -67,8 +67,9 @@ sql_paths = [
   "./seeds/05_invitations.sql",
   "./seeds/06_pokemon.sql",
   "./seeds/07_teams.sql",
-  "./seeds/08_tournaments.sql",
-  "./seeds/09_social.sql"
+  "./seeds/10_tournaments.sql",
+  "./seeds/11_matches.sql",
+  "./seeds/12_standings.sql"
 ]
 
 [db.network_restrictions]

@@ -3,27 +3,18 @@ packages:
   - packages/*
   - tooling/*
 
-# Centralized dependency versions - use "catalog:" prefix in package.json
 catalog:
-  # React ecosystem - pinned to Expo 54 compatible versions
-  # See: https://github.com/expo/expo/blob/sdk-54/packages/expo/bundledNativeModules.json
-  react: 19.1.0
-  react-dom: 19.1.0
+  "@supabase/ssr": ^0.8.0
+  "@supabase/supabase-js": ^2.91.0
+  "@types/node": "catalog:"
   "@types/react": ^19.1.0
   "@types/react-dom": ^19.1.0
-
-  # Core tooling
-  typescript: ^5.9.3
   eslint: ^9.39.2
   prettier: ^3.8.1
-  "@types/node": ^22.19.7
-
-  # Validation
+  react: 19.1.0
+  react-dom: 19.1.0
+  typescript: ^5.9.3
   zod: ^3.25.76
-
-  # Supabase
-  "@supabase/supabase-js": ^2.91.0
-  "@supabase/ssr": ^0.8.0
 
 onlyBuiltDependencies:
   - "@clerk/shared"
