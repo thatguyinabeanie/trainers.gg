@@ -562,17 +562,25 @@ function generateTournamentsSql(
 }
 
 /**
- * Generate 11_matches.sql - Matches and games
+ * Generate 11_matches.sql - Rounds, Matches, and Games
+ *
+ * Database structure:
+ *   tournament_phases (id, tournament_id, ...)
+ *     └── tournament_rounds (id, phase_id, round_number, ...)
+ *           └── tournament_matches (id, round_id, alt1_id, alt2_id, ...)
  */
 function generateMatchesSql(
   matches: GeneratedMatch[],
   games: GeneratedMatchGame[],
   phases: GeneratedTournamentPhase[],
-  tournaments: GeneratedTournament[]
+  tournaments: GeneratedTournament[],
+  alts: GeneratedAlt[]
 ): string {
   const lines: string[] = [];
 
-  lines.push(generateHeader("11_matches.sql", "Create Matches and Games"));
+  lines.push(
+    generateHeader("11_matches.sql", "Create Rounds, Matches, and Games")
+  );
   lines.push(`-- IDEMPOTENT: Uses ON CONFLICT DO NOTHING`);
   lines.push(`-- Depends on: 10_tournaments.sql`);
   lines.push(`-- Generated: ${matches.length} matches, ${games.length} games`);
@@ -580,37 +588,181 @@ function generateMatchesSql(
     `-- =============================================================================\n`
   );
 
-  lines.push(
-    `-- Note: Match generation is complex and requires tournament phase IDs.`
-  );
-  lines.push(
-    `-- This file provides the structure; full match data generation requires`
-  );
-  lines.push(`-- additional tooling to resolve phase IDs at runtime.\n`);
-
-  lines.push(`DO $$`);
-  lines.push(`BEGIN`);
-  lines.push(
-    `  RAISE NOTICE 'Match seed data: ${matches.length} matches ready for insertion';`
-  );
-  lines.push(
-    `  RAISE NOTICE 'Match games: ${games.length} games ready for insertion';`
-  );
-  lines.push(`  -- Full match insertion requires phase ID resolution`);
-  lines.push(`  -- See match generator for detailed implementation`);
-  lines.push(`END $$;\n`);
-
-  // Add sample matches comment
-  lines.push(`-- Sample match structure:`);
-  if (matches.length > 0) {
-    const sample = matches[0]!;
-    lines.push(`-- Match ID: ${sample.id}`);
-    lines.push(`-- Phase ID: ${sample.phaseId} (requires runtime lookup)`);
-    lines.push(`-- Round: ${sample.round}, Table: ${sample.tableNumber}`);
-    lines.push(`-- Players: alt ${sample.alt1Id} vs alt ${sample.alt2Id}`);
-    lines.push(`-- Winner: alt ${sample.winnerAltId}`);
-    lines.push(`-- Score: ${sample.alt1Score}-${sample.alt2Score}`);
+  // Build lookup maps
+  const tournamentById = new Map<number, GeneratedTournament>();
+  for (const t of tournaments) {
+    tournamentById.set(t.id, t);
   }
+
+  const phaseById = new Map<number, GeneratedTournamentPhase>();
+  for (const p of phases) {
+    phaseById.set(p.id, p);
+  }
+
+  const altUsernameById = new Map<number, string>();
+  for (const a of alts) {
+    altUsernameById.set(a.id, a.username);
+  }
+
+  // Group matches by phase and round
+  const matchesByPhaseAndRound = new Map<string, GeneratedMatch[]>();
+  for (const match of matches) {
+    const key = `${match.phaseId}-${match.round}`;
+    if (!matchesByPhaseAndRound.has(key)) {
+      matchesByPhaseAndRound.set(key, []);
+    }
+    matchesByPhaseAndRound.get(key)!.push(match);
+  }
+
+  // Extract unique rounds per phase
+  interface RoundInfo {
+    phaseId: number;
+    roundNumber: number;
+    startTime: Date;
+    endTime: Date;
+  }
+
+  const rounds: RoundInfo[] = [];
+  for (const [key, roundMatches] of matchesByPhaseAndRound) {
+    const [phaseIdStr, roundStr] = key.split("-");
+    const phaseId = parseInt(phaseIdStr!, 10);
+    const roundNumber = parseInt(roundStr!, 10);
+
+    // Get round timing from first and last match
+    const sortedMatches = roundMatches.sort(
+      (a, b) => a.startedAt.getTime() - b.startedAt.getTime()
+    );
+    const startTime = sortedMatches[0]!.startedAt;
+    const endTime = sortedMatches[sortedMatches.length - 1]!.completedAt;
+
+    rounds.push({ phaseId, roundNumber, startTime, endTime });
+  }
+
+  // Sort rounds by phase, then round number
+  rounds.sort((a, b) => {
+    if (a.phaseId !== b.phaseId) return a.phaseId - b.phaseId;
+    return a.roundNumber - b.roundNumber;
+  });
+
+  // Start the main DO block
+  lines.push(`DO $$`);
+  lines.push(`DECLARE`);
+  lines.push(`  matches_exist boolean;`);
+  lines.push(`  phase_id bigint;`);
+  lines.push(`  round_id bigint;`);
+  lines.push(`BEGIN`);
+  lines.push(`  -- Check if matches already exist`);
+  lines.push(
+    `  SELECT EXISTS(SELECT 1 FROM public.tournament_matches LIMIT 1) INTO matches_exist;`
+  );
+  lines.push(`  IF matches_exist THEN`);
+  lines.push(`    RAISE NOTICE 'Matches already exist, skipping';`);
+  lines.push(`    RETURN;`);
+  lines.push(`  END IF;\n`);
+
+  // Group phases by tournament for organized insertion
+  const phasesByTournament = new Map<number, GeneratedTournamentPhase[]>();
+  for (const phase of phases) {
+    if (!phasesByTournament.has(phase.tournamentId)) {
+      phasesByTournament.set(phase.tournamentId, []);
+    }
+    phasesByTournament.get(phase.tournamentId)!.push(phase);
+  }
+
+  // Process only completed tournaments (they have phases)
+  const completedTournaments = tournaments.filter(
+    (t) => t.status === "completed"
+  );
+
+  let totalRounds = 0;
+  let totalMatches = 0;
+
+  for (const tournament of completedTournaments) {
+    const tournamentPhases = phasesByTournament.get(tournament.id) || [];
+    if (tournamentPhases.length === 0) continue;
+
+    lines.push(`  -- Tournament: ${tournament.name}`);
+
+    for (const phase of tournamentPhases.sort(
+      (a, b) => a.phaseOrder - b.phaseOrder
+    )) {
+      // Get rounds for this phase
+      const phaseRounds = rounds.filter((r) => r.phaseId === phase.id);
+      if (phaseRounds.length === 0) continue;
+
+      lines.push(`  -- Phase: ${phase.name}`);
+      lines.push(`  SELECT p.id INTO phase_id FROM public.tournament_phases p`);
+      lines.push(`    JOIN public.tournaments t ON p.tournament_id = t.id`);
+      lines.push(
+        `    WHERE t.slug = '${escapeString(tournament.slug)}' AND p.phase_order = ${phase.phaseOrder};`
+      );
+      lines.push(`  IF phase_id IS NULL THEN`);
+      lines.push(
+        `    RAISE NOTICE 'Phase not found for ${tournament.slug} order ${phase.phaseOrder}';`
+      );
+      lines.push(`  ELSE`);
+
+      for (const round of phaseRounds.sort(
+        (a, b) => a.roundNumber - b.roundNumber
+      )) {
+        const roundMatches = matchesByPhaseAndRound.get(
+          `${phase.id}-${round.roundNumber}`
+        );
+        if (!roundMatches || roundMatches.length === 0) continue;
+
+        // Insert round
+        lines.push(`    -- Round ${round.roundNumber}`);
+        lines.push(`    INSERT INTO public.tournament_rounds (`);
+        lines.push(
+          `      phase_id, round_number, name, status, start_time, end_time`
+        );
+        lines.push(`    ) VALUES (`);
+        lines.push(
+          `      phase_id, ${round.roundNumber}, 'Round ${round.roundNumber}', 'completed'::phase_status,`
+        );
+        lines.push(
+          `      '${round.startTime.toISOString()}'::timestamptz, '${round.endTime.toISOString()}'::timestamptz`
+        );
+        lines.push(`    ) RETURNING id INTO round_id;`);
+        totalRounds++;
+
+        // Insert matches for this round individually to avoid PL/pgSQL variable ambiguity
+        for (const match of roundMatches) {
+          const alt1Username = altUsernameById.get(match.alt1Id);
+          const alt2Username = altUsernameById.get(match.alt2Id);
+          const winnerUsername = altUsernameById.get(match.winnerAltId);
+
+          if (!alt1Username || !alt2Username || !winnerUsername) {
+            throw new Error(`Alt username not found for match ${match.id}`);
+          }
+
+          lines.push(`    INSERT INTO public.tournament_matches (
+      round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
+    ) VALUES (
+      round_id,
+      (SELECT a1.id FROM public.alts a1 WHERE a1.username = '${escapeString(alt1Username)}'),
+      (SELECT a2.id FROM public.alts a2 WHERE a2.username = '${escapeString(alt2Username)}'),
+      (SELECT aw.id FROM public.alts aw WHERE aw.username = '${escapeString(winnerUsername)}'),
+      ${match.alt1Score},
+      ${match.alt2Score},
+      'completed'::phase_status,
+      ${match.tableNumber},
+      '${match.startedAt.toISOString()}'::timestamptz,
+      '${match.completedAt.toISOString()}'::timestamptz
+    );`);
+
+          totalMatches++;
+        }
+      }
+
+      lines.push(`  END IF;\n`);
+    }
+  }
+
+  lines.push(
+    `  RAISE NOTICE 'Created ${totalRounds} rounds and ${totalMatches} matches';`
+  );
+  lines.push(`END $$;\n`);
 
   return lines.join("\n");
 }
@@ -726,7 +878,7 @@ async function main() {
     },
     {
       name: "11_matches.sql",
-      content: generateMatchesSql(matches, games, phases, tournaments),
+      content: generateMatchesSql(matches, games, phases, tournaments, alts),
     },
     {
       name: "12_standings.sql",
