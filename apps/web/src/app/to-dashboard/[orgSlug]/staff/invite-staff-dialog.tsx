@@ -159,7 +159,7 @@ export function InviteStaffDialog({
               <Label>Selected User</Label>
               <div className="bg-muted flex items-center justify-between rounded-lg p-3">
                 <div className="flex items-center gap-3">
-                  <Avatar size="sm">
+                  <Avatar className="h-8 w-8">
                     {selectedUser.image && (
                       <AvatarImage
                         src={selectedUser.image}
@@ -215,7 +215,7 @@ export function InviteStaffDialog({
                       className="hover:bg-muted flex w-full items-center gap-3 p-3 text-left transition-colors"
                       onClick={() => handleSelectUser(user)}
                     >
-                      <Avatar size="sm">
+                      <Avatar className="h-8 w-8">
                         {user.image && (
                           <AvatarImage
                             src={user.image}

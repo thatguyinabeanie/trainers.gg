@@ -125,7 +125,7 @@ export function ChangeRoleDialog({
           <div className="space-y-2">
             <Label>Staff Member</Label>
             <div className="bg-muted flex items-center gap-3 rounded-lg p-3">
-              <Avatar size="sm">
+              <Avatar className="h-8 w-8">
                 {staff.user?.image && (
                   <AvatarImage
                     src={staff.user.image}
