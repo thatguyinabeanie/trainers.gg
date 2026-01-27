@@ -61,19 +61,20 @@ export async function GET(request: Request) {
     // Use atproto client for user table operations (has extended types)
     const supabaseAtproto = createAtprotoServiceClient();
 
-    // Generate placeholder email for lookups
-    const didSlug = did.replace(/[^a-zA-Z0-9]/g, "_").slice(0, 50);
+    // Generate placeholder email from DID (used only for Supabase Auth requirement)
+    // Use the full sanitized DID to prevent collisions - no truncation
+    const didSlug = did.replace(/[^a-zA-Z0-9]/g, "_");
     const placeholderEmail = `${didSlug}@bluesky.trainers.gg`;
 
-    // Step 2: Check if user already exists with this DID or placeholder email
-    // Note: Using separate queries since .or() with special characters in DID can be tricky
+    // Step 2: Check if user already exists - DID is the authoritative identifier
+    // We only fall back to email for legacy accounts that may not have DID set
     let existingUser: {
       id: string;
       email: string | null;
       did: string | null;
     } | null = null;
 
-    // First, check by DID (most reliable)
+    // Primary lookup: by DID (authoritative, collision-free)
     const { data: userByDid } = await supabaseAtproto
       .from("users")
       .select("id, email, did")
@@ -83,11 +84,13 @@ export async function GET(request: Request) {
     if (userByDid) {
       existingUser = userByDid;
     } else {
-      // If not found by DID, check by placeholder email
+      // Fallback: check by placeholder email for legacy accounts without DID
+      // This is only for backwards compatibility with accounts created before
+      // DID was stored. New accounts always have DID set.
       const { data: userByEmail } = await supabaseAtproto
         .from("users")
         .select("id, email, did")
-        .ilike("email", placeholderEmail)
+        .eq("email", placeholderEmail)
         .maybeSingle();
 
       if (userByEmail) {
