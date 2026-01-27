@@ -429,7 +429,7 @@ export function generateTournamentPhases(
         });
 
         // Phase 2: Top Cut (single elimination)
-        const topCutRounds = Math.log2(tournament.topCutSize || 8);
+        const topCutRounds = Math.ceil(Math.log2(tournament.topCutSize || 8));
         const topCutPhaseStatus = getPhaseStatus(tournament.status, 2);
         const topCutCurrentRound = isCompleted ? topCutRounds : 0;
 
@@ -474,7 +474,7 @@ export function generateTournamentPhases(
       }
 
       case "single_elimination": {
-        const rounds = Math.log2(tournament.maxParticipants);
+        const rounds = Math.ceil(Math.log2(tournament.maxParticipants));
         const phaseStatus = getPhaseStatus(tournament.status, 1);
         const currentRound = isCompleted ? rounds : 0;
 
@@ -499,7 +499,7 @@ export function generateTournamentPhases(
       case "double_elimination": {
         // For simplicity, treat as single elimination for now
         // TODO: Implement proper double elimination bracket
-        const rounds = Math.log2(tournament.maxParticipants) + 1;
+        const rounds = Math.ceil(Math.log2(tournament.maxParticipants)) + 1;
         const phaseStatus = getPhaseStatus(tournament.status, 1);
         const currentRound = isCompleted ? rounds : 0;
 
