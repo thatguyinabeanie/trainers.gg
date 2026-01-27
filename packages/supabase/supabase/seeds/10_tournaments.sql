@@ -2,7 +2,7 @@
 -- 10_tournaments.sql - Create Tournaments, Phases, and Registrations
 -- =============================================================================
 -- GENERATED FILE - DO NOT EDIT MANUALLY
--- Generated at: 2026-01-27T02:14:50.566Z
+-- Generated at: 2026-01-27T02:17:55.472Z
 -- IDEMPOTENT: Uses ON CONFLICT and existence checks
 -- =============================================================================
 
@@ -1135,7 +1135,7 @@ BEGIN
   ) VALUES (
     vgc_league_id, 'VGC League Week 9 Championship', 'vgc-league-week-09',
     'VGC League tournament for week 9',
-    'VGC', 'registration_open',
+    'VGC', 'upcoming',
     '2026-01-31T20:00:00.000Z'::timestamptz, '2026-02-01T02:00:00.000Z'::timestamptz,
     '2026-01-31T19:00:00.000Z'::timestamptz, 64,
     'swiss_with_cut', 6, 50, false, 8
@@ -1148,7 +1148,7 @@ BEGIN
   ) VALUES (
     vgc_league_id, 'VGC League Week 9 Practice', 'vgc-league-practice-week-09',
     'Practice tournament for VGC League',
-    'VGC', 'registration_open',
+    'VGC', 'upcoming',
     '2026-01-28T01:00:00.000Z'::timestamptz, '2026-01-28T05:00:00.000Z'::timestamptz,
     '2026-01-28T00:30:00.000Z'::timestamptz, 24,
     'swiss_only', 5, 50, false, NULL
@@ -1161,7 +1161,7 @@ BEGIN
   ) VALUES (
     pallet_town_id, 'Pallet Town Trainers Week 9 Championship', 'pallet-town-week-09',
     'Pallet Town Trainers tournament for week 9',
-    'VGC', 'registration_open',
+    'VGC', 'upcoming',
     '2026-02-01T20:00:00.000Z'::timestamptz, '2026-02-02T02:00:00.000Z'::timestamptz,
     '2026-02-01T19:00:00.000Z'::timestamptz, 128,
     'swiss_with_cut', 7, 50, false, 8
@@ -1174,7 +1174,7 @@ BEGIN
   ) VALUES (
     pallet_town_id, 'Pallet Town Trainers Week 9 Practice', 'pallet-town-practice-week-09',
     'Practice tournament for Pallet Town Trainers',
-    'VGC', 'in_progress',
+    'VGC', 'active',
     '2026-01-27T01:00:00.000Z'::timestamptz, '2026-01-27T05:00:00.000Z'::timestamptz,
     '2026-01-27T00:30:00.000Z'::timestamptz, 24,
     'swiss_only', 5, 50, false, NULL
@@ -1187,7 +1187,7 @@ BEGIN
   ) VALUES (
     sinnoh_champions_id, 'Sinnoh Champions Week 9 Championship', 'sinnoh-champions-week-09',
     'Sinnoh Champions tournament for week 9',
-    'VGC', 'registration_open',
+    'VGC', 'upcoming',
     '2026-01-30T20:00:00.000Z'::timestamptz, '2026-01-31T02:00:00.000Z'::timestamptz,
     '2026-01-30T19:00:00.000Z'::timestamptz, 64,
     'swiss_with_cut', 6, 50, false, 8
@@ -1200,7 +1200,7 @@ BEGIN
   ) VALUES (
     sinnoh_champions_id, 'Sinnoh Champions Week 9 Practice', 'sinnoh-champions-practice-week-09',
     'Practice tournament for Sinnoh Champions',
-    'VGC', 'registration_open',
+    'VGC', 'upcoming',
     '2026-01-29T01:00:00.000Z'::timestamptz, '2026-01-29T05:00:00.000Z'::timestamptz,
     '2026-01-29T00:30:00.000Z'::timestamptz, 32,
     'double_elimination', NULL, 50, false, NULL
@@ -1213,7 +1213,7 @@ BEGIN
   ) VALUES (
     kanto_elite_id, 'Kanto Elite Series Week 9 Championship', 'kanto-elite-week-09',
     'Kanto Elite Series tournament for week 9',
-    'VGC', 'registration_open',
+    'VGC', 'upcoming',
     '2026-01-29T20:00:00.000Z'::timestamptz, '2026-01-30T02:00:00.000Z'::timestamptz,
     '2026-01-29T19:00:00.000Z'::timestamptz, 128,
     'swiss_with_cut', 7, 50, false, 8
@@ -1226,7 +1226,7 @@ BEGIN
   ) VALUES (
     kanto_elite_id, 'Kanto Elite Series Week 9 Practice', 'kanto-elite-practice-week-09',
     'Practice tournament for Kanto Elite Series',
-    'VGC', 'in_progress',
+    'VGC', 'active',
     '2026-01-27T01:00:00.000Z'::timestamptz, '2026-01-27T05:00:00.000Z'::timestamptz,
     '2026-01-27T00:30:00.000Z'::timestamptz, 24,
     'swiss_only', 5, 50, false, NULL
@@ -1239,7 +1239,7 @@ BEGIN
   ) VALUES (
     johto_masters_id, 'Johto Masters League Week 9 Championship', 'johto-masters-week-09',
     'Johto Masters League tournament for week 9',
-    'VGC', 'registration_open',
+    'VGC', 'upcoming',
     '2026-01-28T20:00:00.000Z'::timestamptz, '2026-01-29T02:00:00.000Z'::timestamptz,
     '2026-01-28T19:00:00.000Z'::timestamptz, 64,
     'swiss_with_cut', 6, 50, false, 8
@@ -1252,7 +1252,7 @@ BEGIN
   ) VALUES (
     johto_masters_id, 'Johto Masters League Week 9 Practice', 'johto-masters-practice-week-09',
     'Practice tournament for Johto Masters League',
-    'VGC', 'registration_open',
+    'VGC', 'upcoming',
     '2026-01-28T01:00:00.000Z'::timestamptz, '2026-01-28T05:00:00.000Z'::timestamptz,
     '2026-01-28T00:30:00.000Z'::timestamptz, 24,
     'swiss_only', 5, 50, false, NULL
@@ -1265,7 +1265,7 @@ BEGIN
   ) VALUES (
     vgc_league_id, 'VGC League Week 10 Championship', 'vgc-league-week-10',
     'VGC League tournament for week 10',
-    'VGC', 'registration_open',
+    'VGC', 'upcoming',
     '2026-02-07T20:00:00.000Z'::timestamptz, '2026-02-08T02:00:00.000Z'::timestamptz,
     '2026-02-07T19:00:00.000Z'::timestamptz, 64,
     'swiss_with_cut', 6, 50, false, 8
@@ -1278,7 +1278,7 @@ BEGIN
   ) VALUES (
     vgc_league_id, 'VGC League Week 10 Practice', 'vgc-league-practice-week-10',
     'Practice tournament for VGC League',
-    'VGC', 'registration_open',
+    'VGC', 'upcoming',
     '2026-02-04T01:00:00.000Z'::timestamptz, '2026-02-04T05:00:00.000Z'::timestamptz,
     '2026-02-04T00:30:00.000Z'::timestamptz, 16,
     'swiss_only', 4, 50, false, NULL
@@ -1291,7 +1291,7 @@ BEGIN
   ) VALUES (
     pallet_town_id, 'Pallet Town Trainers Week 10 Championship', 'pallet-town-week-10',
     'Pallet Town Trainers tournament for week 10',
-    'VGC', 'registration_open',
+    'VGC', 'upcoming',
     '2026-02-08T20:00:00.000Z'::timestamptz, '2026-02-09T02:00:00.000Z'::timestamptz,
     '2026-02-08T19:00:00.000Z'::timestamptz, 128,
     'swiss_with_cut', 7, 50, false, 8
@@ -1304,7 +1304,7 @@ BEGIN
   ) VALUES (
     pallet_town_id, 'Pallet Town Trainers Week 10 Practice', 'pallet-town-practice-week-10',
     'Practice tournament for Pallet Town Trainers',
-    'VGC', 'registration_open',
+    'VGC', 'upcoming',
     '2026-02-03T01:00:00.000Z'::timestamptz, '2026-02-03T05:00:00.000Z'::timestamptz,
     '2026-02-03T00:30:00.000Z'::timestamptz, 16,
     'swiss_only', 4, 50, false, NULL
@@ -1317,7 +1317,7 @@ BEGIN
   ) VALUES (
     sinnoh_champions_id, 'Sinnoh Champions Week 10 Championship', 'sinnoh-champions-week-10',
     'Sinnoh Champions tournament for week 10',
-    'VGC', 'registration_open',
+    'VGC', 'upcoming',
     '2026-02-06T20:00:00.000Z'::timestamptz, '2026-02-07T02:00:00.000Z'::timestamptz,
     '2026-02-06T19:00:00.000Z'::timestamptz, 64,
     'swiss_with_cut', 6, 50, false, 8
@@ -1330,7 +1330,7 @@ BEGIN
   ) VALUES (
     sinnoh_champions_id, 'Sinnoh Champions Week 10 Practice', 'sinnoh-champions-practice-week-10',
     'Practice tournament for Sinnoh Champions',
-    'VGC', 'registration_open',
+    'VGC', 'upcoming',
     '2026-02-05T01:00:00.000Z'::timestamptz, '2026-02-05T05:00:00.000Z'::timestamptz,
     '2026-02-05T00:30:00.000Z'::timestamptz, 32,
     'single_elimination', NULL, 50, false, NULL
@@ -1343,7 +1343,7 @@ BEGIN
   ) VALUES (
     kanto_elite_id, 'Kanto Elite Series Week 10 Championship', 'kanto-elite-week-10',
     'Kanto Elite Series tournament for week 10',
-    'VGC', 'registration_open',
+    'VGC', 'upcoming',
     '2026-02-05T20:00:00.000Z'::timestamptz, '2026-02-06T02:00:00.000Z'::timestamptz,
     '2026-02-05T19:00:00.000Z'::timestamptz, 128,
     'swiss_with_cut', 7, 50, false, 8
@@ -1356,7 +1356,7 @@ BEGIN
   ) VALUES (
     kanto_elite_id, 'Kanto Elite Series Week 10 Practice', 'kanto-elite-practice-week-10',
     'Practice tournament for Kanto Elite Series',
-    'VGC', 'registration_open',
+    'VGC', 'upcoming',
     '2026-02-03T01:00:00.000Z'::timestamptz, '2026-02-03T05:00:00.000Z'::timestamptz,
     '2026-02-03T00:30:00.000Z'::timestamptz, 16,
     'swiss_only', 4, 50, false, NULL
@@ -1369,7 +1369,7 @@ BEGIN
   ) VALUES (
     johto_masters_id, 'Johto Masters League Week 10 Championship', 'johto-masters-week-10',
     'Johto Masters League tournament for week 10',
-    'VGC', 'registration_open',
+    'VGC', 'upcoming',
     '2026-02-04T20:00:00.000Z'::timestamptz, '2026-02-05T02:00:00.000Z'::timestamptz,
     '2026-02-04T19:00:00.000Z'::timestamptz, 32,
     'swiss_with_cut', 5, 50, false, 4
@@ -1382,7 +1382,7 @@ BEGIN
   ) VALUES (
     johto_masters_id, 'Johto Masters League Week 10 Practice', 'johto-masters-practice-week-10',
     'Practice tournament for Johto Masters League',
-    'VGC', 'registration_open',
+    'VGC', 'upcoming',
     '2026-02-04T01:00:00.000Z'::timestamptz, '2026-02-04T05:00:00.000Z'::timestamptz,
     '2026-02-04T00:30:00.000Z'::timestamptz, 24,
     'swiss_only', 5, 50, false, NULL
@@ -1396,7 +1396,7 @@ BEGIN
   ) VALUES (
     vgc_league_id, 'VGC League Week 11 Championship', 'vgc-league-week-11',
     'VGC League tournament for week 11',
-    'VGC', 'registration_open',
+    'VGC', 'upcoming',
     '2026-02-14T20:00:00.000Z'::timestamptz, '2026-02-15T02:00:00.000Z'::timestamptz,
     '2026-02-14T19:00:00.000Z'::timestamptz, 64,
     'swiss_with_cut', 6, 50, false, 8
@@ -1409,7 +1409,7 @@ BEGIN
   ) VALUES (
     vgc_league_id, 'VGC League Week 11 Practice', 'vgc-league-practice-week-11',
     'Practice tournament for VGC League',
-    'VGC', 'registration_open',
+    'VGC', 'upcoming',
     '2026-02-11T01:00:00.000Z'::timestamptz, '2026-02-11T05:00:00.000Z'::timestamptz,
     '2026-02-11T00:30:00.000Z'::timestamptz, 16,
     'swiss_only', 4, 50, false, NULL
@@ -1422,7 +1422,7 @@ BEGIN
   ) VALUES (
     pallet_town_id, 'Pallet Town Trainers Week 11 Championship', 'pallet-town-week-11',
     'Pallet Town Trainers tournament for week 11',
-    'VGC', 'registration_open',
+    'VGC', 'upcoming',
     '2026-02-15T20:00:00.000Z'::timestamptz, '2026-02-16T02:00:00.000Z'::timestamptz,
     '2026-02-15T19:00:00.000Z'::timestamptz, 128,
     'swiss_with_cut', 7, 50, false, 8
@@ -1435,7 +1435,7 @@ BEGIN
   ) VALUES (
     pallet_town_id, 'Pallet Town Trainers Week 11 Practice', 'pallet-town-practice-week-11',
     'Practice tournament for Pallet Town Trainers',
-    'VGC', 'registration_open',
+    'VGC', 'upcoming',
     '2026-02-10T01:00:00.000Z'::timestamptz, '2026-02-10T05:00:00.000Z'::timestamptz,
     '2026-02-10T00:30:00.000Z'::timestamptz, 16,
     'swiss_only', 4, 50, false, NULL
@@ -1448,7 +1448,7 @@ BEGIN
   ) VALUES (
     sinnoh_champions_id, 'Sinnoh Champions Week 11 Championship', 'sinnoh-champions-week-11',
     'Sinnoh Champions tournament for week 11',
-    'VGC', 'registration_open',
+    'VGC', 'upcoming',
     '2026-02-13T20:00:00.000Z'::timestamptz, '2026-02-14T02:00:00.000Z'::timestamptz,
     '2026-02-13T19:00:00.000Z'::timestamptz, 64,
     'swiss_with_cut', 6, 50, false, 8
@@ -1461,7 +1461,7 @@ BEGIN
   ) VALUES (
     sinnoh_champions_id, 'Sinnoh Champions Week 11 Practice', 'sinnoh-champions-practice-week-11',
     'Practice tournament for Sinnoh Champions',
-    'VGC', 'registration_open',
+    'VGC', 'upcoming',
     '2026-02-12T01:00:00.000Z'::timestamptz, '2026-02-12T05:00:00.000Z'::timestamptz,
     '2026-02-12T00:30:00.000Z'::timestamptz, 24,
     'swiss_only', 5, 50, false, NULL
@@ -1474,7 +1474,7 @@ BEGIN
   ) VALUES (
     kanto_elite_id, 'Kanto Elite Series Week 11 Championship', 'kanto-elite-week-11',
     'Kanto Elite Series tournament for week 11',
-    'VGC', 'registration_open',
+    'VGC', 'upcoming',
     '2026-02-12T20:00:00.000Z'::timestamptz, '2026-02-13T02:00:00.000Z'::timestamptz,
     '2026-02-12T19:00:00.000Z'::timestamptz, 128,
     'swiss_with_cut', 7, 50, false, 8
@@ -1487,7 +1487,7 @@ BEGIN
   ) VALUES (
     kanto_elite_id, 'Kanto Elite Series Week 11 Practice', 'kanto-elite-practice-week-11',
     'Practice tournament for Kanto Elite Series',
-    'VGC', 'registration_open',
+    'VGC', 'upcoming',
     '2026-02-10T01:00:00.000Z'::timestamptz, '2026-02-10T05:00:00.000Z'::timestamptz,
     '2026-02-10T00:30:00.000Z'::timestamptz, 16,
     'swiss_only', 4, 50, false, NULL
@@ -1500,7 +1500,7 @@ BEGIN
   ) VALUES (
     johto_masters_id, 'Johto Masters League Week 11 Championship', 'johto-masters-week-11',
     'Johto Masters League tournament for week 11',
-    'VGC', 'registration_open',
+    'VGC', 'upcoming',
     '2026-02-11T20:00:00.000Z'::timestamptz, '2026-02-12T02:00:00.000Z'::timestamptz,
     '2026-02-11T19:00:00.000Z'::timestamptz, 32,
     'swiss_with_cut', 5, 50, false, 4
@@ -1513,7 +1513,7 @@ BEGIN
   ) VALUES (
     johto_masters_id, 'Johto Masters League Week 11 Practice', 'johto-masters-practice-week-11',
     'Practice tournament for Johto Masters League',
-    'VGC', 'registration_open',
+    'VGC', 'upcoming',
     '2026-02-11T01:00:00.000Z'::timestamptz, '2026-02-11T05:00:00.000Z'::timestamptz,
     '2026-02-11T00:30:00.000Z'::timestamptz, 24,
     'swiss_only', 5, 50, false, NULL
@@ -1526,7 +1526,7 @@ BEGIN
   ) VALUES (
     vgc_league_id, 'VGC League Week 12 Championship', 'vgc-league-week-12',
     'VGC League tournament for week 12',
-    'VGC', 'registration_open',
+    'VGC', 'upcoming',
     '2026-02-21T20:00:00.000Z'::timestamptz, '2026-02-22T02:00:00.000Z'::timestamptz,
     '2026-02-21T19:00:00.000Z'::timestamptz, 64,
     'swiss_with_cut', 6, 50, false, 8
@@ -1539,7 +1539,7 @@ BEGIN
   ) VALUES (
     vgc_league_id, 'VGC League Week 12 Practice', 'vgc-league-practice-week-12',
     'Practice tournament for VGC League',
-    'VGC', 'registration_open',
+    'VGC', 'upcoming',
     '2026-02-18T01:00:00.000Z'::timestamptz, '2026-02-18T05:00:00.000Z'::timestamptz,
     '2026-02-18T00:30:00.000Z'::timestamptz, 32,
     'single_elimination', NULL, 50, false, NULL
@@ -1552,7 +1552,7 @@ BEGIN
   ) VALUES (
     pallet_town_id, 'Pallet Town Trainers Week 12 Championship', 'pallet-town-week-12',
     'Pallet Town Trainers tournament for week 12',
-    'VGC', 'registration_open',
+    'VGC', 'upcoming',
     '2026-02-22T20:00:00.000Z'::timestamptz, '2026-02-23T02:00:00.000Z'::timestamptz,
     '2026-02-22T19:00:00.000Z'::timestamptz, 32,
     'swiss_with_cut', 5, 50, false, 4
@@ -1565,7 +1565,7 @@ BEGIN
   ) VALUES (
     pallet_town_id, 'Pallet Town Trainers Week 12 Practice', 'pallet-town-practice-week-12',
     'Practice tournament for Pallet Town Trainers',
-    'VGC', 'registration_open',
+    'VGC', 'upcoming',
     '2026-02-17T01:00:00.000Z'::timestamptz, '2026-02-17T05:00:00.000Z'::timestamptz,
     '2026-02-17T00:30:00.000Z'::timestamptz, 24,
     'swiss_only', 5, 50, false, NULL
@@ -1578,7 +1578,7 @@ BEGIN
   ) VALUES (
     sinnoh_champions_id, 'Sinnoh Champions Week 12 Championship', 'sinnoh-champions-week-12',
     'Sinnoh Champions tournament for week 12',
-    'VGC', 'registration_open',
+    'VGC', 'upcoming',
     '2026-02-20T20:00:00.000Z'::timestamptz, '2026-02-21T02:00:00.000Z'::timestamptz,
     '2026-02-20T19:00:00.000Z'::timestamptz, 64,
     'swiss_with_cut', 6, 50, false, 8
@@ -1591,7 +1591,7 @@ BEGIN
   ) VALUES (
     sinnoh_champions_id, 'Sinnoh Champions Week 12 Practice', 'sinnoh-champions-practice-week-12',
     'Practice tournament for Sinnoh Champions',
-    'VGC', 'registration_open',
+    'VGC', 'upcoming',
     '2026-02-19T01:00:00.000Z'::timestamptz, '2026-02-19T05:00:00.000Z'::timestamptz,
     '2026-02-19T00:30:00.000Z'::timestamptz, 24,
     'swiss_only', 5, 50, false, NULL
@@ -1604,7 +1604,7 @@ BEGIN
   ) VALUES (
     kanto_elite_id, 'Kanto Elite Series Week 12 Championship', 'kanto-elite-week-12',
     'Kanto Elite Series tournament for week 12',
-    'VGC', 'registration_open',
+    'VGC', 'upcoming',
     '2026-02-19T20:00:00.000Z'::timestamptz, '2026-02-20T02:00:00.000Z'::timestamptz,
     '2026-02-19T19:00:00.000Z'::timestamptz, 128,
     'swiss_with_cut', 7, 50, false, 8
@@ -1617,7 +1617,7 @@ BEGIN
   ) VALUES (
     kanto_elite_id, 'Kanto Elite Series Week 12 Practice', 'kanto-elite-practice-week-12',
     'Practice tournament for Kanto Elite Series',
-    'VGC', 'registration_open',
+    'VGC', 'upcoming',
     '2026-02-17T01:00:00.000Z'::timestamptz, '2026-02-17T05:00:00.000Z'::timestamptz,
     '2026-02-17T00:30:00.000Z'::timestamptz, 24,
     'swiss_only', 5, 50, false, NULL
@@ -1630,7 +1630,7 @@ BEGIN
   ) VALUES (
     johto_masters_id, 'Johto Masters League Week 12 Championship', 'johto-masters-week-12',
     'Johto Masters League tournament for week 12',
-    'VGC', 'registration_open',
+    'VGC', 'upcoming',
     '2026-02-18T20:00:00.000Z'::timestamptz, '2026-02-19T02:00:00.000Z'::timestamptz,
     '2026-02-18T19:00:00.000Z'::timestamptz, 32,
     'swiss_with_cut', 5, 50, false, 4
@@ -1643,7 +1643,7 @@ BEGIN
   ) VALUES (
     johto_masters_id, 'Johto Masters League Week 12 Practice', 'johto-masters-practice-week-12',
     'Practice tournament for Johto Masters League',
-    'VGC', 'registration_open',
+    'VGC', 'upcoming',
     '2026-02-18T01:00:00.000Z'::timestamptz, '2026-02-18T05:00:00.000Z'::timestamptz,
     '2026-02-18T00:30:00.000Z'::timestamptz, 16,
     'swiss_only', 4, 50, false, NULL
@@ -1657,7 +1657,7 @@ BEGIN
   ) VALUES (
     vgc_league_id, 'VGC League Week 13 Championship', 'vgc-league-week-13',
     'VGC League tournament for week 13',
-    'VGC', 'registration_open',
+    'VGC', 'upcoming',
     '2026-02-28T20:00:00.000Z'::timestamptz, '2026-03-01T02:00:00.000Z'::timestamptz,
     '2026-02-28T19:00:00.000Z'::timestamptz, 64,
     'swiss_with_cut', 6, 50, false, 8
@@ -1670,7 +1670,7 @@ BEGIN
   ) VALUES (
     vgc_league_id, 'VGC League Week 13 Practice', 'vgc-league-practice-week-13',
     'Practice tournament for VGC League',
-    'VGC', 'registration_open',
+    'VGC', 'upcoming',
     '2026-02-25T01:00:00.000Z'::timestamptz, '2026-02-25T05:00:00.000Z'::timestamptz,
     '2026-02-25T00:30:00.000Z'::timestamptz, 32,
     'single_elimination', NULL, 50, false, NULL
@@ -1683,7 +1683,7 @@ BEGIN
   ) VALUES (
     pallet_town_id, 'Pallet Town Trainers Week 13 Championship', 'pallet-town-week-13',
     'Pallet Town Trainers tournament for week 13',
-    'VGC', 'registration_open',
+    'VGC', 'upcoming',
     '2026-03-01T20:00:00.000Z'::timestamptz, '2026-03-02T02:00:00.000Z'::timestamptz,
     '2026-03-01T19:00:00.000Z'::timestamptz, 128,
     'swiss_with_cut', 7, 50, false, 8
@@ -1696,7 +1696,7 @@ BEGIN
   ) VALUES (
     pallet_town_id, 'Pallet Town Trainers Week 13 Practice', 'pallet-town-practice-week-13',
     'Practice tournament for Pallet Town Trainers',
-    'VGC', 'registration_open',
+    'VGC', 'upcoming',
     '2026-02-24T01:00:00.000Z'::timestamptz, '2026-02-24T05:00:00.000Z'::timestamptz,
     '2026-02-24T00:30:00.000Z'::timestamptz, 16,
     'swiss_only', 4, 50, false, NULL
@@ -1709,7 +1709,7 @@ BEGIN
   ) VALUES (
     sinnoh_champions_id, 'Sinnoh Champions Week 13 Championship', 'sinnoh-champions-week-13',
     'Sinnoh Champions tournament for week 13',
-    'VGC', 'registration_open',
+    'VGC', 'upcoming',
     '2026-02-27T20:00:00.000Z'::timestamptz, '2026-02-28T02:00:00.000Z'::timestamptz,
     '2026-02-27T19:00:00.000Z'::timestamptz, 64,
     'swiss_with_cut', 6, 50, false, 8
@@ -1722,7 +1722,7 @@ BEGIN
   ) VALUES (
     sinnoh_champions_id, 'Sinnoh Champions Week 13 Practice', 'sinnoh-champions-practice-week-13',
     'Practice tournament for Sinnoh Champions',
-    'VGC', 'registration_open',
+    'VGC', 'upcoming',
     '2026-02-26T01:00:00.000Z'::timestamptz, '2026-02-26T05:00:00.000Z'::timestamptz,
     '2026-02-26T00:30:00.000Z'::timestamptz, 24,
     'swiss_only', 5, 50, false, NULL
@@ -1735,7 +1735,7 @@ BEGIN
   ) VALUES (
     kanto_elite_id, 'Kanto Elite Series Week 13 Championship', 'kanto-elite-week-13',
     'Kanto Elite Series tournament for week 13',
-    'VGC', 'registration_open',
+    'VGC', 'upcoming',
     '2026-02-26T20:00:00.000Z'::timestamptz, '2026-02-27T02:00:00.000Z'::timestamptz,
     '2026-02-26T19:00:00.000Z'::timestamptz, 128,
     'swiss_with_cut', 7, 50, false, 8
@@ -1748,7 +1748,7 @@ BEGIN
   ) VALUES (
     kanto_elite_id, 'Kanto Elite Series Week 13 Practice', 'kanto-elite-practice-week-13',
     'Practice tournament for Kanto Elite Series',
-    'VGC', 'registration_open',
+    'VGC', 'upcoming',
     '2026-02-24T01:00:00.000Z'::timestamptz, '2026-02-24T05:00:00.000Z'::timestamptz,
     '2026-02-24T00:30:00.000Z'::timestamptz, 24,
     'swiss_only', 5, 50, false, NULL
@@ -1761,7 +1761,7 @@ BEGIN
   ) VALUES (
     johto_masters_id, 'Johto Masters League Week 13 Championship', 'johto-masters-week-13',
     'Johto Masters League tournament for week 13',
-    'VGC', 'registration_open',
+    'VGC', 'upcoming',
     '2026-02-25T20:00:00.000Z'::timestamptz, '2026-02-26T02:00:00.000Z'::timestamptz,
     '2026-02-25T19:00:00.000Z'::timestamptz, 32,
     'swiss_with_cut', 5, 50, false, 4
@@ -1774,7 +1774,7 @@ BEGIN
   ) VALUES (
     johto_masters_id, 'Johto Masters League Week 13 Practice', 'johto-masters-practice-week-13',
     'Practice tournament for Johto Masters League',
-    'VGC', 'registration_open',
+    'VGC', 'upcoming',
     '2026-02-25T01:00:00.000Z'::timestamptz, '2026-02-25T05:00:00.000Z'::timestamptz,
     '2026-02-25T00:30:00.000Z'::timestamptz, 16,
     'swiss_only', 4, 50, false, NULL

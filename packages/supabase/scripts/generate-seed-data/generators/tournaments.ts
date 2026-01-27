@@ -25,11 +25,15 @@ import {
 import { type GeneratedOrganization } from "./organizations.js";
 import { type GeneratedAlt } from "./users.js";
 
+/**
+ * Tournament status enum - must match database enum:
+ * 'draft', 'upcoming', 'active', 'paused', 'completed', 'cancelled'
+ */
 export type TournamentStatus =
   | "draft"
-  | "registration_open"
-  | "registration_closed"
-  | "in_progress"
+  | "upcoming"
+  | "active"
+  | "paused"
   | "completed"
   | "cancelled";
 
@@ -204,22 +208,24 @@ function getTournamentFormat(
 
 /**
  * Determine tournament status based on dates relative to now
+ *
+ * Maps to database enum: 'draft', 'upcoming', 'active', 'paused', 'completed', 'cancelled'
+ * - upcoming: registration is open or closed, tournament hasn't started
+ * - active: tournament is in progress
+ * - completed: tournament has ended
  */
 function getTournamentStatus(
   startDate: Date,
   endDate: Date,
-  registrationDeadline: Date
+  _registrationDeadline: Date
 ): TournamentStatus {
   const now = new Date();
 
-  if (now < registrationDeadline) {
-    return "registration_open";
-  }
   if (now < startDate) {
-    return "registration_closed";
+    return "upcoming";
   }
   if (now < endDate) {
-    return "in_progress";
+    return "active";
   }
   return "completed";
 }
@@ -234,7 +240,7 @@ function getPhaseStatus(
   if (tournamentStatus === "completed") {
     return "completed";
   }
-  if (tournamentStatus === "in_progress") {
+  if (tournamentStatus === "active") {
     // For simplicity, first phase is in_progress, rest are pending
     return phaseOrder === 1 ? "in_progress" : "pending";
   }
@@ -549,7 +555,7 @@ export function generateTournamentRegistrations(
     // Future tournaments have partial registration (40-80% full)
     // Past/current tournaments are at max capacity
     let targetParticipants = tournament.maxParticipants;
-    if (tournament.status === "registration_open") {
+    if (tournament.status === "upcoming") {
       const fillRate = 0.4 + hash(`fill-${tournament.id}`) * 0.4; // 40-80%
       targetParticipants = Math.floor(tournament.maxParticipants * fillRate);
     }
@@ -581,10 +587,9 @@ export function generateTournamentRegistrations(
     }
 
     // Determine registration status based on tournament status
+    // Players are checked in for active/completed tournaments
     const isCheckedIn =
-      tournament.status === "completed" ||
-      tournament.status === "in_progress" ||
-      tournament.status === "registration_closed";
+      tournament.status === "completed" || tournament.status === "active";
 
     // Create registrations
     const now = new Date();
