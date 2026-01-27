@@ -1,43 +1,48 @@
+import { createClient } from "@/lib/supabase/server";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Users, Clock } from "lucide-react";
+  getOrganizationBySlug,
+  listOrganizationStaffWithRoles,
+  listOrganizationGroups,
+} from "@trainers/supabase";
+import { StaffListClient } from "./staff-list-client";
 
-export default function StaffPage() {
+interface PageProps {
+  params: Promise<{
+    orgSlug: string;
+  }>;
+}
+
+export default async function StaffPage({ params }: PageProps) {
+  const { orgSlug } = await params;
+  const supabase = await createClient();
+
+  const organization = await getOrganizationBySlug(supabase, orgSlug);
+
+  if (!organization) {
+    return null; // Layout handles 404
+  }
+
+  // Get current user to check if they're the owner
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  const isOwner = user?.id === organization.owner_user_id;
+
+  // Fetch initial data
+  const [staffMembers, groups] = await Promise.all([
+    listOrganizationStaffWithRoles(supabase, organization.id),
+    listOrganizationGroups(supabase, organization.id),
+  ]);
+
   return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold">Staff Management</h2>
-        <p className="text-muted-foreground text-sm">
-          Manage your organization&apos;s staff and permissions
-        </p>
-      </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Clock className="h-5 w-5" />
-            Coming Soon
-          </CardTitle>
-          <CardDescription>
-            Staff management features are currently in development
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="flex flex-col items-center justify-center py-12">
-          <Users className="text-muted-foreground mb-4 h-16 w-16" />
-          <h3 className="mb-2 text-lg font-semibold">
-            Staff Management Coming Soon
-          </h3>
-          <p className="text-muted-foreground max-w-md text-center">
-            Soon you&apos;ll be able to invite staff, assign roles, and manage
-            permissions for your organization. Stay tuned!
-          </p>
-        </CardContent>
-      </Card>
-    </div>
+    <StaffListClient
+      organizationId={organization.id}
+      orgSlug={orgSlug}
+      initialStaff={staffMembers}
+      groups={groups}
+      isOwner={isOwner}
+      currentUserId={user?.id}
+    />
   );
 }
