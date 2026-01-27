@@ -1614,6 +1614,7 @@ export type Database = {
           checked_in_at: string | null
           created_at: string | null
           id: number
+          in_game_name: string | null
           notes: string | null
           registered_at: string | null
           rental_team_photo_key: string | null
@@ -1632,6 +1633,7 @@ export type Database = {
           checked_in_at?: string | null
           created_at?: string | null
           id?: never
+          in_game_name?: string | null
           notes?: string | null
           registered_at?: string | null
           rental_team_photo_key?: string | null
@@ -1650,6 +1652,7 @@ export type Database = {
           checked_in_at?: string | null
           created_at?: string | null
           id?: never
+          in_game_name?: string | null
           notes?: string | null
           registered_at?: string | null
           rental_team_photo_key?: string | null
