@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
+import { ButtonGroup } from "@/components/ui/button-group";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import type {
@@ -19,12 +20,7 @@ import type {
   PhaseType,
   CutRule,
 } from "@/lib/types/tournament";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-import { Plus, Trash2, ChevronRight, HelpCircle } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
 
 interface TournamentFormatProps {
   formData: TournamentFormData;
@@ -40,20 +36,14 @@ const formatOptions = [
 
 const phaseTypeOptions: { value: PhaseType; label: string }[] = [
   { value: "swiss", label: "Swiss" },
-  { value: "single_elimination", label: "Single Elimination" },
-  { value: "double_elimination", label: "Double Elimination" },
-];
-
-const bestOfOptions: { value: 1 | 3 | 5; label: string }[] = [
-  { value: 1, label: "Bo1" },
-  { value: 3, label: "Bo3" },
-  { value: 5, label: "Bo5" },
+  { value: "single_elimination", label: "Single Elim" },
+  { value: "double_elimination", label: "Double Elim" },
 ];
 
 const cutRuleOptions: { value: CutRule; label: string }[] = [
-  { value: "x-1", label: "X-1 (≤1 loss)" },
-  { value: "x-2", label: "X-2 (≤2 losses)" },
-  { value: "x-3", label: "X-3 (≤3 losses)" },
+  { value: "x-1", label: "X-1" },
+  { value: "x-2", label: "X-2" },
+  { value: "x-3", label: "X-3" },
   { value: "top-4", label: "Top 4" },
   { value: "top-8", label: "Top 8" },
   { value: "top-16", label: "Top 16" },
@@ -110,6 +100,33 @@ function deriveTournamentFormat(
   if (hasDoubleElim) return "double_elimination";
   if (hasElimination) return "single_elimination";
   return "swiss_only";
+}
+
+// Button group for Best Of selection using shadcn components
+function BestOfSelector({
+  value,
+  onChange,
+}: {
+  value: 1 | 3 | 5;
+  onChange: (value: 1 | 3 | 5) => void;
+}) {
+  const options = [1, 3, 5] as const;
+
+  return (
+    <ButtonGroup>
+      {options.map((opt) => (
+        <Button
+          key={opt}
+          type="button"
+          size="sm"
+          variant={value === opt ? "default" : "outline"}
+          onClick={() => onChange(opt)}
+        >
+          {opt}
+        </Button>
+      ))}
+    </ButtonGroup>
+  );
 }
 
 export function TournamentFormat({
@@ -213,61 +230,49 @@ export function TournamentFormat({
 
       <Separator />
 
-      {/* Tournament Phases - Visual Flow */}
-      <div className="space-y-3">
+      {/* Tournament Phases */}
+      <div className="space-y-4">
         <div>
-          <Label className="text-base">Tournament Phases</Label>
+          <Label className="text-base">Tournament Structure</Label>
           <p className="text-muted-foreground text-sm">
-            Configure the phases players will compete through
+            Define the phases players will compete through
           </p>
         </div>
 
-        <div className="flex flex-wrap items-start gap-2">
+        {/* Phase Flow - Centered with max width */}
+        <div className="mx-auto max-w-2xl space-y-3">
           {formData.phases.map((phase, index) => {
             const isSwiss = phase.phaseType === "swiss";
             const isElimination =
               phase.phaseType === "single_elimination" ||
               phase.phaseType === "double_elimination";
             const showCutRule = isElimination && isPrecededBySwiss(index);
-            const showPlannedRounds = isSwiss;
 
             return (
-              <div key={phase.id} className="flex items-center gap-2">
+              <div key={phase.id} className="flex items-start gap-3">
+                {/* Phase Number */}
+                <div className="flex flex-col items-center pt-4">
+                  <span className="bg-primary text-primary-foreground flex h-7 w-7 items-center justify-center rounded-full text-sm font-medium">
+                    {index + 1}
+                  </span>
+                  {index < formData.phases.length - 1 && (
+                    <div className="bg-border mt-2 h-12 w-px" />
+                  )}
+                </div>
+
                 {/* Phase Card */}
-                <Card className="w-64">
-                  <CardContent className="space-y-3 p-3">
-                    {/* Phase Number & Delete */}
-                    <div className="flex items-center justify-between">
-                      <span className="bg-primary text-primary-foreground flex h-5 w-5 items-center justify-center rounded-full text-xs font-medium">
-                        {index + 1}
-                      </span>
-                      {formData.phases.length > 1 && (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="text-muted-foreground hover:text-destructive h-6 w-6"
-                          onClick={() => handleRemovePhase(phase.id)}
-                        >
-                          <Trash2 className="h-3 w-3" />
-                        </Button>
-                      )}
-                    </div>
-
-                    {/* Phase Name Input */}
-                    <Input
-                      value={phase.name}
-                      onChange={(e) =>
-                        handleUpdatePhase(phase.id, { name: e.target.value })
-                      }
-                      className="h-8 text-sm font-medium"
-                      placeholder="Phase name"
-                    />
-
-                    {/* Phase Type */}
-                    <div className="space-y-1">
-                      <Label className="text-muted-foreground text-xs">
-                        Type
-                      </Label>
+                <Card className="flex-1">
+                  <CardContent className="p-5">
+                    {/* Header Row: Name, Type, Delete */}
+                    <div className="flex items-center gap-3">
+                      <Input
+                        value={phase.name}
+                        onChange={(e) =>
+                          handleUpdatePhase(phase.id, { name: e.target.value })
+                        }
+                        className="h-10 flex-1 text-base font-medium"
+                        placeholder="Phase name"
+                      />
                       <Select
                         value={phase.phaseType}
                         onValueChange={(value) => {
@@ -278,7 +283,7 @@ export function TournamentFormat({
                           }
                         }}
                       >
-                        <SelectTrigger className="h-8 text-sm">
+                        <SelectTrigger className="h-10 w-40">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -289,167 +294,138 @@ export function TournamentFormat({
                           ))}
                         </SelectContent>
                       </Select>
+                      {formData.phases.length > 1 && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="text-muted-foreground hover:text-destructive h-10 w-10 shrink-0"
+                          onClick={() => handleRemovePhase(phase.id)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      )}
                     </div>
 
-                    {/* Best Of */}
-                    <div className="space-y-1">
-                      <Label className="text-muted-foreground text-xs">
-                        Best Of
-                      </Label>
-                      <Select
-                        value={phase.bestOf.toString()}
-                        onValueChange={(value) => {
-                          if (value) {
-                            handleUpdatePhase(phase.id, {
-                              bestOf: parseInt(value) as 1 | 3 | 5,
-                            });
-                          }
-                        }}
-                      >
-                        <SelectTrigger className="h-8 text-sm">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {bestOfOptions.map((option) => (
-                            <SelectItem
-                              key={option.value}
-                              value={option.value.toString()}
-                            >
-                              {option.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    {/* Swiss: Planned Rounds */}
-                    {showPlannedRounds && (
-                      <div className="space-y-1">
-                        <Label className="text-muted-foreground text-xs">
-                          Rounds
+                    {/* Settings Row */}
+                    <div className="mt-4 flex flex-wrap items-center gap-x-6 gap-y-3">
+                      {/* Best Of Toggle */}
+                      <div className="flex items-center gap-2">
+                        <Label className="text-muted-foreground text-sm font-normal">
+                          Best of
                         </Label>
-                        <Input
-                          type="number"
-                          value={phase.plannedRounds || ""}
-                          onChange={(e) =>
-                            handleUpdatePhase(phase.id, {
-                              plannedRounds:
-                                parseInt(e.target.value) || undefined,
-                            })
+                        <BestOfSelector
+                          value={phase.bestOf}
+                          onChange={(value) =>
+                            handleUpdatePhase(phase.id, { bestOf: value })
                           }
-                          placeholder="Auto"
-                          className="h-8 text-sm"
-                          min={3}
-                          max={15}
                         />
                       </div>
-                    )}
 
-                    {/* Elimination: Cut Rule (only if preceded by Swiss) */}
-                    {showCutRule && (
-                      <div className="space-y-1">
-                        <Label className="text-muted-foreground text-xs">
-                          Qualification
-                        </Label>
-                        <Select
-                          value={phase.cutRule || "x-2"}
-                          onValueChange={(value) => {
-                            if (value) {
+                      {/* Swiss: Rounds */}
+                      {isSwiss && (
+                        <div className="flex items-center gap-2">
+                          <Label
+                            htmlFor={`${phase.id}-rounds`}
+                            className="text-muted-foreground text-sm font-normal"
+                          >
+                            Rounds
+                          </Label>
+                          <Input
+                            id={`${phase.id}-rounds`}
+                            type="number"
+                            value={phase.plannedRounds || ""}
+                            onChange={(e) =>
                               handleUpdatePhase(phase.id, {
-                                cutRule: value as CutRule,
-                              });
+                                plannedRounds:
+                                  parseInt(e.target.value) || undefined,
+                              })
                             }
-                          }}
+                            placeholder="Auto"
+                            className="h-8 w-20 text-sm"
+                            min={3}
+                            max={15}
+                          />
+                        </div>
+                      )}
+
+                      {/* Elimination: Cut Rule */}
+                      {showCutRule && (
+                        <div className="flex items-center gap-2">
+                          <Label className="text-muted-foreground text-sm font-normal">
+                            Cut
+                          </Label>
+                          <Select
+                            value={phase.cutRule || "x-2"}
+                            onValueChange={(value) => {
+                              if (value) {
+                                handleUpdatePhase(phase.id, {
+                                  cutRule: value as CutRule,
+                                });
+                              }
+                            }}
+                          >
+                            <SelectTrigger className="h-8 w-24">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {cutRuleOptions.map((option) => (
+                                <SelectItem
+                                  key={option.value}
+                                  value={option.value}
+                                >
+                                  {option.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      )}
+
+                      {/* Round Timer */}
+                      <div className="flex items-center gap-2">
+                        <Label
+                          htmlFor={`${phase.id}-timer`}
+                          className="text-muted-foreground text-sm font-normal"
                         >
-                          <SelectTrigger className="h-8 text-sm">
-                            <SelectValue placeholder="Select" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {cutRuleOptions.map((option) => (
-                              <SelectItem
-                                key={option.value}
-                                value={option.value}
-                              >
-                                {option.label}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    )}
-
-                    {/* Round Timer */}
-                    <div className="space-y-1">
-                      <Label className="text-muted-foreground text-xs">
-                        Round Timer (min)
-                      </Label>
-                      <Input
-                        type="number"
-                        value={phase.roundTimeMinutes || ""}
-                        onChange={(e) =>
-                          handleUpdatePhase(phase.id, {
-                            roundTimeMinutes: parseInt(e.target.value) || 0,
-                          })
-                        }
-                        placeholder="0 = no timer"
-                        className="h-8 text-sm"
-                        min={0}
-                        max={120}
-                      />
-                    </div>
-
-                    {/* Check-in Timer */}
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-1">
-                        <Label className="text-muted-foreground text-xs">
-                          Check-in Timer (min/game)
+                          Timer
                         </Label>
-                        <Tooltip>
-                          <TooltipTrigger className="text-muted-foreground cursor-help">
-                            <HelpCircle className="h-3 w-3" />
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            Handles no-shows after a round starts. If a player
-                            doesn&apos;t show up, they automatically lose one
-                            game per interval until the match is forfeited.
-                          </TooltipContent>
-                        </Tooltip>
+                        <Input
+                          id={`${phase.id}-timer`}
+                          type="number"
+                          value={phase.roundTimeMinutes || ""}
+                          onChange={(e) =>
+                            handleUpdatePhase(phase.id, {
+                              roundTimeMinutes: parseInt(e.target.value) || 0,
+                            })
+                          }
+                          placeholder="Off"
+                          className="h-8 w-16 text-sm"
+                          min={0}
+                          max={120}
+                        />
+                        <Label className="text-muted-foreground text-sm font-normal">
+                          min
+                        </Label>
                       </div>
-                      <Input
-                        type="number"
-                        value={phase.checkInTimeMinutes || ""}
-                        onChange={(e) =>
-                          handleUpdatePhase(phase.id, {
-                            checkInTimeMinutes: parseInt(e.target.value) || 0,
-                          })
-                        }
-                        placeholder="0 = disabled"
-                        className="h-8 text-sm"
-                        min={0}
-                        max={30}
-                      />
                     </div>
                   </CardContent>
                 </Card>
-
-                {/* Arrow to next phase or add button */}
-                {(index < formData.phases.length - 1 ||
-                  formData.phases.length > 0) && (
-                  <ChevronRight className="text-muted-foreground h-5 w-5 shrink-0" />
-                )}
               </div>
             );
           })}
 
           {/* Add Phase Button */}
-          <Button
-            variant="outline"
-            className="h-auto min-h-[300px] w-32 flex-col gap-2 border-dashed"
-            onClick={handleAddPhase}
-          >
-            <Plus className="h-5 w-5" />
-            <span className="text-xs">Add Phase</span>
-          </Button>
+          <div className="flex items-start gap-3">
+            <div className="w-7" /> {/* Spacer for alignment */}
+            <Button
+              variant="outline"
+              className="border-dashed"
+              onClick={handleAddPhase}
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              Add Phase
+            </Button>
+          </div>
         </div>
       </div>
 
