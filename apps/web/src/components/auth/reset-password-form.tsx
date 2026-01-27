@@ -10,17 +10,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/hooks/use-auth";
-
-const passwordRequirements = z
-  .string()
-  .min(8, "Password must be at least 8 characters")
-  .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
-  .regex(/[a-z]/, "Password must contain at least one lowercase letter")
-  .regex(/[0-9]/, "Password must contain at least one number");
+import { passwordSchema } from "@trainers/validators";
 
 const resetPasswordSchema = z
   .object({
-    password: passwordRequirements,
+    password: passwordSchema,
     confirmPassword: z.string().min(1, "Please confirm your password"),
   })
   .refine((data) => data.password === data.confirmPassword, {
@@ -104,6 +98,7 @@ export function ResetPasswordForm() {
               <li>At least one uppercase letter</li>
               <li>At least one lowercase letter</li>
               <li>At least one number</li>
+              <li>At least one symbol (!@#$%^&*...)</li>
             </ul>
           </div>
 

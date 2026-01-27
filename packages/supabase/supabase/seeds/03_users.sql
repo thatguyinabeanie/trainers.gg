@@ -3,6 +3,13 @@
 -- =============================================================================
 -- IDEMPOTENT: Uses ON CONFLICT DO NOTHING for inserts, UPDATE for profile data
 -- Creates auth.users entries which trigger creation of public.users and alts
+--
+-- TEST CREDENTIALS:
+--   Email: admin@trainers.local (or player@, champion@, etc.)
+--   Password: Password123!
+--
+-- Password meets Supabase Auth requirements:
+--   - 8+ characters, uppercase, lowercase, digit, symbol
 -- =============================================================================
 
 -- -----------------------------------------------------------------------------
@@ -16,42 +23,42 @@ INSERT INTO auth.users (
   created_at, updated_at, confirmation_token, email_change, email_change_token_new, recovery_token
 ) VALUES
   ('a1b2c3d4-e5f6-4a5b-8c9d-0e1f2a3b4c5d', '00000000-0000-0000-0000-000000000000',
-   'admin@trainers.local', extensions.crypt('password123', extensions.gen_salt('bf')), NOW(),
+   'admin@trainers.local', extensions.crypt('Password123!', extensions.gen_salt('bf')), NOW(),
    'authenticated', 'authenticated',
    '{"provider": "email", "providers": ["email"]}'::jsonb,
    '{"username": "admin_trainer", "first_name": "Admin", "last_name": "Trainer"}'::jsonb,
    NOW(), NOW(), '', '', '', ''),
   
   ('b2c3d4e5-f6a7-5b6c-9d0e-1f2a3b4c5d6e', '00000000-0000-0000-0000-000000000000',
-   'player@trainers.local', extensions.crypt('password123', extensions.gen_salt('bf')), NOW(),
+   'player@trainers.local', extensions.crypt('Password123!', extensions.gen_salt('bf')), NOW(),
    'authenticated', 'authenticated',
    '{"provider": "email", "providers": ["email"]}'::jsonb,
    '{"username": "ash_ketchum", "first_name": "Ash", "last_name": "Ketchum"}'::jsonb,
    NOW(), NOW(), '', '', '', ''),
   
   ('c3d4e5f6-a7b8-6c7d-0e1f-2a3b4c5d6e7f', '00000000-0000-0000-0000-000000000000',
-   'champion@trainers.local', extensions.crypt('password123', extensions.gen_salt('bf')), NOW(),
+   'champion@trainers.local', extensions.crypt('Password123!', extensions.gen_salt('bf')), NOW(),
    'authenticated', 'authenticated',
    '{"provider": "email", "providers": ["email"]}'::jsonb,
    '{"username": "cynthia", "first_name": "Cynthia", "last_name": "Shirona"}'::jsonb,
    NOW(), NOW(), '', '', '', ''),
   
   ('d4e5f6a7-b8c9-7d8e-1f2a-3b4c5d6e7f8a', '00000000-0000-0000-0000-000000000000',
-   'gymleader@trainers.local', extensions.crypt('password123', extensions.gen_salt('bf')), NOW(),
+   'gymleader@trainers.local', extensions.crypt('Password123!', extensions.gen_salt('bf')), NOW(),
    'authenticated', 'authenticated',
    '{"provider": "email", "providers": ["email"]}'::jsonb,
    '{"username": "brock", "first_name": "Brock", "last_name": "Harrison"}'::jsonb,
    NOW(), NOW(), '', '', '', ''),
   
   ('e5f6a7b8-c9d0-8e9f-2a3b-4c5d6e7f8a9b', '00000000-0000-0000-0000-000000000000',
-   'elite@trainers.local', extensions.crypt('password123', extensions.gen_salt('bf')), NOW(),
+   'elite@trainers.local', extensions.crypt('Password123!', extensions.gen_salt('bf')), NOW(),
    'authenticated', 'authenticated',
    '{"provider": "email", "providers": ["email"]}'::jsonb,
    '{"username": "karen", "first_name": "Karen", "last_name": "Elite"}'::jsonb,
    NOW(), NOW(), '', '', '', ''),
   
   ('f6a7b8c9-d0e1-9f0a-3b4c-5d6e7f8a9b0c', '00000000-0000-0000-0000-000000000000',
-   'casual@trainers.local', extensions.crypt('password123', extensions.gen_salt('bf')), NOW(),
+   'casual@trainers.local', extensions.crypt('Password123!', extensions.gen_salt('bf')), NOW(),
    'authenticated', 'authenticated',
    '{"provider": "email", "providers": ["email"]}'::jsonb,
    '{"username": "red", "first_name": "Red", "last_name": "Champion"}'::jsonb,
