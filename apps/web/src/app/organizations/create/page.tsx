@@ -9,7 +9,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { CreateOrganizationForm } from "./create-organization-form";
 
 export default async function CreateOrganizationPage() {
