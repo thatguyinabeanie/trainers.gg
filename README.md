@@ -2,8 +2,6 @@
 
 A Pokemon community platform for competitive players, tournament organizers, and teams. Integrated with the **AT Protocol (Bluesky)** for decentralized social features.
 
-> 📖 **[Project Vision & Roadmap](./docs/planning/PROJECT_BRIEF.md)** — The north star document outlining features, target audience, and phased rollout plan.
-
 ## Tech Stack
 
 | Layer                 | Technology                          |

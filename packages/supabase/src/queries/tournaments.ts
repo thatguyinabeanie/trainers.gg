@@ -423,6 +423,40 @@ export async function isRegisteredForTournament(
 }
 
 /**
+ * Get all tournament IDs the current user is registered for
+ * Returns a Set of tournament IDs for efficient lookup
+ */
+export async function getCurrentUserRegisteredTournamentIds(
+  supabase: TypedClient
+): Promise<Set<number>> {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) return new Set();
+
+  // Get all alts for this user
+  const { data: alts } = await supabase
+    .from("alts")
+    .select("id")
+    .eq("user_id", user.id);
+
+  if (!alts || alts.length === 0) return new Set();
+
+  const altIds = alts.map((a) => a.id);
+
+  // Get all registrations for any of the user's alts
+  const { data: registrations } = await supabase
+    .from("tournament_registrations")
+    .select("tournament_id")
+    .in("alt_id", altIds);
+
+  if (!registrations) return new Set();
+
+  return new Set(registrations.map((r) => r.tournament_id));
+}
+
+/**
  * Get tournament phases
  */
 export async function getTournamentPhases(

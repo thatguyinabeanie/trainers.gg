@@ -5,6 +5,18 @@ import type { Database } from "@trainers/supabase/types";
 import type { AtprotoDatabase } from "@trainers/supabase";
 import type { User } from "@supabase/supabase-js";
 
+/**
+ * Create a Supabase client for static/ISR pages.
+ * Does NOT use cookies - suitable for pages with `revalidate` export.
+ * Only use for public data that doesn't require authentication.
+ */
+export function createStaticClient() {
+  return createSupabaseClient<Database>(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
+}
+
 export async function createClient() {
   const cookieStore = await cookies();
   return createServerClient<Database>(

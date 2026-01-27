@@ -2,11 +2,19 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "../types";
 
 type TypedClient = SupabaseClient<Database>;
+type OrganizationRow = Database["public"]["Tables"]["organizations"]["Row"];
+
+export type OrganizationWithCounts = OrganizationRow & {
+  activeTournamentsCount: number;
+  totalTournamentsCount: number;
+};
 
 /**
  * List all public (active) organizations with tournament counts
  */
-export async function listPublicOrganizations(supabase: TypedClient) {
+export async function listPublicOrganizations(
+  supabase: TypedClient
+): Promise<OrganizationWithCounts[]> {
   const { data: organizations, error } = await supabase
     .from("organizations")
     .select("*")
@@ -14,31 +22,34 @@ export async function listPublicOrganizations(supabase: TypedClient) {
     .order("created_at", { ascending: false });
 
   if (error) throw error;
-  if (!organizations) return [];
+  if (!organizations || organizations.length === 0) return [];
 
-  // Get tournament counts for each organization
-  const orgsWithCounts = await Promise.all(
-    organizations.map(async (org) => {
-      const { count: totalCount } = await supabase
-        .from("tournaments")
-        .select("*", { count: "exact", head: true })
-        .eq("organization_id", org.id)
-        .is("archived_at", null);
-
-      const { count: activeCount } = await supabase
-        .from("tournaments")
-        .select("*", { count: "exact", head: true })
-        .eq("organization_id", org.id)
-        .is("archived_at", null)
-        .in("status", ["upcoming", "active"]);
-
-      return {
-        ...org,
-        activeTournamentsCount: activeCount ?? 0,
-        totalTournamentsCount: totalCount ?? 0,
-      };
-    })
+  // Get tournament counts for all organizations in a single query
+  const orgIds = organizations.map((org) => org.id);
+  const { data: counts, error: countsError } = await supabase.rpc(
+    "get_organization_tournament_counts",
+    { org_ids: orgIds }
   );
+
+  if (countsError) {
+    console.error("Error fetching tournament counts:", countsError);
+  }
+
+  // Build a map of org_id -> counts
+  const countMap: Record<string, { total: number; active: number }> = {};
+  for (const row of counts ?? []) {
+    countMap[String(row.organization_id)] = {
+      total: Number(row.total_count),
+      active: Number(row.active_count),
+    };
+  }
+
+  // Add counts to organizations
+  const orgsWithCounts: OrganizationWithCounts[] = organizations.map((org) => ({
+    ...org,
+    activeTournamentsCount: countMap[String(org.id)]?.active ?? 0,
+    totalTournamentsCount: countMap[String(org.id)]?.total ?? 0,
+  }));
 
   return orgsWithCounts;
 }
