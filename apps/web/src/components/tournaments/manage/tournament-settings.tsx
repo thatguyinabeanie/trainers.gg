@@ -17,8 +17,20 @@ import {
 } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
-import { Save, AlertTriangle, Trash2 } from "lucide-react";
+import { Save, AlertTriangle, Trash2, Layers } from "lucide-react";
 import { toast } from "sonner";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { updatePhase } from "@/actions/tournaments";
+
+interface Phase {
+  id: number;
+  tournament_id: number;
+  name: string;
+  phase_order: number;
+  phase_type: string;
+  match_format: string | null;
+  status: string | null;
+}
 
 interface TournamentSettingsProps {
   tournament: {
@@ -36,10 +48,15 @@ interface TournamentSettingsProps {
     rental_team_photos_enabled?: boolean | null;
     rental_team_photos_required?: boolean | null;
   };
+  phases?: Phase[];
 }
 
-export function TournamentSettings({ tournament }: TournamentSettingsProps) {
+export function TournamentSettings({
+  tournament,
+  phases = [],
+}: TournamentSettingsProps) {
   const [isEditing, setIsEditing] = useState(false);
+  const [updatingPhaseId, setUpdatingPhaseId] = useState<number | null>(null);
   const [formData, setFormData] = useState({
     name: tournament.name || "",
     description: tournament.description || "",
@@ -262,6 +279,117 @@ export function TournamentSettings({ tournament }: TournamentSettingsProps) {
           </div>
         </CardContent>
       </Card>
+
+      {/* Phase Configuration */}
+      {phases.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Layers className="h-5 w-5" />
+              Phase Configuration
+            </CardTitle>
+            <CardDescription>
+              Configure match format for each tournament phase
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {phases.map((phase) => {
+              const currentFormat = phase.match_format || "best_of_3";
+              const isUpdating = updatingPhaseId === phase.id;
+
+              const handleMatchFormatChange = async (
+                value: "best_of_1" | "best_of_3" | "best_of_5"
+              ) => {
+                if (!canEdit || isUpdating) return;
+
+                setUpdatingPhaseId(phase.id);
+                try {
+                  const result = await updatePhase(phase.id, tournament.id, {
+                    matchFormat: value,
+                  });
+
+                  if (result.success) {
+                    toast.success("Phase updated", {
+                      description: `${phase.name} match format updated to Best of ${value.replace("best_of_", "")}`,
+                    });
+                  } else {
+                    toast.error("Error updating phase", {
+                      description: result.error,
+                    });
+                  }
+                } catch (error) {
+                  toast.error("Error updating phase", {
+                    description:
+                      error instanceof Error
+                        ? error.message
+                        : "An unexpected error occurred",
+                  });
+                } finally {
+                  setUpdatingPhaseId(null);
+                }
+              };
+
+              return (
+                <div key={phase.id} className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h4 className="font-medium">{phase.name}</h4>
+                      <p className="text-muted-foreground text-sm capitalize">
+                        {phase.phase_type.replace(/_/g, " ")}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-muted-foreground text-sm">
+                      Best Of
+                    </Label>
+                    <RadioGroup
+                      value={currentFormat}
+                      onValueChange={(value) =>
+                        handleMatchFormatChange(
+                          value as "best_of_1" | "best_of_3" | "best_of_5"
+                        )
+                      }
+                      disabled={!canEdit || isUpdating}
+                      className="flex gap-6"
+                    >
+                      {[
+                        { value: "best_of_1", label: "1" },
+                        { value: "best_of_3", label: "3" },
+                        { value: "best_of_5", label: "5" },
+                      ].map((option) => (
+                        <div
+                          key={option.value}
+                          className="flex items-center gap-2"
+                        >
+                          <RadioGroupItem
+                            value={option.value}
+                            id={`${phase.id}-${option.value}`}
+                            disabled={!canEdit || isUpdating}
+                          />
+                          <Label
+                            htmlFor={`${phase.id}-${option.value}`}
+                            className={
+                              !canEdit || isUpdating
+                                ? "cursor-not-allowed opacity-50"
+                                : "cursor-pointer"
+                            }
+                          >
+                            {option.label}
+                          </Label>
+                        </div>
+                      ))}
+                    </RadioGroup>
+                  </div>
+                  {phase !== phases[phases.length - 1] && (
+                    <Separator className="mt-4" />
+                  )}
+                </div>
+              );
+            })}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Team Requirements */}
       <Card>

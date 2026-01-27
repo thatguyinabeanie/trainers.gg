@@ -36,7 +36,7 @@ import { toast } from "sonner";
 
 const STEPS = [
   { id: 1, title: "Basic Info", description: "Name and details" },
-  { id: 2, title: "Format", description: "Tournament structure" },
+  { id: 2, title: "Structure", description: "Tournament format and rules" },
   { id: 3, title: "Schedule", description: "Dates and times" },
   { id: 4, title: "Review", description: "Confirm details" },
 ];
@@ -74,6 +74,21 @@ export function CreateTournamentClient({
     organizationId: undefined,
     format: "VGC 2025",
     tournamentFormat: "swiss_with_cut",
+    preset: "swiss_with_cut",
+    phases: [
+      {
+        id: "swiss-1",
+        name: "Swiss Rounds",
+        phaseType: "swiss",
+        matchFormat: "best_of_3",
+      },
+      {
+        id: "topcut-1",
+        name: "Top Cut",
+        phaseType: "single_elimination",
+        matchFormat: "best_of_3",
+      },
+    ],
     maxParticipants: 32,
     roundTimeMinutes: 50,
     swissRounds: 5,
@@ -113,6 +128,13 @@ export function CreateTournamentClient({
         roundTimeMinutes?: number;
         rentalTeamPhotosEnabled?: boolean;
         rentalTeamPhotosRequired?: boolean;
+        phases?: {
+          name: string;
+          phaseType: "swiss" | "single_elimination" | "double_elimination";
+          matchFormat: "best_of_1" | "best_of_3" | "best_of_5";
+          plannedRounds?: number;
+          bracketSize?: number;
+        }[];
       }
     ) => createTournament(supabase, args)
   );
@@ -204,6 +226,13 @@ export function CreateTournamentClient({
         registrationDeadline: formData.registrationDeadline
           ? new Date(formData.registrationDeadline).toISOString()
           : undefined,
+        phases: formData.phases.map((p) => ({
+          name: p.name,
+          phaseType: p.phaseType,
+          matchFormat: p.matchFormat,
+          plannedRounds: p.plannedRounds,
+          bracketSize: p.bracketSize,
+        })),
       });
 
       toast.success("Tournament created!", {

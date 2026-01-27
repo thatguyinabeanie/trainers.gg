@@ -70,6 +70,17 @@ async function getCurrentAlt(supabase: TypedClient, altId?: number) {
 }
 
 /**
+ * Phase configuration for tournament creation
+ */
+interface PhaseConfig {
+  name: string;
+  phaseType: "swiss" | "single_elimination" | "double_elimination";
+  matchFormat: "best_of_1" | "best_of_3" | "best_of_5";
+  plannedRounds?: number;
+  bracketSize?: number;
+}
+
+/**
  * Create a new tournament
  */
 export async function createTournament(
@@ -90,6 +101,8 @@ export async function createTournament(
     roundTimeMinutes?: number;
     rentalTeamPhotosEnabled?: boolean;
     rentalTeamPhotosRequired?: boolean;
+    // New phases array for flexible phase configuration
+    phases?: PhaseConfig[];
   }
 ) {
   const user = await getCurrentUser(supabase);
@@ -149,22 +162,77 @@ export async function createTournament(
 
   if (error) throw error;
 
-  // Create default Swiss phase if applicable
-  if (
-    data.tournamentFormat === "swiss_with_cut" ||
-    data.tournamentFormat === "swiss_only"
-  ) {
-    await supabase.from("tournament_phases").insert({
-      tournament_id: tournament.id,
-      name: "Swiss Rounds",
-      phase_order: 1,
-      phase_type: "swiss",
-      status: "pending",
-      match_format: "best_of_3",
-      round_time_minutes: data.roundTimeMinutes,
-      planned_rounds: data.swissRounds,
-      current_round: 0,
-    });
+  // Create phases from the phases array if provided
+  if (data.phases && data.phases.length > 0) {
+    for (let i = 0; i < data.phases.length; i++) {
+      const phase = data.phases[i];
+      if (!phase) continue; // TypeScript guard for noUncheckedIndexedAccess
+      await supabase.from("tournament_phases").insert({
+        tournament_id: tournament.id,
+        name: phase.name,
+        phase_order: i + 1,
+        phase_type: phase.phaseType,
+        status: "pending",
+        match_format: phase.matchFormat,
+        round_time_minutes: data.roundTimeMinutes,
+        planned_rounds: phase.plannedRounds ?? data.swissRounds,
+        bracket_size: phase.bracketSize ?? data.topCutSize,
+        current_round: 0,
+      });
+    }
+  } else {
+    // Fallback: Create default phases based on tournamentFormat (legacy behavior)
+    if (
+      data.tournamentFormat === "swiss_with_cut" ||
+      data.tournamentFormat === "swiss_only"
+    ) {
+      await supabase.from("tournament_phases").insert({
+        tournament_id: tournament.id,
+        name: "Swiss Rounds",
+        phase_order: 1,
+        phase_type: "swiss",
+        status: "pending",
+        match_format: "best_of_3",
+        round_time_minutes: data.roundTimeMinutes,
+        planned_rounds: data.swissRounds,
+        current_round: 0,
+      });
+
+      if (data.tournamentFormat === "swiss_with_cut") {
+        await supabase.from("tournament_phases").insert({
+          tournament_id: tournament.id,
+          name: "Top Cut",
+          phase_order: 2,
+          phase_type: "single_elimination",
+          status: "pending",
+          match_format: "best_of_3",
+          round_time_minutes: data.roundTimeMinutes,
+          current_round: 0,
+        });
+      }
+    } else if (data.tournamentFormat === "single_elimination") {
+      await supabase.from("tournament_phases").insert({
+        tournament_id: tournament.id,
+        name: "Single Elimination Bracket",
+        phase_order: 1,
+        phase_type: "single_elimination",
+        status: "pending",
+        match_format: "best_of_3",
+        round_time_minutes: data.roundTimeMinutes,
+        current_round: 0,
+      });
+    } else if (data.tournamentFormat === "double_elimination") {
+      await supabase.from("tournament_phases").insert({
+        tournament_id: tournament.id,
+        name: "Double Elimination Bracket",
+        phase_order: 1,
+        phase_type: "double_elimination",
+        status: "pending",
+        match_format: "best_of_3",
+        round_time_minutes: data.roundTimeMinutes,
+        current_round: 0,
+      });
+    }
   }
 
   return { id: tournament.id, slug: tournament.slug };
@@ -937,4 +1005,873 @@ export async function respondToTournamentInvitation(
     success: true,
     registration: registrationResult,
   };
+}
+
+// =============================================================================
+// ROUND MANAGEMENT
+// =============================================================================
+
+import {
+  generateSwissPairings,
+  type PlayerForPairing,
+  type Pairing,
+} from "../lib/swiss-pairings";
+
+/**
+ * Generate pairings for a round using the Swiss pairing algorithm
+ */
+export async function generateRoundPairings(
+  supabase: TypedClient,
+  roundId: number
+) {
+  const user = await getCurrentUser(supabase);
+  if (!user) throw new Error("Not authenticated");
+
+  // Get round with phase and tournament info
+  const { data: round } = await supabase
+    .from("tournament_rounds")
+    .select(
+      `
+      id,
+      round_number,
+      status,
+      phase_id,
+      tournament_phases!inner (
+        id,
+        tournament_id,
+        phase_type,
+        tournaments!inner (
+          id,
+          organization_id,
+          status,
+          organizations!inner (
+            owner_user_id
+          )
+        )
+      )
+    `
+    )
+    .eq("id", roundId)
+    .single();
+
+  if (!round) throw new Error("Round not found");
+
+  const phase = round.tournament_phases as unknown as {
+    id: number;
+    tournament_id: number;
+    phase_type: string;
+    tournaments: {
+      id: number;
+      organization_id: number;
+      status: string;
+      organizations: {
+        owner_user_id: string;
+      };
+    };
+  };
+
+  // Verify permission
+  if (phase.tournaments.organizations.owner_user_id !== user.id) {
+    throw new Error("You don't have permission to generate pairings");
+  }
+
+  // Validate tournament is active
+  if (phase.tournaments.status !== "active") {
+    throw new Error("Tournament must be active to generate pairings");
+  }
+
+  // Validate round is pending
+  if (round.status !== "pending") {
+    throw new Error(
+      `Cannot generate pairings for round with status "${round.status}"`
+    );
+  }
+
+  const tournamentId = phase.tournament_id;
+
+  // Get all checked-in players with their stats
+  const { data: registrations } = await supabase
+    .from("tournament_registrations")
+    .select("alt_id")
+    .eq("tournament_id", tournamentId)
+    .eq("status", "checked_in");
+
+  if (!registrations || registrations.length === 0) {
+    throw new Error("No checked-in players to pair");
+  }
+
+  const altIds = registrations.map((r) => r.alt_id);
+
+  // Get player stats
+  const { data: playerStats } = await supabase
+    .from("tournament_player_stats")
+    .select("*")
+    .eq("tournament_id", tournamentId)
+    .in("alt_id", altIds);
+
+  // Build player data for pairing algorithm
+  const statsMap = new Map(playerStats?.map((s) => [s.alt_id, s]) ?? []);
+
+  const players: PlayerForPairing[] = altIds.map((altId, index) => {
+    const stats = statsMap.get(altId);
+    return {
+      altId,
+      matchPoints: stats?.match_points ?? 0,
+      gameWinPercentage: stats?.game_win_percentage ?? 0,
+      opponentMatchWinPercentage: stats?.opponent_match_win_percentage ?? 0,
+      opponentHistory: stats?.opponent_history ?? [],
+      hasReceivedBye: stats?.has_received_bye ?? false,
+      isDropped: stats?.is_dropped ?? false,
+      currentSeed: stats?.current_seed ?? index + 1,
+    };
+  });
+
+  // Generate pairings
+  const result = generateSwissPairings(players, round.round_number);
+
+  if (result.pairings.length === 0) {
+    throw new Error("Failed to generate any pairings");
+  }
+
+  // Create matches and pairings in the database
+  const matchInserts: Array<{
+    round_id: number;
+    alt1_id: number | null;
+    alt2_id: number | null;
+    is_bye: boolean;
+    table_number: number | null;
+    status: "pending";
+  }> = [];
+
+  const pairingInserts: Array<{
+    tournament_id: number;
+    round_id: number;
+    alt1_id: number | null;
+    alt2_id: number | null;
+    alt1_seed: number | null;
+    alt2_seed: number | null;
+    is_bye: boolean;
+    pairing_reason: string;
+    pairing_type: string;
+    table_number: number | null;
+  }> = [];
+
+  for (const pairing of result.pairings) {
+    matchInserts.push({
+      round_id: roundId,
+      alt1_id: pairing.alt1Id,
+      alt2_id: pairing.alt2Id,
+      is_bye: pairing.isBye,
+      table_number: pairing.isBye ? null : pairing.tableNumber,
+      status: "pending",
+    });
+
+    pairingInserts.push({
+      tournament_id: tournamentId,
+      round_id: roundId,
+      alt1_id: pairing.alt1Id,
+      alt2_id: pairing.alt2Id,
+      alt1_seed: pairing.alt1Seed,
+      alt2_seed: pairing.alt2Seed,
+      is_bye: pairing.isBye,
+      pairing_reason: pairing.pairingReason,
+      pairing_type: "swiss",
+      table_number: pairing.isBye ? null : pairing.tableNumber,
+    });
+  }
+
+  // Insert matches
+  const { data: matches, error: matchError } = await supabase
+    .from("tournament_matches")
+    .insert(matchInserts)
+    .select("id");
+
+  if (matchError) throw matchError;
+
+  // Link pairings to matches and insert
+  for (let i = 0; i < pairingInserts.length; i++) {
+    const pairingInsert = pairingInserts[i];
+    const match = matches[i];
+    if (pairingInsert && match) {
+      (pairingInsert as { match_id?: number }).match_id = match.id;
+    }
+  }
+
+  const { error: pairingError } = await supabase
+    .from("tournament_pairings")
+    .insert(
+      pairingInserts.map((p) => ({
+        ...p,
+        match_id: (p as { match_id?: number }).match_id,
+      }))
+    );
+
+  if (pairingError) throw pairingError;
+
+  // Update opponent history for non-bye matches
+  const opponentHistoryInserts: Array<{
+    tournament_id: number;
+    alt_id: number;
+    opponent_alt_id: number;
+    round_number: number;
+  }> = [];
+
+  for (const pairing of result.pairings) {
+    if (!pairing.isBye && pairing.alt2Id !== null) {
+      opponentHistoryInserts.push({
+        tournament_id: tournamentId,
+        alt_id: pairing.alt1Id,
+        opponent_alt_id: pairing.alt2Id,
+        round_number: round.round_number,
+      });
+      opponentHistoryInserts.push({
+        tournament_id: tournamentId,
+        alt_id: pairing.alt2Id,
+        opponent_alt_id: pairing.alt1Id,
+        round_number: round.round_number,
+      });
+    }
+  }
+
+  if (opponentHistoryInserts.length > 0) {
+    await supabase
+      .from("tournament_opponent_history")
+      .insert(opponentHistoryInserts);
+  }
+
+  // Mark players with byes
+  const byePlayers = result.pairings
+    .filter((p) => p.isBye)
+    .map((p) => p.alt1Id);
+
+  if (byePlayers.length > 0) {
+    await supabase
+      .from("tournament_player_stats")
+      .update({ has_received_bye: true })
+      .eq("tournament_id", tournamentId)
+      .in("alt_id", byePlayers);
+  }
+
+  return {
+    success: true,
+    matchesCreated: matches.length,
+    warnings: result.warnings,
+    algorithm: result.algorithm,
+  };
+}
+
+/**
+ * Start a round (set status to active)
+ */
+export async function startRound(supabase: TypedClient, roundId: number) {
+  const user = await getCurrentUser(supabase);
+  if (!user) throw new Error("Not authenticated");
+
+  // Get round with tournament info
+  const { data: round } = await supabase
+    .from("tournament_rounds")
+    .select(
+      `
+      id,
+      status,
+      phase_id,
+      tournament_phases!inner (
+        tournament_id,
+        tournaments!inner (
+          organization_id,
+          status,
+          organizations!inner (
+            owner_user_id
+          )
+        )
+      )
+    `
+    )
+    .eq("id", roundId)
+    .single();
+
+  if (!round) throw new Error("Round not found");
+
+  const phase = round.tournament_phases as unknown as {
+    tournament_id: number;
+    tournaments: {
+      organization_id: number;
+      status: string;
+      organizations: {
+        owner_user_id: string;
+      };
+    };
+  };
+
+  // Verify permission
+  if (phase.tournaments.organizations.owner_user_id !== user.id) {
+    throw new Error("You don't have permission to start this round");
+  }
+
+  // Validate round status
+  if (round.status !== "pending") {
+    throw new Error(`Cannot start round with status "${round.status}"`);
+  }
+
+  // Check that pairings exist
+  const { count } = await supabase
+    .from("tournament_matches")
+    .select("*", { count: "exact", head: true })
+    .eq("round_id", roundId);
+
+  if (!count || count === 0) {
+    throw new Error(
+      "Cannot start round without pairings. Generate pairings first."
+    );
+  }
+
+  // Update round status
+  const { error } = await supabase
+    .from("tournament_rounds")
+    .update({
+      status: "active",
+      started_at: new Date().toISOString(),
+    })
+    .eq("id", roundId);
+
+  if (error) throw error;
+
+  return { success: true };
+}
+
+/**
+ * Complete a round (set status to completed)
+ */
+export async function completeRound(supabase: TypedClient, roundId: number) {
+  const user = await getCurrentUser(supabase);
+  if (!user) throw new Error("Not authenticated");
+
+  // Get round with tournament info
+  const { data: round } = await supabase
+    .from("tournament_rounds")
+    .select(
+      `
+      id,
+      status,
+      phase_id,
+      tournament_phases!inner (
+        tournament_id,
+        tournaments!inner (
+          organization_id,
+          organizations!inner (
+            owner_user_id
+          )
+        )
+      )
+    `
+    )
+    .eq("id", roundId)
+    .single();
+
+  if (!round) throw new Error("Round not found");
+
+  const phase = round.tournament_phases as unknown as {
+    tournament_id: number;
+    tournaments: {
+      organization_id: number;
+      organizations: {
+        owner_user_id: string;
+      };
+    };
+  };
+
+  // Verify permission
+  if (phase.tournaments.organizations.owner_user_id !== user.id) {
+    throw new Error("You don't have permission to complete this round");
+  }
+
+  // Validate round status
+  if (round.status !== "active") {
+    throw new Error(`Cannot complete round with status "${round.status}"`);
+  }
+
+  // Check that all matches are completed
+  const { data: incompleteMatches } = await supabase
+    .from("tournament_matches")
+    .select("id")
+    .eq("round_id", roundId)
+    .neq("status", "completed");
+
+  if (incompleteMatches && incompleteMatches.length > 0) {
+    throw new Error(
+      `Cannot complete round: ${incompleteMatches.length} match(es) still in progress`
+    );
+  }
+
+  // Update round status
+  const { error } = await supabase
+    .from("tournament_rounds")
+    .update({
+      status: "completed",
+      completed_at: new Date().toISOString(),
+    })
+    .eq("id", roundId);
+
+  if (error) throw error;
+
+  // Recalculate standings after round completion
+  await recalculateStandings(supabase, phase.tournament_id);
+
+  return { success: true };
+}
+
+// =============================================================================
+// STANDINGS CALCULATION
+// =============================================================================
+
+/**
+ * Recalculate standings for a tournament
+ * Updates match points, game win %, opponent match win %, etc.
+ */
+export async function recalculateStandings(
+  supabase: TypedClient,
+  tournamentId: number
+) {
+  // Get all completed matches for this tournament
+  const { data: matches } = await supabase
+    .from("tournament_matches")
+    .select(
+      `
+      id,
+      alt1_id,
+      alt2_id,
+      winner_alt_id,
+      game_wins1,
+      game_wins2,
+      is_bye,
+      status,
+      tournament_rounds!inner (
+        tournament_phases!inner (
+          tournament_id
+        )
+      )
+    `
+    )
+    .eq("status", "completed");
+
+  // Filter to only this tournament's matches
+  const tournamentMatches =
+    matches?.filter((m) => {
+      const rounds = m.tournament_rounds as unknown as {
+        tournament_phases: { tournament_id: number };
+      };
+      return rounds.tournament_phases.tournament_id === tournamentId;
+    }) ?? [];
+
+  // Get all registered players
+  const { data: registrations } = await supabase
+    .from("tournament_registrations")
+    .select("alt_id")
+    .eq("tournament_id", tournamentId)
+    .in("status", ["checked_in", "registered", "confirmed"]);
+
+  if (!registrations || registrations.length === 0) {
+    return { success: true, playersUpdated: 0 };
+  }
+
+  const altIds = registrations.map((r) => r.alt_id);
+
+  // Calculate stats for each player
+  interface PlayerMatchData {
+    matchWins: number;
+    matchLosses: number;
+    matchDraws: number;
+    gameWins: number;
+    gameLosses: number;
+    opponents: number[];
+    matchesPlayed: number;
+    hasReceivedBye: boolean;
+  }
+
+  const playerData = new Map<number, PlayerMatchData>();
+
+  // Initialize all players
+  for (const altId of altIds) {
+    playerData.set(altId, {
+      matchWins: 0,
+      matchLosses: 0,
+      matchDraws: 0,
+      gameWins: 0,
+      gameLosses: 0,
+      opponents: [],
+      matchesPlayed: 0,
+      hasReceivedBye: false,
+    });
+  }
+
+  // Process matches
+  for (const match of tournamentMatches) {
+    if (match.is_bye) {
+      // Bye counts as a win with 2-0 game score
+      const player = playerData.get(match.alt1_id!);
+      if (player) {
+        player.matchWins += 1;
+        player.gameWins += 2;
+        player.matchesPlayed += 1;
+        player.hasReceivedBye = true;
+      }
+      continue;
+    }
+
+    const player1Data = playerData.get(match.alt1_id!);
+    const player2Data = playerData.get(match.alt2_id!);
+
+    if (player1Data && player2Data) {
+      // Record opponents
+      player1Data.opponents.push(match.alt2_id!);
+      player2Data.opponents.push(match.alt1_id!);
+
+      // Record games
+      player1Data.gameWins += match.game_wins1 ?? 0;
+      player1Data.gameLosses += match.game_wins2 ?? 0;
+      player2Data.gameWins += match.game_wins2 ?? 0;
+      player2Data.gameLosses += match.game_wins1 ?? 0;
+
+      // Record match result
+      player1Data.matchesPlayed += 1;
+      player2Data.matchesPlayed += 1;
+
+      if (match.winner_alt_id === match.alt1_id) {
+        player1Data.matchWins += 1;
+        player2Data.matchLosses += 1;
+      } else if (match.winner_alt_id === match.alt2_id) {
+        player2Data.matchWins += 1;
+        player1Data.matchLosses += 1;
+      } else {
+        // Draw (rare in Pokemon)
+        player1Data.matchDraws += 1;
+        player2Data.matchDraws += 1;
+      }
+    }
+  }
+
+  // Calculate match points and percentages
+  const calculateMatchWinPercentage = (data: PlayerMatchData): number => {
+    if (data.matchesPlayed === 0) return 0;
+    // Match points: 3 for win, 1 for draw, 0 for loss
+    const matchPoints = data.matchWins * 3 + data.matchDraws * 1;
+    const maxPoints = data.matchesPlayed * 3;
+    const percentage = (matchPoints / maxPoints) * 100;
+    // VGC uses minimum 25% for tiebreaker calculations
+    return Math.max(percentage, 25);
+  };
+
+  const calculateGameWinPercentage = (data: PlayerMatchData): number => {
+    const totalGames = data.gameWins + data.gameLosses;
+    if (totalGames === 0) return 0;
+    const percentage = (data.gameWins / totalGames) * 100;
+    return Math.max(percentage, 25);
+  };
+
+  // Calculate opponent match win percentage
+  const calculateOpponentMatchWinPercentage = (
+    data: PlayerMatchData
+  ): number => {
+    if (data.opponents.length === 0) return 0;
+
+    let totalPercentage = 0;
+    for (const oppId of data.opponents) {
+      const oppData = playerData.get(oppId);
+      if (oppData) {
+        totalPercentage += calculateMatchWinPercentage(oppData);
+      }
+    }
+    return totalPercentage / data.opponents.length;
+  };
+
+  // Build stats for upsert
+  const statsToUpsert: Array<{
+    tournament_id: number;
+    alt_id: number;
+    match_wins: number;
+    match_losses: number;
+    matches_played: number;
+    game_wins: number;
+    game_losses: number;
+    match_points: number;
+    match_win_percentage: number;
+    game_win_percentage: number;
+    opponent_match_win_percentage: number;
+    opponent_history: number[];
+    has_received_bye: boolean;
+    standings_need_recalc: boolean;
+    updated_at: string;
+  }> = [];
+
+  for (const [altId, data] of playerData) {
+    const matchPoints = data.matchWins * 3 + data.matchDraws * 1;
+    const matchWinPct = calculateMatchWinPercentage(data);
+    const gameWinPct = calculateGameWinPercentage(data);
+    const oppMatchWinPct = calculateOpponentMatchWinPercentage(data);
+
+    statsToUpsert.push({
+      tournament_id: tournamentId,
+      alt_id: altId,
+      match_wins: data.matchWins,
+      match_losses: data.matchLosses,
+      matches_played: data.matchesPlayed,
+      game_wins: data.gameWins,
+      game_losses: data.gameLosses,
+      match_points: matchPoints,
+      match_win_percentage: matchWinPct,
+      game_win_percentage: gameWinPct,
+      opponent_match_win_percentage: oppMatchWinPct,
+      opponent_history: data.opponents,
+      has_received_bye: data.hasReceivedBye,
+      standings_need_recalc: false,
+      updated_at: new Date().toISOString(),
+    });
+  }
+
+  // Upsert stats (update if exists, insert if not)
+  for (const stats of statsToUpsert) {
+    const { error } = await supabase
+      .from("tournament_player_stats")
+      .upsert(stats, {
+        onConflict: "tournament_id,alt_id",
+      });
+
+    if (error) {
+      console.error(`Error upserting stats for alt ${stats.alt_id}:`, error);
+    }
+  }
+
+  // Calculate standings (rank by match points, then tiebreakers)
+  const sortedPlayers = [...statsToUpsert].sort((a, b) => {
+    // First by match points
+    if (b.match_points !== a.match_points) {
+      return b.match_points - a.match_points;
+    }
+    // Then by opponent match win %
+    if (b.opponent_match_win_percentage !== a.opponent_match_win_percentage) {
+      return b.opponent_match_win_percentage - a.opponent_match_win_percentage;
+    }
+    // Then by game win %
+    return b.game_win_percentage - a.game_win_percentage;
+  });
+
+  // Update standings
+  for (let i = 0; i < sortedPlayers.length; i++) {
+    const player = sortedPlayers[i];
+    if (player) {
+      await supabase
+        .from("tournament_player_stats")
+        .update({ current_standing: i + 1 })
+        .eq("tournament_id", tournamentId)
+        .eq("alt_id", player.alt_id);
+    }
+  }
+
+  return {
+    success: true,
+    playersUpdated: statsToUpsert.length,
+  };
+}
+
+/**
+ * Drop a player from the tournament (they can no longer participate)
+ */
+export async function dropPlayer(
+  supabase: TypedClient,
+  tournamentId: number,
+  altId: number
+) {
+  const user = await getCurrentUser(supabase);
+  if (!user) throw new Error("Not authenticated");
+
+  // Get tournament with organization info
+  const { data: tournament } = await supabase
+    .from("tournaments")
+    .select(
+      `
+      id,
+      status,
+      organization_id,
+      organizations!inner (
+        owner_user_id
+      )
+    `
+    )
+    .eq("id", tournamentId)
+    .single();
+
+  if (!tournament) throw new Error("Tournament not found");
+
+  const org = tournament.organizations as unknown as { owner_user_id: string };
+
+  // Check permission - either the player themselves or the organizer
+  const currentAlt = await getCurrentAlt(supabase);
+  const isPlayer = currentAlt?.id === altId;
+  const isOrganizer = org.owner_user_id === user.id;
+
+  if (!isPlayer && !isOrganizer) {
+    throw new Error("You don't have permission to drop this player");
+  }
+
+  // Validate tournament is active
+  if (tournament.status !== "active") {
+    throw new Error("Can only drop players from active tournaments");
+  }
+
+  // Update player stats to mark as dropped
+  const { error: statsError } = await supabase
+    .from("tournament_player_stats")
+    .update({ is_dropped: true })
+    .eq("tournament_id", tournamentId)
+    .eq("alt_id", altId);
+
+  if (statsError) throw statsError;
+
+  // Update registration status
+  const { error: regError } = await supabase
+    .from("tournament_registrations")
+    .update({ status: "dropped" })
+    .eq("tournament_id", tournamentId)
+    .eq("alt_id", altId);
+
+  if (regError) throw regError;
+
+  return { success: true };
+}
+
+/**
+ * Create a new round for a phase
+ */
+export async function createRound(
+  supabase: TypedClient,
+  phaseId: number,
+  roundNumber: number
+) {
+  const user = await getCurrentUser(supabase);
+  if (!user) throw new Error("Not authenticated");
+
+  // Get phase with tournament info
+  const { data: phase } = await supabase
+    .from("tournament_phases")
+    .select(
+      `
+      id,
+      tournament_id,
+      tournaments!inner (
+        organization_id,
+        organizations!inner (
+          owner_user_id
+        )
+      )
+    `
+    )
+    .eq("id", phaseId)
+    .single();
+
+  if (!phase) throw new Error("Phase not found");
+
+  const tournament = phase.tournaments as unknown as {
+    organization_id: number;
+    organizations: { owner_user_id: string };
+  };
+
+  // Verify permission
+  if (tournament.organizations.owner_user_id !== user.id) {
+    throw new Error("You don't have permission to create rounds");
+  }
+
+  // Create the round
+  const { data: round, error } = await supabase
+    .from("tournament_rounds")
+    .insert({
+      phase_id: phaseId,
+      round_number: roundNumber,
+      status: "pending",
+    })
+    .select()
+    .single();
+
+  if (error) throw error;
+
+  return { success: true, round };
+}
+
+/**
+ * Update a tournament phase
+ */
+export async function updatePhase(
+  supabase: TypedClient,
+  phaseId: number,
+  updates: {
+    name?: string;
+    matchFormat?: "best_of_1" | "best_of_3" | "best_of_5";
+    roundTimeMinutes?: number;
+    plannedRounds?: number;
+  }
+) {
+  const user = await getCurrentUser(supabase);
+  if (!user) throw new Error("Not authenticated");
+
+  // Get phase with tournament info
+  const { data: phase } = await supabase
+    .from("tournament_phases")
+    .select(
+      `
+      id,
+      status,
+      tournament_id,
+      tournaments!inner (
+        organization_id,
+        status,
+        organizations!inner (
+          owner_user_id
+        )
+      )
+    `
+    )
+    .eq("id", phaseId)
+    .single();
+
+  if (!phase) throw new Error("Phase not found");
+
+  const tournament = phase.tournaments as unknown as {
+    organization_id: number;
+    status: string;
+    organizations: { owner_user_id: string };
+  };
+
+  // Verify permission
+  if (tournament.organizations.owner_user_id !== user.id) {
+    throw new Error("You don't have permission to update this phase");
+  }
+
+  // Only allow editing phases when tournament is draft or upcoming
+  if (tournament.status !== "draft" && tournament.status !== "upcoming") {
+    throw new Error("Cannot edit phases after tournament has started");
+  }
+
+  // Build update object
+  const updateData: {
+    name?: string;
+    match_format?: string;
+    round_time_minutes?: number;
+    planned_rounds?: number;
+  } = {};
+
+  if (updates.name !== undefined) updateData.name = updates.name;
+  if (updates.matchFormat !== undefined)
+    updateData.match_format = updates.matchFormat;
+  if (updates.roundTimeMinutes !== undefined)
+    updateData.round_time_minutes = updates.roundTimeMinutes;
+  if (updates.plannedRounds !== undefined)
+    updateData.planned_rounds = updates.plannedRounds;
+
+  const { error } = await supabase
+    .from("tournament_phases")
+    .update(updateData)
+    .eq("id", phaseId);
+
+  if (error) throw error;
+
+  return { success: true };
 }

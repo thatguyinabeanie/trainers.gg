@@ -48,7 +48,7 @@ interface StaffListClientProps {
   initialStaff: StaffWithRole[];
   groups: OrganizationGroup[];
   isOwner: boolean;
-  currentUserId?: string;
+  currentUserId?: string; // Not currently used but reserved for future use
   currentUserRole?: string | null;
 }
 
@@ -330,7 +330,7 @@ export function StaffListClient({
   initialStaff,
   groups,
   isOwner,
-  currentUserId,
+  currentUserId: _currentUserId,
   currentUserRole,
 }: StaffListClientProps) {
   const router = useRouter();

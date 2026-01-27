@@ -5,13 +5,33 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import type { TournamentFormData } from "@/lib/types/tournament";
-import { Calendar, Users, Trophy, Settings, Loader2 } from "lucide-react";
+import {
+  Calendar,
+  Users,
+  Trophy,
+  Settings,
+  Loader2,
+  Layers,
+  ChevronRight,
+} from "lucide-react";
 
 interface TournamentReviewProps {
   formData: TournamentFormData;
   onSubmit: () => void;
   isSubmitting: boolean;
 }
+
+const phaseTypeLabels: Record<string, string> = {
+  swiss: "Swiss",
+  single_elimination: "Single Elim",
+  double_elimination: "Double Elim",
+};
+
+const matchFormatLabels: Record<string, string> = {
+  best_of_1: "Bo1",
+  best_of_3: "Bo3",
+  best_of_5: "Bo5",
+};
 
 export function TournamentReview({
   formData,
@@ -21,21 +41,6 @@ export function TournamentReview({
   const formatDate = (timestamp?: number) => {
     if (!timestamp) return "Not set";
     return new Date(timestamp).toLocaleString();
-  };
-
-  const getTournamentFormatLabel = (format: string) => {
-    switch (format) {
-      case "swiss_only":
-        return "Swiss Only";
-      case "swiss_with_cut":
-        return "Swiss + Top Cut";
-      case "single_elimination":
-        return "Single Elimination";
-      case "double_elimination":
-        return "Double Elimination";
-      default:
-        return format;
-    }
   };
 
   return (
@@ -83,16 +88,10 @@ export function TournamentReview({
               Format & Structure
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3">
+          <CardContent className="space-y-4">
             <div className="flex items-center gap-2">
               <span className="font-medium">Game Format:</span>
               <Badge variant="secondary">{formData.format}</Badge>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="font-medium">Tournament Structure:</span>
-              <Badge>
-                {getTournamentFormatLabel(formData.tournamentFormat)}
-              </Badge>
             </div>
             <div className="grid grid-cols-2 gap-4 text-sm">
               {formData.maxParticipants && (
@@ -105,18 +104,54 @@ export function TournamentReview({
                 <span className="font-medium">Round Time:</span>{" "}
                 {formData.roundTimeMinutes} minutes
               </div>
-              {formData.swissRounds && (
-                <div>
-                  <span className="font-medium">Swiss Rounds:</span>{" "}
-                  {formData.swissRounds}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Tournament Phases */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Layers className="h-5 w-5" />
+              Tournament Phases
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-wrap items-center gap-2">
+              {formData.phases.map((phase, index) => (
+                <div key={phase.id} className="flex items-center gap-2">
+                  <div className="bg-muted rounded-lg p-3">
+                    <div className="flex items-center gap-2">
+                      <span className="bg-primary text-primary-foreground flex h-5 w-5 items-center justify-center rounded-full text-xs font-medium">
+                        {index + 1}
+                      </span>
+                      <span className="font-medium">{phase.name}</span>
+                    </div>
+                    <div className="text-muted-foreground mt-1 flex gap-2 text-xs">
+                      <Badge variant="outline" className="text-xs">
+                        {phaseTypeLabels[phase.phaseType] || phase.phaseType}
+                      </Badge>
+                      <Badge variant="outline" className="text-xs">
+                        {matchFormatLabels[phase.matchFormat] ||
+                          phase.matchFormat}
+                      </Badge>
+                      {phase.plannedRounds && (
+                        <Badge variant="outline" className="text-xs">
+                          {phase.plannedRounds} rounds
+                        </Badge>
+                      )}
+                      {phase.bracketSize && (
+                        <Badge variant="outline" className="text-xs">
+                          Top {phase.bracketSize}
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+                  {index < formData.phases.length - 1 && (
+                    <ChevronRight className="text-muted-foreground h-4 w-4" />
+                  )}
                 </div>
-              )}
-              {formData.topCutSize && (
-                <div>
-                  <span className="font-medium">Top Cut:</span> Top{" "}
-                  {formData.topCutSize}
-                </div>
-              )}
+              ))}
             </div>
           </CardContent>
         </Card>

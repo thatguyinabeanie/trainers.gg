@@ -19,6 +19,14 @@ import {
   checkIn as checkInMutation,
   undoCheckIn as undoCheckInMutation,
   withdrawFromTournament as withdrawFromTournamentMutation,
+  // Round management mutations
+  createRound as createRoundMutation,
+  generateRoundPairings as generateRoundPairingsMutation,
+  startRound as startRoundMutation,
+  completeRound as completeRoundMutation,
+  recalculateStandings as recalculateStandingsMutation,
+  dropPlayer as dropPlayerMutation,
+  reportMatchResult as reportMatchResultMutation,
   getCurrentUserAlts,
 } from "@trainers/supabase";
 import type { Database } from "@trainers/supabase";
@@ -395,6 +403,210 @@ export async function getCurrentUserAltsAction(): Promise<
       success: false,
       error:
         error instanceof Error ? error.message : "Failed to fetch user alts",
+    };
+  }
+}
+
+// =============================================================================
+// Round Management Actions
+// =============================================================================
+
+/**
+ * Create a new round for a phase
+ */
+export async function createRound(
+  phaseId: number,
+  roundNumber: number,
+  tournamentId: number
+): Promise<ActionResult<{ roundId: number }>> {
+  try {
+    const supabase = await createClient();
+    const result = await createRoundMutation(supabase, phaseId, roundNumber);
+    updateTag(CacheTags.tournament(tournamentId));
+    return { success: true, data: { roundId: result.round.id } };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Failed to create round",
+    };
+  }
+}
+
+/**
+ * Generate pairings for a round using Swiss algorithm
+ */
+export async function generatePairings(
+  roundId: number,
+  tournamentId: number
+): Promise<
+  ActionResult<{
+    matchesCreated: number;
+    warnings: string[];
+  }>
+> {
+  try {
+    const supabase = await createClient();
+    const result = await generateRoundPairingsMutation(supabase, roundId);
+    updateTag(CacheTags.tournament(tournamentId));
+    return {
+      success: true,
+      data: {
+        matchesCreated: result.matchesCreated,
+        warnings: result.warnings,
+      },
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error:
+        error instanceof Error ? error.message : "Failed to generate pairings",
+    };
+  }
+}
+
+/**
+ * Start a round (set status to active)
+ */
+export async function startRound(
+  roundId: number,
+  tournamentId: number
+): Promise<ActionResult<{ success: true }>> {
+  try {
+    const supabase = await createClient();
+    await startRoundMutation(supabase, roundId);
+    updateTag(CacheTags.tournament(tournamentId));
+    return { success: true, data: { success: true } };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Failed to start round",
+    };
+  }
+}
+
+/**
+ * Complete a round (set status to completed, recalculate standings)
+ */
+export async function completeRound(
+  roundId: number,
+  tournamentId: number
+): Promise<ActionResult<{ success: true }>> {
+  try {
+    const supabase = await createClient();
+    await completeRoundMutation(supabase, roundId);
+    updateTag(CacheTags.tournament(tournamentId));
+    return { success: true, data: { success: true } };
+  } catch (error) {
+    return {
+      success: false,
+      error:
+        error instanceof Error ? error.message : "Failed to complete round",
+    };
+  }
+}
+
+/**
+ * Recalculate tournament standings
+ */
+export async function recalculateStandings(
+  tournamentId: number
+): Promise<ActionResult<{ playersUpdated: number }>> {
+  try {
+    const supabase = await createClient();
+    const result = await recalculateStandingsMutation(supabase, tournamentId);
+    updateTag(CacheTags.tournament(tournamentId));
+    return { success: true, data: { playersUpdated: result.playersUpdated } };
+  } catch (error) {
+    return {
+      success: false,
+      error:
+        error instanceof Error
+          ? error.message
+          : "Failed to recalculate standings",
+    };
+  }
+}
+
+/**
+ * Drop a player from the tournament
+ */
+export async function dropPlayer(
+  tournamentId: number,
+  altId: number
+): Promise<ActionResult<{ success: true }>> {
+  try {
+    const supabase = await createClient();
+    await dropPlayerMutation(supabase, tournamentId, altId);
+    updateTag(CacheTags.tournament(tournamentId));
+    return { success: true, data: { success: true } };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Failed to drop player",
+    };
+  }
+}
+
+/**
+ * Report match result
+ */
+export async function reportMatchResult(
+  matchId: number,
+  tournamentId: number,
+  winnerAltId: number,
+  player1GamesWon: number,
+  player2GamesWon: number
+): Promise<ActionResult<{ success: true }>> {
+  try {
+    const supabase = await createClient();
+    await reportMatchResultMutation(
+      supabase,
+      matchId,
+      winnerAltId,
+      player1GamesWon,
+      player2GamesWon
+    );
+    updateTag(CacheTags.tournament(tournamentId));
+    return { success: true, data: { success: true } };
+  } catch (error) {
+    return {
+      success: false,
+      error:
+        error instanceof Error
+          ? error.message
+          : "Failed to report match result",
+    };
+  }
+}
+
+// =============================================================================
+// Phase Management Actions
+// =============================================================================
+
+/**
+ * Update a tournament phase
+ */
+export async function updatePhase(
+  phaseId: number,
+  tournamentId: number,
+  updates: {
+    name?: string;
+    matchFormat?: "best_of_1" | "best_of_3" | "best_of_5";
+    roundTimeMinutes?: number;
+    plannedRounds?: number;
+  }
+): Promise<ActionResult<{ success: true }>> {
+  try {
+    const supabase = await createClient();
+    const { updatePhase: updatePhaseMutation } =
+      await import("@trainers/supabase");
+    await updatePhaseMutation(supabase, phaseId, updates);
+    updateTag(CacheTags.tournament(tournamentId));
+    return { success: true, data: { success: true } };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Failed to update phase",
     };
   }
 }

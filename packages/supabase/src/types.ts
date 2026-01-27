@@ -2234,6 +2234,10 @@ export type Database = {
       custom_access_token_hook: { Args: { event: Json }; Returns: Json }
       get_current_alt_id: { Args: never; Returns: number }
       get_current_user_id: { Args: never; Returns: string }
+      get_org_id_from_group_role: {
+        Args: { p_group_role_id: number }
+        Returns: number
+      }
       get_organization_tournament_counts: {
         Args: { org_ids: number[] }
         Returns: {
@@ -2249,11 +2253,23 @@ export type Database = {
           tournament_id: number
         }[]
       }
+      get_role_name_from_group_role: {
+        Args: { p_group_role_id: number }
+        Returns: string
+      }
       has_org_permission: {
         Args: { org_id: number; permission_key: string }
         Returns: boolean
       }
+      is_org_owner: {
+        Args: { p_org_id: number; p_user_id: string }
+        Returns: boolean
+      }
       is_site_admin: { Args: never; Returns: boolean }
+      user_has_org_role: {
+        Args: { p_org_id: number; p_role_name: string; p_user_id: string }
+        Returns: boolean
+      }
       vault_create_secret: {
         Args: {
           secret_description?: string

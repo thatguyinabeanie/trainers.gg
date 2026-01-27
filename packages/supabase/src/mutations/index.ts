@@ -45,4 +45,13 @@ export {
   deleteTournament,
   sendTournamentInvitations,
   respondToTournamentInvitation,
+  // Round management
+  createRound,
+  generateRoundPairings,
+  startRound,
+  completeRound,
+  recalculateStandings,
+  dropPlayer,
+  // Phase management
+  updatePhase,
 } from "./tournaments";
