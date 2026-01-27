@@ -2,7 +2,7 @@
 -- 04_organizations.sql - Create Organizations and Staff
 -- =============================================================================
 -- GENERATED FILE - DO NOT EDIT MANUALLY
--- Generated at: 2026-01-27T02:02:03.118Z
+-- Generated at: 2026-01-27T02:14:50.566Z
 -- IDEMPOTENT: Uses ON CONFLICT and existence checks
 -- =============================================================================
 

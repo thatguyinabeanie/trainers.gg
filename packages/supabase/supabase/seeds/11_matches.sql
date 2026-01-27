@@ -2,13 +2,13 @@
 -- 11_matches.sql - Create Matches and Games
 -- =============================================================================
 -- GENERATED FILE - DO NOT EDIT MANUALLY
--- Generated at: 2026-01-27T02:02:03.119Z
+-- Generated at: 2026-01-27T02:14:50.566Z
 -- IDEMPOTENT: Uses ON CONFLICT and existence checks
 -- =============================================================================
 
 -- IDEMPOTENT: Uses ON CONFLICT DO NOTHING
 -- Depends on: 10_tournaments.sql
--- Generated: 16808 matches, 40340 games
+-- Generated: 14849 matches, 35640 games
 -- =============================================================================
 
 -- Note: Match generation is complex and requires tournament phase IDs.
@@ -17,8 +17,8 @@
 
 DO $$
 BEGIN
-  RAISE NOTICE 'Match seed data: 16808 matches ready for insertion';
-  RAISE NOTICE 'Match games: 40340 games ready for insertion';
+  RAISE NOTICE 'Match seed data: 14849 matches ready for insertion';
+  RAISE NOTICE 'Match games: 35640 games ready for insertion';
   -- Full match insertion requires phase ID resolution
   -- See match generator for detailed implementation
 END $$;

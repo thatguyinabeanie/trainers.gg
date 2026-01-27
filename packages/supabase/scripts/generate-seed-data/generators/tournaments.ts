@@ -25,6 +25,16 @@ import {
 import { type GeneratedOrganization } from "./organizations.js";
 import { type GeneratedAlt } from "./users.js";
 
+export type TournamentStatus =
+  | "draft"
+  | "registration_open"
+  | "registration_closed"
+  | "in_progress"
+  | "completed"
+  | "cancelled";
+
+export type PhaseStatus = "pending" | "in_progress" | "completed";
+
 export interface GeneratedTournament {
   id: number;
   organizationId: number;
@@ -32,7 +42,7 @@ export interface GeneratedTournament {
   slug: string;
   description: string;
   format: string;
-  status: "completed";
+  status: TournamentStatus;
   startDate: Date;
   endDate: Date;
   registrationDeadline: Date;
@@ -43,6 +53,7 @@ export interface GeneratedTournament {
   roundTimeMinutes: number;
   featured: boolean;
   week: number;
+  weekOffset: number; // negative = past, 0 = current, positive = future
   isMain: boolean; // main tournament vs practice
   isFlagship: boolean;
 }
@@ -53,7 +64,7 @@ export interface GeneratedTournamentPhase {
   name: string;
   phaseOrder: number;
   phaseType: PhaseType;
-  status: "completed";
+  status: PhaseStatus;
   matchFormat: string;
   roundTimeMinutes: number;
   plannedRounds: number | null;
@@ -192,7 +203,49 @@ function getTournamentFormat(
 }
 
 /**
+ * Determine tournament status based on dates relative to now
+ */
+function getTournamentStatus(
+  startDate: Date,
+  endDate: Date,
+  registrationDeadline: Date
+): TournamentStatus {
+  const now = new Date();
+
+  if (now < registrationDeadline) {
+    return "registration_open";
+  }
+  if (now < startDate) {
+    return "registration_closed";
+  }
+  if (now < endDate) {
+    return "in_progress";
+  }
+  return "completed";
+}
+
+/**
+ * Determine phase status based on tournament status
+ */
+function getPhaseStatus(
+  tournamentStatus: TournamentStatus,
+  phaseOrder: number
+): PhaseStatus {
+  if (tournamentStatus === "completed") {
+    return "completed";
+  }
+  if (tournamentStatus === "in_progress") {
+    // For simplicity, first phase is in_progress, rest are pending
+    return phaseOrder === 1 ? "in_progress" : "pending";
+  }
+  return "pending";
+}
+
+/**
  * Generate all tournaments for all organizations
+ *
+ * Generates tournaments spanning from WEEKS_OF_PAST_TOURNAMENTS ago
+ * to WEEKS_OF_FUTURE_TOURNAMENTS ahead, centered around the current date.
  */
 export function generateTournaments(
   organizations: GeneratedOrganization[]
@@ -200,42 +253,63 @@ export function generateTournaments(
   const tournaments: GeneratedTournament[] = [];
   let tournamentId = 1;
 
+  const pastWeeks = SEED_CONFIG.WEEKS_OF_PAST_TOURNAMENTS;
+  const futureWeeks = SEED_CONFIG.WEEKS_OF_FUTURE_TOURNAMENTS;
+  const totalWeeks = pastWeeks + futureWeeks + 1; // +1 for current week
+
   // Generate tournaments for each week
-  for (let week = 1; week <= SEED_CONFIG.WEEKS_OF_HISTORY; week++) {
-    const weekStart = getWeekStartDate(SEED_CONFIG.WEEKS_OF_HISTORY - week + 1);
+  // weekOffset: negative = past, 0 = current week, positive = future
+  for (let weekIndex = 0; weekIndex < totalWeeks; weekIndex++) {
+    // Map weekIndex to weekOffset: 0 -> -pastWeeks, pastWeeks -> 0, totalWeeks-1 -> futureWeeks
+    const weekOffset = weekIndex - pastWeeks;
+    const weekNumber = weekIndex + 1; // 1-indexed week number for display
+
+    // getWeekStartDate takes "weeks ago" as positive, "weeks ahead" as negative
+    const weekStart = getWeekStartDate(-weekOffset);
 
     for (const org of organizations) {
-      // Check if this is a flagship week for this org
-      const flagshipConfig = SEED_CONFIG.FLAGSHIP_TOURNAMENTS.find(
-        (f) => f.orgSlug === org.slug && f.week === week
-      );
+      // Check if this is a flagship week for this org (only for past/current weeks)
+      const flagshipConfig =
+        weekOffset <= 0
+          ? SEED_CONFIG.FLAGSHIP_TOURNAMENTS.find(
+              (f) => f.orgSlug === org.slug && f.week === weekNumber
+            )
+          : undefined;
       const isFlagship = !!flagshipConfig;
 
       // Main tournament (on org's main day)
-      const mainSeed = `tournament-${org.slug}-week${week}-main`;
+      const mainSeed = `tournament-${org.slug}-week${weekNumber}-main`;
       const mainSize = getTournamentSize(mainSeed, true, isFlagship);
       const mainFormat = getTournamentFormat(mainSeed, true, isFlagship);
       const mainStartDate = getDayInWeek(weekStart, org.mainDay, 14); // 2 PM
+      const mainEndDate = new Date(
+        mainStartDate.getTime() + 6 * 60 * 60 * 1000
+      ); // 6 hours
+      const mainRegDeadline = new Date(
+        mainStartDate.getTime() - 60 * 60 * 1000
+      ); // 1 hour before
 
       tournaments.push({
         id: tournamentId++,
         organizationId: org.id,
         name: generateTournamentName(
           org,
-          week,
+          weekNumber,
           true,
           isFlagship,
           flagshipConfig?.name
         ),
-        slug: generateTournamentSlug(org, week, true, isFlagship),
-        description: `${org.name} tournament for week ${week}`,
+        slug: generateTournamentSlug(org, weekNumber, true, isFlagship),
+        description: `${org.name} tournament for week ${weekNumber}`,
         format: "VGC",
-        status: "completed",
+        status: getTournamentStatus(
+          mainStartDate,
+          mainEndDate,
+          mainRegDeadline
+        ),
         startDate: mainStartDate,
-        endDate: new Date(mainStartDate.getTime() + 6 * 60 * 60 * 1000), // 6 hours
-        registrationDeadline: new Date(
-          mainStartDate.getTime() - 60 * 60 * 1000
-        ), // 1 hour before
+        endDate: mainEndDate,
+        registrationDeadline: mainRegDeadline,
         maxParticipants: mainSize,
         topCutSize:
           mainFormat === "swiss_with_cut"
@@ -250,16 +324,23 @@ export function generateTournaments(
         tournamentFormat: mainFormat,
         roundTimeMinutes: SEED_CONFIG.ROUND_TIME_MINUTES,
         featured: isFlagship,
-        week,
+        week: weekNumber,
+        weekOffset,
         isMain: true,
         isFlagship,
       });
 
       // Practice tournament (on org's practice day)
-      const practiceSeed = `tournament-${org.slug}-week${week}-practice`;
+      const practiceSeed = `tournament-${org.slug}-week${weekNumber}-practice`;
       const practiceSize = getTournamentSize(practiceSeed, false, false);
       const practiceFormat = getTournamentFormat(practiceSeed, false, false);
       const practiceStartDate = getDayInWeek(weekStart, org.practiceDay, 19); // 7 PM
+      const practiceEndDate = new Date(
+        practiceStartDate.getTime() + 4 * 60 * 60 * 1000
+      ); // 4 hours
+      const practiceRegDeadline = new Date(
+        practiceStartDate.getTime() - 30 * 60 * 1000
+      ); // 30 min before
 
       const practiceSwissRounds =
         practiceFormat === "swiss_only"
@@ -271,23 +352,26 @@ export function generateTournaments(
       tournaments.push({
         id: tournamentId++,
         organizationId: org.id,
-        name: generateTournamentName(org, week, false, false),
-        slug: generateTournamentSlug(org, week, false, false),
+        name: generateTournamentName(org, weekNumber, false, false),
+        slug: generateTournamentSlug(org, weekNumber, false, false),
         description: `Practice tournament for ${org.name}`,
         format: "VGC",
-        status: "completed",
+        status: getTournamentStatus(
+          practiceStartDate,
+          practiceEndDate,
+          practiceRegDeadline
+        ),
         startDate: practiceStartDate,
-        endDate: new Date(practiceStartDate.getTime() + 4 * 60 * 60 * 1000), // 4 hours
-        registrationDeadline: new Date(
-          practiceStartDate.getTime() - 30 * 60 * 1000
-        ), // 30 min before
+        endDate: practiceEndDate,
+        registrationDeadline: practiceRegDeadline,
         maxParticipants: practiceSize,
         topCutSize: null, // No top cut for practice
         swissRounds: practiceSwissRounds,
         tournamentFormat: practiceFormat,
         roundTimeMinutes: SEED_CONFIG.ROUND_TIME_MINUTES,
         featured: false,
-        week,
+        week: weekNumber,
+        weekOffset,
         isMain: false,
         isFlagship: false,
       });
@@ -299,6 +383,11 @@ export function generateTournaments(
 
 /**
  * Generate phases for a tournament
+ *
+ * Phase status is derived from tournament status:
+ * - completed tournament -> all phases completed
+ * - in_progress tournament -> first phase in_progress, rest pending
+ * - registration_open/closed -> all phases pending
  */
 export function generateTournamentPhases(
   tournaments: GeneratedTournament[]
@@ -307,20 +396,27 @@ export function generateTournamentPhases(
   let phaseId = 1;
 
   for (const tournament of tournaments) {
+    const isCompleted = tournament.status === "completed";
+
     switch (tournament.tournamentFormat) {
       case "swiss_with_cut": {
         // Phase 1: Swiss rounds
+        const swissPhaseStatus = getPhaseStatus(tournament.status, 1);
+        const swissCurrentRound = isCompleted
+          ? (tournament.swissRounds ?? 0)
+          : 0;
+
         phases.push({
           id: phaseId++,
           tournamentId: tournament.id,
           name: "Swiss Rounds",
           phaseOrder: 1,
           phaseType: "swiss",
-          status: "completed",
+          status: swissPhaseStatus,
           matchFormat: "Best of 3",
           roundTimeMinutes: tournament.roundTimeMinutes,
           plannedRounds: tournament.swissRounds,
-          currentRound: tournament.swissRounds ?? 0,
+          currentRound: swissCurrentRound,
           advancementCount: tournament.topCutSize,
           bracketSize: null,
           totalRounds: null,
@@ -328,17 +424,20 @@ export function generateTournamentPhases(
 
         // Phase 2: Top Cut (single elimination)
         const topCutRounds = Math.log2(tournament.topCutSize || 8);
+        const topCutPhaseStatus = getPhaseStatus(tournament.status, 2);
+        const topCutCurrentRound = isCompleted ? topCutRounds : 0;
+
         phases.push({
           id: phaseId++,
           tournamentId: tournament.id,
           name: "Top Cut",
           phaseOrder: 2,
           phaseType: "single_elimination",
-          status: "completed",
+          status: topCutPhaseStatus,
           matchFormat: "Best of 3",
           roundTimeMinutes: tournament.roundTimeMinutes,
           plannedRounds: null,
-          currentRound: topCutRounds,
+          currentRound: topCutCurrentRound,
           advancementCount: null,
           bracketSize: tournament.topCutSize,
           totalRounds: topCutRounds,
@@ -347,17 +446,20 @@ export function generateTournamentPhases(
       }
 
       case "swiss_only": {
+        const phaseStatus = getPhaseStatus(tournament.status, 1);
+        const currentRound = isCompleted ? (tournament.swissRounds ?? 0) : 0;
+
         phases.push({
           id: phaseId++,
           tournamentId: tournament.id,
           name: "Swiss Rounds",
           phaseOrder: 1,
           phaseType: "swiss",
-          status: "completed",
+          status: phaseStatus,
           matchFormat: "Best of 3",
           roundTimeMinutes: tournament.roundTimeMinutes,
           plannedRounds: tournament.swissRounds,
-          currentRound: tournament.swissRounds ?? 0,
+          currentRound: currentRound,
           advancementCount: null,
           bracketSize: null,
           totalRounds: null,
@@ -367,17 +469,20 @@ export function generateTournamentPhases(
 
       case "single_elimination": {
         const rounds = Math.log2(tournament.maxParticipants);
+        const phaseStatus = getPhaseStatus(tournament.status, 1);
+        const currentRound = isCompleted ? rounds : 0;
+
         phases.push({
           id: phaseId++,
           tournamentId: tournament.id,
           name: "Bracket",
           phaseOrder: 1,
           phaseType: "single_elimination",
-          status: "completed",
+          status: phaseStatus,
           matchFormat: "Best of 3",
           roundTimeMinutes: tournament.roundTimeMinutes,
           plannedRounds: null,
-          currentRound: rounds,
+          currentRound: currentRound,
           advancementCount: null,
           bracketSize: tournament.maxParticipants,
           totalRounds: rounds,
@@ -389,17 +494,20 @@ export function generateTournamentPhases(
         // For simplicity, treat as single elimination for now
         // TODO: Implement proper double elimination bracket
         const rounds = Math.log2(tournament.maxParticipants) + 1;
+        const phaseStatus = getPhaseStatus(tournament.status, 1);
+        const currentRound = isCompleted ? rounds : 0;
+
         phases.push({
           id: phaseId++,
           tournamentId: tournament.id,
           name: "Bracket",
           phaseOrder: 1,
           phaseType: "double_elimination",
-          status: "completed",
+          status: phaseStatus,
           matchFormat: "Best of 3",
           roundTimeMinutes: tournament.roundTimeMinutes,
           plannedRounds: null,
-          currentRound: rounds,
+          currentRound: currentRound,
           advancementCount: null,
           bracketSize: tournament.maxParticipants,
           totalRounds: rounds,
@@ -417,6 +525,13 @@ export function generateTournamentPhases(
  *
  * Randomly selects alts to register for tournaments.
  * Uses primary alts by default but occasionally uses alternate alts.
+ *
+ * Registration status depends on tournament status:
+ * - completed/in_progress tournaments: all players checked_in
+ * - registration_closed tournaments: all players checked_in (ready to start)
+ * - registration_open tournaments: players are registered (not yet checked in)
+ *
+ * Future tournaments have fewer registrations (they're still filling up).
  */
 export function generateTournamentRegistrations(
   tournaments: GeneratedTournament[],
@@ -431,10 +546,18 @@ export function generateTournamentRegistrations(
   for (const tournament of tournaments) {
     const seed = `registrations-${tournament.id}`;
 
+    // Future tournaments have partial registration (40-80% full)
+    // Past/current tournaments are at max capacity
+    let targetParticipants = tournament.maxParticipants;
+    if (tournament.status === "registration_open") {
+      const fillRate = 0.4 + hash(`fill-${tournament.id}`) * 0.4; // 40-80%
+      targetParticipants = Math.floor(tournament.maxParticipants * fillRate);
+    }
+
     // Pick random alts for this tournament
     const participants = deterministicPick(
       primaryAlts,
-      tournament.maxParticipants,
+      targetParticipants,
       seed
     );
 
@@ -457,20 +580,34 @@ export function generateTournamentRegistrations(
       }
     }
 
+    // Determine registration status based on tournament status
+    const isCheckedIn =
+      tournament.status === "completed" ||
+      tournament.status === "in_progress" ||
+      tournament.status === "registration_closed";
+
     // Create registrations
+    const now = new Date();
     for (const alt of participants) {
-      const regTime = new Date(
-        tournament.registrationDeadline.getTime() -
-          hash(`reg-time-${tournament.id}-${alt.id}`) * 7 * 24 * 60 * 60 * 1000 // Random time within week before
-      );
+      // Registration time: random time before deadline (or before now for future tournaments)
+      const regDeadline = tournament.registrationDeadline;
+      const regWindowEnd = regDeadline < now ? regDeadline : now;
+      const regWindowStart = new Date(
+        regWindowEnd.getTime() - 7 * 24 * 60 * 60 * 1000
+      ); // Up to 7 days before
+
+      const regTimeOffset =
+        hash(`reg-time-${tournament.id}-${alt.id}`) *
+        (regWindowEnd.getTime() - regWindowStart.getTime());
+      const regTime = new Date(regWindowStart.getTime() + regTimeOffset);
 
       registrations.push({
         id: registrationId++,
         tournamentId: tournament.id,
         altId: alt.id,
-        status: "checked_in",
+        status: isCheckedIn ? "checked_in" : "registered",
         registeredAt: regTime,
-        checkedInAt: tournament.startDate,
+        checkedInAt: isCheckedIn ? tournament.startDate : null,
       });
     }
   }
