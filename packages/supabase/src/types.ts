@@ -2234,6 +2234,13 @@ export type Database = {
       custom_access_token_hook: { Args: { event: Json }; Returns: Json }
       get_current_alt_id: { Args: never; Returns: number }
       get_current_user_id: { Args: never; Returns: string }
+      get_registration_counts: {
+        Args: { tournament_ids: number[] }
+        Returns: {
+          registration_count: number
+          tournament_id: number
+        }[]
+      }
       has_org_permission: {
         Args: { org_id: number; permission_key: string }
         Returns: boolean
