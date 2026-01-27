@@ -246,7 +246,7 @@ export async function deleteTournament(
 
 /**
  * Register for a tournament
- * Note: Does not revalidate list (player counts are fetched via RPC)
+ * Revalidates: tournaments list (registration count changes), individual tournament
  */
 export async function registerForTournament(
   tournamentId: number,
@@ -260,7 +260,9 @@ export async function registerForTournament(
       data
     );
 
-    // Revalidate individual tournament page to update player count display
+    // Revalidate tournaments list (registration count displayed in list)
+    updateTag(CacheTags.TOURNAMENTS_LIST);
+    // Revalidate individual tournament page
     updateTag(CacheTags.tournament(tournamentId));
 
     return {
@@ -277,6 +279,7 @@ export async function registerForTournament(
 
 /**
  * Cancel tournament registration
+ * Revalidates: tournaments list (registration count changes), individual tournament
  */
 export async function cancelRegistration(
   registrationId: number,
@@ -286,6 +289,8 @@ export async function cancelRegistration(
     const supabase = await createClient();
     await cancelRegistrationMutation(supabase, registrationId);
 
+    // Revalidate tournaments list (registration count displayed in list)
+    updateTag(CacheTags.TOURNAMENTS_LIST);
     // Revalidate individual tournament page
     updateTag(CacheTags.tournament(tournamentId));
 
@@ -341,6 +346,7 @@ export async function undoCheckIn(
 
 /**
  * Withdraw from a tournament
+ * Revalidates: tournaments list (registration count changes), individual tournament
  */
 export async function withdrawFromTournament(
   tournamentId: number
@@ -348,7 +354,12 @@ export async function withdrawFromTournament(
   try {
     const supabase = await createClient();
     await withdrawFromTournamentMutation(supabase, tournamentId);
+
+    // Revalidate tournaments list (registration count displayed in list)
+    updateTag(CacheTags.TOURNAMENTS_LIST);
+    // Revalidate individual tournament page
     updateTag(CacheTags.tournament(tournamentId));
+
     return { success: true, data: { success: true } };
   } catch (error) {
     return {
