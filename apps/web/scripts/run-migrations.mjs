@@ -74,9 +74,16 @@ function exec(command, options = {}) {
 }
 
 /**
- * Check if we're in a Vercel environment
+ * Production Supabase project ref - NEVER seed this database
+ * Even if VERCEL_ENV=preview, if we're connected to production Supabase, skip seeding
  */
-function getEnvironment() {
+const PRODUCTION_PROJECT_REF = "shsijtmbiibknwygcdtc";
+
+/**
+ * Check if we're in a Vercel environment
+ * @param {string|null} projectRef - The Supabase project ref (optional, used for safety check)
+ */
+function getEnvironment(projectRef = null) {
   const vercelEnv = process.env.VERCEL_ENV;
 
   if (!vercelEnv) {
@@ -88,7 +95,26 @@ function getEnvironment() {
   }
 
   if (vercelEnv === "preview") {
-    return { type: "preview", shouldRun: true, shouldSeed: true };
+    // SAFETY CHECK: Even in preview mode, never seed the production database
+    // This can happen when:
+    // 1. A branch push triggers a preview deploy before a PR is created
+    // 2. Supabase branching is not enabled or the branch doesn't exist yet
+    // 3. The Supabase Vercel integration falls back to production URL
+    const isProductionDatabase = projectRef === PRODUCTION_PROJECT_REF;
+
+    if (isProductionDatabase) {
+      console.log(
+        `\n⚠️  WARNING: Preview environment connected to PRODUCTION Supabase!`
+      );
+      console.log(`   Project ref ${projectRef} is the production database.`);
+      console.log(`   Seeding will be SKIPPED to protect production data.\n`);
+    }
+
+    return {
+      type: "preview",
+      shouldRun: true,
+      shouldSeed: !isProductionDatabase,
+    };
   }
 
   // development or unknown
@@ -265,8 +291,11 @@ async function runMigrations() {
   console.log("\n🚀 Supabase Migration Runner\n");
   console.log("=".repeat(50));
 
-  // Check environment
-  const env = getEnvironment();
+  // Extract project ref early (needed for environment safety check)
+  const projectRef = extractProjectRef();
+
+  // Check environment (pass projectRef for production database safety check)
+  const env = getEnvironment(projectRef);
   console.log(`\n📍 Environment: ${env.type}`);
 
   if (!env.shouldRun) {
@@ -277,9 +306,6 @@ async function runMigrations() {
 
   // Validate environment variables
   validateEnv();
-
-  // Extract project ref from SUPABASE_URL
-  const projectRef = extractProjectRef();
 
   if (!projectRef) {
     console.error("\n❌ Could not extract project ref from SUPABASE_URL");
@@ -295,11 +321,14 @@ async function runMigrations() {
   }
 
   const migrationCount = countMigrations();
+  const isProductionDb = projectRef === PRODUCTION_PROJECT_REF;
 
-  console.log(`\n📦 Project: ${projectRef}`);
+  console.log(
+    `\n📦 Project: ${projectRef}${isProductionDb ? " (PRODUCTION)" : ""}`
+  );
   console.log(`📁 Migrations: ${migrationCount} files`);
   console.log(
-    `🌱 Seeding: ${env.shouldSeed ? "Yes (preview)" : "No (production)"}`
+    `🌱 Seeding: ${env.shouldSeed ? "Yes (preview branch)" : `No (${isProductionDb ? "production database" : "production env"})`}`
   );
 
   // Build environment for Supabase CLI
