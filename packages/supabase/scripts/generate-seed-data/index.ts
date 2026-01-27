@@ -408,6 +408,65 @@ function generateTournamentsSql(
   lines.push(`\n  RAISE NOTICE 'Created ${tournaments.length} tournaments';`);
   lines.push(`END $$;\n`);
 
+  // Insert tournament phases in a separate block
+  // Group phases by tournament for efficient insertion
+  lines.push(`-- Tournament Phases`);
+  lines.push(`DO $$`);
+  lines.push(`DECLARE`);
+  lines.push(`  t_id bigint;`);
+  lines.push(`BEGIN`);
+
+  // Group phases by tournament
+  const phasesByTournament = new Map<number, GeneratedTournamentPhase[]>();
+  for (const phase of phases) {
+    if (!phasesByTournament.has(phase.tournamentId)) {
+      phasesByTournament.set(phase.tournamentId, []);
+    }
+    phasesByTournament.get(phase.tournamentId)!.push(phase);
+  }
+
+  // Insert phases for each tournament (only completed tournaments need phases for now)
+  const completedTournaments = tournaments.filter(
+    (t) => t.status === "completed"
+  );
+  for (const tournament of completedTournaments) {
+    const tournamentPhases = phasesByTournament.get(tournament.id) || [];
+    if (tournamentPhases.length === 0) continue;
+
+    lines.push(`  -- Phases for: ${tournament.name}`);
+    lines.push(
+      `  SELECT id INTO t_id FROM public.tournaments WHERE slug = '${escapeString(tournament.slug)}';`
+    );
+    lines.push(`  IF t_id IS NOT NULL THEN`);
+
+    for (const phase of tournamentPhases) {
+      lines.push(`    INSERT INTO public.tournament_phases (`);
+      lines.push(`      tournament_id, name, phase_order, phase_type, status,`);
+      lines.push(
+        `      match_format, round_time_minutes, planned_rounds, current_round,`
+      );
+      lines.push(`      advancement_count, bracket_size, total_rounds`);
+      lines.push(`    ) VALUES (`);
+      lines.push(
+        `      t_id, '${escapeString(phase.name)}', ${phase.phaseOrder}, '${phase.phaseType}', '${phase.status}',`
+      );
+      lines.push(
+        `      '${phase.matchFormat}', ${phase.roundTimeMinutes}, ${phase.plannedRounds ?? "NULL"}, ${phase.currentRound},`
+      );
+      lines.push(
+        `      ${phase.advancementCount ?? "NULL"}, ${phase.bracketSize ?? "NULL"}, ${phase.totalRounds ?? "NULL"}`
+      );
+      lines.push(`    ) ON CONFLICT DO NOTHING;`);
+    }
+
+    lines.push(`  END IF;\n`);
+  }
+
+  lines.push(
+    `  RAISE NOTICE 'Created phases for ${completedTournaments.length} completed tournaments';`
+  );
+  lines.push(`END $$;\n`);
+
   return lines.join("\n");
 }
 

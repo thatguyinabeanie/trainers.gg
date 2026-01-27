@@ -2,7 +2,7 @@
 -- 10_tournaments.sql - Create Tournaments, Phases, and Registrations
 -- =============================================================================
 -- GENERATED FILE - DO NOT EDIT MANUALLY
--- Generated at: 2026-01-27T02:17:55.472Z
+-- Generated at: 2026-01-27T02:20:56.071Z
 -- IDEMPOTENT: Uses ON CONFLICT and existence checks
 -- =============================================================================
 
@@ -1783,4 +1783,1492 @@ BEGIN
   -- Note: Only first 50 tournaments have tracked IDs for registrations
 
   RAISE NOTICE 'Created 130 tournaments';
+END $$;
+
+-- Tournament Phases
+DO $$
+DECLARE
+  t_id bigint;
+BEGIN
+  -- Phases for: VGC League Week 1 Championship
+  SELECT id INTO t_id FROM public.tournaments WHERE slug = 'vgc-league-week-01';
+  IF t_id IS NOT NULL THEN
+    INSERT INTO public.tournament_phases (
+      tournament_id, name, phase_order, phase_type, status,
+      match_format, round_time_minutes, planned_rounds, current_round,
+      advancement_count, bracket_size, total_rounds
+    ) VALUES (
+      t_id, 'Swiss Rounds', 1, 'swiss', 'completed',
+      'Best of 3', 50, 5, 5,
+      4, NULL, NULL
+    ) ON CONFLICT DO NOTHING;
+    INSERT INTO public.tournament_phases (
+      tournament_id, name, phase_order, phase_type, status,
+      match_format, round_time_minutes, planned_rounds, current_round,
+      advancement_count, bracket_size, total_rounds
+    ) VALUES (
+      t_id, 'Top Cut', 2, 'single_elimination', 'completed',
+      'Best of 3', 50, NULL, 2,
+      NULL, 4, 2
+    ) ON CONFLICT DO NOTHING;
+  END IF;
+
+  -- Phases for: VGC League Week 1 Practice
+  SELECT id INTO t_id FROM public.tournaments WHERE slug = 'vgc-league-practice-week-01';
+  IF t_id IS NOT NULL THEN
+    INSERT INTO public.tournament_phases (
+      tournament_id, name, phase_order, phase_type, status,
+      match_format, round_time_minutes, planned_rounds, current_round,
+      advancement_count, bracket_size, total_rounds
+    ) VALUES (
+      t_id, 'Swiss Rounds', 1, 'swiss', 'completed',
+      'Best of 3', 50, 4, 4,
+      NULL, NULL, NULL
+    ) ON CONFLICT DO NOTHING;
+  END IF;
+
+  -- Phases for: Pallet Town Trainers Week 1 Championship
+  SELECT id INTO t_id FROM public.tournaments WHERE slug = 'pallet-town-week-01';
+  IF t_id IS NOT NULL THEN
+    INSERT INTO public.tournament_phases (
+      tournament_id, name, phase_order, phase_type, status,
+      match_format, round_time_minutes, planned_rounds, current_round,
+      advancement_count, bracket_size, total_rounds
+    ) VALUES (
+      t_id, 'Swiss Rounds', 1, 'swiss', 'completed',
+      'Best of 3', 50, 5, 5,
+      4, NULL, NULL
+    ) ON CONFLICT DO NOTHING;
+    INSERT INTO public.tournament_phases (
+      tournament_id, name, phase_order, phase_type, status,
+      match_format, round_time_minutes, planned_rounds, current_round,
+      advancement_count, bracket_size, total_rounds
+    ) VALUES (
+      t_id, 'Top Cut', 2, 'single_elimination', 'completed',
+      'Best of 3', 50, NULL, 2,
+      NULL, 4, 2
+    ) ON CONFLICT DO NOTHING;
+  END IF;
+
+  -- Phases for: Pallet Town Trainers Week 1 Practice
+  SELECT id INTO t_id FROM public.tournaments WHERE slug = 'pallet-town-practice-week-01';
+  IF t_id IS NOT NULL THEN
+    INSERT INTO public.tournament_phases (
+      tournament_id, name, phase_order, phase_type, status,
+      match_format, round_time_minutes, planned_rounds, current_round,
+      advancement_count, bracket_size, total_rounds
+    ) VALUES (
+      t_id, 'Bracket', 1, 'single_elimination', 'completed',
+      'Best of 3', 50, NULL, 5,
+      NULL, 32, 5
+    ) ON CONFLICT DO NOTHING;
+  END IF;
+
+  -- Phases for: Sinnoh Champions Week 1 Championship
+  SELECT id INTO t_id FROM public.tournaments WHERE slug = 'sinnoh-champions-week-01';
+  IF t_id IS NOT NULL THEN
+    INSERT INTO public.tournament_phases (
+      tournament_id, name, phase_order, phase_type, status,
+      match_format, round_time_minutes, planned_rounds, current_round,
+      advancement_count, bracket_size, total_rounds
+    ) VALUES (
+      t_id, 'Swiss Rounds', 1, 'swiss', 'completed',
+      'Best of 3', 50, 6, 6,
+      8, NULL, NULL
+    ) ON CONFLICT DO NOTHING;
+    INSERT INTO public.tournament_phases (
+      tournament_id, name, phase_order, phase_type, status,
+      match_format, round_time_minutes, planned_rounds, current_round,
+      advancement_count, bracket_size, total_rounds
+    ) VALUES (
+      t_id, 'Top Cut', 2, 'single_elimination', 'completed',
+      'Best of 3', 50, NULL, 3,
+      NULL, 8, 3
+    ) ON CONFLICT DO NOTHING;
+  END IF;
+
+  -- Phases for: Sinnoh Champions Week 1 Practice
+  SELECT id INTO t_id FROM public.tournaments WHERE slug = 'sinnoh-champions-practice-week-01';
+  IF t_id IS NOT NULL THEN
+    INSERT INTO public.tournament_phases (
+      tournament_id, name, phase_order, phase_type, status,
+      match_format, round_time_minutes, planned_rounds, current_round,
+      advancement_count, bracket_size, total_rounds
+    ) VALUES (
+      t_id, 'Swiss Rounds', 1, 'swiss', 'completed',
+      'Best of 3', 50, 4, 4,
+      NULL, NULL, NULL
+    ) ON CONFLICT DO NOTHING;
+  END IF;
+
+  -- Phases for: Kanto Elite Series Week 1 Championship
+  SELECT id INTO t_id FROM public.tournaments WHERE slug = 'kanto-elite-week-01';
+  IF t_id IS NOT NULL THEN
+    INSERT INTO public.tournament_phases (
+      tournament_id, name, phase_order, phase_type, status,
+      match_format, round_time_minutes, planned_rounds, current_round,
+      advancement_count, bracket_size, total_rounds
+    ) VALUES (
+      t_id, 'Swiss Rounds', 1, 'swiss', 'completed',
+      'Best of 3', 50, 6, 6,
+      8, NULL, NULL
+    ) ON CONFLICT DO NOTHING;
+    INSERT INTO public.tournament_phases (
+      tournament_id, name, phase_order, phase_type, status,
+      match_format, round_time_minutes, planned_rounds, current_round,
+      advancement_count, bracket_size, total_rounds
+    ) VALUES (
+      t_id, 'Top Cut', 2, 'single_elimination', 'completed',
+      'Best of 3', 50, NULL, 3,
+      NULL, 8, 3
+    ) ON CONFLICT DO NOTHING;
+  END IF;
+
+  -- Phases for: Kanto Elite Series Week 1 Practice
+  SELECT id INTO t_id FROM public.tournaments WHERE slug = 'kanto-elite-practice-week-01';
+  IF t_id IS NOT NULL THEN
+    INSERT INTO public.tournament_phases (
+      tournament_id, name, phase_order, phase_type, status,
+      match_format, round_time_minutes, planned_rounds, current_round,
+      advancement_count, bracket_size, total_rounds
+    ) VALUES (
+      t_id, 'Swiss Rounds', 1, 'swiss', 'completed',
+      'Best of 3', 50, 4, 4,
+      NULL, NULL, NULL
+    ) ON CONFLICT DO NOTHING;
+  END IF;
+
+  -- Phases for: Johto Masters League Week 1 Championship
+  SELECT id INTO t_id FROM public.tournaments WHERE slug = 'johto-masters-week-01';
+  IF t_id IS NOT NULL THEN
+    INSERT INTO public.tournament_phases (
+      tournament_id, name, phase_order, phase_type, status,
+      match_format, round_time_minutes, planned_rounds, current_round,
+      advancement_count, bracket_size, total_rounds
+    ) VALUES (
+      t_id, 'Swiss Rounds', 1, 'swiss', 'completed',
+      'Best of 3', 50, 5, 5,
+      4, NULL, NULL
+    ) ON CONFLICT DO NOTHING;
+    INSERT INTO public.tournament_phases (
+      tournament_id, name, phase_order, phase_type, status,
+      match_format, round_time_minutes, planned_rounds, current_round,
+      advancement_count, bracket_size, total_rounds
+    ) VALUES (
+      t_id, 'Top Cut', 2, 'single_elimination', 'completed',
+      'Best of 3', 50, NULL, 2,
+      NULL, 4, 2
+    ) ON CONFLICT DO NOTHING;
+  END IF;
+
+  -- Phases for: Johto Masters League Week 1 Practice
+  SELECT id INTO t_id FROM public.tournaments WHERE slug = 'johto-masters-practice-week-01';
+  IF t_id IS NOT NULL THEN
+    INSERT INTO public.tournament_phases (
+      tournament_id, name, phase_order, phase_type, status,
+      match_format, round_time_minutes, planned_rounds, current_round,
+      advancement_count, bracket_size, total_rounds
+    ) VALUES (
+      t_id, 'Swiss Rounds', 1, 'swiss', 'completed',
+      'Best of 3', 50, 4, 4,
+      NULL, NULL, NULL
+    ) ON CONFLICT DO NOTHING;
+  END IF;
+
+  -- Phases for: VGC League Week 2 Championship
+  SELECT id INTO t_id FROM public.tournaments WHERE slug = 'vgc-league-week-02';
+  IF t_id IS NOT NULL THEN
+    INSERT INTO public.tournament_phases (
+      tournament_id, name, phase_order, phase_type, status,
+      match_format, round_time_minutes, planned_rounds, current_round,
+      advancement_count, bracket_size, total_rounds
+    ) VALUES (
+      t_id, 'Swiss Rounds', 1, 'swiss', 'completed',
+      'Best of 3', 50, 5, 5,
+      4, NULL, NULL
+    ) ON CONFLICT DO NOTHING;
+    INSERT INTO public.tournament_phases (
+      tournament_id, name, phase_order, phase_type, status,
+      match_format, round_time_minutes, planned_rounds, current_round,
+      advancement_count, bracket_size, total_rounds
+    ) VALUES (
+      t_id, 'Top Cut', 2, 'single_elimination', 'completed',
+      'Best of 3', 50, NULL, 2,
+      NULL, 4, 2
+    ) ON CONFLICT DO NOTHING;
+  END IF;
+
+  -- Phases for: VGC League Week 2 Practice
+  SELECT id INTO t_id FROM public.tournaments WHERE slug = 'vgc-league-practice-week-02';
+  IF t_id IS NOT NULL THEN
+    INSERT INTO public.tournament_phases (
+      tournament_id, name, phase_order, phase_type, status,
+      match_format, round_time_minutes, planned_rounds, current_round,
+      advancement_count, bracket_size, total_rounds
+    ) VALUES (
+      t_id, 'Bracket', 1, 'double_elimination', 'completed',
+      'Best of 3', 50, NULL, 6,
+      NULL, 32, 6
+    ) ON CONFLICT DO NOTHING;
+  END IF;
+
+  -- Phases for: Pallet Town Trainers Week 2 Championship
+  SELECT id INTO t_id FROM public.tournaments WHERE slug = 'pallet-town-week-02';
+  IF t_id IS NOT NULL THEN
+    INSERT INTO public.tournament_phases (
+      tournament_id, name, phase_order, phase_type, status,
+      match_format, round_time_minutes, planned_rounds, current_round,
+      advancement_count, bracket_size, total_rounds
+    ) VALUES (
+      t_id, 'Swiss Rounds', 1, 'swiss', 'completed',
+      'Best of 3', 50, 5, 5,
+      4, NULL, NULL
+    ) ON CONFLICT DO NOTHING;
+    INSERT INTO public.tournament_phases (
+      tournament_id, name, phase_order, phase_type, status,
+      match_format, round_time_minutes, planned_rounds, current_round,
+      advancement_count, bracket_size, total_rounds
+    ) VALUES (
+      t_id, 'Top Cut', 2, 'single_elimination', 'completed',
+      'Best of 3', 50, NULL, 2,
+      NULL, 4, 2
+    ) ON CONFLICT DO NOTHING;
+  END IF;
+
+  -- Phases for: Pallet Town Trainers Week 2 Practice
+  SELECT id INTO t_id FROM public.tournaments WHERE slug = 'pallet-town-practice-week-02';
+  IF t_id IS NOT NULL THEN
+    INSERT INTO public.tournament_phases (
+      tournament_id, name, phase_order, phase_type, status,
+      match_format, round_time_minutes, planned_rounds, current_round,
+      advancement_count, bracket_size, total_rounds
+    ) VALUES (
+      t_id, 'Swiss Rounds', 1, 'swiss', 'completed',
+      'Best of 3', 50, 5, 5,
+      NULL, NULL, NULL
+    ) ON CONFLICT DO NOTHING;
+  END IF;
+
+  -- Phases for: Sinnoh Champions Week 2 Championship
+  SELECT id INTO t_id FROM public.tournaments WHERE slug = 'sinnoh-champions-week-02';
+  IF t_id IS NOT NULL THEN
+    INSERT INTO public.tournament_phases (
+      tournament_id, name, phase_order, phase_type, status,
+      match_format, round_time_minutes, planned_rounds, current_round,
+      advancement_count, bracket_size, total_rounds
+    ) VALUES (
+      t_id, 'Swiss Rounds', 1, 'swiss', 'completed',
+      'Best of 3', 50, 6, 6,
+      8, NULL, NULL
+    ) ON CONFLICT DO NOTHING;
+    INSERT INTO public.tournament_phases (
+      tournament_id, name, phase_order, phase_type, status,
+      match_format, round_time_minutes, planned_rounds, current_round,
+      advancement_count, bracket_size, total_rounds
+    ) VALUES (
+      t_id, 'Top Cut', 2, 'single_elimination', 'completed',
+      'Best of 3', 50, NULL, 3,
+      NULL, 8, 3
+    ) ON CONFLICT DO NOTHING;
+  END IF;
+
+  -- Phases for: Sinnoh Champions Week 2 Practice
+  SELECT id INTO t_id FROM public.tournaments WHERE slug = 'sinnoh-champions-practice-week-02';
+  IF t_id IS NOT NULL THEN
+    INSERT INTO public.tournament_phases (
+      tournament_id, name, phase_order, phase_type, status,
+      match_format, round_time_minutes, planned_rounds, current_round,
+      advancement_count, bracket_size, total_rounds
+    ) VALUES (
+      t_id, 'Swiss Rounds', 1, 'swiss', 'completed',
+      'Best of 3', 50, 4, 4,
+      NULL, NULL, NULL
+    ) ON CONFLICT DO NOTHING;
+  END IF;
+
+  -- Phases for: Kanto Elite Series Week 2 Championship
+  SELECT id INTO t_id FROM public.tournaments WHERE slug = 'kanto-elite-week-02';
+  IF t_id IS NOT NULL THEN
+    INSERT INTO public.tournament_phases (
+      tournament_id, name, phase_order, phase_type, status,
+      match_format, round_time_minutes, planned_rounds, current_round,
+      advancement_count, bracket_size, total_rounds
+    ) VALUES (
+      t_id, 'Swiss Rounds', 1, 'swiss', 'completed',
+      'Best of 3', 50, 7, 7,
+      8, NULL, NULL
+    ) ON CONFLICT DO NOTHING;
+    INSERT INTO public.tournament_phases (
+      tournament_id, name, phase_order, phase_type, status,
+      match_format, round_time_minutes, planned_rounds, current_round,
+      advancement_count, bracket_size, total_rounds
+    ) VALUES (
+      t_id, 'Top Cut', 2, 'single_elimination', 'completed',
+      'Best of 3', 50, NULL, 3,
+      NULL, 8, 3
+    ) ON CONFLICT DO NOTHING;
+  END IF;
+
+  -- Phases for: Kanto Elite Series Week 2 Practice
+  SELECT id INTO t_id FROM public.tournaments WHERE slug = 'kanto-elite-practice-week-02';
+  IF t_id IS NOT NULL THEN
+    INSERT INTO public.tournament_phases (
+      tournament_id, name, phase_order, phase_type, status,
+      match_format, round_time_minutes, planned_rounds, current_round,
+      advancement_count, bracket_size, total_rounds
+    ) VALUES (
+      t_id, 'Swiss Rounds', 1, 'swiss', 'completed',
+      'Best of 3', 50, 4, 4,
+      NULL, NULL, NULL
+    ) ON CONFLICT DO NOTHING;
+  END IF;
+
+  -- Phases for: Johto Masters League Week 2 Championship
+  SELECT id INTO t_id FROM public.tournaments WHERE slug = 'johto-masters-week-02';
+  IF t_id IS NOT NULL THEN
+    INSERT INTO public.tournament_phases (
+      tournament_id, name, phase_order, phase_type, status,
+      match_format, round_time_minutes, planned_rounds, current_round,
+      advancement_count, bracket_size, total_rounds
+    ) VALUES (
+      t_id, 'Swiss Rounds', 1, 'swiss', 'completed',
+      'Best of 3', 50, 5, 5,
+      4, NULL, NULL
+    ) ON CONFLICT DO NOTHING;
+    INSERT INTO public.tournament_phases (
+      tournament_id, name, phase_order, phase_type, status,
+      match_format, round_time_minutes, planned_rounds, current_round,
+      advancement_count, bracket_size, total_rounds
+    ) VALUES (
+      t_id, 'Top Cut', 2, 'single_elimination', 'completed',
+      'Best of 3', 50, NULL, 2,
+      NULL, 4, 2
+    ) ON CONFLICT DO NOTHING;
+  END IF;
+
+  -- Phases for: Johto Masters League Week 2 Practice
+  SELECT id INTO t_id FROM public.tournaments WHERE slug = 'johto-masters-practice-week-02';
+  IF t_id IS NOT NULL THEN
+    INSERT INTO public.tournament_phases (
+      tournament_id, name, phase_order, phase_type, status,
+      match_format, round_time_minutes, planned_rounds, current_round,
+      advancement_count, bracket_size, total_rounds
+    ) VALUES (
+      t_id, 'Bracket', 1, 'single_elimination', 'completed',
+      'Best of 3', 50, NULL, 5,
+      NULL, 32, 5
+    ) ON CONFLICT DO NOTHING;
+  END IF;
+
+  -- Phases for: VGC League Week 3 Championship
+  SELECT id INTO t_id FROM public.tournaments WHERE slug = 'vgc-league-week-03';
+  IF t_id IS NOT NULL THEN
+    INSERT INTO public.tournament_phases (
+      tournament_id, name, phase_order, phase_type, status,
+      match_format, round_time_minutes, planned_rounds, current_round,
+      advancement_count, bracket_size, total_rounds
+    ) VALUES (
+      t_id, 'Swiss Rounds', 1, 'swiss', 'completed',
+      'Best of 3', 50, 5, 5,
+      4, NULL, NULL
+    ) ON CONFLICT DO NOTHING;
+    INSERT INTO public.tournament_phases (
+      tournament_id, name, phase_order, phase_type, status,
+      match_format, round_time_minutes, planned_rounds, current_round,
+      advancement_count, bracket_size, total_rounds
+    ) VALUES (
+      t_id, 'Top Cut', 2, 'single_elimination', 'completed',
+      'Best of 3', 50, NULL, 2,
+      NULL, 4, 2
+    ) ON CONFLICT DO NOTHING;
+  END IF;
+
+  -- Phases for: VGC League Week 3 Practice
+  SELECT id INTO t_id FROM public.tournaments WHERE slug = 'vgc-league-practice-week-03';
+  IF t_id IS NOT NULL THEN
+    INSERT INTO public.tournament_phases (
+      tournament_id, name, phase_order, phase_type, status,
+      match_format, round_time_minutes, planned_rounds, current_round,
+      advancement_count, bracket_size, total_rounds
+    ) VALUES (
+      t_id, 'Bracket', 1, 'double_elimination', 'completed',
+      'Best of 3', 50, NULL, 6,
+      NULL, 32, 6
+    ) ON CONFLICT DO NOTHING;
+  END IF;
+
+  -- Phases for: Pallet Town Trainers Week 3 Championship
+  SELECT id INTO t_id FROM public.tournaments WHERE slug = 'pallet-town-week-03';
+  IF t_id IS NOT NULL THEN
+    INSERT INTO public.tournament_phases (
+      tournament_id, name, phase_order, phase_type, status,
+      match_format, round_time_minutes, planned_rounds, current_round,
+      advancement_count, bracket_size, total_rounds
+    ) VALUES (
+      t_id, 'Swiss Rounds', 1, 'swiss', 'completed',
+      'Best of 3', 50, 5, 5,
+      4, NULL, NULL
+    ) ON CONFLICT DO NOTHING;
+    INSERT INTO public.tournament_phases (
+      tournament_id, name, phase_order, phase_type, status,
+      match_format, round_time_minutes, planned_rounds, current_round,
+      advancement_count, bracket_size, total_rounds
+    ) VALUES (
+      t_id, 'Top Cut', 2, 'single_elimination', 'completed',
+      'Best of 3', 50, NULL, 2,
+      NULL, 4, 2
+    ) ON CONFLICT DO NOTHING;
+  END IF;
+
+  -- Phases for: Pallet Town Trainers Week 3 Practice
+  SELECT id INTO t_id FROM public.tournaments WHERE slug = 'pallet-town-practice-week-03';
+  IF t_id IS NOT NULL THEN
+    INSERT INTO public.tournament_phases (
+      tournament_id, name, phase_order, phase_type, status,
+      match_format, round_time_minutes, planned_rounds, current_round,
+      advancement_count, bracket_size, total_rounds
+    ) VALUES (
+      t_id, 'Swiss Rounds', 1, 'swiss', 'completed',
+      'Best of 3', 50, 4, 4,
+      NULL, NULL, NULL
+    ) ON CONFLICT DO NOTHING;
+  END IF;
+
+  -- Phases for: Sinnoh Champions Week 3 Championship
+  SELECT id INTO t_id FROM public.tournaments WHERE slug = 'sinnoh-champions-week-03';
+  IF t_id IS NOT NULL THEN
+    INSERT INTO public.tournament_phases (
+      tournament_id, name, phase_order, phase_type, status,
+      match_format, round_time_minutes, planned_rounds, current_round,
+      advancement_count, bracket_size, total_rounds
+    ) VALUES (
+      t_id, 'Swiss Rounds', 1, 'swiss', 'completed',
+      'Best of 3', 50, 6, 6,
+      8, NULL, NULL
+    ) ON CONFLICT DO NOTHING;
+    INSERT INTO public.tournament_phases (
+      tournament_id, name, phase_order, phase_type, status,
+      match_format, round_time_minutes, planned_rounds, current_round,
+      advancement_count, bracket_size, total_rounds
+    ) VALUES (
+      t_id, 'Top Cut', 2, 'single_elimination', 'completed',
+      'Best of 3', 50, NULL, 3,
+      NULL, 8, 3
+    ) ON CONFLICT DO NOTHING;
+  END IF;
+
+  -- Phases for: Sinnoh Champions Week 3 Practice
+  SELECT id INTO t_id FROM public.tournaments WHERE slug = 'sinnoh-champions-practice-week-03';
+  IF t_id IS NOT NULL THEN
+    INSERT INTO public.tournament_phases (
+      tournament_id, name, phase_order, phase_type, status,
+      match_format, round_time_minutes, planned_rounds, current_round,
+      advancement_count, bracket_size, total_rounds
+    ) VALUES (
+      t_id, 'Bracket', 1, 'double_elimination', 'completed',
+      'Best of 3', 50, NULL, 6,
+      NULL, 32, 6
+    ) ON CONFLICT DO NOTHING;
+  END IF;
+
+  -- Phases for: Kanto Elite Series Week 3 Championship
+  SELECT id INTO t_id FROM public.tournaments WHERE slug = 'kanto-elite-week-03';
+  IF t_id IS NOT NULL THEN
+    INSERT INTO public.tournament_phases (
+      tournament_id, name, phase_order, phase_type, status,
+      match_format, round_time_minutes, planned_rounds, current_round,
+      advancement_count, bracket_size, total_rounds
+    ) VALUES (
+      t_id, 'Swiss Rounds', 1, 'swiss', 'completed',
+      'Best of 3', 50, 6, 6,
+      8, NULL, NULL
+    ) ON CONFLICT DO NOTHING;
+    INSERT INTO public.tournament_phases (
+      tournament_id, name, phase_order, phase_type, status,
+      match_format, round_time_minutes, planned_rounds, current_round,
+      advancement_count, bracket_size, total_rounds
+    ) VALUES (
+      t_id, 'Top Cut', 2, 'single_elimination', 'completed',
+      'Best of 3', 50, NULL, 3,
+      NULL, 8, 3
+    ) ON CONFLICT DO NOTHING;
+  END IF;
+
+  -- Phases for: Kanto Elite Series Week 3 Practice
+  SELECT id INTO t_id FROM public.tournaments WHERE slug = 'kanto-elite-practice-week-03';
+  IF t_id IS NOT NULL THEN
+    INSERT INTO public.tournament_phases (
+      tournament_id, name, phase_order, phase_type, status,
+      match_format, round_time_minutes, planned_rounds, current_round,
+      advancement_count, bracket_size, total_rounds
+    ) VALUES (
+      t_id, 'Swiss Rounds', 1, 'swiss', 'completed',
+      'Best of 3', 50, 5, 5,
+      NULL, NULL, NULL
+    ) ON CONFLICT DO NOTHING;
+  END IF;
+
+  -- Phases for: Johto Masters League Week 3 Championship
+  SELECT id INTO t_id FROM public.tournaments WHERE slug = 'johto-masters-week-03';
+  IF t_id IS NOT NULL THEN
+    INSERT INTO public.tournament_phases (
+      tournament_id, name, phase_order, phase_type, status,
+      match_format, round_time_minutes, planned_rounds, current_round,
+      advancement_count, bracket_size, total_rounds
+    ) VALUES (
+      t_id, 'Swiss Rounds', 1, 'swiss', 'completed',
+      'Best of 3', 50, 5, 5,
+      4, NULL, NULL
+    ) ON CONFLICT DO NOTHING;
+    INSERT INTO public.tournament_phases (
+      tournament_id, name, phase_order, phase_type, status,
+      match_format, round_time_minutes, planned_rounds, current_round,
+      advancement_count, bracket_size, total_rounds
+    ) VALUES (
+      t_id, 'Top Cut', 2, 'single_elimination', 'completed',
+      'Best of 3', 50, NULL, 2,
+      NULL, 4, 2
+    ) ON CONFLICT DO NOTHING;
+  END IF;
+
+  -- Phases for: Johto Masters League Week 3 Practice
+  SELECT id INTO t_id FROM public.tournaments WHERE slug = 'johto-masters-practice-week-03';
+  IF t_id IS NOT NULL THEN
+    INSERT INTO public.tournament_phases (
+      tournament_id, name, phase_order, phase_type, status,
+      match_format, round_time_minutes, planned_rounds, current_round,
+      advancement_count, bracket_size, total_rounds
+    ) VALUES (
+      t_id, 'Swiss Rounds', 1, 'swiss', 'completed',
+      'Best of 3', 50, 5, 5,
+      NULL, NULL, NULL
+    ) ON CONFLICT DO NOTHING;
+  END IF;
+
+  -- Phases for: VGC League Week 4 Championship
+  SELECT id INTO t_id FROM public.tournaments WHERE slug = 'vgc-league-week-04';
+  IF t_id IS NOT NULL THEN
+    INSERT INTO public.tournament_phases (
+      tournament_id, name, phase_order, phase_type, status,
+      match_format, round_time_minutes, planned_rounds, current_round,
+      advancement_count, bracket_size, total_rounds
+    ) VALUES (
+      t_id, 'Swiss Rounds', 1, 'swiss', 'completed',
+      'Best of 3', 50, 5, 5,
+      4, NULL, NULL
+    ) ON CONFLICT DO NOTHING;
+    INSERT INTO public.tournament_phases (
+      tournament_id, name, phase_order, phase_type, status,
+      match_format, round_time_minutes, planned_rounds, current_round,
+      advancement_count, bracket_size, total_rounds
+    ) VALUES (
+      t_id, 'Top Cut', 2, 'single_elimination', 'completed',
+      'Best of 3', 50, NULL, 2,
+      NULL, 4, 2
+    ) ON CONFLICT DO NOTHING;
+  END IF;
+
+  -- Phases for: VGC League Week 4 Practice
+  SELECT id INTO t_id FROM public.tournaments WHERE slug = 'vgc-league-practice-week-04';
+  IF t_id IS NOT NULL THEN
+    INSERT INTO public.tournament_phases (
+      tournament_id, name, phase_order, phase_type, status,
+      match_format, round_time_minutes, planned_rounds, current_round,
+      advancement_count, bracket_size, total_rounds
+    ) VALUES (
+      t_id, 'Swiss Rounds', 1, 'swiss', 'completed',
+      'Best of 3', 50, 4, 4,
+      NULL, NULL, NULL
+    ) ON CONFLICT DO NOTHING;
+  END IF;
+
+  -- Phases for: Pallet Town Trainers Week 4 Championship
+  SELECT id INTO t_id FROM public.tournaments WHERE slug = 'pallet-town-week-04';
+  IF t_id IS NOT NULL THEN
+    INSERT INTO public.tournament_phases (
+      tournament_id, name, phase_order, phase_type, status,
+      match_format, round_time_minutes, planned_rounds, current_round,
+      advancement_count, bracket_size, total_rounds
+    ) VALUES (
+      t_id, 'Swiss Rounds', 1, 'swiss', 'completed',
+      'Best of 3', 50, 5, 5,
+      4, NULL, NULL
+    ) ON CONFLICT DO NOTHING;
+    INSERT INTO public.tournament_phases (
+      tournament_id, name, phase_order, phase_type, status,
+      match_format, round_time_minutes, planned_rounds, current_round,
+      advancement_count, bracket_size, total_rounds
+    ) VALUES (
+      t_id, 'Top Cut', 2, 'single_elimination', 'completed',
+      'Best of 3', 50, NULL, 2,
+      NULL, 4, 2
+    ) ON CONFLICT DO NOTHING;
+  END IF;
+
+  -- Phases for: Pallet Town Trainers Week 4 Practice
+  SELECT id INTO t_id FROM public.tournaments WHERE slug = 'pallet-town-practice-week-04';
+  IF t_id IS NOT NULL THEN
+    INSERT INTO public.tournament_phases (
+      tournament_id, name, phase_order, phase_type, status,
+      match_format, round_time_minutes, planned_rounds, current_round,
+      advancement_count, bracket_size, total_rounds
+    ) VALUES (
+      t_id, 'Swiss Rounds', 1, 'swiss', 'completed',
+      'Best of 3', 50, 5, 5,
+      NULL, NULL, NULL
+    ) ON CONFLICT DO NOTHING;
+  END IF;
+
+  -- Phases for: Sinnoh Champions Week 4 Championship
+  SELECT id INTO t_id FROM public.tournaments WHERE slug = 'sinnoh-champions-week-04';
+  IF t_id IS NOT NULL THEN
+    INSERT INTO public.tournament_phases (
+      tournament_id, name, phase_order, phase_type, status,
+      match_format, round_time_minutes, planned_rounds, current_round,
+      advancement_count, bracket_size, total_rounds
+    ) VALUES (
+      t_id, 'Swiss Rounds', 1, 'swiss', 'completed',
+      'Best of 3', 50, 7, 7,
+      8, NULL, NULL
+    ) ON CONFLICT DO NOTHING;
+    INSERT INTO public.tournament_phases (
+      tournament_id, name, phase_order, phase_type, status,
+      match_format, round_time_minutes, planned_rounds, current_round,
+      advancement_count, bracket_size, total_rounds
+    ) VALUES (
+      t_id, 'Top Cut', 2, 'single_elimination', 'completed',
+      'Best of 3', 50, NULL, 3,
+      NULL, 8, 3
+    ) ON CONFLICT DO NOTHING;
+  END IF;
+
+  -- Phases for: Sinnoh Champions Week 4 Practice
+  SELECT id INTO t_id FROM public.tournaments WHERE slug = 'sinnoh-champions-practice-week-04';
+  IF t_id IS NOT NULL THEN
+    INSERT INTO public.tournament_phases (
+      tournament_id, name, phase_order, phase_type, status,
+      match_format, round_time_minutes, planned_rounds, current_round,
+      advancement_count, bracket_size, total_rounds
+    ) VALUES (
+      t_id, 'Swiss Rounds', 1, 'swiss', 'completed',
+      'Best of 3', 50, 5, 5,
+      NULL, NULL, NULL
+    ) ON CONFLICT DO NOTHING;
+  END IF;
+
+  -- Phases for: Kanto Elite Series Week 4 Championship
+  SELECT id INTO t_id FROM public.tournaments WHERE slug = 'kanto-elite-week-04';
+  IF t_id IS NOT NULL THEN
+    INSERT INTO public.tournament_phases (
+      tournament_id, name, phase_order, phase_type, status,
+      match_format, round_time_minutes, planned_rounds, current_round,
+      advancement_count, bracket_size, total_rounds
+    ) VALUES (
+      t_id, 'Swiss Rounds', 1, 'swiss', 'completed',
+      'Best of 3', 50, 6, 6,
+      8, NULL, NULL
+    ) ON CONFLICT DO NOTHING;
+    INSERT INTO public.tournament_phases (
+      tournament_id, name, phase_order, phase_type, status,
+      match_format, round_time_minutes, planned_rounds, current_round,
+      advancement_count, bracket_size, total_rounds
+    ) VALUES (
+      t_id, 'Top Cut', 2, 'single_elimination', 'completed',
+      'Best of 3', 50, NULL, 3,
+      NULL, 8, 3
+    ) ON CONFLICT DO NOTHING;
+  END IF;
+
+  -- Phases for: Kanto Elite Series Week 4 Practice
+  SELECT id INTO t_id FROM public.tournaments WHERE slug = 'kanto-elite-practice-week-04';
+  IF t_id IS NOT NULL THEN
+    INSERT INTO public.tournament_phases (
+      tournament_id, name, phase_order, phase_type, status,
+      match_format, round_time_minutes, planned_rounds, current_round,
+      advancement_count, bracket_size, total_rounds
+    ) VALUES (
+      t_id, 'Bracket', 1, 'single_elimination', 'completed',
+      'Best of 3', 50, NULL, 5,
+      NULL, 32, 5
+    ) ON CONFLICT DO NOTHING;
+  END IF;
+
+  -- Phases for: Johto Masters League Week 4 Championship
+  SELECT id INTO t_id FROM public.tournaments WHERE slug = 'johto-masters-week-04';
+  IF t_id IS NOT NULL THEN
+    INSERT INTO public.tournament_phases (
+      tournament_id, name, phase_order, phase_type, status,
+      match_format, round_time_minutes, planned_rounds, current_round,
+      advancement_count, bracket_size, total_rounds
+    ) VALUES (
+      t_id, 'Swiss Rounds', 1, 'swiss', 'completed',
+      'Best of 3', 50, 6, 6,
+      8, NULL, NULL
+    ) ON CONFLICT DO NOTHING;
+    INSERT INTO public.tournament_phases (
+      tournament_id, name, phase_order, phase_type, status,
+      match_format, round_time_minutes, planned_rounds, current_round,
+      advancement_count, bracket_size, total_rounds
+    ) VALUES (
+      t_id, 'Top Cut', 2, 'single_elimination', 'completed',
+      'Best of 3', 50, NULL, 3,
+      NULL, 8, 3
+    ) ON CONFLICT DO NOTHING;
+  END IF;
+
+  -- Phases for: Johto Masters League Week 4 Practice
+  SELECT id INTO t_id FROM public.tournaments WHERE slug = 'johto-masters-practice-week-04';
+  IF t_id IS NOT NULL THEN
+    INSERT INTO public.tournament_phases (
+      tournament_id, name, phase_order, phase_type, status,
+      match_format, round_time_minutes, planned_rounds, current_round,
+      advancement_count, bracket_size, total_rounds
+    ) VALUES (
+      t_id, 'Swiss Rounds', 1, 'swiss', 'completed',
+      'Best of 3', 50, 4, 4,
+      NULL, NULL, NULL
+    ) ON CONFLICT DO NOTHING;
+  END IF;
+
+  -- Phases for: VGC League Week 5 Championship
+  SELECT id INTO t_id FROM public.tournaments WHERE slug = 'vgc-league-week-05';
+  IF t_id IS NOT NULL THEN
+    INSERT INTO public.tournament_phases (
+      tournament_id, name, phase_order, phase_type, status,
+      match_format, round_time_minutes, planned_rounds, current_round,
+      advancement_count, bracket_size, total_rounds
+    ) VALUES (
+      t_id, 'Swiss Rounds', 1, 'swiss', 'completed',
+      'Best of 3', 50, 5, 5,
+      4, NULL, NULL
+    ) ON CONFLICT DO NOTHING;
+    INSERT INTO public.tournament_phases (
+      tournament_id, name, phase_order, phase_type, status,
+      match_format, round_time_minutes, planned_rounds, current_round,
+      advancement_count, bracket_size, total_rounds
+    ) VALUES (
+      t_id, 'Top Cut', 2, 'single_elimination', 'completed',
+      'Best of 3', 50, NULL, 2,
+      NULL, 4, 2
+    ) ON CONFLICT DO NOTHING;
+  END IF;
+
+  -- Phases for: VGC League Week 5 Practice
+  SELECT id INTO t_id FROM public.tournaments WHERE slug = 'vgc-league-practice-week-05';
+  IF t_id IS NOT NULL THEN
+    INSERT INTO public.tournament_phases (
+      tournament_id, name, phase_order, phase_type, status,
+      match_format, round_time_minutes, planned_rounds, current_round,
+      advancement_count, bracket_size, total_rounds
+    ) VALUES (
+      t_id, 'Swiss Rounds', 1, 'swiss', 'completed',
+      'Best of 3', 50, 4, 4,
+      NULL, NULL, NULL
+    ) ON CONFLICT DO NOTHING;
+  END IF;
+
+  -- Phases for: Pallet Town Trainers Week 5 Championship
+  SELECT id INTO t_id FROM public.tournaments WHERE slug = 'pallet-town-week-05';
+  IF t_id IS NOT NULL THEN
+    INSERT INTO public.tournament_phases (
+      tournament_id, name, phase_order, phase_type, status,
+      match_format, round_time_minutes, planned_rounds, current_round,
+      advancement_count, bracket_size, total_rounds
+    ) VALUES (
+      t_id, 'Swiss Rounds', 1, 'swiss', 'completed',
+      'Best of 3', 50, 5, 5,
+      4, NULL, NULL
+    ) ON CONFLICT DO NOTHING;
+    INSERT INTO public.tournament_phases (
+      tournament_id, name, phase_order, phase_type, status,
+      match_format, round_time_minutes, planned_rounds, current_round,
+      advancement_count, bracket_size, total_rounds
+    ) VALUES (
+      t_id, 'Top Cut', 2, 'single_elimination', 'completed',
+      'Best of 3', 50, NULL, 2,
+      NULL, 4, 2
+    ) ON CONFLICT DO NOTHING;
+  END IF;
+
+  -- Phases for: Pallet Town Trainers Week 5 Practice
+  SELECT id INTO t_id FROM public.tournaments WHERE slug = 'pallet-town-practice-week-05';
+  IF t_id IS NOT NULL THEN
+    INSERT INTO public.tournament_phases (
+      tournament_id, name, phase_order, phase_type, status,
+      match_format, round_time_minutes, planned_rounds, current_round,
+      advancement_count, bracket_size, total_rounds
+    ) VALUES (
+      t_id, 'Bracket', 1, 'double_elimination', 'completed',
+      'Best of 3', 50, NULL, 6,
+      NULL, 32, 6
+    ) ON CONFLICT DO NOTHING;
+  END IF;
+
+  -- Phases for: Sinnoh Champions Week 5 Championship
+  SELECT id INTO t_id FROM public.tournaments WHERE slug = 'sinnoh-champions-week-05';
+  IF t_id IS NOT NULL THEN
+    INSERT INTO public.tournament_phases (
+      tournament_id, name, phase_order, phase_type, status,
+      match_format, round_time_minutes, planned_rounds, current_round,
+      advancement_count, bracket_size, total_rounds
+    ) VALUES (
+      t_id, 'Swiss Rounds', 1, 'swiss', 'completed',
+      'Best of 3', 50, 7, 7,
+      8, NULL, NULL
+    ) ON CONFLICT DO NOTHING;
+    INSERT INTO public.tournament_phases (
+      tournament_id, name, phase_order, phase_type, status,
+      match_format, round_time_minutes, planned_rounds, current_round,
+      advancement_count, bracket_size, total_rounds
+    ) VALUES (
+      t_id, 'Top Cut', 2, 'single_elimination', 'completed',
+      'Best of 3', 50, NULL, 3,
+      NULL, 8, 3
+    ) ON CONFLICT DO NOTHING;
+  END IF;
+
+  -- Phases for: Sinnoh Champions Week 5 Practice
+  SELECT id INTO t_id FROM public.tournaments WHERE slug = 'sinnoh-champions-practice-week-05';
+  IF t_id IS NOT NULL THEN
+    INSERT INTO public.tournament_phases (
+      tournament_id, name, phase_order, phase_type, status,
+      match_format, round_time_minutes, planned_rounds, current_round,
+      advancement_count, bracket_size, total_rounds
+    ) VALUES (
+      t_id, 'Swiss Rounds', 1, 'swiss', 'completed',
+      'Best of 3', 50, 5, 5,
+      NULL, NULL, NULL
+    ) ON CONFLICT DO NOTHING;
+  END IF;
+
+  -- Phases for: Kanto Elite Series Week 5 Championship
+  SELECT id INTO t_id FROM public.tournaments WHERE slug = 'kanto-elite-week-05';
+  IF t_id IS NOT NULL THEN
+    INSERT INTO public.tournament_phases (
+      tournament_id, name, phase_order, phase_type, status,
+      match_format, round_time_minutes, planned_rounds, current_round,
+      advancement_count, bracket_size, total_rounds
+    ) VALUES (
+      t_id, 'Swiss Rounds', 1, 'swiss', 'completed',
+      'Best of 3', 50, 6, 6,
+      8, NULL, NULL
+    ) ON CONFLICT DO NOTHING;
+    INSERT INTO public.tournament_phases (
+      tournament_id, name, phase_order, phase_type, status,
+      match_format, round_time_minutes, planned_rounds, current_round,
+      advancement_count, bracket_size, total_rounds
+    ) VALUES (
+      t_id, 'Top Cut', 2, 'single_elimination', 'completed',
+      'Best of 3', 50, NULL, 3,
+      NULL, 8, 3
+    ) ON CONFLICT DO NOTHING;
+  END IF;
+
+  -- Phases for: Kanto Elite Series Week 5 Practice
+  SELECT id INTO t_id FROM public.tournaments WHERE slug = 'kanto-elite-practice-week-05';
+  IF t_id IS NOT NULL THEN
+    INSERT INTO public.tournament_phases (
+      tournament_id, name, phase_order, phase_type, status,
+      match_format, round_time_minutes, planned_rounds, current_round,
+      advancement_count, bracket_size, total_rounds
+    ) VALUES (
+      t_id, 'Swiss Rounds', 1, 'swiss', 'completed',
+      'Best of 3', 50, 4, 4,
+      NULL, NULL, NULL
+    ) ON CONFLICT DO NOTHING;
+  END IF;
+
+  -- Phases for: Johto Masters League Week 5 Championship
+  SELECT id INTO t_id FROM public.tournaments WHERE slug = 'johto-masters-week-05';
+  IF t_id IS NOT NULL THEN
+    INSERT INTO public.tournament_phases (
+      tournament_id, name, phase_order, phase_type, status,
+      match_format, round_time_minutes, planned_rounds, current_round,
+      advancement_count, bracket_size, total_rounds
+    ) VALUES (
+      t_id, 'Swiss Rounds', 1, 'swiss', 'completed',
+      'Best of 3', 50, 5, 5,
+      4, NULL, NULL
+    ) ON CONFLICT DO NOTHING;
+    INSERT INTO public.tournament_phases (
+      tournament_id, name, phase_order, phase_type, status,
+      match_format, round_time_minutes, planned_rounds, current_round,
+      advancement_count, bracket_size, total_rounds
+    ) VALUES (
+      t_id, 'Top Cut', 2, 'single_elimination', 'completed',
+      'Best of 3', 50, NULL, 2,
+      NULL, 4, 2
+    ) ON CONFLICT DO NOTHING;
+  END IF;
+
+  -- Phases for: Johto Masters League Week 5 Practice
+  SELECT id INTO t_id FROM public.tournaments WHERE slug = 'johto-masters-practice-week-05';
+  IF t_id IS NOT NULL THEN
+    INSERT INTO public.tournament_phases (
+      tournament_id, name, phase_order, phase_type, status,
+      match_format, round_time_minutes, planned_rounds, current_round,
+      advancement_count, bracket_size, total_rounds
+    ) VALUES (
+      t_id, 'Swiss Rounds', 1, 'swiss', 'completed',
+      'Best of 3', 50, 4, 4,
+      NULL, NULL, NULL
+    ) ON CONFLICT DO NOTHING;
+  END IF;
+
+  -- Phases for: VGC League Championship
+  SELECT id INTO t_id FROM public.tournaments WHERE slug = 'vgc-league-championship-week-06';
+  IF t_id IS NOT NULL THEN
+    INSERT INTO public.tournament_phases (
+      tournament_id, name, phase_order, phase_type, status,
+      match_format, round_time_minutes, planned_rounds, current_round,
+      advancement_count, bracket_size, total_rounds
+    ) VALUES (
+      t_id, 'Swiss Rounds', 1, 'swiss', 'completed',
+      'Best of 3', 50, 8, 8,
+      8, NULL, NULL
+    ) ON CONFLICT DO NOTHING;
+    INSERT INTO public.tournament_phases (
+      tournament_id, name, phase_order, phase_type, status,
+      match_format, round_time_minutes, planned_rounds, current_round,
+      advancement_count, bracket_size, total_rounds
+    ) VALUES (
+      t_id, 'Top Cut', 2, 'single_elimination', 'completed',
+      'Best of 3', 50, NULL, 3,
+      NULL, 8, 3
+    ) ON CONFLICT DO NOTHING;
+  END IF;
+
+  -- Phases for: VGC League Week 6 Practice
+  SELECT id INTO t_id FROM public.tournaments WHERE slug = 'vgc-league-practice-week-06';
+  IF t_id IS NOT NULL THEN
+    INSERT INTO public.tournament_phases (
+      tournament_id, name, phase_order, phase_type, status,
+      match_format, round_time_minutes, planned_rounds, current_round,
+      advancement_count, bracket_size, total_rounds
+    ) VALUES (
+      t_id, 'Bracket', 1, 'single_elimination', 'completed',
+      'Best of 3', 50, NULL, 5,
+      NULL, 32, 5
+    ) ON CONFLICT DO NOTHING;
+  END IF;
+
+  -- Phases for: Pallet Town Trainers Week 6 Championship
+  SELECT id INTO t_id FROM public.tournaments WHERE slug = 'pallet-town-week-06';
+  IF t_id IS NOT NULL THEN
+    INSERT INTO public.tournament_phases (
+      tournament_id, name, phase_order, phase_type, status,
+      match_format, round_time_minutes, planned_rounds, current_round,
+      advancement_count, bracket_size, total_rounds
+    ) VALUES (
+      t_id, 'Swiss Rounds', 1, 'swiss', 'completed',
+      'Best of 3', 50, 5, 5,
+      4, NULL, NULL
+    ) ON CONFLICT DO NOTHING;
+    INSERT INTO public.tournament_phases (
+      tournament_id, name, phase_order, phase_type, status,
+      match_format, round_time_minutes, planned_rounds, current_round,
+      advancement_count, bracket_size, total_rounds
+    ) VALUES (
+      t_id, 'Top Cut', 2, 'single_elimination', 'completed',
+      'Best of 3', 50, NULL, 2,
+      NULL, 4, 2
+    ) ON CONFLICT DO NOTHING;
+  END IF;
+
+  -- Phases for: Pallet Town Trainers Week 6 Practice
+  SELECT id INTO t_id FROM public.tournaments WHERE slug = 'pallet-town-practice-week-06';
+  IF t_id IS NOT NULL THEN
+    INSERT INTO public.tournament_phases (
+      tournament_id, name, phase_order, phase_type, status,
+      match_format, round_time_minutes, planned_rounds, current_round,
+      advancement_count, bracket_size, total_rounds
+    ) VALUES (
+      t_id, 'Bracket', 1, 'single_elimination', 'completed',
+      'Best of 3', 50, NULL, 5,
+      NULL, 32, 5
+    ) ON CONFLICT DO NOTHING;
+  END IF;
+
+  -- Phases for: Sinnoh Champions Week 6 Championship
+  SELECT id INTO t_id FROM public.tournaments WHERE slug = 'sinnoh-champions-week-06';
+  IF t_id IS NOT NULL THEN
+    INSERT INTO public.tournament_phases (
+      tournament_id, name, phase_order, phase_type, status,
+      match_format, round_time_minutes, planned_rounds, current_round,
+      advancement_count, bracket_size, total_rounds
+    ) VALUES (
+      t_id, 'Swiss Rounds', 1, 'swiss', 'completed',
+      'Best of 3', 50, 7, 7,
+      8, NULL, NULL
+    ) ON CONFLICT DO NOTHING;
+    INSERT INTO public.tournament_phases (
+      tournament_id, name, phase_order, phase_type, status,
+      match_format, round_time_minutes, planned_rounds, current_round,
+      advancement_count, bracket_size, total_rounds
+    ) VALUES (
+      t_id, 'Top Cut', 2, 'single_elimination', 'completed',
+      'Best of 3', 50, NULL, 3,
+      NULL, 8, 3
+    ) ON CONFLICT DO NOTHING;
+  END IF;
+
+  -- Phases for: Sinnoh Champions Week 6 Practice
+  SELECT id INTO t_id FROM public.tournaments WHERE slug = 'sinnoh-champions-practice-week-06';
+  IF t_id IS NOT NULL THEN
+    INSERT INTO public.tournament_phases (
+      tournament_id, name, phase_order, phase_type, status,
+      match_format, round_time_minutes, planned_rounds, current_round,
+      advancement_count, bracket_size, total_rounds
+    ) VALUES (
+      t_id, 'Swiss Rounds', 1, 'swiss', 'completed',
+      'Best of 3', 50, 4, 4,
+      NULL, NULL, NULL
+    ) ON CONFLICT DO NOTHING;
+  END IF;
+
+  -- Phases for: Kanto Elite Series Week 6 Championship
+  SELECT id INTO t_id FROM public.tournaments WHERE slug = 'kanto-elite-week-06';
+  IF t_id IS NOT NULL THEN
+    INSERT INTO public.tournament_phases (
+      tournament_id, name, phase_order, phase_type, status,
+      match_format, round_time_minutes, planned_rounds, current_round,
+      advancement_count, bracket_size, total_rounds
+    ) VALUES (
+      t_id, 'Swiss Rounds', 1, 'swiss', 'completed',
+      'Best of 3', 50, 6, 6,
+      8, NULL, NULL
+    ) ON CONFLICT DO NOTHING;
+    INSERT INTO public.tournament_phases (
+      tournament_id, name, phase_order, phase_type, status,
+      match_format, round_time_minutes, planned_rounds, current_round,
+      advancement_count, bracket_size, total_rounds
+    ) VALUES (
+      t_id, 'Top Cut', 2, 'single_elimination', 'completed',
+      'Best of 3', 50, NULL, 3,
+      NULL, 8, 3
+    ) ON CONFLICT DO NOTHING;
+  END IF;
+
+  -- Phases for: Kanto Elite Series Week 6 Practice
+  SELECT id INTO t_id FROM public.tournaments WHERE slug = 'kanto-elite-practice-week-06';
+  IF t_id IS NOT NULL THEN
+    INSERT INTO public.tournament_phases (
+      tournament_id, name, phase_order, phase_type, status,
+      match_format, round_time_minutes, planned_rounds, current_round,
+      advancement_count, bracket_size, total_rounds
+    ) VALUES (
+      t_id, 'Swiss Rounds', 1, 'swiss', 'completed',
+      'Best of 3', 50, 4, 4,
+      NULL, NULL, NULL
+    ) ON CONFLICT DO NOTHING;
+  END IF;
+
+  -- Phases for: Johto Masters League Week 6 Championship
+  SELECT id INTO t_id FROM public.tournaments WHERE slug = 'johto-masters-week-06';
+  IF t_id IS NOT NULL THEN
+    INSERT INTO public.tournament_phases (
+      tournament_id, name, phase_order, phase_type, status,
+      match_format, round_time_minutes, planned_rounds, current_round,
+      advancement_count, bracket_size, total_rounds
+    ) VALUES (
+      t_id, 'Swiss Rounds', 1, 'swiss', 'completed',
+      'Best of 3', 50, 6, 6,
+      8, NULL, NULL
+    ) ON CONFLICT DO NOTHING;
+    INSERT INTO public.tournament_phases (
+      tournament_id, name, phase_order, phase_type, status,
+      match_format, round_time_minutes, planned_rounds, current_round,
+      advancement_count, bracket_size, total_rounds
+    ) VALUES (
+      t_id, 'Top Cut', 2, 'single_elimination', 'completed',
+      'Best of 3', 50, NULL, 3,
+      NULL, 8, 3
+    ) ON CONFLICT DO NOTHING;
+  END IF;
+
+  -- Phases for: Johto Masters League Week 6 Practice
+  SELECT id INTO t_id FROM public.tournaments WHERE slug = 'johto-masters-practice-week-06';
+  IF t_id IS NOT NULL THEN
+    INSERT INTO public.tournament_phases (
+      tournament_id, name, phase_order, phase_type, status,
+      match_format, round_time_minutes, planned_rounds, current_round,
+      advancement_count, bracket_size, total_rounds
+    ) VALUES (
+      t_id, 'Bracket', 1, 'double_elimination', 'completed',
+      'Best of 3', 50, NULL, 6,
+      NULL, 32, 6
+    ) ON CONFLICT DO NOTHING;
+  END IF;
+
+  -- Phases for: VGC League Week 7 Championship
+  SELECT id INTO t_id FROM public.tournaments WHERE slug = 'vgc-league-week-07';
+  IF t_id IS NOT NULL THEN
+    INSERT INTO public.tournament_phases (
+      tournament_id, name, phase_order, phase_type, status,
+      match_format, round_time_minutes, planned_rounds, current_round,
+      advancement_count, bracket_size, total_rounds
+    ) VALUES (
+      t_id, 'Swiss Rounds', 1, 'swiss', 'completed',
+      'Best of 3', 50, 5, 5,
+      4, NULL, NULL
+    ) ON CONFLICT DO NOTHING;
+    INSERT INTO public.tournament_phases (
+      tournament_id, name, phase_order, phase_type, status,
+      match_format, round_time_minutes, planned_rounds, current_round,
+      advancement_count, bracket_size, total_rounds
+    ) VALUES (
+      t_id, 'Top Cut', 2, 'single_elimination', 'completed',
+      'Best of 3', 50, NULL, 2,
+      NULL, 4, 2
+    ) ON CONFLICT DO NOTHING;
+  END IF;
+
+  -- Phases for: VGC League Week 7 Practice
+  SELECT id INTO t_id FROM public.tournaments WHERE slug = 'vgc-league-practice-week-07';
+  IF t_id IS NOT NULL THEN
+    INSERT INTO public.tournament_phases (
+      tournament_id, name, phase_order, phase_type, status,
+      match_format, round_time_minutes, planned_rounds, current_round,
+      advancement_count, bracket_size, total_rounds
+    ) VALUES (
+      t_id, 'Bracket', 1, 'single_elimination', 'completed',
+      'Best of 3', 50, NULL, 5,
+      NULL, 32, 5
+    ) ON CONFLICT DO NOTHING;
+  END IF;
+
+  -- Phases for: Pallet Town Trainers Week 7 Championship
+  SELECT id INTO t_id FROM public.tournaments WHERE slug = 'pallet-town-week-07';
+  IF t_id IS NOT NULL THEN
+    INSERT INTO public.tournament_phases (
+      tournament_id, name, phase_order, phase_type, status,
+      match_format, round_time_minutes, planned_rounds, current_round,
+      advancement_count, bracket_size, total_rounds
+    ) VALUES (
+      t_id, 'Swiss Rounds', 1, 'swiss', 'completed',
+      'Best of 3', 50, 5, 5,
+      4, NULL, NULL
+    ) ON CONFLICT DO NOTHING;
+    INSERT INTO public.tournament_phases (
+      tournament_id, name, phase_order, phase_type, status,
+      match_format, round_time_minutes, planned_rounds, current_round,
+      advancement_count, bracket_size, total_rounds
+    ) VALUES (
+      t_id, 'Top Cut', 2, 'single_elimination', 'completed',
+      'Best of 3', 50, NULL, 2,
+      NULL, 4, 2
+    ) ON CONFLICT DO NOTHING;
+  END IF;
+
+  -- Phases for: Pallet Town Trainers Week 7 Practice
+  SELECT id INTO t_id FROM public.tournaments WHERE slug = 'pallet-town-practice-week-07';
+  IF t_id IS NOT NULL THEN
+    INSERT INTO public.tournament_phases (
+      tournament_id, name, phase_order, phase_type, status,
+      match_format, round_time_minutes, planned_rounds, current_round,
+      advancement_count, bracket_size, total_rounds
+    ) VALUES (
+      t_id, 'Swiss Rounds', 1, 'swiss', 'completed',
+      'Best of 3', 50, 4, 4,
+      NULL, NULL, NULL
+    ) ON CONFLICT DO NOTHING;
+  END IF;
+
+  -- Phases for: Sinnoh Champions Week 7 Championship
+  SELECT id INTO t_id FROM public.tournaments WHERE slug = 'sinnoh-champions-week-07';
+  IF t_id IS NOT NULL THEN
+    INSERT INTO public.tournament_phases (
+      tournament_id, name, phase_order, phase_type, status,
+      match_format, round_time_minutes, planned_rounds, current_round,
+      advancement_count, bracket_size, total_rounds
+    ) VALUES (
+      t_id, 'Swiss Rounds', 1, 'swiss', 'completed',
+      'Best of 3', 50, 6, 6,
+      8, NULL, NULL
+    ) ON CONFLICT DO NOTHING;
+    INSERT INTO public.tournament_phases (
+      tournament_id, name, phase_order, phase_type, status,
+      match_format, round_time_minutes, planned_rounds, current_round,
+      advancement_count, bracket_size, total_rounds
+    ) VALUES (
+      t_id, 'Top Cut', 2, 'single_elimination', 'completed',
+      'Best of 3', 50, NULL, 3,
+      NULL, 8, 3
+    ) ON CONFLICT DO NOTHING;
+  END IF;
+
+  -- Phases for: Sinnoh Champions Week 7 Practice
+  SELECT id INTO t_id FROM public.tournaments WHERE slug = 'sinnoh-champions-practice-week-07';
+  IF t_id IS NOT NULL THEN
+    INSERT INTO public.tournament_phases (
+      tournament_id, name, phase_order, phase_type, status,
+      match_format, round_time_minutes, planned_rounds, current_round,
+      advancement_count, bracket_size, total_rounds
+    ) VALUES (
+      t_id, 'Swiss Rounds', 1, 'swiss', 'completed',
+      'Best of 3', 50, 4, 4,
+      NULL, NULL, NULL
+    ) ON CONFLICT DO NOTHING;
+  END IF;
+
+  -- Phases for: Kanto Elite Series Week 7 Championship
+  SELECT id INTO t_id FROM public.tournaments WHERE slug = 'kanto-elite-week-07';
+  IF t_id IS NOT NULL THEN
+    INSERT INTO public.tournament_phases (
+      tournament_id, name, phase_order, phase_type, status,
+      match_format, round_time_minutes, planned_rounds, current_round,
+      advancement_count, bracket_size, total_rounds
+    ) VALUES (
+      t_id, 'Swiss Rounds', 1, 'swiss', 'completed',
+      'Best of 3', 50, 6, 6,
+      8, NULL, NULL
+    ) ON CONFLICT DO NOTHING;
+    INSERT INTO public.tournament_phases (
+      tournament_id, name, phase_order, phase_type, status,
+      match_format, round_time_minutes, planned_rounds, current_round,
+      advancement_count, bracket_size, total_rounds
+    ) VALUES (
+      t_id, 'Top Cut', 2, 'single_elimination', 'completed',
+      'Best of 3', 50, NULL, 3,
+      NULL, 8, 3
+    ) ON CONFLICT DO NOTHING;
+  END IF;
+
+  -- Phases for: Kanto Elite Series Week 7 Practice
+  SELECT id INTO t_id FROM public.tournaments WHERE slug = 'kanto-elite-practice-week-07';
+  IF t_id IS NOT NULL THEN
+    INSERT INTO public.tournament_phases (
+      tournament_id, name, phase_order, phase_type, status,
+      match_format, round_time_minutes, planned_rounds, current_round,
+      advancement_count, bracket_size, total_rounds
+    ) VALUES (
+      t_id, 'Swiss Rounds', 1, 'swiss', 'completed',
+      'Best of 3', 50, 5, 5,
+      NULL, NULL, NULL
+    ) ON CONFLICT DO NOTHING;
+  END IF;
+
+  -- Phases for: Johto Masters League Week 7 Championship
+  SELECT id INTO t_id FROM public.tournaments WHERE slug = 'johto-masters-week-07';
+  IF t_id IS NOT NULL THEN
+    INSERT INTO public.tournament_phases (
+      tournament_id, name, phase_order, phase_type, status,
+      match_format, round_time_minutes, planned_rounds, current_round,
+      advancement_count, bracket_size, total_rounds
+    ) VALUES (
+      t_id, 'Swiss Rounds', 1, 'swiss', 'completed',
+      'Best of 3', 50, 5, 5,
+      4, NULL, NULL
+    ) ON CONFLICT DO NOTHING;
+    INSERT INTO public.tournament_phases (
+      tournament_id, name, phase_order, phase_type, status,
+      match_format, round_time_minutes, planned_rounds, current_round,
+      advancement_count, bracket_size, total_rounds
+    ) VALUES (
+      t_id, 'Top Cut', 2, 'single_elimination', 'completed',
+      'Best of 3', 50, NULL, 2,
+      NULL, 4, 2
+    ) ON CONFLICT DO NOTHING;
+  END IF;
+
+  -- Phases for: Johto Masters League Week 7 Practice
+  SELECT id INTO t_id FROM public.tournaments WHERE slug = 'johto-masters-practice-week-07';
+  IF t_id IS NOT NULL THEN
+    INSERT INTO public.tournament_phases (
+      tournament_id, name, phase_order, phase_type, status,
+      match_format, round_time_minutes, planned_rounds, current_round,
+      advancement_count, bracket_size, total_rounds
+    ) VALUES (
+      t_id, 'Bracket', 1, 'single_elimination', 'completed',
+      'Best of 3', 50, NULL, 5,
+      NULL, 32, 5
+    ) ON CONFLICT DO NOTHING;
+  END IF;
+
+  -- Phases for: VGC League Week 8 Championship
+  SELECT id INTO t_id FROM public.tournaments WHERE slug = 'vgc-league-week-08';
+  IF t_id IS NOT NULL THEN
+    INSERT INTO public.tournament_phases (
+      tournament_id, name, phase_order, phase_type, status,
+      match_format, round_time_minutes, planned_rounds, current_round,
+      advancement_count, bracket_size, total_rounds
+    ) VALUES (
+      t_id, 'Swiss Rounds', 1, 'swiss', 'completed',
+      'Best of 3', 50, 6, 6,
+      8, NULL, NULL
+    ) ON CONFLICT DO NOTHING;
+    INSERT INTO public.tournament_phases (
+      tournament_id, name, phase_order, phase_type, status,
+      match_format, round_time_minutes, planned_rounds, current_round,
+      advancement_count, bracket_size, total_rounds
+    ) VALUES (
+      t_id, 'Top Cut', 2, 'single_elimination', 'completed',
+      'Best of 3', 50, NULL, 3,
+      NULL, 8, 3
+    ) ON CONFLICT DO NOTHING;
+  END IF;
+
+  -- Phases for: VGC League Week 8 Practice
+  SELECT id INTO t_id FROM public.tournaments WHERE slug = 'vgc-league-practice-week-08';
+  IF t_id IS NOT NULL THEN
+    INSERT INTO public.tournament_phases (
+      tournament_id, name, phase_order, phase_type, status,
+      match_format, round_time_minutes, planned_rounds, current_round,
+      advancement_count, bracket_size, total_rounds
+    ) VALUES (
+      t_id, 'Swiss Rounds', 1, 'swiss', 'completed',
+      'Best of 3', 50, 5, 5,
+      NULL, NULL, NULL
+    ) ON CONFLICT DO NOTHING;
+  END IF;
+
+  -- Phases for: Pallet Town Trainers Week 8 Championship
+  SELECT id INTO t_id FROM public.tournaments WHERE slug = 'pallet-town-week-08';
+  IF t_id IS NOT NULL THEN
+    INSERT INTO public.tournament_phases (
+      tournament_id, name, phase_order, phase_type, status,
+      match_format, round_time_minutes, planned_rounds, current_round,
+      advancement_count, bracket_size, total_rounds
+    ) VALUES (
+      t_id, 'Swiss Rounds', 1, 'swiss', 'completed',
+      'Best of 3', 50, 7, 7,
+      8, NULL, NULL
+    ) ON CONFLICT DO NOTHING;
+    INSERT INTO public.tournament_phases (
+      tournament_id, name, phase_order, phase_type, status,
+      match_format, round_time_minutes, planned_rounds, current_round,
+      advancement_count, bracket_size, total_rounds
+    ) VALUES (
+      t_id, 'Top Cut', 2, 'single_elimination', 'completed',
+      'Best of 3', 50, NULL, 3,
+      NULL, 8, 3
+    ) ON CONFLICT DO NOTHING;
+  END IF;
+
+  -- Phases for: Pallet Town Trainers Week 8 Practice
+  SELECT id INTO t_id FROM public.tournaments WHERE slug = 'pallet-town-practice-week-08';
+  IF t_id IS NOT NULL THEN
+    INSERT INTO public.tournament_phases (
+      tournament_id, name, phase_order, phase_type, status,
+      match_format, round_time_minutes, planned_rounds, current_round,
+      advancement_count, bracket_size, total_rounds
+    ) VALUES (
+      t_id, 'Bracket', 1, 'double_elimination', 'completed',
+      'Best of 3', 50, NULL, 6,
+      NULL, 32, 6
+    ) ON CONFLICT DO NOTHING;
+  END IF;
+
+  -- Phases for: Sinnoh Champions Week 8 Championship
+  SELECT id INTO t_id FROM public.tournaments WHERE slug = 'sinnoh-champions-week-08';
+  IF t_id IS NOT NULL THEN
+    INSERT INTO public.tournament_phases (
+      tournament_id, name, phase_order, phase_type, status,
+      match_format, round_time_minutes, planned_rounds, current_round,
+      advancement_count, bracket_size, total_rounds
+    ) VALUES (
+      t_id, 'Swiss Rounds', 1, 'swiss', 'completed',
+      'Best of 3', 50, 6, 6,
+      8, NULL, NULL
+    ) ON CONFLICT DO NOTHING;
+    INSERT INTO public.tournament_phases (
+      tournament_id, name, phase_order, phase_type, status,
+      match_format, round_time_minutes, planned_rounds, current_round,
+      advancement_count, bracket_size, total_rounds
+    ) VALUES (
+      t_id, 'Top Cut', 2, 'single_elimination', 'completed',
+      'Best of 3', 50, NULL, 3,
+      NULL, 8, 3
+    ) ON CONFLICT DO NOTHING;
+  END IF;
+
+  -- Phases for: Sinnoh Champions Week 8 Practice
+  SELECT id INTO t_id FROM public.tournaments WHERE slug = 'sinnoh-champions-practice-week-08';
+  IF t_id IS NOT NULL THEN
+    INSERT INTO public.tournament_phases (
+      tournament_id, name, phase_order, phase_type, status,
+      match_format, round_time_minutes, planned_rounds, current_round,
+      advancement_count, bracket_size, total_rounds
+    ) VALUES (
+      t_id, 'Swiss Rounds', 1, 'swiss', 'completed',
+      'Best of 3', 50, 4, 4,
+      NULL, NULL, NULL
+    ) ON CONFLICT DO NOTHING;
+  END IF;
+
+  -- Phases for: Kanto Elite Series Week 8 Championship
+  SELECT id INTO t_id FROM public.tournaments WHERE slug = 'kanto-elite-week-08';
+  IF t_id IS NOT NULL THEN
+    INSERT INTO public.tournament_phases (
+      tournament_id, name, phase_order, phase_type, status,
+      match_format, round_time_minutes, planned_rounds, current_round,
+      advancement_count, bracket_size, total_rounds
+    ) VALUES (
+      t_id, 'Swiss Rounds', 1, 'swiss', 'completed',
+      'Best of 3', 50, 7, 7,
+      8, NULL, NULL
+    ) ON CONFLICT DO NOTHING;
+    INSERT INTO public.tournament_phases (
+      tournament_id, name, phase_order, phase_type, status,
+      match_format, round_time_minutes, planned_rounds, current_round,
+      advancement_count, bracket_size, total_rounds
+    ) VALUES (
+      t_id, 'Top Cut', 2, 'single_elimination', 'completed',
+      'Best of 3', 50, NULL, 3,
+      NULL, 8, 3
+    ) ON CONFLICT DO NOTHING;
+  END IF;
+
+  -- Phases for: Kanto Elite Series Week 8 Practice
+  SELECT id INTO t_id FROM public.tournaments WHERE slug = 'kanto-elite-practice-week-08';
+  IF t_id IS NOT NULL THEN
+    INSERT INTO public.tournament_phases (
+      tournament_id, name, phase_order, phase_type, status,
+      match_format, round_time_minutes, planned_rounds, current_round,
+      advancement_count, bracket_size, total_rounds
+    ) VALUES (
+      t_id, 'Swiss Rounds', 1, 'swiss', 'completed',
+      'Best of 3', 50, 4, 4,
+      NULL, NULL, NULL
+    ) ON CONFLICT DO NOTHING;
+  END IF;
+
+  -- Phases for: Johto Masters League Week 8 Championship
+  SELECT id INTO t_id FROM public.tournaments WHERE slug = 'johto-masters-week-08';
+  IF t_id IS NOT NULL THEN
+    INSERT INTO public.tournament_phases (
+      tournament_id, name, phase_order, phase_type, status,
+      match_format, round_time_minutes, planned_rounds, current_round,
+      advancement_count, bracket_size, total_rounds
+    ) VALUES (
+      t_id, 'Swiss Rounds', 1, 'swiss', 'completed',
+      'Best of 3', 50, 6, 6,
+      8, NULL, NULL
+    ) ON CONFLICT DO NOTHING;
+    INSERT INTO public.tournament_phases (
+      tournament_id, name, phase_order, phase_type, status,
+      match_format, round_time_minutes, planned_rounds, current_round,
+      advancement_count, bracket_size, total_rounds
+    ) VALUES (
+      t_id, 'Top Cut', 2, 'single_elimination', 'completed',
+      'Best of 3', 50, NULL, 3,
+      NULL, 8, 3
+    ) ON CONFLICT DO NOTHING;
+  END IF;
+
+  -- Phases for: Johto Masters League Week 8 Practice
+  SELECT id INTO t_id FROM public.tournaments WHERE slug = 'johto-masters-practice-week-08';
+  IF t_id IS NOT NULL THEN
+    INSERT INTO public.tournament_phases (
+      tournament_id, name, phase_order, phase_type, status,
+      match_format, round_time_minutes, planned_rounds, current_round,
+      advancement_count, bracket_size, total_rounds
+    ) VALUES (
+      t_id, 'Swiss Rounds', 1, 'swiss', 'completed',
+      'Best of 3', 50, 4, 4,
+      NULL, NULL, NULL
+    ) ON CONFLICT DO NOTHING;
+  END IF;
+
+  RAISE NOTICE 'Created phases for 80 completed tournaments';
 END $$;
