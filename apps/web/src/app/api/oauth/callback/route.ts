@@ -9,6 +9,10 @@
  * 2. If DID exists in our DB → generate magic link → redirect to verify
  * 3. If DID is new → create account from Bluesky profile → sign in
  *
+ * NOTE: Bluesky OAuth users get pds_status = 'external' because they already
+ * have a PDS account elsewhere (e.g., @username.bsky.social). They don't need
+ * one on pds.trainers.gg.
+ *
  * GET /api/oauth/callback?code=...&state=...
  */
 
@@ -24,12 +28,12 @@ import {
 } from "@/lib/supabase/server";
 
 /**
- * Generate a unique username by appending numbers if needed
+ * Sanitize a username from a Bluesky handle
+ * Does NOT check for uniqueness - that happens during onboarding
  */
-async function generateUniqueUsername(
-  baseUsername: string,
-  supabase: ReturnType<typeof createServiceRoleClient>
-): Promise<string> {
+function sanitizeUsername(handle: string): string {
+  const baseUsername = extractUsernameFromHandle(handle);
+
   // Sanitize: only alphanumeric, underscores, hyphens
   let sanitized = baseUsername
     .toLowerCase()
@@ -41,33 +45,7 @@ async function generateUniqueUsername(
     sanitized = `user_${sanitized}`;
   }
 
-  // Check if username is available
-  const { data: existing } = await supabase
-    .from("users")
-    .select("id")
-    .ilike("username", sanitized)
-    .maybeSingle();
-
-  if (!existing) {
-    return sanitized;
-  }
-
-  // Append numbers until we find an available one
-  for (let i = 1; i < 1000; i++) {
-    const candidate = `${sanitized}${i}`;
-    const { data } = await supabase
-      .from("users")
-      .select("id")
-      .ilike("username", candidate)
-      .maybeSingle();
-
-    if (!data) {
-      return candidate;
-    }
-  }
-
-  // Fallback: use timestamp
-  return `user_${Date.now().toString(36)}`;
+  return sanitized;
 }
 
 export async function GET(request: Request) {
@@ -83,19 +61,20 @@ export async function GET(request: Request) {
     // Use atproto client for user table operations (has extended types)
     const supabaseAtproto = createAtprotoServiceClient();
 
-    // Generate placeholder email for lookups
-    const didSlug = did.replace(/[^a-zA-Z0-9]/g, "_").slice(0, 50);
+    // Generate placeholder email from DID (used only for Supabase Auth requirement)
+    // Use the full sanitized DID to prevent collisions - no truncation
+    const didSlug = did.replace(/[^a-zA-Z0-9]/g, "_");
     const placeholderEmail = `${didSlug}@bluesky.trainers.gg`;
 
-    // Step 2: Check if user already exists with this DID or placeholder email
-    // Note: Using separate queries since .or() with special characters in DID can be tricky
+    // Step 2: Check if user already exists - DID is the authoritative identifier
+    // We only fall back to email for legacy accounts that may not have DID set
     let existingUser: {
       id: string;
       email: string | null;
       did: string | null;
     } | null = null;
 
-    // First, check by DID (most reliable)
+    // Primary lookup: by DID (authoritative, collision-free)
     const { data: userByDid } = await supabaseAtproto
       .from("users")
       .select("id, email, did")
@@ -105,11 +84,13 @@ export async function GET(request: Request) {
     if (userByDid) {
       existingUser = userByDid;
     } else {
-      // If not found by DID, check by placeholder email
+      // Fallback: check by placeholder email for legacy accounts without DID
+      // This is only for backwards compatibility with accounts created before
+      // DID was stored. New accounts always have DID set.
       const { data: userByEmail } = await supabaseAtproto
         .from("users")
         .select("id, email, did")
-        .ilike("email", placeholderEmail)
+        .eq("email", placeholderEmail)
         .maybeSingle();
 
       if (userByEmail) {
@@ -124,10 +105,11 @@ export async function GET(request: Request) {
       userEmail = existingUser.email;
 
       // If DID wasn't set on the user record, update it now
+      // Note: Keep pds_status as 'external' for Bluesky users
       if (!existingUser.did) {
         await supabaseAtproto
           .from("users")
-          .update({ did, pds_status: "active" })
+          .update({ did, pds_status: "external" })
           .eq("id", existingUser.id);
       }
     } else {
@@ -138,9 +120,10 @@ export async function GET(request: Request) {
         throw new Error("Could not fetch Bluesky profile");
       }
 
-      // Generate unique username from handle
-      const baseUsername = extractUsernameFromHandle(profile.handle);
-      const username = await generateUniqueUsername(baseUsername, supabase);
+      // Extract username from handle (e.g., "pikachu" from "pikachu.bsky.social")
+      // This may conflict with existing usernames - that's OK, we'll handle it
+      // during onboarding by making the username field read-only for Bluesky users
+      const username = sanitizeUsername(profile.handle);
 
       userEmail = placeholderEmail;
 
@@ -176,7 +159,7 @@ export async function GET(request: Request) {
               .update({
                 did,
                 pds_handle: profile.handle,
-                pds_status: "active",
+                pds_status: "external",
                 image: profile.avatar,
               })
               .eq("id", userByPlaceholderEmail.id);
@@ -188,12 +171,13 @@ export async function GET(request: Request) {
         }
       } else if (authData?.user) {
         // New user created successfully - update their public.users record
+        // Note: pds_status = 'external' because they already have a Bluesky PDS
         await supabaseAtproto
           .from("users")
           .update({
             did,
             pds_handle: profile.handle,
-            pds_status: "active",
+            pds_status: "external",
             image: profile.avatar,
           })
           .eq("id", authData.user.id);

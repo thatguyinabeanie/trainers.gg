@@ -1,0 +1,45 @@
+# Local PDS Development Environment
+#
+# The PDS requires HTTPS, so this uses ngrok for a secure tunnel.
+# DO NOT run directly - use ./local-dev.sh start instead
+#
+# Production PDS runs on Fly.io (see fly.toml)
+
+services:
+  pds:
+    image: ghcr.io/bluesky-social/pds:latest
+    container_name: trainers-pds-local
+    ports:
+      - "3001:3000"
+    environment:
+      # These are set via --env-file from local-dev.sh
+      PDS_HOSTNAME: ${PDS_HOSTNAME}
+      PDS_PORT: ${PDS_PORT:-3000}
+      PDS_ADMIN_PASSWORD: ${PDS_ADMIN_PASSWORD}
+      PDS_JWT_SECRET: ${PDS_JWT_SECRET}
+      PDS_PLC_ROTATION_KEY_K256_PRIVATE_KEY_HEX: ${PDS_PLC_ROTATION_KEY_K256_PRIVATE_KEY_HEX}
+      PDS_DATA_DIRECTORY: ${PDS_DATA_DIRECTORY:-/pds}
+      PDS_BLOBSTORE_DISK_LOCATION: ${PDS_BLOBSTORE_DISK_LOCATION:-/pds/blobs}
+      PDS_DID_PLC_URL: ${PDS_DID_PLC_URL:-https://plc.directory}
+      PDS_BSKY_APP_VIEW_URL: ${PDS_BSKY_APP_VIEW_URL:-https://api.bsky.app}
+      PDS_BSKY_APP_VIEW_DID: ${PDS_BSKY_APP_VIEW_DID:-did:web:api.bsky.app}
+      PDS_REPORT_SERVICE_URL: ${PDS_REPORT_SERVICE_URL:-https://mod.bsky.app}
+      PDS_REPORT_SERVICE_DID: ${PDS_REPORT_SERVICE_DID:-did:plc:ar7c4by46qjdydhdevvrndac}
+      PDS_CRAWLERS: ${PDS_CRAWLERS:-https://bsky.network}
+      PDS_INVITE_REQUIRED: ${PDS_INVITE_REQUIRED:-true}
+      PDS_INVITE_INTERVAL: ${PDS_INVITE_INTERVAL:-604800000}
+      # Handle domains - allow trainers.gg handles in local dev
+      PDS_HANDLE_DOMAINS: ${PDS_HANDLE_DOMAINS:-.trainers.gg}
+    volumes:
+      - pds-data:/pds
+    restart: "no"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/xrpc/_health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+volumes:
+  pds-data:
+    name: trainers-pds-local-data

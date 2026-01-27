@@ -1615,7 +1615,6 @@ export type Database = {
           created_at: string | null
           id: number
           in_game_name: string | null
-          notes: string | null
           registered_at: string | null
           rental_team_photo_key: string | null
           rental_team_photo_uploaded_at: string | null
@@ -1634,7 +1633,6 @@ export type Database = {
           created_at?: string | null
           id?: never
           in_game_name?: string | null
-          notes?: string | null
           registered_at?: string | null
           rental_team_photo_key?: string | null
           rental_team_photo_uploaded_at?: string | null
@@ -1653,7 +1651,6 @@ export type Database = {
           created_at?: string | null
           id?: never
           in_game_name?: string | null
-          notes?: string | null
           registered_at?: string | null
           rental_team_photo_key?: string | null
           rental_team_photo_uploaded_at?: string | null
@@ -2257,6 +2254,14 @@ export type Database = {
         Returns: boolean
       }
       is_site_admin: { Args: never; Returns: boolean }
+      vault_create_secret: {
+        Args: {
+          secret_description?: string
+          secret_name: string
+          secret_value: string
+        }
+        Returns: string
+      }
     }
     Enums: {
       billing_interval: "monthly" | "annual"
@@ -2269,7 +2274,12 @@ export type Database = {
         | "organization_plus"
         | "enterprise"
       organization_tier: "regular" | "verified" | "partner"
-      pds_account_status: "pending" | "active" | "failed" | "suspended"
+      pds_account_status:
+        | "pending"
+        | "active"
+        | "failed"
+        | "suspended"
+        | "external"
       phase_status: "pending" | "active" | "completed"
       pokemon_gender: "Male" | "Female"
       registration_status:
@@ -2436,7 +2446,13 @@ export const Constants = {
         "enterprise",
       ],
       organization_tier: ["regular", "verified", "partner"],
-      pds_account_status: ["pending", "active", "failed", "suspended"],
+      pds_account_status: [
+        "pending",
+        "active",
+        "failed",
+        "suspended",
+        "external",
+      ],
       phase_status: ["pending", "active", "completed"],
       pokemon_gender: ["Male", "Female"],
       registration_status: [

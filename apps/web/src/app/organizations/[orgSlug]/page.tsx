@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Building2, Trophy, Users, Calendar, Settings } from "lucide-react";
+import { Trophy, Users, Calendar, Settings } from "lucide-react";
 import { OrganizationTabs } from "./organization-tabs";
 
 // On-demand revalidation only (no time-based)
