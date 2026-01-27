@@ -467,6 +467,97 @@ function generateTournamentsSql(
   );
   lines.push(`END $$;\n`);
 
+  // Insert tournament registrations
+  // Build lookup maps from internal IDs to slugs/usernames
+  const tournamentSlugMap = new Map<number, string>();
+  for (const t of tournaments) {
+    tournamentSlugMap.set(t.id, t.slug);
+  }
+
+  const altUsernameMap = new Map<number, string>();
+  for (const alt of alts) {
+    altUsernameMap.set(alt.id, alt.username);
+  }
+
+  lines.push(`-- Tournament Registrations`);
+  lines.push(`DO $$`);
+  lines.push(`DECLARE`);
+  lines.push(`  registrations_exist boolean;`);
+  lines.push(`BEGIN`);
+  lines.push(`  -- Check if registrations already exist`);
+  lines.push(
+    `  SELECT EXISTS(SELECT 1 FROM public.tournament_registrations LIMIT 1) INTO registrations_exist;`
+  );
+  lines.push(`  IF registrations_exist THEN`);
+  lines.push(`    RAISE NOTICE 'Registrations already exist, skipping';`);
+  lines.push(`    RETURN;`);
+  lines.push(`  END IF;\n`);
+
+  // Batch insert registrations using subqueries to resolve IDs
+  // Group by tournament for efficiency
+  const regsByTournament = new Map<number, GeneratedTournamentRegistration[]>();
+  for (const reg of registrations) {
+    if (!regsByTournament.has(reg.tournamentId)) {
+      regsByTournament.set(reg.tournamentId, []);
+    }
+    regsByTournament.get(reg.tournamentId)!.push(reg);
+  }
+
+  // Insert in batches per tournament
+  const regBatchSize = 100;
+  let totalInserted = 0;
+
+  for (const tournament of tournaments) {
+    const tournamentRegs = regsByTournament.get(tournament.id) || [];
+    if (tournamentRegs.length === 0) continue;
+
+    lines.push(
+      `  -- Registrations for: ${tournament.name} (${tournamentRegs.length} players)`
+    );
+
+    // Process in batches
+    for (let i = 0; i < tournamentRegs.length; i += regBatchSize) {
+      const batch = tournamentRegs.slice(i, i + regBatchSize);
+
+      lines.push(`  INSERT INTO public.tournament_registrations (`);
+      lines.push(
+        `    tournament_id, alt_id, status, registered_at, checked_in_at`
+      );
+      lines.push(`  )`);
+
+      const values = batch.map((reg) => {
+        const altUsername = altUsernameMap.get(reg.altId);
+        if (!altUsername) {
+          throw new Error(`Alt ID ${reg.altId} not found in alt username map`);
+        }
+
+        const checkedInAt = reg.checkedInAt
+          ? `'${reg.checkedInAt.toISOString()}'::timestamptz`
+          : "NULL::timestamptz";
+
+        return `  SELECT
+      t.id,
+      a.id,
+      '${reg.status}'::registration_status,
+      '${reg.registeredAt.toISOString()}'::timestamptz,
+      ${checkedInAt}
+    FROM public.tournaments t, public.alts a
+    WHERE t.slug = '${escapeString(tournament.slug)}'
+      AND a.username = '${escapeString(altUsername)}'`;
+      });
+
+      lines.push(values.join("\n  UNION ALL\n"));
+      lines.push(`  ON CONFLICT DO NOTHING;\n`);
+
+      totalInserted += batch.length;
+    }
+  }
+
+  lines.push(
+    `  RAISE NOTICE 'Created ${registrations.length} tournament registrations';`
+  );
+  lines.push(`END $$;\n`);
+
   return lines.join("\n");
 }
 
