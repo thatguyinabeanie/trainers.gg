@@ -594,3 +594,365 @@ export async function listOrganizationTournaments(
     hasMore: (count ?? 0) > offset + limit,
   };
 }
+
+// =============================================================================
+// Staff Management Queries
+// =============================================================================
+
+/**
+ * Staff member with their group/role information
+ */
+export type StaffWithRole = {
+  id: number;
+  user_id: string;
+  organization_id: number;
+  created_at: string | null;
+  user: {
+    id: string;
+    username: string | null;
+    first_name: string | null;
+    last_name: string | null;
+    image: string | null;
+    email: string | null;
+  } | null;
+  group: {
+    id: number;
+    name: string;
+  } | null;
+  role: {
+    id: number;
+    name: string;
+    description: string | null;
+  } | null;
+  isOwner: boolean;
+};
+
+/**
+ * List organization staff with their assigned roles via groups
+ */
+export async function listOrganizationStaffWithRoles(
+  supabase: TypedClient,
+  organizationId: number
+): Promise<StaffWithRole[]> {
+  // Get organization owner
+  const { data: org } = await supabase
+    .from("organizations")
+    .select("owner_user_id")
+    .eq("id", organizationId)
+    .single();
+
+  const ownerUserId = org?.owner_user_id;
+
+  // Get all staff members with user details
+  const { data: staffMembers, error: staffError } = await supabase
+    .from("organization_staff")
+    .select(
+      `
+      id,
+      user_id,
+      organization_id,
+      created_at,
+      user:users(id, username, first_name, last_name, image, email)
+    `
+    )
+    .eq("organization_id", organizationId);
+
+  if (staffError) throw staffError;
+
+  // Get groups for this organization
+  const { data: groups } = await supabase
+    .from("groups")
+    .select(
+      `
+      id,
+      name,
+      organization_id
+    `
+    )
+    .eq("organization_id", organizationId);
+
+  const groupIds = (groups ?? []).map((g) => g.id);
+
+  // Get group_roles for these groups
+  const { data: groupRoles } = await supabase
+    .from("group_roles")
+    .select(
+      `
+      id,
+      group_id,
+      role:roles(id, name, description)
+    `
+    )
+    .in("group_id", groupIds.length > 0 ? groupIds : [-1]);
+
+  // Get user_group_roles to find which users are in which groups
+  const groupRoleIds = (groupRoles ?? []).map((gr) => gr.id);
+  const { data: userGroupRoles } = await supabase
+    .from("user_group_roles")
+    .select("user_id, group_role_id")
+    .in("group_role_id", groupRoleIds.length > 0 ? groupRoleIds : [-1]);
+
+  // Build lookup maps
+  const groupMap = new Map((groups ?? []).map((g) => [g.id, g]));
+  const groupRoleMap = new Map((groupRoles ?? []).map((gr) => [gr.id, gr]));
+
+  // Map user_id to their group/role
+  const userRoleMap = new Map<
+    string,
+    {
+      group: { id: number; name: string };
+      role: { id: number; name: string; description: string | null };
+    }
+  >();
+
+  for (const ugr of userGroupRoles ?? []) {
+    const groupRole = groupRoleMap.get(ugr.group_role_id);
+    if (groupRole) {
+      const group = groupMap.get(groupRole.group_id);
+      if (group && groupRole.role) {
+        userRoleMap.set(ugr.user_id, {
+          group: { id: group.id, name: group.name },
+          role: {
+            id: groupRole.role.id,
+            name: groupRole.role.name,
+            description: groupRole.role.description,
+          },
+        });
+      }
+    }
+  }
+
+  // Build result with owner included
+  const result: StaffWithRole[] = [];
+
+  // Add owner first (if not already in staff list)
+  if (ownerUserId) {
+    const { data: ownerUser } = await supabase
+      .from("users")
+      .select("id, username, first_name, last_name, image, email")
+      .eq("id", ownerUserId)
+      .single();
+
+    if (ownerUser) {
+      const ownerInStaff = (staffMembers ?? []).find(
+        (s) => s.user_id === ownerUserId
+      );
+      if (!ownerInStaff) {
+        result.push({
+          id: -1, // Special ID for owner not in staff table
+          user_id: ownerUserId,
+          organization_id: organizationId,
+          created_at: null,
+          user: ownerUser,
+          group: null,
+          role: null,
+          isOwner: true,
+        });
+      }
+    }
+  }
+
+  // Add staff members
+  for (const staff of staffMembers ?? []) {
+    const userRole = userRoleMap.get(staff.user_id);
+    result.push({
+      id: staff.id,
+      user_id: staff.user_id,
+      organization_id: staff.organization_id,
+      created_at: staff.created_at,
+      user: staff.user,
+      group: userRole?.group ?? null,
+      role: userRole?.role ?? null,
+      isOwner: staff.user_id === ownerUserId,
+    });
+  }
+
+  // Sort: owner first, then by role (Admin > Head Judge > Judge), then by name
+  const roleOrder: Record<string, number> = {
+    org_admin: 1,
+    org_head_judge: 2,
+    org_judge: 3,
+  };
+
+  result.sort((a, b) => {
+    // Owner always first
+    if (a.isOwner && !b.isOwner) return -1;
+    if (!a.isOwner && b.isOwner) return 1;
+
+    // Then by role
+    const aOrder = a.role ? (roleOrder[a.role.name] ?? 99) : 99;
+    const bOrder = b.role ? (roleOrder[b.role.name] ?? 99) : 99;
+    if (aOrder !== bOrder) return aOrder - bOrder;
+
+    // Then by name
+    const aName = a.user?.username ?? a.user?.first_name ?? "";
+    const bName = b.user?.username ?? b.user?.first_name ?? "";
+    return aName.localeCompare(bName);
+  });
+
+  return result;
+}
+
+/**
+ * Organization group with its role
+ */
+export type OrganizationGroup = {
+  id: number;
+  name: string;
+  description: string | null;
+  role: {
+    id: number;
+    name: string;
+    description: string | null;
+  } | null;
+  memberCount: number;
+};
+
+/**
+ * List all groups for an organization with their roles
+ */
+export async function listOrganizationGroups(
+  supabase: TypedClient,
+  organizationId: number
+): Promise<OrganizationGroup[]> {
+  const { data: groups, error } = await supabase
+    .from("groups")
+    .select(
+      `
+      id,
+      name,
+      description,
+      group_roles(
+        role:roles(id, name, description)
+      )
+    `
+    )
+    .eq("organization_id", organizationId)
+    .order("name");
+
+  if (error) throw error;
+
+  // Get member counts for each group
+  const result: OrganizationGroup[] = [];
+
+  for (const group of groups ?? []) {
+    // Get the group_role ids for this group
+    const { data: groupRoleData } = await supabase
+      .from("group_roles")
+      .select("id")
+      .eq("group_id", group.id);
+
+    const groupRoleIds = (groupRoleData ?? []).map((gr) => gr.id);
+
+    // Count users in this group
+    let memberCount = 0;
+    if (groupRoleIds.length > 0) {
+      const { count } = await supabase
+        .from("user_group_roles")
+        .select("*", { count: "exact", head: true })
+        .in("group_role_id", groupRoleIds);
+      memberCount = count ?? 0;
+    }
+
+    // Extract role from group_roles (assuming one role per group)
+    const groupRole = group.group_roles?.[0];
+    const role = groupRole?.role
+      ? {
+          id: groupRole.role.id,
+          name: groupRole.role.name,
+          description: groupRole.role.description,
+        }
+      : null;
+
+    result.push({
+      id: group.id,
+      name: group.name,
+      description: group.description,
+      role,
+      memberCount,
+    });
+  }
+
+  return result;
+}
+
+/**
+ * Search users for staff invitation
+ * Returns users matching the search term who are NOT already staff
+ */
+export async function searchUsersForInvite(
+  supabase: TypedClient,
+  organizationId: number,
+  searchTerm: string,
+  limit: number = 10
+): Promise<
+  {
+    id: string;
+    username: string | null;
+    first_name: string | null;
+    last_name: string | null;
+    image: string | null;
+  }[]
+> {
+  if (!searchTerm || searchTerm.length < 2) {
+    return [];
+  }
+
+  // Get existing staff user IDs
+  const { data: existingStaff } = await supabase
+    .from("organization_staff")
+    .select("user_id")
+    .eq("organization_id", organizationId);
+
+  const existingUserIds = (existingStaff ?? []).map((s) => s.user_id);
+
+  // Get organization owner
+  const { data: org } = await supabase
+    .from("organizations")
+    .select("owner_user_id")
+    .eq("id", organizationId)
+    .single();
+
+  if (org?.owner_user_id) {
+    existingUserIds.push(org.owner_user_id);
+  }
+
+  // Search users by username
+  let query = supabase
+    .from("users")
+    .select("id, username, first_name, last_name, image")
+    .ilike("username", `%${searchTerm}%`)
+    .limit(limit);
+
+  // Exclude existing staff/owner
+  if (existingUserIds.length > 0) {
+    query = query.not("id", "in", existingUserIds);
+  }
+
+  const { data: users, error } = await query;
+
+  if (error) throw error;
+  return users ?? [];
+}
+
+/**
+ * Check if user has a specific permission in an organization
+ * Uses the database function has_org_permission
+ */
+export async function hasOrgPermission(
+  supabase: TypedClient,
+  organizationId: number,
+  permissionKey: string
+): Promise<boolean> {
+  const { data, error } = await supabase.rpc("has_org_permission", {
+    org_id: organizationId,
+    permission_key: permissionKey,
+  });
+
+  if (error) {
+    console.error("Error checking permission:", error);
+    return false;
+  }
+
+  return data === true;
+}

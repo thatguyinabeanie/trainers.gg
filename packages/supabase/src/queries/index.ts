@@ -33,7 +33,14 @@ export {
   hasOrganizationAccess,
   getMyOrganizationInvitations,
   getOrganizationInvitations,
+  // Staff management
+  listOrganizationStaffWithRoles,
+  listOrganizationGroups,
+  searchUsersForInvite,
+  hasOrgPermission,
 } from "./organizations";
+
+export type { StaffWithRole, OrganizationGroup } from "./organizations";
 
 // Tournament queries
 export {

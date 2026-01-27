@@ -15,6 +15,46 @@ async function getCurrentUser(supabase: TypedClient) {
 }
 
 /**
+ * Helper to check if user has a specific permission in an organization
+ */
+async function checkOrgPermission(
+  supabase: TypedClient,
+  organizationId: number,
+  permissionKey: string
+): Promise<boolean> {
+  const { data, error } = await supabase.rpc("has_org_permission", {
+    org_id: organizationId,
+    permission_key: permissionKey,
+  });
+
+  if (error) {
+    console.error("Error checking permission:", error);
+    return false;
+  }
+
+  return data === true;
+}
+
+/**
+ * Helper to check if current user is org owner
+ */
+async function isOrgOwner(
+  supabase: TypedClient,
+  organizationId: number
+): Promise<boolean> {
+  const currentUser = await getCurrentUser(supabase);
+  if (!currentUser) return false;
+
+  const { data: org } = await supabase
+    .from("organizations")
+    .select("owner_user_id")
+    .eq("id", organizationId)
+    .single();
+
+  return org?.owner_user_id === currentUser.id;
+}
+
+/**
  * Helper to get current alt
  */
 async function getCurrentAlt(supabase: TypedClient) {
@@ -324,6 +364,307 @@ export async function removeStaff(
     throw new Error("Cannot remove the owner");
   }
 
+  const { error } = await supabase
+    .from("organization_staff")
+    .delete()
+    .eq("organization_id", organizationId)
+    .eq("user_id", userId);
+
+  if (error) throw error;
+  return { success: true };
+}
+
+// =============================================================================
+// Staff Group Management
+// =============================================================================
+
+/**
+ * Add a user to an organization as staff (without assigning to a group yet)
+ * The user will appear in the "Unassigned" section until moved to a group
+ */
+export async function addStaffMember(
+  supabase: TypedClient,
+  organizationId: number,
+  userId: string
+) {
+  const currentUser = await getCurrentUser(supabase);
+  if (!currentUser) throw new Error("Not authenticated");
+
+  // Verify permission: must be org owner or have org.staff.manage permission
+  const ownerCheck = await isOrgOwner(supabase, organizationId);
+  const permCheck = await checkOrgPermission(
+    supabase,
+    organizationId,
+    "org.staff.manage"
+  );
+  if (!ownerCheck && !permCheck) {
+    throw new Error("You don't have permission to manage staff");
+  }
+
+  // Check if user is already staff
+  const { data: existingStaff } = await supabase
+    .from("organization_staff")
+    .select("id")
+    .eq("organization_id", organizationId)
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  if (existingStaff) {
+    throw new Error("User is already a staff member");
+  }
+
+  // Add user as staff (no group assignment)
+  const { error: staffError } = await supabase
+    .from("organization_staff")
+    .insert({
+      organization_id: organizationId,
+      user_id: userId,
+    });
+
+  if (staffError) throw staffError;
+
+  return { success: true };
+}
+
+/**
+ * Add a user to an organization as staff with a specific group/role
+ */
+export async function addStaffToGroup(
+  supabase: TypedClient,
+  organizationId: number,
+  userId: string,
+  groupId: number
+) {
+  const currentUser = await getCurrentUser(supabase);
+  if (!currentUser) throw new Error("Not authenticated");
+
+  // Verify permission: must be org owner or have org.staff.manage permission
+  const ownerCheck = await isOrgOwner(supabase, organizationId);
+  const permCheck = await checkOrgPermission(
+    supabase,
+    organizationId,
+    "org.staff.manage"
+  );
+  if (!ownerCheck && !permCheck) {
+    throw new Error("You don't have permission to manage staff");
+  }
+
+  // Verify the group belongs to this organization
+  const { data: group } = await supabase
+    .from("groups")
+    .select("id, organization_id")
+    .eq("id", groupId)
+    .single();
+
+  if (!group) throw new Error("Group not found");
+  if (group.organization_id !== organizationId) {
+    throw new Error("Group does not belong to this organization");
+  }
+
+  // Get the group_role for this group
+  const { data: groupRole } = await supabase
+    .from("group_roles")
+    .select("id")
+    .eq("group_id", groupId)
+    .single();
+
+  if (!groupRole) throw new Error("Group has no associated role");
+
+  // Check if user is already staff
+  const { data: existingStaff } = await supabase
+    .from("organization_staff")
+    .select("id")
+    .eq("organization_id", organizationId)
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  // If not already staff, add them
+  if (!existingStaff) {
+    const { error: staffError } = await supabase
+      .from("organization_staff")
+      .insert({
+        organization_id: organizationId,
+        user_id: userId,
+      });
+
+    if (staffError) throw staffError;
+  }
+
+  // Check if user already has a role in any group of this org
+  const { data: orgGroups } = await supabase
+    .from("groups")
+    .select("id")
+    .eq("organization_id", organizationId);
+
+  const orgGroupIds = (orgGroups ?? []).map((g) => g.id);
+
+  const { data: existingGroupRoles } = await supabase
+    .from("group_roles")
+    .select("id")
+    .in("group_id", orgGroupIds.length > 0 ? orgGroupIds : [-1]);
+
+  const existingGroupRoleIds = (existingGroupRoles ?? []).map((gr) => gr.id);
+
+  // Remove any existing user_group_roles for this org
+  if (existingGroupRoleIds.length > 0) {
+    await supabase
+      .from("user_group_roles")
+      .delete()
+      .eq("user_id", userId)
+      .in("group_role_id", existingGroupRoleIds);
+  }
+
+  // Add user to the new group
+  const { error: roleError } = await supabase.from("user_group_roles").insert({
+    user_id: userId,
+    group_role_id: groupRole.id,
+  });
+
+  if (roleError) throw roleError;
+
+  return { success: true };
+}
+
+/**
+ * Remove a user from all groups in an organization (effectively removing their role)
+ */
+export async function removeStaffFromGroup(
+  supabase: TypedClient,
+  organizationId: number,
+  userId: string
+) {
+  const currentUser = await getCurrentUser(supabase);
+  if (!currentUser) throw new Error("Not authenticated");
+
+  // Verify permission: must be org owner or have org.staff.manage permission
+  const ownerCheck = await isOrgOwner(supabase, organizationId);
+  const permCheck = await checkOrgPermission(
+    supabase,
+    organizationId,
+    "org.staff.manage"
+  );
+  if (!ownerCheck && !permCheck) {
+    throw new Error("You don't have permission to manage staff");
+  }
+
+  // Get all groups for this organization
+  const { data: orgGroups } = await supabase
+    .from("groups")
+    .select("id")
+    .eq("organization_id", organizationId);
+
+  const orgGroupIds = (orgGroups ?? []).map((g) => g.id);
+
+  if (orgGroupIds.length === 0) {
+    return { success: true };
+  }
+
+  // Get all group_roles for these groups
+  const { data: groupRoles } = await supabase
+    .from("group_roles")
+    .select("id")
+    .in("group_id", orgGroupIds);
+
+  const groupRoleIds = (groupRoles ?? []).map((gr) => gr.id);
+
+  if (groupRoleIds.length === 0) {
+    return { success: true };
+  }
+
+  // Remove user from all group_roles
+  await supabase
+    .from("user_group_roles")
+    .delete()
+    .eq("user_id", userId)
+    .in("group_role_id", groupRoleIds);
+
+  return { success: true };
+}
+
+/**
+ * Change a staff member's role by moving them to a different group
+ */
+export async function changeStaffRole(
+  supabase: TypedClient,
+  organizationId: number,
+  userId: string,
+  newGroupId: number
+) {
+  const currentUser = await getCurrentUser(supabase);
+  if (!currentUser) throw new Error("Not authenticated");
+
+  // Verify permission: must be org owner or have org.staff.manage permission
+  const ownerCheck = await isOrgOwner(supabase, organizationId);
+  const permCheck = await checkOrgPermission(
+    supabase,
+    organizationId,
+    "org.staff.manage"
+  );
+  if (!ownerCheck && !permCheck) {
+    throw new Error("You don't have permission to manage staff");
+  }
+
+  // Verify the target user is not the org owner
+  const { data: org } = await supabase
+    .from("organizations")
+    .select("owner_user_id")
+    .eq("id", organizationId)
+    .single();
+
+  if (!org) throw new Error("Organization not found");
+  if (org.owner_user_id === userId) {
+    throw new Error("Cannot change the owner's role");
+  }
+
+  // Use addStaffToGroup which handles replacing existing role
+  return addStaffToGroup(supabase, organizationId, userId, newGroupId);
+}
+
+/**
+ * Remove a staff member completely (from staff table and all groups)
+ */
+export async function removeStaffCompletely(
+  supabase: TypedClient,
+  organizationId: number,
+  userId: string
+) {
+  const currentUser = await getCurrentUser(supabase);
+  if (!currentUser) throw new Error("Not authenticated");
+
+  // Verify permission: must be org owner or have org.staff.manage permission
+  const ownerCheck = await isOrgOwner(supabase, organizationId);
+  const permCheck = await checkOrgPermission(
+    supabase,
+    organizationId,
+    "org.staff.manage"
+  );
+  if (!ownerCheck && !permCheck) {
+    throw new Error("You don't have permission to manage staff");
+  }
+
+  // Verify not removing the owner
+  const { data: org } = await supabase
+    .from("organizations")
+    .select("owner_user_id")
+    .eq("id", organizationId)
+    .single();
+
+  if (!org) throw new Error("Organization not found");
+  if (org.owner_user_id === userId) {
+    throw new Error("Cannot remove the organization owner");
+  }
+
+  // Cannot remove yourself
+  if (userId === currentUser.id) {
+    throw new Error(
+      "Cannot remove yourself. Use 'Leave Organization' instead."
+    );
+  }
+
+  // First remove from all groups
+  await removeStaffFromGroup(supabase, organizationId, userId);
+
+  // Then remove from organization_staff
   const { error } = await supabase
     .from("organization_staff")
     .delete()

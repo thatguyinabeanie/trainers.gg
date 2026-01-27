@@ -11,6 +11,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
   DropdownMenuLabel,
+  DropdownMenuGroup,
 } from "@/components/ui/dropdown-menu";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -126,22 +127,24 @@ export function TopNavAuthSection() {
           {hasOrganizations && (
             <>
               <DropdownMenuSeparator />
-              <DropdownMenuLabel className="text-muted-foreground text-xs font-normal">
-                My Organizations
-              </DropdownMenuLabel>
-              {myOrganizations.map((org) => (
-                <DropdownMenuItem
-                  key={org.id}
-                  onClick={() => router.push(`/to-dashboard/${org.slug}`)}
-                  className="justify-between"
-                >
-                  <div className="flex items-center">
-                    <Building2 className="mr-2 h-4 w-4" />
-                    <span className="truncate">{org.name}</span>
-                  </div>
-                  <ChevronRight className="text-muted-foreground h-4 w-4" />
-                </DropdownMenuItem>
-              ))}
+              <DropdownMenuGroup>
+                <DropdownMenuLabel className="text-muted-foreground text-xs font-normal">
+                  My Organizations
+                </DropdownMenuLabel>
+                {myOrganizations.map((org) => (
+                  <DropdownMenuItem
+                    key={org.id}
+                    onClick={() => router.push(`/to-dashboard/${org.slug}`)}
+                    className="justify-between"
+                  >
+                    <div className="flex items-center">
+                      <Building2 className="mr-2 h-4 w-4" />
+                      <span className="truncate">{org.name}</span>
+                    </div>
+                    <ChevronRight className="text-muted-foreground h-4 w-4" />
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuGroup>
             </>
           )}
 

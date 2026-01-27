@@ -21,6 +21,12 @@ export {
   declineOrganizationInvitation,
   leaveOrganization,
   removeStaff,
+  // Staff group management
+  addStaffMember,
+  addStaffToGroup,
+  removeStaffFromGroup,
+  changeStaffRole,
+  removeStaffCompletely,
 } from "./organizations";
 
 // Tournament mutations
