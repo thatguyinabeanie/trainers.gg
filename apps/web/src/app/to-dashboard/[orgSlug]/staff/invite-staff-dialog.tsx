@@ -13,24 +13,15 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Loader2, Search, UserPlus } from "lucide-react";
-import { searchUsersForStaffInvite, inviteStaffToGroup } from "@/actions/staff";
-import type { OrganizationGroup } from "@trainers/supabase";
+import { searchUsersForStaffInvite, inviteStaffMember } from "@/actions/staff";
 
 interface InviteStaffDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   organizationId: number;
   orgSlug: string;
-  groups: OrganizationGroup[];
   onSuccess: () => void;
 }
 
@@ -70,14 +61,12 @@ export function InviteStaffDialog({
   onOpenChange,
   organizationId,
   orgSlug,
-  groups,
   onSuccess,
 }: InviteStaffDialogProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [selectedUser, setSelectedUser] = useState<SearchResult | null>(null);
-  const [selectedGroupId, setSelectedGroupId] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Debounced search with cancellation
@@ -116,7 +105,6 @@ export function InviteStaffDialog({
       setSearchTerm("");
       setSearchResults([]);
       setSelectedUser(null);
-      setSelectedGroupId("");
     }
   }, [open]);
 
@@ -127,19 +115,18 @@ export function InviteStaffDialog({
   };
 
   const handleSubmit = async () => {
-    if (!selectedUser || !selectedGroupId) return;
+    if (!selectedUser) return;
 
     setIsSubmitting(true);
     try {
-      const result = await inviteStaffToGroup(
+      const result = await inviteStaffMember(
         organizationId,
         selectedUser.id,
-        parseInt(selectedGroupId, 10),
         orgSlug
       );
 
       if (result.success) {
-        toast.success(`${getDisplayName(selectedUser)} added as staff`);
+        toast.success(`${getDisplayName(selectedUser)} added to staff`);
         onOpenChange(false);
         onSuccess();
       } else {
@@ -152,7 +139,7 @@ export function InviteStaffDialog({
     }
   };
 
-  const canSubmit = selectedUser && selectedGroupId && !isSubmitting;
+  const canSubmit = selectedUser && !isSubmitting;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -160,7 +147,8 @@ export function InviteStaffDialog({
         <DialogHeader>
           <DialogTitle>Add Staff Member</DialogTitle>
           <DialogDescription>
-            Search for a user and assign them a role in your organization.
+            Search for a user to add to your organization. You can assign them
+            to a group after they&apos;re added.
           </DialogDescription>
         </DialogHeader>
 
@@ -258,31 +246,6 @@ export function InviteStaffDialog({
                 )}
             </div>
           )}
-
-          {/* Role Selection */}
-          <div className="space-y-2">
-            <Label htmlFor="role">Role</Label>
-            <Select
-              value={selectedGroupId}
-              onValueChange={(value) => setSelectedGroupId(value ?? "")}
-            >
-              <SelectTrigger id="role">
-                <SelectValue placeholder="Select a role..." />
-              </SelectTrigger>
-              <SelectContent>
-                {groups.map((group) => (
-                  <SelectItem key={group.id} value={String(group.id)}>
-                    {group.name}
-                    {group.role?.description && (
-                      <span className="text-muted-foreground ml-2 text-xs">
-                        - {group.role.description}
-                      </span>
-                    )}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
         </div>
 
         <DialogFooter>

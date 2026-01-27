@@ -12,7 +12,8 @@ import { createClient } from "@/lib/supabase/server";
 import {
   searchUsersForInvite as searchUsersQuery,
   listOrganizationGroups as listGroupsQuery,
-  addStaffToGroup as addStaffMutation,
+  addStaffMember as addStaffMemberMutation,
+  addStaffToGroup as addStaffToGroupMutation,
   changeStaffRole as changeRoleMutation,
   removeStaffCompletely as removeStaffMutation,
 } from "@trainers/supabase";
@@ -65,18 +66,18 @@ export async function searchUsersForStaffInvite(
 // =============================================================================
 
 /**
- * Add a user to an organization as staff with a specific group/role
+ * Add a user to an organization as staff (unassigned to any group)
+ * The user will appear in the "Unassigned" section until moved to a group
  * Revalidates: organization page
  */
-export async function inviteStaffToGroup(
+export async function inviteStaffMember(
   organizationId: number,
   userId: string,
-  groupId: number,
   slug?: string
 ): Promise<ActionResult<{ success: true }>> {
   try {
     const supabase = await createClient();
-    await addStaffMutation(supabase, organizationId, userId, groupId);
+    await addStaffMemberMutation(supabase, organizationId, userId);
 
     // Revalidate organization page to show new staff member
     if (slug) {
@@ -95,7 +96,37 @@ export async function inviteStaffToGroup(
 }
 
 /**
- * Change a staff member's role by moving them to a different group
+ * Add a user to an organization as staff with a specific group
+ * Revalidates: organization page
+ */
+export async function inviteStaffToGroup(
+  organizationId: number,
+  userId: string,
+  groupId: number,
+  slug?: string
+): Promise<ActionResult<{ success: true }>> {
+  try {
+    const supabase = await createClient();
+    await addStaffToGroupMutation(supabase, organizationId, userId, groupId);
+
+    // Revalidate organization page to show new staff member
+    if (slug) {
+      updateTag(CacheTags.organization(slug));
+    }
+    updateTag(CacheTags.organization(organizationId));
+
+    return { success: true, data: { success: true } };
+  } catch (error) {
+    return {
+      success: false,
+      error:
+        error instanceof Error ? error.message : "Failed to add staff member",
+    };
+  }
+}
+
+/**
+ * Change a staff member's group (for drag & drop)
  * Revalidates: organization page
  */
 export async function changeStaffRoleAction(
@@ -119,9 +150,21 @@ export async function changeStaffRoleAction(
     return {
       success: false,
       error:
-        error instanceof Error ? error.message : "Failed to change staff role",
+        error instanceof Error ? error.message : "Failed to change staff group",
     };
   }
+}
+
+/**
+ * Move a staff member to a group (alias for changeStaffRoleAction for drag & drop)
+ */
+export async function moveStaffToGroup(
+  organizationId: number,
+  userId: string,
+  groupId: number,
+  slug?: string
+): Promise<ActionResult<{ success: true }>> {
+  return changeStaffRoleAction(organizationId, userId, groupId, slug);
 }
 
 /**

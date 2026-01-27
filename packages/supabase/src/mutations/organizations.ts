@@ -339,6 +339,43 @@ export async function removeStaff(
 // =============================================================================
 
 /**
+ * Add a user to an organization as staff (without assigning to a group yet)
+ * The user will appear in the "Unassigned" section until moved to a group
+ */
+export async function addStaffMember(
+  supabase: TypedClient,
+  organizationId: number,
+  userId: string
+) {
+  const currentUser = await getCurrentUser(supabase);
+  if (!currentUser) throw new Error("Not authenticated");
+
+  // Check if user is already staff
+  const { data: existingStaff } = await supabase
+    .from("organization_staff")
+    .select("id")
+    .eq("organization_id", organizationId)
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  if (existingStaff) {
+    throw new Error("User is already a staff member");
+  }
+
+  // Add user as staff (no group assignment)
+  const { error: staffError } = await supabase
+    .from("organization_staff")
+    .insert({
+      organization_id: organizationId,
+      user_id: userId,
+    });
+
+  if (staffError) throw staffError;
+
+  return { success: true };
+}
+
+/**
  * Add a user to an organization as staff with a specific group/role
  */
 export async function addStaffToGroup(

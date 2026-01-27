@@ -2,6 +2,20 @@
 
 import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
+import {
+  DndContext,
+  DragOverlay,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+  type DragStartEvent,
+} from "@dnd-kit/core";
+import { useDraggable, useDroppable } from "@dnd-kit/core";
+import { CSS } from "@dnd-kit/utilities";
 import { useSupabaseQuery } from "@/lib/supabase";
 import {
   listOrganizationStaffWithRoles,
@@ -9,28 +23,24 @@ import {
   type OrganizationGroup,
 } from "@trainers/supabase";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-  DropdownMenuSeparator,
-} from "@/components/ui/dropdown-menu";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   Users,
   Plus,
   Loader2,
-  MoreHorizontal,
-  UserMinus,
-  Shield,
   Crown,
+  GripVertical,
+  UserMinus,
 } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { InviteStaffDialog } from "./invite-staff-dialog";
-import { ChangeRoleDialog } from "./change-role-dialog";
 import { RemoveStaffDialog } from "./remove-staff-dialog";
+import { moveStaffToGroup } from "@/actions/staff";
+
+// =============================================================================
+// Types & Constants
+// =============================================================================
 
 interface StaffListClientProps {
   organizationId: number;
@@ -39,13 +49,32 @@ interface StaffListClientProps {
   groups: OrganizationGroup[];
   isOwner: boolean;
   currentUserId?: string;
+  currentUserRole?: string | null;
 }
 
-const roleLabels: Record<string, { label: string; color: string }> = {
-  org_admin: { label: "Admin", color: "bg-purple-100 text-purple-800" },
-  org_head_judge: { label: "Head Judge", color: "bg-blue-100 text-blue-800" },
-  org_judge: { label: "Judge", color: "bg-green-100 text-green-800" },
+const UNASSIGNED_GROUP_ID = "unassigned";
+
+// Role hierarchy: who can manage whom
+// Owner can manage all, Admin can manage Head Judges & Judges, Head Judge can manage Judges
+const ROLE_HIERARCHY: Record<string, string[]> = {
+  owner: ["org_admin", "org_head_judge", "org_judge"],
+  org_admin: ["org_head_judge", "org_judge"],
+  org_head_judge: ["org_judge"],
+  org_judge: [],
 };
+
+const GROUP_COLORS: Record<string, string> = {
+  org_admin:
+    "border-purple-200 bg-purple-50 dark:border-purple-900 dark:bg-purple-950",
+  org_head_judge:
+    "border-blue-200 bg-blue-50 dark:border-blue-900 dark:bg-blue-950",
+  org_judge:
+    "border-green-200 bg-green-50 dark:border-green-900 dark:bg-green-950",
+};
+
+// =============================================================================
+// Helper Functions
+// =============================================================================
 
 function getInitials(
   firstName: string | null,
@@ -78,6 +107,223 @@ function getDisplayName(
   return username ?? "Unknown";
 }
 
+function canManageGroup(
+  userRole: string | null,
+  isOwner: boolean,
+  targetGroupRole: string | null
+): boolean {
+  if (isOwner) return true;
+  if (!userRole || !targetGroupRole) return false;
+
+  const manageableRoles = ROLE_HIERARCHY[userRole] ?? [];
+  return manageableRoles.includes(targetGroupRole);
+}
+
+// =============================================================================
+// Draggable Staff Card
+// =============================================================================
+
+interface DraggableStaffCardProps {
+  member: StaffWithRole;
+  canDrag: boolean;
+  onRemove?: () => void;
+}
+
+function DraggableStaffCard({
+  member,
+  canDrag,
+  onRemove,
+}: DraggableStaffCardProps) {
+  const { attributes, listeners, setNodeRef, transform, isDragging } =
+    useDraggable({
+      id: member.user_id,
+      disabled: !canDrag || member.isOwner,
+      data: { member },
+    });
+
+  const style = transform
+    ? {
+        transform: CSS.Translate.toString(transform),
+        opacity: isDragging ? 0.5 : 1,
+      }
+    : undefined;
+
+  const displayName = getDisplayName(
+    member.user?.first_name ?? null,
+    member.user?.last_name ?? null,
+    member.user?.username ?? null
+  );
+  const initials = getInitials(
+    member.user?.first_name ?? null,
+    member.user?.last_name ?? null,
+    member.user?.username ?? null
+  );
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={cn(
+        "bg-card flex items-center gap-3 rounded-lg border p-3 transition-shadow",
+        isDragging && "shadow-lg",
+        canDrag && !member.isOwner && "cursor-grab active:cursor-grabbing"
+      )}
+    >
+      {canDrag && !member.isOwner && (
+        <div {...attributes} {...listeners} className="text-muted-foreground">
+          <GripVertical className="h-4 w-4" />
+        </div>
+      )}
+      <Avatar className="h-8 w-8">
+        {member.user?.image && (
+          <AvatarImage src={member.user.image} alt={displayName} />
+        )}
+        <AvatarFallback className="text-xs">{initials}</AvatarFallback>
+      </Avatar>
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-2">
+          <p className="truncate text-sm font-medium">{displayName}</p>
+          {member.isOwner && (
+            <Crown className="h-3.5 w-3.5 flex-shrink-0 text-yellow-500" />
+          )}
+        </div>
+        {member.user?.username && (
+          <p className="text-muted-foreground truncate text-xs">
+            @{member.user.username}
+          </p>
+        )}
+      </div>
+      {onRemove && !member.isOwner && (
+        <button
+          onClick={onRemove}
+          className="text-muted-foreground hover:text-destructive rounded p-1 transition-colors"
+          title="Remove from organization"
+        >
+          <UserMinus className="h-4 w-4" />
+        </button>
+      )}
+    </div>
+  );
+}
+
+// =============================================================================
+// Staff Card for Overlay (while dragging)
+// =============================================================================
+
+function StaffCardOverlay({ member }: { member: StaffWithRole }) {
+  const displayName = getDisplayName(
+    member.user?.first_name ?? null,
+    member.user?.last_name ?? null,
+    member.user?.username ?? null
+  );
+  const initials = getInitials(
+    member.user?.first_name ?? null,
+    member.user?.last_name ?? null,
+    member.user?.username ?? null
+  );
+
+  return (
+    <div className="bg-card flex items-center gap-3 rounded-lg border p-3 shadow-xl">
+      <GripVertical className="text-muted-foreground h-4 w-4" />
+      <Avatar className="h-8 w-8">
+        {member.user?.image && (
+          <AvatarImage src={member.user.image} alt={displayName} />
+        )}
+        <AvatarFallback className="text-xs">{initials}</AvatarFallback>
+      </Avatar>
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-sm font-medium">{displayName}</p>
+        {member.user?.username && (
+          <p className="text-muted-foreground truncate text-xs">
+            @{member.user.username}
+          </p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// =============================================================================
+// Droppable Group Section
+// =============================================================================
+
+interface DroppableGroupProps {
+  groupId: string;
+  title: string;
+  description?: string;
+  members: StaffWithRole[];
+  canDrop: boolean;
+  canDrag: boolean;
+  colorClass?: string;
+  onRemoveMember?: (member: StaffWithRole) => void;
+}
+
+function DroppableGroup({
+  groupId,
+  title,
+  description,
+  members,
+  canDrop,
+  canDrag,
+  colorClass,
+  onRemoveMember,
+}: DroppableGroupProps) {
+  const { setNodeRef, isOver } = useDroppable({
+    id: groupId,
+    disabled: !canDrop,
+  });
+
+  return (
+    <Card
+      ref={setNodeRef}
+      className={cn(
+        "transition-all",
+        colorClass,
+        isOver && canDrop && "ring-primary ring-2 ring-offset-2",
+        !canDrop && "opacity-60"
+      )}
+    >
+      <CardHeader className="pb-3">
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle className="text-base">{title}</CardTitle>
+            {description && (
+              <p className="text-muted-foreground text-xs">{description}</p>
+            )}
+          </div>
+          <span className="text-muted-foreground text-sm">
+            {members.length} {members.length === 1 ? "member" : "members"}
+          </span>
+        </div>
+      </CardHeader>
+      <CardContent className="pt-0">
+        {members.length === 0 ? (
+          <div className="text-muted-foreground rounded-lg border-2 border-dashed py-6 text-center text-sm">
+            {canDrop ? "Drag staff here" : "No members"}
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {members.map((member) => (
+              <DraggableStaffCard
+                key={member.user_id}
+                member={member}
+                canDrag={canDrag}
+                onRemove={
+                  onRemoveMember ? () => onRemoveMember(member) : undefined
+                }
+              />
+            ))}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+// =============================================================================
+// Main Component
+// =============================================================================
+
 export function StaffListClient({
   organizationId,
   orgSlug,
@@ -85,15 +331,23 @@ export function StaffListClient({
   groups,
   isOwner,
   currentUserId,
+  currentUserRole,
 }: StaffListClientProps) {
   const router = useRouter();
   const [isInviteOpen, setIsInviteOpen] = useState(false);
-  const [changeRoleStaff, setChangeRoleStaff] = useState<StaffWithRole | null>(
-    null
-  );
   const [removeStaff, setRemoveStaff] = useState<StaffWithRole | null>(null);
+  const [activeStaff, setActiveStaff] = useState<StaffWithRole | null>(null);
+  const [isMoving, setIsMoving] = useState(false);
 
-  // Use server data initially, refetch on changes
+  // DnD sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: { distance: 8 },
+    }),
+    useSensor(KeyboardSensor)
+  );
+
+  // Fetch staff data
   const queryFn = useCallback(
     (supabase: Parameters<typeof listOrganizationStaffWithRoles>[0]) =>
       listOrganizationStaffWithRoles(supabase, organizationId),
@@ -106,13 +360,100 @@ export function StaffListClient({
     refetch,
   } = useSupabaseQuery(queryFn, [organizationId]);
 
-  // Use initial data while loading
   const staff = staffMembers ?? initialStaff;
+
+  // Group staff by their group assignment
+  const unassignedStaff = staff.filter((s) => !s.group && !s.isOwner);
+  const ownerStaff = staff.filter((s) => s.isOwner);
+
+  const staffByGroup = groups.reduce(
+    (acc, group) => {
+      acc[group.id] = staff.filter(
+        (s) => s.group?.id === group.id && !s.isOwner
+      );
+      return acc;
+    },
+    {} as Record<number, StaffWithRole[]>
+  );
 
   const handleSuccess = () => {
     refetch();
     router.refresh();
   };
+
+  const handleDragStart = (event: DragStartEvent) => {
+    const member = event.active.data.current?.member as
+      | StaffWithRole
+      | undefined;
+    setActiveStaff(member ?? null);
+  };
+
+  const handleDragEnd = async (event: DragEndEvent) => {
+    setActiveStaff(null);
+
+    const { active, over } = event;
+    if (!over || !active.data.current?.member) return;
+
+    const member = active.data.current.member as StaffWithRole;
+    const targetGroupId = over.id as string;
+
+    // Don't move if dropping on same group
+    const currentGroupId = member.group?.id?.toString() ?? UNASSIGNED_GROUP_ID;
+    if (currentGroupId === targetGroupId) return;
+
+    // Don't allow dropping to unassigned (for now)
+    if (targetGroupId === UNASSIGNED_GROUP_ID) {
+      toast.error("Cannot move staff to Unassigned. Remove them instead.");
+      return;
+    }
+
+    // Find the target group
+    const targetGroup = groups.find((g) => g.id.toString() === targetGroupId);
+    if (!targetGroup) return;
+
+    // Check permissions
+    const targetRole = targetGroup.role?.name ?? null;
+    if (!canManageGroup(currentUserRole ?? null, isOwner, targetRole)) {
+      toast.error("You don't have permission to assign staff to this group");
+      return;
+    }
+
+    setIsMoving(true);
+    try {
+      const result = await moveStaffToGroup(
+        organizationId,
+        member.user_id,
+        targetGroup.id,
+        orgSlug
+      );
+
+      if (result.success) {
+        toast.success(
+          `Moved ${getDisplayName(
+            member.user?.first_name ?? null,
+            member.user?.last_name ?? null,
+            member.user?.username ?? null
+          )} to ${targetGroup.name}`
+        );
+        handleSuccess();
+      } else {
+        toast.error(result.error);
+      }
+    } catch {
+      toast.error("Failed to move staff member");
+    } finally {
+      setIsMoving(false);
+    }
+  };
+
+  const handleDragCancel = () => {
+    setActiveStaff(null);
+  };
+
+  // Check if user can drag (has any management permissions)
+  const canDragAny =
+    isOwner ||
+    (currentUserRole && (ROLE_HIERARCHY[currentUserRole]?.length ?? 0) > 0);
 
   return (
     <div className="space-y-6">
@@ -121,7 +462,9 @@ export function StaffListClient({
         <div>
           <h2 className="text-2xl font-bold">Staff Management</h2>
           <p className="text-muted-foreground text-sm">
-            Manage your organization&apos;s staff and permissions
+            {canDragAny
+              ? "Drag and drop staff between groups to assign roles"
+              : "View your organization's staff"}
           </p>
         </div>
         {isOwner && (
@@ -132,26 +475,7 @@ export function StaffListClient({
         )}
       </div>
 
-      {/* Role Legend */}
-      <div className="flex flex-wrap gap-3">
-        {groups.map((group) => {
-          const roleConfig = group.role
-            ? roleLabels[group.role.name]
-            : undefined;
-          return (
-            <div key={group.id} className="flex items-center gap-2 text-sm">
-              <Badge className={roleConfig?.color ?? "bg-muted"}>
-                {group.name}
-              </Badge>
-              <span className="text-muted-foreground">
-                ({group.memberCount})
-              </span>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Staff List */}
+      {/* Loading State */}
       {isLoading && staff.length === 0 ? (
         <div className="flex min-h-[40vh] items-center justify-center">
           <Loader2 className="text-muted-foreground h-8 w-8 animate-spin" />
@@ -173,99 +497,81 @@ export function StaffListClient({
           </CardContent>
         </Card>
       ) : (
-        <Card>
-          <CardContent className="divide-y p-0">
-            {staff.map((member) => {
-              const displayName = getDisplayName(
-                member.user?.first_name ?? null,
-                member.user?.last_name ?? null,
-                member.user?.username ?? null
-              );
-              const initials = getInitials(
-                member.user?.first_name ?? null,
-                member.user?.last_name ?? null,
-                member.user?.username ?? null
-              );
-              const roleConfig = member.role
-                ? roleLabels[member.role.name]
-                : undefined;
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragStart={handleDragStart}
+          onDragEnd={handleDragEnd}
+          onDragCancel={handleDragCancel}
+        >
+          <div className="space-y-4">
+            {/* Owner Section (not droppable) */}
+            {ownerStaff.length > 0 && (
+              <Card className="border-yellow-200 bg-yellow-50 dark:border-yellow-900 dark:bg-yellow-950">
+                <CardHeader className="pb-3">
+                  <div className="flex items-center gap-2">
+                    <Crown className="h-4 w-4 text-yellow-500" />
+                    <CardTitle className="text-base">Owner</CardTitle>
+                  </div>
+                </CardHeader>
+                <CardContent className="pt-0">
+                  <div className="space-y-2">
+                    {ownerStaff.map((member) => (
+                      <DraggableStaffCard
+                        key={member.user_id}
+                        member={member}
+                        canDrag={false}
+                      />
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
-              const canModify =
-                isOwner && !member.isOwner && member.user_id !== currentUserId;
+            {/* Group Sections */}
+            {groups.map((group) => {
+              const targetRole = group.role?.name ?? null;
+              const canDropHere = canManageGroup(
+                currentUserRole ?? null,
+                isOwner,
+                targetRole
+              );
 
               return (
-                <div
-                  key={member.id}
-                  className="flex items-center justify-between p-4"
-                >
-                  <div className="flex items-center gap-3">
-                    <Avatar>
-                      {member.user?.image && (
-                        <AvatarImage
-                          src={member.user.image}
-                          alt={displayName}
-                        />
-                      )}
-                      <AvatarFallback>{initials}</AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <p className="font-medium">{displayName}</p>
-                        {member.isOwner && (
-                          <Crown className="h-4 w-4 text-yellow-500" />
-                        )}
-                      </div>
-                      {member.user?.username && (
-                        <p className="text-muted-foreground text-sm">
-                          @{member.user.username}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-3">
-                    {member.isOwner ? (
-                      <Badge variant="outline" className="gap-1">
-                        <Crown className="h-3 w-3" />
-                        Owner
-                      </Badge>
-                    ) : member.group ? (
-                      <Badge className={roleConfig?.color ?? "bg-muted"}>
-                        {member.group.name}
-                      </Badge>
-                    ) : (
-                      <Badge variant="outline">No Role</Badge>
-                    )}
-
-                    {canModify && (
-                      <DropdownMenu>
-                        <DropdownMenuTrigger className="focus-visible:ring-ring hover:bg-accent inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-md focus-visible:ring-1 focus-visible:outline-none">
-                          <MoreHorizontal className="h-4 w-4" />
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem
-                            onClick={() => setChangeRoleStaff(member)}
-                          >
-                            <Shield className="mr-2 h-4 w-4" />
-                            Change Role
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem
-                            className="text-destructive focus:text-destructive"
-                            onClick={() => setRemoveStaff(member)}
-                          >
-                            <UserMinus className="mr-2 h-4 w-4" />
-                            Remove
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    )}
-                  </div>
-                </div>
+                <DroppableGroup
+                  key={group.id}
+                  groupId={group.id.toString()}
+                  title={group.name}
+                  description={group.role?.description ?? undefined}
+                  members={staffByGroup[group.id] ?? []}
+                  canDrop={canDropHere && !isMoving}
+                  canDrag={!!canDragAny}
+                  colorClass={GROUP_COLORS[targetRole ?? ""] ?? ""}
+                  onRemoveMember={
+                    isOwner ? (m) => setRemoveStaff(m) : undefined
+                  }
+                />
               );
             })}
-          </CardContent>
-        </Card>
+
+            {/* Unassigned Section (at bottom) */}
+            <DroppableGroup
+              groupId={UNASSIGNED_GROUP_ID}
+              title="Unassigned"
+              description="New staff members appear here until assigned to a group"
+              members={unassignedStaff}
+              canDrop={false}
+              canDrag={!!canDragAny}
+              colorClass="border-dashed"
+              onRemoveMember={isOwner ? (m) => setRemoveStaff(m) : undefined}
+            />
+          </div>
+
+          {/* Drag Overlay */}
+          <DragOverlay>
+            {activeStaff ? <StaffCardOverlay member={activeStaff} /> : null}
+          </DragOverlay>
+        </DndContext>
       )}
 
       {/* Dialogs */}
@@ -274,21 +580,8 @@ export function StaffListClient({
         onOpenChange={setIsInviteOpen}
         organizationId={organizationId}
         orgSlug={orgSlug}
-        groups={groups}
         onSuccess={handleSuccess}
       />
-
-      {changeRoleStaff && (
-        <ChangeRoleDialog
-          open={!!changeRoleStaff}
-          onOpenChange={(open: boolean) => !open && setChangeRoleStaff(null)}
-          organizationId={organizationId}
-          orgSlug={orgSlug}
-          staff={changeRoleStaff}
-          groups={groups}
-          onSuccess={handleSuccess}
-        />
-      )}
 
       {removeStaff && (
         <RemoveStaffDialog

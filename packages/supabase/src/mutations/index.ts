@@ -22,6 +22,7 @@ export {
   leaveOrganization,
   removeStaff,
   // Staff group management
+  addStaffMember,
   addStaffToGroup,
   removeStaffFromGroup,
   changeStaffRole,

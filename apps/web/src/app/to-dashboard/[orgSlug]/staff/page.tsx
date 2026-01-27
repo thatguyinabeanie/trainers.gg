@@ -35,6 +35,12 @@ export default async function StaffPage({ params }: PageProps) {
     listOrganizationGroups(supabase, organization.id),
   ]);
 
+  // Get current user's role from staff list
+  const currentUserStaff = user
+    ? staffMembers.find((s) => s.user_id === user.id)
+    : null;
+  const currentUserRole = currentUserStaff?.role?.name ?? null;
+
   return (
     <StaffListClient
       organizationId={organization.id}
@@ -43,6 +49,7 @@ export default async function StaffPage({ params }: PageProps) {
       groups={groups}
       isOwner={isOwner}
       currentUserId={user?.id}
+      currentUserRole={currentUserRole}
     />
   );
 }

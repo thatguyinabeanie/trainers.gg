@@ -114,9 +114,9 @@ export function ChangeRoleDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Change Role</DialogTitle>
+          <DialogTitle>Change Group</DialogTitle>
           <DialogDescription>
-            Update the role for this staff member.
+            Move this staff member to a different group.
           </DialogDescription>
         </DialogHeader>
 
