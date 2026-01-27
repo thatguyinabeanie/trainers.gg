@@ -6,7 +6,7 @@ packages:
 catalog:
   "@supabase/ssr": ^0.8.0
   "@supabase/supabase-js": ^2.91.0
-  "@types/node": "catalog:"
+  "@types/node": ^22.19.7
   "@types/react": ^19.1.0
   "@types/react-dom": ^19.1.0
   eslint: ^9.39.2
