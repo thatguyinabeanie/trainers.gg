@@ -357,8 +357,16 @@ export function StaffListClient({
   const {
     data: staffMembers,
     isLoading,
+    error: queryError,
     refetch,
   } = useSupabaseQuery(queryFn, [organizationId]);
+
+  // Show error toast if query fails
+  useEffect(() => {
+    if (queryError) {
+      toast.error("Failed to load staff members. Please try refreshing.");
+    }
+  }, [queryError]);
 
   // Optimistic state for drag & drop
   // This stores temporary group assignments that haven't been confirmed by the server yet

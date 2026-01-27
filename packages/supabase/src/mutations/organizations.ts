@@ -15,6 +15,46 @@ async function getCurrentUser(supabase: TypedClient) {
 }
 
 /**
+ * Helper to check if user has a specific permission in an organization
+ */
+async function checkOrgPermission(
+  supabase: TypedClient,
+  organizationId: number,
+  permissionKey: string
+): Promise<boolean> {
+  const { data, error } = await supabase.rpc("has_org_permission", {
+    org_id: organizationId,
+    permission_key: permissionKey,
+  });
+
+  if (error) {
+    console.error("Error checking permission:", error);
+    return false;
+  }
+
+  return data === true;
+}
+
+/**
+ * Helper to check if current user is org owner
+ */
+async function isOrgOwner(
+  supabase: TypedClient,
+  organizationId: number
+): Promise<boolean> {
+  const currentUser = await getCurrentUser(supabase);
+  if (!currentUser) return false;
+
+  const { data: org } = await supabase
+    .from("organizations")
+    .select("owner_user_id")
+    .eq("id", organizationId)
+    .single();
+
+  return org?.owner_user_id === currentUser.id;
+}
+
+/**
  * Helper to get current alt
  */
 async function getCurrentAlt(supabase: TypedClient) {
@@ -350,6 +390,17 @@ export async function addStaffMember(
   const currentUser = await getCurrentUser(supabase);
   if (!currentUser) throw new Error("Not authenticated");
 
+  // Verify permission: must be org owner or have org.staff.manage permission
+  const ownerCheck = await isOrgOwner(supabase, organizationId);
+  const permCheck = await checkOrgPermission(
+    supabase,
+    organizationId,
+    "org.staff.manage"
+  );
+  if (!ownerCheck && !permCheck) {
+    throw new Error("You don't have permission to manage staff");
+  }
+
   // Check if user is already staff
   const { data: existingStaff } = await supabase
     .from("organization_staff")
@@ -386,6 +437,17 @@ export async function addStaffToGroup(
 ) {
   const currentUser = await getCurrentUser(supabase);
   if (!currentUser) throw new Error("Not authenticated");
+
+  // Verify permission: must be org owner or have org.staff.manage permission
+  const ownerCheck = await isOrgOwner(supabase, organizationId);
+  const permCheck = await checkOrgPermission(
+    supabase,
+    organizationId,
+    "org.staff.manage"
+  );
+  if (!ownerCheck && !permCheck) {
+    throw new Error("You don't have permission to manage staff");
+  }
 
   // Verify the group belongs to this organization
   const { data: group } = await supabase
@@ -474,6 +536,17 @@ export async function removeStaffFromGroup(
   const currentUser = await getCurrentUser(supabase);
   if (!currentUser) throw new Error("Not authenticated");
 
+  // Verify permission: must be org owner or have org.staff.manage permission
+  const ownerCheck = await isOrgOwner(supabase, organizationId);
+  const permCheck = await checkOrgPermission(
+    supabase,
+    organizationId,
+    "org.staff.manage"
+  );
+  if (!ownerCheck && !permCheck) {
+    throw new Error("You don't have permission to manage staff");
+  }
+
   // Get all groups for this organization
   const { data: orgGroups } = await supabase
     .from("groups")
@@ -520,6 +593,17 @@ export async function changeStaffRole(
   const currentUser = await getCurrentUser(supabase);
   if (!currentUser) throw new Error("Not authenticated");
 
+  // Verify permission: must be org owner or have org.staff.manage permission
+  const ownerCheck = await isOrgOwner(supabase, organizationId);
+  const permCheck = await checkOrgPermission(
+    supabase,
+    organizationId,
+    "org.staff.manage"
+  );
+  if (!ownerCheck && !permCheck) {
+    throw new Error("You don't have permission to manage staff");
+  }
+
   // Verify the target user is not the org owner
   const { data: org } = await supabase
     .from("organizations")
@@ -546,6 +630,17 @@ export async function removeStaffCompletely(
 ) {
   const currentUser = await getCurrentUser(supabase);
   if (!currentUser) throw new Error("Not authenticated");
+
+  // Verify permission: must be org owner or have org.staff.manage permission
+  const ownerCheck = await isOrgOwner(supabase, organizationId);
+  const permCheck = await checkOrgPermission(
+    supabase,
+    organizationId,
+    "org.staff.manage"
+  );
+  if (!ownerCheck && !permCheck) {
+    throw new Error("You don't have permission to manage staff");
+  }
 
   // Verify not removing the owner
   const { data: org } = await supabase

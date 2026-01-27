@@ -926,7 +926,7 @@ export async function searchUsersForInvite(
 
   // Exclude existing staff/owner
   if (existingUserIds.length > 0) {
-    query = query.not("id", "in", `(${existingUserIds.join(",")})`);
+    query = query.not("id", "in", existingUserIds);
   }
 
   const { data: users, error } = await query;
