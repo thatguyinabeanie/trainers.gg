@@ -45,6 +45,7 @@
     "lint-staged": "^16.2.7",
     "prettier": "catalog:",
     "prettier-plugin-tailwindcss": "^0.6.9",
+    "supabase": "^2.72.8",
     "turbo": "^2.7.6",
     "typescript": "catalog:"
   },
