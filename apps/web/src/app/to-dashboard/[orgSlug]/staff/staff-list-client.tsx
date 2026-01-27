@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import {
@@ -360,7 +360,39 @@ export function StaffListClient({
     refetch,
   } = useSupabaseQuery(queryFn, [organizationId]);
 
-  const staff = staffMembers ?? initialStaff;
+  // Optimistic state for drag & drop
+  // This stores temporary group assignments that haven't been confirmed by the server yet
+  const [optimisticMoves, setOptimisticMoves] = useState<
+    Map<string, { groupId: number; group: OrganizationGroup }>
+  >(new Map());
+
+  // Clear optimistic moves when staffMembers updates (server confirmed the change)
+  useEffect(() => {
+    if (staffMembers) {
+      setOptimisticMoves(new Map());
+    }
+  }, [staffMembers]);
+
+  // Apply optimistic moves to staff data
+  const staff = useMemo(() => {
+    const baseStaff = staffMembers ?? initialStaff;
+    if (optimisticMoves.size === 0) return baseStaff;
+
+    return baseStaff.map((member) => {
+      const optimisticMove = optimisticMoves.get(member.user_id);
+      if (optimisticMove) {
+        return {
+          ...member,
+          group: {
+            id: optimisticMove.group.id,
+            name: optimisticMove.group.name,
+            role: optimisticMove.group.role,
+          },
+        };
+      }
+      return member;
+    });
+  }, [staffMembers, initialStaff, optimisticMoves]);
 
   // Group staff by their group assignment
   const unassignedStaff = staff.filter((s) => !s.group && !s.isOwner);
@@ -418,6 +450,13 @@ export function StaffListClient({
       return;
     }
 
+    // Apply optimistic update immediately
+    setOptimisticMoves((prev) => {
+      const next = new Map(prev);
+      next.set(member.user_id, { groupId: targetGroup.id, group: targetGroup });
+      return next;
+    });
+
     setIsMoving(true);
     try {
       const result = await moveStaffToGroup(
@@ -437,9 +476,21 @@ export function StaffListClient({
         );
         handleSuccess();
       } else {
+        // Revert optimistic update on error
+        setOptimisticMoves((prev) => {
+          const next = new Map(prev);
+          next.delete(member.user_id);
+          return next;
+        });
         toast.error(result.error);
       }
     } catch {
+      // Revert optimistic update on error
+      setOptimisticMoves((prev) => {
+        const next = new Map(prev);
+        next.delete(member.user_id);
+        return next;
+      });
       toast.error("Failed to move staff member");
     } finally {
       setIsMoving(false);
