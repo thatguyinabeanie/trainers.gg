@@ -42,7 +42,9 @@ interface ProvisionPdsResponse {
     | "ALREADY_PROVISIONED"
     | "UNAUTHORIZED"
     | "INVALID_USERNAME"
-    | "PDS_NOT_CONFIGURED";
+    | "PDS_NOT_CONFIGURED"
+    | "DB_UPDATE_FAILED"
+    | "VAULT_STORAGE_FAILED";
 }
 
 Deno.serve(async (req) => {
@@ -174,6 +176,12 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Allow retry for failed PDS provisioning
+    // Users with pds_status = 'failed' can attempt to provision again
+    if (userData.pds_status === "failed") {
+      console.log(`Retrying PDS provisioning for user ${user.id}`);
+    }
+
     // Check if external (Bluesky OAuth user)
     if (userData.pds_status === "external") {
       return new Response(
@@ -265,8 +273,8 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Store password in Vault
-    // Using RPC call to vault.create_secret
+    // Store password in Vault FIRST (before marking success)
+    // This is critical - without the password, the user is locked out of their PDS
     const secretName = `pds_password_${user.id}`;
     const { error: vaultError } = await supabaseAdmin.rpc(
       "vault_create_secret",
@@ -278,11 +286,26 @@ Deno.serve(async (req) => {
     );
 
     if (vaultError) {
-      // Log but don't fail - the account is created, password storage is secondary
+      // CRITICAL: Password storage failed - user will be locked out of PDS
+      // Return error so the client can handle this (e.g., show support contact)
       console.error("Failed to store password in vault:", vaultError);
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error:
+            "PDS account was created but password storage failed. Please contact support.",
+          code: "VAULT_STORAGE_FAILED",
+          did: pdsResult.did, // Include DID for support reference
+        } satisfies ProvisionPdsResponse),
+        {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
     }
 
     // Update user record with DID and pds_status
+    // This must succeed for onboarding to complete
     const { error: updateError } = await supabaseAdmin
       .from("users")
       .update({
@@ -293,8 +316,29 @@ Deno.serve(async (req) => {
       .eq("id", user.id);
 
     if (updateError) {
+      // CRITICAL: DB update failed - PDS account exists but user record is stale
+      // Set pds_status to 'failed' so user can retry
       console.error("Failed to update user with DID:", updateError);
-      // The PDS account exists, so we return success but log the error
+
+      // Try to mark as failed so user can retry
+      await supabaseAdmin
+        .from("users")
+        .update({ pds_status: "failed" })
+        .eq("id", user.id);
+
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error:
+            "PDS account was created but database update failed. Please try again.",
+          code: "DB_UPDATE_FAILED",
+          did: pdsResult.did, // Include DID for support reference
+        } satisfies ProvisionPdsResponse),
+        {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
     }
 
     return new Response(

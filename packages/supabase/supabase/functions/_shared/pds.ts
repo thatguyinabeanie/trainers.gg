@@ -13,6 +13,31 @@ const PDS_HANDLE_DOMAIN =
     ? new URL(PDS_HOST).hostname
     : "trainers.gg");
 
+// Timeout for PDS API calls (10 seconds)
+const PDS_FETCH_TIMEOUT_MS = 10_000;
+
+/**
+ * Create a fetch request with timeout
+ */
+async function fetchWithTimeout(
+  url: string,
+  options: RequestInit,
+  timeoutMs: number = PDS_FETCH_TIMEOUT_MS
+): Promise<Response> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    const response = await fetch(url, {
+      ...options,
+      signal: controller.signal,
+    });
+    return response;
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
 /**
  * Create an invite code on the PDS (required for account creation)
  */
@@ -23,7 +48,7 @@ export async function createPdsInviteCode(): Promise<string | null> {
   }
 
   try {
-    const response = await fetch(
+    const response = await fetchWithTimeout(
       `${PDS_HOST}/xrpc/com.atproto.server.createInviteCode`,
       {
         method: "POST",
@@ -44,7 +69,11 @@ export async function createPdsInviteCode(): Promise<string | null> {
     const data = await response.json();
     return data.code;
   } catch (error) {
-    console.error("Error creating invite code:", error);
+    if (error instanceof DOMException && error.name === "AbortError") {
+      console.error("PDS invite code request timed out");
+    } else {
+      console.error("Error creating invite code:", error);
+    }
     return null;
   }
 }
@@ -59,7 +88,7 @@ export async function createPdsAccount(
   inviteCode: string
 ): Promise<{ did: string } | { error: string }> {
   try {
-    const response = await fetch(
+    const response = await fetchWithTimeout(
       `${PDS_HOST}/xrpc/com.atproto.server.createAccount`,
       {
         method: "POST",
@@ -83,6 +112,10 @@ export async function createPdsAccount(
 
     return { did: data.did };
   } catch (error) {
+    if (error instanceof DOMException && error.name === "AbortError") {
+      console.error("PDS account creation request timed out");
+      return { error: "PDS request timed out" };
+    }
     console.error("Error creating PDS account:", error);
     return { error: "Failed to connect to PDS" };
   }
@@ -95,8 +128,9 @@ export async function checkPdsHandleAvailable(
   handle: string
 ): Promise<boolean> {
   try {
-    const response = await fetch(
-      `${PDS_HOST}/xrpc/com.atproto.identity.resolveHandle?handle=${encodeURIComponent(handle)}`
+    const response = await fetchWithTimeout(
+      `${PDS_HOST}/xrpc/com.atproto.identity.resolveHandle?handle=${encodeURIComponent(handle)}`,
+      { method: "GET" }
     );
 
     // 400 with "Unable to resolve handle" means it's available
@@ -106,8 +140,11 @@ export async function checkPdsHandleAvailable(
 
     // 200 means handle exists (not available)
     return false;
-  } catch {
-    // Network error - assume available but will fail at creation
+  } catch (error) {
+    if (error instanceof DOMException && error.name === "AbortError") {
+      console.error("PDS handle check request timed out");
+    }
+    // Network error or timeout - assume available but will fail at creation
     return true;
   }
 }

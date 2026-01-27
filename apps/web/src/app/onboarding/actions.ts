@@ -151,8 +151,15 @@ export async function completeProfile(data: {
 
     const pdsStatus = userData.pds_status as string | null;
 
-    // If user has pending PDS status (Social OAuth), provision their PDS account
-    if (pdsStatus === "pending" || pdsStatus === null) {
+    // If user has pending or failed PDS status, provision their PDS account
+    // - pending: Social OAuth users who haven't completed onboarding yet
+    // - failed: Previous PDS provisioning attempt failed, allow retry
+    // - null: Legacy users who need PDS accounts
+    if (
+      pdsStatus === "pending" ||
+      pdsStatus === "failed" ||
+      pdsStatus === null
+    ) {
       // Get the access token for the edge function call
       const {
         data: { session },
