@@ -98,8 +98,8 @@ export const SEED_CONFIG = {
   // Tournament timeline (relative to current date at seed time)
   // Past tournaments have matches, results, and standings
   // Future tournaments have registrations but no matches yet
-  WEEKS_OF_PAST_TOURNAMENTS: 8,
-  WEEKS_OF_FUTURE_TOURNAMENTS: 4,
+  WEEKS_OF_PAST_TOURNAMENTS: 10,
+  WEEKS_OF_FUTURE_TOURNAMENTS: 1,
 
   // Each org runs 2 tournaments per week (main + practice)
   TOURNAMENTS_PER_WEEK_PER_ORG: 2,

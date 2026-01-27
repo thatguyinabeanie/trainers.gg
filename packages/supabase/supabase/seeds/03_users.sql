@@ -2,7 +2,7 @@
 -- 03_users.sql - Create Test Users
 -- =============================================================================
 -- GENERATED FILE - DO NOT EDIT MANUALLY
--- Generated at: 2026-01-27T03:43:58.927Z
+-- Generated at: 2026-01-27T03:56:04.310Z
 -- IDEMPOTENT: Uses ON CONFLICT and existence checks
 -- =============================================================================
 

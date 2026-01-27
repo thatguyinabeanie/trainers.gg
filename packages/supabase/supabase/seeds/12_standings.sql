@@ -2,13 +2,13 @@
 -- 12_standings.sql - Create Tournament Standings
 -- =============================================================================
 -- GENERATED FILE - DO NOT EDIT MANUALLY
--- Generated at: 2026-01-27T03:43:58.959Z
+-- Generated at: 2026-01-27T03:56:04.348Z
 -- IDEMPOTENT: Uses ON CONFLICT and existence checks
 -- =============================================================================
 
 -- IDEMPOTENT: Uses ON CONFLICT DO NOTHING
 -- Depends on: 11_matches.sql
--- Generated: 5154 standings entries
+-- Generated: 5344 standings entries
 -- =============================================================================
 
 DO $$
@@ -5256,7 +5256,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'wilhelmmccullough77'),
-      7,
+      8,
       12,
       8,
       2,
@@ -5273,7 +5273,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'waynegorczany73'),
-      7,
+      8,
       9,
       7,
       3,
@@ -5290,7 +5290,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'unselfish_trainer_12'),
-      7,
+      8,
       9,
       7,
       4,
@@ -5307,7 +5307,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'ash_ketchum'),
-      7,
+      8,
       9,
       6,
       2,
@@ -5324,7 +5324,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'frivolous_master'),
-      7,
+      8,
       9,
       6,
       2,
@@ -5341,7 +5341,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'trentheaney20'),
-      7,
+      8,
       6,
       5,
       5,
@@ -5358,7 +5358,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'pitiful_elite'),
-      7,
+      8,
       6,
       4,
       5,
@@ -5375,7 +5375,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'lucy_reilly'),
-      7,
+      8,
       6,
       6,
       5,
@@ -5392,7 +5392,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'shanelfeeney90'),
-      7,
+      8,
       6,
       4,
       6,
@@ -5409,7 +5409,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'slushy_trainer_459'),
-      7,
+      8,
       6,
       6,
       4,
@@ -5426,7 +5426,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'domenic_jast43'),
-      7,
+      8,
       6,
       5,
       5,
@@ -5443,7 +5443,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'red'),
-      7,
+      8,
       3,
       2,
       6,
@@ -5460,7 +5460,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'heavy_trainer_256'),
-      7,
+      8,
       3,
       3,
       6,
@@ -5477,7 +5477,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'sorrowful_trainer_13'),
-      7,
+      8,
       3,
       2,
       7,
@@ -5494,7 +5494,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'jessicaleannon22'),
-      7,
+      8,
       3,
       3,
       6,
@@ -5511,7 +5511,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'lonny_bechtelar49'),
-      7,
+      8,
       0,
       2,
       8,
@@ -15552,7 +15552,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'novakuhic68'),
-      7,
+      8,
       15,
       10,
       5,
@@ -15569,7 +15569,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'sigrid67'),
-      7,
+      8,
       12,
       9,
       3,
@@ -15586,7 +15586,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'happy_trainer_400'),
-      7,
+      8,
       9,
       7,
       3,
@@ -15603,7 +15603,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'lenore_schulist95'),
-      7,
+      8,
       9,
       6,
       4,
@@ -15620,7 +15620,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'filthy_trainer_361'),
-      7,
+      8,
       6,
       5,
       4,
@@ -15637,7 +15637,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'chaunceyjohnson55'),
-      7,
+      8,
       6,
       4,
       3,
@@ -15654,7 +15654,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'shanelfeeney90'),
-      7,
+      8,
       6,
       5,
       2,
@@ -15671,7 +15671,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'garett_bergnaum'),
-      7,
+      8,
       6,
       4,
       3,
@@ -15688,7 +15688,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'jackiebins45'),
-      7,
+      8,
       3,
       3,
       3,
@@ -15705,7 +15705,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'recent_trainer_469'),
-      7,
+      8,
       3,
       2,
       3,
@@ -15722,7 +15722,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'early_master'),
-      7,
+      8,
       3,
       3,
       2,
@@ -15739,7 +15739,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'oleflatley25'),
-      7,
+      8,
       3,
       2,
       2,
@@ -15756,7 +15756,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'taut_leader'),
-      7,
+      8,
       3,
       3,
       2,
@@ -15773,7 +15773,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'sophieorn25'),
-      7,
+      8,
       3,
       2,
       2,
@@ -15790,7 +15790,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'bad_trainer_106'),
-      7,
+      8,
       3,
       2,
       2,
@@ -15807,7 +15807,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'nervous_trainer'),
-      7,
+      8,
       3,
       2,
       3,
@@ -15824,7 +15824,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'ronny_koss27'),
-      7,
+      8,
       0,
       1,
       2,
@@ -15841,7 +15841,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'defensive_champion'),
-      7,
+      8,
       0,
       1,
       2,
@@ -15858,7 +15858,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'pastel_gym'),
-      7,
+      8,
       0,
       1,
       2,
@@ -15875,7 +15875,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'substantial_trainer_'),
-      7,
+      8,
       0,
       0,
       2,
@@ -15892,7 +15892,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'katrina16'),
-      7,
+      8,
       0,
       1,
       2,
@@ -15909,7 +15909,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'marianamitchell71'),
-      7,
+      8,
       0,
       1,
       2,
@@ -15926,7 +15926,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'ella_ratke'),
-      7,
+      8,
       0,
       1,
       2,
@@ -15943,7 +15943,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'abelardo_konopelski'),
-      7,
+      8,
       0,
       0,
       2,
@@ -15960,7 +15960,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'sorrowful_trainer_13'),
-      7,
+      8,
       0,
       1,
       2,
@@ -15977,7 +15977,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'fake_ace'),
-      7,
+      8,
       0,
       1,
       2,
@@ -15994,7 +15994,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'norene68'),
-      7,
+      8,
       0,
       1,
       2,
@@ -16011,7 +16011,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'valentinemiller24'),
-      7,
+      8,
       0,
       0,
       2,
@@ -16028,7 +16028,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'insistent_ranger'),
-      7,
+      8,
       0,
       0,
       2,
@@ -16045,7 +16045,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'lee51'),
-      7,
+      8,
       0,
       0,
       2,
@@ -16062,7 +16062,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'blank_trainer_642'),
-      7,
+      8,
       0,
       0,
       2,
@@ -16079,7 +16079,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'malvinamitchell24'),
-      7,
+      8,
       0,
       0,
       2,
@@ -16102,7 +16102,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'reidstamm21'),
-      7,
+      8,
       24,
       16,
       5,
@@ -16119,7 +16119,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'colorless_trainer_93'),
-      7,
+      8,
       21,
       15,
       7,
@@ -16136,7 +16136,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'opheliadicki91'),
-      7,
+      8,
       18,
       13,
       5,
@@ -16153,7 +16153,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'marquis78'),
-      7,
+      8,
       15,
       12,
       7,
@@ -16170,7 +16170,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'corrupt_trainer'),
-      7,
+      8,
       18,
       13,
       6,
@@ -16187,7 +16187,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'quick_trainer_532'),
-      7,
+      8,
       15,
       11,
       5,
@@ -16204,7 +16204,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'taut_leader'),
-      7,
+      8,
       15,
       11,
       5,
@@ -16221,7 +16221,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'marilyne_bogan7'),
-      7,
+      8,
       15,
       11,
       6,
@@ -16238,7 +16238,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'viviane_rempel'),
-      7,
+      8,
       12,
       9,
       5,
@@ -16255,7 +16255,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'smooth_trainer_36'),
-      7,
+      8,
       12,
       8,
       6,
@@ -16272,7 +16272,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'insistent_ranger'),
-      7,
+      8,
       12,
       9,
       6,
@@ -16289,7 +16289,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'violent_trainer_345'),
-      7,
+      8,
       12,
       8,
       6,
@@ -16306,7 +16306,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'easy_trainer_738'),
-      7,
+      8,
       12,
       8,
       5,
@@ -16323,7 +16323,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'jayson63'),
-      7,
+      8,
       12,
       8,
       5,
@@ -16340,7 +16340,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'myrtice66'),
-      7,
+      8,
       12,
       8,
       5,
@@ -16357,7 +16357,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'delores_orn44'),
-      7,
+      8,
       12,
       9,
       6,
@@ -16374,7 +16374,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'charlotteschoen99'),
-      7,
+      8,
       12,
       9,
       7,
@@ -16391,7 +16391,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'beloved_leader'),
-      7,
+      8,
       12,
       9,
       6,
@@ -16408,7 +16408,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'alyson_stiedemann'),
-      7,
+      8,
       12,
       9,
       5,
@@ -16425,7 +16425,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'candid_breeder'),
-      7,
+      8,
       12,
       9,
       6,
@@ -16442,7 +16442,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'delectable_trainer_3'),
-      7,
+      8,
       12,
       8,
       6,
@@ -16459,7 +16459,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'chaunceyjohnson55'),
-      7,
+      8,
       12,
       8,
       6,
@@ -16476,7 +16476,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'ashtyn_vonrueden'),
-      7,
+      8,
       12,
       9,
       4,
@@ -16493,7 +16493,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'shy_ace'),
-      7,
+      8,
       9,
       7,
       6,
@@ -16510,7 +16510,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'aged_trainer_120'),
-      7,
+      8,
       9,
       7,
       7,
@@ -16527,7 +16527,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'colby_roberts52'),
-      7,
+      8,
       9,
       6,
       7,
@@ -16544,7 +16544,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'godfreyjenkins91'),
-      7,
+      8,
       9,
       8,
       7,
@@ -16561,7 +16561,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'soupy_breeder'),
-      7,
+      8,
       9,
       7,
       8,
@@ -16578,7 +16578,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'monica_crist_fahey79'),
-      7,
+      8,
       9,
       7,
       6,
@@ -16595,7 +16595,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'ashton_kshlerin'),
-      7,
+      8,
       9,
       7,
       6,
@@ -16612,7 +16612,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'major_breeder'),
-      7,
+      8,
       9,
       7,
       8,
@@ -16629,7 +16629,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'sincere98'),
-      7,
+      8,
       9,
       6,
       8,
@@ -16646,7 +16646,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'clint_denesik'),
-      7,
+      8,
       9,
       7,
       8,
@@ -16663,7 +16663,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'artfritsch16'),
-      7,
+      8,
       9,
       8,
       8,
@@ -16680,7 +16680,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'nolanlangosh54'),
-      7,
+      8,
       9,
       6,
       9,
@@ -16697,7 +16697,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'nettie_hermiston'),
-      7,
+      8,
       9,
       7,
       8,
@@ -16714,7 +16714,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'price45'),
-      7,
+      8,
       9,
       8,
       8,
@@ -16731,7 +16731,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'nella_russel'),
-      7,
+      8,
       9,
       6,
       8,
@@ -16748,7 +16748,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'felicia62'),
-      7,
+      8,
       9,
       8,
       7,
@@ -16765,7 +16765,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'enlightened_trainer_'),
-      7,
+      8,
       9,
       8,
       8,
@@ -16782,7 +16782,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'twin_trainer_704'),
-      7,
+      8,
       9,
       7,
       6,
@@ -16799,7 +16799,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'leta_kunde1'),
-      7,
+      8,
       9,
       6,
       7,
@@ -16816,7 +16816,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'defensive_champion'),
-      7,
+      8,
       6,
       7,
       9,
@@ -16833,7 +16833,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'jackiebins45'),
-      7,
+      8,
       6,
       7,
       9,
@@ -16850,7 +16850,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'emmittdubuque80'),
-      7,
+      8,
       6,
       6,
       8,
@@ -16867,7 +16867,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'sophieorn25'),
-      7,
+      8,
       6,
       5,
       9,
@@ -16884,7 +16884,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'kenna_beahan'),
-      7,
+      8,
       6,
       7,
       9,
@@ -16901,7 +16901,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'qualified_trainer_61'),
-      7,
+      8,
       6,
       6,
       8,
@@ -16918,7 +16918,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'thrifty_trainer_14'),
-      7,
+      8,
       6,
       6,
       9,
@@ -16935,7 +16935,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'cooperative_trainer_'),
-      7,
+      8,
       6,
       5,
       8,
@@ -16952,7 +16952,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'bart74'),
-      7,
+      8,
       6,
       7,
       8,
@@ -16969,7 +16969,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'aliviashields97'),
-      7,
+      8,
       6,
       6,
       8,
@@ -16986,7 +16986,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'arnoldo81'),
-      7,
+      8,
       6,
       5,
       8,
@@ -17003,7 +17003,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'diamond_kunze75'),
-      7,
+      8,
       6,
       4,
       10,
@@ -17020,7 +17020,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'lucius41'),
-      7,
+      8,
       6,
       5,
       9,
@@ -17037,7 +17037,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'estell85'),
-      7,
+      8,
       6,
       7,
       9,
@@ -17054,7 +17054,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'fake_ace'),
-      7,
+      8,
       3,
       3,
       10,
@@ -17071,7 +17071,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'overcooked_trainer_5'),
-      7,
+      8,
       3,
       4,
       10,
@@ -17088,7 +17088,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'winifred46'),
-      7,
+      8,
       3,
       3,
       10,
@@ -17105,7 +17105,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'vincent_hickle19'),
-      7,
+      8,
       3,
       5,
       10,
@@ -17122,7 +17122,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'price_fay82'),
-      7,
+      8,
       3,
       2,
       10,
@@ -17139,7 +17139,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'malvinamitchell24'),
-      7,
+      8,
       3,
       5,
       10,
@@ -17156,7 +17156,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'ripe_trainer_294'),
-      7,
+      8,
       3,
       3,
       10,
@@ -17173,7 +17173,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'jazmyne80'),
-      7,
+      8,
       0,
       2,
       12,
@@ -32838,7 +32838,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'treverhartmann73'),
-      7,
+      8,
       30,
       20,
       5,
@@ -32855,7 +32855,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'krystina_beatty85'),
-      7,
+      8,
       27,
       19,
       9,
@@ -32872,7 +32872,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'aliviashields97'),
-      7,
+      8,
       24,
       16,
       6,
@@ -32889,7 +32889,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'fuzzy_pro'),
-      7,
+      8,
       24,
       16,
       7,
@@ -32906,7 +32906,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'jeffryyost15'),
-      7,
+      8,
       24,
       16,
       4,
@@ -32923,7 +32923,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'jayson63'),
-      7,
+      8,
       21,
       16,
       7,
@@ -32940,7 +32940,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'shaylee16'),
-      7,
+      8,
       21,
       15,
       7,
@@ -32957,7 +32957,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'weekly_trainer_641'),
-      7,
+      8,
       21,
       14,
       6,
@@ -32974,7 +32974,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'major_breeder'),
-      7,
+      8,
       21,
       14,
       3,
@@ -32991,7 +32991,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'ashleylueilwitz37'),
-      7,
+      8,
       18,
       13,
       6,
@@ -33008,7 +33008,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'kasey_jacobi99'),
-      7,
+      8,
       18,
       12,
       7,
@@ -33025,7 +33025,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'myrtice66'),
-      7,
+      8,
       18,
       12,
       8,
@@ -33042,7 +33042,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'hildegard_predovic'),
-      7,
+      8,
       18,
       13,
       7,
@@ -33059,7 +33059,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'jaydeemard34'),
-      7,
+      8,
       18,
       13,
       5,
@@ -33076,7 +33076,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'overcooked_ranger'),
-      7,
+      8,
       18,
       13,
       7,
@@ -33093,7 +33093,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'incomplete_trainer_6'),
-      7,
+      8,
       18,
       12,
       7,
@@ -33110,7 +33110,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'vidaboyle57'),
-      7,
+      8,
       18,
       13,
       8,
@@ -33127,7 +33127,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'janellebradtke25'),
-      7,
+      8,
       18,
       13,
       6,
@@ -33144,7 +33144,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'chaunceyjohnson55'),
-      7,
+      8,
       18,
       14,
       5,
@@ -33161,7 +33161,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'marianna_stokes'),
-      7,
+      8,
       18,
       13,
       7,
@@ -33178,7 +33178,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'scottie17'),
-      7,
+      8,
       18,
       13,
       7,
@@ -33195,7 +33195,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'short_term_elite'),
-      7,
+      8,
       18,
       14,
       5,
@@ -33212,7 +33212,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'dariusschneider93'),
-      7,
+      8,
       18,
       12,
       6,
@@ -33229,7 +33229,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'cyrilfriesen33'),
-      7,
+      8,
       18,
       13,
       6,
@@ -33246,7 +33246,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'ripe_trainer_294'),
-      7,
+      8,
       18,
       13,
       6,
@@ -33263,7 +33263,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'adela1'),
-      7,
+      8,
       18,
       12,
       7,
@@ -33280,7 +33280,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'fortunate_champion'),
-      7,
+      8,
       18,
       14,
       5,
@@ -33297,7 +33297,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'ettie_abbott24'),
-      7,
+      8,
       18,
       14,
       7,
@@ -33314,7 +33314,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'laurettayundt22'),
-      7,
+      8,
       18,
       13,
       6,
@@ -33331,7 +33331,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'hope_cummerata20'),
-      7,
+      8,
       18,
       14,
       7,
@@ -33348,7 +33348,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'soupy_breeder'),
-      7,
+      8,
       18,
       13,
       6,
@@ -33365,7 +33365,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'wilhelmmccullough77'),
-      7,
+      8,
       18,
       12,
       7,
@@ -33382,7 +33382,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'slushy_trainer_459'),
-      7,
+      8,
       18,
       13,
       7,
@@ -33399,7 +33399,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'ella_ratke'),
-      7,
+      8,
       18,
       13,
       7,
@@ -33416,7 +33416,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'liquid_ace'),
-      7,
+      8,
       18,
       12,
       7,
@@ -33433,7 +33433,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'houston_walter'),
-      7,
+      8,
       18,
       13,
       6,
@@ -33450,7 +33450,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'sorrowful_trainer_13'),
-      7,
+      8,
       18,
       12,
       7,
@@ -33467,7 +33467,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'tressa72'),
-      7,
+      8,
       15,
       10,
       8,
@@ -33484,7 +33484,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'runny_champion'),
-      7,
+      8,
       15,
       10,
       7,
@@ -33501,7 +33501,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'noted_gym'),
-      7,
+      8,
       15,
       13,
       10,
@@ -33518,7 +33518,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'flaviedare76'),
-      7,
+      8,
       15,
       11,
       8,
@@ -33535,7 +33535,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'gaston_funk5'),
-      7,
+      8,
       15,
       10,
       10,
@@ -33552,7 +33552,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'laurynbalistreri76'),
-      7,
+      8,
       15,
       10,
       7,
@@ -33569,7 +33569,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'chad_friesen'),
-      7,
+      8,
       15,
       11,
       8,
@@ -33586,7 +33586,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'arturofahey55'),
-      7,
+      8,
       15,
       10,
       10,
@@ -33603,7 +33603,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'phony_leader'),
-      7,
+      8,
       15,
       12,
       8,
@@ -33620,7 +33620,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'impossible_trainer_9'),
-      7,
+      8,
       15,
       12,
       9,
@@ -33637,7 +33637,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'marianamitchell71'),
-      7,
+      8,
       15,
       12,
       9,
@@ -33654,7 +33654,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'sick_trainer'),
-      7,
+      8,
       15,
       11,
       8,
@@ -33671,7 +33671,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'gummy_pro'),
-      7,
+      8,
       15,
       11,
       10,
@@ -33688,7 +33688,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'kelli_buckridge72'),
-      7,
+      8,
       15,
       11,
       6,
@@ -33705,7 +33705,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'blanca13'),
-      7,
+      8,
       15,
       11,
       7,
@@ -33722,7 +33722,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'happy_trainer_413'),
-      7,
+      8,
       15,
       11,
       8,
@@ -33739,7 +33739,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'those_trainer_198'),
-      7,
+      8,
       15,
       10,
       8,
@@ -33756,7 +33756,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'drab_trainer_487'),
-      7,
+      8,
       15,
       10,
       8,
@@ -33773,7 +33773,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'lenore_schulist95'),
-      7,
+      8,
       15,
       11,
       9,
@@ -33790,7 +33790,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'mariannamacejkovic76'),
-      7,
+      8,
       15,
       10,
       6,
@@ -33807,7 +33807,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'neat_ace'),
-      7,
+      8,
       15,
       12,
       7,
@@ -33824,7 +33824,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'lance'),
-      7,
+      8,
       15,
       11,
       7,
@@ -33841,7 +33841,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'big_gym'),
-      7,
+      8,
       15,
       12,
       7,
@@ -33858,7 +33858,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'willing_trainer_39'),
-      7,
+      8,
       15,
       12,
       7,
@@ -33875,7 +33875,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'eryn_stracke_hand41'),
-      7,
+      8,
       15,
       12,
       8,
@@ -33892,7 +33892,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'bustling_elite'),
-      7,
+      8,
       15,
       12,
       8,
@@ -33909,7 +33909,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'oleflatley25'),
-      7,
+      8,
       15,
       11,
       8,
@@ -33926,7 +33926,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'clint_denesik'),
-      7,
+      8,
       15,
       11,
       9,
@@ -33943,7 +33943,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'ivah_mcglynn'),
-      7,
+      8,
       15,
       11,
       7,
@@ -33960,7 +33960,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'brannonlarkin62'),
-      7,
+      8,
       15,
       12,
       8,
@@ -33977,7 +33977,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'sigmund_senger46'),
-      7,
+      8,
       15,
       11,
       8,
@@ -33994,7 +33994,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'ciara_heidenreich33'),
-      7,
+      8,
       15,
       12,
       8,
@@ -34011,7 +34011,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'alyson_stiedemann'),
-      7,
+      8,
       15,
       12,
       8,
@@ -34028,7 +34028,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'quick_trainer_532'),
-      7,
+      8,
       15,
       12,
       6,
@@ -34045,7 +34045,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'twin_trainer_704'),
-      7,
+      8,
       15,
       11,
       8,
@@ -34062,7 +34062,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'substantial_trainer_'),
-      7,
+      8,
       15,
       11,
       8,
@@ -34079,7 +34079,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'nigeljerde94'),
-      7,
+      8,
       15,
       11,
       8,
@@ -34096,7 +34096,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'wilsontrantow30'),
-      7,
+      8,
       15,
       10,
       8,
@@ -34113,7 +34113,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'michale_orn'),
-      7,
+      8,
       15,
       10,
       9,
@@ -34130,7 +34130,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'prime_trainer_706'),
-      7,
+      8,
       15,
       12,
       8,
@@ -34147,7 +34147,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'red'),
-      7,
+      8,
       15,
       11,
       6,
@@ -34164,7 +34164,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'woeful_trainer_243'),
-      7,
+      8,
       15,
       11,
       7,
@@ -34181,7 +34181,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'cruel_trainer_440'),
-      7,
+      8,
       15,
       12,
       7,
@@ -34198,7 +34198,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'dominic_kuphal'),
-      7,
+      8,
       15,
       12,
       8,
@@ -34215,7 +34215,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'coralie_bernhard'),
-      7,
+      8,
       15,
       10,
       9,
@@ -34232,7 +34232,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'valentin_hodkiewicz3'),
-      7,
+      8,
       15,
       11,
       10,
@@ -34249,7 +34249,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'taut_trainer_671'),
-      7,
+      8,
       15,
       10,
       7,
@@ -34266,7 +34266,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'lorna_effertz'),
-      7,
+      8,
       15,
       11,
       8,
@@ -34283,7 +34283,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'shanie_maggio'),
-      7,
+      8,
       15,
       11,
       9,
@@ -34300,7 +34300,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'candid_breeder'),
-      7,
+      8,
       15,
       11,
       9,
@@ -34317,7 +34317,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'nervous_trainer'),
-      7,
+      8,
       15,
       11,
       8,
@@ -34334,7 +34334,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'nella_russel'),
-      7,
+      8,
       15,
       12,
       8,
@@ -34351,7 +34351,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'jaleelstracke93'),
-      7,
+      8,
       15,
       11,
       9,
@@ -34368,7 +34368,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'leta_kunde1'),
-      7,
+      8,
       15,
       10,
       9,
@@ -34385,7 +34385,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'frozen_trainer_101'),
-      7,
+      8,
       15,
       12,
       7,
@@ -34402,7 +34402,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'flo_friesen'),
-      7,
+      8,
       15,
       11,
       8,
@@ -34419,7 +34419,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'kasandracronin25'),
-      7,
+      8,
       12,
       9,
       10,
@@ -34436,7 +34436,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'entire_gym'),
-      7,
+      8,
       12,
       10,
       11,
@@ -34453,7 +34453,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'uncomfortable_traine'),
-      7,
+      8,
       12,
       10,
       9,
@@ -34470,7 +34470,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'entire_trainer'),
-      7,
+      8,
       12,
       8,
       8,
@@ -34487,7 +34487,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'karen'),
-      7,
+      8,
       12,
       10,
       9,
@@ -34504,7 +34504,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'marguerite_hintz'),
-      7,
+      8,
       12,
       11,
       11,
@@ -34521,7 +34521,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'bowed_ace'),
-      7,
+      8,
       12,
       9,
       10,
@@ -34538,7 +34538,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'ophelia96'),
-      7,
+      8,
       12,
       8,
       9,
@@ -34555,7 +34555,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'bad_trainer_106'),
-      7,
+      8,
       12,
       10,
       9,
@@ -34572,7 +34572,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'shameful_master'),
-      7,
+      8,
       12,
       10,
       11,
@@ -34589,7 +34589,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'price45'),
-      7,
+      8,
       12,
       9,
       11,
@@ -34606,7 +34606,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'arnoldo81'),
-      7,
+      8,
       12,
       10,
       9,
@@ -34623,7 +34623,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'filthy_trainer_361'),
-      7,
+      8,
       12,
       10,
       10,
@@ -34640,7 +34640,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'ronny_koss27'),
-      7,
+      8,
       12,
       12,
       12,
@@ -34657,7 +34657,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'sally_block33'),
-      7,
+      8,
       12,
       9,
       10,
@@ -34674,7 +34674,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'quincy_pouros90'),
-      7,
+      8,
       12,
       10,
       9,
@@ -34691,7 +34691,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'well_lit_trainer_814'),
-      7,
+      8,
       12,
       10,
       9,
@@ -34708,7 +34708,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'chance65'),
-      7,
+      8,
       12,
       10,
       12,
@@ -34725,7 +34725,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'orland_kihn'),
-      7,
+      8,
       12,
       8,
       10,
@@ -34742,7 +34742,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'chaz13'),
-      7,
+      8,
       12,
       9,
       10,
@@ -34759,7 +34759,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'lucius41'),
-      7,
+      8,
       12,
       11,
       9,
@@ -34776,7 +34776,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'squeaky_trainer_454'),
-      7,
+      8,
       12,
       11,
       10,
@@ -34793,7 +34793,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'francesco_nader66'),
-      7,
+      8,
       12,
       9,
       8,
@@ -34810,7 +34810,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'unpleasant_pro'),
-      7,
+      8,
       12,
       9,
       8,
@@ -34827,7 +34827,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'shanelfeeney90'),
-      7,
+      8,
       12,
       10,
       9,
@@ -34844,7 +34844,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'carleykerluke47'),
-      7,
+      8,
       12,
       11,
       10,
@@ -34861,7 +34861,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'long_trainer_533'),
-      7,
+      8,
       12,
       9,
       9,
@@ -34878,7 +34878,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'stunning_gym'),
-      7,
+      8,
       12,
       9,
       9,
@@ -34895,7 +34895,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'memorable_master'),
-      7,
+      8,
       12,
       10,
       9,
@@ -34912,7 +34912,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'cooperative_trainer_'),
-      7,
+      8,
       12,
       10,
       8,
@@ -34929,7 +34929,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'nicola69'),
-      7,
+      8,
       12,
       11,
       9,
@@ -34946,7 +34946,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'trusting_trainer_973'),
-      7,
+      8,
       12,
       10,
       9,
@@ -34963,7 +34963,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'admin_trainer'),
-      7,
+      8,
       12,
       11,
       9,
@@ -34980,7 +34980,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'ordinary_trainer_36'),
-      7,
+      8,
       12,
       10,
       10,
@@ -34997,7 +34997,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'titus_kohler60'),
-      7,
+      8,
       12,
       10,
       11,
@@ -35014,7 +35014,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'fausto_mraz11'),
-      7,
+      8,
       12,
       11,
       9,
@@ -35031,7 +35031,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'nicolaconn45'),
-      7,
+      8,
       12,
       9,
       9,
@@ -35048,7 +35048,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'submissive_trainer_7'),
-      7,
+      8,
       12,
       10,
       10,
@@ -35065,7 +35065,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'easy_trainer_738'),
-      7,
+      8,
       12,
       9,
       9,
@@ -35082,7 +35082,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'stunning_trainer_537'),
-      7,
+      8,
       12,
       10,
       11,
@@ -35099,7 +35099,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'ashamed_elite'),
-      7,
+      8,
       12,
       10,
       11,
@@ -35116,7 +35116,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'fredrick_hagenes66'),
-      7,
+      8,
       12,
       9,
       10,
@@ -35133,7 +35133,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'emiliebednar53'),
-      7,
+      8,
       12,
       9,
       10,
@@ -35150,7 +35150,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'kiplarkin25'),
-      7,
+      8,
       12,
       9,
       10,
@@ -35167,7 +35167,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'robin_schultz'),
-      7,
+      8,
       12,
       8,
       9,
@@ -35184,7 +35184,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'fake_ace'),
-      7,
+      8,
       12,
       8,
       9,
@@ -35201,7 +35201,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'foolhardy_trainer_79'),
-      7,
+      8,
       12,
       8,
       8,
@@ -35218,7 +35218,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'thoramarvin72'),
-      7,
+      8,
       12,
       10,
       10,
@@ -35235,7 +35235,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'vain_trainer_113'),
-      7,
+      8,
       12,
       9,
       11,
@@ -35252,7 +35252,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'thrifty_trainer_14'),
-      7,
+      8,
       12,
       9,
       9,
@@ -35269,7 +35269,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'happy_trainer_400'),
-      7,
+      8,
       12,
       12,
       10,
@@ -35286,7 +35286,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'sigrid67'),
-      7,
+      8,
       12,
       10,
       9,
@@ -35303,7 +35303,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'opheliadicki91'),
-      7,
+      8,
       12,
       9,
       9,
@@ -35320,7 +35320,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'eugene_huel73'),
-      7,
+      8,
       12,
       8,
       8,
@@ -35337,7 +35337,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'felicia62'),
-      7,
+      8,
       12,
       10,
       10,
@@ -35354,7 +35354,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'frequent_trainer_572'),
-      7,
+      8,
       12,
       9,
       11,
@@ -35371,7 +35371,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'jermaineharvey25'),
-      7,
+      8,
       12,
       11,
       9,
@@ -35388,7 +35388,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'delilaho_hara84'),
-      7,
+      8,
       12,
       11,
       10,
@@ -35405,7 +35405,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'mallory39'),
-      7,
+      8,
       12,
       9,
       9,
@@ -35422,7 +35422,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'scornful_trainer_666'),
-      7,
+      8,
       12,
       9,
       9,
@@ -35439,7 +35439,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'teagan92'),
-      7,
+      8,
       12,
       10,
       12,
@@ -35456,7 +35456,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'assuntaschoen_koelpi'),
-      7,
+      8,
       12,
       11,
       11,
@@ -35473,7 +35473,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'practical_leader'),
-      7,
+      8,
       12,
       9,
       9,
@@ -35490,7 +35490,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'jabari_pagac18'),
-      7,
+      8,
       12,
       9,
       10,
@@ -35507,7 +35507,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'dim_trainer_491'),
-      7,
+      8,
       12,
       10,
       11,
@@ -35524,7 +35524,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'brown_gym'),
-      7,
+      8,
       12,
       9,
       12,
@@ -35541,7 +35541,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'johnnievandervort55'),
-      7,
+      8,
       12,
       9,
       11,
@@ -35558,7 +35558,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'violent_trainer_345'),
-      7,
+      8,
       12,
       8,
       10,
@@ -35575,7 +35575,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'wallace_reichert'),
-      7,
+      8,
       12,
       10,
       8,
@@ -35592,7 +35592,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'novakuhic68'),
-      7,
+      8,
       12,
       9,
       10,
@@ -35609,7 +35609,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'defensive_champion'),
-      7,
+      8,
       9,
       7,
       12,
@@ -35626,7 +35626,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'izabellabeahan79'),
-      7,
+      8,
       9,
       9,
       11,
@@ -35643,7 +35643,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'slushy_breeder'),
-      7,
+      8,
       9,
       7,
       10,
@@ -35660,7 +35660,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'lempi_brakus24'),
-      7,
+      8,
       9,
       9,
       10,
@@ -35677,7 +35677,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'sammy_pouros'),
-      7,
+      8,
       9,
       6,
       11,
@@ -35694,7 +35694,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'crooked_gym'),
-      7,
+      8,
       9,
       8,
       10,
@@ -35711,7 +35711,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'grant_bednar'),
-      7,
+      8,
       9,
       8,
       11,
@@ -35728,7 +35728,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'chelsea_witting'),
-      7,
+      8,
       9,
       8,
       11,
@@ -35745,7 +35745,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'scary_trainer_677'),
-      7,
+      8,
       9,
       8,
       11,
@@ -35762,7 +35762,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'mauricelittel79'),
-      7,
+      8,
       9,
       7,
       10,
@@ -35779,7 +35779,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'taut_leader'),
-      7,
+      8,
       9,
       10,
       12,
@@ -35796,7 +35796,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'shad_williamson9'),
-      7,
+      8,
       9,
       9,
       12,
@@ -35813,7 +35813,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'malvinamitchell24'),
-      7,
+      8,
       9,
       9,
       12,
@@ -35830,7 +35830,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'brody25'),
-      7,
+      8,
       9,
       7,
       10,
@@ -35847,7 +35847,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'lee51'),
-      7,
+      8,
       9,
       6,
       12,
@@ -35864,7 +35864,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'alvertalemke46'),
-      7,
+      8,
       9,
       7,
       12,
@@ -35881,7 +35881,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'blank_trainer_642'),
-      7,
+      8,
       9,
       9,
       10,
@@ -35898,7 +35898,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'price_fay82'),
-      7,
+      8,
       9,
       9,
       10,
@@ -35915,7 +35915,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'heavy_trainer_256'),
-      7,
+      8,
       9,
       7,
       11,
@@ -35932,7 +35932,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'elsie_stroman'),
-      7,
+      8,
       9,
       6,
       11,
@@ -35949,7 +35949,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'vincent_hickle19'),
-      7,
+      8,
       9,
       8,
       11,
@@ -35966,7 +35966,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'domenic_jast43'),
-      7,
+      8,
       9,
       7,
       12,
@@ -35983,7 +35983,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'nolanlangosh54'),
-      7,
+      8,
       9,
       11,
       12,
@@ -36000,7 +36000,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'rickylockman29'),
-      7,
+      8,
       9,
       9,
       11,
@@ -36017,7 +36017,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'adolfomoen96'),
-      7,
+      8,
       9,
       8,
       10,
@@ -36034,7 +36034,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'front_trainer_895'),
-      7,
+      8,
       9,
       8,
       10,
@@ -36051,7 +36051,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'colorless_trainer_93'),
-      7,
+      8,
       9,
       8,
       11,
@@ -36068,7 +36068,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'millie_zieme65'),
-      7,
+      8,
       9,
       8,
       11,
@@ -36085,7 +36085,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'alda_rau2'),
-      7,
+      8,
       9,
       8,
       12,
@@ -36102,7 +36102,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'stanley_schneider'),
-      7,
+      8,
       9,
       7,
       11,
@@ -36119,7 +36119,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'odd_ranger'),
-      7,
+      8,
       9,
       7,
       10,
@@ -36136,7 +36136,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'ornery_trainer_904'),
-      7,
+      8,
       9,
       7,
       10,
@@ -36153,7 +36153,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'viviane_rempel'),
-      7,
+      8,
       9,
       7,
       11,
@@ -36170,7 +36170,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'desiree_fadel'),
-      7,
+      8,
       9,
       10,
       11,
@@ -36187,7 +36187,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'garricklindgren16'),
-      7,
+      8,
       9,
       9,
       11,
@@ -36204,7 +36204,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'sneaky_master'),
-      7,
+      8,
       9,
       8,
       11,
@@ -36221,7 +36221,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'cathrinemosciski_wun'),
-      7,
+      8,
       9,
       8,
       11,
@@ -36238,7 +36238,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'kenna_beahan'),
-      7,
+      8,
       9,
       7,
       10,
@@ -36255,7 +36255,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'recent_trainer_469'),
-      7,
+      8,
       9,
       7,
       10,
@@ -36272,7 +36272,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'nippy_elite'),
-      7,
+      8,
       9,
       6,
       10,
@@ -36289,7 +36289,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'outstanding_elite'),
-      7,
+      8,
       9,
       6,
       10,
@@ -36306,7 +36306,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'dallas56'),
-      7,
+      8,
       9,
       9,
       11,
@@ -36323,7 +36323,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'annette20'),
-      7,
+      8,
       9,
       9,
       11,
@@ -36340,7 +36340,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'dirty_trainer_951'),
-      7,
+      8,
       9,
       9,
       12,
@@ -36357,7 +36357,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'late_trainer_395'),
-      7,
+      8,
       9,
       8,
       11,
@@ -36374,7 +36374,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'parched_trainer_151'),
-      7,
+      8,
       9,
       9,
       13,
@@ -36391,7 +36391,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'qualified_trainer_61'),
-      7,
+      8,
       9,
       6,
       12,
@@ -36408,7 +36408,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'ellis_paucek'),
-      7,
+      8,
       9,
       7,
       11,
@@ -36425,7 +36425,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'jeraldferry81'),
-      7,
+      8,
       9,
       8,
       11,
@@ -36442,7 +36442,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'gloomy_champion'),
-      7,
+      8,
       9,
       8,
       12,
@@ -36459,7 +36459,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'brock'),
-      7,
+      8,
       9,
       9,
       11,
@@ -36476,7 +36476,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'valentinaklocko65'),
-      7,
+      8,
       9,
       8,
       11,
@@ -36493,7 +36493,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'monica_crist_fahey79'),
-      7,
+      8,
       9,
       7,
       10,
@@ -36510,7 +36510,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'werner_auer80'),
-      7,
+      8,
       9,
       7,
       12,
@@ -36527,7 +36527,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'oswaldo_kling'),
-      7,
+      8,
       9,
       8,
       12,
@@ -36544,7 +36544,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'personal_trainer_58'),
-      7,
+      8,
       9,
       6,
       11,
@@ -36561,7 +36561,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'shy_ace'),
-      7,
+      8,
       6,
       7,
       13,
@@ -36578,7 +36578,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'insistent_ranger'),
-      7,
+      8,
       6,
       8,
       12,
@@ -36595,7 +36595,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'vernie34'),
-      7,
+      8,
       6,
       7,
       13,
@@ -36612,7 +36612,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'halliefay16'),
-      7,
+      8,
       6,
       6,
       13,
@@ -36629,7 +36629,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'savanah33'),
-      7,
+      8,
       6,
       6,
       14,
@@ -36646,7 +36646,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'katheryn_braun'),
-      7,
+      8,
       6,
       7,
       14,
@@ -36663,7 +36663,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'brilliant_breeder'),
-      7,
+      8,
       6,
       7,
       12,
@@ -36680,7 +36680,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'oval_trainer_521'),
-      7,
+      8,
       6,
       7,
       13,
@@ -36697,7 +36697,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'sophieorn25'),
-      7,
+      8,
       6,
       7,
       14,
@@ -36714,7 +36714,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'delectable_trainer_3'),
-      7,
+      8,
       6,
       5,
       13,
@@ -36731,7 +36731,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'tatyanahintz44'),
-      7,
+      8,
       6,
       6,
       12,
@@ -36748,7 +36748,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'true_elite'),
-      7,
+      8,
       6,
       7,
       12,
@@ -36765,7 +36765,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'multicolored_trainer'),
-      7,
+      8,
       6,
       6,
       14,
@@ -36782,7 +36782,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'jazmin_lubowitz'),
-      7,
+      8,
       6,
       7,
       12,
@@ -36799,7 +36799,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'jessicaleannon22'),
-      7,
+      8,
       6,
       6,
       14,
@@ -36816,7 +36816,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'skylar_bednar'),
-      7,
+      8,
       6,
       4,
       12,
@@ -36833,7 +36833,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'quick_witted_leader'),
-      7,
+      8,
       6,
       4,
       13,
@@ -36850,7 +36850,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'jaeden50'),
-      7,
+      8,
       6,
       7,
       12,
@@ -36867,7 +36867,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'robust_elite'),
-      7,
+      8,
       6,
       9,
       12,
@@ -36884,7 +36884,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'clevekling88'),
-      7,
+      8,
       6,
       7,
       12,
@@ -36901,7 +36901,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'madyson24'),
-      7,
+      8,
       6,
       7,
       13,
@@ -36918,7 +36918,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'smooth_trainer_36'),
-      7,
+      8,
       6,
       6,
       12,
@@ -36935,7 +36935,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'purple_champion'),
-      7,
+      8,
       6,
       6,
       14,
@@ -36952,7 +36952,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'dario_west44'),
-      7,
+      8,
       6,
       7,
       12,
@@ -36969,7 +36969,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'wicked_trainer'),
-      7,
+      8,
       6,
       7,
       13,
@@ -36986,7 +36986,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'unused_trainer_669'),
-      7,
+      8,
       6,
       6,
       13,
@@ -37003,7 +37003,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'hilbert38'),
-      7,
+      8,
       6,
       7,
       13,
@@ -37020,7 +37020,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'faraway_master'),
-      7,
+      8,
       6,
       8,
       13,
@@ -37037,7 +37037,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'ashton_kshlerin'),
-      7,
+      8,
       3,
       8,
       15,
@@ -37054,7 +37054,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'maiya_renner'),
-      7,
+      8,
       3,
       5,
       15,
@@ -37071,7 +37071,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'jackiebins45'),
-      7,
+      8,
       3,
       6,
       15,
@@ -37088,7 +37088,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'waynegorczany73'),
-      7,
+      8,
       3,
       4,
       14,
@@ -37105,7 +37105,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'awful_ranger'),
-      7,
+      8,
       3,
       5,
       14,
@@ -37122,7 +37122,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'pitiful_elite'),
-      7,
+      8,
       3,
       6,
       15,
@@ -37139,7 +37139,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'emmittdubuque80'),
-      7,
+      8,
       3,
       4,
       15,
@@ -37156,7 +37156,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'cynthia'),
-      7,
+      8,
       3,
       5,
       15,
@@ -37173,7 +37173,7 @@ BEGIN
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'claudestreich31'),
-      7,
+      8,
       0,
       5,
       16,
@@ -59663,5 +59663,22021 @@ BEGIN
     );
   END IF;
 
-  RAISE NOTICE 'Created 3480 standings entries for 80 tournaments';
+  -- Tournament: VGC League Week 9 Championship
+  SELECT t.id INTO t_id FROM public.tournaments t
+    WHERE t.slug = 'vgc-league-week-09';
+  IF t_id IS NOT NULL THEN
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'flo_friesen'),
+      1,
+      24,
+      16,
+      5,
+      0.8889,
+      0.7619,
+      0.6241,
+      0.5593,
+      1
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'long_trainer_533'),
+      1,
+      24,
+      17,
+      5,
+      0.8889,
+      0.7727,
+      0.7127,
+      0.6628,
+      2
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'adela1'),
+      1,
+      18,
+      12,
+      6,
+      0.75,
+      0.6667,
+      0.5813,
+      0.5783,
+      3
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'taut_trainer_671'),
+      1,
+      15,
+      10,
+      7,
+      0.625,
+      0.5882,
+      0.6716,
+      0.5947,
+      4
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'pastel_gym'),
+      1,
+      15,
+      11,
+      5,
+      0.7143,
+      0.6875,
+      0.6774,
+      0.6102,
+      5
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'treviono_kon17'),
+      1,
+      15,
+      11,
+      6,
+      0.7143,
+      0.6471,
+      0.627,
+      0.604,
+      6
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'brock'),
+      1,
+      15,
+      11,
+      6,
+      0.7143,
+      0.6471,
+      0.5187,
+      0.519,
+      7
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'wilsontrantow30'),
+      1,
+      15,
+      10,
+      5,
+      0.7143,
+      0.6667,
+      0.5119,
+      0.5048,
+      8
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'reidstamm21'),
+      1,
+      12,
+      8,
+      5,
+      0.6667,
+      0.6154,
+      0.6283,
+      0.5811,
+      9
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'trusty_gym'),
+      1,
+      12,
+      8,
+      7,
+      0.6667,
+      0.5333,
+      0.627,
+      0.6003,
+      10
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'pertinent_trainer_27'),
+      1,
+      12,
+      8,
+      6,
+      0.6667,
+      0.5714,
+      0.6121,
+      0.5947,
+      11
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'carleykerluke47'),
+      1,
+      12,
+      10,
+      6,
+      0.6667,
+      0.625,
+      0.5728,
+      0.527,
+      12
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'richardswaniawski20'),
+      1,
+      12,
+      9,
+      5,
+      0.6667,
+      0.6429,
+      0.5556,
+      0.4858,
+      13
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'ashamed_elite'),
+      1,
+      12,
+      9,
+      4,
+      0.6667,
+      0.6923,
+      0.5417,
+      0.4948,
+      14
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'rickylockman29'),
+      1,
+      12,
+      9,
+      4,
+      0.6667,
+      0.6923,
+      0.5278,
+      0.4825,
+      15
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'teagan92'),
+      1,
+      12,
+      9,
+      7,
+      0.6667,
+      0.5625,
+      0.5093,
+      0.5389,
+      16
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'lempi_brakus24'),
+      1,
+      12,
+      8,
+      7,
+      0.6667,
+      0.5333,
+      0.5079,
+      0.5023,
+      17
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'wallace_reichert'),
+      1,
+      12,
+      9,
+      4,
+      0.6667,
+      0.6923,
+      0.4802,
+      0.4842,
+      18
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'kayla75'),
+      1,
+      12,
+      9,
+      6,
+      0.6667,
+      0.6,
+      0.4722,
+      0.5135,
+      19
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'defensive_champion'),
+      1,
+      12,
+      8,
+      6,
+      0.6667,
+      0.5714,
+      0.4722,
+      0.4785,
+      20
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'delectable_trainer_3'),
+      1,
+      12,
+      8,
+      5,
+      0.6667,
+      0.6154,
+      0.4444,
+      0.4619,
+      21
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'francesco_nader66'),
+      1,
+      12,
+      10,
+      5,
+      0.6667,
+      0.6667,
+      0.3889,
+      0.4159,
+      22
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'weldon_bergnaum_schu'),
+      1,
+      9,
+      6,
+      8,
+      0.5,
+      0.4286,
+      0.6181,
+      0.6066,
+      23
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'submissive_trainer_7'),
+      1,
+      9,
+      8,
+      8,
+      0.5,
+      0.5,
+      0.5972,
+      0.5618,
+      24
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'angelic_trainer_423'),
+      1,
+      9,
+      7,
+      8,
+      0.5,
+      0.4667,
+      0.5833,
+      0.5733,
+      25
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'johnnievandervort55'),
+      1,
+      9,
+      7,
+      6,
+      0.5,
+      0.5385,
+      0.5635,
+      0.5553,
+      26
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'nicolaconn45'),
+      1,
+      9,
+      7,
+      7,
+      0.5,
+      0.5,
+      0.5556,
+      0.5248,
+      27
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'fred_pacocha47'),
+      1,
+      9,
+      8,
+      8,
+      0.5,
+      0.5,
+      0.537,
+      0.5363,
+      28
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'shy_ace'),
+      1,
+      9,
+      6,
+      7,
+      0.5,
+      0.4615,
+      0.5357,
+      0.5427,
+      29
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'overcooked_ranger'),
+      1,
+      9,
+      6,
+      8,
+      0.5,
+      0.4286,
+      0.5301,
+      0.5382,
+      30
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'enriquebalistreri40'),
+      1,
+      9,
+      7,
+      7,
+      0.5,
+      0.5,
+      0.5278,
+      0.557,
+      31
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'entire_gym'),
+      1,
+      9,
+      6,
+      8,
+      0.5,
+      0.4286,
+      0.5093,
+      0.4968,
+      32
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'bowed_ace'),
+      1,
+      9,
+      8,
+      6,
+      0.5,
+      0.5714,
+      0.5093,
+      0.5012,
+      33
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'admin_trainer'),
+      1,
+      9,
+      8,
+      8,
+      0.5,
+      0.5,
+      0.4802,
+      0.496,
+      34
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'quick_trainer_532'),
+      1,
+      9,
+      6,
+      6,
+      0.5,
+      0.5,
+      0.4524,
+      0.4793,
+      35
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'katrina16'),
+      1,
+      9,
+      7,
+      7,
+      0.5,
+      0.5,
+      0.4375,
+      0.4841,
+      36
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'jaeden50'),
+      1,
+      9,
+      7,
+      8,
+      0.5,
+      0.4667,
+      0.4306,
+      0.4569,
+      37
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'jessicaleannon22'),
+      1,
+      9,
+      8,
+      6,
+      0.5,
+      0.5714,
+      0.4246,
+      0.4534,
+      38
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'ophelia96'),
+      1,
+      9,
+      6,
+      8,
+      0.5,
+      0.4286,
+      0.4167,
+      0.4471,
+      39
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'runny_champion'),
+      1,
+      9,
+      8,
+      7,
+      0.5,
+      0.5333,
+      0.4167,
+      0.404,
+      40
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'jacynthe_klein'),
+      1,
+      9,
+      6,
+      8,
+      0.5,
+      0.4286,
+      0.3968,
+      0.4507,
+      41
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'jackiebins45'),
+      1,
+      9,
+      7,
+      7,
+      0.5,
+      0.5,
+      0.3889,
+      0.4491,
+      42
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'lucy_reilly'),
+      1,
+      6,
+      4,
+      8,
+      0.3333,
+      0.3333,
+      0.537,
+      0.527,
+      43
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'short_term_elite'),
+      1,
+      6,
+      6,
+      8,
+      0.3333,
+      0.4286,
+      0.5357,
+      0.5032,
+      44
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'bart74'),
+      1,
+      6,
+      5,
+      9,
+      0.3333,
+      0.3571,
+      0.5278,
+      0.5278,
+      45
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'leta_kunde1'),
+      1,
+      6,
+      8,
+      8,
+      0.3333,
+      0.5,
+      0.5079,
+      0.4726,
+      46
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'ivah_mcglynn'),
+      1,
+      6,
+      7,
+      10,
+      0.3333,
+      0.4118,
+      0.5079,
+      0.5224,
+      47
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'sincere98'),
+      1,
+      6,
+      6,
+      8,
+      0.3333,
+      0.4286,
+      0.5,
+      0.4874,
+      48
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'tianna46'),
+      1,
+      6,
+      7,
+      10,
+      0.3333,
+      0.4118,
+      0.4722,
+      0.4657,
+      49
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'kenna_beahan'),
+      1,
+      6,
+      6,
+      9,
+      0.3333,
+      0.4,
+      0.4722,
+      0.4641,
+      50
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'phony_leader'),
+      1,
+      6,
+      5,
+      9,
+      0.3333,
+      0.3571,
+      0.4722,
+      0.4951,
+      51
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'emmittdubuque80'),
+      1,
+      6,
+      4,
+      9,
+      0.3333,
+      0.3077,
+      0.4524,
+      0.5037,
+      52
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'kelli_buckridge72'),
+      1,
+      6,
+      5,
+      10,
+      0.3333,
+      0.3333,
+      0.4444,
+      0.464,
+      53
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'vincent_hickle19'),
+      1,
+      6,
+      6,
+      9,
+      0.3333,
+      0.4,
+      0.3889,
+      0.4139,
+      54
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'faint_trainer_713'),
+      1,
+      6,
+      6,
+      8,
+      0.3333,
+      0.4286,
+      0.369,
+      0.4178,
+      55
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'dirty_trainer_951'),
+      1,
+      6,
+      7,
+      9,
+      0.3333,
+      0.4375,
+      0.3333,
+      0.4003,
+      56
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'dariusschneider93'),
+      1,
+      6,
+      6,
+      8,
+      0.3333,
+      0.4286,
+      0.3333,
+      0.4007,
+      57
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'skylar_bednar'),
+      1,
+      3,
+      7,
+      10,
+      0.1667,
+      0.4118,
+      0.5139,
+      0.4957,
+      58
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'stanley_schneider'),
+      1,
+      3,
+      5,
+      10,
+      0.1667,
+      0.3333,
+      0.3968,
+      0.4301,
+      59
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'godfreyjenkins91'),
+      1,
+      3,
+      4,
+      11,
+      0.1667,
+      0.2667,
+      0.3889,
+      0.4221,
+      60
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'unpleasant_pro'),
+      1,
+      3,
+      4,
+      11,
+      0.1667,
+      0.2667,
+      0.3611,
+      0.3897,
+      61
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'qualified_trainer_61'),
+      1,
+      3,
+      3,
+      10,
+      0.1667,
+      0.2308,
+      0.3333,
+      0.4008,
+      62
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'domenic_jast43'),
+      1,
+      3,
+      3,
+      11,
+      0.1667,
+      0.2143,
+      0.3333,
+      0.3772,
+      63
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'red'),
+      1,
+      0,
+      2,
+      12,
+      0,
+      0.1429,
+      0.3333,
+      0.3964,
+      64
+    );
+  END IF;
+
+  -- Tournament: VGC League Week 9 Practice
+  SELECT t.id INTO t_id FROM public.tournaments t
+    WHERE t.slug = 'vgc-league-practice-week-09';
+  IF t_id IS NOT NULL THEN
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'late_trainer_395'),
+      1,
+      15,
+      10,
+      2,
+      1,
+      0.8333,
+      0.6,
+      0.5483,
+      1
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'jazmyne80'),
+      1,
+      12,
+      9,
+      2,
+      0.8,
+      0.8182,
+      0.6,
+      0.5603,
+      2
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'ashtyn_vonrueden'),
+      1,
+      12,
+      8,
+      3,
+      0.8,
+      0.7273,
+      0.48,
+      0.4582,
+      3
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'mariannamacejkovic76'),
+      1,
+      12,
+      8,
+      4,
+      0.8,
+      0.6667,
+      0.44,
+      0.4621,
+      4
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'phony_leader'),
+      1,
+      9,
+      6,
+      7,
+      0.6,
+      0.4615,
+      0.64,
+      0.6393,
+      5
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'noted_gym'),
+      1,
+      9,
+      7,
+      5,
+      0.6,
+      0.5833,
+      0.64,
+      0.5937,
+      6
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'filthy_trainer_361'),
+      1,
+      9,
+      7,
+      6,
+      0.6,
+      0.5385,
+      0.56,
+      0.5496,
+      7
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'tianna46'),
+      1,
+      9,
+      6,
+      7,
+      0.6,
+      0.4615,
+      0.56,
+      0.5499,
+      8
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'lucius41'),
+      1,
+      9,
+      7,
+      5,
+      0.6,
+      0.5833,
+      0.48,
+      0.4738,
+      9
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'awful_ranger'),
+      1,
+      9,
+      7,
+      5,
+      0.6,
+      0.5833,
+      0.48,
+      0.48,
+      10
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'delores_orn44'),
+      1,
+      9,
+      7,
+      5,
+      0.6,
+      0.5833,
+      0.4,
+      0.4428,
+      11
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'scary_trainer_677'),
+      1,
+      9,
+      6,
+      6,
+      0.6,
+      0.5,
+      0.4,
+      0.4516,
+      12
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'runny_champion'),
+      1,
+      6,
+      6,
+      7,
+      0.4,
+      0.4615,
+      0.56,
+      0.544,
+      13
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'rubbery_elite'),
+      1,
+      6,
+      6,
+      7,
+      0.4,
+      0.4615,
+      0.56,
+      0.5418,
+      14
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'nettie_hermiston'),
+      1,
+      6,
+      6,
+      7,
+      0.4,
+      0.4615,
+      0.56,
+      0.5538,
+      15
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'chance65'),
+      1,
+      6,
+      6,
+      7,
+      0.4,
+      0.4615,
+      0.52,
+      0.5416,
+      16
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'clint_denesik'),
+      1,
+      6,
+      4,
+      6,
+      0.4,
+      0.4,
+      0.52,
+      0.5411,
+      17
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'pertinent_trainer_27'),
+      1,
+      6,
+      5,
+      8,
+      0.4,
+      0.3846,
+      0.4,
+      0.4621,
+      18
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'kasandracronin25'),
+      1,
+      6,
+      5,
+      6,
+      0.4,
+      0.4545,
+      0.4,
+      0.4063,
+      19
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'dominic_zulauf'),
+      1,
+      6,
+      7,
+      7,
+      0.4,
+      0.5,
+      0.36,
+      0.4189,
+      20
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'laurettayundt22'),
+      1,
+      3,
+      3,
+      8,
+      0.2,
+      0.2727,
+      0.6,
+      0.5332,
+      21
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'valentinaklocko65'),
+      1,
+      3,
+      5,
+      9,
+      0.2,
+      0.3571,
+      0.48,
+      0.48,
+      22
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'pastel_gym'),
+      1,
+      3,
+      4,
+      9,
+      0.2,
+      0.3077,
+      0.4,
+      0.4397,
+      23
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'gloomy_champion'),
+      1,
+      0,
+      3,
+      10,
+      0,
+      0.2308,
+      0.36,
+      0.4217,
+      24
+    );
+  END IF;
+
+  -- Tournament: Pallet Town Trainers Week 9 Championship
+  SELECT t.id INTO t_id FROM public.tournaments t
+    WHERE t.slug = 'pallet-town-week-09';
+  IF t_id IS NOT NULL THEN
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'kasandracronin25'),
+      1,
+      27,
+      18,
+      5,
+      0.9,
+      0.7826,
+      0.7209,
+      0.6704,
+      1
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'flo_friesen'),
+      1,
+      24,
+      16,
+      6,
+      0.8,
+      0.7273,
+      0.6899,
+      0.6338,
+      2
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'substantial_trainer_'),
+      1,
+      21,
+      14,
+      7,
+      0.7778,
+      0.6667,
+      0.698,
+      0.6433,
+      3
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'fredrick_hagenes66'),
+      1,
+      21,
+      16,
+      6,
+      0.7778,
+      0.7273,
+      0.6484,
+      0.6007,
+      4
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'wicked_trainer'),
+      1,
+      21,
+      15,
+      3,
+      0.875,
+      0.8333,
+      0.6829,
+      0.6415,
+      5
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'jayson63'),
+      1,
+      18,
+      13,
+      5,
+      0.75,
+      0.7222,
+      0.6584,
+      0.6305,
+      6
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'maiyaabshire82'),
+      1,
+      18,
+      12,
+      5,
+      0.75,
+      0.7059,
+      0.6352,
+      0.6092,
+      7
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'grant_bednar'),
+      1,
+      18,
+      13,
+      6,
+      0.75,
+      0.6842,
+      0.6,
+      0.5749,
+      8
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'jailyn75'),
+      1,
+      15,
+      10,
+      8,
+      0.7143,
+      0.5556,
+      0.6683,
+      0.6285,
+      9
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'elaina_nitzsche'),
+      1,
+      15,
+      10,
+      6,
+      0.7143,
+      0.625,
+      0.6264,
+      0.5795,
+      10
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'jaeden50'),
+      1,
+      15,
+      10,
+      7,
+      0.7143,
+      0.5882,
+      0.6122,
+      0.5697,
+      11
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'karen'),
+      1,
+      15,
+      11,
+      5,
+      0.7143,
+      0.6875,
+      0.5969,
+      0.564,
+      12
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'clementina80'),
+      1,
+      15,
+      10,
+      7,
+      0.7143,
+      0.5882,
+      0.5969,
+      0.6053,
+      13
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'jaydeemard34'),
+      1,
+      15,
+      12,
+      7,
+      0.7143,
+      0.6316,
+      0.5805,
+      0.5548,
+      14
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'houston_walter'),
+      1,
+      15,
+      10,
+      6,
+      0.7143,
+      0.625,
+      0.5723,
+      0.5478,
+      15
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'easy_trainer_738'),
+      1,
+      15,
+      10,
+      6,
+      0.7143,
+      0.625,
+      0.5601,
+      0.566,
+      16
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'stunning_gym'),
+      1,
+      15,
+      10,
+      5,
+      0.7143,
+      0.6667,
+      0.5587,
+      0.5416,
+      17
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'parched_trainer_151'),
+      1,
+      15,
+      11,
+      6,
+      0.7143,
+      0.6471,
+      0.551,
+      0.5115,
+      18
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'tressa72'),
+      1,
+      15,
+      12,
+      5,
+      0.7143,
+      0.7059,
+      0.551,
+      0.5166,
+      19
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'cristobalupton55'),
+      1,
+      15,
+      11,
+      6,
+      0.7143,
+      0.6471,
+      0.551,
+      0.5087,
+      20
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'skylar_bednar'),
+      1,
+      15,
+      10,
+      6,
+      0.7143,
+      0.625,
+      0.5418,
+      0.555,
+      21
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'smooth_trainer_36'),
+      1,
+      15,
+      10,
+      6,
+      0.7143,
+      0.625,
+      0.5306,
+      0.5138,
+      22
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'trusting_trainer_973'),
+      1,
+      15,
+      11,
+      7,
+      0.7143,
+      0.6111,
+      0.5224,
+      0.5076,
+      23
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'wilsontrantow30'),
+      1,
+      15,
+      10,
+      6,
+      0.7143,
+      0.625,
+      0.5153,
+      0.5267,
+      24
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'halliefay16'),
+      1,
+      15,
+      10,
+      7,
+      0.7143,
+      0.5882,
+      0.5102,
+      0.5315,
+      25
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'rubbery_elite'),
+      1,
+      15,
+      11,
+      6,
+      0.7143,
+      0.6471,
+      0.4898,
+      0.5047,
+      26
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'sincere98'),
+      1,
+      15,
+      10,
+      4,
+      0.7143,
+      0.7143,
+      0.4694,
+      0.4702,
+      27
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'purple_champion'),
+      1,
+      15,
+      12,
+      7,
+      0.7143,
+      0.6316,
+      0.4694,
+      0.484,
+      28
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'pastel_gym'),
+      1,
+      15,
+      10,
+      7,
+      0.7143,
+      0.5882,
+      0.449,
+      0.4966,
+      29
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'jackiebins45'),
+      1,
+      12,
+      10,
+      7,
+      0.5714,
+      0.5882,
+      0.6704,
+      0.6432,
+      30
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'front_trainer_895'),
+      1,
+      12,
+      10,
+      7,
+      0.5714,
+      0.5882,
+      0.6556,
+      0.6106,
+      31
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'long_trainer_533'),
+      1,
+      12,
+      8,
+      7,
+      0.5714,
+      0.5333,
+      0.6378,
+      0.5988,
+      32
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'madyson24'),
+      1,
+      12,
+      8,
+      9,
+      0.5714,
+      0.4706,
+      0.6122,
+      0.573,
+      33
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'opheliadicki91'),
+      1,
+      12,
+      8,
+      6,
+      0.5714,
+      0.5714,
+      0.6041,
+      0.5782,
+      34
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'marianamitchell71'),
+      1,
+      12,
+      10,
+      6,
+      0.5714,
+      0.625,
+      0.6009,
+      0.5461,
+      35
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'flaviedare76'),
+      1,
+      12,
+      10,
+      7,
+      0.5714,
+      0.5882,
+      0.598,
+      0.557,
+      36
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'incomplete_trainer_6'),
+      1,
+      12,
+      8,
+      8,
+      0.5714,
+      0.5,
+      0.5805,
+      0.5392,
+      37
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'shy_ace'),
+      1,
+      12,
+      8,
+      8,
+      0.5714,
+      0.5,
+      0.5805,
+      0.5311,
+      38
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'early_master'),
+      1,
+      12,
+      9,
+      6,
+      0.5714,
+      0.6,
+      0.5791,
+      0.568,
+      39
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'pertinent_trainer_27'),
+      1,
+      12,
+      10,
+      7,
+      0.5714,
+      0.5882,
+      0.5652,
+      0.557,
+      40
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'lonny_bechtelar49'),
+      1,
+      12,
+      10,
+      7,
+      0.5714,
+      0.5882,
+      0.5633,
+      0.5233,
+      41
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'alda_rau2'),
+      1,
+      12,
+      10,
+      7,
+      0.5714,
+      0.5882,
+      0.551,
+      0.5041,
+      42
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'lee51'),
+      1,
+      12,
+      10,
+      7,
+      0.5714,
+      0.5882,
+      0.551,
+      0.5147,
+      43
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'marilie_medhurst82'),
+      1,
+      12,
+      8,
+      6,
+      0.5714,
+      0.5714,
+      0.551,
+      0.5394,
+      44
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'ivah_mcglynn'),
+      1,
+      12,
+      9,
+      7,
+      0.5714,
+      0.5625,
+      0.5153,
+      0.504,
+      45
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'nella_russel'),
+      1,
+      12,
+      10,
+      6,
+      0.5714,
+      0.625,
+      0.5102,
+      0.4906,
+      46
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'delilaho_hara84'),
+      1,
+      12,
+      9,
+      8,
+      0.5714,
+      0.5294,
+      0.5102,
+      0.5023,
+      47
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'red'),
+      1,
+      12,
+      9,
+      8,
+      0.5714,
+      0.5294,
+      0.4949,
+      0.4852,
+      48
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'thoramarvin72'),
+      1,
+      12,
+      9,
+      6,
+      0.5714,
+      0.6,
+      0.4898,
+      0.4978,
+      49
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'sophieorn25'),
+      1,
+      12,
+      8,
+      7,
+      0.5714,
+      0.5333,
+      0.4898,
+      0.4774,
+      50
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'odd_ranger'),
+      1,
+      12,
+      8,
+      7,
+      0.5714,
+      0.5333,
+      0.4898,
+      0.4827,
+      51
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'scornful_elite'),
+      1,
+      12,
+      9,
+      7,
+      0.5714,
+      0.5625,
+      0.4745,
+      0.477,
+      52
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'ella_ratke'),
+      1,
+      12,
+      9,
+      7,
+      0.5714,
+      0.5625,
+      0.458,
+      0.4578,
+      53
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'powerless_trainer_33'),
+      1,
+      12,
+      8,
+      7,
+      0.5714,
+      0.5333,
+      0.449,
+      0.4689,
+      54
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'malvinamitchell24'),
+      1,
+      12,
+      9,
+      8,
+      0.5714,
+      0.5294,
+      0.449,
+      0.4572,
+      55
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'brock'),
+      1,
+      12,
+      9,
+      8,
+      0.5714,
+      0.5294,
+      0.449,
+      0.4794,
+      56
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'marianna_stokes'),
+      1,
+      12,
+      9,
+      7,
+      0.5714,
+      0.5625,
+      0.4286,
+      0.479,
+      57
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'colby_roberts52'),
+      1,
+      12,
+      9,
+      8,
+      0.5714,
+      0.5294,
+      0.4286,
+      0.4527,
+      58
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'sigrid67'),
+      1,
+      12,
+      10,
+      9,
+      0.5714,
+      0.5263,
+      0.4286,
+      0.4616,
+      59
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'overcooked_trainer_5'),
+      1,
+      12,
+      10,
+      9,
+      0.5714,
+      0.5263,
+      0.4286,
+      0.4565,
+      60
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'total_champion'),
+      1,
+      12,
+      8,
+      8,
+      0.5714,
+      0.5,
+      0.4286,
+      0.4544,
+      61
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'enriquebalistreri40'),
+      1,
+      12,
+      9,
+      8,
+      0.5714,
+      0.5294,
+      0.4082,
+      0.4281,
+      62
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'price45'),
+      1,
+      12,
+      8,
+      7,
+      0.5714,
+      0.5333,
+      0.3878,
+      0.4405,
+      63
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'lempi_brakus24'),
+      1,
+      12,
+      10,
+      9,
+      0.5714,
+      0.5263,
+      0.3673,
+      0.4068,
+      64
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'cynthia'),
+      1,
+      9,
+      7,
+      8,
+      0.4286,
+      0.4667,
+      0.5969,
+      0.5484,
+      65
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'happy_trainer_400'),
+      1,
+      9,
+      8,
+      10,
+      0.4286,
+      0.4444,
+      0.5918,
+      0.5486,
+      66
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'rare_master'),
+      1,
+      9,
+      7,
+      9,
+      0.4286,
+      0.4375,
+      0.5918,
+      0.5728,
+      67
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'trentheaney20'),
+      1,
+      9,
+      7,
+      10,
+      0.4286,
+      0.4118,
+      0.5765,
+      0.5687,
+      68
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'unused_trainer_669'),
+      1,
+      9,
+      6,
+      9,
+      0.4286,
+      0.4,
+      0.574,
+      0.5738,
+      69
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'irma58'),
+      1,
+      9,
+      6,
+      8,
+      0.4286,
+      0.4286,
+      0.5601,
+      0.5457,
+      70
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'nervous_trainer'),
+      1,
+      9,
+      9,
+      10,
+      0.4286,
+      0.4737,
+      0.551,
+      0.5342,
+      71
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'faraway_master'),
+      1,
+      9,
+      7,
+      10,
+      0.4286,
+      0.4118,
+      0.551,
+      0.5621,
+      72
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'major_breeder'),
+      1,
+      9,
+      6,
+      9,
+      0.4286,
+      0.4,
+      0.551,
+      0.541,
+      73
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'lorna_effertz'),
+      1,
+      9,
+      8,
+      10,
+      0.4286,
+      0.4444,
+      0.551,
+      0.5445,
+      74
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'hope_cummerata20'),
+      1,
+      9,
+      8,
+      9,
+      0.4286,
+      0.4706,
+      0.5367,
+      0.499,
+      75
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'runny_champion'),
+      1,
+      9,
+      8,
+      8,
+      0.4286,
+      0.5,
+      0.5357,
+      0.5277,
+      76
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'novakuhic68'),
+      1,
+      9,
+      9,
+      10,
+      0.4286,
+      0.4737,
+      0.5102,
+      0.5093,
+      77
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'neat_ace'),
+      1,
+      9,
+      8,
+      9,
+      0.4286,
+      0.4706,
+      0.5102,
+      0.5283,
+      78
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'demetrius_gutkowski'),
+      1,
+      9,
+      7,
+      8,
+      0.4286,
+      0.4667,
+      0.5102,
+      0.5113,
+      79
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'annette20'),
+      1,
+      9,
+      7,
+      9,
+      0.4286,
+      0.4375,
+      0.5102,
+      0.5141,
+      80
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'vincent_hickle19'),
+      1,
+      9,
+      7,
+      9,
+      0.4286,
+      0.4375,
+      0.4898,
+      0.4851,
+      81
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'frivolous_master'),
+      1,
+      9,
+      8,
+      9,
+      0.4286,
+      0.4706,
+      0.4898,
+      0.5004,
+      82
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'liquid_ace'),
+      1,
+      9,
+      8,
+      10,
+      0.4286,
+      0.4444,
+      0.4898,
+      0.4677,
+      83
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'khalillarson_schuppe'),
+      1,
+      9,
+      8,
+      10,
+      0.4286,
+      0.4444,
+      0.4694,
+      0.4791,
+      84
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'insistent_ranger'),
+      1,
+      9,
+      6,
+      10,
+      0.4286,
+      0.375,
+      0.4694,
+      0.462,
+      85
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'taut_trainer_671'),
+      1,
+      9,
+      8,
+      8,
+      0.4286,
+      0.5,
+      0.4694,
+      0.4732,
+      86
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'sorrowful_trainer_13'),
+      1,
+      9,
+      7,
+      9,
+      0.4286,
+      0.4375,
+      0.449,
+      0.4603,
+      87
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'thorny_trainer_213'),
+      1,
+      9,
+      7,
+      9,
+      0.4286,
+      0.4375,
+      0.4408,
+      0.4625,
+      88
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'huge_trainer_672'),
+      1,
+      9,
+      7,
+      9,
+      0.4286,
+      0.4375,
+      0.4286,
+      0.4371,
+      89
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'maiya_renner'),
+      1,
+      9,
+      6,
+      9,
+      0.4286,
+      0.4,
+      0.4286,
+      0.4766,
+      90
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'ordinary_trainer_36'),
+      1,
+      9,
+      8,
+      9,
+      0.4286,
+      0.4706,
+      0.4286,
+      0.4484,
+      91
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'gaston_funk5'),
+      1,
+      9,
+      8,
+      10,
+      0.4286,
+      0.4444,
+      0.4286,
+      0.4689,
+      92
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'weekly_trainer_641'),
+      1,
+      9,
+      8,
+      8,
+      0.4286,
+      0.5,
+      0.4082,
+      0.4048,
+      93
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'artfritsch16'),
+      1,
+      9,
+      9,
+      10,
+      0.4286,
+      0.4737,
+      0.4082,
+      0.4289,
+      94
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'itzel12'),
+      1,
+      9,
+      7,
+      10,
+      0.4286,
+      0.4118,
+      0.4082,
+      0.4593,
+      95
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'laurynbalistreri76'),
+      1,
+      9,
+      8,
+      8,
+      0.4286,
+      0.5,
+      0.3878,
+      0.4348,
+      96
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'diamond_kunze75'),
+      1,
+      9,
+      7,
+      8,
+      0.4286,
+      0.4667,
+      0.3878,
+      0.4165,
+      97
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'romaine_homenick'),
+      1,
+      9,
+      9,
+      9,
+      0.4286,
+      0.5,
+      0.3673,
+      0.3997,
+      98
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'eryn_stracke_hand41'),
+      1,
+      9,
+      6,
+      9,
+      0.4286,
+      0.4,
+      0.3061,
+      0.3886,
+      99
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'reidstamm21'),
+      1,
+      6,
+      7,
+      11,
+      0.2857,
+      0.3889,
+      0.5306,
+      0.5268,
+      100
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'waynegorczany73'),
+      1,
+      6,
+      6,
+      11,
+      0.2857,
+      0.3529,
+      0.5306,
+      0.5222,
+      101
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'nettie_hermiston'),
+      1,
+      6,
+      6,
+      10,
+      0.2857,
+      0.375,
+      0.5244,
+      0.5209,
+      102
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'claudestreich31'),
+      1,
+      6,
+      6,
+      10,
+      0.2857,
+      0.375,
+      0.449,
+      0.4607,
+      103
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'late_trainer_395'),
+      1,
+      6,
+      7,
+      10,
+      0.2857,
+      0.4118,
+      0.449,
+      0.4548,
+      104
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'viviane_rempel'),
+      1,
+      6,
+      6,
+      12,
+      0.2857,
+      0.3333,
+      0.449,
+      0.4765,
+      105
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'werner_auer80'),
+      1,
+      6,
+      8,
+      11,
+      0.2857,
+      0.4211,
+      0.4286,
+      0.4528,
+      106
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'nolanlangosh54'),
+      1,
+      6,
+      6,
+      10,
+      0.2857,
+      0.375,
+      0.4286,
+      0.4274,
+      107
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'noted_gym'),
+      1,
+      6,
+      5,
+      11,
+      0.2857,
+      0.3125,
+      0.4286,
+      0.4542,
+      108
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'laurettayundt22'),
+      1,
+      6,
+      7,
+      10,
+      0.2857,
+      0.4118,
+      0.4133,
+      0.422,
+      109
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'johnnievandervort55'),
+      1,
+      6,
+      6,
+      11,
+      0.2857,
+      0.3529,
+      0.4082,
+      0.4441,
+      110
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'filthy_trainer_361'),
+      1,
+      6,
+      6,
+      11,
+      0.2857,
+      0.3529,
+      0.4082,
+      0.4699,
+      111
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'entire_trainer'),
+      1,
+      6,
+      6,
+      12,
+      0.2857,
+      0.3333,
+      0.4082,
+      0.4352,
+      112
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'fake_ace'),
+      1,
+      6,
+      5,
+      12,
+      0.2857,
+      0.2941,
+      0.4082,
+      0.4593,
+      113
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'shameful_master'),
+      1,
+      6,
+      7,
+      11,
+      0.2857,
+      0.3889,
+      0.3878,
+      0.407,
+      114
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'submissive_trainer_7'),
+      1,
+      6,
+      6,
+      11,
+      0.2857,
+      0.3529,
+      0.3878,
+      0.4062,
+      115
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'mariannamacejkovic76'),
+      1,
+      6,
+      6,
+      11,
+      0.2857,
+      0.3529,
+      0.3878,
+      0.4351,
+      116
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'shanie_maggio'),
+      1,
+      6,
+      5,
+      12,
+      0.2857,
+      0.2941,
+      0.3673,
+      0.424,
+      117
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'sick_trainer'),
+      1,
+      6,
+      6,
+      11,
+      0.2857,
+      0.3529,
+      0.3673,
+      0.4316,
+      118
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'courteous_trainer_87'),
+      1,
+      6,
+      5,
+      11,
+      0.2857,
+      0.3125,
+      0.3469,
+      0.4061,
+      119
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'amber_reichel25'),
+      1,
+      6,
+      5,
+      10,
+      0.2857,
+      0.3333,
+      0.3265,
+      0.3911,
+      120
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'multicolored_trainer'),
+      1,
+      3,
+      7,
+      12,
+      0.1429,
+      0.3684,
+      0.449,
+      0.4453,
+      121
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'fortunate_champion'),
+      1,
+      3,
+      6,
+      12,
+      0.1429,
+      0.3333,
+      0.449,
+      0.4547,
+      122
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'kamron_kemmer91'),
+      1,
+      3,
+      4,
+      12,
+      0.1429,
+      0.25,
+      0.4286,
+      0.4494,
+      123
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'brilliant_breeder'),
+      1,
+      3,
+      4,
+      12,
+      0.1429,
+      0.25,
+      0.3673,
+      0.4084,
+      124
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'nippy_elite'),
+      1,
+      3,
+      4,
+      13,
+      0.1429,
+      0.2353,
+      0.3673,
+      0.4224,
+      125
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'teagan92'),
+      1,
+      3,
+      3,
+      13,
+      0.1429,
+      0.1875,
+      0.3469,
+      0.3915,
+      126
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'francesco_nader66'),
+      1,
+      3,
+      5,
+      12,
+      0.1429,
+      0.2941,
+      0.2449,
+      0.3109,
+      127
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'treviono_kon17'),
+      1,
+      0,
+      3,
+      14,
+      0,
+      0.1765,
+      0.3469,
+      0.3888,
+      128
+    );
+  END IF;
+
+  -- Tournament: Pallet Town Trainers Week 9 Practice
+  SELECT t.id INTO t_id FROM public.tournaments t
+    WHERE t.slug = 'pallet-town-practice-week-09';
+  IF t_id IS NOT NULL THEN
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'fortunate_champion'),
+      1,
+      15,
+      10,
+      2,
+      1,
+      0.8333,
+      0.64,
+      0.5718,
+      1
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'rosy_trainer_409'),
+      1,
+      12,
+      9,
+      4,
+      0.8,
+      0.6923,
+      0.56,
+      0.5456,
+      2
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'norene68'),
+      1,
+      12,
+      9,
+      4,
+      0.8,
+      0.6923,
+      0.52,
+      0.5469,
+      3
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'flaviedare76'),
+      1,
+      12,
+      8,
+      3,
+      0.8,
+      0.7273,
+      0.44,
+      0.4497,
+      4
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'slushy_trainer_459'),
+      1,
+      9,
+      6,
+      6,
+      0.6,
+      0.5,
+      0.64,
+      0.58,
+      5
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'izabellabeahan79'),
+      1,
+      9,
+      7,
+      5,
+      0.6,
+      0.5833,
+      0.6,
+      0.5878,
+      6
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'noted_gym'),
+      1,
+      9,
+      6,
+      6,
+      0.6,
+      0.5,
+      0.6,
+      0.5551,
+      7
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'broderick40'),
+      1,
+      9,
+      7,
+      7,
+      0.6,
+      0.5,
+      0.56,
+      0.55,
+      8
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'jaleelstracke93'),
+      1,
+      9,
+      6,
+      4,
+      0.6,
+      0.6,
+      0.52,
+      0.4875,
+      9
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'nettie_hermiston'),
+      1,
+      9,
+      7,
+      5,
+      0.6,
+      0.5833,
+      0.48,
+      0.4573,
+      10
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'kelli_buckridge72'),
+      1,
+      9,
+      7,
+      5,
+      0.6,
+      0.5833,
+      0.48,
+      0.4866,
+      11
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'shad_williamson9'),
+      1,
+      9,
+      7,
+      5,
+      0.6,
+      0.5833,
+      0.48,
+      0.4632,
+      12
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'houston_walter'),
+      1,
+      6,
+      5,
+      7,
+      0.4,
+      0.4167,
+      0.56,
+      0.5706,
+      13
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'marianna_stokes'),
+      1,
+      6,
+      6,
+      7,
+      0.4,
+      0.4615,
+      0.56,
+      0.5627,
+      14
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'twin_trainer_704'),
+      1,
+      6,
+      7,
+      7,
+      0.4,
+      0.5,
+      0.52,
+      0.505,
+      15
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'joshweimann33'),
+      1,
+      6,
+      4,
+      7,
+      0.4,
+      0.3636,
+      0.52,
+      0.5449,
+      16
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'millie_zieme65'),
+      1,
+      6,
+      5,
+      7,
+      0.4,
+      0.4167,
+      0.44,
+      0.4345,
+      17
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'cyrilfriesen33'),
+      1,
+      6,
+      5,
+      6,
+      0.4,
+      0.4545,
+      0.44,
+      0.459,
+      18
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'frivolous_master'),
+      1,
+      6,
+      5,
+      8,
+      0.4,
+      0.3846,
+      0.36,
+      0.4231,
+      19
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'vincent_hickle19'),
+      1,
+      6,
+      5,
+      7,
+      0.4,
+      0.4167,
+      0.28,
+      0.3583,
+      20
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'jackiebins45'),
+      1,
+      3,
+      5,
+      8,
+      0.2,
+      0.3846,
+      0.52,
+      0.5237,
+      21
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'lonny_bechtelar49'),
+      1,
+      3,
+      3,
+      8,
+      0.2,
+      0.2727,
+      0.48,
+      0.5033,
+      22
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'casimer_baumbach'),
+      1,
+      3,
+      4,
+      8,
+      0.2,
+      0.3333,
+      0.4,
+      0.4212,
+      23
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'frequent_trainer_572'),
+      1,
+      0,
+      3,
+      10,
+      0,
+      0.2308,
+      0.4,
+      0.4266,
+      24
+    );
+  END IF;
+
+  -- Tournament: Sinnoh Champions Week 9 Championship
+  SELECT t.id INTO t_id FROM public.tournaments t
+    WHERE t.slug = 'sinnoh-champions-week-09';
+  IF t_id IS NOT NULL THEN
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'maiyaabshire82'),
+      1,
+      21,
+      16,
+      8,
+      0.7778,
+      0.6667,
+      0.5825,
+      0.5561,
+      1
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'gloomy_champion'),
+      1,
+      21,
+      15,
+      8,
+      0.7778,
+      0.6522,
+      0.6241,
+      0.5892,
+      2
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'godfreyjenkins91'),
+      1,
+      21,
+      14,
+      4,
+      0.875,
+      0.7778,
+      0.5719,
+      0.5547,
+      3
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'quick_witted_leader'),
+      1,
+      18,
+      13,
+      7,
+      0.75,
+      0.65,
+      0.655,
+      0.5947,
+      4
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'demetrius_gutkowski'),
+      1,
+      15,
+      10,
+      5,
+      0.7143,
+      0.6667,
+      0.6468,
+      0.5737,
+      5
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'monica_crist_fahey79'),
+      1,
+      15,
+      12,
+      5,
+      0.7143,
+      0.7059,
+      0.6437,
+      0.5863,
+      6
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'vincent_hickle19'),
+      1,
+      15,
+      11,
+      6,
+      0.7143,
+      0.6471,
+      0.5901,
+      0.5763,
+      7
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'frozen_trainer_101'),
+      1,
+      15,
+      10,
+      4,
+      0.7143,
+      0.7143,
+      0.4683,
+      0.4659,
+      8
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'oleflatley25'),
+      1,
+      12,
+      8,
+      5,
+      0.6667,
+      0.6154,
+      0.6458,
+      0.6118,
+      9
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'laurynbalistreri76'),
+      1,
+      12,
+      9,
+      5,
+      0.6667,
+      0.6429,
+      0.6366,
+      0.5885,
+      10
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'ordinary_trainer_36'),
+      1,
+      12,
+      8,
+      7,
+      0.6667,
+      0.5333,
+      0.5992,
+      0.5745,
+      11
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'awful_ranger'),
+      1,
+      12,
+      10,
+      7,
+      0.6667,
+      0.5882,
+      0.5926,
+      0.574,
+      12
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'frozen_trainer_653'),
+      1,
+      12,
+      8,
+      5,
+      0.6667,
+      0.6154,
+      0.5833,
+      0.5394,
+      13
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'nippy_elite'),
+      1,
+      12,
+      8,
+      6,
+      0.6667,
+      0.5714,
+      0.5714,
+      0.5741,
+      14
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'vain_trainer_113'),
+      1,
+      12,
+      8,
+      6,
+      0.6667,
+      0.5714,
+      0.5612,
+      0.5293,
+      15
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'sneaky_master'),
+      1,
+      12,
+      9,
+      6,
+      0.6667,
+      0.6,
+      0.5357,
+      0.5214,
+      16
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'dixiesanford87'),
+      1,
+      12,
+      10,
+      5,
+      0.6667,
+      0.6667,
+      0.5079,
+      0.4798,
+      17
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'hilma_veum18'),
+      1,
+      12,
+      8,
+      5,
+      0.6667,
+      0.6154,
+      0.5,
+      0.4841,
+      18
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'defensive_champion'),
+      1,
+      12,
+      8,
+      4,
+      0.6667,
+      0.6667,
+      0.4802,
+      0.4494,
+      19
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'katheryn_braun'),
+      1,
+      12,
+      9,
+      5,
+      0.6667,
+      0.6429,
+      0.4246,
+      0.453,
+      20
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'huge_trainer_672'),
+      1,
+      12,
+      9,
+      6,
+      0.6667,
+      0.6,
+      0.4246,
+      0.4551,
+      21
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'outstanding_elite'),
+      1,
+      12,
+      10,
+      7,
+      0.6667,
+      0.5882,
+      0.4167,
+      0.4532,
+      22
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'werner_auer80'),
+      1,
+      9,
+      6,
+      7,
+      0.5,
+      0.4615,
+      0.5913,
+      0.5854,
+      23
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'maiya_renner'),
+      1,
+      9,
+      9,
+      7,
+      0.5,
+      0.5625,
+      0.5833,
+      0.5458,
+      24
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'orland_kihn'),
+      1,
+      9,
+      7,
+      7,
+      0.5,
+      0.5,
+      0.5635,
+      0.5294,
+      25
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'nettie_hermiston'),
+      1,
+      9,
+      6,
+      7,
+      0.5,
+      0.4615,
+      0.5635,
+      0.5657,
+      26
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'corrupt_trainer'),
+      1,
+      9,
+      8,
+      7,
+      0.5,
+      0.5333,
+      0.5556,
+      0.545,
+      27
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'mariannamacejkovic76'),
+      1,
+      9,
+      8,
+      8,
+      0.5,
+      0.5,
+      0.5463,
+      0.5148,
+      28
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'itzel12'),
+      1,
+      9,
+      9,
+      7,
+      0.5,
+      0.5625,
+      0.5185,
+      0.5164,
+      29
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'jaydeemard34'),
+      1,
+      9,
+      7,
+      7,
+      0.5,
+      0.5,
+      0.5079,
+      0.5178,
+      30
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'bustling_elite'),
+      1,
+      9,
+      7,
+      6,
+      0.5,
+      0.5385,
+      0.5,
+      0.5088,
+      31
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'sammy_pouros'),
+      1,
+      9,
+      6,
+      7,
+      0.5,
+      0.4615,
+      0.5,
+      0.5125,
+      32
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'estell85'),
+      1,
+      9,
+      7,
+      7,
+      0.5,
+      0.5,
+      0.5,
+      0.5204,
+      33
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'richardswaniawski20'),
+      1,
+      9,
+      6,
+      8,
+      0.5,
+      0.4286,
+      0.5,
+      0.5024,
+      34
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'ashtyn_vonrueden'),
+      1,
+      9,
+      7,
+      9,
+      0.5,
+      0.4375,
+      0.4802,
+      0.5079,
+      35
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'ornery_trainer_904'),
+      1,
+      9,
+      7,
+      7,
+      0.5,
+      0.5,
+      0.4722,
+      0.4625,
+      36
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'major_breeder'),
+      1,
+      9,
+      8,
+      8,
+      0.5,
+      0.5,
+      0.463,
+      0.4815,
+      37
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'kayden33'),
+      1,
+      9,
+      6,
+      8,
+      0.5,
+      0.4286,
+      0.463,
+      0.4902,
+      38
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'brock'),
+      1,
+      9,
+      7,
+      7,
+      0.5,
+      0.5,
+      0.4167,
+      0.4403,
+      39
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'purple_champion'),
+      1,
+      9,
+      6,
+      6,
+      0.5,
+      0.5,
+      0.4167,
+      0.4455,
+      40
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'hilbert38'),
+      1,
+      9,
+      8,
+      8,
+      0.5,
+      0.5,
+      0.3889,
+      0.4141,
+      41
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'alvertalemke46'),
+      1,
+      9,
+      7,
+      7,
+      0.5,
+      0.5,
+      0.3889,
+      0.4397,
+      42
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'malvinamitchell24'),
+      1,
+      6,
+      7,
+      9,
+      0.3333,
+      0.4375,
+      0.6098,
+      0.5729,
+      43
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'norene68'),
+      1,
+      6,
+      8,
+      10,
+      0.3333,
+      0.4444,
+      0.5741,
+      0.5441,
+      44
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'beloved_leader'),
+      1,
+      6,
+      4,
+      9,
+      0.3333,
+      0.3077,
+      0.5278,
+      0.4991,
+      45
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'colorless_trainer_93'),
+      1,
+      6,
+      6,
+      8,
+      0.3333,
+      0.4286,
+      0.4722,
+      0.4801,
+      46
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'chaunceyjohnson55'),
+      1,
+      6,
+      4,
+      8,
+      0.3333,
+      0.3333,
+      0.4722,
+      0.4521,
+      47
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'mallory39'),
+      1,
+      6,
+      5,
+      9,
+      0.3333,
+      0.3571,
+      0.4444,
+      0.4643,
+      48
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'tatyanahintz44'),
+      1,
+      6,
+      4,
+      9,
+      0.3333,
+      0.3077,
+      0.4246,
+      0.4881,
+      49
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'liquid_ace'),
+      1,
+      6,
+      5,
+      8,
+      0.3333,
+      0.3846,
+      0.4167,
+      0.453,
+      50
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'unused_trainer_669'),
+      1,
+      6,
+      5,
+      8,
+      0.3333,
+      0.3846,
+      0.4167,
+      0.4359,
+      51
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'bowed_ace'),
+      1,
+      6,
+      4,
+      8,
+      0.3333,
+      0.3333,
+      0.4028,
+      0.4071,
+      52
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'admin_trainer'),
+      1,
+      6,
+      5,
+      8,
+      0.3333,
+      0.3846,
+      0.3889,
+      0.4008,
+      53
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'irma58'),
+      1,
+      6,
+      5,
+      8,
+      0.3333,
+      0.3846,
+      0.3889,
+      0.3919,
+      54
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'heavy_trainer_256'),
+      1,
+      6,
+      4,
+      9,
+      0.3333,
+      0.3077,
+      0.375,
+      0.3942,
+      55
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'eminent_ranger'),
+      1,
+      6,
+      8,
+      9,
+      0.3333,
+      0.4706,
+      0.3333,
+      0.3777,
+      56
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'kasey_jacobi99'),
+      1,
+      6,
+      7,
+      9,
+      0.3333,
+      0.4375,
+      0.3056,
+      0.3811,
+      57
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'jermaineharvey25'),
+      1,
+      3,
+      4,
+      11,
+      0.1667,
+      0.2667,
+      0.5532,
+      0.5414,
+      58
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'casimer_baumbach'),
+      1,
+      3,
+      3,
+      10,
+      0.1667,
+      0.2308,
+      0.5,
+      0.4728,
+      59
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'weekly_trainer_641'),
+      1,
+      3,
+      5,
+      10,
+      0.1667,
+      0.3333,
+      0.4871,
+      0.5295,
+      60
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'halliefay16'),
+      1,
+      3,
+      6,
+      11,
+      0.1667,
+      0.3529,
+      0.4802,
+      0.4799,
+      61
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'marquis78'),
+      1,
+      3,
+      4,
+      11,
+      0.1667,
+      0.2667,
+      0.3968,
+      0.4455,
+      62
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'shameful_master'),
+      1,
+      3,
+      5,
+      10,
+      0.1667,
+      0.3333,
+      0.3333,
+      0.355,
+      63
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'kiplarkin25'),
+      1,
+      0,
+      2,
+      12,
+      0,
+      0.1429,
+      0.2778,
+      0.3759,
+      64
+    );
+  END IF;
+
+  -- Tournament: Sinnoh Champions Week 9 Practice
+  SELECT t.id INTO t_id FROM public.tournaments t
+    WHERE t.slug = 'sinnoh-champions-practice-week-09';
+  IF t_id IS NOT NULL THEN
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'colby_roberts52'),
+      1,
+      15,
+      10,
+      2,
+      1,
+      0.8333,
+      0.5433,
+      0.5566,
+      1
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'entire_gym'),
+      1,
+      12,
+      8,
+      3,
+      0.8,
+      0.7273,
+      0.5833,
+      0.501,
+      2
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'neat_ace'),
+      1,
+      9,
+      6,
+      3,
+      0.75,
+      0.6667,
+      0.5417,
+      0.5012,
+      3
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'those_trainer_198'),
+      1,
+      9,
+      7,
+      3,
+      0.75,
+      0.7,
+      0.4917,
+      0.508,
+      4
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'long_trainer_533'),
+      1,
+      6,
+      5,
+      4,
+      0.6667,
+      0.5556,
+      0.5,
+      0.5889,
+      5
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'treviono_kon17'),
+      1,
+      6,
+      4,
+      3,
+      0.6667,
+      0.5714,
+      0.4333,
+      0.4424,
+      6
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'coralie_bernhard'),
+      1,
+      6,
+      4,
+      3,
+      0.6667,
+      0.5714,
+      0.4167,
+      0.4333,
+      7
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'ettie_abbott24'),
+      1,
+      6,
+      4,
+      3,
+      0.6667,
+      0.5714,
+      0.4167,
+      0.5,
+      8
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'frozen_trainer_101'),
+      1,
+      3,
+      2,
+      2,
+      0.5,
+      0.5,
+      0.5,
+      0.4167,
+      9
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'charlotteschoen99'),
+      1,
+      3,
+      2,
+      3,
+      0.5,
+      0.4,
+      0.4,
+      0.5303,
+      10
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'dario_west44'),
+      1,
+      3,
+      3,
+      2,
+      0.5,
+      0.6,
+      0.375,
+      0.3333,
+      11
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'jazmin_lubowitz'),
+      1,
+      3,
+      2,
+      3,
+      0.5,
+      0.4,
+      0.375,
+      0.5167,
+      12
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'bart74'),
+      1,
+      3,
+      3,
+      2,
+      0.5,
+      0.6,
+      0.3333,
+      0.2857,
+      13
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'viviane_rempel'),
+      1,
+      3,
+      3,
+      2,
+      0.5,
+      0.6,
+      0.3333,
+      0.2778,
+      14
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'shaylee16'),
+      1,
+      3,
+      3,
+      2,
+      0.5,
+      0.6,
+      0.3333,
+      0.2857,
+      15
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'garett_bergnaum'),
+      1,
+      3,
+      2,
+      2,
+      0.5,
+      0.5,
+      0.3333,
+      0.2857,
+      16
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'jabari_pagac18'),
+      1,
+      0,
+      1,
+      2,
+      0,
+      0.3333,
+      1,
+      0.8333,
+      17
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'grant_bednar'),
+      1,
+      0,
+      0,
+      2,
+      0,
+      0,
+      0.8,
+      0.7273,
+      18
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'skylar_bednar'),
+      1,
+      0,
+      1,
+      2,
+      0,
+      0.3333,
+      0.75,
+      0.7,
+      19
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'soupy_breeder'),
+      1,
+      0,
+      0,
+      2,
+      0,
+      0,
+      0.75,
+      0.6667,
+      20
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'nettie_hermiston'),
+      1,
+      0,
+      1,
+      2,
+      0,
+      0.3333,
+      0.6667,
+      0.5556,
+      21
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'emmittdubuque80'),
+      1,
+      0,
+      1,
+      2,
+      0,
+      0.3333,
+      0.6667,
+      0.5714,
+      22
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'shanie_maggio'),
+      1,
+      0,
+      0,
+      2,
+      0,
+      0,
+      0.6667,
+      0.5714,
+      23
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'chance65'),
+      1,
+      0,
+      0,
+      2,
+      0,
+      0,
+      0.6667,
+      0.5714,
+      24
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'sincere98'),
+      1,
+      0,
+      1,
+      2,
+      0,
+      0.3333,
+      0.5,
+      0.4,
+      25
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'huge_trainer_672'),
+      1,
+      0,
+      1,
+      2,
+      0,
+      0.3333,
+      0.5,
+      0.4,
+      26
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'enlightened_trainer_'),
+      1,
+      0,
+      0,
+      2,
+      0,
+      0,
+      0.5,
+      0.5,
+      27
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'salty_trainer_403'),
+      1,
+      0,
+      0,
+      2,
+      0,
+      0,
+      0.5,
+      0.5,
+      28
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'bad_trainer_106'),
+      1,
+      0,
+      0,
+      2,
+      0,
+      0,
+      0.5,
+      0.6,
+      29
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'halliefay16'),
+      1,
+      0,
+      0,
+      2,
+      0,
+      0,
+      0.5,
+      0.6,
+      30
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'price45'),
+      1,
+      0,
+      0,
+      2,
+      0,
+      0,
+      0.5,
+      0.6,
+      31
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'adela1'),
+      1,
+      0,
+      0,
+      2,
+      0,
+      0,
+      0.5,
+      0.6,
+      32
+    );
+  END IF;
+
+  -- Tournament: Kanto Elite Series Week 9 Championship
+  SELECT t.id INTO t_id FROM public.tournaments t
+    WHERE t.slug = 'kanto-elite-week-09';
+  IF t_id IS NOT NULL THEN
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'savanah33'),
+      1,
+      27,
+      18,
+      7,
+      0.9,
+      0.72,
+      0.651,
+      0.6168,
+      1
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'jaleelstracke93'),
+      1,
+      24,
+      17,
+      7,
+      0.8,
+      0.7083,
+      0.6745,
+      0.6314,
+      2
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'lonny_bechtelar49'),
+      1,
+      24,
+      17,
+      5,
+      0.8889,
+      0.7727,
+      0.6444,
+      0.6132,
+      3
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'garett_bergnaum'),
+      1,
+      21,
+      15,
+      6,
+      0.7778,
+      0.7143,
+      0.6837,
+      0.6085,
+      4
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'nicolaconn45'),
+      1,
+      18,
+      13,
+      5,
+      0.75,
+      0.7222,
+      0.6893,
+      0.5927,
+      5
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'neat_ace'),
+      1,
+      18,
+      12,
+      5,
+      0.75,
+      0.7059,
+      0.67,
+      0.5978,
+      6
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'multicolored_champio'),
+      1,
+      18,
+      13,
+      7,
+      0.75,
+      0.65,
+      0.6508,
+      0.6041,
+      7
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'parched_trainer_151'),
+      1,
+      18,
+      12,
+      5,
+      0.75,
+      0.7059,
+      0.5643,
+      0.5433,
+      8
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'those_trainer_198'),
+      1,
+      15,
+      11,
+      6,
+      0.7143,
+      0.6471,
+      0.7224,
+      0.6727,
+      9
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'tianna46'),
+      1,
+      15,
+      12,
+      4,
+      0.7143,
+      0.75,
+      0.6841,
+      0.6019,
+      10
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'vidaboyle57'),
+      1,
+      15,
+      10,
+      6,
+      0.7143,
+      0.625,
+      0.6173,
+      0.572,
+      11
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'blank_trainer_642'),
+      1,
+      15,
+      11,
+      8,
+      0.7143,
+      0.5789,
+      0.6173,
+      0.6019,
+      12
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'unused_trainer_669'),
+      1,
+      15,
+      10,
+      8,
+      0.7143,
+      0.5556,
+      0.6009,
+      0.5973,
+      13
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'dominic_zulauf'),
+      1,
+      15,
+      10,
+      6,
+      0.7143,
+      0.625,
+      0.6009,
+      0.5796,
+      14
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'sigmund_senger46'),
+      1,
+      15,
+      11,
+      6,
+      0.7143,
+      0.6471,
+      0.5969,
+      0.5651,
+      15
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'treverhartmann73'),
+      1,
+      15,
+      11,
+      5,
+      0.7143,
+      0.6875,
+      0.5918,
+      0.5271,
+      16
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'adolfomoen96'),
+      1,
+      15,
+      10,
+      6,
+      0.7143,
+      0.625,
+      0.5816,
+      0.5554,
+      17
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'fred_pacocha47'),
+      1,
+      15,
+      12,
+      4,
+      0.7143,
+      0.75,
+      0.5714,
+      0.5234,
+      18
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'nippy_elite'),
+      1,
+      15,
+      11,
+      6,
+      0.7143,
+      0.6471,
+      0.5714,
+      0.5815,
+      19
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'lera_reilly90'),
+      1,
+      15,
+      10,
+      7,
+      0.7143,
+      0.5882,
+      0.5652,
+      0.564,
+      20
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'laurynbalistreri76'),
+      1,
+      15,
+      11,
+      6,
+      0.7143,
+      0.6471,
+      0.5633,
+      0.513,
+      21
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'front_trainer_895'),
+      1,
+      15,
+      10,
+      5,
+      0.7143,
+      0.6667,
+      0.5561,
+      0.5273,
+      22
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'bill_pacocha'),
+      1,
+      15,
+      11,
+      6,
+      0.7143,
+      0.6471,
+      0.5561,
+      0.5382,
+      23
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'monica_crist_fahey79'),
+      1,
+      15,
+      11,
+      5,
+      0.7143,
+      0.6875,
+      0.5448,
+      0.5097,
+      24
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'price_fay82'),
+      1,
+      15,
+      11,
+      7,
+      0.7143,
+      0.6111,
+      0.5357,
+      0.5154,
+      25
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'vincent_hickle19'),
+      1,
+      15,
+      11,
+      7,
+      0.7143,
+      0.6111,
+      0.5357,
+      0.5352,
+      26
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'big_gym'),
+      1,
+      15,
+      12,
+      5,
+      0.7143,
+      0.7059,
+      0.4898,
+      0.4793,
+      27
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'entire_trainer'),
+      1,
+      15,
+      11,
+      6,
+      0.7143,
+      0.6471,
+      0.4694,
+      0.4738,
+      28
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'fake_ace'),
+      1,
+      15,
+      11,
+      6,
+      0.7143,
+      0.6471,
+      0.4286,
+      0.4552,
+      29
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'wilhelmmccullough77'),
+      1,
+      12,
+      8,
+      7,
+      0.5714,
+      0.5333,
+      0.5918,
+      0.5473,
+      30
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'westonwilderman14'),
+      1,
+      12,
+      9,
+      8,
+      0.5714,
+      0.5294,
+      0.5918,
+      0.5805,
+      31
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'unselfish_trainer_12'),
+      1,
+      12,
+      8,
+      8,
+      0.5714,
+      0.5,
+      0.5918,
+      0.5638,
+      32
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'dirty_trainer_951'),
+      1,
+      12,
+      9,
+      6,
+      0.5714,
+      0.6,
+      0.5888,
+      0.5546,
+      33
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'twin_trainer_704'),
+      1,
+      12,
+      9,
+      7,
+      0.5714,
+      0.5625,
+      0.5837,
+      0.532,
+      34
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'eryn_stracke_hand41'),
+      1,
+      12,
+      9,
+      6,
+      0.5714,
+      0.6,
+      0.5811,
+      0.5579,
+      35
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'mauricelittel79'),
+      1,
+      12,
+      10,
+      7,
+      0.5714,
+      0.5882,
+      0.5765,
+      0.5761,
+      36
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'well_to_do_trainer_5'),
+      1,
+      12,
+      8,
+      8,
+      0.5714,
+      0.5,
+      0.5765,
+      0.587,
+      37
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'rickylockman29'),
+      1,
+      12,
+      10,
+      10,
+      0.5714,
+      0.5,
+      0.5714,
+      0.5532,
+      38
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'hilbert38'),
+      1,
+      12,
+      8,
+      8,
+      0.5714,
+      0.5,
+      0.5714,
+      0.5546,
+      39
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'assuntaschoen_koelpi'),
+      1,
+      12,
+      8,
+      9,
+      0.5714,
+      0.4706,
+      0.5714,
+      0.5485,
+      40
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'delectable_trainer_3'),
+      1,
+      12,
+      8,
+      7,
+      0.5714,
+      0.5333,
+      0.5367,
+      0.5241,
+      41
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'ronny_koss27'),
+      1,
+      12,
+      8,
+      9,
+      0.5714,
+      0.4706,
+      0.5306,
+      0.512,
+      42
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'halliefay16'),
+      1,
+      12,
+      10,
+      6,
+      0.5714,
+      0.625,
+      0.5306,
+      0.5193,
+      43
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'faint_trainer_713'),
+      1,
+      12,
+      10,
+      8,
+      0.5714,
+      0.5556,
+      0.5102,
+      0.535,
+      44
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'ripe_trainer_294'),
+      1,
+      12,
+      10,
+      8,
+      0.5714,
+      0.5556,
+      0.5102,
+      0.4878,
+      45
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'eugene_huel73'),
+      1,
+      12,
+      8,
+      7,
+      0.5714,
+      0.5333,
+      0.5102,
+      0.4879,
+      46
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'lucy_reilly'),
+      1,
+      12,
+      9,
+      8,
+      0.5714,
+      0.5294,
+      0.5102,
+      0.5232,
+      47
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'lorna_effertz'),
+      1,
+      12,
+      10,
+      6,
+      0.5714,
+      0.625,
+      0.5102,
+      0.5027,
+      48
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'emiliebednar53'),
+      1,
+      12,
+      10,
+      7,
+      0.5714,
+      0.5882,
+      0.4949,
+      0.5341,
+      49
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'kasandracronin25'),
+      1,
+      12,
+      10,
+      7,
+      0.5714,
+      0.5882,
+      0.4898,
+      0.4667,
+      50
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'sorrowful_trainer_13'),
+      1,
+      12,
+      9,
+      7,
+      0.5714,
+      0.5625,
+      0.4898,
+      0.4894,
+      51
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'substantial_trainer_'),
+      1,
+      12,
+      10,
+      8,
+      0.5714,
+      0.5556,
+      0.4898,
+      0.5085,
+      52
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'quick_witted_leader'),
+      1,
+      12,
+      8,
+      9,
+      0.5714,
+      0.4706,
+      0.4745,
+      0.5008,
+      53
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'ornery_trainer_904'),
+      1,
+      12,
+      10,
+      8,
+      0.5714,
+      0.5556,
+      0.4739,
+      0.4789,
+      54
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'personal_trainer_58'),
+      1,
+      12,
+      10,
+      6,
+      0.5714,
+      0.625,
+      0.4694,
+      0.4676,
+      55
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'sammy_pouros'),
+      1,
+      12,
+      10,
+      7,
+      0.5714,
+      0.5882,
+      0.449,
+      0.4435,
+      56
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'artfritsch16'),
+      1,
+      12,
+      9,
+      8,
+      0.5714,
+      0.5294,
+      0.449,
+      0.4467,
+      57
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'werner_auer80'),
+      1,
+      12,
+      9,
+      7,
+      0.5714,
+      0.5625,
+      0.449,
+      0.4778,
+      58
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'made_up_trainer_12'),
+      1,
+      12,
+      8,
+      8,
+      0.5714,
+      0.5,
+      0.4376,
+      0.4469,
+      59
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'heavy_trainer_256'),
+      1,
+      12,
+      9,
+      8,
+      0.5714,
+      0.5294,
+      0.4286,
+      0.4264,
+      60
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'hildegard_predovic'),
+      1,
+      12,
+      8,
+      9,
+      0.5714,
+      0.4706,
+      0.4286,
+      0.4581,
+      61
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'faraway_master'),
+      1,
+      12,
+      9,
+      7,
+      0.5714,
+      0.5625,
+      0.4082,
+      0.4326,
+      62
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'richardswaniawski20'),
+      1,
+      12,
+      9,
+      7,
+      0.5714,
+      0.5625,
+      0.3878,
+      0.4348,
+      63
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'incomplete_trainer_6'),
+      1,
+      12,
+      9,
+      6,
+      0.5714,
+      0.6,
+      0.3673,
+      0.3852,
+      64
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'phony_leader'),
+      1,
+      9,
+      8,
+      10,
+      0.4286,
+      0.4444,
+      0.6041,
+      0.6034,
+      65
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'aged_trainer_120'),
+      1,
+      9,
+      6,
+      10,
+      0.4286,
+      0.375,
+      0.5561,
+      0.5486,
+      66
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'weekly_trainer_641'),
+      1,
+      9,
+      8,
+      9,
+      0.4286,
+      0.4706,
+      0.551,
+      0.5447,
+      67
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'broderick40'),
+      1,
+      9,
+      7,
+      10,
+      0.4286,
+      0.4118,
+      0.551,
+      0.532,
+      68
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'quincy_pouros90'),
+      1,
+      9,
+      8,
+      8,
+      0.4286,
+      0.5,
+      0.5429,
+      0.5286,
+      69
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'joshweimann33'),
+      1,
+      9,
+      8,
+      8,
+      0.4286,
+      0.5,
+      0.5306,
+      0.5153,
+      70
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'late_trainer_395'),
+      1,
+      9,
+      9,
+      9,
+      0.4286,
+      0.5,
+      0.5306,
+      0.5068,
+      71
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'alda_rau2'),
+      1,
+      9,
+      8,
+      10,
+      0.4286,
+      0.4444,
+      0.5306,
+      0.5137,
+      72
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'mallory39'),
+      1,
+      9,
+      7,
+      9,
+      0.4286,
+      0.4375,
+      0.5306,
+      0.5369,
+      73
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'casimer_baumbach'),
+      1,
+      9,
+      7,
+      10,
+      0.4286,
+      0.4118,
+      0.5153,
+      0.5121,
+      74
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'francesco_nader66'),
+      1,
+      9,
+      6,
+      10,
+      0.4286,
+      0.375,
+      0.5102,
+      0.5068,
+      75
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'claudestreich31'),
+      1,
+      9,
+      6,
+      11,
+      0.4286,
+      0.3529,
+      0.4949,
+      0.5009,
+      76
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'nicola69'),
+      1,
+      9,
+      10,
+      9,
+      0.4286,
+      0.5263,
+      0.4898,
+      0.4662,
+      77
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'weldon_bergnaum_schu'),
+      1,
+      9,
+      8,
+      9,
+      0.4286,
+      0.4706,
+      0.4898,
+      0.4979,
+      78
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'wilsontrantow30'),
+      1,
+      9,
+      9,
+      9,
+      0.4286,
+      0.5,
+      0.4694,
+      0.4575,
+      79
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'gloomy_champion'),
+      1,
+      9,
+      9,
+      9,
+      0.4286,
+      0.5,
+      0.4694,
+      0.4536,
+      80
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'odd_ranger'),
+      1,
+      9,
+      8,
+      9,
+      0.4286,
+      0.4706,
+      0.4694,
+      0.4713,
+      81
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'kamron_kemmer91'),
+      1,
+      9,
+      7,
+      9,
+      0.4286,
+      0.4375,
+      0.4694,
+      0.4883,
+      82
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'brock'),
+      1,
+      9,
+      6,
+      9,
+      0.4286,
+      0.4,
+      0.4694,
+      0.4864,
+      83
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'adela1'),
+      1,
+      9,
+      7,
+      8,
+      0.4286,
+      0.4667,
+      0.4541,
+      0.4658,
+      84
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'thorny_trainer_213'),
+      1,
+      9,
+      7,
+      10,
+      0.4286,
+      0.4118,
+      0.4535,
+      0.4718,
+      85
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'stanley_schneider'),
+      1,
+      9,
+      8,
+      9,
+      0.4286,
+      0.4706,
+      0.449,
+      0.4892,
+      86
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'aliviashields97'),
+      1,
+      9,
+      9,
+      10,
+      0.4286,
+      0.4737,
+      0.449,
+      0.4659,
+      87
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'vain_trainer_113'),
+      1,
+      9,
+      7,
+      8,
+      0.4286,
+      0.4667,
+      0.4286,
+      0.4742,
+      88
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'shameful_master'),
+      1,
+      9,
+      7,
+      8,
+      0.4286,
+      0.4667,
+      0.4286,
+      0.4402,
+      89
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'courteous_trainer_87'),
+      1,
+      9,
+      8,
+      10,
+      0.4286,
+      0.4444,
+      0.4286,
+      0.4444,
+      90
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'overcooked_trainer_5'),
+      1,
+      9,
+      7,
+      10,
+      0.4286,
+      0.4118,
+      0.4082,
+      0.4265,
+      91
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'frivolous_master'),
+      1,
+      9,
+      6,
+      9,
+      0.4286,
+      0.4,
+      0.4082,
+      0.4625,
+      92
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'godfreyjenkins91'),
+      1,
+      9,
+      8,
+      8,
+      0.4286,
+      0.5,
+      0.3929,
+      0.4236,
+      93
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'oleflatley25'),
+      1,
+      9,
+      8,
+      8,
+      0.4286,
+      0.5,
+      0.3878,
+      0.4134,
+      94
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'made_up_trainer_161'),
+      1,
+      9,
+      9,
+      8,
+      0.4286,
+      0.5294,
+      0.3673,
+      0.4068,
+      95
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'robin_schultz'),
+      1,
+      9,
+      9,
+      8,
+      0.4286,
+      0.5294,
+      0.3673,
+      0.4055,
+      96
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'sneaky_master'),
+      1,
+      9,
+      8,
+      9,
+      0.4286,
+      0.4706,
+      0.3673,
+      0.3966,
+      97
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'soupy_breeder'),
+      1,
+      9,
+      7,
+      9,
+      0.4286,
+      0.4375,
+      0.3673,
+      0.4226,
+      98
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'scornful_trainer_666'),
+      1,
+      9,
+      8,
+      8,
+      0.4286,
+      0.5,
+      0.3469,
+      0.348,
+      99
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'powerless_trainer_33'),
+      1,
+      6,
+      5,
+      11,
+      0.2857,
+      0.3125,
+      0.5561,
+      0.5319,
+      100
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'enlightened_trainer_'),
+      1,
+      6,
+      5,
+      11,
+      0.2857,
+      0.3125,
+      0.5367,
+      0.5331,
+      101
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'delilaho_hara84'),
+      1,
+      6,
+      6,
+      11,
+      0.2857,
+      0.3529,
+      0.5147,
+      0.5132,
+      102
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'insistent_ranger'),
+      1,
+      6,
+      6,
+      11,
+      0.2857,
+      0.3529,
+      0.5102,
+      0.5153,
+      103
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'mariannamacejkovic76'),
+      1,
+      6,
+      6,
+      10,
+      0.2857,
+      0.375,
+      0.5102,
+      0.5001,
+      104
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'eminent_ranger'),
+      1,
+      6,
+      5,
+      12,
+      0.2857,
+      0.2941,
+      0.4959,
+      0.5173,
+      105
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'novakuhic68'),
+      1,
+      6,
+      4,
+      11,
+      0.2857,
+      0.2667,
+      0.4898,
+      0.5063,
+      106
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'bart74'),
+      1,
+      6,
+      6,
+      10,
+      0.2857,
+      0.375,
+      0.4898,
+      0.4962,
+      107
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'trusting_trainer_973'),
+      1,
+      6,
+      7,
+      11,
+      0.2857,
+      0.3889,
+      0.4785,
+      0.4881,
+      108
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'ophelia96'),
+      1,
+      6,
+      7,
+      10,
+      0.2857,
+      0.4118,
+      0.4694,
+      0.4665,
+      109
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'fausto_mraz11'),
+      1,
+      6,
+      4,
+      10,
+      0.2857,
+      0.2857,
+      0.449,
+      0.4858,
+      110
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'marguerite_hintz'),
+      1,
+      6,
+      6,
+      10,
+      0.2857,
+      0.375,
+      0.4337,
+      0.4539,
+      111
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'brody25'),
+      1,
+      6,
+      7,
+      10,
+      0.2857,
+      0.4118,
+      0.4286,
+      0.4371,
+      112
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'beloved_leader'),
+      1,
+      6,
+      5,
+      10,
+      0.2857,
+      0.3333,
+      0.4286,
+      0.4554,
+      113
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'coralie_bernhard'),
+      1,
+      6,
+      7,
+      11,
+      0.2857,
+      0.3889,
+      0.3878,
+      0.4137,
+      114
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'katrina16'),
+      1,
+      6,
+      6,
+      10,
+      0.2857,
+      0.375,
+      0.3673,
+      0.4118,
+      115
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'foolhardy_trainer_79'),
+      1,
+      6,
+      5,
+      11,
+      0.2857,
+      0.3125,
+      0.3673,
+      0.405,
+      116
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'elaina_nitzsche'),
+      1,
+      6,
+      6,
+      11,
+      0.2857,
+      0.3529,
+      0.3673,
+      0.4021,
+      117
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'viviane_rempel'),
+      1,
+      6,
+      6,
+      11,
+      0.2857,
+      0.3529,
+      0.3469,
+      0.4087,
+      118
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'awful_ranger'),
+      1,
+      6,
+      5,
+      11,
+      0.2857,
+      0.3125,
+      0.3469,
+      0.4118,
+      119
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'recent_trainer_469'),
+      1,
+      6,
+      5,
+      12,
+      0.2857,
+      0.2941,
+      0.2857,
+      0.3511,
+      120
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'kayden33'),
+      1,
+      3,
+      3,
+      12,
+      0.1429,
+      0.2,
+      0.551,
+      0.5515,
+      121
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'cathrinemosciski_wun'),
+      1,
+      3,
+      4,
+      13,
+      0.1429,
+      0.2353,
+      0.4694,
+      0.5127,
+      122
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'chelsea_witting'),
+      1,
+      3,
+      4,
+      13,
+      0.1429,
+      0.2353,
+      0.449,
+      0.4574,
+      123
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'willing_trainer_39'),
+      1,
+      3,
+      4,
+      12,
+      0.1429,
+      0.25,
+      0.4082,
+      0.4152,
+      124
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'gregorio_schuster_ke'),
+      1,
+      3,
+      5,
+      13,
+      0.1429,
+      0.2778,
+      0.3673,
+      0.3891,
+      125
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'frozen_trainer_101'),
+      1,
+      3,
+      4,
+      12,
+      0.1429,
+      0.25,
+      0.3469,
+      0.3814,
+      126
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'sick_trainer'),
+      1,
+      3,
+      3,
+      12,
+      0.1429,
+      0.2,
+      0.3061,
+      0.3672,
+      127
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'filthy_trainer_361'),
+      1,
+      0,
+      2,
+      14,
+      0,
+      0.125,
+      0.2857,
+      0.345,
+      128
+    );
+  END IF;
+
+  -- Tournament: Kanto Elite Series Week 9 Practice
+  SELECT t.id INTO t_id FROM public.tournaments t
+    WHERE t.slug = 'kanto-elite-practice-week-09';
+  IF t_id IS NOT NULL THEN
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'delta_olson'),
+      1,
+      15,
+      10,
+      1,
+      1,
+      0.9091,
+      0.64,
+      0.6062,
+      1
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'westonwilderman14'),
+      1,
+      12,
+      8,
+      3,
+      0.8,
+      0.7273,
+      0.48,
+      0.491,
+      2
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'made_up_trainer_161'),
+      1,
+      12,
+      8,
+      3,
+      0.8,
+      0.7273,
+      0.48,
+      0.5071,
+      3
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'rey_bode55'),
+      1,
+      12,
+      8,
+      5,
+      0.8,
+      0.6154,
+      0.48,
+      0.5042,
+      4
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'shaylee16'),
+      1,
+      12,
+      9,
+      3,
+      0.8,
+      0.75,
+      0.4,
+      0.401,
+      5
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'opheliadicki91'),
+      1,
+      9,
+      7,
+      5,
+      0.6,
+      0.5833,
+      0.68,
+      0.6247,
+      6
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'skylar_bednar'),
+      1,
+      9,
+      7,
+      5,
+      0.6,
+      0.5833,
+      0.6,
+      0.5699,
+      7
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'wallace_reichert'),
+      1,
+      9,
+      6,
+      5,
+      0.6,
+      0.5455,
+      0.6,
+      0.5869,
+      8
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'hildegard_predovic'),
+      1,
+      9,
+      7,
+      4,
+      0.6,
+      0.6364,
+      0.52,
+      0.4882,
+      9
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'vidaboyle57'),
+      1,
+      9,
+      7,
+      6,
+      0.6,
+      0.5385,
+      0.52,
+      0.5135,
+      10
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'alyson_stiedemann'),
+      1,
+      9,
+      7,
+      6,
+      0.6,
+      0.5385,
+      0.48,
+      0.4682,
+      11
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'scary_trainer_677'),
+      1,
+      6,
+      4,
+      7,
+      0.4,
+      0.3636,
+      0.64,
+      0.5942,
+      12
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'fred_pacocha47'),
+      1,
+      6,
+      5,
+      8,
+      0.4,
+      0.3846,
+      0.6,
+      0.5578,
+      13
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'kamron_kemmer91'),
+      1,
+      6,
+      5,
+      7,
+      0.4,
+      0.4167,
+      0.56,
+      0.5727,
+      14
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'jessicaleannon22'),
+      1,
+      6,
+      6,
+      7,
+      0.4,
+      0.4615,
+      0.52,
+      0.5244,
+      15
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'lexieerdman24'),
+      1,
+      6,
+      5,
+      7,
+      0.4,
+      0.4167,
+      0.48,
+      0.4797,
+      16
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'titus_kohler60'),
+      1,
+      6,
+      6,
+      7,
+      0.4,
+      0.4615,
+      0.4,
+      0.4172,
+      17
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'rubbery_elite'),
+      1,
+      6,
+      6,
+      6,
+      0.4,
+      0.5,
+      0.36,
+      0.3949,
+      18
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'orland_kihn'),
+      1,
+      6,
+      5,
+      7,
+      0.4,
+      0.4167,
+      0.36,
+      0.4115,
+      19
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'shanelfeeney90'),
+      1,
+      3,
+      4,
+      8,
+      0.2,
+      0.3333,
+      0.56,
+      0.5275,
+      20
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'nicola69'),
+      1,
+      3,
+      3,
+      9,
+      0.2,
+      0.25,
+      0.52,
+      0.5619,
+      21
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'easy_trainer_738'),
+      1,
+      3,
+      4,
+      9,
+      0.2,
+      0.3077,
+      0.4,
+      0.4617,
+      22
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'true_elite'),
+      1,
+      3,
+      5,
+      8,
+      0.2,
+      0.3846,
+      0.36,
+      0.3903,
+      23
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'unused_trainer_669'),
+      1,
+      3,
+      3,
+      9,
+      0.2,
+      0.25,
+      0.36,
+      0.4465,
+      24
+    );
+  END IF;
+
+  -- Tournament: Johto Masters League Week 9 Championship
+  SELECT t.id INTO t_id FROM public.tournaments t
+    WHERE t.slug = 'johto-masters-week-09';
+  IF t_id IS NOT NULL THEN
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'neat_ace'),
+      1,
+      24,
+      16,
+      4,
+      0.8889,
+      0.8,
+      0.6354,
+      0.5985,
+      1
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'ronny_koss27'),
+      1,
+      21,
+      15,
+      6,
+      0.7778,
+      0.7143,
+      0.6206,
+      0.5899,
+      2
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'defensive_champion'),
+      1,
+      18,
+      13,
+      7,
+      0.75,
+      0.65,
+      0.6171,
+      0.581,
+      3
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'reidstamm21'),
+      1,
+      15,
+      11,
+      9,
+      0.625,
+      0.55,
+      0.5407,
+      0.5365,
+      4
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'madyson24'),
+      1,
+      18,
+      12,
+      4,
+      0.8571,
+      0.75,
+      0.5782,
+      0.5497,
+      5
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'arnoldo81'),
+      1,
+      15,
+      11,
+      6,
+      0.7143,
+      0.6471,
+      0.5867,
+      0.5512,
+      6
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'colorless_trainer_93'),
+      1,
+      15,
+      10,
+      5,
+      0.7143,
+      0.6667,
+      0.5635,
+      0.5428,
+      7
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'joshweimann33'),
+      1,
+      15,
+      11,
+      4,
+      0.7143,
+      0.7333,
+      0.494,
+      0.4787,
+      8
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'trusting_trainer_973'),
+      1,
+      12,
+      9,
+      7,
+      0.6667,
+      0.5625,
+      0.6369,
+      0.5754,
+      9
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'scottie17'),
+      1,
+      12,
+      9,
+      6,
+      0.6667,
+      0.6,
+      0.625,
+      0.56,
+      10
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'cody_heaney'),
+      1,
+      12,
+      8,
+      6,
+      0.6667,
+      0.5714,
+      0.6019,
+      0.5974,
+      11
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'blank_trainer_642'),
+      1,
+      12,
+      8,
+      7,
+      0.6667,
+      0.5333,
+      0.6005,
+      0.5775,
+      12
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'long_trainer_533'),
+      1,
+      12,
+      8,
+      5,
+      0.6667,
+      0.6154,
+      0.5565,
+      0.54,
+      13
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'scornful_elite'),
+      1,
+      12,
+      8,
+      6,
+      0.6667,
+      0.5714,
+      0.5463,
+      0.531,
+      14
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'marianamitchell71'),
+      1,
+      12,
+      9,
+      6,
+      0.6667,
+      0.6,
+      0.537,
+      0.5271,
+      15
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'stunning_trainer_537'),
+      1,
+      12,
+      9,
+      7,
+      0.6667,
+      0.5625,
+      0.5357,
+      0.541,
+      16
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'sneaky_master'),
+      1,
+      12,
+      8,
+      8,
+      0.6667,
+      0.5,
+      0.5357,
+      0.5438,
+      17
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'violent_trainer_345'),
+      1,
+      12,
+      10,
+      4,
+      0.6667,
+      0.7143,
+      0.5278,
+      0.5119,
+      18
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'ash_ketchum'),
+      1,
+      12,
+      9,
+      7,
+      0.6667,
+      0.5625,
+      0.5278,
+      0.5224,
+      19
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'brody25'),
+      1,
+      12,
+      8,
+      6,
+      0.6667,
+      0.5714,
+      0.5139,
+      0.5028,
+      20
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'orland_kihn'),
+      1,
+      12,
+      9,
+      5,
+      0.6667,
+      0.6429,
+      0.5093,
+      0.4977,
+      21
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'cathrinemosciski_wun'),
+      1,
+      12,
+      9,
+      6,
+      0.6667,
+      0.6,
+      0.4802,
+      0.4961,
+      22
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'late_trainer_395'),
+      1,
+      9,
+      7,
+      6,
+      0.5,
+      0.5385,
+      0.6849,
+      0.6155,
+      23
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'jackiebins45'),
+      1,
+      9,
+      9,
+      6,
+      0.5,
+      0.6,
+      0.6693,
+      0.6092,
+      24
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'dallas56'),
+      1,
+      9,
+      7,
+      7,
+      0.5,
+      0.5,
+      0.5913,
+      0.5913,
+      25
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'elaina_nitzsche'),
+      1,
+      9,
+      7,
+      8,
+      0.5,
+      0.4667,
+      0.5635,
+      0.5766,
+      26
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'marilyne_bogan7'),
+      1,
+      9,
+      8,
+      7,
+      0.5,
+      0.5333,
+      0.5278,
+      0.4916,
+      27
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'multicolored_trainer'),
+      1,
+      9,
+      8,
+      7,
+      0.5,
+      0.5333,
+      0.5278,
+      0.4952,
+      28
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'laurettayundt22'),
+      1,
+      9,
+      7,
+      7,
+      0.5,
+      0.5,
+      0.5278,
+      0.5086,
+      29
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'aliviashields97'),
+      1,
+      9,
+      9,
+      6,
+      0.5,
+      0.6,
+      0.5093,
+      0.473,
+      30
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'multicolored_champio'),
+      1,
+      9,
+      7,
+      7,
+      0.5,
+      0.5,
+      0.5069,
+      0.4762,
+      31
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'dixiesanford87'),
+      1,
+      9,
+      6,
+      7,
+      0.5,
+      0.4615,
+      0.5,
+      0.4826,
+      32
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'vidaboyle57'),
+      1,
+      9,
+      7,
+      6,
+      0.5,
+      0.5385,
+      0.4722,
+      0.4872,
+      33
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'eugene_huel73'),
+      1,
+      9,
+      8,
+      7,
+      0.5,
+      0.5333,
+      0.4722,
+      0.466,
+      34
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'slushy_trainer_459'),
+      1,
+      9,
+      7,
+      7,
+      0.5,
+      0.5,
+      0.4583,
+      0.4906,
+      35
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'coralie_bernhard'),
+      1,
+      9,
+      7,
+      7,
+      0.5,
+      0.5,
+      0.4454,
+      0.4708,
+      36
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'easy_trainer_738'),
+      1,
+      9,
+      7,
+      6,
+      0.5,
+      0.5385,
+      0.4444,
+      0.455,
+      37
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'alyson_stiedemann'),
+      1,
+      9,
+      6,
+      6,
+      0.5,
+      0.5,
+      0.4444,
+      0.4432,
+      38
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'short_term_elite'),
+      1,
+      9,
+      6,
+      7,
+      0.5,
+      0.4615,
+      0.4167,
+      0.462,
+      39
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'scornful_trainer_666'),
+      1,
+      9,
+      6,
+      9,
+      0.5,
+      0.4,
+      0.3889,
+      0.4062,
+      40
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'personal_trainer_58'),
+      1,
+      9,
+      6,
+      7,
+      0.5,
+      0.4615,
+      0.3611,
+      0.401,
+      41
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'novakuhic68'),
+      1,
+      9,
+      9,
+      6,
+      0.5,
+      0.6,
+      0.2778,
+      0.3468,
+      42
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'jermaineharvey25'),
+      1,
+      6,
+      6,
+      9,
+      0.3333,
+      0.4,
+      0.5741,
+      0.5913,
+      43
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'taut_leader'),
+      1,
+      6,
+      7,
+      8,
+      0.3333,
+      0.4667,
+      0.5496,
+      0.5469,
+      44
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'pitiful_elite'),
+      1,
+      6,
+      5,
+      9,
+      0.3333,
+      0.3571,
+      0.545,
+      0.5356,
+      45
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'salty_trainer_403'),
+      1,
+      6,
+      5,
+      8,
+      0.3333,
+      0.3846,
+      0.5079,
+      0.5286,
+      46
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'rubbery_elite'),
+      1,
+      6,
+      5,
+      10,
+      0.3333,
+      0.3333,
+      0.5079,
+      0.5326,
+      47
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'nella_russel'),
+      1,
+      6,
+      5,
+      9,
+      0.3333,
+      0.3571,
+      0.4931,
+      0.4978,
+      48
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'frequent_trainer_572'),
+      1,
+      6,
+      6,
+      9,
+      0.3333,
+      0.4,
+      0.4907,
+      0.5379,
+      49
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'ettie_abbott24'),
+      1,
+      6,
+      5,
+      8,
+      0.3333,
+      0.3846,
+      0.4722,
+      0.4715,
+      50
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'substantial_trainer_'),
+      1,
+      6,
+      5,
+      9,
+      0.3333,
+      0.3571,
+      0.4484,
+      0.447,
+      51
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'mauricelittel79'),
+      1,
+      6,
+      7,
+      10,
+      0.3333,
+      0.4118,
+      0.4444,
+      0.4889,
+      52
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'jaleelstracke93'),
+      1,
+      6,
+      5,
+      10,
+      0.3333,
+      0.3333,
+      0.4375,
+      0.4369,
+      53
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'tressie65'),
+      1,
+      6,
+      7,
+      8,
+      0.3333,
+      0.4667,
+      0.3889,
+      0.4057,
+      54
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'kayla75'),
+      1,
+      6,
+      5,
+      8,
+      0.3333,
+      0.3846,
+      0.3333,
+      0.3708,
+      55
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'vernie34'),
+      1,
+      6,
+      7,
+      8,
+      0.3333,
+      0.4667,
+      0.3056,
+      0.3708,
+      56
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'marquis78'),
+      1,
+      6,
+      6,
+      9,
+      0.3333,
+      0.4,
+      0.3056,
+      0.3839,
+      57
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'ophelia96'),
+      1,
+      3,
+      4,
+      10,
+      0.1667,
+      0.2857,
+      0.5079,
+      0.504,
+      58
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'arturofahey55'),
+      1,
+      3,
+      3,
+      11,
+      0.1667,
+      0.2143,
+      0.4444,
+      0.445,
+      59
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'eminent_ranger'),
+      1,
+      3,
+      3,
+      11,
+      0.1667,
+      0.2143,
+      0.4444,
+      0.4674,
+      60
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'jessicaleannon22'),
+      1,
+      3,
+      6,
+      10,
+      0.1667,
+      0.375,
+      0.3889,
+      0.3977,
+      61
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'slushy_breeder'),
+      1,
+      3,
+      2,
+      10,
+      0.1667,
+      0.1667,
+      0.3651,
+      0.4532,
+      62
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'mallory39'),
+      1,
+      3,
+      4,
+      11,
+      0.1667,
+      0.2667,
+      0.3333,
+      0.3498,
+      63
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'brown_gym'),
+      1,
+      0,
+      2,
+      12,
+      0,
+      0.1429,
+      0.3333,
+      0.3936,
+      64
+    );
+  END IF;
+
+  -- Tournament: Johto Masters League Week 9 Practice
+  SELECT t.id INTO t_id FROM public.tournaments t
+    WHERE t.slug = 'johto-masters-practice-week-09';
+  IF t_id IS NOT NULL THEN
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'marquis78'),
+      1,
+      15,
+      10,
+      1,
+      1,
+      0.9091,
+      0.6,
+      0.5796,
+      1
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'cody_heaney'),
+      1,
+      12,
+      8,
+      2,
+      0.8,
+      0.8,
+      0.68,
+      0.6075,
+      2
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'mariannamacejkovic76'),
+      1,
+      12,
+      8,
+      4,
+      0.8,
+      0.6667,
+      0.56,
+      0.5715,
+      3
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'delta_olson'),
+      1,
+      12,
+      8,
+      3,
+      0.8,
+      0.7273,
+      0.48,
+      0.4666,
+      4
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'ivah_mcglynn'),
+      1,
+      9,
+      6,
+      7,
+      0.6,
+      0.4615,
+      0.72,
+      0.6789,
+      5
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'sick_trainer'),
+      1,
+      9,
+      7,
+      5,
+      0.6,
+      0.5833,
+      0.6,
+      0.5488,
+      6
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'sniveling_trainer'),
+      1,
+      9,
+      7,
+      4,
+      0.6,
+      0.6364,
+      0.52,
+      0.5045,
+      7
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'blank_trainer_642'),
+      1,
+      9,
+      7,
+      4,
+      0.6,
+      0.6364,
+      0.48,
+      0.4862,
+      8
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'lucy_reilly'),
+      1,
+      9,
+      6,
+      7,
+      0.6,
+      0.4615,
+      0.44,
+      0.5009,
+      9
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'arturofahey55'),
+      1,
+      9,
+      7,
+      4,
+      0.6,
+      0.6364,
+      0.4,
+      0.4394,
+      10
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'weekly_trainer_641'),
+      1,
+      9,
+      7,
+      6,
+      0.6,
+      0.5385,
+      0.4,
+      0.3999,
+      11
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'marianamitchell71'),
+      1,
+      9,
+      6,
+      4,
+      0.6,
+      0.6,
+      0.32,
+      0.3742,
+      12
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'aged_trainer_120'),
+      1,
+      9,
+      7,
+      4,
+      0.6,
+      0.6364,
+      0.28,
+      0.3391,
+      13
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'ordinary_trainer_36'),
+      1,
+      6,
+      5,
+      6,
+      0.4,
+      0.4545,
+      0.72,
+      0.7018,
+      14
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'frequent_trainer_572'),
+      1,
+      6,
+      5,
+      6,
+      0.4,
+      0.4545,
+      0.6,
+      0.5591,
+      15
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'sneaky_master'),
+      1,
+      6,
+      5,
+      7,
+      0.4,
+      0.4167,
+      0.52,
+      0.5368,
+      16
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'titus_kohler60'),
+      1,
+      6,
+      5,
+      7,
+      0.4,
+      0.4167,
+      0.52,
+      0.5344,
+      17
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'price_fay82'),
+      1,
+      6,
+      5,
+      8,
+      0.4,
+      0.3846,
+      0.44,
+      0.45,
+      18
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'ronny_koss27'),
+      1,
+      6,
+      4,
+      6,
+      0.4,
+      0.4,
+      0.4,
+      0.4439,
+      19
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'big_gym'),
+      1,
+      3,
+      4,
+      8,
+      0.2,
+      0.3333,
+      0.52,
+      0.5102,
+      20
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'kenna_beahan'),
+      1,
+      3,
+      3,
+      8,
+      0.2,
+      0.2727,
+      0.48,
+      0.4909,
+      21
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'huge_trainer_672'),
+      1,
+      3,
+      3,
+      9,
+      0.2,
+      0.25,
+      0.44,
+      0.4725,
+      22
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'marianna_stokes'),
+      1,
+      3,
+      4,
+      8,
+      0.2,
+      0.3333,
+      0.36,
+      0.3678,
+      23
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'candid_breeder'),
+      1,
+      0,
+      1,
+      10,
+      0,
+      0.0909,
+      0.52,
+      0.5363,
+      24
+    );
+  END IF;
+
+  -- Tournament: VGC League Week 10 Championship
+  SELECT t.id INTO t_id FROM public.tournaments t
+    WHERE t.slug = 'vgc-league-week-10';
+  IF t_id IS NOT NULL THEN
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'jaleelstracke93'),
+      1,
+      24,
+      16,
+      6,
+      0.8889,
+      0.7273,
+      0.7174,
+      0.6295,
+      1
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'drab_trainer_487'),
+      1,
+      21,
+      15,
+      10,
+      0.7778,
+      0.6,
+      0.5948,
+      0.564,
+      2
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'vain_trainer_113'),
+      1,
+      21,
+      15,
+      7,
+      0.875,
+      0.6818,
+      0.5704,
+      0.577,
+      3
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'nicola69'),
+      1,
+      18,
+      13,
+      7,
+      0.75,
+      0.65,
+      0.5526,
+      0.555,
+      4
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'delectable_trainer_3'),
+      1,
+      15,
+      12,
+      5,
+      0.7143,
+      0.7059,
+      0.6874,
+      0.6182,
+      5
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'practical_leader'),
+      1,
+      15,
+      11,
+      6,
+      0.7143,
+      0.6471,
+      0.5658,
+      0.536,
+      6
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'awful_ranger'),
+      1,
+      15,
+      11,
+      4,
+      0.7143,
+      0.7333,
+      0.5465,
+      0.4914,
+      7
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'shaylee16'),
+      1,
+      12,
+      10,
+      6,
+      0.5714,
+      0.625,
+      0.6318,
+      0.5605,
+      8
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'brock'),
+      1,
+      12,
+      9,
+      6,
+      0.6667,
+      0.6,
+      0.6296,
+      0.5756,
+      9
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'cruel_trainer_440'),
+      1,
+      12,
+      8,
+      6,
+      0.6667,
+      0.5714,
+      0.5714,
+      0.5541,
+      10
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'unselfish_trainer_12'),
+      1,
+      12,
+      8,
+      7,
+      0.6667,
+      0.5333,
+      0.5714,
+      0.5583,
+      11
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'arnoldo81'),
+      1,
+      12,
+      9,
+      5,
+      0.6667,
+      0.6429,
+      0.5704,
+      0.505,
+      12
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'faraway_master'),
+      1,
+      12,
+      9,
+      6,
+      0.6667,
+      0.6,
+      0.5556,
+      0.5331,
+      13
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'shad_williamson9'),
+      1,
+      12,
+      8,
+      5,
+      0.6667,
+      0.6154,
+      0.545,
+      0.5268,
+      14
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'valentinaklocko65'),
+      1,
+      12,
+      9,
+      5,
+      0.6667,
+      0.6429,
+      0.5357,
+      0.5406,
+      15
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'liquid_ace'),
+      1,
+      12,
+      10,
+      5,
+      0.6667,
+      0.6667,
+      0.5,
+      0.4905,
+      16
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'claudestreich31'),
+      1,
+      12,
+      9,
+      5,
+      0.6667,
+      0.6429,
+      0.4861,
+      0.5057,
+      17
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'bart74'),
+      1,
+      12,
+      9,
+      6,
+      0.6667,
+      0.6,
+      0.4815,
+      0.4943,
+      18
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'red'),
+      1,
+      12,
+      9,
+      5,
+      0.6667,
+      0.6429,
+      0.4444,
+      0.4894,
+      19
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'richardswaniawski20'),
+      1,
+      12,
+      9,
+      5,
+      0.6667,
+      0.6429,
+      0.4167,
+      0.4269,
+      20
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'gummy_pro'),
+      1,
+      12,
+      9,
+      6,
+      0.6667,
+      0.6,
+      0.3889,
+      0.4415,
+      21
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'dallas56'),
+      1,
+      12,
+      10,
+      6,
+      0.6667,
+      0.625,
+      0.3611,
+      0.4013,
+      22
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'unused_trainer_669'),
+      1,
+      9,
+      8,
+      8,
+      0.5,
+      0.5,
+      0.6181,
+      0.5916,
+      23
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'huge_trainer_672'),
+      1,
+      9,
+      8,
+      7,
+      0.5,
+      0.5333,
+      0.6111,
+      0.5465,
+      24
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'scornful_elite'),
+      1,
+      9,
+      7,
+      9,
+      0.5,
+      0.4375,
+      0.5972,
+      0.5893,
+      25
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'price_fay82'),
+      1,
+      9,
+      9,
+      6,
+      0.5,
+      0.6,
+      0.5833,
+      0.5542,
+      26
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'sammy_pouros'),
+      1,
+      9,
+      6,
+      7,
+      0.5,
+      0.4615,
+      0.5661,
+      0.5709,
+      27
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'godfreyjenkins91'),
+      1,
+      9,
+      6,
+      8,
+      0.5,
+      0.4286,
+      0.5357,
+      0.5078,
+      28
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'angelic_trainer_423'),
+      1,
+      9,
+      8,
+      7,
+      0.5,
+      0.5333,
+      0.5278,
+      0.5248,
+      29
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'sally_block33'),
+      1,
+      9,
+      7,
+      7,
+      0.5,
+      0.5,
+      0.5278,
+      0.5301,
+      30
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'those_trainer_198'),
+      1,
+      9,
+      6,
+      7,
+      0.5,
+      0.4615,
+      0.5278,
+      0.5222,
+      31
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'waynegorczany73'),
+      1,
+      9,
+      7,
+      7,
+      0.5,
+      0.5,
+      0.5119,
+      0.4806,
+      32
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'rosy_trainer_409'),
+      1,
+      9,
+      7,
+      7,
+      0.5,
+      0.5,
+      0.5,
+      0.4653,
+      33
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'lance'),
+      1,
+      9,
+      7,
+      8,
+      0.5,
+      0.4667,
+      0.5,
+      0.542,
+      34
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'bustling_elite'),
+      1,
+      9,
+      7,
+      6,
+      0.5,
+      0.5385,
+      0.4444,
+      0.4429,
+      35
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'felicia62'),
+      1,
+      9,
+      8,
+      8,
+      0.5,
+      0.5,
+      0.4444,
+      0.4301,
+      36
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'nervous_trainer'),
+      1,
+      9,
+      6,
+      8,
+      0.5,
+      0.4286,
+      0.4444,
+      0.4889,
+      37
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'robust_elite'),
+      1,
+      9,
+      8,
+      6,
+      0.5,
+      0.5714,
+      0.4306,
+      0.4552,
+      38
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'treverhartmann73'),
+      1,
+      9,
+      7,
+      6,
+      0.5,
+      0.5385,
+      0.4306,
+      0.4495,
+      39
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'annette_harber2'),
+      1,
+      9,
+      7,
+      6,
+      0.5,
+      0.5385,
+      0.4167,
+      0.4251,
+      40
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'sneaky_master'),
+      1,
+      9,
+      7,
+      6,
+      0.5,
+      0.5385,
+      0.4167,
+      0.4371,
+      41
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'jazmin_lubowitz'),
+      1,
+      9,
+      7,
+      7,
+      0.5,
+      0.5,
+      0.4167,
+      0.4318,
+      42
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'ella_ratke'),
+      1,
+      6,
+      7,
+      9,
+      0.3333,
+      0.4375,
+      0.6366,
+      0.5772,
+      43
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'nippy_elite'),
+      1,
+      6,
+      5,
+      9,
+      0.3333,
+      0.3571,
+      0.5714,
+      0.5634,
+      44
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'ornery_trainer_904'),
+      1,
+      6,
+      7,
+      9,
+      0.3333,
+      0.4375,
+      0.5635,
+      0.5534,
+      45
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'filthy_trainer_361'),
+      1,
+      6,
+      4,
+      8,
+      0.3333,
+      0.3333,
+      0.5278,
+      0.5477,
+      46
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'slushy_trainer_459'),
+      1,
+      6,
+      7,
+      8,
+      0.3333,
+      0.4667,
+      0.4722,
+      0.4515,
+      47
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'dixiesanford87'),
+      1,
+      6,
+      5,
+      10,
+      0.3333,
+      0.3333,
+      0.463,
+      0.4616,
+      48
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'valentin_hodkiewicz3'),
+      1,
+      6,
+      5,
+      10,
+      0.3333,
+      0.3333,
+      0.4563,
+      0.4764,
+      49
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'diamond_kunze75'),
+      1,
+      6,
+      5,
+      9,
+      0.3333,
+      0.3571,
+      0.4444,
+      0.4889,
+      50
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'noted_gym'),
+      1,
+      6,
+      6,
+      9,
+      0.3333,
+      0.4,
+      0.4107,
+      0.4508,
+      51
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'westonwilderman14'),
+      1,
+      6,
+      5,
+      9,
+      0.3333,
+      0.3571,
+      0.3889,
+      0.3847,
+      52
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'stanley_schneider'),
+      1,
+      6,
+      6,
+      8,
+      0.3333,
+      0.4286,
+      0.3889,
+      0.3827,
+      53
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'scottie17'),
+      1,
+      6,
+      5,
+      10,
+      0.3333,
+      0.3333,
+      0.3889,
+      0.4217,
+      54
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'katheryn_braun'),
+      1,
+      6,
+      5,
+      8,
+      0.3333,
+      0.3846,
+      0.3611,
+      0.4111,
+      55
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'elaina_nitzsche'),
+      1,
+      6,
+      5,
+      10,
+      0.3333,
+      0.3333,
+      0.3333,
+      0.3902,
+      56
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'jaydeemard34'),
+      1,
+      6,
+      6,
+      8,
+      0.3333,
+      0.4286,
+      0.3056,
+      0.3417,
+      57
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'impossible_trainer_9'),
+      1,
+      3,
+      2,
+      10,
+      0.1667,
+      0.1667,
+      0.5357,
+      0.5493,
+      58
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'coralie_bernhard'),
+      1,
+      3,
+      2,
+      11,
+      0.1667,
+      0.1538,
+      0.5,
+      0.5208,
+      59
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'grant_bednar'),
+      1,
+      3,
+      4,
+      10,
+      0.1667,
+      0.2857,
+      0.3889,
+      0.431,
+      60
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'gregorio_schuster_ke'),
+      1,
+      3,
+      4,
+      11,
+      0.1667,
+      0.2667,
+      0.3889,
+      0.4347,
+      61
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'jazmyne80'),
+      1,
+      3,
+      5,
+      11,
+      0.1667,
+      0.3125,
+      0.3611,
+      0.4115,
+      62
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'rickylockman29'),
+      1,
+      3,
+      4,
+      10,
+      0.1667,
+      0.2857,
+      0.3611,
+      0.4143,
+      63
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'lucius41'),
+      1,
+      0,
+      4,
+      12,
+      0,
+      0.25,
+      0.5069,
+      0.508,
+      64
+    );
+  END IF;
+
+  -- Tournament: VGC League Week 10 Practice
+  SELECT t.id INTO t_id FROM public.tournaments t
+    WHERE t.slug = 'vgc-league-practice-week-10';
+  IF t_id IS NOT NULL THEN
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'odd_ranger'),
+      1,
+      12,
+      8,
+      1,
+      1,
+      0.8889,
+      0.625,
+      0.5641,
+      1
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'demetrius_gutkowski'),
+      1,
+      9,
+      6,
+      4,
+      0.75,
+      0.6,
+      0.6875,
+      0.6427,
+      2
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'angelic_trainer_423'),
+      1,
+      9,
+      6,
+      3,
+      0.75,
+      0.6667,
+      0.5,
+      0.529,
+      3
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'marianna_stokes'),
+      1,
+      9,
+      7,
+      4,
+      0.75,
+      0.6364,
+      0.375,
+      0.4159,
+      4
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'easy_trainer_738'),
+      1,
+      9,
+      6,
+      2,
+      0.75,
+      0.75,
+      0.3125,
+      0.3694,
+      5
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'lempi_brakus24'),
+      1,
+      6,
+      6,
+      5,
+      0.5,
+      0.5455,
+      0.625,
+      0.5875,
+      6
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'shaylee16'),
+      1,
+      6,
+      4,
+      4,
+      0.5,
+      0.5,
+      0.625,
+      0.5688,
+      7
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'vidaboyle57'),
+      1,
+      6,
+      5,
+      4,
+      0.5,
+      0.5556,
+      0.5,
+      0.5145,
+      8
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'godfreyjenkins91'),
+      1,
+      6,
+      4,
+      4,
+      0.5,
+      0.5,
+      0.5,
+      0.4909,
+      9
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'multicolored_trainer'),
+      1,
+      6,
+      4,
+      5,
+      0.5,
+      0.4444,
+      0.5,
+      0.5076,
+      10
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'fred_pacocha47'),
+      1,
+      6,
+      4,
+      5,
+      0.5,
+      0.4444,
+      0.3125,
+      0.4155,
+      11
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'alvertalemke46'),
+      1,
+      3,
+      4,
+      7,
+      0.25,
+      0.3636,
+      0.625,
+      0.5896,
+      12
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'felicia62'),
+      1,
+      3,
+      2,
+      7,
+      0.25,
+      0.2222,
+      0.5,
+      0.5278,
+      13
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'taut_trainer_671'),
+      1,
+      3,
+      5,
+      7,
+      0.25,
+      0.4167,
+      0.375,
+      0.3939,
+      14
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'janellebradtke25'),
+      1,
+      3,
+      4,
+      7,
+      0.25,
+      0.3636,
+      0.375,
+      0.4319,
+      15
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'true_elite'),
+      1,
+      0,
+      2,
+      8,
+      0,
+      0.2,
+      0.5625,
+      0.5486,
+      16
+    );
+  END IF;
+
+  -- Tournament: Pallet Town Trainers Week 10 Championship
+  SELECT t.id INTO t_id FROM public.tournaments t
+    WHERE t.slug = 'pallet-town-week-10';
+  IF t_id IS NOT NULL THEN
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'alda_rau2'),
+      1,
+      27,
+      19,
+      6,
+      0.9,
+      0.76,
+      0.6756,
+      0.6292,
+      1
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'hope_cummerata20'),
+      1,
+      27,
+      19,
+      4,
+      0.9,
+      0.8261,
+      0.6713,
+      0.5889,
+      2
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'red'),
+      1,
+      21,
+      15,
+      8,
+      0.7778,
+      0.6522,
+      0.6278,
+      0.6049,
+      3
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'multicolored_champio'),
+      1,
+      21,
+      15,
+      8,
+      0.7778,
+      0.6522,
+      0.6048,
+      0.5945,
+      4
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'submissive_trainer_7'),
+      1,
+      18,
+      12,
+      6,
+      0.75,
+      0.6667,
+      0.725,
+      0.6749,
+      5
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'vain_trainer_113'),
+      1,
+      18,
+      12,
+      7,
+      0.75,
+      0.6316,
+      0.674,
+      0.6336,
+      6
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'beloved_leader'),
+      1,
+      18,
+      13,
+      7,
+      0.75,
+      0.65,
+      0.6329,
+      0.5744,
+      7
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'kayla75'),
+      1,
+      18,
+      13,
+      6,
+      0.75,
+      0.6842,
+      0.5437,
+      0.5311,
+      8
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'lee51'),
+      1,
+      15,
+      11,
+      6,
+      0.7143,
+      0.6471,
+      0.6468,
+      0.5859,
+      9
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'impossible_trainer_9'),
+      1,
+      15,
+      12,
+      5,
+      0.7143,
+      0.7059,
+      0.6378,
+      0.5891,
+      10
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'aged_trainer_120'),
+      1,
+      15,
+      10,
+      5,
+      0.7143,
+      0.6667,
+      0.6327,
+      0.587,
+      11
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'houston_walter'),
+      1,
+      15,
+      10,
+      6,
+      0.7143,
+      0.625,
+      0.6235,
+      0.569,
+      12
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'mariannamacejkovic76'),
+      1,
+      15,
+      11,
+      7,
+      0.7143,
+      0.6111,
+      0.607,
+      0.5648,
+      13
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'incomplete_trainer_6'),
+      1,
+      15,
+      10,
+      6,
+      0.7143,
+      0.625,
+      0.606,
+      0.555,
+      14
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'monica_crist_fahey79'),
+      1,
+      15,
+      10,
+      7,
+      0.7143,
+      0.5882,
+      0.5765,
+      0.5439,
+      15
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'noted_gym'),
+      1,
+      15,
+      10,
+      6,
+      0.7143,
+      0.625,
+      0.5714,
+      0.5565,
+      16
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'fausto_mraz11'),
+      1,
+      15,
+      10,
+      5,
+      0.7143,
+      0.6667,
+      0.5612,
+      0.5168,
+      17
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'mauricelittel79'),
+      1,
+      15,
+      11,
+      5,
+      0.7143,
+      0.6875,
+      0.551,
+      0.5479,
+      18
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'tatyanahintz44'),
+      1,
+      15,
+      11,
+      7,
+      0.7143,
+      0.6111,
+      0.551,
+      0.5395,
+      19
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'sigmund_senger46'),
+      1,
+      15,
+      10,
+      4,
+      0.7143,
+      0.7143,
+      0.5357,
+      0.5227,
+      20
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'quincy_pouros90'),
+      1,
+      15,
+      12,
+      6,
+      0.7143,
+      0.6667,
+      0.5306,
+      0.4963,
+      21
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'uncomfortable_traine'),
+      1,
+      15,
+      10,
+      4,
+      0.7143,
+      0.7143,
+      0.5153,
+      0.4803,
+      22
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'drab_trainer_487'),
+      1,
+      15,
+      11,
+      5,
+      0.7143,
+      0.6875,
+      0.5153,
+      0.4929,
+      23
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'rickylockman29'),
+      1,
+      15,
+      11,
+      6,
+      0.7143,
+      0.6471,
+      0.4898,
+      0.4959,
+      24
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'jacynthe_klein'),
+      1,
+      15,
+      12,
+      7,
+      0.7143,
+      0.6316,
+      0.4898,
+      0.4844,
+      25
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'ashleylueilwitz37'),
+      1,
+      15,
+      10,
+      6,
+      0.7143,
+      0.625,
+      0.449,
+      0.4814,
+      26
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'scottie17'),
+      1,
+      15,
+      10,
+      7,
+      0.7143,
+      0.5882,
+      0.449,
+      0.4709,
+      27
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'lempi_brakus24'),
+      1,
+      15,
+      11,
+      7,
+      0.7143,
+      0.6111,
+      0.4286,
+      0.469,
+      28
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'pitiful_elite'),
+      1,
+      15,
+      10,
+      5,
+      0.7143,
+      0.6667,
+      0.4082,
+      0.4575,
+      29
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'opheliadicki91'),
+      1,
+      12,
+      9,
+      8,
+      0.5714,
+      0.5294,
+      0.6633,
+      0.5859,
+      30
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'short_term_elite'),
+      1,
+      12,
+      11,
+      7,
+      0.5714,
+      0.6111,
+      0.6264,
+      0.589,
+      31
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'fortunate_champion'),
+      1,
+      12,
+      8,
+      8,
+      0.5714,
+      0.5,
+      0.6173,
+      0.5782,
+      32
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'gaston_funk5'),
+      1,
+      12,
+      10,
+      7,
+      0.5714,
+      0.5882,
+      0.6009,
+      0.547,
+      33
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'made_up_trainer_161'),
+      1,
+      12,
+      10,
+      6,
+      0.5714,
+      0.625,
+      0.598,
+      0.5425,
+      34
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'valentinaklocko65'),
+      1,
+      12,
+      9,
+      9,
+      0.5714,
+      0.5,
+      0.5776,
+      0.5607,
+      35
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'grant_bednar'),
+      1,
+      12,
+      9,
+      9,
+      0.5714,
+      0.5,
+      0.5776,
+      0.5592,
+      36
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'hilma_veum18'),
+      1,
+      12,
+      10,
+      8,
+      0.5714,
+      0.5556,
+      0.5765,
+      0.5254,
+      37
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'adela1'),
+      1,
+      12,
+      8,
+      7,
+      0.5714,
+      0.5333,
+      0.5765,
+      0.5652,
+      38
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'smooth_trainer_36'),
+      1,
+      12,
+      9,
+      8,
+      0.5714,
+      0.5294,
+      0.5765,
+      0.5474,
+      39
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'demetrius_gutkowski'),
+      1,
+      12,
+      9,
+      9,
+      0.5714,
+      0.5,
+      0.5765,
+      0.5688,
+      40
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'marilyne_bogan7'),
+      1,
+      12,
+      8,
+      8,
+      0.5714,
+      0.5,
+      0.5714,
+      0.5496,
+      41
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'clevekling88'),
+      1,
+      12,
+      8,
+      9,
+      0.5714,
+      0.4706,
+      0.5714,
+      0.575,
+      42
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'outstanding_elite'),
+      1,
+      12,
+      9,
+      7,
+      0.5714,
+      0.5625,
+      0.5601,
+      0.5212,
+      43
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'qualified_trainer_61'),
+      1,
+      12,
+      11,
+      6,
+      0.5714,
+      0.6471,
+      0.5571,
+      0.5002,
+      44
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'practical_leader'),
+      1,
+      12,
+      10,
+      7,
+      0.5714,
+      0.5882,
+      0.5561,
+      0.5281,
+      45
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'annette_harber2'),
+      1,
+      12,
+      9,
+      9,
+      0.5714,
+      0.5,
+      0.5561,
+      0.5636,
+      46
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'ella_ratke'),
+      1,
+      12,
+      8,
+      7,
+      0.5714,
+      0.5333,
+      0.5306,
+      0.5652,
+      47
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'eminent_ranger'),
+      1,
+      12,
+      10,
+      8,
+      0.5714,
+      0.5556,
+      0.5306,
+      0.5109,
+      48
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'alyson_stiedemann'),
+      1,
+      12,
+      9,
+      7,
+      0.5714,
+      0.5625,
+      0.5193,
+      0.5091,
+      49
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'lorna_effertz'),
+      1,
+      12,
+      8,
+      7,
+      0.5714,
+      0.5333,
+      0.5102,
+      0.5181,
+      50
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'jackiebins45'),
+      1,
+      12,
+      9,
+      9,
+      0.5714,
+      0.5,
+      0.5102,
+      0.5095,
+      51
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'corrupt_trainer'),
+      1,
+      12,
+      11,
+      8,
+      0.5714,
+      0.5789,
+      0.4949,
+      0.4853,
+      52
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'emiliebednar53'),
+      1,
+      12,
+      10,
+      8,
+      0.5714,
+      0.5556,
+      0.4949,
+      0.5073,
+      53
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'amber_reichel25'),
+      1,
+      12,
+      9,
+      7,
+      0.5714,
+      0.5625,
+      0.4898,
+      0.4939,
+      54
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'taut_trainer_671'),
+      1,
+      12,
+      10,
+      10,
+      0.5714,
+      0.5,
+      0.4694,
+      0.4627,
+      55
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'trusty_gym'),
+      1,
+      12,
+      9,
+      6,
+      0.5714,
+      0.6,
+      0.4694,
+      0.4885,
+      56
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'well_lit_trainer_814'),
+      1,
+      12,
+      8,
+      6,
+      0.5714,
+      0.5714,
+      0.4694,
+      0.46,
+      57
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'unused_trainer_669'),
+      1,
+      12,
+      9,
+      8,
+      0.5714,
+      0.5294,
+      0.4694,
+      0.4914,
+      58
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'desiree_fadel'),
+      1,
+      12,
+      10,
+      9,
+      0.5714,
+      0.5263,
+      0.4694,
+      0.4748,
+      59
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'chad_friesen'),
+      1,
+      12,
+      9,
+      9,
+      0.5714,
+      0.5,
+      0.4694,
+      0.5027,
+      60
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'waynegorczany73'),
+      1,
+      12,
+      8,
+      9,
+      0.5714,
+      0.4706,
+      0.4694,
+      0.5016,
+      61
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'shy_ace'),
+      1,
+      12,
+      10,
+      8,
+      0.5714,
+      0.5556,
+      0.449,
+      0.4577,
+      62
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'quick_trainer_532'),
+      1,
+      12,
+      10,
+      7,
+      0.5714,
+      0.5882,
+      0.4286,
+      0.4158,
+      63
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'shameful_master'),
+      1,
+      12,
+      9,
+      9,
+      0.5714,
+      0.5,
+      0.3469,
+      0.4317,
+      64
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'janellebradtke25'),
+      1,
+      9,
+      7,
+      9,
+      0.4286,
+      0.4375,
+      0.6184,
+      0.6185,
+      65
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'brody25'),
+      1,
+      9,
+      6,
+      9,
+      0.4286,
+      0.4,
+      0.6184,
+      0.6132,
+      66
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'vincent_hickle19'),
+      1,
+      9,
+      7,
+      9,
+      0.4286,
+      0.4375,
+      0.5805,
+      0.535,
+      67
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'norene68'),
+      1,
+      9,
+      7,
+      9,
+      0.4286,
+      0.4375,
+      0.5714,
+      0.5431,
+      68
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'jazmyne80'),
+      1,
+      9,
+      8,
+      9,
+      0.4286,
+      0.4706,
+      0.5714,
+      0.5275,
+      69
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'lexieerdman24'),
+      1,
+      9,
+      9,
+      8,
+      0.4286,
+      0.5294,
+      0.551,
+      0.5112,
+      70
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'delores_orn44'),
+      1,
+      9,
+      7,
+      8,
+      0.4286,
+      0.4667,
+      0.551,
+      0.5353,
+      71
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'chaunceyjohnson55'),
+      1,
+      9,
+      9,
+      10,
+      0.4286,
+      0.4737,
+      0.5306,
+      0.5291,
+      72
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'delta_olson'),
+      1,
+      9,
+      8,
+      10,
+      0.4286,
+      0.4444,
+      0.5306,
+      0.511,
+      73
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'marilie_medhurst82'),
+      1,
+      9,
+      9,
+      8,
+      0.4286,
+      0.5294,
+      0.5193,
+      0.4899,
+      74
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'robust_elite'),
+      1,
+      9,
+      8,
+      9,
+      0.4286,
+      0.4706,
+      0.5193,
+      0.4901,
+      75
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'ronny_koss27'),
+      1,
+      9,
+      9,
+      9,
+      0.4286,
+      0.5,
+      0.5102,
+      0.5028,
+      76
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'itzel12'),
+      1,
+      9,
+      7,
+      9,
+      0.4286,
+      0.4375,
+      0.5102,
+      0.4892,
+      77
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'angelic_trainer_423'),
+      1,
+      9,
+      7,
+      10,
+      0.4286,
+      0.4118,
+      0.5102,
+      0.5109,
+      78
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'dominic_kuphal'),
+      1,
+      9,
+      7,
+      10,
+      0.4286,
+      0.4118,
+      0.5102,
+      0.5184,
+      79
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'enlightened_trainer_'),
+      1,
+      9,
+      10,
+      9,
+      0.4286,
+      0.5263,
+      0.4949,
+      0.4878,
+      80
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'cristobalupton55'),
+      1,
+      9,
+      7,
+      8,
+      0.4286,
+      0.4667,
+      0.4898,
+      0.5082,
+      81
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'reidstamm21'),
+      1,
+      9,
+      8,
+      10,
+      0.4286,
+      0.4444,
+      0.4898,
+      0.4943,
+      82
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'kayden33'),
+      1,
+      9,
+      7,
+      10,
+      0.4286,
+      0.4118,
+      0.4745,
+      0.4983,
+      83
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'vidaboyle57'),
+      1,
+      9,
+      7,
+      9,
+      0.4286,
+      0.4375,
+      0.4694,
+      0.4844,
+      84
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'marguerite_hintz'),
+      1,
+      9,
+      7,
+      9,
+      0.4286,
+      0.4375,
+      0.4694,
+      0.4726,
+      85
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'thrifty_trainer_14'),
+      1,
+      9,
+      7,
+      10,
+      0.4286,
+      0.4118,
+      0.4694,
+      0.4726,
+      86
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'ophelia96'),
+      1,
+      9,
+      7,
+      8,
+      0.4286,
+      0.4667,
+      0.449,
+      0.4594,
+      87
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'ornery_trainer_904'),
+      1,
+      9,
+      9,
+      9,
+      0.4286,
+      0.5,
+      0.4337,
+      0.4546,
+      88
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'brilliant_breeder'),
+      1,
+      9,
+      9,
+      9,
+      0.4286,
+      0.5,
+      0.4286,
+      0.4402,
+      89
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'irma58'),
+      1,
+      9,
+      7,
+      8,
+      0.4286,
+      0.4667,
+      0.4286,
+      0.4322,
+      90
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'marianna_stokes'),
+      1,
+      9,
+      9,
+      11,
+      0.4286,
+      0.45,
+      0.4286,
+      0.4565,
+      91
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'total_champion'),
+      1,
+      9,
+      6,
+      9,
+      0.4286,
+      0.4,
+      0.4286,
+      0.4594,
+      92
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'nervous_trainer'),
+      1,
+      9,
+      6,
+      10,
+      0.4286,
+      0.375,
+      0.4286,
+      0.4873,
+      93
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'myrtice66'),
+      1,
+      9,
+      6,
+      8,
+      0.4286,
+      0.4286,
+      0.4143,
+      0.4486,
+      94
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'jaeden50'),
+      1,
+      9,
+      7,
+      9,
+      0.4286,
+      0.4375,
+      0.4082,
+      0.4522,
+      95
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'sigrid67'),
+      1,
+      9,
+      8,
+      9,
+      0.4286,
+      0.4706,
+      0.3878,
+      0.4322,
+      96
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'multicolored_trainer'),
+      1,
+      9,
+      8,
+      9,
+      0.4286,
+      0.4706,
+      0.3673,
+      0.4234,
+      97
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'stunning_gym'),
+      1,
+      9,
+      6,
+      8,
+      0.4286,
+      0.4286,
+      0.3673,
+      0.4233,
+      98
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'awful_ranger'),
+      1,
+      9,
+      10,
+      8,
+      0.4286,
+      0.5556,
+      0.3469,
+      0.3935,
+      99
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'insistent_ranger'),
+      1,
+      6,
+      6,
+      11,
+      0.2857,
+      0.3529,
+      0.4949,
+      0.5033,
+      100
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'brown_gym'),
+      1,
+      6,
+      6,
+      10,
+      0.2857,
+      0.375,
+      0.4898,
+      0.4833,
+      101
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'woeful_trainer_243'),
+      1,
+      6,
+      5,
+      10,
+      0.2857,
+      0.3333,
+      0.4898,
+      0.5037,
+      102
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'brock'),
+      1,
+      6,
+      5,
+      11,
+      0.2857,
+      0.3125,
+      0.4755,
+      0.5138,
+      103
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'pertinent_trainer_27'),
+      1,
+      6,
+      7,
+      11,
+      0.2857,
+      0.3889,
+      0.4694,
+      0.4616,
+      104
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'kiplarkin25'),
+      1,
+      6,
+      6,
+      11,
+      0.2857,
+      0.3529,
+      0.4694,
+      0.4679,
+      105
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'personal_trainer_58'),
+      1,
+      6,
+      5,
+      11,
+      0.2857,
+      0.3125,
+      0.4694,
+      0.471,
+      106
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'dixiesanford87'),
+      1,
+      6,
+      8,
+      12,
+      0.2857,
+      0.4,
+      0.449,
+      0.4821,
+      107
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'ettie_abbott24'),
+      1,
+      6,
+      7,
+      11,
+      0.2857,
+      0.3889,
+      0.449,
+      0.453,
+      108
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'ivah_mcglynn'),
+      1,
+      6,
+      6,
+      12,
+      0.2857,
+      0.3333,
+      0.4286,
+      0.4673,
+      109
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'ellis_paucek'),
+      1,
+      6,
+      5,
+      11,
+      0.2857,
+      0.3125,
+      0.3878,
+      0.4556,
+      110
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'sally_block33'),
+      1,
+      6,
+      5,
+      11,
+      0.2857,
+      0.3125,
+      0.3878,
+      0.4413,
+      111
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'shanie_maggio'),
+      1,
+      6,
+      6,
+      11,
+      0.2857,
+      0.3529,
+      0.3673,
+      0.4065,
+      112
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'viviane_rempel'),
+      1,
+      6,
+      5,
+      11,
+      0.2857,
+      0.3125,
+      0.3673,
+      0.4202,
+      113
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'aliviashields97'),
+      1,
+      6,
+      8,
+      11,
+      0.2857,
+      0.4211,
+      0.356,
+      0.3841,
+      114
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'jessicaleannon22'),
+      1,
+      6,
+      7,
+      11,
+      0.2857,
+      0.3889,
+      0.3469,
+      0.3963,
+      115
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'eryn_stracke_hand41'),
+      1,
+      6,
+      6,
+      11,
+      0.2857,
+      0.3529,
+      0.3469,
+      0.3713,
+      116
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'chelsea_witting'),
+      1,
+      6,
+      4,
+      10,
+      0.2857,
+      0.2857,
+      0.3469,
+      0.4044,
+      117
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'delectable_trainer_3'),
+      1,
+      6,
+      7,
+      11,
+      0.2857,
+      0.3889,
+      0.3469,
+      0.423,
+      118
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'romaine_homenick'),
+      1,
+      6,
+      5,
+      11,
+      0.2857,
+      0.3125,
+      0.3265,
+      0.4127,
+      119
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'happy_trainer_400'),
+      1,
+      6,
+      6,
+      11,
+      0.2857,
+      0.3529,
+      0.3265,
+      0.4081,
+      120
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'maiyaabshire82'),
+      1,
+      3,
+      7,
+      13,
+      0.1429,
+      0.35,
+      0.4989,
+      0.4855,
+      121
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'rey_bode55'),
+      1,
+      3,
+      5,
+      12,
+      0.1429,
+      0.2941,
+      0.449,
+      0.4579,
+      122
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'true_elite'),
+      1,
+      3,
+      5,
+      12,
+      0.1429,
+      0.2941,
+      0.4286,
+      0.4264,
+      123
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'jeraldferry81'),
+      1,
+      3,
+      6,
+      13,
+      0.1429,
+      0.3158,
+      0.4082,
+      0.4446,
+      124
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'nicolaconn45'),
+      1,
+      3,
+      5,
+      12,
+      0.1429,
+      0.2941,
+      0.3878,
+      0.4143,
+      125
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'neat_ace'),
+      1,
+      3,
+      5,
+      13,
+      0.1429,
+      0.2778,
+      0.3673,
+      0.4115,
+      126
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'garricklindgren16'),
+      1,
+      3,
+      4,
+      12,
+      0.1429,
+      0.25,
+      0.2653,
+      0.3452,
+      127
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'oval_trainer_521'),
+      1,
+      0,
+      3,
+      14,
+      0,
+      0.1765,
+      0.3673,
+      0.4039,
+      128
+    );
+  END IF;
+
+  -- Tournament: Pallet Town Trainers Week 10 Practice
+  SELECT t.id INTO t_id FROM public.tournaments t
+    WHERE t.slug = 'pallet-town-practice-week-10';
+  IF t_id IS NOT NULL THEN
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'ashton_kshlerin'),
+      1,
+      12,
+      8,
+      2,
+      1,
+      0.8,
+      0.625,
+      0.6056,
+      1
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'joshweimann33'),
+      1,
+      9,
+      6,
+      3,
+      0.75,
+      0.6667,
+      0.625,
+      0.5611,
+      2
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'nigeljerde94'),
+      1,
+      9,
+      7,
+      3,
+      0.75,
+      0.7,
+      0.5,
+      0.5028,
+      3
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'corrupt_trainer'),
+      1,
+      9,
+      7,
+      3,
+      0.75,
+      0.7,
+      0.5,
+      0.5139,
+      4
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'nicolaconn45'),
+      1,
+      9,
+      6,
+      4,
+      0.75,
+      0.6,
+      0.375,
+      0.4028,
+      5
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'bart74'),
+      1,
+      6,
+      5,
+      4,
+      0.5,
+      0.5556,
+      0.6875,
+      0.6111,
+      6
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'cathrinemosciski_wun'),
+      1,
+      6,
+      4,
+      5,
+      0.5,
+      0.4444,
+      0.5625,
+      0.5556,
+      7
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'carleykerluke47'),
+      1,
+      6,
+      4,
+      4,
+      0.5,
+      0.5,
+      0.5,
+      0.525,
+      8
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'vernie34'),
+      1,
+      6,
+      4,
+      4,
+      0.5,
+      0.5,
+      0.5,
+      0.4889,
+      9
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'dario_west44'),
+      1,
+      6,
+      4,
+      4,
+      0.5,
+      0.5,
+      0.4375,
+      0.4667,
+      10
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'janellebradtke25'),
+      1,
+      6,
+      4,
+      5,
+      0.5,
+      0.4444,
+      0.375,
+      0.4167,
+      11
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'delta_olson'),
+      1,
+      3,
+      4,
+      6,
+      0.25,
+      0.4,
+      0.5,
+      0.4944,
+      12
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'lance'),
+      1,
+      3,
+      3,
+      6,
+      0.25,
+      0.3333,
+      0.5,
+      0.4861,
+      13
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'thorny_trainer_213'),
+      1,
+      3,
+      3,
+      6,
+      0.25,
+      0.3333,
+      0.4375,
+      0.4361,
+      14
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'made_up_trainer_161'),
+      1,
+      3,
+      3,
+      7,
+      0.25,
+      0.3,
+      0.4375,
+      0.4528,
+      15
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'nicola69'),
+      1,
+      0,
+      2,
+      8,
+      0,
+      0.2,
+      0.4375,
+      0.4583,
+      16
+    );
+  END IF;
+
+  -- Tournament: Sinnoh Grand Finals
+  SELECT t.id INTO t_id FROM public.tournaments t
+    WHERE t.slug = 'sinnoh-champions-championship-week-10';
+  IF t_id IS NOT NULL THEN
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'godfreyjenkins91'),
+      1,
+      30,
+      20,
+      4,
+      0.9091,
+      0.8333,
+      0.6963,
+      0.6455,
+      1
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'early_master'),
+      1,
+      27,
+      19,
+      7,
+      0.8182,
+      0.7308,
+      0.6806,
+      0.6366,
+      2
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'recent_trainer_469'),
+      1,
+      24,
+      17,
+      7,
+      0.8,
+      0.7083,
+      0.659,
+      0.6089,
+      3
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'robust_elite'),
+      1,
+      24,
+      18,
+      8,
+      0.8,
+      0.6923,
+      0.6346,
+      0.5925,
+      4
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'marianamitchell71'),
+      1,
+      24,
+      16,
+      4,
+      0.8889,
+      0.8,
+      0.7165,
+      0.6428,
+      5
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'colorless_trainer_93'),
+      1,
+      21,
+      14,
+      8,
+      0.7778,
+      0.6364,
+      0.7053,
+      0.6264,
+      6
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'major_breeder'),
+      1,
+      21,
+      14,
+      6,
+      0.7778,
+      0.7,
+      0.6028,
+      0.5723,
+      7
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'delectable_trainer_3'),
+      1,
+      21,
+      16,
+      7,
+      0.7778,
+      0.6957,
+      0.5889,
+      0.5323,
+      8
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'brannonlarkin62'),
+      1,
+      21,
+      15,
+      5,
+      0.875,
+      0.75,
+      0.5781,
+      0.5382,
+      9
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'sneaky_master'),
+      1,
+      18,
+      14,
+      6,
+      0.75,
+      0.7,
+      0.6563,
+      0.6121,
+      10
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'candid_breeder'),
+      1,
+      18,
+      13,
+      6,
+      0.75,
+      0.6842,
+      0.6563,
+      0.6087,
+      11
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'kelli_buckridge72'),
+      1,
+      18,
+      13,
+      7,
+      0.75,
+      0.65,
+      0.6469,
+      0.6136,
+      12
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'madyson24'),
+      1,
+      18,
+      12,
+      4,
+      0.75,
+      0.75,
+      0.6449,
+      0.6053,
+      13
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'shanie_maggio'),
+      1,
+      18,
+      13,
+      6,
+      0.75,
+      0.6842,
+      0.6285,
+      0.5804,
+      14
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'bowed_ace'),
+      1,
+      18,
+      13,
+      6,
+      0.75,
+      0.6842,
+      0.6094,
+      0.5846,
+      15
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'scottie17'),
+      1,
+      18,
+      13,
+      7,
+      0.75,
+      0.65,
+      0.6094,
+      0.559,
+      16
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'joshweimann33'),
+      1,
+      18,
+      13,
+      7,
+      0.75,
+      0.65,
+      0.6094,
+      0.5761,
+      17
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'kenna_beahan'),
+      1,
+      18,
+      12,
+      7,
+      0.75,
+      0.6316,
+      0.6043,
+      0.5759,
+      18
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'kasey_jacobi99'),
+      1,
+      18,
+      13,
+      6,
+      0.75,
+      0.6842,
+      0.6015,
+      0.5763,
+      19
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'ettie_abbott24'),
+      1,
+      18,
+      13,
+      6,
+      0.75,
+      0.6842,
+      0.598,
+      0.5789,
+      20
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'abelardo_konopelski'),
+      1,
+      18,
+      12,
+      7,
+      0.75,
+      0.6316,
+      0.5938,
+      0.5491,
+      21
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'marguerite_hintz'),
+      1,
+      18,
+      12,
+      6,
+      0.75,
+      0.6667,
+      0.5833,
+      0.5408,
+      22
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'annette20'),
+      1,
+      18,
+      13,
+      5,
+      0.75,
+      0.7222,
+      0.5781,
+      0.544,
+      23
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'phony_leader'),
+      1,
+      18,
+      12,
+      7,
+      0.75,
+      0.6316,
+      0.5781,
+      0.562,
+      24
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'prime_trainer_706'),
+      1,
+      18,
+      12,
+      6,
+      0.75,
+      0.6667,
+      0.5705,
+      0.5319,
+      25
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'robin_schultz'),
+      1,
+      18,
+      13,
+      8,
+      0.75,
+      0.619,
+      0.566,
+      0.5516,
+      26
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'dim_trainer_491'),
+      1,
+      18,
+      12,
+      9,
+      0.75,
+      0.5714,
+      0.566,
+      0.5616,
+      27
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'foolhardy_trainer_79'),
+      1,
+      18,
+      12,
+      5,
+      0.75,
+      0.7059,
+      0.5625,
+      0.528,
+      28
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'werner_auer80'),
+      1,
+      18,
+      12,
+      7,
+      0.75,
+      0.6316,
+      0.5625,
+      0.566,
+      29
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'made_up_trainer_12'),
+      1,
+      18,
+      13,
+      7,
+      0.75,
+      0.65,
+      0.5503,
+      0.5428,
+      30
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'janellebradtke25'),
+      1,
+      18,
+      13,
+      7,
+      0.75,
+      0.65,
+      0.5469,
+      0.5182,
+      31
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'alda_rau2'),
+      1,
+      18,
+      12,
+      9,
+      0.75,
+      0.5714,
+      0.5347,
+      0.5493,
+      32
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'chance65'),
+      1,
+      18,
+      14,
+      5,
+      0.75,
+      0.7368,
+      0.5241,
+      0.5077,
+      33
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'made_up_trainer_161'),
+      1,
+      18,
+      14,
+      5,
+      0.75,
+      0.7368,
+      0.5219,
+      0.5047,
+      34
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'unpleasant_pro'),
+      1,
+      18,
+      14,
+      6,
+      0.75,
+      0.7,
+      0.5,
+      0.4943,
+      35
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'alvertalemke46'),
+      1,
+      18,
+      12,
+      6,
+      0.75,
+      0.6667,
+      0.5,
+      0.4945,
+      36
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'ornery_trainer_904'),
+      1,
+      18,
+      13,
+      6,
+      0.75,
+      0.6842,
+      0.4688,
+      0.4781,
+      37
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'overcooked_trainer_5'),
+      1,
+      15,
+      13,
+      9,
+      0.625,
+      0.5909,
+      0.6719,
+      0.6041,
+      38
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'lorna_effertz'),
+      1,
+      15,
+      11,
+      9,
+      0.625,
+      0.55,
+      0.6406,
+      0.5955,
+      39
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'dixiesanford87'),
+      1,
+      15,
+      11,
+      8,
+      0.625,
+      0.5789,
+      0.6285,
+      0.5864,
+      40
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'brown_gym'),
+      1,
+      15,
+      11,
+      8,
+      0.625,
+      0.5789,
+      0.6163,
+      0.5936,
+      41
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'jabari_pagac18'),
+      1,
+      15,
+      11,
+      9,
+      0.625,
+      0.55,
+      0.6128,
+      0.5958,
+      42
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'pertinent_trainer_27'),
+      1,
+      15,
+      11,
+      8,
+      0.625,
+      0.5789,
+      0.6094,
+      0.5832,
+      43
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'estell85'),
+      1,
+      15,
+      11,
+      10,
+      0.625,
+      0.5238,
+      0.6094,
+      0.5869,
+      44
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'teagan92'),
+      1,
+      15,
+      10,
+      10,
+      0.625,
+      0.5,
+      0.6023,
+      0.5743,
+      45
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'sincere98'),
+      1,
+      15,
+      12,
+      10,
+      0.625,
+      0.5455,
+      0.6,
+      0.5685,
+      46
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'hope_cummerata20'),
+      1,
+      15,
+      12,
+      8,
+      0.625,
+      0.6,
+      0.5938,
+      0.5758,
+      47
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'wilhelmmccullough77'),
+      1,
+      15,
+      11,
+      9,
+      0.625,
+      0.55,
+      0.5938,
+      0.5473,
+      48
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'maiya_renner'),
+      1,
+      15,
+      11,
+      7,
+      0.625,
+      0.6111,
+      0.5866,
+      0.5515,
+      49
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'ripe_trainer_294'),
+      1,
+      15,
+      12,
+      9,
+      0.625,
+      0.5714,
+      0.5781,
+      0.5342,
+      50
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'kayden33'),
+      1,
+      15,
+      11,
+      8,
+      0.625,
+      0.5789,
+      0.5688,
+      0.5314,
+      51
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'hilma_veum18'),
+      1,
+      15,
+      12,
+      6,
+      0.625,
+      0.6667,
+      0.5625,
+      0.5072,
+      52
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'sammy_pouros'),
+      1,
+      15,
+      12,
+      8,
+      0.625,
+      0.6,
+      0.5625,
+      0.5411,
+      53
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'sick_trainer'),
+      1,
+      15,
+      11,
+      9,
+      0.625,
+      0.55,
+      0.5625,
+      0.5435,
+      54
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'shameful_master'),
+      1,
+      15,
+      12,
+      9,
+      0.625,
+      0.5714,
+      0.5531,
+      0.5209,
+      55
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'multicolored_trainer'),
+      1,
+      15,
+      10,
+      6,
+      0.625,
+      0.625,
+      0.5511,
+      0.5456,
+      56
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'slushy_trainer_459'),
+      1,
+      15,
+      12,
+      8,
+      0.625,
+      0.6,
+      0.5486,
+      0.5188,
+      57
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'gloomy_champion'),
+      1,
+      15,
+      11,
+      7,
+      0.625,
+      0.6111,
+      0.5469,
+      0.5506,
+      58
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'sigmund_senger46'),
+      1,
+      15,
+      11,
+      7,
+      0.625,
+      0.6111,
+      0.5469,
+      0.5295,
+      59
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'jaeden50'),
+      1,
+      15,
+      12,
+      8,
+      0.625,
+      0.6,
+      0.5469,
+      0.5214,
+      60
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'marilie_medhurst82'),
+      1,
+      15,
+      12,
+      8,
+      0.625,
+      0.6,
+      0.5469,
+      0.5189,
+      61
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'soupy_breeder'),
+      1,
+      15,
+      10,
+      8,
+      0.625,
+      0.5556,
+      0.5398,
+      0.5543,
+      62
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'katrina16'),
+      1,
+      15,
+      13,
+      7,
+      0.625,
+      0.65,
+      0.5313,
+      0.5231,
+      63
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'insistent_ranger'),
+      1,
+      15,
+      12,
+      7,
+      0.625,
+      0.6316,
+      0.5313,
+      0.4965,
+      64
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'nettie_hermiston'),
+      1,
+      15,
+      12,
+      7,
+      0.625,
+      0.6316,
+      0.5313,
+      0.5352,
+      65
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'gaston_funk5'),
+      1,
+      15,
+      13,
+      8,
+      0.625,
+      0.619,
+      0.5313,
+      0.5316,
+      66
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'delta_olson'),
+      1,
+      15,
+      12,
+      9,
+      0.625,
+      0.5714,
+      0.5313,
+      0.5266,
+      67
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'lucius41'),
+      1,
+      15,
+      10,
+      9,
+      0.625,
+      0.5263,
+      0.5313,
+      0.5517,
+      68
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'bad_trainer_106'),
+      1,
+      15,
+      12,
+      7,
+      0.625,
+      0.6316,
+      0.5191,
+      0.4928,
+      69
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'entire_trainer'),
+      1,
+      15,
+      12,
+      9,
+      0.625,
+      0.5714,
+      0.5191,
+      0.5082,
+      70
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'shanelfeeney90'),
+      1,
+      15,
+      11,
+      6,
+      0.625,
+      0.6471,
+      0.5156,
+      0.4845,
+      71
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'taut_leader'),
+      1,
+      15,
+      10,
+      7,
+      0.625,
+      0.5882,
+      0.5156,
+      0.5119,
+      72
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'runny_champion'),
+      1,
+      15,
+      11,
+      8,
+      0.625,
+      0.5789,
+      0.5156,
+      0.5134,
+      73
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'westonwilderman14'),
+      1,
+      15,
+      10,
+      8,
+      0.625,
+      0.5556,
+      0.5156,
+      0.5069,
+      74
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'wilsontrantow30'),
+      1,
+      15,
+      11,
+      9,
+      0.625,
+      0.55,
+      0.5,
+      0.4977,
+      75
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'frozen_trainer_653'),
+      1,
+      15,
+      11,
+      10,
+      0.625,
+      0.5238,
+      0.5,
+      0.4902,
+      76
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'quincy_pouros90'),
+      1,
+      15,
+      11,
+      7,
+      0.625,
+      0.6111,
+      0.4906,
+      0.4807,
+      77
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'jayson63'),
+      1,
+      15,
+      12,
+      6,
+      0.625,
+      0.6667,
+      0.4844,
+      0.4944,
+      78
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'ella_ratke'),
+      1,
+      15,
+      12,
+      6,
+      0.625,
+      0.6667,
+      0.4844,
+      0.4759,
+      79
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'aliviashields97'),
+      1,
+      15,
+      12,
+      7,
+      0.625,
+      0.6316,
+      0.4844,
+      0.4753,
+      80
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'stunning_trainer_537'),
+      1,
+      15,
+      12,
+      8,
+      0.625,
+      0.6,
+      0.4844,
+      0.4755,
+      81
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'clint_denesik'),
+      1,
+      15,
+      10,
+      8,
+      0.625,
+      0.5556,
+      0.4844,
+      0.4766,
+      82
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'diamond_kunze75'),
+      1,
+      15,
+      12,
+      10,
+      0.625,
+      0.5455,
+      0.4844,
+      0.5006,
+      83
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'nolanlangosh54'),
+      1,
+      15,
+      11,
+      7,
+      0.625,
+      0.6111,
+      0.4688,
+      0.4629,
+      84
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'impossible_trainer_9'),
+      1,
+      15,
+      11,
+      8,
+      0.625,
+      0.5789,
+      0.4688,
+      0.4538,
+      85
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'fredrick_hagenes66'),
+      1,
+      15,
+      10,
+      8,
+      0.625,
+      0.5556,
+      0.4688,
+      0.4912,
+      86
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'arturofahey55'),
+      1,
+      15,
+      11,
+      10,
+      0.625,
+      0.5238,
+      0.4688,
+      0.4732,
+      87
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'heavy_trainer_256'),
+      1,
+      15,
+      11,
+      8,
+      0.625,
+      0.5789,
+      0.4531,
+      0.4572,
+      88
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'faraway_master'),
+      1,
+      15,
+      11,
+      9,
+      0.625,
+      0.55,
+      0.4531,
+      0.4782,
+      89
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'reidstamm21'),
+      1,
+      15,
+      11,
+      9,
+      0.625,
+      0.55,
+      0.4531,
+      0.473,
+      90
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'colby_roberts52'),
+      1,
+      15,
+      10,
+      7,
+      0.625,
+      0.5882,
+      0.4375,
+      0.4687,
+      91
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'outstanding_elite'),
+      1,
+      15,
+      10,
+      9,
+      0.625,
+      0.5263,
+      0.4375,
+      0.481,
+      92
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'true_elite'),
+      1,
+      15,
+      11,
+      7,
+      0.625,
+      0.6111,
+      0.375,
+      0.433,
+      93
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'sigrid67'),
+      1,
+      12,
+      10,
+      10,
+      0.5,
+      0.5,
+      0.6761,
+      0.6369,
+      94
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'kasandracronin25'),
+      1,
+      12,
+      9,
+      10,
+      0.5,
+      0.4737,
+      0.6753,
+      0.5998,
+      95
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'jailyn75'),
+      1,
+      12,
+      8,
+      11,
+      0.5,
+      0.4211,
+      0.6313,
+      0.6024,
+      96
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'hilbert38'),
+      1,
+      12,
+      10,
+      10,
+      0.5,
+      0.5,
+      0.6267,
+      0.5917,
+      97
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'eminent_ranger'),
+      1,
+      12,
+      10,
+      10,
+      0.5,
+      0.5,
+      0.6179,
+      0.5767,
+      98
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'felicia62'),
+      1,
+      12,
+      10,
+      11,
+      0.5,
+      0.4762,
+      0.6094,
+      0.5641,
+      99
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'front_trainer_895'),
+      1,
+      12,
+      10,
+      11,
+      0.5,
+      0.4762,
+      0.6094,
+      0.5639,
+      100
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'personal_trainer_58'),
+      1,
+      12,
+      11,
+      10,
+      0.5,
+      0.5238,
+      0.5972,
+      0.5814,
+      101
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'gummy_pro'),
+      1,
+      12,
+      9,
+      9,
+      0.5,
+      0.5,
+      0.5938,
+      0.5744,
+      102
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'submissive_trainer_7'),
+      1,
+      12,
+      11,
+      11,
+      0.5,
+      0.5,
+      0.5781,
+      0.5599,
+      103
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'titus_kohler60'),
+      1,
+      12,
+      9,
+      11,
+      0.5,
+      0.45,
+      0.5781,
+      0.5641,
+      104
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'admin_trainer'),
+      1,
+      12,
+      11,
+      9,
+      0.5,
+      0.55,
+      0.5625,
+      0.5147,
+      105
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'long_trainer_533'),
+      1,
+      12,
+      9,
+      8,
+      0.5,
+      0.5294,
+      0.5625,
+      0.5467,
+      106
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'orland_kihn'),
+      1,
+      12,
+      10,
+      9,
+      0.5,
+      0.5263,
+      0.5625,
+      0.5587,
+      107
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'lera_reilly90'),
+      1,
+      12,
+      10,
+      10,
+      0.5,
+      0.5,
+      0.5625,
+      0.5571,
+      108
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'drab_trainer_487'),
+      1,
+      12,
+      11,
+      9,
+      0.5,
+      0.55,
+      0.5531,
+      0.5231,
+      109
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'cynthia'),
+      1,
+      12,
+      9,
+      8,
+      0.5,
+      0.5294,
+      0.5469,
+      0.5167,
+      110
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'lexieerdman24'),
+      1,
+      12,
+      10,
+      10,
+      0.5,
+      0.5,
+      0.5375,
+      0.5176,
+      111
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'karen'),
+      1,
+      12,
+      8,
+      11,
+      0.5,
+      0.4211,
+      0.533,
+      0.5425,
+      112
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'bustling_elite'),
+      1,
+      12,
+      10,
+      10,
+      0.5,
+      0.5,
+      0.5313,
+      0.5326,
+      113
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'weldon_bergnaum_schu'),
+      1,
+      12,
+      10,
+      10,
+      0.5,
+      0.5,
+      0.5313,
+      0.5185,
+      114
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'waynegorczany73'),
+      1,
+      12,
+      9,
+      11,
+      0.5,
+      0.45,
+      0.5313,
+      0.5366,
+      115
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'assuntaschoen_koelpi'),
+      1,
+      12,
+      9,
+      10,
+      0.5,
+      0.4737,
+      0.5191,
+      0.4988,
+      116
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'jacynthe_klein'),
+      1,
+      12,
+      11,
+      8,
+      0.5,
+      0.5789,
+      0.5156,
+      0.4992,
+      117
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'enriquebalistreri40'),
+      1,
+      12,
+      10,
+      9,
+      0.5,
+      0.5263,
+      0.5156,
+      0.5254,
+      118
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'emmittdubuque80'),
+      1,
+      12,
+      11,
+      10,
+      0.5,
+      0.5238,
+      0.5156,
+      0.5206,
+      119
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'purple_champion'),
+      1,
+      12,
+      9,
+      9,
+      0.5,
+      0.5,
+      0.5156,
+      0.5254,
+      120
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'ashtyn_vonrueden'),
+      1,
+      12,
+      10,
+      10,
+      0.5,
+      0.5,
+      0.5156,
+      0.5088,
+      121
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'myrtice66'),
+      1,
+      12,
+      10,
+      10,
+      0.5,
+      0.5,
+      0.5156,
+      0.5132,
+      122
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'scornful_elite'),
+      1,
+      12,
+      10,
+      11,
+      0.5,
+      0.4762,
+      0.5156,
+      0.5076,
+      123
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'valentinaklocko65'),
+      1,
+      12,
+      9,
+      11,
+      0.5,
+      0.45,
+      0.5156,
+      0.5049,
+      124
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'elsie_stroman'),
+      1,
+      12,
+      9,
+      11,
+      0.5,
+      0.45,
+      0.5035,
+      0.4982,
+      125
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'angelic_trainer_423'),
+      1,
+      12,
+      12,
+      10,
+      0.5,
+      0.5455,
+      0.5,
+      0.5022,
+      126
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'marquis78'),
+      1,
+      12,
+      11,
+      11,
+      0.5,
+      0.5,
+      0.5,
+      0.4964,
+      127
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'rey_bode55'),
+      1,
+      12,
+      9,
+      9,
+      0.5,
+      0.5,
+      0.5,
+      0.4989,
+      128
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'flo_friesen'),
+      1,
+      12,
+      8,
+      8,
+      0.5,
+      0.5,
+      0.5,
+      0.5065,
+      129
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'ophelia96'),
+      1,
+      12,
+      11,
+      12,
+      0.5,
+      0.4783,
+      0.5,
+      0.4823,
+      130
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'treverhartmann73'),
+      1,
+      12,
+      9,
+      10,
+      0.5,
+      0.4737,
+      0.5,
+      0.5113,
+      131
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'quick_trainer_532'),
+      1,
+      12,
+      10,
+      12,
+      0.5,
+      0.4545,
+      0.5,
+      0.5155,
+      132
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'wallace_reichert'),
+      1,
+      12,
+      9,
+      10,
+      0.5,
+      0.4737,
+      0.4878,
+      0.4935,
+      133
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'jazmyne80'),
+      1,
+      12,
+      9,
+      8,
+      0.5,
+      0.5294,
+      0.4844,
+      0.4589,
+      134
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'trentheaney20'),
+      1,
+      12,
+      9,
+      9,
+      0.5,
+      0.5,
+      0.4844,
+      0.4922,
+      135
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'cody_heaney'),
+      1,
+      12,
+      10,
+      10,
+      0.5,
+      0.5,
+      0.4773,
+      0.4813,
+      136
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'frequent_trainer_572'),
+      1,
+      12,
+      10,
+      10,
+      0.5,
+      0.5,
+      0.475,
+      0.4867,
+      137
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'trusty_gym'),
+      1,
+      12,
+      10,
+      8,
+      0.5,
+      0.5556,
+      0.4688,
+      0.4568,
+      138
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'clementina80'),
+      1,
+      12,
+      9,
+      9,
+      0.5,
+      0.5,
+      0.4688,
+      0.4852,
+      139
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'marilyne_bogan7'),
+      1,
+      12,
+      9,
+      10,
+      0.5,
+      0.4737,
+      0.4688,
+      0.4873,
+      140
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'mauricelittel79'),
+      1,
+      12,
+      9,
+      10,
+      0.5,
+      0.4737,
+      0.4688,
+      0.494,
+      141
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'tatyanahintz44'),
+      1,
+      12,
+      8,
+      11,
+      0.5,
+      0.4211,
+      0.4688,
+      0.5012,
+      142
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'coralie_bernhard'),
+      1,
+      12,
+      10,
+      11,
+      0.5,
+      0.4762,
+      0.4531,
+      0.481,
+      143
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'lonny_bechtelar49'),
+      1,
+      12,
+      10,
+      11,
+      0.5,
+      0.4762,
+      0.4531,
+      0.4836,
+      144
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'itzel12'),
+      1,
+      12,
+      9,
+      10,
+      0.5,
+      0.4737,
+      0.4531,
+      0.4757,
+      145
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'trusting_trainer_973'),
+      1,
+      12,
+      8,
+      10,
+      0.5,
+      0.4444,
+      0.4531,
+      0.4534,
+      146
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'fred_pacocha47'),
+      1,
+      12,
+      10,
+      11,
+      0.5,
+      0.4762,
+      0.4438,
+      0.4709,
+      147
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'rubbery_elite'),
+      1,
+      12,
+      11,
+      9,
+      0.5,
+      0.55,
+      0.4375,
+      0.4466,
+      148
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'eryn_stracke_hand41'),
+      1,
+      12,
+      10,
+      9,
+      0.5,
+      0.5263,
+      0.4375,
+      0.4613,
+      149
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'unselfish_trainer_12'),
+      1,
+      12,
+      8,
+      10,
+      0.5,
+      0.4444,
+      0.4375,
+      0.4693,
+      150
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'nippy_elite'),
+      1,
+      12,
+      11,
+      9,
+      0.5,
+      0.55,
+      0.4219,
+      0.4217,
+      151
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'oleflatley25'),
+      1,
+      12,
+      9,
+      9,
+      0.5,
+      0.5,
+      0.4219,
+      0.4448,
+      152
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'well_lit_trainer_814'),
+      1,
+      12,
+      9,
+      9,
+      0.5,
+      0.5,
+      0.4219,
+      0.4371,
+      153
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'gregorio_schuster_ke'),
+      1,
+      12,
+      9,
+      10,
+      0.5,
+      0.4737,
+      0.4219,
+      0.4643,
+      154
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'ellis_paucek'),
+      1,
+      12,
+      11,
+      9,
+      0.5,
+      0.55,
+      0.4125,
+      0.4392,
+      155
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'late_trainer_395'),
+      1,
+      12,
+      10,
+      10,
+      0.5,
+      0.5,
+      0.4063,
+      0.4395,
+      156
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'shy_ace'),
+      1,
+      12,
+      10,
+      10,
+      0.5,
+      0.5,
+      0.4063,
+      0.4157,
+      157
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'adolfomoen96'),
+      1,
+      12,
+      10,
+      9,
+      0.5,
+      0.5263,
+      0.3906,
+      0.4133,
+      158
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'sorrowful_trainer_13'),
+      1,
+      12,
+      9,
+      9,
+      0.5,
+      0.5,
+      0.375,
+      0.4248,
+      159
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'dariusschneider93'),
+      1,
+      12,
+      8,
+      11,
+      0.5,
+      0.4211,
+      0.375,
+      0.4464,
+      160
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'big_gym'),
+      1,
+      12,
+      9,
+      10,
+      0.5,
+      0.4737,
+      0.3594,
+      0.3993,
+      161
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'tressie65'),
+      1,
+      12,
+      11,
+      10,
+      0.5,
+      0.5238,
+      0.3438,
+      0.4059,
+      162
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'brilliant_breeder'),
+      1,
+      12,
+      9,
+      10,
+      0.5,
+      0.4737,
+      0.3281,
+      0.3934,
+      163
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'beloved_leader'),
+      1,
+      9,
+      8,
+      11,
+      0.375,
+      0.4211,
+      0.625,
+      0.5665,
+      164
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'fortunate_champion'),
+      1,
+      9,
+      8,
+      11,
+      0.375,
+      0.4211,
+      0.5625,
+      0.5355,
+      165
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'chad_friesen'),
+      1,
+      9,
+      8,
+      11,
+      0.375,
+      0.4211,
+      0.5469,
+      0.5397,
+      166
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'crooked_gym'),
+      1,
+      9,
+      7,
+      11,
+      0.375,
+      0.3889,
+      0.5469,
+      0.5464,
+      167
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'maiyaabshire82'),
+      1,
+      9,
+      7,
+      11,
+      0.375,
+      0.3889,
+      0.5469,
+      0.5235,
+      168
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'lenore_schulist95'),
+      1,
+      9,
+      6,
+      11,
+      0.375,
+      0.3529,
+      0.5347,
+      0.5472,
+      169
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'oval_trainer_521'),
+      1,
+      9,
+      7,
+      13,
+      0.375,
+      0.35,
+      0.5313,
+      0.535,
+      170
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'ashton_kshlerin'),
+      1,
+      9,
+      10,
+      11,
+      0.375,
+      0.4762,
+      0.5156,
+      0.4992,
+      171
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'shad_williamson9'),
+      1,
+      9,
+      9,
+      10,
+      0.375,
+      0.4737,
+      0.5156,
+      0.5038,
+      172
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'frivolous_master'),
+      1,
+      9,
+      8,
+      11,
+      0.375,
+      0.4211,
+      0.5156,
+      0.4997,
+      173
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'slushy_breeder'),
+      1,
+      9,
+      8,
+      12,
+      0.375,
+      0.4,
+      0.5156,
+      0.5029,
+      174
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'cyrilfriesen33'),
+      1,
+      9,
+      9,
+      11,
+      0.375,
+      0.45,
+      0.5,
+      0.4873,
+      175
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'cathrinemosciski_wun'),
+      1,
+      9,
+      9,
+      12,
+      0.375,
+      0.4286,
+      0.5,
+      0.4999,
+      176
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'khalillarson_schuppe'),
+      1,
+      9,
+      9,
+      12,
+      0.375,
+      0.4286,
+      0.5,
+      0.4945,
+      177
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'kamron_kemmer91'),
+      1,
+      9,
+      8,
+      11,
+      0.375,
+      0.4211,
+      0.5,
+      0.5015,
+      178
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'stunning_gym'),
+      1,
+      9,
+      8,
+      11,
+      0.375,
+      0.4211,
+      0.5,
+      0.49,
+      179
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'odd_ranger'),
+      1,
+      9,
+      8,
+      11,
+      0.375,
+      0.4211,
+      0.5,
+      0.4995,
+      180
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'squeaky_trainer_454'),
+      1,
+      9,
+      8,
+      12,
+      0.375,
+      0.4,
+      0.5,
+      0.4986,
+      181
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'well_to_do_trainer_5'),
+      1,
+      9,
+      9,
+      10,
+      0.375,
+      0.4737,
+      0.4929,
+      0.4928,
+      182
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'malvinamitchell24'),
+      1,
+      9,
+      9,
+      11,
+      0.375,
+      0.45,
+      0.4878,
+      0.4884,
+      183
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'ashleylueilwitz37'),
+      1,
+      9,
+      9,
+      11,
+      0.375,
+      0.45,
+      0.4844,
+      0.482,
+      184
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'awful_ranger'),
+      1,
+      9,
+      8,
+      11,
+      0.375,
+      0.4211,
+      0.4844,
+      0.499,
+      185
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'michale_orn'),
+      1,
+      9,
+      8,
+      11,
+      0.375,
+      0.4211,
+      0.4844,
+      0.5018,
+      186
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'annette_harber2'),
+      1,
+      9,
+      7,
+      11,
+      0.375,
+      0.3889,
+      0.4844,
+      0.4759,
+      187
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'ashamed_elite'),
+      1,
+      9,
+      7,
+      11,
+      0.375,
+      0.3889,
+      0.4844,
+      0.5078,
+      188
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'jeffryyost15'),
+      1,
+      9,
+      8,
+      13,
+      0.375,
+      0.381,
+      0.4844,
+      0.5119,
+      189
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'treviono_kon17'),
+      1,
+      9,
+      9,
+      11,
+      0.375,
+      0.45,
+      0.4688,
+      0.4805,
+      190
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'delilaho_hara84'),
+      1,
+      9,
+      8,
+      12,
+      0.375,
+      0.4,
+      0.4688,
+      0.4624,
+      191
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'price45'),
+      1,
+      9,
+      8,
+      12,
+      0.375,
+      0.4,
+      0.4688,
+      0.4884,
+      192
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'broderick40'),
+      1,
+      9,
+      7,
+      11,
+      0.375,
+      0.3889,
+      0.4688,
+      0.4982,
+      193
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'nella_russel'),
+      1,
+      9,
+      7,
+      12,
+      0.375,
+      0.3684,
+      0.4566,
+      0.4821,
+      194
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'thoramarvin72'),
+      1,
+      9,
+      9,
+      11,
+      0.375,
+      0.45,
+      0.4531,
+      0.4755,
+      195
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'dominic_zulauf'),
+      1,
+      9,
+      9,
+      11,
+      0.375,
+      0.45,
+      0.4531,
+      0.4571,
+      196
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'claudestreich31'),
+      1,
+      9,
+      8,
+      11,
+      0.375,
+      0.4211,
+      0.4531,
+      0.4782,
+      197
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'corrupt_trainer'),
+      1,
+      9,
+      8,
+      10,
+      0.375,
+      0.4444,
+      0.4375,
+      0.4408,
+      198
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'hildegard_predovic'),
+      1,
+      9,
+      8,
+      11,
+      0.375,
+      0.4211,
+      0.4375,
+      0.4617,
+      199
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'ciara_heidenreich33'),
+      1,
+      9,
+      9,
+      12,
+      0.375,
+      0.4286,
+      0.4281,
+      0.4523,
+      200
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'amber_reichel25'),
+      1,
+      9,
+      9,
+      12,
+      0.375,
+      0.4286,
+      0.4219,
+      0.4473,
+      201
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'lucy_reilly'),
+      1,
+      9,
+      8,
+      11,
+      0.375,
+      0.4211,
+      0.4219,
+      0.4481,
+      202
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'garricklindgren16'),
+      1,
+      9,
+      7,
+      11,
+      0.375,
+      0.3889,
+      0.4219,
+      0.448,
+      203
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'neat_ace'),
+      1,
+      9,
+      6,
+      12,
+      0.375,
+      0.3333,
+      0.4219,
+      0.4464,
+      204
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'alyson_stiedemann'),
+      1,
+      9,
+      10,
+      11,
+      0.375,
+      0.4762,
+      0.4063,
+      0.4207,
+      205
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'winifred46'),
+      1,
+      9,
+      9,
+      11,
+      0.375,
+      0.45,
+      0.4063,
+      0.4352,
+      206
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'ronny_koss27'),
+      1,
+      9,
+      9,
+      12,
+      0.375,
+      0.4286,
+      0.4063,
+      0.4386,
+      207
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'salty_trainer_403'),
+      1,
+      9,
+      6,
+      13,
+      0.375,
+      0.3158,
+      0.4063,
+      0.4445,
+      208
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'savanah33'),
+      1,
+      9,
+      8,
+      11,
+      0.375,
+      0.4211,
+      0.3906,
+      0.4377,
+      209
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'smooth_trainer_36'),
+      1,
+      9,
+      8,
+      11,
+      0.375,
+      0.4211,
+      0.3906,
+      0.422,
+      210
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'nicolaconn45'),
+      1,
+      9,
+      8,
+      11,
+      0.375,
+      0.4211,
+      0.3906,
+      0.4329,
+      211
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'mariannamacejkovic76'),
+      1,
+      9,
+      7,
+      12,
+      0.375,
+      0.3684,
+      0.3906,
+      0.4175,
+      212
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'those_trainer_198'),
+      1,
+      9,
+      10,
+      11,
+      0.375,
+      0.4762,
+      0.375,
+      0.3844,
+      213
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'demetrius_gutkowski'),
+      1,
+      9,
+      8,
+      10,
+      0.375,
+      0.4444,
+      0.375,
+      0.4257,
+      214
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'memorable_master'),
+      1,
+      9,
+      9,
+      12,
+      0.375,
+      0.4286,
+      0.375,
+      0.4251,
+      215
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'tianna46'),
+      1,
+      9,
+      9,
+      13,
+      0.375,
+      0.4091,
+      0.375,
+      0.446,
+      216
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'parched_trainer_151'),
+      1,
+      9,
+      9,
+      10,
+      0.375,
+      0.4737,
+      0.3594,
+      0.3848,
+      217
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'enlightened_trainer_'),
+      1,
+      9,
+      9,
+      12,
+      0.375,
+      0.4286,
+      0.3438,
+      0.4054,
+      218
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'dario_west44'),
+      1,
+      9,
+      9,
+      11,
+      0.375,
+      0.45,
+      0.3281,
+      0.3829,
+      219
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'qualified_trainer_61'),
+      1,
+      6,
+      8,
+      12,
+      0.25,
+      0.4,
+      0.5156,
+      0.4912,
+      220
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'aged_trainer_120'),
+      1,
+      6,
+      6,
+      12,
+      0.25,
+      0.3333,
+      0.5156,
+      0.5251,
+      221
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'taut_trainer_671'),
+      1,
+      6,
+      8,
+      13,
+      0.25,
+      0.381,
+      0.4844,
+      0.4801,
+      222
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'firsthand_gym'),
+      1,
+      6,
+      6,
+      12,
+      0.25,
+      0.3333,
+      0.4844,
+      0.4899,
+      223
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'katheryn_braun'),
+      1,
+      6,
+      8,
+      12,
+      0.25,
+      0.4,
+      0.4688,
+      0.4647,
+      224
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'izabellabeahan79'),
+      1,
+      6,
+      7,
+      12,
+      0.25,
+      0.3684,
+      0.4688,
+      0.4817,
+      225
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'garett_bergnaum'),
+      1,
+      6,
+      7,
+      13,
+      0.25,
+      0.35,
+      0.4688,
+      0.4824,
+      226
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'short_term_elite'),
+      1,
+      6,
+      6,
+      13,
+      0.25,
+      0.3158,
+      0.4688,
+      0.5043,
+      227
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'rare_master'),
+      1,
+      6,
+      5,
+      12,
+      0.25,
+      0.2941,
+      0.4688,
+      0.4779,
+      228
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'jessicaleannon22'),
+      1,
+      6,
+      6,
+      12,
+      0.25,
+      0.3333,
+      0.4531,
+      0.4814,
+      229
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'woeful_trainer_243'),
+      1,
+      6,
+      5,
+      13,
+      0.25,
+      0.2778,
+      0.4531,
+      0.4787,
+      230
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'grant_bednar'),
+      1,
+      6,
+      8,
+      13,
+      0.25,
+      0.381,
+      0.4375,
+      0.4675,
+      231
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'twin_trainer_704'),
+      1,
+      6,
+      6,
+      12,
+      0.25,
+      0.3333,
+      0.4375,
+      0.4625,
+      232
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'charlotteschoen99'),
+      1,
+      6,
+      6,
+      12,
+      0.25,
+      0.3333,
+      0.4253,
+      0.4421,
+      233
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'price_fay82'),
+      1,
+      6,
+      8,
+      12,
+      0.25,
+      0.4,
+      0.4219,
+      0.4344,
+      234
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'red'),
+      1,
+      6,
+      7,
+      12,
+      0.25,
+      0.3684,
+      0.4219,
+      0.4382,
+      235
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'blank_trainer_642'),
+      1,
+      6,
+      7,
+      13,
+      0.25,
+      0.35,
+      0.4105,
+      0.4432,
+      236
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'brock'),
+      1,
+      6,
+      8,
+      13,
+      0.25,
+      0.381,
+      0.4063,
+      0.4329,
+      237
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'pastel_gym'),
+      1,
+      6,
+      8,
+      13,
+      0.25,
+      0.381,
+      0.4063,
+      0.4141,
+      238
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'distinct_breeder'),
+      1,
+      6,
+      7,
+      14,
+      0.25,
+      0.3333,
+      0.4063,
+      0.452,
+      239
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'faint_trainer_713'),
+      1,
+      6,
+      6,
+      12,
+      0.25,
+      0.3333,
+      0.4063,
+      0.4451,
+      240
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'johnnievandervort55'),
+      1,
+      6,
+      6,
+      12,
+      0.25,
+      0.3333,
+      0.3906,
+      0.4021,
+      241
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'tressa72'),
+      1,
+      6,
+      5,
+      14,
+      0.25,
+      0.2632,
+      0.3906,
+      0.43,
+      242
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'skylar_bednar'),
+      1,
+      6,
+      8,
+      13,
+      0.25,
+      0.381,
+      0.375,
+      0.4032,
+      243
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'norene68'),
+      1,
+      6,
+      7,
+      12,
+      0.25,
+      0.3684,
+      0.375,
+      0.3801,
+      244
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'nigeljerde94'),
+      1,
+      6,
+      7,
+      14,
+      0.25,
+      0.3333,
+      0.375,
+      0.4262,
+      245
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'nervous_trainer'),
+      1,
+      6,
+      8,
+      14,
+      0.25,
+      0.3636,
+      0.2969,
+      0.3265,
+      246
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'practical_leader'),
+      1,
+      6,
+      6,
+      12,
+      0.25,
+      0.3333,
+      0.2969,
+      0.363,
+      247
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'stanley_schneider'),
+      1,
+      3,
+      4,
+      15,
+      0.125,
+      0.2105,
+      0.4375,
+      0.4569,
+      248
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'chaunceyjohnson55'),
+      1,
+      3,
+      5,
+      15,
+      0.125,
+      0.25,
+      0.4063,
+      0.4312,
+      249
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'weekly_trainer_641'),
+      1,
+      3,
+      3,
+      14,
+      0.125,
+      0.1765,
+      0.4063,
+      0.4623,
+      250
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'emiliebednar53'),
+      1,
+      3,
+      5,
+      14,
+      0.125,
+      0.2632,
+      0.3906,
+      0.4311,
+      251
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'fake_ace'),
+      1,
+      3,
+      4,
+      14,
+      0.125,
+      0.2222,
+      0.3906,
+      0.4324,
+      252
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'valentin_hodkiewicz3'),
+      1,
+      3,
+      5,
+      15,
+      0.125,
+      0.25,
+      0.375,
+      0.4244,
+      253
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'scary_trainer_677'),
+      1,
+      3,
+      3,
+      15,
+      0.125,
+      0.1667,
+      0.375,
+      0.4427,
+      254
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'ordinary_trainer_36'),
+      1,
+      3,
+      4,
+      14,
+      0.125,
+      0.2222,
+      0.2813,
+      0.3754,
+      255
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'dominic_kuphal'),
+      1,
+      0,
+      2,
+      16,
+      0,
+      0.1111,
+      0.3281,
+      0.3836,
+      256
+    );
+  END IF;
+
+  -- Tournament: Sinnoh Champions Week 10 Practice
+  SELECT t.id INTO t_id FROM public.tournaments t
+    WHERE t.slug = 'sinnoh-champions-practice-week-10';
+  IF t_id IS NOT NULL THEN
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'ettie_abbott24'),
+      1,
+      15,
+      10,
+      0,
+      1,
+      1,
+      0.5433,
+      0.4933,
+      1
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'shad_williamson9'),
+      1,
+      12,
+      8,
+      2,
+      0.8,
+      0.8,
+      0.5833,
+      0.5276,
+      2
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'willing_trainer_39'),
+      1,
+      9,
+      6,
+      3,
+      0.75,
+      0.6667,
+      0.5417,
+      0.5667,
+      3
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'abelardo_konopelski'),
+      1,
+      9,
+      6,
+      3,
+      0.75,
+      0.6667,
+      0.4917,
+      0.5167,
+      4
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'brown_gym'),
+      1,
+      6,
+      4,
+      4,
+      0.6667,
+      0.5,
+      0.5,
+      0.6111,
+      5
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'caleighparker77'),
+      1,
+      6,
+      4,
+      3,
+      0.6667,
+      0.5714,
+      0.4333,
+      0.5111,
+      6
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'claudestreich31'),
+      1,
+      6,
+      4,
+      2,
+      0.6667,
+      0.6667,
+      0.4167,
+      0.3556,
+      7
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'nervous_trainer'),
+      1,
+      6,
+      4,
+      2,
+      0.6667,
+      0.6667,
+      0.4167,
+      0.3889,
+      8
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'kiplarkin25'),
+      1,
+      3,
+      2,
+      2,
+      0.5,
+      0.5,
+      0.5,
+      0.5,
+      9
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'major_breeder'),
+      1,
+      3,
+      2,
+      3,
+      0.5,
+      0.4,
+      0.4,
+      0.5667,
+      10
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'happy_trainer_413'),
+      1,
+      3,
+      3,
+      2,
+      0.5,
+      0.6,
+      0.375,
+      0.3333,
+      11
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'hilbert38'),
+      1,
+      3,
+      3,
+      2,
+      0.5,
+      0.6,
+      0.375,
+      0.3333,
+      12
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'colorless_trainer_93'),
+      1,
+      3,
+      2,
+      2,
+      0.5,
+      0.5,
+      0.3333,
+      0.3333,
+      13
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'fredrick_hagenes66'),
+      1,
+      3,
+      3,
+      3,
+      0.5,
+      0.5,
+      0.3333,
+      0.4167,
+      14
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'unselfish_trainer_12'),
+      1,
+      3,
+      2,
+      3,
+      0.5,
+      0.4,
+      0.3333,
+      0.4524,
+      15
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'lexieerdman24'),
+      1,
+      3,
+      2,
+      3,
+      0.5,
+      0.4,
+      0.3333,
+      0.5,
+      16
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'multicolored_champio'),
+      1,
+      0,
+      0,
+      2,
+      0,
+      0,
+      1,
+      1,
+      17
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'trentheaney20'),
+      1,
+      0,
+      0,
+      2,
+      0,
+      0,
+      0.8,
+      0.8,
+      18
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'pastel_gym'),
+      1,
+      0,
+      0,
+      2,
+      0,
+      0,
+      0.75,
+      0.6667,
+      19
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'firsthand_gym'),
+      1,
+      0,
+      0,
+      2,
+      0,
+      0,
+      0.75,
+      0.6667,
+      20
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'jacynthe_klein'),
+      1,
+      0,
+      1,
+      2,
+      0,
+      0.3333,
+      0.6667,
+      0.5714,
+      21
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'frivolous_master'),
+      1,
+      0,
+      1,
+      2,
+      0,
+      0.3333,
+      0.6667,
+      0.5,
+      22
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'garett_bergnaum'),
+      1,
+      0,
+      0,
+      2,
+      0,
+      0,
+      0.6667,
+      0.6667,
+      23
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'shy_ace'),
+      1,
+      0,
+      0,
+      2,
+      0,
+      0,
+      0.6667,
+      0.6667,
+      24
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'millie_zieme65'),
+      1,
+      0,
+      1,
+      2,
+      0,
+      0.3333,
+      0.5,
+      0.4,
+      25
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'dirty_trainer_951'),
+      1,
+      0,
+      1,
+      2,
+      0,
+      0.3333,
+      0.5,
+      0.5,
+      26
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'kelli_buckridge72'),
+      1,
+      0,
+      1,
+      2,
+      0,
+      0.3333,
+      0.5,
+      0.4,
+      27
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'frozen_trainer_101'),
+      1,
+      0,
+      1,
+      2,
+      0,
+      0.3333,
+      0.5,
+      0.4,
+      28
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'gregorio_schuster_ke'),
+      1,
+      0,
+      0,
+      2,
+      0,
+      0,
+      0.5,
+      0.6,
+      29
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'alda_rau2'),
+      1,
+      0,
+      0,
+      2,
+      0,
+      0,
+      0.5,
+      0.6,
+      30
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'powerless_trainer_33'),
+      1,
+      0,
+      0,
+      2,
+      0,
+      0,
+      0.5,
+      0.5,
+      31
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'crooked_gym'),
+      1,
+      0,
+      0,
+      2,
+      0,
+      0,
+      0.5,
+      0.5,
+      32
+    );
+  END IF;
+
+  -- Tournament: Kanto Elite Series Week 10 Championship
+  SELECT t.id INTO t_id FROM public.tournaments t
+    WHERE t.slug = 'kanto-elite-week-10';
+  IF t_id IS NOT NULL THEN
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'incomplete_trainer_6'),
+      1,
+      27,
+      19,
+      6,
+      0.9,
+      0.76,
+      0.6899,
+      0.6044,
+      1
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'emiliebednar53'),
+      1,
+      24,
+      18,
+      8,
+      0.8,
+      0.6923,
+      0.6928,
+      0.6348,
+      2
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'estell85'),
+      1,
+      21,
+      15,
+      7,
+      0.7778,
+      0.6818,
+      0.6972,
+      0.6113,
+      3
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'shad_williamson9'),
+      1,
+      21,
+      16,
+      6,
+      0.7778,
+      0.7273,
+      0.6643,
+      0.5768,
+      4
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'lorna_effertz'),
+      1,
+      21,
+      14,
+      6,
+      0.875,
+      0.7,
+      0.6437,
+      0.5947,
+      5
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'vain_trainer_113'),
+      1,
+      18,
+      12,
+      7,
+      0.75,
+      0.6316,
+      0.6544,
+      0.6123,
+      6
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'gregorio_schuster_ke'),
+      1,
+      18,
+      13,
+      8,
+      0.75,
+      0.619,
+      0.6258,
+      0.6,
+      7
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'robust_elite'),
+      1,
+      18,
+      12,
+      5,
+      0.75,
+      0.7059,
+      0.5437,
+      0.5261,
+      8
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'ashtyn_vonrueden'),
+      1,
+      15,
+      11,
+      6,
+      0.7143,
+      0.6471,
+      0.6653,
+      0.6013,
+      9
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'fred_pacocha47'),
+      1,
+      15,
+      10,
+      6,
+      0.7143,
+      0.625,
+      0.6213,
+      0.6059,
+      10
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'blanca13'),
+      1,
+      15,
+      10,
+      6,
+      0.7143,
+      0.625,
+      0.6031,
+      0.5596,
+      11
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'garett_bergnaum'),
+      1,
+      15,
+      12,
+      9,
+      0.7143,
+      0.5714,
+      0.5896,
+      0.5818,
+      12
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'oval_trainer_521'),
+      1,
+      15,
+      11,
+      5,
+      0.7143,
+      0.6875,
+      0.5805,
+      0.5394,
+      13
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'mariannamacejkovic76'),
+      1,
+      15,
+      12,
+      6,
+      0.7143,
+      0.6667,
+      0.5791,
+      0.5377,
+      14
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'ashleylueilwitz37'),
+      1,
+      15,
+      12,
+      4,
+      0.7143,
+      0.75,
+      0.5765,
+      0.5308,
+      15
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'marquis78'),
+      1,
+      15,
+      11,
+      5,
+      0.7143,
+      0.6875,
+      0.5714,
+      0.5328,
+      16
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'jaleelstracke93'),
+      1,
+      15,
+      12,
+      6,
+      0.7143,
+      0.6667,
+      0.5694,
+      0.5461,
+      17
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'lucy_reilly'),
+      1,
+      15,
+      11,
+      5,
+      0.7143,
+      0.6875,
+      0.5633,
+      0.5364,
+      18
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'uncomfortable_traine'),
+      1,
+      15,
+      11,
+      7,
+      0.7143,
+      0.6111,
+      0.5561,
+      0.538,
+      19
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'jayson63'),
+      1,
+      15,
+      11,
+      7,
+      0.7143,
+      0.6111,
+      0.551,
+      0.544,
+      20
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'major_breeder'),
+      1,
+      15,
+      10,
+      6,
+      0.7143,
+      0.625,
+      0.5306,
+      0.521,
+      21
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'fredrick_hagenes66'),
+      1,
+      15,
+      10,
+      7,
+      0.7143,
+      0.5882,
+      0.5306,
+      0.5425,
+      22
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'personal_trainer_58'),
+      1,
+      15,
+      11,
+      6,
+      0.7143,
+      0.6471,
+      0.5102,
+      0.4925,
+      23
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'abelardo_konopelski'),
+      1,
+      15,
+      10,
+      7,
+      0.7143,
+      0.5882,
+      0.505,
+      0.5227,
+      24
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'soupy_breeder'),
+      1,
+      15,
+      12,
+      6,
+      0.7143,
+      0.6667,
+      0.4898,
+      0.4967,
+      25
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'short_term_elite'),
+      1,
+      15,
+      10,
+      4,
+      0.7143,
+      0.7143,
+      0.4745,
+      0.4705,
+      26
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'runny_champion'),
+      1,
+      15,
+      10,
+      5,
+      0.7143,
+      0.6667,
+      0.4694,
+      0.4861,
+      27
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'price45'),
+      1,
+      15,
+      11,
+      7,
+      0.7143,
+      0.6111,
+      0.4694,
+      0.4852,
+      28
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'rare_master'),
+      1,
+      15,
+      10,
+      6,
+      0.7143,
+      0.625,
+      0.449,
+      0.4702,
+      29
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'frequent_trainer_572'),
+      1,
+      12,
+      9,
+      8,
+      0.5714,
+      0.5294,
+      0.6556,
+      0.5955,
+      30
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'titus_kohler60'),
+      1,
+      12,
+      9,
+      7,
+      0.5714,
+      0.5625,
+      0.6468,
+      0.5846,
+      31
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'maiyaabshire82'),
+      1,
+      12,
+      10,
+      8,
+      0.5714,
+      0.5556,
+      0.6429,
+      0.5973,
+      32
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'drab_trainer_487'),
+      1,
+      12,
+      9,
+      9,
+      0.5714,
+      0.5,
+      0.6199,
+      0.5945,
+      33
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'oleflatley25'),
+      1,
+      12,
+      8,
+      7,
+      0.5714,
+      0.5333,
+      0.6184,
+      0.5944,
+      34
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'multicolored_champio'),
+      1,
+      12,
+      8,
+      7,
+      0.5714,
+      0.5333,
+      0.6009,
+      0.5685,
+      35
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'taut_leader'),
+      1,
+      12,
+      8,
+      7,
+      0.5714,
+      0.5333,
+      0.5714,
+      0.5557,
+      36
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'cooperative_trainer_'),
+      1,
+      12,
+      10,
+      7,
+      0.5714,
+      0.5882,
+      0.5633,
+      0.5115,
+      37
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'frivolous_master'),
+      1,
+      12,
+      10,
+      6,
+      0.5714,
+      0.625,
+      0.5561,
+      0.5294,
+      38
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'opheliadicki91'),
+      1,
+      12,
+      9,
+      7,
+      0.5714,
+      0.5625,
+      0.551,
+      0.5321,
+      39
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'lucius41'),
+      1,
+      12,
+      9,
+      8,
+      0.5714,
+      0.5294,
+      0.5397,
+      0.5423,
+      40
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'well_to_do_trainer_5'),
+      1,
+      12,
+      10,
+      7,
+      0.5714,
+      0.5882,
+      0.5306,
+      0.4985,
+      41
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'well_lit_trainer_814'),
+      1,
+      12,
+      9,
+      7,
+      0.5714,
+      0.5625,
+      0.5153,
+      0.4924,
+      42
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'mauricelittel79'),
+      1,
+      12,
+      10,
+      6,
+      0.5714,
+      0.625,
+      0.5102,
+      0.4916,
+      43
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'eugene_huel73'),
+      1,
+      12,
+      9,
+      9,
+      0.5714,
+      0.5,
+      0.5102,
+      0.5493,
+      44
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'romaine_homenick'),
+      1,
+      12,
+      10,
+      9,
+      0.5714,
+      0.5263,
+      0.4949,
+      0.4833,
+      45
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'submissive_trainer_7'),
+      1,
+      12,
+      9,
+      8,
+      0.5714,
+      0.5294,
+      0.4898,
+      0.4674,
+      46
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'awful_ranger'),
+      1,
+      12,
+      9,
+      7,
+      0.5714,
+      0.5625,
+      0.4898,
+      0.5104,
+      47
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'trusting_trainer_973'),
+      1,
+      12,
+      9,
+      7,
+      0.5714,
+      0.5625,
+      0.4898,
+      0.4897,
+      48
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'easy_trainer_738'),
+      1,
+      12,
+      9,
+      8,
+      0.5714,
+      0.5294,
+      0.4898,
+      0.5108,
+      49
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'francesco_nader66'),
+      1,
+      12,
+      9,
+      9,
+      0.5714,
+      0.5,
+      0.4898,
+      0.5158,
+      50
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'stunning_trainer_537'),
+      1,
+      12,
+      9,
+      7,
+      0.5714,
+      0.5625,
+      0.4785,
+      0.4942,
+      51
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'viviane_rempel'),
+      1,
+      12,
+      8,
+      9,
+      0.5714,
+      0.4706,
+      0.4785,
+      0.505,
+      52
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'ashton_kshlerin'),
+      1,
+      12,
+      8,
+      8,
+      0.5714,
+      0.5,
+      0.4745,
+      0.4733,
+      53
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'tressa72'),
+      1,
+      12,
+      9,
+      7,
+      0.5714,
+      0.5625,
+      0.4694,
+      0.5046,
+      54
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'rey_bode55'),
+      1,
+      12,
+      10,
+      6,
+      0.5714,
+      0.625,
+      0.4694,
+      0.4779,
+      55
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'dominic_kuphal'),
+      1,
+      12,
+      9,
+      7,
+      0.5714,
+      0.5625,
+      0.4694,
+      0.4458,
+      56
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'neat_ace'),
+      1,
+      12,
+      9,
+      8,
+      0.5714,
+      0.5294,
+      0.4694,
+      0.4575,
+      57
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'jazmyne80'),
+      1,
+      12,
+      10,
+      6,
+      0.5714,
+      0.625,
+      0.4286,
+      0.4217,
+      58
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'brilliant_breeder'),
+      1,
+      12,
+      9,
+      7,
+      0.5714,
+      0.5625,
+      0.4286,
+      0.4621,
+      59
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'rosy_trainer_409'),
+      1,
+      12,
+      8,
+      9,
+      0.5714,
+      0.4706,
+      0.4172,
+      0.4548,
+      60
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'cody_heaney'),
+      1,
+      12,
+      8,
+      8,
+      0.5714,
+      0.5,
+      0.3878,
+      0.4328,
+      61
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'waynegorczany73'),
+      1,
+      12,
+      10,
+      6,
+      0.5714,
+      0.625,
+      0.3469,
+      0.3874,
+      62
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'nettie_hermiston'),
+      1,
+      12,
+      11,
+      8,
+      0.5714,
+      0.5789,
+      0.3469,
+      0.3833,
+      63
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'novakuhic68'),
+      1,
+      12,
+      10,
+      8,
+      0.5714,
+      0.5556,
+      0.3469,
+      0.3814,
+      64
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'demetrius_gutkowski'),
+      1,
+      12,
+      9,
+      9,
+      0.5714,
+      0.5,
+      0.3469,
+      0.3764,
+      65
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'claudestreich31'),
+      1,
+      9,
+      7,
+      10,
+      0.4286,
+      0.4118,
+      0.6796,
+      0.6286,
+      66
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'wicked_trainer'),
+      1,
+      9,
+      10,
+      9,
+      0.4286,
+      0.5263,
+      0.5918,
+      0.5474,
+      67
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'millie_zieme65'),
+      1,
+      9,
+      8,
+      10,
+      0.4286,
+      0.4444,
+      0.5918,
+      0.5655,
+      68
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'jackiebins45'),
+      1,
+      9,
+      6,
+      9,
+      0.4286,
+      0.4,
+      0.5918,
+      0.5952,
+      69
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'dallas56'),
+      1,
+      9,
+      8,
+      9,
+      0.4286,
+      0.4706,
+      0.5791,
+      0.5368,
+      70
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'shameful_master'),
+      1,
+      9,
+      9,
+      9,
+      0.4286,
+      0.5,
+      0.5714,
+      0.5447,
+      71
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'alvertalemke46'),
+      1,
+      9,
+      6,
+      9,
+      0.4286,
+      0.4,
+      0.5714,
+      0.541,
+      72
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'chad_friesen'),
+      1,
+      9,
+      8,
+      9,
+      0.4286,
+      0.4706,
+      0.551,
+      0.5154,
+      73
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'mallory39'),
+      1,
+      9,
+      7,
+      9,
+      0.4286,
+      0.4375,
+      0.551,
+      0.52,
+      74
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'front_trainer_895'),
+      1,
+      9,
+      7,
+      10,
+      0.4286,
+      0.4118,
+      0.551,
+      0.5405,
+      75
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'distinct_breeder'),
+      1,
+      9,
+      7,
+      10,
+      0.4286,
+      0.4118,
+      0.5397,
+      0.5259,
+      76
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'nella_russel'),
+      1,
+      9,
+      6,
+      10,
+      0.4286,
+      0.375,
+      0.5306,
+      0.5414,
+      77
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'powerless_trainer_33'),
+      1,
+      9,
+      9,
+      8,
+      0.4286,
+      0.5294,
+      0.5102,
+      0.5222,
+      78
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'angelic_trainer_423'),
+      1,
+      9,
+      9,
+      9,
+      0.4286,
+      0.5,
+      0.5102,
+      0.5152,
+      79
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'willing_trainer_39'),
+      1,
+      9,
+      7,
+      9,
+      0.4286,
+      0.4375,
+      0.5102,
+      0.5189,
+      80
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'enlightened_trainer_'),
+      1,
+      9,
+      6,
+      9,
+      0.4286,
+      0.4,
+      0.5102,
+      0.5197,
+      81
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'entire_gym'),
+      1,
+      9,
+      8,
+      10,
+      0.4286,
+      0.4444,
+      0.4959,
+      0.4934,
+      82
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'thorny_trainer_213'),
+      1,
+      9,
+      8,
+      8,
+      0.4286,
+      0.5,
+      0.4898,
+      0.5057,
+      83
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'ordinary_trainer_36'),
+      1,
+      9,
+      8,
+      9,
+      0.4286,
+      0.4706,
+      0.4898,
+      0.4958,
+      84
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'nippy_elite'),
+      1,
+      9,
+      8,
+      10,
+      0.4286,
+      0.4444,
+      0.4898,
+      0.4993,
+      85
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'dariusschneider93'),
+      1,
+      9,
+      7,
+      9,
+      0.4286,
+      0.4375,
+      0.4898,
+      0.4906,
+      86
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'monica_crist_fahey79'),
+      1,
+      9,
+      9,
+      9,
+      0.4286,
+      0.5,
+      0.4694,
+      0.4668,
+      87
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'made_up_trainer_161'),
+      1,
+      9,
+      9,
+      11,
+      0.4286,
+      0.45,
+      0.4694,
+      0.4692,
+      88
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'laurettayundt22'),
+      1,
+      9,
+      8,
+      10,
+      0.4286,
+      0.4444,
+      0.449,
+      0.4549,
+      89
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'insistent_ranger'),
+      1,
+      9,
+      7,
+      9,
+      0.4286,
+      0.4375,
+      0.449,
+      0.4739,
+      90
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'kiplarkin25'),
+      1,
+      9,
+      7,
+      11,
+      0.4286,
+      0.3889,
+      0.449,
+      0.4594,
+      91
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'houston_walter'),
+      1,
+      9,
+      8,
+      9,
+      0.4286,
+      0.4706,
+      0.4337,
+      0.4324,
+      92
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'krystina_beatty85'),
+      1,
+      9,
+      6,
+      10,
+      0.4286,
+      0.375,
+      0.4286,
+      0.4773,
+      93
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'weekly_trainer_641'),
+      1,
+      9,
+      8,
+      9,
+      0.4286,
+      0.4706,
+      0.4082,
+      0.4557,
+      94
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'ashamed_elite'),
+      1,
+      9,
+      7,
+      9,
+      0.4286,
+      0.4375,
+      0.4082,
+      0.4417,
+      95
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'thoramarvin72'),
+      1,
+      9,
+      7,
+      10,
+      0.4286,
+      0.4118,
+      0.4082,
+      0.429,
+      96
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'filthy_trainer_361'),
+      1,
+      9,
+      7,
+      10,
+      0.4286,
+      0.4118,
+      0.3878,
+      0.4354,
+      97
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'happy_trainer_400'),
+      1,
+      9,
+      6,
+      9,
+      0.4286,
+      0.4,
+      0.3878,
+      0.4367,
+      98
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'khalillarson_schuppe'),
+      1,
+      9,
+      8,
+      9,
+      0.4286,
+      0.4706,
+      0.3673,
+      0.391,
+      99
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'emmittdubuque80'),
+      1,
+      9,
+      8,
+      8,
+      0.4286,
+      0.5,
+      0.2857,
+      0.3778,
+      100
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'delilaho_hara84'),
+      1,
+      6,
+      5,
+      12,
+      0.2857,
+      0.2941,
+      0.5561,
+      0.5407,
+      101
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'frozen_trainer_653'),
+      1,
+      6,
+      5,
+      11,
+      0.2857,
+      0.3125,
+      0.5102,
+      0.5194,
+      102
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'smooth_trainer_36'),
+      1,
+      6,
+      7,
+      11,
+      0.2857,
+      0.3889,
+      0.4923,
+      0.4978,
+      103
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'early_master'),
+      1,
+      6,
+      6,
+      11,
+      0.2857,
+      0.3529,
+      0.4898,
+      0.4828,
+      104
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'cruel_trainer_440'),
+      1,
+      6,
+      6,
+      10,
+      0.2857,
+      0.375,
+      0.4694,
+      0.5004,
+      105
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'faint_trainer_713'),
+      1,
+      6,
+      5,
+      10,
+      0.2857,
+      0.3333,
+      0.4694,
+      0.4829,
+      106
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'sigmund_senger46'),
+      1,
+      6,
+      6,
+      10,
+      0.2857,
+      0.375,
+      0.4541,
+      0.4569,
+      107
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'entire_trainer'),
+      1,
+      6,
+      5,
+      12,
+      0.2857,
+      0.2941,
+      0.449,
+      0.4399,
+      108
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'shy_ace'),
+      1,
+      6,
+      6,
+      10,
+      0.2857,
+      0.375,
+      0.4337,
+      0.4475,
+      109
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'sincere98'),
+      1,
+      6,
+      8,
+      11,
+      0.2857,
+      0.4211,
+      0.4286,
+      0.4446,
+      110
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'halliefay16'),
+      1,
+      6,
+      6,
+      11,
+      0.2857,
+      0.3529,
+      0.4286,
+      0.4631,
+      111
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'total_champion'),
+      1,
+      6,
+      7,
+      11,
+      0.2857,
+      0.3889,
+      0.4082,
+      0.4512,
+      112
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'marilie_medhurst82'),
+      1,
+      6,
+      7,
+      11,
+      0.2857,
+      0.3889,
+      0.4082,
+      0.4336,
+      113
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'ellis_paucek'),
+      1,
+      6,
+      7,
+      11,
+      0.2857,
+      0.3889,
+      0.4082,
+      0.4555,
+      114
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'brown_gym'),
+      1,
+      6,
+      7,
+      11,
+      0.2857,
+      0.3889,
+      0.4082,
+      0.4494,
+      115
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'pertinent_trainer_27'),
+      1,
+      6,
+      7,
+      11,
+      0.2857,
+      0.3889,
+      0.3796,
+      0.4225,
+      116
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'impossible_trainer_9'),
+      1,
+      6,
+      9,
+      11,
+      0.2857,
+      0.45,
+      0.3673,
+      0.4046,
+      117
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'westonwilderman14'),
+      1,
+      6,
+      5,
+      11,
+      0.2857,
+      0.3125,
+      0.2857,
+      0.3555,
+      118
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'sniveling_trainer'),
+      1,
+      6,
+      6,
+      10,
+      0.2857,
+      0.375,
+      0.2857,
+      0.367,
+      119
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'frozen_trainer_101'),
+      1,
+      3,
+      5,
+      12,
+      0.1429,
+      0.2941,
+      0.5102,
+      0.501,
+      120
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'richardswaniawski20'),
+      1,
+      3,
+      4,
+      13,
+      0.1429,
+      0.2353,
+      0.5102,
+      0.53,
+      121
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'red'),
+      1,
+      3,
+      4,
+      12,
+      0.1429,
+      0.25,
+      0.4286,
+      0.4721,
+      122
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'shanelfeeney90'),
+      1,
+      3,
+      5,
+      12,
+      0.1429,
+      0.2941,
+      0.4082,
+      0.4329,
+      123
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'orland_kihn'),
+      1,
+      3,
+      5,
+      12,
+      0.1429,
+      0.2941,
+      0.3878,
+      0.4548,
+      124
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'twin_trainer_704'),
+      1,
+      3,
+      4,
+      12,
+      0.1429,
+      0.25,
+      0.3878,
+      0.429,
+      125
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'sammy_pouros'),
+      1,
+      3,
+      3,
+      12,
+      0.1429,
+      0.2,
+      0.3469,
+      0.4012,
+      126
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'vernie34'),
+      1,
+      0,
+      3,
+      14,
+      0,
+      0.1765,
+      0.3878,
+      0.4212,
+      127
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'bowed_ace'),
+      1,
+      0,
+      3,
+      14,
+      0,
+      0.1765,
+      0.3673,
+      0.3788,
+      128
+    );
+  END IF;
+
+  -- Tournament: Kanto Elite Series Week 10 Practice
+  SELECT t.id INTO t_id FROM public.tournaments t
+    WHERE t.slug = 'kanto-elite-practice-week-10';
+  IF t_id IS NOT NULL THEN
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'thoramarvin72'),
+      1,
+      12,
+      8,
+      1,
+      1,
+      0.8889,
+      0.5,
+      0.4766,
+      1
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'sniveling_trainer'),
+      1,
+      9,
+      6,
+      3,
+      0.75,
+      0.6667,
+      0.75,
+      0.6722,
+      2
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'crooked_gym'),
+      1,
+      9,
+      6,
+      4,
+      0.75,
+      0.6,
+      0.625,
+      0.5619,
+      3
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'khalillarson_schuppe'),
+      1,
+      9,
+      7,
+      3,
+      0.75,
+      0.7,
+      0.5,
+      0.5028,
+      4
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'opheliadicki91'),
+      1,
+      9,
+      7,
+      4,
+      0.75,
+      0.6364,
+      0.4375,
+      0.4447,
+      5
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'entire_gym'),
+      1,
+      6,
+      6,
+      5,
+      0.5,
+      0.5455,
+      0.5625,
+      0.5396,
+      6
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'shaylee16'),
+      1,
+      6,
+      5,
+      5,
+      0.5,
+      0.5,
+      0.5625,
+      0.55,
+      7
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'claudestreich31'),
+      1,
+      6,
+      4,
+      5,
+      0.5,
+      0.4444,
+      0.5,
+      0.5404,
+      8
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'krystina_beatty85'),
+      1,
+      6,
+      4,
+      5,
+      0.5,
+      0.4444,
+      0.4375,
+      0.4458,
+      9
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'irma58'),
+      1,
+      6,
+      5,
+      5,
+      0.5,
+      0.5,
+      0.375,
+      0.4085,
+      10
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'candid_breeder'),
+      1,
+      6,
+      4,
+      4,
+      0.5,
+      0.5,
+      0.3125,
+      0.3833,
+      11
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'oleflatley25'),
+      1,
+      3,
+      4,
+      6,
+      0.25,
+      0.4,
+      0.5625,
+      0.5361,
+      12
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'karen'),
+      1,
+      3,
+      3,
+      6,
+      0.25,
+      0.3333,
+      0.5625,
+      0.5316,
+      13
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'neat_ace'),
+      1,
+      3,
+      2,
+      6,
+      0.25,
+      0.25,
+      0.5,
+      0.5265,
+      14
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'carleykerluke47'),
+      1,
+      3,
+      3,
+      7,
+      0.25,
+      0.3,
+      0.4375,
+      0.4886,
+      15
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'kenna_beahan'),
+      1,
+      0,
+      3,
+      8,
+      0,
+      0.2727,
+      0.375,
+      0.3736,
+      16
+    );
+  END IF;
+
+  -- Tournament: Johto Masters League Week 10 Championship
+  SELECT t.id INTO t_id FROM public.tournaments t
+    WHERE t.slug = 'johto-masters-week-10';
+  IF t_id IS NOT NULL THEN
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'thorny_trainer_213'),
+      1,
+      18,
+      12,
+      5,
+      0.8571,
+      0.7059,
+      0.6463,
+      0.576,
+      1
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'short_term_elite'),
+      1,
+      18,
+      12,
+      7,
+      0.8571,
+      0.6316,
+      0.5605,
+      0.5498,
+      2
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'irma58'),
+      1,
+      12,
+      8,
+      6,
+      0.6667,
+      0.5714,
+      0.6095,
+      0.568,
+      3
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'lenore_schulist95'),
+      1,
+      12,
+      8,
+      7,
+      0.6667,
+      0.5333,
+      0.5429,
+      0.5419,
+      4
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'slushy_trainer_459'),
+      1,
+      12,
+      9,
+      3,
+      0.8,
+      0.75,
+      0.6362,
+      0.5728,
+      5
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'ripe_trainer_294'),
+      1,
+      12,
+      9,
+      4,
+      0.8,
+      0.6923,
+      0.56,
+      0.5729,
+      6
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'impossible_trainer_9'),
+      1,
+      9,
+      8,
+      6,
+      0.6,
+      0.5714,
+      0.7029,
+      0.6127,
+      7
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'sigrid67'),
+      1,
+      9,
+      8,
+      6,
+      0.6,
+      0.5714,
+      0.6,
+      0.5581,
+      8
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'frivolous_master'),
+      1,
+      9,
+      7,
+      6,
+      0.6,
+      0.5385,
+      0.4933,
+      0.5088,
+      9
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'khalillarson_schuppe'),
+      1,
+      9,
+      6,
+      4,
+      0.6,
+      0.6,
+      0.48,
+      0.4695,
+      10
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'recent_trainer_469'),
+      1,
+      9,
+      6,
+      5,
+      0.6,
+      0.5455,
+      0.4648,
+      0.4793,
+      11
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'caleighparker77'),
+      1,
+      9,
+      7,
+      5,
+      0.6,
+      0.5833,
+      0.4533,
+      0.451,
+      12
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'nigeljerde94'),
+      1,
+      9,
+      7,
+      5,
+      0.6,
+      0.5833,
+      0.4533,
+      0.4367,
+      13
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'laurynbalistreri76'),
+      1,
+      9,
+      7,
+      5,
+      0.6,
+      0.5833,
+      0.4514,
+      0.4445,
+      14
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'sincere98'),
+      1,
+      9,
+      8,
+      6,
+      0.6,
+      0.5714,
+      0.4133,
+      0.4331,
+      15
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'tianna46'),
+      1,
+      9,
+      8,
+      6,
+      0.6,
+      0.5714,
+      0.4,
+      0.4312,
+      16
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'vernie34'),
+      1,
+      6,
+      6,
+      6,
+      0.4,
+      0.5,
+      0.5848,
+      0.513,
+      17
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'delores_orn44'),
+      1,
+      6,
+      5,
+      7,
+      0.4,
+      0.4167,
+      0.5714,
+      0.5521,
+      18
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'annette_harber2'),
+      1,
+      6,
+      7,
+      6,
+      0.4,
+      0.5385,
+      0.52,
+      0.5063,
+      19
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'bill_pacocha'),
+      1,
+      6,
+      5,
+      7,
+      0.4,
+      0.4167,
+      0.52,
+      0.5497,
+      20
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'izabellabeahan79'),
+      1,
+      6,
+      5,
+      7,
+      0.4,
+      0.4167,
+      0.4914,
+      0.4588,
+      21
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'dirty_trainer_951'),
+      1,
+      6,
+      5,
+      7,
+      0.4,
+      0.4167,
+      0.48,
+      0.5069,
+      22
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'corrupt_trainer'),
+      1,
+      6,
+      4,
+      6,
+      0.4,
+      0.4,
+      0.44,
+      0.44,
+      23
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'garett_bergnaum'),
+      1,
+      6,
+      5,
+      7,
+      0.4,
+      0.4167,
+      0.4133,
+      0.4176,
+      24
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'nella_russel'),
+      1,
+      6,
+      4,
+      6,
+      0.4,
+      0.4,
+      0.4,
+      0.4744,
+      25
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'gaston_funk5'),
+      1,
+      6,
+      6,
+      6,
+      0.4,
+      0.5,
+      0.3733,
+      0.3948,
+      26
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'winifred46'),
+      1,
+      3,
+      4,
+      8,
+      0.2,
+      0.3333,
+      0.6248,
+      0.5639,
+      27
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'quick_witted_leader'),
+      1,
+      3,
+      5,
+      8,
+      0.2,
+      0.3846,
+      0.48,
+      0.4544,
+      28
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'ashtyn_vonrueden'),
+      1,
+      3,
+      4,
+      8,
+      0.2,
+      0.3333,
+      0.36,
+      0.3745,
+      29
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'parched_trainer_151'),
+      1,
+      3,
+      3,
+      8,
+      0.2,
+      0.2727,
+      0.36,
+      0.4159,
+      30
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'colorless_trainer_93'),
+      1,
+      3,
+      2,
+      8,
+      0.2,
+      0.2,
+      0.36,
+      0.4269,
+      31
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'ashamed_elite'),
+      1,
+      0,
+      1,
+      10,
+      0,
+      0.0909,
+      0.44,
+      0.4688,
+      32
+    );
+  END IF;
+
+  -- Tournament: Johto Masters League Week 10 Practice
+  SELECT t.id INTO t_id FROM public.tournaments t
+    WHERE t.slug = 'johto-masters-practice-week-10';
+  IF t_id IS NOT NULL THEN
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'coralie_bernhard'),
+      1,
+      15,
+      10,
+      0,
+      1,
+      1,
+      0.56,
+      0.5118,
+      1
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'smooth_trainer_36'),
+      1,
+      12,
+      8,
+      4,
+      0.8,
+      0.6667,
+      0.68,
+      0.6943,
+      2
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'madyson24'),
+      1,
+      12,
+      8,
+      3,
+      0.8,
+      0.7273,
+      0.52,
+      0.5016,
+      3
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'treverhartmann73'),
+      1,
+      12,
+      8,
+      2,
+      0.8,
+      0.8,
+      0.48,
+      0.4667,
+      4
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'lance'),
+      1,
+      9,
+      7,
+      4,
+      0.6,
+      0.6364,
+      0.6,
+      0.5754,
+      5
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'katheryn_braun'),
+      1,
+      9,
+      6,
+      4,
+      0.6,
+      0.6,
+      0.6,
+      0.5873,
+      6
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'those_trainer_198'),
+      1,
+      9,
+      6,
+      5,
+      0.6,
+      0.5455,
+      0.6,
+      0.6144,
+      7
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'vernie34'),
+      1,
+      9,
+      7,
+      4,
+      0.6,
+      0.6364,
+      0.56,
+      0.5634,
+      8
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'mariannamacejkovic76'),
+      1,
+      9,
+      6,
+      5,
+      0.6,
+      0.5455,
+      0.52,
+      0.4924,
+      9
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'gummy_pro'),
+      1,
+      9,
+      7,
+      5,
+      0.6,
+      0.5833,
+      0.44,
+      0.4818,
+      10
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'faraway_master'),
+      1,
+      9,
+      7,
+      6,
+      0.6,
+      0.5385,
+      0.44,
+      0.4654,
+      11
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'shanelfeeney90'),
+      1,
+      9,
+      6,
+      6,
+      0.6,
+      0.5,
+      0.44,
+      0.4656,
+      12
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'courteous_trainer_87'),
+      1,
+      6,
+      4,
+      6,
+      0.4,
+      0.4,
+      0.6,
+      0.6109,
+      13
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'ciara_heidenreich33'),
+      1,
+      6,
+      6,
+      8,
+      0.4,
+      0.4286,
+      0.56,
+      0.5607,
+      14
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'short_term_elite'),
+      1,
+      6,
+      5,
+      7,
+      0.4,
+      0.4167,
+      0.52,
+      0.5306,
+      15
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'kasey_jacobi99'),
+      1,
+      6,
+      4,
+      7,
+      0.4,
+      0.3636,
+      0.52,
+      0.5382,
+      16
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'pastel_gym'),
+      1,
+      6,
+      4,
+      7,
+      0.4,
+      0.3636,
+      0.4,
+      0.4161,
+      17
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'cruel_trainer_440'),
+      1,
+      6,
+      6,
+      7,
+      0.4,
+      0.4615,
+      0.36,
+      0.3752,
+      18
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'skylar_bednar'),
+      1,
+      6,
+      7,
+      7,
+      0.4,
+      0.5,
+      0.32,
+      0.3764,
+      19
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'angelic_trainer_423'),
+      1,
+      3,
+      4,
+      9,
+      0.2,
+      0.3077,
+      0.6,
+      0.5773,
+      20
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'insistent_ranger'),
+      1,
+      3,
+      3,
+      9,
+      0.2,
+      0.25,
+      0.56,
+      0.5705,
+      21
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'jaleelstracke93'),
+      1,
+      3,
+      3,
+      8,
+      0.2,
+      0.2727,
+      0.4,
+      0.4365,
+      22
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'maiya_renner'),
+      1,
+      3,
+      5,
+      9,
+      0.2,
+      0.3571,
+      0.36,
+      0.3888,
+      23
+    );
+    INSERT INTO public.tournament_standings (
+      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
+    ) VALUES (
+      t_id,
+      (SELECT a.id FROM public.alts a WHERE a.username = 'sigrid67'),
+      1,
+      3,
+      4,
+      9,
+      0.2,
+      0.3077,
+      0.36,
+      0.4075,
+      24
+    );
+  END IF;
+
+  RAISE NOTICE 'Created 4768 standings entries for 100 tournaments';
 END $$;
