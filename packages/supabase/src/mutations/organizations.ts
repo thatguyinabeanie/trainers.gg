@@ -476,7 +476,7 @@ export async function addStaffToGroup(
     .select("id")
     .eq("organization_id", organizationId)
     .eq("user_id", userId)
-    .single();
+    .maybeSingle();
 
   // If not already staff, add them
   if (!existingStaff) {

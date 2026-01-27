@@ -371,7 +371,7 @@ export function StaffListClient({
   // Optimistic state for drag & drop
   // This stores temporary group assignments that haven't been confirmed by the server yet
   const [optimisticMoves, setOptimisticMoves] = useState<
-    Map<string, { groupId: number; group: OrganizationGroup }>
+    Map<string, { group: OrganizationGroup }>
   >(new Map());
 
   // Clear optimistic moves when staffMembers updates (server confirmed the change)
@@ -391,11 +391,7 @@ export function StaffListClient({
       if (optimisticMove) {
         return {
           ...member,
-          group: {
-            id: optimisticMove.group.id,
-            name: optimisticMove.group.name,
-            role: optimisticMove.group.role,
-          },
+          group: optimisticMove.group,
         };
       }
       return member;
@@ -461,7 +457,7 @@ export function StaffListClient({
     // Apply optimistic update immediately
     setOptimisticMoves((prev) => {
       const next = new Map(prev);
-      next.set(member.user_id, { groupId: targetGroup.id, group: targetGroup });
+      next.set(member.user_id, { group: targetGroup });
       return next;
     });
 
