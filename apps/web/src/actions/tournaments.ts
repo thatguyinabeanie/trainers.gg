@@ -591,9 +591,11 @@ export async function updatePhase(
   tournamentId: number,
   updates: {
     name?: string;
-    matchFormat?: "best_of_1" | "best_of_3" | "best_of_5";
+    bestOf?: 1 | 3 | 5;
     roundTimeMinutes?: number;
+    checkInTimeMinutes?: number;
     plannedRounds?: number;
+    cutRule?: "x-1" | "x-2" | "x-3" | "top-4" | "top-8" | "top-16" | "top-32";
   }
 ): Promise<ActionResult<{ success: true }>> {
   try {

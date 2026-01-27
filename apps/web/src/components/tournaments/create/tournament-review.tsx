@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import type { TournamentFormData } from "@/lib/types/tournament";
+import type { TournamentFormData, CutRule } from "@/lib/types/tournament";
 import {
   Calendar,
   Users,
@@ -27,10 +27,20 @@ const phaseTypeLabels: Record<string, string> = {
   double_elimination: "Double Elim",
 };
 
-const matchFormatLabels: Record<string, string> = {
-  best_of_1: "Bo1",
-  best_of_3: "Bo3",
-  best_of_5: "Bo5",
+const bestOfLabels: Record<number, string> = {
+  1: "Bo1",
+  3: "Bo3",
+  5: "Bo5",
+};
+
+const cutRuleLabels: Record<CutRule, string> = {
+  "x-1": "X-1",
+  "x-2": "X-2",
+  "x-3": "X-3",
+  "top-4": "Top 4",
+  "top-8": "Top 8",
+  "top-16": "Top 16",
+  "top-32": "Top 32",
 };
 
 export function TournamentReview({
@@ -93,18 +103,12 @@ export function TournamentReview({
               <span className="font-medium">Game Format:</span>
               <Badge variant="secondary">{formData.format}</Badge>
             </div>
-            <div className="grid grid-cols-2 gap-4 text-sm">
-              {formData.maxParticipants && (
-                <div>
-                  <span className="font-medium">Max Participants:</span>{" "}
-                  {formData.maxParticipants}
-                </div>
-              )}
-              <div>
-                <span className="font-medium">Round Time:</span>{" "}
-                {formData.roundTimeMinutes} minutes
+            {formData.maxParticipants && (
+              <div className="text-sm">
+                <span className="font-medium">Max Participants:</span>{" "}
+                {formData.maxParticipants}
               </div>
-            </div>
+            )}
           </CardContent>
         </Card>
 
@@ -127,24 +131,33 @@ export function TournamentReview({
                       </span>
                       <span className="font-medium">{phase.name}</span>
                     </div>
-                    <div className="text-muted-foreground mt-1 flex gap-2 text-xs">
+                    <div className="text-muted-foreground mt-1 flex flex-wrap gap-2 text-xs">
                       <Badge variant="outline" className="text-xs">
                         {phaseTypeLabels[phase.phaseType] || phase.phaseType}
                       </Badge>
                       <Badge variant="outline" className="text-xs">
-                        {matchFormatLabels[phase.matchFormat] ||
-                          phase.matchFormat}
+                        {bestOfLabels[phase.bestOf] || `Bo${phase.bestOf}`}
                       </Badge>
-                      {phase.plannedRounds && (
+                      {phase.plannedRounds ? (
                         <Badge variant="outline" className="text-xs">
                           {phase.plannedRounds} rounds
                         </Badge>
-                      )}
-                      {phase.bracketSize && (
+                      ) : phase.phaseType === "swiss" ? (
                         <Badge variant="outline" className="text-xs">
-                          Top {phase.bracketSize}
+                          Auto rounds
+                        </Badge>
+                      ) : null}
+                      {phase.cutRule && (
+                        <Badge variant="outline" className="text-xs">
+                          {cutRuleLabels[phase.cutRule]}
                         </Badge>
                       )}
+                      <Badge variant="outline" className="text-xs">
+                        {phase.roundTimeMinutes}min rounds
+                      </Badge>
+                      <Badge variant="outline" className="text-xs">
+                        {phase.checkInTimeMinutes}min check-in
+                      </Badge>
                     </div>
                   </div>
                   {index < formData.phases.length - 1 && (

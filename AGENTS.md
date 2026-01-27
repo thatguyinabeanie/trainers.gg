@@ -30,18 +30,19 @@ tooling/
 
 ## Tech Stack
 
-| Layer            | Technology              | Notes                                     |
-| ---------------- | ----------------------- | ----------------------------------------- |
-| Auth             | Supabase Auth           | Native auth with email/password and OAuth |
-| Database         | Supabase (PostgreSQL)   | Row Level Security with auth.uid()        |
-| Edge Functions   | Supabase Edge Functions | Deno runtime                              |
-| Social/Identity  | AT Protocol (Bluesky)   | Decentralized identity and federation     |
-| PDS              | Fly.io                  | Self-hosted at pds.trainers.gg            |
-| Web              | Next.js 16              | React 19, App Router, Server Components   |
-| Mobile           | Expo 54                 | React Native with Tamagui                 |
-| Styling (Web)    | Tailwind CSS 4          | Uses @tailwindcss/postcss                 |
-| Styling (Mobile) | Tamagui                 | Universal UI components with theme tokens |
-| Theme            | @trainers/theme         | OKLCH colors, light/dark mode support     |
+| Layer            | Technology              | Notes                                        |
+| ---------------- | ----------------------- | -------------------------------------------- |
+| Auth             | Supabase Auth           | Native auth with email/password and OAuth    |
+| Database         | Supabase (PostgreSQL)   | Row Level Security with auth.uid()           |
+| Edge Functions   | Supabase Edge Functions | Deno runtime                                 |
+| Social/Identity  | AT Protocol (Bluesky)   | Decentralized identity and federation        |
+| PDS              | Fly.io                  | Self-hosted at pds.trainers.gg               |
+| Web              | Next.js 16              | React 19, App Router, Server Components      |
+| Mobile           | Expo 54                 | React Native with Tamagui                    |
+| UI Components    | shadcn/ui + Base UI     | Base UI primitives (NOT Radix), no `asChild` |
+| Styling (Web)    | Tailwind CSS 4          | Uses @tailwindcss/postcss                    |
+| Styling (Mobile) | Tamagui                 | Universal UI components with theme tokens    |
+| Theme            | @trainers/theme         | OKLCH colors, light/dark mode support        |
 
 ---
 

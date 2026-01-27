@@ -69,13 +69,12 @@ export interface GeneratedTournamentPhase {
   phaseOrder: number;
   phaseType: PhaseType;
   status: PhaseStatus;
-  matchFormat: string;
+  bestOf: number; // 1, 3, or 5
   roundTimeMinutes: number;
   plannedRounds: number | null;
   currentRound: number;
-  advancementCount: number | null;
-  bracketSize: number | null;
-  totalRounds: number | null;
+  cutRule: string | null; // "x-1", "x-2", "x-3", "top-4", "top-8", "top-16", "top-32"
+  checkInTimeMinutes: number;
 }
 
 export interface GeneratedTournamentRegistration {
@@ -431,17 +430,19 @@ export function generateTournamentPhases(
           phaseOrder: 1,
           phaseType: "swiss",
           status: swissPhaseStatus,
-          matchFormat: "Best of 3",
+          bestOf: 3,
           roundTimeMinutes: tournament.roundTimeMinutes,
           plannedRounds: tournament.swissRounds,
           currentRound: swissCurrentRound,
-          advancementCount: tournament.topCutSize,
-          bracketSize: null,
-          totalRounds: null,
+          cutRule: null, // Swiss phase doesn't have cut rule
+          checkInTimeMinutes: 5,
         });
 
         // Phase 2: Top Cut (single elimination)
-        const topCutRounds = Math.ceil(Math.log2(tournament.topCutSize || 8));
+        // Determine cut rule based on top cut size
+        const topCutSize = tournament.topCutSize || 8;
+        const cutRule = `top-${topCutSize}`;
+        const topCutRounds = Math.ceil(Math.log2(topCutSize));
         const topCutPhaseStatus = getPhaseStatus(tournament.status, 2);
         const topCutCurrentRound = isCompleted ? topCutRounds : 0;
 
@@ -452,13 +453,12 @@ export function generateTournamentPhases(
           phaseOrder: 2,
           phaseType: "single_elimination",
           status: topCutPhaseStatus,
-          matchFormat: "Best of 3",
+          bestOf: 3,
           roundTimeMinutes: tournament.roundTimeMinutes,
           plannedRounds: null,
           currentRound: topCutCurrentRound,
-          advancementCount: null,
-          bracketSize: tournament.topCutSize,
-          totalRounds: topCutRounds,
+          cutRule: cutRule, // e.g., "top-8"
+          checkInTimeMinutes: 5,
         });
         break;
       }
@@ -474,13 +474,12 @@ export function generateTournamentPhases(
           phaseOrder: 1,
           phaseType: "swiss",
           status: phaseStatus,
-          matchFormat: "Best of 3",
+          bestOf: 3,
           roundTimeMinutes: tournament.roundTimeMinutes,
           plannedRounds: tournament.swissRounds,
           currentRound: currentRound,
-          advancementCount: null,
-          bracketSize: null,
-          totalRounds: null,
+          cutRule: null, // Standalone Swiss has no cut
+          checkInTimeMinutes: 5,
         });
         break;
       }
@@ -497,13 +496,12 @@ export function generateTournamentPhases(
           phaseOrder: 1,
           phaseType: "single_elimination",
           status: phaseStatus,
-          matchFormat: "Best of 3",
+          bestOf: 3,
           roundTimeMinutes: tournament.roundTimeMinutes,
           plannedRounds: null,
           currentRound: currentRound,
-          advancementCount: null,
-          bracketSize: tournament.maxParticipants,
-          totalRounds: rounds,
+          cutRule: null, // Standalone elimination has no cut rule
+          checkInTimeMinutes: 5,
         });
         break;
       }
@@ -522,13 +520,12 @@ export function generateTournamentPhases(
           phaseOrder: 1,
           phaseType: "double_elimination",
           status: phaseStatus,
-          matchFormat: "Best of 3",
+          bestOf: 3,
           roundTimeMinutes: tournament.roundTimeMinutes,
           plannedRounds: null,
           currentRound: currentRound,
-          advancementCount: null,
-          bracketSize: tournament.maxParticipants,
-          totalRounds: rounds,
+          cutRule: null, // Standalone elimination has no cut rule
+          checkInTimeMinutes: 5,
         });
         break;
       }

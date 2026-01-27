@@ -70,14 +70,21 @@ async function getCurrentAlt(supabase: TypedClient, altId?: number) {
 }
 
 /**
+ * Cut rule for elimination phases preceded by Swiss
+ */
+type CutRule = "x-1" | "x-2" | "x-3" | "top-4" | "top-8" | "top-16" | "top-32";
+
+/**
  * Phase configuration for tournament creation
  */
 interface PhaseConfig {
   name: string;
   phaseType: "swiss" | "single_elimination" | "double_elimination";
-  matchFormat: "best_of_1" | "best_of_3" | "best_of_5";
-  plannedRounds?: number;
-  bracketSize?: number;
+  bestOf: 1 | 3 | 5;
+  roundTimeMinutes: number;
+  checkInTimeMinutes: number;
+  plannedRounds?: number; // Swiss only, null = auto
+  cutRule?: CutRule; // Elimination only (when preceded by Swiss)
 }
 
 /**
@@ -173,10 +180,11 @@ export async function createTournament(
         phase_order: i + 1,
         phase_type: phase.phaseType,
         status: "pending",
-        match_format: phase.matchFormat,
-        round_time_minutes: data.roundTimeMinutes,
-        planned_rounds: phase.plannedRounds ?? data.swissRounds,
-        bracket_size: phase.bracketSize ?? data.topCutSize,
+        best_of: phase.bestOf,
+        round_time_minutes: phase.roundTimeMinutes,
+        check_in_time_minutes: phase.checkInTimeMinutes,
+        planned_rounds: phase.plannedRounds,
+        cut_rule: phase.cutRule,
         current_round: 0,
       });
     }
@@ -192,8 +200,9 @@ export async function createTournament(
         phase_order: 1,
         phase_type: "swiss",
         status: "pending",
-        match_format: "best_of_3",
-        round_time_minutes: data.roundTimeMinutes,
+        best_of: 3,
+        round_time_minutes: data.roundTimeMinutes ?? 50,
+        check_in_time_minutes: 5,
         planned_rounds: data.swissRounds,
         current_round: 0,
       });
@@ -205,8 +214,10 @@ export async function createTournament(
           phase_order: 2,
           phase_type: "single_elimination",
           status: "pending",
-          match_format: "best_of_3",
-          round_time_minutes: data.roundTimeMinutes,
+          best_of: 3,
+          round_time_minutes: data.roundTimeMinutes ?? 50,
+          check_in_time_minutes: 5,
+          cut_rule: "x-2", // Default cut rule
           current_round: 0,
         });
       }
@@ -217,8 +228,9 @@ export async function createTournament(
         phase_order: 1,
         phase_type: "single_elimination",
         status: "pending",
-        match_format: "best_of_3",
-        round_time_minutes: data.roundTimeMinutes,
+        best_of: 3,
+        round_time_minutes: data.roundTimeMinutes ?? 50,
+        check_in_time_minutes: 5,
         current_round: 0,
       });
     } else if (data.tournamentFormat === "double_elimination") {
@@ -228,8 +240,9 @@ export async function createTournament(
         phase_order: 1,
         phase_type: "double_elimination",
         status: "pending",
-        match_format: "best_of_3",
-        round_time_minutes: data.roundTimeMinutes,
+        best_of: 3,
+        round_time_minutes: data.roundTimeMinutes ?? 50,
+        check_in_time_minutes: 5,
         current_round: 0,
       });
     }
@@ -1804,9 +1817,11 @@ export async function updatePhase(
   phaseId: number,
   updates: {
     name?: string;
-    matchFormat?: "best_of_1" | "best_of_3" | "best_of_5";
+    bestOf?: 1 | 3 | 5;
     roundTimeMinutes?: number;
+    checkInTimeMinutes?: number;
     plannedRounds?: number;
+    cutRule?: CutRule;
   }
 ) {
   const user = await getCurrentUser(supabase);
@@ -1853,18 +1868,22 @@ export async function updatePhase(
   // Build update object
   const updateData: {
     name?: string;
-    match_format?: string;
+    best_of?: number;
     round_time_minutes?: number;
+    check_in_time_minutes?: number;
     planned_rounds?: number;
+    cut_rule?: string;
   } = {};
 
   if (updates.name !== undefined) updateData.name = updates.name;
-  if (updates.matchFormat !== undefined)
-    updateData.match_format = updates.matchFormat;
+  if (updates.bestOf !== undefined) updateData.best_of = updates.bestOf;
   if (updates.roundTimeMinutes !== undefined)
     updateData.round_time_minutes = updates.roundTimeMinutes;
+  if (updates.checkInTimeMinutes !== undefined)
+    updateData.check_in_time_minutes = updates.checkInTimeMinutes;
   if (updates.plannedRounds !== undefined)
     updateData.planned_rounds = updates.plannedRounds;
+  if (updates.cutRule !== undefined) updateData.cut_rule = updates.cutRule;
 
   const { error } = await supabase
     .from("tournament_phases")

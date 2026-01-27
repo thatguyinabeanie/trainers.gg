@@ -17,9 +17,14 @@ import type {
   TournamentFormData,
   PhaseConfig,
   PhaseType,
-  MatchFormat,
+  CutRule,
 } from "@/lib/types/tournament";
-import { Plus, Trash2, ChevronRight } from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { Plus, Trash2, ChevronRight, HelpCircle } from "lucide-react";
 
 interface TournamentFormatProps {
   formData: TournamentFormData;
@@ -39,18 +44,36 @@ const phaseTypeOptions: { value: PhaseType; label: string }[] = [
   { value: "double_elimination", label: "Double Elimination" },
 ];
 
-const matchFormatOptions: { value: MatchFormat; label: string }[] = [
-  { value: "best_of_1", label: "Bo1" },
-  { value: "best_of_3", label: "Bo3" },
-  { value: "best_of_5", label: "Bo5" },
+const bestOfOptions: { value: 1 | 3 | 5; label: string }[] = [
+  { value: 1, label: "Bo1" },
+  { value: 3, label: "Bo3" },
+  { value: 5, label: "Bo5" },
 ];
 
-const bracketSizeOptions = [
-  { value: 4, label: "Top 4" },
-  { value: 8, label: "Top 8" },
-  { value: 16, label: "Top 16" },
-  { value: 32, label: "Top 32" },
+const cutRuleOptions: { value: CutRule; label: string }[] = [
+  { value: "x-1", label: "X-1 (≤1 loss)" },
+  { value: "x-2", label: "X-2 (≤2 losses)" },
+  { value: "x-3", label: "X-3 (≤3 losses)" },
+  { value: "top-4", label: "Top 4" },
+  { value: "top-8", label: "Top 8" },
+  { value: "top-16", label: "Top 16" },
+  { value: "top-32", label: "Top 32" },
 ];
+
+/**
+ * Get default round time based on best of format
+ * VGC: 20 min/game + 5 min/game buffer
+ */
+function getDefaultRoundTime(bestOf: 1 | 3 | 5): number {
+  switch (bestOf) {
+    case 1:
+      return 25;
+    case 3:
+      return 50;
+    case 5:
+      return 75;
+  }
+}
 
 function generatePhaseId(): string {
   return `phase-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
@@ -97,11 +120,18 @@ export function TournamentFormat({
     // Default to single_elimination if there's already a swiss phase, otherwise swiss
     const hasSwiss = formData.phases.some((p) => p.phaseType === "swiss");
     const defaultType: PhaseType = hasSwiss ? "single_elimination" : "swiss";
+    const defaultBestOf = 3 as const;
+
     const newPhase: PhaseConfig = {
       id: generatePhaseId(),
       name: getDefaultPhaseName(defaultType),
       phaseType: defaultType,
-      matchFormat: "best_of_3",
+      bestOf: defaultBestOf,
+      roundTimeMinutes: getDefaultRoundTime(defaultBestOf),
+      checkInTimeMinutes: 5,
+      // If adding elimination after swiss, default to x-2
+      cutRule:
+        defaultType !== "swiss" && hasSwiss ? ("x-2" as CutRule) : undefined,
     };
 
     const updatedPhases = [...formData.phases, newPhase];
@@ -133,6 +163,14 @@ export function TournamentFormat({
         updated.name = getDefaultPhaseName(updates.phaseType);
       }
 
+      // Auto-update round time when bestOf changes
+      if (
+        updates.bestOf &&
+        p.roundTimeMinutes === getDefaultRoundTime(p.bestOf)
+      ) {
+        updated.roundTimeMinutes = getDefaultRoundTime(updates.bestOf);
+      }
+
       return updated;
     });
 
@@ -142,10 +180,7 @@ export function TournamentFormat({
     });
   };
 
-  // Check if a phase has a next phase (for showing advancement settings)
-  const hasNextPhase = (index: number) => index < formData.phases.length - 1;
-
-  // Check if a phase is preceded by a Swiss phase (for showing bracket size)
+  // Check if a phase is preceded by a Swiss phase (for showing cut rule)
   const isPrecededBySwiss = (index: number) => {
     if (index === 0) return false;
     const prevPhase = formData.phases[index - 1];
@@ -193,13 +228,13 @@ export function TournamentFormat({
             const isElimination =
               phase.phaseType === "single_elimination" ||
               phase.phaseType === "double_elimination";
-            const showBracketSize = isElimination && isPrecededBySwiss(index);
+            const showCutRule = isElimination && isPrecededBySwiss(index);
             const showPlannedRounds = isSwiss;
 
             return (
               <div key={phase.id} className="flex items-center gap-2">
                 {/* Phase Card */}
-                <Card className="w-56">
+                <Card className="w-64">
                   <CardContent className="space-y-3 p-3">
                     {/* Phase Number & Delete */}
                     <div className="flex items-center justify-between">
@@ -256,17 +291,17 @@ export function TournamentFormat({
                       </Select>
                     </div>
 
-                    {/* Match Format */}
+                    {/* Best Of */}
                     <div className="space-y-1">
                       <Label className="text-muted-foreground text-xs">
-                        Match Format
+                        Best Of
                       </Label>
                       <Select
-                        value={phase.matchFormat}
+                        value={phase.bestOf.toString()}
                         onValueChange={(value) => {
                           if (value) {
                             handleUpdatePhase(phase.id, {
-                              matchFormat: value as MatchFormat,
+                              bestOf: parseInt(value) as 1 | 3 | 5,
                             });
                           }
                         }}
@@ -275,8 +310,11 @@ export function TournamentFormat({
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          {matchFormatOptions.map((option) => (
-                            <SelectItem key={option.value} value={option.value}>
+                          {bestOfOptions.map((option) => (
+                            <SelectItem
+                              key={option.value}
+                              value={option.value.toString()}
+                            >
                               {option.label}
                             </SelectItem>
                           ))}
@@ -307,18 +345,18 @@ export function TournamentFormat({
                       </div>
                     )}
 
-                    {/* Elimination: Bracket Size (only if preceded by Swiss) */}
-                    {showBracketSize && (
+                    {/* Elimination: Cut Rule (only if preceded by Swiss) */}
+                    {showCutRule && (
                       <div className="space-y-1">
                         <Label className="text-muted-foreground text-xs">
-                          Bracket Size
+                          Qualification
                         </Label>
                         <Select
-                          value={phase.bracketSize?.toString() || ""}
+                          value={phase.cutRule || "x-2"}
                           onValueChange={(value) => {
                             if (value) {
                               handleUpdatePhase(phase.id, {
-                                bracketSize: parseInt(value),
+                                cutRule: value as CutRule,
                               });
                             }
                           }}
@@ -327,10 +365,10 @@ export function TournamentFormat({
                             <SelectValue placeholder="Select" />
                           </SelectTrigger>
                           <SelectContent>
-                            {bracketSizeOptions.map((option) => (
+                            {cutRuleOptions.map((option) => (
                               <SelectItem
                                 key={option.value}
-                                value={option.value.toString()}
+                                value={option.value}
                               >
                                 {option.label}
                               </SelectItem>
@@ -339,6 +377,58 @@ export function TournamentFormat({
                         </Select>
                       </div>
                     )}
+
+                    {/* Round Timer */}
+                    <div className="space-y-1">
+                      <Label className="text-muted-foreground text-xs">
+                        Round Timer (min)
+                      </Label>
+                      <Input
+                        type="number"
+                        value={phase.roundTimeMinutes || ""}
+                        onChange={(e) =>
+                          handleUpdatePhase(phase.id, {
+                            roundTimeMinutes: parseInt(e.target.value) || 0,
+                          })
+                        }
+                        placeholder="0 = no timer"
+                        className="h-8 text-sm"
+                        min={0}
+                        max={120}
+                      />
+                    </div>
+
+                    {/* Check-in Timer */}
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-1">
+                        <Label className="text-muted-foreground text-xs">
+                          Check-in Timer (min/game)
+                        </Label>
+                        <Tooltip>
+                          <TooltipTrigger className="text-muted-foreground cursor-help">
+                            <HelpCircle className="h-3 w-3" />
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            Handles no-shows after a round starts. If a player
+                            doesn&apos;t show up, they automatically lose one
+                            game per interval until the match is forfeited.
+                          </TooltipContent>
+                        </Tooltip>
+                      </div>
+                      <Input
+                        type="number"
+                        value={phase.checkInTimeMinutes || ""}
+                        onChange={(e) =>
+                          handleUpdatePhase(phase.id, {
+                            checkInTimeMinutes: parseInt(e.target.value) || 0,
+                          })
+                        }
+                        placeholder="0 = disabled"
+                        className="h-8 text-sm"
+                        min={0}
+                        max={30}
+                      />
+                    </div>
                   </CardContent>
                 </Card>
 
@@ -354,7 +444,7 @@ export function TournamentFormat({
           {/* Add Phase Button */}
           <Button
             variant="outline"
-            className="h-auto min-h-[200px] w-32 flex-col gap-2 border-dashed"
+            className="h-auto min-h-[300px] w-32 flex-col gap-2 border-dashed"
             onClick={handleAddPhase}
           >
             <Plus className="h-5 w-5" />
@@ -366,42 +456,25 @@ export function TournamentFormat({
       <Separator />
 
       {/* Global Tournament Settings */}
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        <div className="space-y-2">
-          <Label htmlFor="maxParticipants">Max Participants</Label>
-          <Input
-            id="maxParticipants"
-            type="number"
-            value={formData.maxParticipants || ""}
-            onChange={(e) =>
-              updateFormData({
-                maxParticipants: parseInt(e.target.value) || undefined,
-              })
-            }
-            placeholder="Unlimited"
-            min="4"
-            max="512"
-          />
-          <p className="text-muted-foreground text-sm">
-            Leave empty for unlimited registrations
-          </p>
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="roundTime">Round Time (minutes) *</Label>
-          <Input
-            id="roundTime"
-            type="number"
-            value={formData.roundTimeMinutes}
-            onChange={(e) =>
-              updateFormData({
-                roundTimeMinutes: parseInt(e.target.value) || 50,
-              })
-            }
-            min="15"
-            max="120"
-          />
-        </div>
+      <div className="space-y-2">
+        <Label htmlFor="maxParticipants">Max Participants</Label>
+        <Input
+          id="maxParticipants"
+          type="number"
+          value={formData.maxParticipants || ""}
+          onChange={(e) =>
+            updateFormData({
+              maxParticipants: parseInt(e.target.value) || undefined,
+            })
+          }
+          placeholder="Unlimited"
+          min="4"
+          max="512"
+          className="w-full max-w-xs"
+        />
+        <p className="text-muted-foreground text-sm">
+          Leave empty for unlimited registrations
+        </p>
       </div>
 
       <Separator />

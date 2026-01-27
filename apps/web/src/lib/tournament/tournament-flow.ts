@@ -27,7 +27,7 @@ export interface TournamentSettings {
   swissRounds: number;
   format: "swiss_only" | "swiss_with_cut" | "single_elimination";
   roundTimeMinutes: number;
-  matchFormat: "best_of_1" | "best_of_3";
+  bestOf: 1 | 3 | 5;
 }
 
 export interface TournamentMatch {
@@ -314,7 +314,7 @@ async function generateTopCutRound(
     const bracket = generateTopCutBracket(bracketPlayers, {
       bracketSize: tournamentState.bracket.bracketSize,
       format: tournamentState.bracket.format,
-      matchFormat: "best_of_3", // Default for top cut
+      bestOf: 3, // Default for top cut
     });
 
     // Get first round matches from bracket
@@ -366,7 +366,7 @@ async function generateTopCutRound(
                 ? match.player2Id
                 : null,
           isComplete: match.isComplete,
-          matchFormat: "best_of_3" as const,
+          bestOf: 3 as const,
           prerequisiteMatch1Id: null,
           prerequisiteMatch2Id: null,
         };
@@ -384,7 +384,7 @@ async function generateTopCutRound(
     const currentBracket = generateTopCutBracket(bracketPlayers, {
       bracketSize: tournamentState.bracket.bracketSize,
       format: tournamentState.bracket.format,
-      matchFormat: "best_of_3",
+      bestOf: 3,
     });
 
     // Advance bracket with completed matches

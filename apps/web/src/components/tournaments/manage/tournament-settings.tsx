@@ -28,7 +28,11 @@ interface Phase {
   name: string;
   phase_order: number;
   phase_type: string;
-  match_format: string | null;
+  best_of: number | null;
+  round_time_minutes: number | null;
+  check_in_time_minutes: number | null;
+  cut_rule: string | null;
+  planned_rounds: number | null;
   status: string | null;
 }
 
@@ -294,23 +298,21 @@ export function TournamentSettings({
           </CardHeader>
           <CardContent className="space-y-6">
             {phases.map((phase) => {
-              const currentFormat = phase.match_format || "best_of_3";
+              const currentBestOf = phase.best_of?.toString() || "3";
               const isUpdating = updatingPhaseId === phase.id;
 
-              const handleMatchFormatChange = async (
-                value: "best_of_1" | "best_of_3" | "best_of_5"
-              ) => {
+              const handleBestOfChange = async (value: string) => {
                 if (!canEdit || isUpdating) return;
 
                 setUpdatingPhaseId(phase.id);
                 try {
                   const result = await updatePhase(phase.id, tournament.id, {
-                    matchFormat: value,
+                    bestOf: parseInt(value) as 1 | 3 | 5,
                   });
 
                   if (result.success) {
                     toast.success("Phase updated", {
-                      description: `${phase.name} match format updated to Best of ${value.replace("best_of_", "")}`,
+                      description: `${phase.name} match format updated to Best of ${value}`,
                     });
                   } else {
                     toast.error("Error updating phase", {
@@ -344,19 +346,15 @@ export function TournamentSettings({
                       Best Of
                     </Label>
                     <RadioGroup
-                      value={currentFormat}
-                      onValueChange={(value) =>
-                        handleMatchFormatChange(
-                          value as "best_of_1" | "best_of_3" | "best_of_5"
-                        )
-                      }
+                      value={currentBestOf}
+                      onValueChange={handleBestOfChange}
                       disabled={!canEdit || isUpdating}
                       className="flex gap-6"
                     >
                       {[
-                        { value: "best_of_1", label: "1" },
-                        { value: "best_of_3", label: "3" },
-                        { value: "best_of_5", label: "5" },
+                        { value: "1", label: "1" },
+                        { value: "3", label: "3" },
+                        { value: "5", label: "5" },
                       ].map((option) => (
                         <div
                           key={option.value}

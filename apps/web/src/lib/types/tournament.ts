@@ -8,14 +8,18 @@
 export type PhaseType = "swiss" | "single_elimination" | "double_elimination";
 
 /**
- * Match format options
+ * Cut rule for elimination phases preceded by Swiss
+ * - x-1, x-2, x-3: All players with ≤N losses advance
+ * - top-4, top-8, top-16, top-32: Top N by standings advance
  */
-export type MatchFormat = "best_of_1" | "best_of_3" | "best_of_5";
-
-/**
- * Advancement type for determining who advances to the next phase
- */
-export type AdvancementType = "top_count" | "record_cutoff";
+export type CutRule =
+  | "x-1"
+  | "x-2"
+  | "x-3"
+  | "top-4"
+  | "top-8"
+  | "top-16"
+  | "top-32";
 
 /**
  * Phase configuration for tournament creation
@@ -24,14 +28,14 @@ export interface PhaseConfig {
   id: string; // Temporary client-side ID for React keys
   name: string;
   phaseType: PhaseType;
-  matchFormat: MatchFormat;
+  // Match settings
+  bestOf: 1 | 3 | 5;
+  roundTimeMinutes: number; // null/0 = no timer
+  checkInTimeMinutes: number; // Time before no-show gets game loss (default 5)
   // Swiss-specific settings
-  plannedRounds?: number;
-  // Advancement settings (for phases that feed into elimination)
-  advancementType?: AdvancementType; // "top_count" = Top 8, "record_cutoff" = X-1
-  advancementCount?: number; // For top_count: 4, 8, 16, 32. For record_cutoff: max losses (1, 2, 3)
-  // Elimination-specific settings (deprecated in favor of advancement on Swiss phase)
-  bracketSize?: number;
+  plannedRounds?: number; // null = auto based on registrations
+  // Elimination-specific settings (when preceded by Swiss)
+  cutRule?: CutRule; // null for standalone phases
 }
 
 /**

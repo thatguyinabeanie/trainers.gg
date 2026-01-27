@@ -443,18 +443,18 @@ function generateTournamentsSql(
       lines.push(`    INSERT INTO public.tournament_phases (`);
       lines.push(`      tournament_id, name, phase_order, phase_type, status,`);
       lines.push(
-        `      match_format, round_time_minutes, planned_rounds, current_round,`
+        `      best_of, round_time_minutes, planned_rounds, current_round,`
       );
-      lines.push(`      advancement_count, bracket_size, total_rounds`);
+      lines.push(`      cut_rule, check_in_time_minutes`);
       lines.push(`    ) VALUES (`);
       lines.push(
         `      t_id, '${escapeString(phase.name)}', ${phase.phaseOrder}, '${phase.phaseType}', '${phase.status}',`
       );
       lines.push(
-        `      '${phase.matchFormat}', ${phase.roundTimeMinutes}, ${phase.plannedRounds ?? "NULL"}, ${phase.currentRound},`
+        `      ${phase.bestOf}, ${phase.roundTimeMinutes}, ${phase.plannedRounds ?? "NULL"}, ${phase.currentRound},`
       );
       lines.push(
-        `      ${phase.advancementCount ?? "NULL"}, ${phase.bracketSize ?? "NULL"}, ${phase.totalRounds ?? "NULL"}`
+        `      ${phase.cutRule ? `'${phase.cutRule}'` : "NULL"}, ${phase.checkInTimeMinutes}`
       );
       lines.push(`    ) ON CONFLICT DO NOTHING;`);
     }

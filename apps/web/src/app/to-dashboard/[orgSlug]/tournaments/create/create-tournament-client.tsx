@@ -80,13 +80,18 @@ export function CreateTournamentClient({
         id: "swiss-1",
         name: "Swiss Rounds",
         phaseType: "swiss",
-        matchFormat: "best_of_3",
+        bestOf: 3,
+        roundTimeMinutes: 50,
+        checkInTimeMinutes: 5,
       },
       {
         id: "topcut-1",
         name: "Top Cut",
         phaseType: "single_elimination",
-        matchFormat: "best_of_3",
+        bestOf: 3,
+        roundTimeMinutes: 50,
+        checkInTimeMinutes: 5,
+        cutRule: "x-2",
       },
     ],
     maxParticipants: 32,
@@ -131,9 +136,18 @@ export function CreateTournamentClient({
         phases?: {
           name: string;
           phaseType: "swiss" | "single_elimination" | "double_elimination";
-          matchFormat: "best_of_1" | "best_of_3" | "best_of_5";
+          bestOf: 1 | 3 | 5;
+          roundTimeMinutes: number;
+          checkInTimeMinutes: number;
           plannedRounds?: number;
-          bracketSize?: number;
+          cutRule?:
+            | "x-1"
+            | "x-2"
+            | "x-3"
+            | "top-4"
+            | "top-8"
+            | "top-16"
+            | "top-32";
         }[];
       }
     ) => createTournament(supabase, args)
@@ -229,9 +243,11 @@ export function CreateTournamentClient({
         phases: formData.phases.map((p) => ({
           name: p.name,
           phaseType: p.phaseType,
-          matchFormat: p.matchFormat,
+          bestOf: p.bestOf,
+          roundTimeMinutes: p.roundTimeMinutes,
+          checkInTimeMinutes: p.checkInTimeMinutes,
           plannedRounds: p.plannedRounds,
-          bracketSize: p.bracketSize,
+          cutRule: p.cutRule,
         })),
       });
 

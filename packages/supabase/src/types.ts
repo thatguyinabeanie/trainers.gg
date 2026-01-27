@@ -1389,66 +1389,54 @@ export type Database = {
       }
       tournament_phases: {
         Row: {
-          advancement_count: number | null
-          advancement_type: string | null
-          bracket_format: string | null
-          bracket_size: number | null
+          best_of: number | null
+          check_in_time_minutes: number | null
           completed_at: string | null
           created_at: string | null
           current_round: number | null
+          cut_rule: string | null
           id: number
-          match_format: string
           name: string
           phase_order: number
           phase_type: string
           planned_rounds: number | null
           round_time_minutes: number | null
-          seeding_method: string | null
           started_at: string | null
           status: Database["public"]["Enums"]["phase_status"] | null
-          total_rounds: number | null
           tournament_id: number
         }
         Insert: {
-          advancement_count?: number | null
-          advancement_type?: string | null
-          bracket_format?: string | null
-          bracket_size?: number | null
+          best_of?: number | null
+          check_in_time_minutes?: number | null
           completed_at?: string | null
           created_at?: string | null
           current_round?: number | null
+          cut_rule?: string | null
           id?: never
-          match_format: string
           name: string
           phase_order: number
           phase_type: string
           planned_rounds?: number | null
           round_time_minutes?: number | null
-          seeding_method?: string | null
           started_at?: string | null
           status?: Database["public"]["Enums"]["phase_status"] | null
-          total_rounds?: number | null
           tournament_id: number
         }
         Update: {
-          advancement_count?: number | null
-          advancement_type?: string | null
-          bracket_format?: string | null
-          bracket_size?: number | null
+          best_of?: number | null
+          check_in_time_minutes?: number | null
           completed_at?: string | null
           created_at?: string | null
           current_round?: number | null
+          cut_rule?: string | null
           id?: never
-          match_format?: string
           name?: string
           phase_order?: number
           phase_type?: string
           planned_rounds?: number | null
           round_time_minutes?: number | null
-          seeding_method?: string | null
           started_at?: string | null
           status?: Database["public"]["Enums"]["phase_status"] | null
-          total_rounds?: number | null
           tournament_id?: number
         }
         Relationships: [
