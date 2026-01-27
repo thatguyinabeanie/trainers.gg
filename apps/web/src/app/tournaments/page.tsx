@@ -1,6 +1,11 @@
-import { createStaticClient } from "@/lib/supabase/server";
+import { unstable_cache } from "next/cache";
+import {
+  createStaticClient,
+  createClientReadOnly,
+} from "@/lib/supabase/server";
 import {
   listTournamentsGrouped,
+  getCurrentUserRegisteredTournamentIds,
   type TournamentWithOrg,
   type GroupedTournaments,
 } from "@trainers/supabase";
@@ -19,9 +24,24 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Trophy, Users, Calendar } from "lucide-react";
 import { TournamentSearch } from "./tournament-search";
 import { DateChip } from "./date-chip";
+import { QuickRegisterButton } from "./quick-register-button";
+import { CacheTags } from "@/lib/cache";
 
-// Revalidate every 60 seconds
-export const revalidate = 60;
+// On-demand revalidation via cache tags (no time-based revalidation)
+export const revalidate = false;
+
+/**
+ * Cached data fetcher for tournaments list
+ * Revalidated when CacheTags.TOURNAMENTS_LIST is invalidated
+ */
+const getCachedTournaments = unstable_cache(
+  async () => {
+    const supabase = createStaticClient();
+    return listTournamentsGrouped(supabase, { completedLimit: 20 });
+  },
+  ["tournaments-grouped"],
+  { tags: [CacheTags.TOURNAMENTS_LIST] }
+);
 
 // ============================================================================
 // Section Header (Server Component)
@@ -124,8 +144,10 @@ function ActiveTournamentsTable({
 
 function UpcomingTournamentsTable({
   tournaments,
+  registeredTournamentIds,
 }: {
   tournaments: TournamentWithOrg[];
+  registeredTournamentIds: Set<number>;
 }) {
   if (tournaments.length === 0) return null;
 
@@ -141,13 +163,14 @@ function UpcomingTournamentsTable({
               </div>
             </TableHead>
             <TableHead>Name</TableHead>
-            <TableHead>Organization</TableHead>
+            <TableHead className="hidden sm:table-cell">Organization</TableHead>
             <TableHead className="text-right">
               <div className="flex items-center justify-end gap-1">
                 <Users className="h-3.5 w-3.5" />
                 Spots
               </div>
             </TableHead>
+            <TableHead className="w-[100px] text-center"></TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -159,6 +182,8 @@ function UpcomingTournamentsTable({
             const isFull =
               tournament.max_participants &&
               tournament._count.registrations >= tournament.max_participants;
+
+            const isRegistered = registeredTournamentIds.has(tournament.id);
 
             return (
               <TableRow key={tournament.id} className="hover:bg-muted/50">
@@ -173,17 +198,20 @@ function UpcomingTournamentsTable({
                     {tournament.name}
                   </Link>
                 </TableCell>
-                <TableCell className="text-muted-foreground">
+                <TableCell className="text-muted-foreground hidden sm:table-cell">
                   {tournament.organization?.name || "—"}
                 </TableCell>
                 <TableCell className="text-right">
-                  {isFull ? (
-                    <Badge variant="secondary" className="text-xs">
-                      Full
-                    </Badge>
-                  ) : (
-                    <span className="text-muted-foreground">{spotsText}</span>
-                  )}
+                  <span className="text-muted-foreground">{spotsText}</span>
+                </TableCell>
+                <TableCell className="text-center">
+                  <QuickRegisterButton
+                    tournamentId={tournament.id}
+                    tournamentSlug={tournament.slug}
+                    tournamentName={tournament.name}
+                    isFull={!!isFull}
+                    isRegistered={isRegistered}
+                  />
                 </TableCell>
               </TableRow>
             );
@@ -280,10 +308,20 @@ export default async function TournamentsPage({
   searchParams: Promise<{ q?: string }>;
 }) {
   const { q: searchQuery } = await searchParams;
-  const supabase = createStaticClient();
-  const allData = await listTournamentsGrouped(supabase, {
-    completedLimit: 20,
-  });
+
+  // Fetch tournaments (cached) and user registrations (not cached, user-specific)
+  const [allData, registeredTournamentIds] = await Promise.all([
+    getCachedTournaments(),
+    (async () => {
+      try {
+        const supabase = await createClientReadOnly();
+        return getCurrentUserRegisteredTournamentIds(supabase);
+      } catch {
+        // User not logged in or error - return empty set
+        return new Set<number>();
+      }
+    })(),
+  ]);
 
   // Filter on the server
   const data = filterTournaments(allData, searchQuery);
@@ -328,7 +366,10 @@ export default async function TournamentsPage({
           {data.upcoming.length > 0 && (
             <>
               <SectionHeader title="Upcoming" count={data.upcoming.length} />
-              <UpcomingTournamentsTable tournaments={data.upcoming} />
+              <UpcomingTournamentsTable
+                tournaments={data.upcoming}
+                registeredTournamentIds={registeredTournamentIds}
+              />
             </>
           )}
 

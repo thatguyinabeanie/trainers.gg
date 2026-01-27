@@ -113,17 +113,46 @@ export async function getAltByUsername(
 }
 
 /**
- * Get alt by user ID
+ * Get alt by user ID (returns first alt only)
+ * @deprecated Use getAltsByUserId for users with multiple alts
  */
 export async function getAltByUserId(supabase: TypedClient, userId: string) {
   const { data, error } = await supabase
     .from("alts")
     .select("*")
     .eq("user_id", userId)
-    .single();
+    .limit(1)
+    .maybeSingle();
 
   if (error) return null;
   return data;
+}
+
+/**
+ * Get all alts for a user
+ */
+export async function getAltsByUserId(supabase: TypedClient, userId: string) {
+  const { data, error } = await supabase
+    .from("alts")
+    .select("*")
+    .eq("user_id", userId)
+    .order("id", { ascending: true });
+
+  if (error) return [];
+  return data ?? [];
+}
+
+/**
+ * Get current user's alts (for authenticated user)
+ */
+export async function getCurrentUserAlts(supabase: TypedClient) {
+  const {
+    data: { user: authUser },
+  } = await supabase.auth.getUser();
+
+  if (!authUser) return [];
+
+  return getAltsByUserId(supabase, authUser.id);
 }
 
 /**

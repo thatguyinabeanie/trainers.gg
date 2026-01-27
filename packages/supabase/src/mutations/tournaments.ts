@@ -18,18 +18,53 @@ async function getCurrentUser(supabase: TypedClient) {
 
 /**
  * Helper to get current alt (for tournament registrations/matches)
+ * If altId is provided, fetches that specific alt (must belong to user)
+ * Otherwise, uses the user's main_alt_id from the users table
  */
-async function getCurrentAlt(supabase: TypedClient) {
+async function getCurrentAlt(supabase: TypedClient, altId?: number) {
   const {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return null;
 
+  // If specific altId provided, verify it belongs to this user
+  if (altId !== undefined) {
+    const { data: alt } = await supabase
+      .from("alts")
+      .select("*")
+      .eq("id", altId)
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    return alt;
+  }
+
+  // Otherwise, get the user's main alt
+  const { data: userData } = await supabase
+    .from("users")
+    .select("main_alt_id")
+    .eq("id", user.id)
+    .single();
+
+  if (!userData?.main_alt_id) {
+    // Fallback: get first alt for this user
+    const { data: alt } = await supabase
+      .from("alts")
+      .select("*")
+      .eq("user_id", user.id)
+      .order("id", { ascending: true })
+      .limit(1)
+      .maybeSingle();
+
+    return alt;
+  }
+
+  // Get the main alt
   const { data: alt } = await supabase
     .from("alts")
     .select("*")
-    .eq("user_id", user.id)
-    .single();
+    .eq("id", userData.main_alt_id)
+    .maybeSingle();
 
   return alt;
 }
@@ -202,11 +237,12 @@ export async function registerForTournament(
   supabase: TypedClient,
   tournamentId: number,
   data?: {
+    altId?: number;
     teamName?: string;
-    notes?: string;
+    inGameName?: string;
   }
 ) {
-  const alt = await getCurrentAlt(supabase);
+  const alt = await getCurrentAlt(supabase, data?.altId);
   if (!alt) throw new Error("Not authenticated");
 
   // Check if already registered
@@ -257,7 +293,7 @@ export async function registerForTournament(
       status: registrationStatus,
       registered_at: new Date().toISOString(),
       team_name: data?.teamName,
-      notes: data?.notes,
+      in_game_name: data?.inGameName,
       rental_team_photo_verified: false,
     })
     .select()

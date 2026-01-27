@@ -1,57 +1,101 @@
+import { unstable_cache } from "next/cache";
 import { createStaticClient } from "@/lib/supabase/server";
 import { listPublicOrganizations } from "@trainers/supabase";
 import { type OrganizationWithCounts } from "@trainers/supabase";
 import Link from "next/link";
 import { Suspense } from "react";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Building2, Trophy } from "lucide-react";
 import { OrganizationSearch } from "./organization-search";
+import { CacheTags } from "@/lib/cache";
 
-// Revalidate every 60 seconds
-export const revalidate = 60;
+// On-demand revalidation via cache tags (no time-based revalidation)
+export const revalidate = false;
+
+/**
+ * Cached data fetcher for organizations list
+ * Revalidated when CacheTags.ORGANIZATIONS_LIST is invalidated
+ */
+const getCachedOrganizations = unstable_cache(
+  async () => {
+    const supabase = createStaticClient();
+    return listPublicOrganizations(supabase);
+  },
+  ["organizations-list"],
+  { tags: [CacheTags.ORGANIZATIONS_LIST] }
+);
 
 // ============================================================================
-// Organization Card (Server Component)
+// Organizations Table (Server Component)
 // ============================================================================
 
-function OrganizationCard({ org }: { org: OrganizationWithCounts }) {
+function OrganizationsTable({
+  organizations,
+}: {
+  organizations: OrganizationWithCounts[];
+}) {
   return (
-    <Link href={`/organizations/${org.slug}`}>
-      <Card className="h-full transition-shadow hover:shadow-md">
-        <CardHeader className="pb-3">
-          <div className="flex items-start justify-between">
-            <CardTitle className="line-clamp-1 text-lg">{org.name}</CardTitle>
-            {org.tier === "verified" || org.tier === "partner" ? (
-              <Badge variant="secondary" className="shrink-0">
-                {org.tier === "partner" ? "Partner" : "Verified"}
-              </Badge>
-            ) : null}
-          </div>
-          <CardDescription className="line-clamp-2">
-            {org.description || `@${org.slug}`}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="text-muted-foreground flex items-center gap-4 text-sm">
-            <span className="flex items-center gap-1">
-              <Trophy className="h-4 w-4" />
-              {org.activeTournamentsCount || 0} active
-            </span>
-            <span className="flex items-center gap-1">
-              <Trophy className="h-4 w-4" />
-              {org.totalTournamentsCount || 0} total
-            </span>
-          </div>
-        </CardContent>
-      </Card>
-    </Link>
+    <div className="rounded-lg border">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Name</TableHead>
+            <TableHead className="hidden sm:table-cell">Description</TableHead>
+            <TableHead className="text-right">
+              <div className="flex items-center justify-end gap-1">
+                <Trophy className="h-3.5 w-3.5" />
+                Active
+              </div>
+            </TableHead>
+            <TableHead className="text-right">
+              <div className="flex items-center justify-end gap-1">
+                <Trophy className="h-3.5 w-3.5" />
+                Total
+              </div>
+            </TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {organizations.map((org) => (
+            <TableRow key={org.id} className="hover:bg-muted/50">
+              <TableCell className="font-medium">
+                <div className="flex items-center gap-2">
+                  <Link
+                    href={`/organizations/${org.slug}`}
+                    className="hover:text-primary hover:underline"
+                  >
+                    {org.name}
+                  </Link>
+                  {(org.tier === "verified" || org.tier === "partner") && (
+                    <Badge variant="secondary" className="text-xs">
+                      {org.tier === "partner" ? "Partner" : "Verified"}
+                    </Badge>
+                  )}
+                </div>
+              </TableCell>
+              <TableCell className="text-muted-foreground hidden max-w-xs truncate sm:table-cell">
+                {org.description || `@${org.slug}`}
+              </TableCell>
+              <TableCell className="text-muted-foreground text-right">
+                {org.activeTournamentsCount || 0}
+              </TableCell>
+              <TableCell className="text-muted-foreground text-right">
+                {org.totalTournamentsCount || 0}
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </div>
   );
 }
 
@@ -85,8 +129,7 @@ export default async function OrganizationsPage({
   searchParams: Promise<{ q?: string }>;
 }) {
   const { q: searchQuery } = await searchParams;
-  const supabase = createStaticClient();
-  const allOrganizations = await listPublicOrganizations(supabase);
+  const allOrganizations = await getCachedOrganizations();
 
   // Filter on the server
   const organizations = searchQuery
@@ -122,14 +165,8 @@ export default async function OrganizationsPage({
       {/* Empty State */}
       {hasNoResults && <EmptyState isSearching={isSearching} />}
 
-      {/* Organizations Grid */}
-      {!hasNoResults && (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {organizations.map((org) => (
-            <OrganizationCard key={org.id} org={org} />
-          ))}
-        </div>
-      )}
+      {/* Organizations Table */}
+      {!hasNoResults && <OrganizationsTable organizations={organizations} />}
     </div>
   );
 }

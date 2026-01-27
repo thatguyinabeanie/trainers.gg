@@ -14,6 +14,8 @@ export {
   getProfileByUserId,
   searchProfiles,
   getEmailByUsername,
+  getAltsByUserId,
+  getCurrentUserAlts,
 } from "./users";
 
 // Organization queries
@@ -43,6 +45,7 @@ export {
   getTournamentById,
   getTournamentRegistrations,
   isRegisteredForTournament,
+  getCurrentUserRegisteredTournamentIds,
   getTournamentPhases,
   getTournamentRounds,
   getRoundMatches,
