@@ -239,10 +239,8 @@ export function StaffListClient({
 
                     {canModify && (
                       <DropdownMenu>
-                        <DropdownMenuTrigger>
-                          <Button variant="ghost" size="icon-sm">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
+                        <DropdownMenuTrigger className="focus-visible:ring-ring hover:bg-accent inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-md focus-visible:ring-1 focus-visible:outline-none">
+                          <MoreHorizontal className="h-4 w-4" />
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           <DropdownMenuItem
