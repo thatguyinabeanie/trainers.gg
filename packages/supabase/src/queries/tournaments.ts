@@ -4,6 +4,105 @@ import type { Database } from "../types";
 type TypedClient = SupabaseClient<Database>;
 type TournamentStatus = Database["public"]["Enums"]["tournament_status"];
 
+// Base tournament type from query
+type TournamentRow = Database["public"]["Tables"]["tournaments"]["Row"];
+type OrganizationRow = Database["public"]["Tables"]["organizations"]["Row"];
+
+export type TournamentWithOrg = TournamentRow & {
+  organization: Pick<OrganizationRow, "id" | "name" | "slug"> | null;
+  _count: { registrations: number };
+};
+
+export type GroupedTournaments = {
+  active: TournamentWithOrg[];
+  upcoming: TournamentWithOrg[];
+  completed: TournamentWithOrg[];
+};
+
+/**
+ * List tournaments grouped by status for the public browse page
+ * Returns active, upcoming, and recently completed tournaments in a single call
+ */
+export async function listTournamentsGrouped(
+  supabase: TypedClient,
+  options: {
+    completedLimit?: number;
+  } = {}
+): Promise<GroupedTournaments> {
+  const { completedLimit = 10 } = options;
+
+  // Fetch all non-archived tournaments that are active, upcoming, or completed
+  const { data, error } = await supabase
+    .from("tournaments")
+    .select(
+      `
+      *,
+      organization:organizations(id, name, slug)
+    `
+    )
+    .is("archived_at", null)
+    .in("status", ["active", "upcoming", "completed"])
+    .order("start_date", { ascending: true, nullsFirst: false });
+
+  if (error) throw error;
+
+  const tournaments = data ?? [];
+
+  // Get registration counts for all tournaments using RPC function
+  // This avoids the PostgREST 1000-row pagination limit
+  const tournamentIds = tournaments.map((t) => t.id);
+
+  // Count registrations per tournament
+  const countMap: Record<string, number> = {};
+
+  if (tournamentIds.length > 0) {
+    const { data: regCounts, error: regError } = await supabase.rpc(
+      "get_registration_counts",
+      { tournament_ids: tournamentIds }
+    );
+
+    if (regError) {
+      console.error("Error fetching registration counts:", regError);
+    }
+
+    for (const row of regCounts ?? []) {
+      countMap[String(row.tournament_id)] = Number(row.registration_count);
+    }
+  }
+
+  // Add counts to tournaments
+  const tournamentsWithCounts: TournamentWithOrg[] = tournaments.map((t) => ({
+    ...t,
+    _count: { registrations: countMap[String(t.id)] ?? 0 },
+  }));
+
+  // Group by status
+  const active = tournamentsWithCounts.filter((t) => t.status === "active");
+
+  const upcoming = tournamentsWithCounts
+    .filter((t) => t.status === "upcoming")
+    .sort((a, b) => {
+      // Sort upcoming by start_date ascending (soonest first)
+      const dateA = a.start_date ? new Date(a.start_date).getTime() : Infinity;
+      const dateB = b.start_date ? new Date(b.start_date).getTime() : Infinity;
+      return dateA - dateB;
+    });
+
+  const completed = tournamentsWithCounts
+    .filter((t) => t.status === "completed")
+    .sort((a, b) => {
+      // Sort completed by end_date or start_date descending (most recent first)
+      const dateA = a.end_date || a.start_date;
+      const dateB = b.end_date || b.start_date;
+      const timeA = dateA ? new Date(dateA).getTime() : 0;
+      const timeB = dateB ? new Date(dateB).getTime() : 0;
+      return timeB - timeA;
+    })
+    .slice(0, completedLimit);
+
+  return { active, upcoming, completed };
+}
+
 /**
  * List public tournaments with pagination (for public browse page)
  * Returns format compatible with Convex api.tournaments.queries.list
@@ -44,21 +143,25 @@ export async function listPublicTournaments(
 
   if (error) throw error;
 
-  // Get registration counts for each tournament
-  const tournamentsWithCounts = await Promise.all(
-    (data ?? []).map(async (tournament) => {
-      const { count: regCount } = await supabase
-        .from("tournament_registrations")
-        .select("*", { count: "exact", head: true })
-        .eq("tournament_id", tournament.id);
+  // Get registration counts for all tournaments in a single query
+  const tournamentIds = (data ?? []).map((t) => t.id);
+  const { data: regCounts } = tournamentIds.length
+    ? await supabase.rpc("get_registration_counts", {
+        tournament_ids: tournamentIds,
+      })
+    : { data: [] };
 
-      return {
-        ...tournament,
-        participants: Array(regCount ?? 0).fill(null), // Mimic Convex structure
-        _count: { registrations: regCount ?? 0 },
-      };
-    })
-  );
+  // Build a map of tournament_id -> count
+  const countMap: Record<string, number> = {};
+  for (const row of regCounts ?? []) {
+    countMap[String(row.tournament_id)] = Number(row.registration_count);
+  }
+
+  const tournamentsWithCounts = (data ?? []).map((tournament) => ({
+    ...tournament,
+    participants: Array(countMap[String(tournament.id)] ?? 0).fill(null), // Mimic Convex structure
+    _count: { registrations: countMap[String(tournament.id)] ?? 0 },
+  }));
 
   const totalCount = count ?? 0;
   const nextCursor = offset + limit < totalCount ? offset + limit : null;
@@ -113,20 +216,24 @@ export async function listTournaments(
 
   if (error) throw error;
 
-  // Get registration counts for each tournament
-  const tournamentsWithCounts = await Promise.all(
-    (data ?? []).map(async (tournament) => {
-      const { count: regCount } = await supabase
-        .from("tournament_registrations")
-        .select("*", { count: "exact", head: true })
-        .eq("tournament_id", tournament.id);
+  // Get registration counts for all tournaments in a single query
+  const tournamentIds = (data ?? []).map((t) => t.id);
+  const { data: regCounts } = tournamentIds.length
+    ? await supabase.rpc("get_registration_counts", {
+        tournament_ids: tournamentIds,
+      })
+    : { data: [] };
 
-      return {
-        ...tournament,
-        _count: { registrations: regCount ?? 0 },
-      };
-    })
-  );
+  // Build a map of tournament_id -> count
+  const countMap: Record<string, number> = {};
+  for (const row of regCounts ?? []) {
+    countMap[String(row.tournament_id)] = Number(row.registration_count);
+  }
+
+  const tournamentsWithCounts = (data ?? []).map((tournament) => ({
+    ...tournament,
+    _count: { registrations: countMap[String(tournament.id)] ?? 0 },
+  }));
 
   return {
     items: tournamentsWithCounts,

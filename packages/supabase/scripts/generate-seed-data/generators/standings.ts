@@ -23,7 +23,10 @@ export interface GeneratedStanding {
   losses: number;
   gameWins: number;
   gameLosses: number;
+  /** Opponent Match Win Percentage (0-100) */
   resistancePct: number;
+  /** Opponent Game Win Percentage (0-100) */
+  opponentGameWinPct: number;
 }
 
 interface PlayerStats {
@@ -132,28 +135,44 @@ export function generateStandings(
       }
     }
 
-    // Calculate resistance percentage for each player
+    // Calculate resistance percentage (opponent match win %) for each player
     // Resistance = average win rate of opponents
     const resistanceCache = new Map<number, number>();
+    // Calculate opponent game win percentage for each player
+    const opponentGameWinCache = new Map<number, number>();
 
     for (const [altId, stats] of playerStats) {
       if (stats.opponents.length === 0) {
         resistanceCache.set(altId, 0);
+        opponentGameWinCache.set(altId, 0);
         continue;
       }
 
-      let totalOpponentWinRate = 0;
+      let totalOpponentMatchWinRate = 0;
+      let totalOpponentGameWinRate = 0;
+
       for (const oppId of stats.opponents) {
         const opp = playerStats.get(oppId);
         if (opp) {
-          const oppTotal = opp.wins + opp.losses;
-          const oppWinRate = oppTotal > 0 ? opp.wins / oppTotal : 0;
-          totalOpponentWinRate += oppWinRate;
+          // Opponent Match Win Rate
+          const oppMatchTotal = opp.wins + opp.losses;
+          const oppMatchWinRate =
+            oppMatchTotal > 0 ? opp.wins / oppMatchTotal : 0;
+          totalOpponentMatchWinRate += oppMatchWinRate;
+
+          // Opponent Game Win Rate
+          const oppGameTotal = opp.gameWins + opp.gameLosses;
+          const oppGameWinRate =
+            oppGameTotal > 0 ? opp.gameWins / oppGameTotal : 0;
+          totalOpponentGameWinRate += oppGameWinRate;
         }
       }
 
-      const resistance = totalOpponentWinRate / stats.opponents.length;
+      const resistance = totalOpponentMatchWinRate / stats.opponents.length;
       resistanceCache.set(altId, resistance);
+
+      const opponentGameWin = totalOpponentGameWinRate / stats.opponents.length;
+      opponentGameWinCache.set(altId, opponentGameWin);
     }
 
     // Sort players for placement
@@ -200,6 +219,7 @@ export function generateStandings(
     for (let i = 0; i < sortedPlayers.length; i++) {
       const player = sortedPlayers[i]!;
       const resistance = resistanceCache.get(player.altId) || 0;
+      const opponentGameWin = opponentGameWinCache.get(player.altId) || 0;
 
       standings.push({
         id: standingId++,
@@ -210,7 +230,8 @@ export function generateStandings(
         losses: player.losses,
         gameWins: player.gameWins,
         gameLosses: player.gameLosses,
-        resistancePct: Math.round(resistance * 10000) / 100, // Store as percentage
+        resistancePct: Math.round(resistance * 10000) / 100, // Store as percentage (0-100)
+        opponentGameWinPct: Math.round(opponentGameWin * 10000) / 100, // Store as percentage (0-100)
       });
     }
   }

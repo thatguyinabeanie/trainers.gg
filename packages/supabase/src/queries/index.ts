@@ -36,6 +36,7 @@ export {
 // Tournament queries
 export {
   listPublicTournaments,
+  listTournamentsGrouped,
   listTournaments,
   getTournamentBySlug,
   getTournamentByOrgAndSlug,
@@ -57,6 +58,8 @@ export {
   getTournamentInvitationsSent,
   getTournamentInvitationsReceived,
 } from "./tournaments";
+
+export type { TournamentWithOrg, GroupedTournaments } from "./tournaments";
 
 // Permission queries
 export { getUserPermissions, hasPermission } from "./permissions";

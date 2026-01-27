@@ -869,15 +869,19 @@ function generateStandingsSql(
         totalGames > 0
           ? Math.round((standing.gameWins / totalGames) * 10000) / 10000
           : 0;
-      // Resistance percentage also needs to be 0-1 decimal
+      // Resistance percentage (opponent match win %) also needs to be 0-1 decimal
       const resistancePct = Math.round(standing.resistancePct * 100) / 10000;
+      // Opponent game win percentage also needs to be 0-1 decimal
+      const opponentGameWinPct =
+        Math.round(standing.opponentGameWinPct * 100) / 10000;
 
       // Match points: 3 for win, 0 for loss (standard Swiss)
       const matchPoints = standing.wins * 3;
 
       lines.push(`    INSERT INTO public.tournament_standings (
       tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
-      match_win_percentage, game_win_percentage, opponent_match_win_percentage, rank
+      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
+      opponent_game_win_percentage, rank
     ) VALUES (
       t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = '${escapeString(altUsername)}'),
@@ -888,6 +892,7 @@ function generateStandingsSql(
       ${matchWinPct},
       ${gameWinPct},
       ${resistancePct},
+      ${opponentGameWinPct},
       ${standing.placement}
     );`);
 
