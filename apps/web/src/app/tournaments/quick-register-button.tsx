@@ -96,31 +96,6 @@ export function QuickRegisterButton({
   // Get currently selected alt
   const selectedAlt = alts.find((a) => a.id === selectedAltId);
 
-  // Generate preview text
-  function getPreviewText(): string {
-    if (!selectedAlt) return "";
-
-    let displayPart = "";
-    switch (displayNameOption) {
-      case "username":
-        displayPart = selectedAlt.username;
-        break;
-      case "shortened":
-        // First name or first word of display name
-        displayPart =
-          selectedAlt.display_name?.split(" ")[0] || selectedAlt.username;
-        break;
-      case "full":
-        displayPart = selectedAlt.display_name || selectedAlt.username;
-        break;
-    }
-
-    const flagPart = showCountryFlag ? " 🇺🇸" : ""; // TODO: Get actual country from user profile
-    const igPart = inGameName ? ` / ${inGameName}` : "";
-
-    return `${displayPart}${flagPart}${igPart}`;
-  }
-
   async function handleRegister() {
     setIsLoading(true);
     setError(null);
@@ -203,7 +178,11 @@ export function QuickRegisterButton({
                   onValueChange={(v) => setSelectedAltId(Number(v))}
                 >
                   <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Select profile" />
+                    <SelectValue placeholder="Select profile">
+                      {selectedAlt
+                        ? `${selectedAlt.display_name || selectedAlt.username} (@${selectedAlt.username})`
+                        : "Select profile"}
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     {alts.map((alt) => (
@@ -276,9 +255,24 @@ export function QuickRegisterButton({
 
             {/* Preview */}
             {selectedAlt && (
-              <div className="bg-muted rounded-lg p-3">
-                <p className="text-muted-foreground mb-1 text-xs">Preview</p>
-                <p className="font-medium">{getPreviewText()}</p>
+              <div className="bg-muted rounded-lg p-4">
+                <p className="text-muted-foreground mb-2 text-xs">Preview</p>
+                <div className="space-y-0.5">
+                  <p className="font-medium">
+                    {displayNameOption === "username"
+                      ? selectedAlt.username
+                      : displayNameOption === "shortened"
+                        ? selectedAlt.display_name?.split(" ")[0] ||
+                          selectedAlt.username
+                        : selectedAlt.display_name || selectedAlt.username}
+                    {showCountryFlag && <span className="ml-1.5">🇺🇸</span>}
+                  </p>
+                  {inGameName && (
+                    <p className="text-muted-foreground text-sm">
+                      {inGameName}
+                    </p>
+                  )}
+                </div>
               </div>
             )}
           </div>
