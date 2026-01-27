@@ -60,6 +60,7 @@ export {
 } from "./tournaments";
 
 export type { TournamentWithOrg, GroupedTournaments } from "./tournaments";
+export type { OrganizationWithCounts } from "./organizations";
 
 // Permission queries
 export { getUserPermissions, hasPermission } from "./permissions";

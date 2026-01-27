@@ -1,5 +1,6 @@
 "use client";
 
+import { type ElementType } from "react";
 import {
   type TournamentWithOrg,
   type GroupedTournaments,
@@ -122,7 +123,7 @@ function EmptyState({
   title,
   description,
 }: {
-  icon: React.ElementType;
+  icon: ElementType;
   title: string;
   description: string;
 }) {
