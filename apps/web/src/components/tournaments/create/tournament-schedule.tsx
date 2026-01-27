@@ -1,7 +1,9 @@
 "use client";
 
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Field, FieldLabel, FieldDescription } from "@/components/ui/field";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
+import { Lightbulb } from "lucide-react";
 import type { TournamentFormData } from "@/lib/types/tournament";
 
 interface TournamentScheduleProps {
@@ -26,17 +28,9 @@ export function TournamentSchedule({
 
   return (
     <div className="space-y-6">
-      <div className="space-y-4">
-        <h3 className="text-lg font-medium">Tournament Dates</h3>
-        <p className="text-muted-foreground text-sm">
-          Set the schedule for your tournament. All dates are optional and can
-          be updated later.
-        </p>
-      </div>
-
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        <div className="space-y-2">
-          <Label htmlFor="startDate">Start Date & Time</Label>
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+        <Field>
+          <FieldLabel htmlFor="startDate">Start Date & Time</FieldLabel>
           <Input
             id="startDate"
             type="datetime-local"
@@ -45,13 +39,11 @@ export function TournamentSchedule({
               updateFormData({ startDate: parseInputDate(e.target.value) })
             }
           />
-          <p className="text-muted-foreground text-sm">
-            When the tournament begins
-          </p>
-        </div>
+          <FieldDescription>When the tournament begins</FieldDescription>
+        </Field>
 
-        <div className="space-y-2">
-          <Label htmlFor="endDate">End Date & Time</Label>
+        <Field>
+          <FieldLabel htmlFor="endDate">End Date & Time</FieldLabel>
           <Input
             id="endDate"
             type="datetime-local"
@@ -61,14 +53,14 @@ export function TournamentSchedule({
             }
             min={formatDateForInput(formData.startDate)}
           />
-          <p className="text-muted-foreground text-sm">
-            Expected end time (optional)
-          </p>
-        </div>
+          <FieldDescription>Expected end time (optional)</FieldDescription>
+        </Field>
       </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="registrationDeadline">Registration Deadline</Label>
+      <Field>
+        <FieldLabel htmlFor="registrationDeadline">
+          Registration Deadline
+        </FieldLabel>
         <Input
           id="registrationDeadline"
           type="datetime-local"
@@ -79,31 +71,27 @@ export function TournamentSchedule({
             })
           }
           max={formatDateForInput(formData.startDate)}
+          className="max-w-sm"
         />
-        <p className="text-muted-foreground text-sm">
+        <FieldDescription>
           When registration closes (defaults to tournament start time)
-        </p>
-      </div>
+        </FieldDescription>
+      </Field>
 
-      <div className="bg-muted/50 rounded-lg p-4">
-        <h4 className="mb-2 font-medium">Schedule Tips</h4>
-        <ul className="text-muted-foreground space-y-1 text-sm">
-          <li>
-            • All dates can be updated later from the tournament management page
-          </li>
-          <li>
-            • Registration will automatically close at the deadline or
-            tournament start
-          </li>
-          <li>
-            • Consider time zones when setting dates for online tournaments
-          </li>
-          <li>
-            • Allow buffer time between registration deadline and tournament
-            start
-          </li>
-        </ul>
-      </div>
+      <Alert>
+        <Lightbulb className="h-4 w-4" />
+        <AlertTitle>Schedule Tips</AlertTitle>
+        <AlertDescription>
+          <ul className="mt-2 list-inside list-disc space-y-1">
+            <li>All dates can be updated later from tournament management</li>
+            <li>
+              Registration closes at the deadline or tournament start time
+            </li>
+            <li>Consider time zones for online tournaments</li>
+            <li>Allow buffer time between registration close and start</li>
+          </ul>
+        </AlertDescription>
+      </Alert>
     </div>
   );
 }

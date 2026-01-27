@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Field, FieldLabel, FieldDescription } from "@/components/ui/field";
 import { Textarea } from "@/components/ui/textarea";
 import {
   TournamentFormat,
@@ -396,35 +396,35 @@ export function CreateTournamentClient({
         <CardContent>
           {currentStep === 1 && (
             <div className="space-y-6">
-              <div className="space-y-2">
-                <Label htmlFor="name">Tournament Name *</Label>
+              <Field>
+                <FieldLabel htmlFor="name">Tournament Name *</FieldLabel>
                 <Input
                   id="name"
                   value={formData.name}
                   onChange={(e) => handleNameChange(e.target.value)}
                   placeholder="e.g., Spring Regional Championship"
                 />
-                <p className="text-muted-foreground text-sm">
+                <FieldDescription>
                   Give your tournament a descriptive name
-                </p>
-              </div>
+                </FieldDescription>
+              </Field>
 
-              <div className="space-y-2">
-                <Label htmlFor="slug">URL Slug *</Label>
+              <Field>
+                <FieldLabel htmlFor="slug">URL Slug *</FieldLabel>
                 <Input
                   id="slug"
                   value={formData.slug}
                   onChange={(e) => updateFormData({ slug: e.target.value })}
                   placeholder="spring-regional-championship"
                 />
-                <p className="text-muted-foreground text-sm">
+                <FieldDescription>
                   This will be used in the tournament URL:
                   trainers.gg/tournaments/{formData.slug || "your-slug"}
-                </p>
-              </div>
+                </FieldDescription>
+              </Field>
 
-              <div className="space-y-2">
-                <Label htmlFor="description">Description</Label>
+              <Field>
+                <FieldLabel htmlFor="description">Description</FieldLabel>
                 <Textarea
                   id="description"
                   value={formData.description}
@@ -434,10 +434,10 @@ export function CreateTournamentClient({
                   placeholder="Describe your tournament, rules, prizes, etc."
                   rows={4}
                 />
-                <p className="text-muted-foreground text-sm">
+                <FieldDescription>
                   Optional description that will be shown to players
-                </p>
-              </div>
+                </FieldDescription>
+              </Field>
             </div>
           )}
           {currentStep === 2 && (

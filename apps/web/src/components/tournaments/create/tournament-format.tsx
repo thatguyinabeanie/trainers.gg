@@ -15,13 +15,18 @@ import { Button } from "@/components/ui/button";
 import { ButtonGroup } from "@/components/ui/button-group";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import type {
   TournamentFormData,
   PhaseConfig,
   PhaseType,
   CutRule,
 } from "@/lib/types/tournament";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2, HelpCircle } from "lucide-react";
 
 interface TournamentFormatProps {
   formData: TournamentFormData;
@@ -311,9 +316,15 @@ export function TournamentFormat({
                     <div className="mt-4 flex flex-wrap items-center gap-x-6 gap-y-3">
                       {/* Best Of Toggle */}
                       <div className="flex items-center gap-2">
-                        <Label className="text-muted-foreground text-sm font-normal">
-                          Best of
-                        </Label>
+                        <Tooltip>
+                          <TooltipTrigger className="text-muted-foreground flex cursor-help items-center gap-1 text-sm font-normal">
+                            Best of
+                            <HelpCircle className="h-3 w-3" />
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            Games needed to win a match (Bo1, Bo3, or Bo5)
+                          </TooltipContent>
+                        </Tooltip>
                         <BestOfSelector
                           value={phase.bestOf}
                           onChange={(value) =>
@@ -325,12 +336,16 @@ export function TournamentFormat({
                       {/* Swiss: Rounds */}
                       {isSwiss && (
                         <div className="flex items-center gap-2">
-                          <Label
-                            htmlFor={`${phase.id}-rounds`}
-                            className="text-muted-foreground text-sm font-normal"
-                          >
-                            Rounds
-                          </Label>
+                          <Tooltip>
+                            <TooltipTrigger className="text-muted-foreground flex cursor-help items-center gap-1 text-sm font-normal">
+                              Rounds
+                              <HelpCircle className="h-3 w-3" />
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              Number of Swiss rounds. Leave empty to
+                              auto-calculate based on player count.
+                            </TooltipContent>
+                          </Tooltip>
                           <Input
                             id={`${phase.id}-rounds`}
                             type="number"
@@ -352,9 +367,16 @@ export function TournamentFormat({
                       {/* Elimination: Cut Rule */}
                       {showCutRule && (
                         <div className="flex items-center gap-2">
-                          <Label className="text-muted-foreground text-sm font-normal">
-                            Cut
-                          </Label>
+                          <Tooltip>
+                            <TooltipTrigger className="text-muted-foreground flex cursor-help items-center gap-1 text-sm font-normal">
+                              Cut
+                              <HelpCircle className="h-3 w-3" />
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              Who advances from Swiss to top cut. X-2 means
+                              players with 2 or fewer losses.
+                            </TooltipContent>
+                          </Tooltip>
                           <Select
                             value={phase.cutRule || "x-2"}
                             onValueChange={(value) => {
@@ -384,12 +406,15 @@ export function TournamentFormat({
 
                       {/* Round Timer */}
                       <div className="flex items-center gap-2">
-                        <Label
-                          htmlFor={`${phase.id}-timer`}
-                          className="text-muted-foreground text-sm font-normal"
-                        >
-                          Timer
-                        </Label>
+                        <Tooltip>
+                          <TooltipTrigger className="text-muted-foreground flex cursor-help items-center gap-1 text-sm font-normal">
+                            Timer
+                            <HelpCircle className="h-3 w-3" />
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            Round time limit in minutes. Set to 0 to disable.
+                          </TooltipContent>
+                        </Tooltip>
                         <Input
                           id={`${phase.id}-timer`}
                           type="number"
@@ -404,9 +429,9 @@ export function TournamentFormat({
                           min={0}
                           max={120}
                         />
-                        <Label className="text-muted-foreground text-sm font-normal">
+                        <span className="text-muted-foreground text-sm">
                           min
-                        </Label>
+                        </span>
                       </div>
                     </div>
                   </CardContent>
