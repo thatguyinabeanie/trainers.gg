@@ -1,9 +1,10 @@
 # Profiles Architecture
 
+> ⚠️ **Note:** This document references "profiles" but the current trainers.gg implementation uses the term "**alts**" for alternate identities. The concepts are the same - see [USER_VS_ALT_ARCHITECTURE.md](./USER_VS_ALT_ARCHITECTURE.md) for the authoritative guide.
+
 ## Overview
 
-The Battle Stadium platform implements a multi-profile system that allows users to maintain separate gaming identities while preventing name squatting and
-encouraging active usage. This document outlines the architecture and business logic for profile management across free and paid tiers.
+trainers.gg implements a multi-profile (alt) system that allows users to maintain separate gaming identities for tournament anonymity while preventing name squatting and encouraging active usage. This document outlines the architecture and business logic for profile/alt management across free and paid tiers.
 
 ## Core Concepts
 

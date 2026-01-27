@@ -1,11 +1,13 @@
 ---
+title: Tournaments
+description: Tournament ownership, creation, and structure on trainers.gg
 ---
 
 # Tournaments
 
-This section covers tournament ownership, creation, and structure in Battle Stadium.
+This section covers tournament ownership, creation, and structure in trainers.gg.
 
-**Battle Stadium focuses on grassroots, community-driven online Pokemon tournaments.** These tournaments are hosted by content creators, Discord communities, friend groups, and other community organizers - not corporate or professional esports entities.
+**trainers.gg focuses on grassroots, community-driven online Pokemon tournaments.** These tournaments are hosted by content creators, Discord communities, friend groups, and other community organizers - not corporate or professional esports entities.
 
 ## Contents
 

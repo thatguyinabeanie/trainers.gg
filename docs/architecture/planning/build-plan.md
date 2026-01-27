@@ -1,3 +1,6 @@
+> [!WARNING]
+> **ARCHIVED DOCUMENT** — This is a planning document from early development. The tech stack and priorities have evolved. Kept for historical reference.
+
 # Build Plan
 
 This document outlines exactly what will be built for the Battle Stadium platform, blending requirements, product specification,

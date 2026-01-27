@@ -1,21 +1,21 @@
 # Site Organization
 
-This document outlines the structure and user flows of the Battle Stadium platform.
+This document outlines the structure and user flows of the trainers.gg platform.
 
 ## Contents
 
-- [[../index.md|Main Docs Index]]
-- [[#Landing Page]]
-- [[#Organizations]]
-- [[#Tournaments]]
-- [[#Users]]
-- [[#Articles]]
-- [[#Analytics]]
-- [[#Dashboard]]
+- [Main Docs Index](../index.md)
+- [Landing Page](#landing-page)
+- [Organizations](#organizations)
+- [Tournaments](#tournaments)
+- [Users](#users)
+- [Articles](#articles)
+- [Analytics](#analytics)
+- [Dashboard](#dashboard)
 
 ## Landing Page
 
-A simple, aesthetic introduction to Battle Stadium. Future: dynamic content and highlights.
+A simple, aesthetic introduction to trainers.gg. Future: dynamic content and highlights.
 
 ## Organizations
 

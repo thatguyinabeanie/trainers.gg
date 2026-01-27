@@ -1,6 +1,8 @@
 # Convex Schema Design - trainers.gg
 
-This document describes the database schema for trainers.gg using Convex.
+> ⚠️ **ARCHIVED:** This document is historical. trainers.gg migrated from Convex to **Supabase** (PostgreSQL). See [BACKEND_COMPARISON.md](./BACKEND_COMPARISON.md) for migration rationale. The current schema is defined in `packages/supabase/supabase/migrations/`.
+
+This document describes the original database schema designed for Convex (no longer in use).
 
 ---
 

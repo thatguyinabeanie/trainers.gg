@@ -1,3 +1,6 @@
+> [!WARNING]
+> **ARCHIVED DOCUMENT** — This is an implementation guide from early development. The tech stack has changed (now Supabase instead of Convex, Tamagui instead of NativeWind, self-hosted PDS). Some patterns may still be useful but verify against current architecture. Kept for historical reference.
+
 # Cross-Platform UI Libraries for React + React Native/Expo
 
 > Research conducted January 2026 for BattleStadium - a Pokemon VGC tournament hosting platform

@@ -7,7 +7,7 @@ title: Pokémon Draft League Support
 ## TL;DR
 
 - Pokémon Draft Leagues are competitive formats where players draft unique Pokémon teams and compete in a structured league.
-- This document outlines how to support draft leagues in Battle Stadium, including data models and an MVP checklist.
+- This document outlines how to support draft leagues in trainers.gg, including data models and an MVP checklist.
 
 ---
 

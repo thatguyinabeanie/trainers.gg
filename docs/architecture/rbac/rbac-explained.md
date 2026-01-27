@@ -1,10 +1,10 @@
 ---
-Obsidian-compatible: All internal links use [[WikiLinks]]
+title: RBAC Explained
 ---
 
 # RBAC Explained
 
-This document explains how the groups, roles, and permissions system (Role-Based Access Control, or RBAC) works in Battle Stadium. It is designed to be accessible for anyone new to the concept.
+This document explains how the groups, roles, and permissions system (Role-Based Access Control, or RBAC) works in trainers.gg. It is designed to be accessible for anyone new to the concept.
 
 ---
 
@@ -49,7 +49,7 @@ Assigning every permission to every user individually would be a nightmare to ma
 
 ---
 
-## 3. How It Works in Battle Stadium
+## 3. How It Works in trainers.gg
 
 ### Step-by-Step Example
 

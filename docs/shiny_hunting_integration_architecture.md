@@ -8,9 +8,11 @@
 
 ## ⚠️ Prerequisites
 
-Before implementing shiny hunting features, the social system needs a migration from `alt_id` to `user_id`.
+~~Before implementing shiny hunting features, the social system needs a migration from `alt_id` to `user_id`.~~
 
-> 📄 **See full migration plan:** [SOCIAL_MIGRATION_PLAN.md](./planning/SOCIAL_MIGRATION_PLAN.md)
+> ✅ **Migration Complete:** The social system migration from `alt_id` to `user_id` has been completed. The database now uses `user_id` for all social features (posts, follows, likes, organizations).
+>
+> 📄 **See completed migration:** [SOCIAL_MIGRATION_PLAN.md](./planning/SOCIAL_MIGRATION_PLAN.md)
 >
 > 📄 **See architecture guide:** [USER_VS_ALT_ARCHITECTURE.md](./architecture/USER_VS_ALT_ARCHITECTURE.md)
 
@@ -65,11 +67,9 @@ Using `alt_id` for social features would **break** tournament anonymity—the op
 
 ### Timeline
 
-The social migration should be completed **before** starting shiny hunting implementation.
+~~The social migration should be completed **before** starting shiny hunting implementation.~~
 
-**Current Status:** Database is empty (no production data), so we can use a simplified drop-and-recreate approach.
-
-**Estimated effort:** 2-3 elapsed days (streamlined migration)
+**Migration Status:** ✅ Complete. Ready to implement shiny hunting features.
 
 ---
 

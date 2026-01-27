@@ -2,8 +2,10 @@
 
 **Project:** trainers.gg  
 **Date:** January 26, 2026  
-**Status:** Planning  
-**Priority:** High (blocks shiny hunting features)
+**Status:** ✅ COMPLETED  
+**Completed:** January 2026
+
+> **Migration Complete:** The database schema now uses `user_id` for all social features. The `posts`, `post_likes`, `follows`, and `organizations` tables all reference `users(id)` directly via `auth.uid()`. This document is preserved for historical reference and to document the architectural decision.
 
 ---
 

@@ -1,23 +1,29 @@
 # Technical Decisions - trainers.gg
 
-This document captures all technical decisions made during the planning phase for trainers.gg.
+This document captures all technical decisions made for trainers.gg.
+
+---
 
 ## Tech Stack Summary
 
 | Layer                      | Technology                  | Version |
 | -------------------------- | --------------------------- | ------- |
 | **Web Framework**          | Next.js                     | 16      |
-| **Web React**              | React                       | 19.2    |
 | **Mobile Framework**       | Expo                        | 54      |
-| **Mobile React**           | React                       | 18      |
-| **Database**               | Convex                      | Latest  |
-| **Authentication**         | Bluesky OAuth (AT Protocol) | -       |
-| **UI Components (Web)**    | shadcn/ui with Base UI      | Latest  |
-| **UI Components (Mobile)** | NativeWind + custom         | Latest  |
-| **Styling**                | Tailwind CSS                | 4.x     |
+| **React (Both Platforms)** | React                       | 19      |
+| **Database**               | Supabase (PostgreSQL)       | Latest  |
+| **Authentication**         | Supabase Auth + Bluesky PDS | -       |
+| **Edge Functions**         | Supabase Edge Functions     | Deno    |
+| **UI Components (Web)**    | shadcn/ui                   | Latest  |
+| **UI Components (Mobile)** | Tamagui                     | Latest  |
+| **Styling (Web)**          | Tailwind CSS                | 4.x     |
+| **Styling (Mobile)**       | Tamagui                     | Latest  |
+| **Theme Tokens**           | @trainers/theme (OKLCH)     | -       |
 | **Monorepo**               | Turborepo + pnpm            | Latest  |
 | **Package Namespace**      | `@trainers`                 | -       |
 | **Deployment (Web)**       | Vercel                      | -       |
+| **Deployment (Database)**  | Supabase Cloud              | -       |
+| **Deployment (PDS)**       | Fly.io                      | -       |
 | **Deployment (Mobile)**    | EAS / Expo                  | -       |
 
 ---
@@ -34,7 +40,7 @@ This document captures all technical decisions made during the planning phase fo
 - Parallel development ensures consistent feature parity
 - Shared business logic reduces duplication
 
-**Note**: Different React versions between platforms (19.2 for web, 18 for mobile) - shared code must be compatible with both.
+**Note**: Both platforms now use React 19, simplifying shared code.
 
 ---
 
@@ -52,137 +58,163 @@ This document captures all technical decisions made during the planning phase fo
 
 - `apps/` - User-facing applications (web, mobile)
 - `packages/` - Shared business logic and data layer
+- `infra/` - Infrastructure (PDS deployment)
 - `tooling/` - Developer experience and configuration
 
 ---
 
 ### 3. Database
 
-**Decision**: Use Convex as the database and backend.
+**Decision**: Use Supabase (PostgreSQL) as the database and backend.
 
 **Rationale**:
 
-- Real-time sync out of the box (great for live tournament brackets later)
-- Works with both React (Next.js) and React Native (Expo)
-- Combines database + serverless functions in one
-- TypeScript-first with excellent type inference
+- PostgreSQL is battle-tested and scales well
+- Row Level Security (RLS) provides declarative access control
+- Edge Functions (Deno) for server-side logic
+- Realtime subscriptions for live updates
+- Excellent TypeScript support with generated types
+- Git-based migrations for version control
 
-**Note**: Convex account is already set up.
+**Previous Decision**: Originally planned to use Convex, but migrated to Supabase for better control over data and compatibility with self-hosted PDS requirements.
 
 ---
 
 ### 4. Authentication Strategy
 
-**Decision**: Phase 1 uses Bluesky's existing PDS infrastructure. Fast follow to deploy our own containerized PDS for `@username.trainers.gg` handles.
+**Decision**: Unified Supabase Auth + Bluesky PDS account creation.
 
-**Phase 1 Flow**:
+**Flow**:
 
-1. User signs in with existing Bluesky account
-2. OR creates new `@username.bsky.social` account
-3. trainers.gg stores user profile data in Convex (linked via DID)
-
-**Phase 2 (Fast Follow)**:
-
-1. Deploy containerized PDS (likely Fly.io or similar)
-2. Users can create `@username.trainers.gg` handles
-3. Full control over user accounts and data
+1. User signs up with email, username, password
+2. Edge function creates Supabase Auth account
+3. Edge function creates PDS account (`@username.trainers.gg`)
+4. DID stored in users table, linked to Supabase auth.uid()
+5. User receives session tokens for both systems
 
 **Rationale**:
 
-- Bluesky OAuth is complex (DPoP, PAR, PKCE requirements)
-- Using existing infrastructure reduces initial complexity
-- Can add own PDS without breaking existing accounts (account migration is supported)
+- Single signup flow creates both accounts atomically
+- Users get a Bluesky identity immediately
+- Supabase Auth handles session management, password reset, etc.
+- PDS handles decentralized social features
+
+**Note**: We now run our own PDS at `pds.trainers.gg` (deployed on Fly.io).
 
 ---
 
 ### 5. UI Components (Web)
 
-**Decision**: Use shadcn/ui with Base UI (not Radix UI).
+**Decision**: Use shadcn/ui components.
 
 **Rationale**:
 
-- shadcn/ui provides beautiful, accessible components
-- Base UI is actively maintained (MUI backing) vs Radix concerns
-- shadcn/ui officially supports Base UI as an alternative to Radix
+- Beautiful, accessible components out of the box
 - Components are copied into project for full customization control
+- Works great with Tailwind CSS 4
 
 **Implementation**:
 
-- Use shadcn CLI with Base UI variant
-- Components available at `/docs/components/base/*` in shadcn docs
+- Components live in `packages/ui/`
+- Shared across web app via `@trainers/ui`
 
 ---
 
 ### 6. UI Components (Mobile)
 
-**Decision**: Use NativeWind for Tailwind-style classes in React Native.
+**Decision**: Use Tamagui for React Native UI.
 
 **Rationale**:
 
-- Maintains design language consistency with web
-- Developers can use familiar Tailwind utility classes
-- Single design system across platforms
+- Universal components with excellent performance
+- Theme tokens can be shared via `@trainers/theme`
+- Better DX than NativeWind for complex components
+- Supports web compilation if needed later
 
-**Note**: Mobile will have custom components built with NativeWind, not shared with web (different component primitives).
+**Previous Decision**: Originally planned NativeWind, but Tamagui provides better component primitives for mobile-first design.
 
 ---
 
-### 7. Package Namespace
+### 7. Theme System
+
+**Decision**: OKLCH color space with generated outputs for each platform.
+
+**Implementation**:
+
+- Colors defined in OKLCH in `@trainers/theme`
+- Build script generates:
+  - CSS variables for web (`theme.css`)
+  - Hex colors for mobile (`mobile-theme.ts`)
+- Light and dark modes supported
+
+**Rationale**:
+
+- OKLCH provides perceptually uniform colors
+- Single source of truth for design tokens
+- Works across Tailwind (web) and Tamagui (mobile)
+
+---
+
+### 8. Package Namespace
 
 **Decision**: Use `@trainers` as the package namespace.
 
 **Examples**:
 
-- `@trainers/ui` - Shared UI components
-- `@trainers/backend` - Convex functions
+- `@trainers/supabase` - Database client, queries, edge functions
+- `@trainers/atproto` - AT Protocol / Bluesky utilities
+- `@trainers/ui` - Shared web UI components
+- `@trainers/theme` - Shared theme tokens
 - `@trainers/validators` - Shared Zod schemas
 
 ---
 
-### 8. Bluesky Integration Approach
+### 9. Bluesky Integration Approach
 
 #### Account Handles
 
-**Decision**: Default to `username.trainers.gg` handles (when own PDS is ready), but allow users to choose their provider during signup.
+**Decision**: Every user gets an `@username.trainers.gg` handle on signup.
 
-**Phase 1**: Users use existing Bluesky handles or create `@username.bsky.social`
+**Implementation**:
 
-**Phase 2**: Users can create `@username.trainers.gg` handles on our PDS
+- Self-hosted PDS at `pds.trainers.gg` (Fly.io)
+- Signup edge function creates PDS account automatically
+- Handle resolution via wildcard DNS (`*.trainers.gg` → PDS)
+- Users can login to bsky.app with their trainers.gg handle
 
 #### Feed Strategy
 
 **Decision**: Hybrid with tabs - default to Pokemon-curated feed, allow switching to full Bluesky feed.
 
-**Implementation (Phase 1)**: Keep it simple
+**Implementation**:
 
 - Pokemon feed: Filter by hashtags/keywords related to Pokemon
 - Full feed: Show complete Bluesky feed from follows
-- Prioritize trainers.gg content in Pokemon feed (when we have our own posts)
+- Prioritize trainers.gg content in Pokemon feed
 
 #### Cross-posting
 
-**Decision**: Always cross-post to Bluesky by default.
+**Decision**: Posts created on trainers.gg are stored on the user's PDS and federate to Bluesky network automatically.
 
 **Options available**:
 
-1. Default behavior: All posts go to Bluesky automatically
-2. User settings: Global preference to change default
-3. Per-post override: Toggle on composer to skip Bluesky
+1. Default behavior: All posts federate to Bluesky
+2. Future: Per-post privacy controls
 
 #### Profiles
 
-**Decision**: trainers.gg profiles are independent from Bluesky.
+**Decision**: trainers.gg profiles extend Bluesky profiles with Pokemon-specific fields.
 
 **Flow**:
 
-1. On initial setup, pull avatar/name/bio from Bluesky profile
-2. User can edit/override any field
-3. trainers.gg profile stored in Convex, lives independently
-4. Pokemon-specific fields added (game preferences, tournament history, etc.)
+1. On signup, profile created with username
+2. User can add Pokemon-specific fields (game preferences, tournament history, etc.)
+3. Profile stored in Supabase `users` table
+4. Avatar/bio can sync with PDS profile or be independent
 
 ---
 
-### 9. Team Sharing in Posts
+### 10. Team Sharing in Posts
 
 **Decision**: Simple text posts only for Phase 1.
 
@@ -194,39 +226,55 @@ This document captures all technical decisions made during the planning phase fo
 
 ---
 
-### 10. Deployment
+### 11. Deployment
 
 **Decision**:
 
-- Web: Vercel
+- Web: Vercel (auto-deploy from main branch)
+- Database: Supabase Cloud (Git integration for migrations)
+- PDS: Fly.io (manual deploy via `infra/pds/deploy.sh`)
 - Mobile: EAS (Expo Application Services)
 
 **Rationale**:
 
 - Vercel has first-class Next.js support
+- Supabase Git integration handles preview branches
+- Fly.io is cost-effective for containerized PDS
 - EAS provides streamlined Expo builds and OTA updates
-- Both integrate well with the chosen stack
+
+---
+
+## Resolved Decisions
+
+| Question             | Resolution                            |
+| -------------------- | ------------------------------------- |
+| Domain (trainers.gg) | ✅ Purchased January 2026             |
+| PDS Hosting          | ✅ Fly.io at pds.trainers.gg          |
+| Database choice      | ✅ Supabase (migrated from Convex)    |
+| Mobile UI library    | ✅ Tamagui (migrated from NativeWind) |
+| React version        | ✅ React 19 on both platforms         |
 
 ---
 
 ## Open Questions / Future Decisions
 
-1. ~~**Domain**: `trainers.gg` needs to be purchased before OAuth can fully work (client metadata must be hosted at a public URL)~~ **RESOLVED**: Domain purchased January 2026
+1. **OAuth Providers**: Add Google, Discord, etc. via Supabase Auth?
 
-2. **PDS Hosting**: When ready for Phase 2, decide between Fly.io, Railway, Render, or dedicated VPS for containerized PDS
+2. **Caching Strategy**: May need to cache Bluesky feed data for performance
 
-3. **Caching Strategy**: May need to cache Bluesky feed data in Convex for performance (rate limits consideration)
+3. **Mobile Deep Linking**: Universal links configuration for both platforms
 
-4. **Mobile OAuth**: Need to verify Expo WebBrowser/AuthSession works with atproto OAuth requirements (DPoP)
+4. **Push Notifications**: Expo notifications vs native implementation
 
 ---
 
 ## Status
 
-| Item                 | Status      |
-| -------------------- | ----------- |
-| Domain (trainers.gg) | Purchased   |
-| Convex Account       | Ready       |
-| Vercel Account       | TBD         |
-| Planning Docs        | Complete    |
-| Implementation       | Not Started |
+| Item                  | Status         |
+| --------------------- | -------------- |
+| Domain (trainers.gg)  | ✅ Active      |
+| Supabase Project      | ✅ Ready       |
+| PDS (pds.trainers.gg) | ✅ Deployed    |
+| Vercel Deployment     | ✅ Active      |
+| Web App               | 🔶 In Progress |
+| Mobile App            | 🔶 In Progress |

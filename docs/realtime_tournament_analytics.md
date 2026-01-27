@@ -1,3 +1,6 @@
+> [!WARNING]
+> **ARCHIVED DOCUMENT** — This is a brainstorming/research document from early development. The tech stack has changed (now Supabase, Tamagui, self-hosted PDS) and the project was renamed from "Battle Stadium" to "trainers.gg". Ideas have been extracted for Linear tickets. Kept for historical reference only.
+
 # Real-Time Tournament Analytics - Deep Dive
 
 ## 🏗️ Overview

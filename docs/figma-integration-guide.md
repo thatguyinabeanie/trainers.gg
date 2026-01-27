@@ -1,3 +1,6 @@
+> [!WARNING]
+> **ARCHIVED DOCUMENT** — This is an implementation guide from early development. The tech stack has changed (now Supabase instead of Convex, Tamagui instead of NativeWind, self-hosted PDS). Some patterns may still be useful but verify against current architecture. Kept for historical reference.
+
 # Figma Integration & Design System Guide
 
 This document provides comprehensive guidelines for integrating Figma designs into the BattleStadium codebase using the Model Context Protocol (MCP) and following the established design system patterns.
@@ -453,7 +456,7 @@ export function cn(...inputs: ClassValue[]) {
 ```tsx
 // Use @container for component-level responsive design
 <div className="@container">
-  <div className="grid grid-cols-1 @md:grid-cols-2 @lg:grid-cols-3">
+  <div className="@md:grid-cols-2 @lg:grid-cols-3 grid grid-cols-1">
     {/* Responsive to container, not viewport */}
   </div>
 </div>

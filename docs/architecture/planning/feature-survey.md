@@ -7,6 +7,9 @@ status: survey-results
 obsidian_compatible: true
 ---
 
+> [!WARNING]
+> **ARCHIVED DOCUMENT** — This is a planning document from early development. The tech stack and priorities have evolved. Kept for historical reference.
+
 # 📊 Feature Survey & Recommendations
 
 To help select the best real-time provider for your Next.js app on Vercel, please answer the following questions. Your responses will guide the recommendation of the top 3 services for your needs.

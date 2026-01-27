@@ -8,10 +8,49 @@ This document details how trainers.gg integrates with Bluesky and the AT Protoco
 
 trainers.gg uses Bluesky as the social backbone:
 
-- **Authentication**: Users sign in with Bluesky accounts via OAuth
-- **Social Graph**: Follows/followers from Bluesky
-- **Content**: Posts federate to/from Bluesky network
-- **Identity**: Users identified by their Bluesky DID
+- **Identity**: Every user gets a `@username.trainers.gg` handle
+- **Social Graph**: Follows/followers via AT Protocol
+- **Content**: Posts federate to/from the Bluesky network
+- **DID**: Users identified by their permanent Decentralized Identifier
+
+---
+
+## Current Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                           trainers.gg                                        │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────────────────────┐  │
+│  │ Next.js Web │  │ Expo Mobile │  │ Supabase                            │  │
+│  │             │  │             │  │ ┌─────────────────────────────────┐ │  │
+│  │ signUp() ───┼──┼─────────────┼──┼─► Edge Function (/signup)         │ │  │
+│  │             │  │             │  │ │  ├─► Create Supabase Auth       │ │  │
+│  │             │  │             │  │ │  ├─► Create PDS Account         │ │  │
+│  │             │  │             │  │ │  └─► Store DID in users table   │ │  │
+│  │             │  │             │  │ └─────────────────────────────────┘ │  │
+│  └─────────────┘  └─────────────┘  └─────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    │ Edge Function calls PDS API
+                                    ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                         PDS (pds.trainers.gg)                                │
+│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────────────────┐  │
+│  │  User Accounts  │  │  DID / Handles  │  │  Federation (Relay)        │  │
+│  │  @user.trainers │  │  did:plc:...    │  │  → bsky.network             │  │
+│  └─────────────────┘  └─────────────────┘  └─────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    │ Federates with
+                                    ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                         Bluesky Network                                      │
+│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────────────────┐  │
+│  │  bsky.social    │  │  Relay          │  │  AppView                    │  │
+│  │  (main PDS)     │  │  bsky.network   │  │  (aggregation)              │  │
+│  └─────────────────┘  └─────────────────┘  └─────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
 
 ---
 
@@ -22,7 +61,7 @@ trainers.gg uses Bluesky as the social backbone:
 | Term        | Description                                                              |
 | ----------- | ------------------------------------------------------------------------ |
 | **DID**     | Decentralized Identifier - permanent user ID (e.g., `did:plc:abc123...`) |
-| **Handle**  | User-friendly name (e.g., `user.bsky.social` or `user.trainers.gg`)      |
+| **Handle**  | User-friendly name (e.g., `@username.trainers.gg`)                       |
 | **PDS**     | Personal Data Server - hosts user's data                                 |
 | **Lexicon** | Schema definitions for AT Protocol (like OpenAPI for atproto)            |
 | **XRPC**    | HTTP-based RPC protocol used by AT Protocol                              |
@@ -38,55 +77,29 @@ trainers.gg uses Bluesky as the social backbone:
 
 ---
 
-## Phase 1: Using Bluesky's PDS
+## Authentication Flow
 
-### OAuth Flow
+### Unified Signup
 
-Bluesky uses a custom OAuth 2.0 profile with additional security requirements:
+trainers.gg uses **Supabase Auth** for authentication, with automatic PDS account creation:
 
 ```
-┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
-│   trainers.gg   │────▶│   Bluesky       │────▶│   User's PDS    │
-│   (Client)      │     │   Auth Server   │     │   (bsky.social) │
-└─────────────────┘     └─────────────────┘     └─────────────────┘
-        │                       │
-        │  1. PAR Request       │
-        │  2. Auth Redirect     │
-        │  3. Callback + Code   │
-        │  4. Token Exchange    │
-        │  5. Access Token      │
-        ▼                       ▼
+1. User enters email, username, password
+2. Client calls /functions/v1/signup edge function
+3. Edge function validates username availability (Supabase + PDS)
+4. Edge function creates Supabase Auth account
+5. Edge function generates PDS invite code
+6. Edge function creates PDS account (@username.trainers.gg)
+7. Edge function stores DID in users table
+8. User receives session tokens
 ```
 
-### OAuth Requirements
+### Why This Approach?
 
-| Requirement         | Description                                  |
-| ------------------- | -------------------------------------------- |
-| **PKCE**            | Proof Key for Code Exchange - required       |
-| **PAR**             | Pushed Authorization Requests - required     |
-| **DPoP**            | Demonstrating Proof of Possession - required |
-| **Client Metadata** | JSON file hosted at public URL               |
-
-### Client Metadata
-
-trainers.gg hosts a client metadata file at `https://trainers.gg/oauth/client-metadata.json`:
-
-```json
-{
-  "client_id": "https://trainers.gg/oauth/client-metadata.json",
-  "application_type": "web",
-  "client_name": "trainers.gg",
-  "client_uri": "https://trainers.gg",
-  "dpop_bound_access_tokens": true,
-  "grant_types": ["authorization_code", "refresh_token"],
-  "redirect_uris": ["https://trainers.gg/api/oauth/callback"],
-  "response_types": ["code"],
-  "scope": "atproto transition:generic",
-  "token_endpoint_auth_method": "none"
-}
-```
-
-**CRITICAL:** Per the AT Protocol OAuth spec, this URL must return HTTP 200 directly. Any redirect (301, 302, 308) will cause OAuth to fail with `invalid_client_metadata`. This is why `trainers.gg` must be the primary domain in Vercel (not `www.trainers.gg`).
+| Approach              | Pros                                                | Cons                                                   |
+| --------------------- | --------------------------------------------------- | ------------------------------------------------------ |
+| **Bluesky OAuth**     | Standard OAuth flow                                 | Complex (DPoP, PAR, PKCE), user needs existing account |
+| **Supabase + PDS** ✅ | Simpler, user gets handle immediately, full control | Must manage PDS ourselves                              |
 
 ### Handle Resolution
 
@@ -99,216 +112,62 @@ Users get handles like `@username.trainers.gg`. For these to work, the AT Protoc
 
 The PDS handles this automatically when wildcard DNS (`*.trainers.gg`) points to Fly.io.
 
-**Required DNS configuration:**
+**Current DNS configuration:**
 
-- `*.trainers.gg` CNAME → `trainers-pds.fly.dev`
-- Wildcard SSL certificate on Fly.io: `fly certs add "*.trainers.gg" -a trainers-pds`
+| Record         | Type  | Points To              | Purpose           |
+| -------------- | ----- | ---------------------- | ----------------- |
+| `pds`          | CNAME | `trainers-pds.fly.dev` | PDS API           |
+| `*` (wildcard) | CNAME | `trainers-pds.fly.dev` | Handle resolution |
 
-````
+---
 
-### Recommended Packages
+## PDS Deployment
+
+### Infrastructure
+
+| Component   | Value                               |
+| ----------- | ----------------------------------- |
+| **Host**    | Fly.io                              |
+| **Domain**  | pds.trainers.gg                     |
+| **Handles** | \*.trainers.gg                      |
+| **SSL**     | Fly.io managed (with wildcard cert) |
+
+### Management Scripts
 
 ```bash
-pnpm add @atproto/oauth-client-browser @atproto/api
-````
+cd infra/pds
 
-| Package                         | Purpose                                 |
-| ------------------------------- | --------------------------------------- |
-| `@atproto/oauth-client-browser` | Handles OAuth flow with DPoP, PAR, PKCE |
-| `@atproto/api`                  | Type-safe API client for Bluesky        |
+# Full deployment
+./deploy.sh
 
----
+# Create a user account manually
+./create-account.sh <username> <email> <password>
 
-## API Integration
-
-### Convex Actions for Bluesky
-
-All Bluesky API calls go through Convex Actions (server-side):
-
-```typescript
-// convex/bluesky.ts
-import { action } from "./_generated/server";
-import { v } from "convex/values";
-import { BskyAgent } from "@atproto/api";
-
-// Get user's timeline
-export const getTimeline = action({
-  args: {
-    accessToken: v.string(),
-    cursor: v.optional(v.string()),
-    limit: v.optional(v.number()),
-  },
-  handler: async (ctx, args) => {
-    const agent = new BskyAgent({ service: "https://bsky.social" });
-
-    // Resume session with access token
-    // Note: This is simplified - actual implementation needs DPoP handling
-
-    const response = await agent.getTimeline({
-      cursor: args.cursor,
-      limit: args.limit || 50,
-    });
-
-    return {
-      feed: response.data.feed,
-      cursor: response.data.cursor,
-    };
-  },
-});
-
-// Create a post
-export const createPost = action({
-  args: {
-    accessToken: v.string(),
-    text: v.string(),
-    // images: v.optional(v.array(v.string())), // Future: image uploads
-  },
-  handler: async (ctx, args) => {
-    const agent = new BskyAgent({ service: "https://bsky.social" });
-
-    const response = await agent.post({
-      text: args.text,
-      createdAt: new Date().toISOString(),
-    });
-
-    return {
-      uri: response.uri,
-      cid: response.cid,
-    };
-  },
-});
-
-// Like a post
-export const likePost = action({
-  args: {
-    accessToken: v.string(),
-    uri: v.string(),
-    cid: v.string(),
-  },
-  handler: async (ctx, args) => {
-    const agent = new BskyAgent({ service: "https://bsky.social" });
-
-    const response = await agent.like(args.uri, args.cid);
-
-    return { uri: response.uri };
-  },
-});
-
-// Unlike a post
-export const unlikePost = action({
-  args: {
-    accessToken: v.string(),
-    likeUri: v.string(),
-  },
-  handler: async (ctx, args) => {
-    const agent = new BskyAgent({ service: "https://bsky.social" });
-
-    await agent.deleteLike(args.likeUri);
-
-    return { success: true };
-  },
-});
-
-// Repost
-export const repost = action({
-  args: {
-    accessToken: v.string(),
-    uri: v.string(),
-    cid: v.string(),
-  },
-  handler: async (ctx, args) => {
-    const agent = new BskyAgent({ service: "https://bsky.social" });
-
-    const response = await agent.repost(args.uri, args.cid);
-
-    return { uri: response.uri };
-  },
-});
-
-// Follow a user
-export const followUser = action({
-  args: {
-    accessToken: v.string(),
-    did: v.string(),
-  },
-  handler: async (ctx, args) => {
-    const agent = new BskyAgent({ service: "https://bsky.social" });
-
-    const response = await agent.follow(args.did);
-
-    return { uri: response.uri };
-  },
-});
-
-// Unfollow a user
-export const unfollowUser = action({
-  args: {
-    accessToken: v.string(),
-    followUri: v.string(),
-  },
-  handler: async (ctx, args) => {
-    const agent = new BskyAgent({ service: "https://bsky.social" });
-
-    await agent.deleteFollow(args.followUri);
-
-    return { success: true };
-  },
-});
-
-// Get user profile
-export const getProfile = action({
-  args: {
-    actor: v.string(), // Handle or DID
-  },
-  handler: async (ctx, args) => {
-    const agent = new BskyAgent({ service: "https://bsky.social" });
-
-    const response = await agent.getProfile({ actor: args.actor });
-
-    return response.data;
-  },
-});
-
-// Get user's posts
-export const getAuthorFeed = action({
-  args: {
-    actor: v.string(),
-    cursor: v.optional(v.string()),
-    limit: v.optional(v.number()),
-  },
-  handler: async (ctx, args) => {
-    const agent = new BskyAgent({ service: "https://bsky.social" });
-
-    const response = await agent.getAuthorFeed({
-      actor: args.actor,
-      cursor: args.cursor,
-      limit: args.limit || 50,
-    });
-
-    return {
-      feed: response.data.feed,
-      cursor: response.data.cursor,
-    };
-  },
-});
+# Check status
+make status
+make health
+make logs
 ```
 
+See [infra/pds/README.md](../../infra/pds/README.md) for full documentation.
+
 ---
 
-## Feed Strategy
+## Future: Social Features
 
-### Two Feed Views
+### Feed Strategy (Not Yet Implemented)
+
+Two feed views are planned:
 
 1. **Pokemon Feed** (Default)
    - Filter posts containing Pokemon-related keywords/hashtags
    - Prioritize posts from trainers.gg users
-   - Simple implementation: keyword matching
 
 2. **Full Feed**
-   - Complete Bluesky timeline
+   - Complete Bluesky timeline from follows
    - No filtering
 
-### Pokemon Content Detection (Phase 1 - Simple)
+### Pokemon Content Detection
 
 ```typescript
 const POKEMON_KEYWORDS = [
@@ -321,9 +180,6 @@ const POKEMON_KEYWORDS = [
   "#draftleague",
   "#pokemonshowdown",
   "#competitivepokemon",
-  "#pokemonscarlet",
-  "#pokemonviolet",
-  "#pokemonsv",
 
   // Keywords
   "pokemon",
@@ -335,8 +191,6 @@ const POKEMON_KEYWORDS = [
   "regionals",
   "nationals",
   "worlds",
-  "terastal",
-  "tera type",
 ];
 
 function isPokemonContent(text: string): boolean {
@@ -349,7 +203,7 @@ function isPokemonContent(text: string): boolean {
 
 ### Future: Custom Feed Generator
 
-In Phase 2+, we could create a proper Bluesky Feed Generator that:
+In a later phase, we could create a proper Bluesky Feed Generator that:
 
 - Uses ML to classify Pokemon content
 - Provides better relevance ranking
@@ -357,36 +211,42 @@ In Phase 2+, we could create a proper Bluesky Feed Generator that:
 
 ---
 
-## Cross-Posting Logic
+## Future: Post Creation
 
-### Default Behavior
+### Bluesky API Integration
 
-When a user creates a post on trainers.gg:
-
-1. Post is created on Bluesky (via their PDS)
-2. Post appears in their Bluesky feed
-3. Post is visible on trainers.gg
-
-### User Controls
+Posts will be created via the user's PDS using the AT Protocol API:
 
 ```typescript
-// Check user's cross-posting preference
-async function shouldCrossPost(
-  userId: Id<"users">,
-  perPostOverride?: boolean
-): Promise<boolean> {
-  // Per-post override takes precedence
-  if (perPostOverride !== undefined) {
-    return perPostOverride;
-  }
+// packages/atproto/src/posts.ts
+import { BskyAgent } from "@atproto/api";
 
-  // Fall back to user's default setting
-  const user = await ctx.db.get(userId);
-  return user?.settings?.crossPostToBluesky ?? true;
+export async function createPost(agent: BskyAgent, text: string) {
+  const response = await agent.post({
+    text,
+    createdAt: new Date().toISOString(),
+  });
+
+  return {
+    uri: response.uri,
+    cid: response.cid,
+  };
+}
+
+export async function likePost(agent: BskyAgent, uri: string, cid: string) {
+  return await agent.like(uri, cid);
+}
+
+export async function repost(agent: BskyAgent, uri: string, cid: string) {
+  return await agent.repost(uri, cid);
+}
+
+export async function follow(agent: BskyAgent, did: string) {
+  return await agent.follow(did);
 }
 ```
 
-### Post Composer UI
+### Post Composer UI (Mockup)
 
 ```
 ┌─────────────────────────────────────────────────────┐
@@ -404,81 +264,6 @@ async function shouldCrossPost(
 
 ---
 
-## Mobile OAuth Considerations
-
-### Expo Implementation
-
-For React Native/Expo, we need to handle OAuth differently:
-
-```typescript
-// Using expo-auth-session
-import * as AuthSession from "expo-auth-session";
-import * as WebBrowser from "expo-web-browser";
-
-// Register for redirect
-WebBrowser.maybeCompleteAuthSession();
-
-// OAuth configuration will need to account for:
-// 1. Different redirect URI (app scheme or universal link)
-// 2. DPoP key management in React Native
-// 3. Secure token storage (expo-secure-store)
-```
-
-### Challenges
-
-1. **DPoP Keys**: Need secure key generation in React Native
-2. **Redirect URI**: May need custom URI scheme or Universal Links
-3. **Token Storage**: Use `expo-secure-store` for secure storage
-
-### Potential Solutions
-
-1. Use `@atproto/oauth-client-browser` if it works in React Native WebView
-2. Build custom OAuth flow using React Native crypto libraries
-3. Proxy OAuth through web app (less ideal)
-
----
-
-## Phase 2: Own PDS
-
-### Benefits
-
-- `@username.trainers.gg` handles
-- Full control over user data
-- Can customize account creation flow
-- Not dependent on Bluesky's infrastructure
-
-### Deployment Options
-
-| Platform         | Pros                                    | Cons             |
-| ---------------- | --------------------------------------- | ---------------- |
-| **Fly.io**       | Easy container deployment, good scaling | Cost at scale    |
-| **Railway**      | Simple, git-based deploys               | Less control     |
-| **Render**       | Good free tier                          | Cold starts      |
-| **DigitalOcean** | Full VPS control, cheap                 | More maintenance |
-
-### PDS Requirements
-
-- Public IPv4 address
-- Domain with DNS configured
-- SSL certificate (auto via Caddy)
-- 1GB+ RAM
-- Persistent storage for SQLite + blobs
-
-### Handle Configuration
-
-```
-trainers.gg              → PDS server
-*.trainers.gg            → PDS server (for user handles)
-```
-
-Users would have handles like:
-
-- `ash.trainers.gg`
-- `cynthia.trainers.gg`
-- `leon.trainers.gg`
-
----
-
 ## Rate Limits
 
 Bluesky has rate limits that we need to respect:
@@ -491,30 +276,10 @@ Bluesky has rate limits that we need to respect:
 
 ### Mitigation Strategies
 
-1. **Caching**: Cache feed data in Convex for repeat views
-2. **Debouncing**: Debounce rapid actions (like spam clicking)
+1. **Caching**: Cache feed data for repeat views
+2. **Debouncing**: Debounce rapid actions
 3. **Queuing**: Queue posts if rate limited
 4. **Graceful Degradation**: Show cached data if API unavailable
-
----
-
-## Error Handling
-
-```typescript
-// Common Bluesky API errors
-const BLUESKY_ERRORS = {
-  InvalidToken: "Session expired, please sign in again",
-  RateLimitExceeded: "Too many requests, please wait",
-  RecordNotFound: "Post not found",
-  InvalidRequest: "Invalid request",
-  AuthRequired: "Please sign in to continue",
-};
-
-function handleBlueskyError(error: any): string {
-  const errorType = error?.error;
-  return BLUESKY_ERRORS[errorType] || "Something went wrong";
-}
-```
 
 ---
 
@@ -525,17 +290,57 @@ function handleBlueskyError(error: any): string {
    - Use httpOnly cookies or secure session management
    - Mobile: Use `expo-secure-store`
 
-2. **DPoP Keys**
-   - Generate per-session
-   - Never export or share
-   - Store in IndexedDB (web) or Keychain (mobile)
-
-3. **API Calls**
-   - All Bluesky calls through Convex Actions (server-side)
+2. **API Calls**
+   - Sensitive operations through Edge Functions (server-side)
    - Validate user owns the session before making calls
-   - Don't expose raw tokens to client
 
-4. **Client Metadata**
-   - Host at HTTPS URL
-   - Keep redirect URIs minimal and specific
-   - Update if keys are compromised
+3. **PDS Admin**
+   - Admin password stored in Fly.io secrets
+   - Only Edge Functions have access to admin operations
+
+---
+
+## Mobile Considerations
+
+### Challenges
+
+1. **PDS Authentication**: Need to authenticate with PDS from mobile
+2. **Token Storage**: Use `expo-secure-store` for secure storage
+3. **Deep Linking**: Handle `trainers.gg://` scheme for callbacks
+
+### Potential Approaches
+
+1. Use Supabase session to generate PDS session tokens
+2. Proxy PDS operations through Edge Functions
+3. Direct PDS authentication with secure token storage
+
+---
+
+## Useful Packages
+
+```bash
+pnpm add @atproto/api
+```
+
+| Package        | Purpose                                      |
+| -------------- | -------------------------------------------- |
+| `@atproto/api` | Type-safe API client for Bluesky/AT Protocol |
+
+---
+
+## References
+
+### AT Protocol
+
+- [AT Protocol Docs](https://atproto.com/docs)
+- [Bluesky API Reference](https://docs.bsky.app/)
+- [Lexicon Reference](https://atproto.com/lexicons)
+
+### PDS
+
+- [PDS Self-Hosting Guide](https://github.com/bluesky-social/pds)
+- [Handle Resolution](https://atproto.com/specs/handle)
+
+---
+
+**Last Updated:** January 2026

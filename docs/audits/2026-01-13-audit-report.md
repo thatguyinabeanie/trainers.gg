@@ -1,4 +1,13 @@
-# Battle Stadium Implementation Audit Report - 2026-01-13
+# trainers.gg Implementation Audit Report - 2026-01-13
+
+> ⚠️ **OUTDATED:** This audit was conducted when the project still used Convex as the backend. The project has since migrated to **Supabase**. This document is preserved for historical reference only. The architecture, recommendations, and gaps described here may no longer be accurate.
+>
+> **Key changes since this audit:**
+>
+> - Backend migrated from Convex to Supabase (PostgreSQL)
+> - UI library changed from NativeWind to Tamagui (mobile)
+> - Project renamed from "Battle Stadium" to "trainers.gg"
+> - Self-hosted Bluesky PDS deployed at pds.trainers.gg
 
 ## Executive Summary
 

@@ -1,18 +1,15 @@
 ---
 title: Organization System Overview
-description: Comprehensive guide to tournament organizations, groups, roles, and permissions on the Battle Stadium platform
+description: Comprehensive guide to tournament organizations, groups, roles, and permissions on trainers.gg
 category: organizations
 type: overview
-obsidian_compatible: true
 ---
 
 # 🏢 Organization System Overview
 
-> **Note:** This documentation is Obsidian-compatible. Use [[WikiLinks]] for navigation.
+Welcome to the trainers.gg Organization System!
 
-Welcome to the Battle Stadium Organization System!
-
-**Battle Stadium is built for grassroots, community-driven tournament organizing.** Organizations on this platform represent community groups like Discord servers, friend groups, content creator communities, local gaming clubs, and other grassroots tournament organizers - NOT corporate entities or professional esports organizations.
+**trainers.gg is built for grassroots, community-driven tournament organizing.** Organizations on this platform represent community groups like Discord servers, friend groups, content creator communities, local gaming clubs, and other grassroots tournament organizers - NOT corporate entities or professional esports organizations.
 
 This documentation explains how these community-driven tournament organizations, groups, roles, and permissions work on the platform.
 
