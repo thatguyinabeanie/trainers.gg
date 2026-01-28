@@ -55,7 +55,7 @@ export function TopNavAuthSection() {
     return (
       <div className="flex items-center gap-2">
         <Skeleton className="h-8 w-8 rounded-full" />
-        <Skeleton className="hidden h-4 w-20 sm:block" />
+        <Skeleton className="hidden h-4 w-20 lg:block" />
       </div>
     );
   }
@@ -105,7 +105,7 @@ export function TopNavAuthSection() {
               {userInitial}
             </AvatarFallback>
           </Avatar>
-          <span className="text-muted-foreground hidden text-sm sm:inline">
+          <span className="text-muted-foreground hidden max-w-32 truncate text-sm lg:inline">
             {displayName}
           </span>
         </DropdownMenuTrigger>
