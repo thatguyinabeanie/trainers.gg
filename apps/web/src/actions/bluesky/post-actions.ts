@@ -9,6 +9,7 @@
 
 import { revalidatePath } from "next/cache";
 import { getCurrentUserDid } from "@/lib/atproto/agent";
+import { getErrorMessage } from "@/lib/utils";
 import {
   createPost as apiCreatePost,
   deletePost as apiDeletePost,
@@ -71,14 +72,9 @@ export async function createBlueskyPost(
     };
   } catch (error) {
     console.error("Failed to create Bluesky post:", error);
-
-    if (error instanceof Error) {
-      return { success: false, error: error.message };
-    }
-
     return {
       success: false,
-      error: "Failed to create post. Please try again.",
+      error: getErrorMessage(error, "Failed to create post. Please try again."),
     };
   }
 }
@@ -153,14 +149,9 @@ export async function deleteBlueskyPost(
     return { success: true, data: undefined };
   } catch (error) {
     console.error("Failed to delete Bluesky post:", error);
-
-    if (error instanceof Error) {
-      return { success: false, error: error.message };
-    }
-
     return {
       success: false,
-      error: "Failed to delete post. Please try again.",
+      error: getErrorMessage(error, "Failed to delete post. Please try again."),
     };
   }
 }

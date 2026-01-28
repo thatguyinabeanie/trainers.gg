@@ -9,6 +9,7 @@
 
 import { updateTag } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { getErrorMessage } from "@/lib/utils";
 import {
   createTournament as createTournamentMutation,
   updateTournament as updateTournamentMutation,
@@ -73,8 +74,7 @@ export async function createTournament(data: {
   } catch (error) {
     return {
       success: false,
-      error:
-        error instanceof Error ? error.message : "Failed to create tournament",
+      error: getErrorMessage(error, "Failed to create tournament"),
     };
   }
 }
@@ -111,8 +111,7 @@ export async function updateTournament(
   } catch (error) {
     return {
       success: false,
-      error:
-        error instanceof Error ? error.message : "Failed to update tournament",
+      error: getErrorMessage(error, "Failed to update tournament"),
     };
   }
 }
@@ -138,8 +137,7 @@ export async function publishTournament(
   } catch (error) {
     return {
       success: false,
-      error:
-        error instanceof Error ? error.message : "Failed to publish tournament",
+      error: getErrorMessage(error, "Failed to publish tournament"),
     };
   }
 }
@@ -165,8 +163,7 @@ export async function startTournament(
   } catch (error) {
     return {
       success: false,
-      error:
-        error instanceof Error ? error.message : "Failed to start tournament",
+      error: getErrorMessage(error, "Failed to start tournament"),
     };
   }
 }
@@ -192,10 +189,7 @@ export async function completeTournament(
   } catch (error) {
     return {
       success: false,
-      error:
-        error instanceof Error
-          ? error.message
-          : "Failed to complete tournament",
+      error: getErrorMessage(error, "Failed to complete tournament"),
     };
   }
 }
@@ -219,8 +213,7 @@ export async function archiveTournament(
   } catch (error) {
     return {
       success: false,
-      error:
-        error instanceof Error ? error.message : "Failed to archive tournament",
+      error: getErrorMessage(error, "Failed to archive tournament"),
     };
   }
 }
@@ -240,8 +233,7 @@ export async function deleteTournament(
   } catch (error) {
     return {
       success: false,
-      error:
-        error instanceof Error ? error.message : "Failed to delete tournament",
+      error: getErrorMessage(error, "Failed to delete tournament"),
     };
   }
 }
@@ -278,7 +270,7 @@ export async function registerForTournament(
   } catch (error) {
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Failed to register",
+      error: getErrorMessage(error, "Failed to register"),
     };
   }
 }
@@ -304,10 +296,7 @@ export async function cancelRegistration(
   } catch (error) {
     return {
       success: false,
-      error:
-        error instanceof Error
-          ? error.message
-          : "Failed to cancel registration",
+      error: getErrorMessage(error, "Failed to cancel registration"),
     };
   }
 }
@@ -326,7 +315,7 @@ export async function checkIn(
   } catch (error) {
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Failed to check in",
+      error: getErrorMessage(error, "Failed to check in"),
     };
   }
 }
@@ -345,7 +334,7 @@ export async function undoCheckIn(
   } catch (error) {
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Failed to undo check-in",
+      error: getErrorMessage(error, "Failed to undo check-in"),
     };
   }
 }
@@ -370,7 +359,7 @@ export async function withdrawFromTournament(
   } catch (error) {
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Failed to withdraw",
+      error: getErrorMessage(error, "Failed to withdraw"),
     };
   }
 }
@@ -399,8 +388,7 @@ export async function getCurrentUserAltsAction(): Promise<
   } catch (error) {
     return {
       success: false,
-      error:
-        error instanceof Error ? error.message : "Failed to fetch user alts",
+      error: getErrorMessage(error, "Failed to fetch user alts"),
     };
   }
 }
@@ -425,7 +413,7 @@ export async function createRound(
   } catch (error) {
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Failed to create round",
+      error: getErrorMessage(error, "Failed to create round"),
     };
   }
 }
@@ -456,8 +444,7 @@ export async function generatePairings(
   } catch (error) {
     return {
       success: false,
-      error:
-        error instanceof Error ? error.message : "Failed to generate pairings",
+      error: getErrorMessage(error, "Failed to generate pairings"),
     };
   }
 }
@@ -477,7 +464,7 @@ export async function startRound(
   } catch (error) {
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Failed to start round",
+      error: getErrorMessage(error, "Failed to start round"),
     };
   }
 }
@@ -497,8 +484,7 @@ export async function completeRound(
   } catch (error) {
     return {
       success: false,
-      error:
-        error instanceof Error ? error.message : "Failed to complete round",
+      error: getErrorMessage(error, "Failed to complete round"),
     };
   }
 }
@@ -517,10 +503,7 @@ export async function recalculateStandings(
   } catch (error) {
     return {
       success: false,
-      error:
-        error instanceof Error
-          ? error.message
-          : "Failed to recalculate standings",
+      error: getErrorMessage(error, "Failed to recalculate standings"),
     };
   }
 }
@@ -540,7 +523,7 @@ export async function dropPlayer(
   } catch (error) {
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Failed to drop player",
+      error: getErrorMessage(error, "Failed to drop player"),
     };
   }
 }
@@ -569,10 +552,7 @@ export async function reportMatchResult(
   } catch (error) {
     return {
       success: false,
-      error:
-        error instanceof Error
-          ? error.message
-          : "Failed to report match result",
+      error: getErrorMessage(error, "Failed to report match result"),
     };
   }
 }
@@ -606,7 +586,7 @@ export async function updatePhase(
   } catch (error) {
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Failed to update phase",
+      error: getErrorMessage(error, "Failed to update phase"),
     };
   }
 }
@@ -636,7 +616,7 @@ export async function createTournamentPhase(
   } catch (error) {
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Failed to create phase",
+      error: getErrorMessage(error, "Failed to create phase"),
     };
   }
 }
@@ -658,7 +638,7 @@ export async function deleteTournamentPhase(
   } catch (error) {
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Failed to delete phase",
+      error: getErrorMessage(error, "Failed to delete phase"),
     };
   }
 }
@@ -703,7 +683,7 @@ export async function saveTournamentPhasesAction(
   } catch (error) {
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Failed to save phases",
+      error: getErrorMessage(error, "Failed to save phases"),
     };
   }
 }

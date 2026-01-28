@@ -4,9 +4,11 @@ import * as React from "react";
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
   Card,
   CardContent,
@@ -15,6 +17,14 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 import { useAuth } from "@/hooks/use-auth";
 
 interface LinkBlueskyClientProps {
@@ -22,28 +32,40 @@ interface LinkBlueskyClientProps {
   returnUrl?: string;
 }
 
+const linkBlueskySchema = z.object({
+  email: z.string().min(1, "Email is required").email("Invalid email address"),
+  password: z.string().min(1, "Password is required"),
+});
+
+type LinkBlueskyFormData = z.infer<typeof linkBlueskySchema>;
+
 export function LinkBlueskyClient({ did, returnUrl }: LinkBlueskyClientProps) {
   const router = useRouter();
   const { signInWithEmail } = useAuth();
-  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
 
-  // Sign in form state
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const form = useForm<LinkBlueskyFormData>({
+    resolver: zodResolver(linkBlueskySchema),
+    defaultValues: {
+      email: "",
+      password: "",
+    },
+  });
 
-  const handleSignInAndLink = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const { isSubmitting } = form.formState;
+
+  const onSubmit = async (data: LinkBlueskyFormData) => {
     setError(null);
-    setIsLoading(true);
 
     try {
-      const { error: signInError } = await signInWithEmail(email, password);
+      const { error: signInError } = await signInWithEmail(
+        data.email,
+        data.password
+      );
 
       if (signInError) {
         setError(signInError.message);
-        setIsLoading(false);
         return;
       }
 
@@ -58,7 +80,6 @@ export function LinkBlueskyClient({ did, returnUrl }: LinkBlueskyClientProps) {
 
       if (!result.success) {
         setError(result.error || "Failed to link Bluesky account");
-        setIsLoading(false);
         return;
       }
 
@@ -70,7 +91,6 @@ export function LinkBlueskyClient({ did, returnUrl }: LinkBlueskyClientProps) {
       }, 1500);
     } catch {
       setError("An unexpected error occurred");
-      setIsLoading(false);
     }
   };
 
@@ -105,45 +125,59 @@ export function LinkBlueskyClient({ did, returnUrl }: LinkBlueskyClientProps) {
           </TabsList>
 
           <TabsContent value="signin" className="mt-4">
-            <form
-              onSubmit={handleSignInAndLink}
-              className="flex flex-col gap-4"
-            >
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="you@example.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  disabled={isLoading}
-                  required
+            <Form {...form}>
+              <form
+                onSubmit={form.handleSubmit(onSubmit)}
+                className="flex flex-col gap-4"
+              >
+                <FormField
+                  control={form.control}
+                  name="email"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Email</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="email"
+                          placeholder="you@example.com"
+                          disabled={isSubmitting}
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
                 />
-              </div>
 
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="password">Password</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  disabled={isLoading}
-                  required
+                <FormField
+                  control={form.control}
+                  name="password"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Password</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="password"
+                          disabled={isSubmitting}
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
                 />
-              </div>
 
-              {error && <p className="text-destructive text-sm">{error}</p>}
+                {error && <p className="text-destructive text-sm">{error}</p>}
 
-              <Button type="submit" disabled={isLoading}>
-                {isLoading ? (
-                  <span className="size-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                ) : (
-                  "Sign In & Link Account"
-                )}
-              </Button>
-            </form>
+                <Button type="submit" disabled={isSubmitting}>
+                  {isSubmitting ? (
+                    <span className="size-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                  ) : (
+                    "Sign In & Link Account"
+                  )}
+                </Button>
+              </form>
+            </Form>
           </TabsContent>
 
           <TabsContent value="signup" className="mt-4">

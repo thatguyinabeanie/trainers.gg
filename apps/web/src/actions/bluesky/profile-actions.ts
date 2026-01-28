@@ -8,6 +8,7 @@
 "use server";
 
 import { getProfile, getProfiles } from "@/lib/atproto/api";
+import { getErrorMessage } from "@/lib/utils";
 import type { ProfileView } from "@/lib/atproto/api";
 
 /**
@@ -57,19 +58,15 @@ export async function getProfileAction(
     };
   } catch (error) {
     console.error("Failed to fetch profile:", error);
-
-    if (error instanceof Error) {
-      // Handle specific AT Protocol errors
-      if (error.message.includes("not found")) {
-        return { success: false, error: "Profile not found." };
-      }
-      return { success: false, error: error.message };
+    const message = getErrorMessage(
+      error,
+      "Failed to fetch profile. Please try again."
+    );
+    // Handle specific AT Protocol errors
+    if (message.includes("not found")) {
+      return { success: false, error: "Profile not found." };
     }
-
-    return {
-      success: false,
-      error: "Failed to fetch profile. Please try again.",
-    };
+    return { success: false, error: message };
   }
 }
 
@@ -98,14 +95,12 @@ export async function getProfilesAction(
     };
   } catch (error) {
     console.error("Failed to fetch profiles:", error);
-
-    if (error instanceof Error) {
-      return { success: false, error: error.message };
-    }
-
     return {
       success: false,
-      error: "Failed to fetch profiles. Please try again.",
+      error: getErrorMessage(
+        error,
+        "Failed to fetch profiles. Please try again."
+      ),
     };
   }
 }

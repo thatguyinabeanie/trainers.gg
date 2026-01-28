@@ -9,6 +9,7 @@
 
 import { revalidatePath } from "next/cache";
 import { getCurrentUserDid } from "@/lib/atproto/agent";
+import { getErrorMessage } from "@/lib/utils";
 import {
   follow as apiFollow,
   unfollow as apiUnfollow,
@@ -73,14 +74,9 @@ export async function followBlueskyUser(
     };
   } catch (error) {
     console.error("Failed to follow user:", error);
-
-    if (error instanceof Error) {
-      return { success: false, error: error.message };
-    }
-
     return {
       success: false,
-      error: "Failed to follow user. Please try again.",
+      error: getErrorMessage(error, "Failed to follow user. Please try again."),
     };
   }
 }
@@ -111,14 +107,12 @@ export async function unfollowBlueskyUser(
     return { success: true, data: undefined };
   } catch (error) {
     console.error("Failed to unfollow user:", error);
-
-    if (error instanceof Error) {
-      return { success: false, error: error.message };
-    }
-
     return {
       success: false,
-      error: "Failed to unfollow user. Please try again.",
+      error: getErrorMessage(
+        error,
+        "Failed to unfollow user. Please try again."
+      ),
     };
   }
 }
@@ -189,12 +183,10 @@ export async function blockBlueskyUser(
     };
   } catch (error) {
     console.error("Failed to block user:", error);
-
-    if (error instanceof Error) {
-      return { success: false, error: error.message };
-    }
-
-    return { success: false, error: "Failed to block user. Please try again." };
+    return {
+      success: false,
+      error: getErrorMessage(error, "Failed to block user. Please try again."),
+    };
   }
 }
 
@@ -225,14 +217,12 @@ export async function unblockBlueskyUser(
     return { success: true, data: undefined };
   } catch (error) {
     console.error("Failed to unblock user:", error);
-
-    if (error instanceof Error) {
-      return { success: false, error: error.message };
-    }
-
     return {
       success: false,
-      error: "Failed to unblock user. Please try again.",
+      error: getErrorMessage(
+        error,
+        "Failed to unblock user. Please try again."
+      ),
     };
   }
 }
@@ -263,12 +253,10 @@ export async function muteBlueskyUser(
     return { success: true, data: undefined };
   } catch (error) {
     console.error("Failed to mute user:", error);
-
-    if (error instanceof Error) {
-      return { success: false, error: error.message };
-    }
-
-    return { success: false, error: "Failed to mute user. Please try again." };
+    return {
+      success: false,
+      error: getErrorMessage(error, "Failed to mute user. Please try again."),
+    };
   }
 }
 
@@ -298,14 +286,9 @@ export async function unmuteBlueskyUser(
     return { success: true, data: undefined };
   } catch (error) {
     console.error("Failed to unmute user:", error);
-
-    if (error instanceof Error) {
-      return { success: false, error: error.message };
-    }
-
     return {
       success: false,
-      error: "Failed to unmute user. Please try again.",
+      error: getErrorMessage(error, "Failed to unmute user. Please try again."),
     };
   }
 }
@@ -361,14 +344,12 @@ export async function getFollowersAction(
     };
   } catch (error) {
     console.error("Failed to fetch followers:", error);
-
-    if (error instanceof Error) {
-      return { success: false, error: error.message };
-    }
-
     return {
       success: false,
-      error: "Failed to fetch followers. Please try again.",
+      error: getErrorMessage(
+        error,
+        "Failed to fetch followers. Please try again."
+      ),
     };
   }
 }
@@ -398,14 +379,12 @@ export async function getFollowsAction(
     };
   } catch (error) {
     console.error("Failed to fetch follows:", error);
-
-    if (error instanceof Error) {
-      return { success: false, error: error.message };
-    }
-
     return {
       success: false,
-      error: "Failed to fetch following. Please try again.",
+      error: getErrorMessage(
+        error,
+        "Failed to fetch following. Please try again."
+      ),
     };
   }
 }

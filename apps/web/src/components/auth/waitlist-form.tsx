@@ -7,8 +7,15 @@ import { z } from "zod";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 import { joinWaitlist } from "@/app/(auth-pages)/actions";
 
 const waitlistSchema = z.object({
@@ -23,19 +30,18 @@ type WaitlistFormData = z.infer<typeof waitlistSchema>;
 export function WaitlistForm() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-  } = useForm<WaitlistFormData>({
+  const form = useForm<WaitlistFormData>({
     resolver: zodResolver(waitlistSchema),
+    defaultValues: {
+      email: "",
+    },
   });
+
+  const { isSubmitting } = form.formState;
 
   const onSubmit = async (data: WaitlistFormData) => {
     setError(null);
-    setIsSubmitting(true);
 
     try {
       const result = await joinWaitlist(data.email);
@@ -50,8 +56,6 @@ export function WaitlistForm() {
       setError(
         err instanceof Error ? err.message : "An unexpected error occurred"
       );
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
@@ -88,32 +92,41 @@ export function WaitlistForm() {
           launch publicly.
         </p>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
-          {error && (
-            <div className="bg-destructive/10 text-destructive rounded-lg p-3 text-sm">
-              {error}
-            </div>
-          )}
-
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="email">Email</Label>
-            <Input
-              id="email"
-              type="email"
-              placeholder="you@example.com"
-              autoComplete="email"
-              aria-invalid={errors.email ? "true" : undefined}
-              {...register("email")}
-            />
-            {errors.email && (
-              <p className="text-destructive text-sm">{errors.email.message}</p>
+        <Form {...form}>
+          <form
+            onSubmit={form.handleSubmit(onSubmit)}
+            className="flex flex-col gap-4"
+          >
+            {error && (
+              <div className="bg-destructive/10 text-destructive rounded-lg p-3 text-sm">
+                {error}
+              </div>
             )}
-          </div>
 
-          <Button type="submit" className="w-full" disabled={isSubmitting}>
-            {isSubmitting ? "Joining..." : "Join Waitlist"}
-          </Button>
-        </form>
+            <FormField
+              control={form.control}
+              name="email"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Email</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="email"
+                      placeholder="you@example.com"
+                      autoComplete="email"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <Button type="submit" className="w-full" disabled={isSubmitting}>
+              {isSubmitting ? "Joining..." : "Join Waitlist"}
+            </Button>
+          </form>
+        </Form>
 
         <p className="text-muted-foreground text-center text-sm">
           Already have an account?{" "}

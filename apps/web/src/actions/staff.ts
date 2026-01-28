@@ -9,6 +9,7 @@
 
 import { updateTag } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { getErrorMessage } from "@/lib/utils";
 import {
   searchUsersForInvite as searchUsersQuery,
   listOrganizationGroups as listGroupsQuery,
@@ -56,7 +57,7 @@ export async function searchUsersForStaffInvite(
   } catch (error) {
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Failed to search users",
+      error: getErrorMessage(error, "Failed to search users"),
     };
   }
 }
@@ -89,8 +90,7 @@ export async function inviteStaffMember(
   } catch (error) {
     return {
       success: false,
-      error:
-        error instanceof Error ? error.message : "Failed to add staff member",
+      error: getErrorMessage(error, "Failed to add staff member"),
     };
   }
 }
@@ -119,8 +119,7 @@ export async function inviteStaffToGroup(
   } catch (error) {
     return {
       success: false,
-      error:
-        error instanceof Error ? error.message : "Failed to add staff member",
+      error: getErrorMessage(error, "Failed to add staff member"),
     };
   }
 }
@@ -149,8 +148,7 @@ export async function changeStaffRoleAction(
   } catch (error) {
     return {
       success: false,
-      error:
-        error instanceof Error ? error.message : "Failed to change staff group",
+      error: getErrorMessage(error, "Failed to change staff group"),
     };
   }
 }
@@ -190,10 +188,7 @@ export async function removeStaffAction(
   } catch (error) {
     return {
       success: false,
-      error:
-        error instanceof Error
-          ? error.message
-          : "Failed to remove staff member",
+      error: getErrorMessage(error, "Failed to remove staff member"),
     };
   }
 }
@@ -228,7 +223,7 @@ export async function getOrganizationGroups(organizationId: number): Promise<
   } catch (error) {
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Failed to fetch groups",
+      error: getErrorMessage(error, "Failed to fetch groups"),
     };
   }
 }

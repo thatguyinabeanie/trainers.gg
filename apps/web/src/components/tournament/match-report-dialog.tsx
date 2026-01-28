@@ -1,6 +1,9 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useCallback, useEffect } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import { useSupabaseQuery, useSupabaseMutation } from "@/lib/supabase";
 import {
   getMatchDetails,
@@ -17,12 +20,19 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 import {
   Trophy,
   Swords,
@@ -40,16 +50,37 @@ interface MatchReportDialogProps {
   onReportSubmitted?: () => void;
 }
 
+const matchReportSchema = z
+  .object({
+    winnerId: z.string().min(1, "Please select a winner"),
+    player1Score: z.coerce.number().min(0).max(3),
+    player2Score: z.coerce.number().min(0).max(3),
+  })
+  .refine((data) => data.player1Score !== data.player2Score, {
+    message: "Scores cannot be tied",
+    path: ["player1Score"],
+  });
+
+type MatchReportFormData = z.infer<typeof matchReportSchema>;
+
 export function MatchReportDialog({
   matchId,
   open,
   onOpenChange,
   onReportSubmitted,
 }: MatchReportDialogProps) {
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [winnerId, setWinnerId] = useState<number | null>(null);
-  const [player1Score, setPlayer1Score] = useState("2");
-  const [player2Score, setPlayer2Score] = useState("0");
+  const form = useForm<MatchReportFormData>({
+    resolver: zodResolver(matchReportSchema),
+    defaultValues: {
+      winnerId: "",
+      player1Score: 2,
+      player2Score: 0,
+    },
+  });
+
+  const { isSubmitting } = form.formState;
+  const player1Score = form.watch("player1Score");
+  const player2Score = form.watch("player2Score");
 
   const { data: matchDetails } = useSupabaseQuery(
     useCallback(
@@ -85,10 +116,35 @@ export function MatchReportDialog({
     (supabase, args: { matchId: number }) => startMatch(supabase, args.matchId)
   );
 
+  // Extract player data
+  const player1 = matchDetails?.player1;
+  const player2 = matchDetails?.player2;
+  const p1 = Array.isArray(player1) ? player1[0] : player1;
+  const p2 = Array.isArray(player2) ? player2[0] : player2;
+
+  // Auto-select winner based on scores
+  useEffect(() => {
+    if (player1Score > player2Score && p1) {
+      form.setValue("winnerId", String(p1.id));
+    } else if (player2Score > player1Score && p2) {
+      form.setValue("winnerId", String(p2.id));
+    }
+  }, [player1Score, player2Score, p1, p2, form]);
+
+  // Reset form when dialog closes
+  useEffect(() => {
+    if (!open) {
+      form.reset({
+        winnerId: "",
+        player1Score: 2,
+        player2Score: 0,
+      });
+    }
+  }, [open, form]);
+
   const handleStartMatch = async () => {
     if (!matchId) return;
 
-    setIsSubmitting(true);
     try {
       await startMatchMutation({ matchId });
       toast.success("Match started", {
@@ -98,46 +154,23 @@ export function MatchReportDialog({
       toast.error("Failed to start match", {
         description: error instanceof Error ? error.message : "Unknown error",
       });
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
-  const handleSubmit = async () => {
-    if (!matchId || !winnerId) {
-      toast.error("Invalid submission", {
-        description: "Please select a winner",
-      });
-      return;
-    }
+  const onSubmit = async (data: MatchReportFormData) => {
+    if (!matchId) return;
 
-    const score1 = parseInt(player1Score) || 0;
-    const score2 = parseInt(player2Score) || 0;
-
-    if (score1 === score2) {
-      toast.error("Invalid scores", {
-        description: "Scores cannot be tied",
-      });
-      return;
-    }
-
-    setIsSubmitting(true);
     try {
       await reportResultMutation({
         matchId,
-        winnerId,
-        player1Score: score1,
-        player2Score: score2,
+        winnerId: Number(data.winnerId),
+        player1Score: data.player1Score,
+        player2Score: data.player2Score,
       });
 
       toast.success("Match reported", {
         description: "The match result has been recorded",
       });
-
-      // Reset form
-      setWinnerId(null);
-      setPlayer1Score("2");
-      setPlayer2Score("0");
 
       onReportSubmitted?.();
       onOpenChange(false);
@@ -145,8 +178,6 @@ export function MatchReportDialog({
       toast.error("Failed to report match", {
         description: error instanceof Error ? error.message : "Unknown error",
       });
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
@@ -162,29 +193,13 @@ export function MatchReportDialog({
     );
   }
 
-  const { match, player1, player2, round, tournament } = matchDetails;
-
-  // Supabase returns arrays for joined relations when using select with nested objects.
-  // This happens because the relationship could theoretically be one-to-many.
-  // We safely extract the first item since we know it's a one-to-one relation.
-  const p1 = Array.isArray(player1) ? player1[0] : player1;
-  const p2 = Array.isArray(player2) ? player2[0] : player2;
+  const { match, round, tournament } = matchDetails;
 
   const isMatchActive = match.status === "active";
   const isMatchPending = match.status === "pending";
   const isMatchCompleted = match.status === "completed";
 
-  // Auto-select winner based on scores
-  const updateWinnerFromScores = (p1Score: string, p2Score: string) => {
-    const s1 = parseInt(p1Score) || 0;
-    const s2 = parseInt(p2Score) || 0;
-
-    if (s1 > s2 && p1) {
-      setWinnerId(p1.id);
-    } else if (s2 > s1 && p2) {
-      setWinnerId(p2.id);
-    }
-  };
+  const winnerId = form.watch("winnerId");
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -218,201 +233,238 @@ export function MatchReportDialog({
           </Alert>
         )}
 
-        <div className="space-y-4">
-          {/* Players */}
-          <div className="grid grid-cols-2 gap-4">
-            {/* Player 1 */}
-            <div
-              className={`rounded-lg border p-4 transition-colors ${
-                winnerId === p1?.id
-                  ? "border-green-500 bg-green-500/10"
-                  : match.winner_alt_id === p1?.id
-                    ? "border-green-500/50 bg-green-500/5"
-                    : ""
-              }`}
-            >
-              <div className="mb-3 flex items-center gap-3">
-                <Avatar>
-                  <AvatarImage src={p1?.avatar_url ?? undefined} />
-                  <AvatarFallback>
-                    <User className="h-4 w-4" />
-                  </AvatarFallback>
-                </Avatar>
-                <div className="flex-1">
-                  <p className="font-medium">
-                    {p1?.display_name ?? p1?.username ?? "BYE"}
-                  </p>
-                  <p className="text-muted-foreground text-xs">Player 1</p>
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            {/* Players */}
+            <div className="grid grid-cols-2 gap-4">
+              {/* Player 1 */}
+              <div
+                className={`rounded-lg border p-4 transition-colors ${
+                  winnerId === String(p1?.id)
+                    ? "border-green-500 bg-green-500/10"
+                    : match.winner_alt_id === p1?.id
+                      ? "border-green-500/50 bg-green-500/5"
+                      : ""
+                }`}
+              >
+                <div className="mb-3 flex items-center gap-3">
+                  <Avatar>
+                    <AvatarImage src={p1?.avatar_url ?? undefined} />
+                    <AvatarFallback>
+                      <User className="h-4 w-4" />
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1">
+                    <p className="font-medium">
+                      {p1?.display_name ?? p1?.username ?? "BYE"}
+                    </p>
+                    <p className="text-muted-foreground text-xs">Player 1</p>
+                  </div>
+                  {match.winner_alt_id === p1?.id && (
+                    <Badge variant="default" className="bg-green-600">
+                      <Trophy className="mr-1 h-3 w-3" />
+                      Winner
+                    </Badge>
+                  )}
                 </div>
-                {match.winner_alt_id === p1?.id && (
-                  <Badge variant="default" className="bg-green-600">
-                    <Trophy className="mr-1 h-3 w-3" />
-                    Winner
-                  </Badge>
+
+                {!isMatchCompleted && p1 && (
+                  <FormField
+                    control={form.control}
+                    name="player1Score"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Games Won</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            min="0"
+                            max="3"
+                            disabled={!isMatchActive || isSubmitting}
+                            {...field}
+                            onChange={(e) =>
+                              field.onChange(parseInt(e.target.value) || 0)
+                            }
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
+
+                {isMatchCompleted && (
+                  <div className="text-center">
+                    <p className="text-3xl font-bold">
+                      {match.game_wins1 || 0}
+                    </p>
+                    <p className="text-muted-foreground text-xs">Games Won</p>
+                  </div>
                 )}
               </div>
 
-              {!isMatchCompleted && p1 && (
-                <>
-                  <div className="space-y-2">
-                    <Label htmlFor="player1-score">Games Won</Label>
-                    <Input
-                      id="player1-score"
-                      type="number"
-                      min="0"
-                      max="3"
-                      value={player1Score}
-                      onChange={(e) => {
-                        setPlayer1Score(e.target.value);
-                        updateWinnerFromScores(e.target.value, player2Score);
-                      }}
-                      disabled={!isMatchActive || isSubmitting}
-                    />
-                  </div>
-                </>
-              )}
-
-              {isMatchCompleted && (
+              {/* VS Divider */}
+              <div className="flex items-center justify-center">
                 <div className="text-center">
-                  <p className="text-3xl font-bold">{match.game_wins1 || 0}</p>
-                  <p className="text-muted-foreground text-xs">Games Won</p>
+                  <Badge variant="outline">VS</Badge>
                 </div>
-              )}
-            </div>
-
-            {/* VS Divider */}
-            <div className="flex items-center justify-center">
-              <div className="text-center">
-                <Badge variant="outline">VS</Badge>
               </div>
-            </div>
 
-            {/* Player 2 */}
-            <div
-              className={`rounded-lg border p-4 transition-colors ${
-                winnerId === p2?.id
-                  ? "border-green-500 bg-green-500/10"
-                  : match.winner_alt_id === p2?.id
-                    ? "border-green-500/50 bg-green-500/5"
-                    : ""
-              }`}
-            >
-              <div className="mb-3 flex items-center gap-3">
-                <Avatar>
-                  <AvatarImage src={p2?.avatar_url ?? undefined} />
-                  <AvatarFallback>
-                    <User className="h-4 w-4" />
-                  </AvatarFallback>
-                </Avatar>
-                <div className="flex-1">
-                  <p className="font-medium">
-                    {p2?.display_name ?? p2?.username ?? "BYE"}
-                  </p>
-                  <p className="text-muted-foreground text-xs">Player 2</p>
+              {/* Player 2 */}
+              <div
+                className={`rounded-lg border p-4 transition-colors ${
+                  winnerId === String(p2?.id)
+                    ? "border-green-500 bg-green-500/10"
+                    : match.winner_alt_id === p2?.id
+                      ? "border-green-500/50 bg-green-500/5"
+                      : ""
+                }`}
+              >
+                <div className="mb-3 flex items-center gap-3">
+                  <Avatar>
+                    <AvatarImage src={p2?.avatar_url ?? undefined} />
+                    <AvatarFallback>
+                      <User className="h-4 w-4" />
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1">
+                    <p className="font-medium">
+                      {p2?.display_name ?? p2?.username ?? "BYE"}
+                    </p>
+                    <p className="text-muted-foreground text-xs">Player 2</p>
+                  </div>
+                  {match.winner_alt_id === p2?.id && (
+                    <Badge variant="default" className="bg-green-600">
+                      <Trophy className="mr-1 h-3 w-3" />
+                      Winner
+                    </Badge>
+                  )}
                 </div>
-                {match.winner_alt_id === p2?.id && (
-                  <Badge variant="default" className="bg-green-600">
-                    <Trophy className="mr-1 h-3 w-3" />
-                    Winner
-                  </Badge>
+
+                {!isMatchCompleted && p2 && (
+                  <FormField
+                    control={form.control}
+                    name="player2Score"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Games Won</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            min="0"
+                            max="3"
+                            disabled={!isMatchActive || isSubmitting}
+                            {...field}
+                            onChange={(e) =>
+                              field.onChange(parseInt(e.target.value) || 0)
+                            }
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
+
+                {isMatchCompleted && (
+                  <div className="text-center">
+                    <p className="text-3xl font-bold">
+                      {match.game_wins2 || 0}
+                    </p>
+                    <p className="text-muted-foreground text-xs">Games Won</p>
+                  </div>
                 )}
               </div>
-
-              {!isMatchCompleted && p2 && (
-                <>
-                  <div className="space-y-2">
-                    <Label htmlFor="player2-score">Games Won</Label>
-                    <Input
-                      id="player2-score"
-                      type="number"
-                      min="0"
-                      max="3"
-                      value={player2Score}
-                      onChange={(e) => {
-                        setPlayer2Score(e.target.value);
-                        updateWinnerFromScores(player1Score, e.target.value);
-                      }}
-                      disabled={!isMatchActive || isSubmitting}
-                    />
-                  </div>
-                </>
-              )}
-
-              {isMatchCompleted && (
-                <div className="text-center">
-                  <p className="text-3xl font-bold">{match.game_wins2 || 0}</p>
-                  <p className="text-muted-foreground text-xs">Games Won</p>
-                </div>
-              )}
             </div>
-          </div>
 
-          {/* Winner Selection */}
-          {!isMatchCompleted && isMatchActive && (
-            <>
-              <Separator />
-              <div className="space-y-3">
-                <Label>Select Winner</Label>
-                <RadioGroup
-                  value={winnerId?.toString() ?? ""}
-                  onValueChange={(value: string) =>
-                    setWinnerId(value ? Number(value) : null)
-                  }
+            {/* Winner Selection */}
+            {!isMatchCompleted && isMatchActive && (
+              <>
+                <Separator />
+                <FormField
+                  control={form.control}
+                  name="winnerId"
+                  render={({ field }) => (
+                    <FormItem className="space-y-3">
+                      <FormLabel>Select Winner</FormLabel>
+                      <FormControl>
+                        <RadioGroup
+                          onValueChange={field.onChange}
+                          value={field.value}
+                          disabled={isSubmitting}
+                        >
+                          {p1 && (
+                            <div className="flex items-center space-x-2">
+                              <RadioGroupItem
+                                value={String(p1.id)}
+                                id="winner-1"
+                              />
+                              <FormLabel
+                                htmlFor="winner-1"
+                                className="flex-1 cursor-pointer font-normal"
+                              >
+                                {p1.display_name ?? p1.username} wins
+                              </FormLabel>
+                            </div>
+                          )}
+                          {p2 && (
+                            <div className="flex items-center space-x-2">
+                              <RadioGroupItem
+                                value={String(p2.id)}
+                                id="winner-2"
+                              />
+                              <FormLabel
+                                htmlFor="winner-2"
+                                className="flex-1 cursor-pointer font-normal"
+                              >
+                                {p2.display_name ?? p2.username} wins
+                              </FormLabel>
+                            </div>
+                          )}
+                        </RadioGroup>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </>
+            )}
+
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => onOpenChange(false)}
+              >
+                {isMatchCompleted ? "Close" : "Cancel"}
+              </Button>
+
+              {isMatchPending && (
+                <Button
+                  type="button"
+                  onClick={handleStartMatch}
                   disabled={isSubmitting}
                 >
-                  {p1 && (
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value={String(p1.id)} id="winner-1" />
-                      <Label
-                        htmlFor="winner-1"
-                        className="flex-1 cursor-pointer"
-                      >
-                        {p1.display_name ?? p1.username} wins
-                      </Label>
-                    </div>
-                  )}
-                  {p2 && (
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value={String(p2.id)} id="winner-2" />
-                      <Label
-                        htmlFor="winner-2"
-                        className="flex-1 cursor-pointer"
-                      >
-                        {p2.display_name ?? p2.username} wins
-                      </Label>
-                    </div>
-                  )}
-                </RadioGroup>
-              </div>
-            </>
-          )}
-        </div>
-
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
-            {isMatchCompleted ? "Close" : "Cancel"}
-          </Button>
-
-          {isMatchPending && (
-            <Button onClick={handleStartMatch} disabled={isSubmitting}>
-              {isSubmitting ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : null}
-              Start Match
-            </Button>
-          )}
-
-          {isMatchActive && (
-            <Button onClick={handleSubmit} disabled={!winnerId || isSubmitting}>
-              {isSubmitting ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <CheckCircle2 className="mr-2 h-4 w-4" />
+                  {isSubmitting ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : null}
+                  Start Match
+                </Button>
               )}
-              Report Result
-            </Button>
-          )}
-        </DialogFooter>
+
+              {isMatchActive && (
+                <Button type="submit" disabled={!winnerId || isSubmitting}>
+                  {isSubmitting ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <CheckCircle2 className="mr-2 h-4 w-4" />
+                  )}
+                  Report Result
+                </Button>
+              )}
+            </DialogFooter>
+          </form>
+        </Form>
       </DialogContent>
     </Dialog>
   );
