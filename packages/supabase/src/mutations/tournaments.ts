@@ -106,6 +106,15 @@ export async function createTournament(
     swissRounds?: number;
     tournamentFormat?: TournamentFormat;
     roundTimeMinutes?: number;
+    // Game settings
+    game?: string;
+    gameFormat?: string;
+    platform?: string;
+    battleFormat?: string;
+    // Registration settings
+    registrationType?: string;
+    checkInRequired?: boolean;
+    allowLateRegistration?: boolean;
     // New phases array for flexible phase configuration
     phases?: PhaseConfig[];
   }
@@ -159,6 +168,15 @@ export async function createTournament(
       tournament_format: data.tournamentFormat,
       round_time_minutes: data.roundTimeMinutes ?? 50,
       current_round: 0,
+      // Game settings
+      game: data.game,
+      game_format: data.gameFormat,
+      platform: data.platform ?? "cartridge",
+      battle_format: data.battleFormat ?? "doubles",
+      // Registration settings
+      registration_type: data.registrationType ?? "open",
+      check_in_required: data.checkInRequired ?? false,
+      allow_late_registration: data.allowLateRegistration ?? false,
     })
     .select()
     .single();
@@ -296,8 +314,17 @@ export async function updateTournament(
     startDate?: string;
     endDate?: string;
     registrationDeadline?: string;
-    maxParticipants?: number;
+    maxParticipants?: number | null;
     status?: TournamentStatus;
+    // Game settings
+    game?: string;
+    gameFormat?: string;
+    platform?: string;
+    battleFormat?: string;
+    // Registration settings
+    registrationType?: string;
+    checkInRequired?: boolean;
+    allowLateRegistration?: boolean;
   }
 ) {
   const user = await getCurrentUser(supabase);
@@ -336,6 +363,20 @@ export async function updateTournament(
   if (updates.maxParticipants !== undefined)
     updateData.max_participants = updates.maxParticipants;
   if (updates.status !== undefined) updateData.status = updates.status;
+  // Game settings
+  if (updates.game !== undefined) updateData.game = updates.game;
+  if (updates.gameFormat !== undefined)
+    updateData.game_format = updates.gameFormat;
+  if (updates.platform !== undefined) updateData.platform = updates.platform;
+  if (updates.battleFormat !== undefined)
+    updateData.battle_format = updates.battleFormat;
+  // Registration settings
+  if (updates.registrationType !== undefined)
+    updateData.registration_type = updates.registrationType;
+  if (updates.checkInRequired !== undefined)
+    updateData.check_in_required = updates.checkInRequired;
+  if (updates.allowLateRegistration !== undefined)
+    updateData.allow_late_registration = updates.allowLateRegistration;
 
   const { error } = await supabase
     .from("tournaments")

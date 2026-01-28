@@ -46,12 +46,31 @@ export type TournamentPreset = "swiss_only" | "swiss_with_cut" | "custom";
 /**
  * Form data for creating a new tournament
  */
+/**
+ * Platform where battles take place
+ */
+export type BattlePlatform = "cartridge" | "showdown";
+
+/**
+ * Battle format (singles or doubles)
+ */
+export type BattleFormat = "singles" | "doubles";
+
+/**
+ * Registration type for tournaments
+ */
+export type RegistrationType = "open" | "invite_only";
+
 export interface TournamentFormData {
   organizationId?: number;
   name: string;
   slug: string;
   description?: string;
-  format?: string;
+  // Game settings
+  game?: string; // Pokemon game ID (e.g., "sv", "swsh")
+  gameFormat?: string; // Format ID within the game (e.g., "reg-i", "series-13")
+  platform: BattlePlatform; // Where battles take place
+  battleFormat: BattleFormat; // Singles or doubles
   // Legacy field kept for backward compatibility, derived from phases
   tournamentFormat:
     | "swiss_only"
@@ -68,6 +87,11 @@ export interface TournamentFormData {
   startDate?: number;
   endDate?: number;
   registrationDeadline?: number;
+  // Registration settings
+  registrationType: RegistrationType;
+  playerCapEnabled: boolean; // When false, maxParticipants is unlimited (null in DB)
+  checkInRequired: boolean;
+  allowLateRegistration: boolean;
 }
 
 /**

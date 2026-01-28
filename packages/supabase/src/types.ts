@@ -1889,9 +1889,12 @@ export type Database = {
       }
       tournaments: {
         Row: {
+          allow_late_registration: boolean | null
           archive_reason: string | null
           archived_at: string | null
           archived_by: number | null
+          battle_format: string | null
+          check_in_required: boolean | null
           check_in_window_minutes: number | null
           created_at: string | null
           current_phase_id: number | null
@@ -1900,13 +1903,17 @@ export type Database = {
           end_date: string | null
           featured: boolean | null
           format: string | null
+          game: string | null
+          game_format: string | null
           id: number
           max_participants: number | null
           name: string
           organization_id: number
           participants: number[] | null
+          platform: string | null
           prize_pool: string | null
           registration_deadline: string | null
+          registration_type: string | null
           rental_team_photos_enabled: boolean | null
           rental_team_photos_required: boolean | null
           round_time_minutes: number | null
@@ -1923,9 +1930,12 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          allow_late_registration?: boolean | null
           archive_reason?: string | null
           archived_at?: string | null
           archived_by?: number | null
+          battle_format?: string | null
+          check_in_required?: boolean | null
           check_in_window_minutes?: number | null
           created_at?: string | null
           current_phase_id?: number | null
@@ -1934,13 +1944,17 @@ export type Database = {
           end_date?: string | null
           featured?: boolean | null
           format?: string | null
+          game?: string | null
+          game_format?: string | null
           id?: never
           max_participants?: number | null
           name: string
           organization_id: number
           participants?: number[] | null
+          platform?: string | null
           prize_pool?: string | null
           registration_deadline?: string | null
+          registration_type?: string | null
           rental_team_photos_enabled?: boolean | null
           rental_team_photos_required?: boolean | null
           round_time_minutes?: number | null
@@ -1957,9 +1971,12 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          allow_late_registration?: boolean | null
           archive_reason?: string | null
           archived_at?: string | null
           archived_by?: number | null
+          battle_format?: string | null
+          check_in_required?: boolean | null
           check_in_window_minutes?: number | null
           created_at?: string | null
           current_phase_id?: number | null
@@ -1968,13 +1985,17 @@ export type Database = {
           end_date?: string | null
           featured?: boolean | null
           format?: string | null
+          game?: string | null
+          game_format?: string | null
           id?: never
           max_participants?: number | null
           name?: string
           organization_id?: number
           participants?: number[] | null
+          platform?: string | null
           prize_pool?: string | null
           registration_deadline?: string | null
+          registration_type?: string | null
           rental_team_photos_enabled?: boolean | null
           rental_team_photos_required?: boolean | null
           round_time_minutes?: number | null

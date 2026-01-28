@@ -20,8 +20,10 @@ import { Field, FieldLabel, FieldDescription } from "@/components/ui/field";
 import { Textarea } from "@/components/ui/textarea";
 import {
   TournamentFormat,
+  TournamentRegistration,
   TournamentSchedule,
   TournamentReview,
+  TournamentGameSettings,
 } from "@/components/tournaments";
 import type { TournamentFormData } from "@/lib/types/tournament";
 import {
@@ -36,10 +38,17 @@ import {
 import { toast } from "sonner";
 
 const STEPS = [
-  { id: 1, title: "Basic Info", description: "Name and details" },
-  { id: 2, title: "Structure", description: "Tournament format and rules" },
-  { id: 3, title: "Schedule", description: "Dates and times" },
-  { id: 4, title: "Review", description: "Confirm details" },
+  {
+    id: 1,
+    title: "Details",
+    description: "Basic info, schedule, and registration",
+  },
+  {
+    id: 2,
+    title: "Structure",
+    description: "Game settings and tournament format",
+  },
+  { id: 3, title: "Review", description: "Confirm details" },
 ];
 
 interface CreateTournamentClientProps {
@@ -74,7 +83,10 @@ export function CreateTournamentClient({
     slug: "",
     description: "",
     organizationId: undefined,
-    format: "VGC 2025",
+    game: "sv",
+    gameFormat: "reg-i",
+    platform: "cartridge",
+    battleFormat: "doubles",
     tournamentFormat: "swiss_with_cut",
     preset: "swiss_with_cut",
     phases: [
@@ -103,6 +115,11 @@ export function CreateTournamentClient({
     startDate: undefined,
     endDate: undefined,
     registrationDeadline: undefined,
+    // Registration settings
+    registrationType: "open",
+    playerCapEnabled: false,
+    checkInRequired: true,
+    allowLateRegistration: true,
   });
 
   // Update organization ID when org is loaded
@@ -131,6 +148,15 @@ export function CreateTournamentClient({
           | "single_elimination"
           | "double_elimination";
         roundTimeMinutes?: number;
+        // Game settings
+        game?: string;
+        gameFormat?: string;
+        platform?: string;
+        battleFormat?: string;
+        // Registration settings
+        registrationType?: string;
+        checkInRequired?: boolean;
+        allowLateRegistration?: boolean;
         phases?: {
           name: string;
           phaseType: "swiss" | "single_elimination" | "double_elimination";
@@ -198,7 +224,7 @@ export function CreateTournamentClient({
   const validateStep = (step: number): boolean => {
     switch (step) {
       case 1: {
-        // Mark fields as touched to show validation
+        // Details step: Basic Info + Schedule + Registration
         setTouched((prev) => ({ ...prev, name: true, slug: true }));
 
         const nameError = !formData.name.trim() || formData.name.length < 3;
@@ -212,14 +238,22 @@ export function CreateTournamentClient({
         return true;
       }
       case 2:
+        // Structure step: Game Settings + Tournament Format
+        if (!formData.game) {
+          toast.error("Please select a Pokemon game");
+          return false;
+        }
+        if (!formData.gameFormat) {
+          toast.error("Please select a game format");
+          return false;
+        }
         if (!formData.tournamentFormat) {
           toast.error("Please select a tournament format");
           return false;
         }
         return true;
       case 3:
-        return true;
-      case 4:
+        // Review step
         return true;
       default:
         return true;
@@ -249,9 +283,10 @@ export function CreateTournamentClient({
         name: formData.name,
         slug: formData.slug,
         description: formData.description,
-        format: formData.format,
         tournamentFormat: formData.tournamentFormat,
-        maxParticipants: formData.maxParticipants,
+        maxParticipants: formData.playerCapEnabled
+          ? formData.maxParticipants
+          : undefined,
         swissRounds: formData.swissRounds,
         topCutSize: formData.topCutSize,
         roundTimeMinutes: formData.roundTimeMinutes,
@@ -264,6 +299,15 @@ export function CreateTournamentClient({
         registrationDeadline: formData.registrationDeadline
           ? new Date(formData.registrationDeadline).toISOString()
           : undefined,
+        // Game settings
+        game: formData.game,
+        gameFormat: formData.gameFormat,
+        platform: formData.platform,
+        battleFormat: formData.battleFormat,
+        // Registration settings
+        registrationType: formData.registrationType,
+        checkInRequired: formData.checkInRequired,
+        allowLateRegistration: formData.allowLateRegistration,
         phases: formData.phases.map((p) => ({
           name: p.name,
           phaseType: p.phaseType,
@@ -433,99 +477,169 @@ export function CreateTournamentClient({
       </div>
 
       {/* Step Content */}
-      <Card>
-        <CardHeader>
-          <CardTitle>{STEPS[currentStep - 1]?.title}</CardTitle>
-          <CardDescription>
+      <div className="space-y-6">
+        <div>
+          <h2 className="text-xl font-semibold">
+            {STEPS[currentStep - 1]?.title}
+          </h2>
+          <p className="text-muted-foreground text-sm">
             {STEPS[currentStep - 1]?.description}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {currentStep === 1 && (
-            <div className="space-y-6">
-              <Field>
-                <FieldLabel htmlFor="name">Tournament Name *</FieldLabel>
-                <Input
-                  id="name"
-                  value={formData.name}
-                  onChange={(e) => handleNameChange(e.target.value)}
-                  onBlur={() => markTouched("name")}
-                  placeholder="e.g., Spring Regional Championship"
-                  aria-invalid={!!getFieldError("name")}
-                  className={getFieldError("name") ? "border-destructive" : ""}
-                />
-                {getFieldError("name") ? (
-                  <p className="text-destructive text-sm">
-                    {getFieldError("name")}
-                  </p>
-                ) : (
-                  <FieldDescription>
-                    Give your tournament a descriptive name
-                  </FieldDescription>
-                )}
-              </Field>
+          </p>
+        </div>
 
-              <Field>
-                <FieldLabel htmlFor="slug">URL Slug *</FieldLabel>
-                <Input
-                  id="slug"
-                  value={formData.slug}
-                  onChange={(e) => updateFormData({ slug: e.target.value })}
-                  onBlur={() => markTouched("slug")}
-                  placeholder="spring-regional-championship"
-                  aria-invalid={!!getFieldError("slug")}
-                  className={getFieldError("slug") ? "border-destructive" : ""}
-                />
-                {getFieldError("slug") ? (
-                  <p className="text-destructive text-sm">
-                    {getFieldError("slug")}
-                  </p>
-                ) : (
-                  <FieldDescription>
-                    This will be used in the tournament URL:
-                    trainers.gg/tournaments/{formData.slug || "your-slug"}
-                  </FieldDescription>
-                )}
-              </Field>
+        {currentStep === 1 && (
+          <div className="space-y-6">
+            {/* Basic Info Section - Full Width */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Basic Information</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+                  <Field>
+                    <FieldLabel htmlFor="name">Tournament Name *</FieldLabel>
+                    <Input
+                      id="name"
+                      value={formData.name}
+                      onChange={(e) => handleNameChange(e.target.value)}
+                      onBlur={() => markTouched("name")}
+                      placeholder="e.g., Spring Regional Championship"
+                      aria-invalid={!!getFieldError("name")}
+                      className={
+                        getFieldError("name") ? "border-destructive" : ""
+                      }
+                    />
+                    {getFieldError("name") ? (
+                      <p className="text-destructive text-sm">
+                        {getFieldError("name")}
+                      </p>
+                    ) : (
+                      <FieldDescription>
+                        Give your tournament a descriptive name
+                      </FieldDescription>
+                    )}
+                  </Field>
 
-              <Field>
-                <FieldLabel htmlFor="description">Description</FieldLabel>
-                <Textarea
-                  id="description"
-                  value={formData.description}
-                  onChange={(e) =>
-                    updateFormData({ description: e.target.value })
-                  }
-                  placeholder="Describe your tournament, rules, prizes, etc."
-                  rows={4}
-                />
-                <FieldDescription>
-                  Optional description that will be shown to players
-                </FieldDescription>
-              </Field>
+                  <Field>
+                    <FieldLabel htmlFor="slug">URL Slug *</FieldLabel>
+                    <Input
+                      id="slug"
+                      value={formData.slug}
+                      onChange={(e) => updateFormData({ slug: e.target.value })}
+                      onBlur={() => markTouched("slug")}
+                      placeholder="spring-regional-championship"
+                      aria-invalid={!!getFieldError("slug")}
+                      className={
+                        getFieldError("slug") ? "border-destructive" : ""
+                      }
+                    />
+                    {getFieldError("slug") ? (
+                      <p className="text-destructive text-sm">
+                        {getFieldError("slug")}
+                      </p>
+                    ) : (
+                      <FieldDescription>
+                        trainers.gg/tournaments/{formData.slug || "your-slug"}
+                      </FieldDescription>
+                    )}
+                  </Field>
+                </div>
+
+                <Field>
+                  <FieldLabel htmlFor="description">Description</FieldLabel>
+                  <Textarea
+                    id="description"
+                    value={formData.description}
+                    onChange={(e) =>
+                      updateFormData({ description: e.target.value })
+                    }
+                    placeholder="Describe your tournament, rules, prizes, etc."
+                    rows={4}
+                  />
+                  <FieldDescription>
+                    Optional description that will be shown to players
+                  </FieldDescription>
+                </Field>
+              </CardContent>
+            </Card>
+
+            {/* Schedule & Registration - Side by Side */}
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+              {/* Schedule Section */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Schedule</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <TournamentSchedule
+                    formData={formData}
+                    updateFormData={updateFormData}
+                  />
+                </CardContent>
+              </Card>
+
+              {/* Registration Section */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Registration</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <TournamentRegistration
+                    formData={formData}
+                    updateFormData={updateFormData}
+                  />
+                </CardContent>
+              </Card>
             </div>
-          )}
-          {currentStep === 2 && (
-            <TournamentFormat
-              formData={formData}
-              updateFormData={updateFormData}
-            />
-          )}
-          {currentStep === 3 && (
-            <TournamentSchedule
-              formData={formData}
-              updateFormData={updateFormData}
-            />
-          )}
-          {currentStep === 4 && (
-            <TournamentReview
-              formData={formData}
-              onSubmit={handleSubmit}
-              isSubmitting={isSubmitting}
-            />
-          )}
-        </CardContent>
-      </Card>
+          </div>
+        )}
+        {currentStep === 2 && (
+          <div className="space-y-6">
+            {/* Game Settings Section */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Game Settings</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <TournamentGameSettings
+                  game={formData.game}
+                  gameFormat={formData.gameFormat}
+                  platform={formData.platform}
+                  battleFormat={formData.battleFormat}
+                  onGameChange={(game) => updateFormData({ game })}
+                  onGameFormatChange={(gameFormat) =>
+                    updateFormData({ gameFormat })
+                  }
+                  onPlatformChange={(platform) => updateFormData({ platform })}
+                  onBattleFormatChange={(battleFormat) =>
+                    updateFormData({ battleFormat })
+                  }
+                />
+              </CardContent>
+            </Card>
+
+            {/* Tournament Format Section */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Tournament Format</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <TournamentFormat
+                  formData={formData}
+                  updateFormData={updateFormData}
+                />
+              </CardContent>
+            </Card>
+          </div>
+        )}
+        {currentStep === 3 && (
+          <TournamentReview
+            formData={formData}
+            onSubmit={handleSubmit}
+            isSubmitting={isSubmitting}
+          />
+        )}
+      </div>
 
       {/* Navigation */}
       <div className="flex justify-between">

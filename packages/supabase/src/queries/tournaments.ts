@@ -308,6 +308,24 @@ export async function getTournamentByOrgAndSlug(
 }
 
 /**
+ * Check if a tournament slug is available (globally unique)
+ * Returns true if the slug is available, false if taken
+ */
+export async function checkTournamentSlugAvailable(
+  supabase: TypedClient,
+  slug: string
+): Promise<boolean> {
+  const { data, error } = await supabase
+    .from("tournaments")
+    .select("id")
+    .eq("slug", slug)
+    .maybeSingle();
+
+  if (error) throw error;
+  return data === null;
+}
+
+/**
  * Get tournament by slug (globally unique)
  * Used for /tournaments/{slug} public view
  */

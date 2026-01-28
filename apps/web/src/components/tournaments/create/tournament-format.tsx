@@ -1,12 +1,8 @@
 "use client";
 
-import { Input } from "@/components/ui/input";
-import { Field, FieldLabel, FieldDescription } from "@/components/ui/field";
-import { Separator } from "@/components/ui/separator";
 import type { TournamentFormData, PhaseConfig } from "@/lib/types/tournament";
 import {
   TournamentPhasesEditor,
-  TournamentGameFormat,
   TournamentPresetSelector,
   deriveTournamentFormat,
 } from "../shared";
@@ -29,14 +25,6 @@ export function TournamentFormat({
 
   return (
     <div className="space-y-6">
-      {/* Game Format */}
-      <TournamentGameFormat
-        value={formData.format}
-        onChange={(value) => updateFormData({ format: value })}
-      />
-
-      <Separator />
-
       {/* Quick Presets */}
       <TournamentPresetSelector
         phases={formData.phases}
@@ -56,30 +44,6 @@ export function TournamentFormat({
         mode="create"
         canAddRemove={true}
       />
-
-      <Separator />
-
-      {/* Global Tournament Settings */}
-      <Field>
-        <FieldLabel htmlFor="maxParticipants">Max Participants</FieldLabel>
-        <Input
-          id="maxParticipants"
-          type="number"
-          value={formData.maxParticipants || ""}
-          onChange={(e) =>
-            updateFormData({
-              maxParticipants: parseInt(e.target.value) || undefined,
-            })
-          }
-          placeholder="Unlimited"
-          min="4"
-          max="512"
-          className="w-full max-w-xs"
-        />
-        <FieldDescription>
-          Leave empty for unlimited registrations
-        </FieldDescription>
-      </Field>
     </div>
   );
 }
