@@ -106,8 +106,6 @@ export async function createTournament(
     swissRounds?: number;
     tournamentFormat?: TournamentFormat;
     roundTimeMinutes?: number;
-    rentalTeamPhotosEnabled?: boolean;
-    rentalTeamPhotosRequired?: boolean;
     // New phases array for flexible phase configuration
     phases?: PhaseConfig[];
   }
@@ -160,8 +158,6 @@ export async function createTournament(
       swiss_rounds: data.swissRounds,
       tournament_format: data.tournamentFormat,
       round_time_minutes: data.roundTimeMinutes ?? 50,
-      rental_team_photos_enabled: data.rentalTeamPhotosEnabled ?? false,
-      rental_team_photos_required: data.rentalTeamPhotosRequired ?? false,
       current_round: 0,
     })
     .select()
@@ -299,6 +295,7 @@ export async function updateTournament(
     format?: string;
     startDate?: string;
     endDate?: string;
+    registrationDeadline?: string;
     maxParticipants?: number;
     status?: TournamentStatus;
   }
@@ -334,6 +331,8 @@ export async function updateTournament(
   if (updates.startDate !== undefined)
     updateData.start_date = updates.startDate;
   if (updates.endDate !== undefined) updateData.end_date = updates.endDate;
+  if (updates.registrationDeadline !== undefined)
+    updateData.registration_deadline = updates.registrationDeadline;
   if (updates.maxParticipants !== undefined)
     updateData.max_participants = updates.maxParticipants;
   if (updates.status !== undefined) updateData.status = updates.status;
@@ -411,7 +410,6 @@ export async function registerForTournament(
       registered_at: new Date().toISOString(),
       team_name: data?.teamName,
       in_game_name: data?.inGameName,
-      rental_team_photo_verified: false,
     })
     .select()
     .single();
@@ -1038,7 +1036,6 @@ export async function respondToTournamentInvitation(
           alt_id: alt.id,
           status: "registered",
           registered_at: new Date().toISOString(),
-          rental_team_photo_verified: false,
         })
         .select()
         .single();

@@ -7,7 +7,6 @@ import { Separator } from "@/components/ui/separator";
 import type { TournamentFormData, CutRule } from "@/lib/types/tournament";
 import {
   Calendar,
-  Users,
   Trophy,
   Settings,
   Loader2,
@@ -190,40 +189,6 @@ export function TournamentReview({
               <span className="font-medium">Registration Deadline:</span>{" "}
               {formatDate(formData.registrationDeadline)}
             </div>
-          </CardContent>
-        </Card>
-
-        {/* Team Requirements */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Users className="h-5 w-5" />
-              Team Requirements
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="flex items-center gap-2">
-              <span className="font-medium">Rental Team Photos:</span>
-              <Badge
-                variant={
-                  formData.rentalTeamPhotosEnabled ? "default" : "secondary"
-                }
-              >
-                {formData.rentalTeamPhotosEnabled ? "Enabled" : "Disabled"}
-              </Badge>
-            </div>
-            {formData.rentalTeamPhotosEnabled && (
-              <div className="flex items-center gap-2">
-                <span className="font-medium">Photos Required:</span>
-                <Badge
-                  variant={
-                    formData.rentalTeamPhotosRequired ? "default" : "secondary"
-                  }
-                >
-                  {formData.rentalTeamPhotosRequired ? "Required" : "Optional"}
-                </Badge>
-              </div>
-            )}
           </CardContent>
         </Card>
       </div>

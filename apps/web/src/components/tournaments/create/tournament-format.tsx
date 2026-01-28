@@ -6,7 +6,6 @@ import { Separator } from "@/components/ui/separator";
 import type { TournamentFormData, PhaseConfig } from "@/lib/types/tournament";
 import {
   TournamentPhasesEditor,
-  TournamentTeamRequirements,
   TournamentGameFormat,
   TournamentPresetSelector,
   deriveTournamentFormat,
@@ -81,15 +80,6 @@ export function TournamentFormat({
           Leave empty for unlimited registrations
         </FieldDescription>
       </Field>
-
-      <Separator />
-
-      {/* Team Requirements */}
-      <TournamentTeamRequirements
-        rentalTeamPhotosEnabled={formData.rentalTeamPhotosEnabled}
-        rentalTeamPhotosRequired={formData.rentalTeamPhotosRequired}
-        onChange={(updates) => updateFormData(updates)}
-      />
     </div>
   );
 }

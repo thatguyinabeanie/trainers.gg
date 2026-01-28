@@ -68,8 +68,6 @@ export interface TournamentFormData {
   startDate?: number;
   endDate?: number;
   registrationDeadline?: number;
-  rentalTeamPhotosEnabled: boolean;
-  rentalTeamPhotosRequired: boolean;
 }
 
 /**

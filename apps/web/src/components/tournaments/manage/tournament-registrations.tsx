@@ -34,7 +34,6 @@ interface TournamentRegistrationsProps {
   tournament: {
     id: number;
     status: string;
-    rental_team_photos_enabled?: boolean | null;
   };
 }
 
@@ -189,7 +188,6 @@ export function TournamentRegistrations({
                   <TableHead>Team Name</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Registered</TableHead>
-                  <TableHead>Team Photo</TableHead>
                   <TableHead className="w-[50px]"></TableHead>
                 </TableRow>
               </TableHeader>
@@ -234,23 +232,6 @@ export function TournamentRegistrations({
                     </TableCell>
                     <TableCell>
                       {formatDate(registration.registered_at)}
-                    </TableCell>
-                    <TableCell>
-                      {tournament.rental_team_photos_enabled ? (
-                        registration.rental_team_photo_verified ? (
-                          <Badge className="bg-green-100 text-green-800">
-                            Verified
-                          </Badge>
-                        ) : registration.rental_team_photo_url ? (
-                          <Badge className="bg-yellow-100 text-yellow-800">
-                            Pending
-                          </Badge>
-                        ) : (
-                          <Badge variant="outline">Not uploaded</Badge>
-                        )
-                      ) : (
-                        <span className="text-muted-foreground">N/A</span>
-                      )}
                     </TableCell>
                     <TableCell>
                       <DropdownMenu>

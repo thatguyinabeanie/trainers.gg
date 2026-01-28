@@ -103,8 +103,6 @@ export function CreateTournamentClient({
     startDate: undefined,
     endDate: undefined,
     registrationDeadline: undefined,
-    rentalTeamPhotosEnabled: false,
-    rentalTeamPhotosRequired: false,
   });
 
   // Update organization ID when org is loaded
@@ -133,8 +131,6 @@ export function CreateTournamentClient({
           | "single_elimination"
           | "double_elimination";
         roundTimeMinutes?: number;
-        rentalTeamPhotosEnabled?: boolean;
-        rentalTeamPhotosRequired?: boolean;
         phases?: {
           name: string;
           phaseType: "swiss" | "single_elimination" | "double_elimination";
@@ -259,8 +255,6 @@ export function CreateTournamentClient({
         swissRounds: formData.swissRounds,
         topCutSize: formData.topCutSize,
         roundTimeMinutes: formData.roundTimeMinutes,
-        rentalTeamPhotosEnabled: formData.rentalTeamPhotosEnabled,
-        rentalTeamPhotosRequired: formData.rentalTeamPhotosRequired,
         startDate: formData.startDate
           ? new Date(formData.startDate).toISOString()
           : undefined,
@@ -386,7 +380,7 @@ export function CreateTournamentClient({
       </div>
 
       {/* Progress */}
-      <div>
+      <div className="mx-auto max-w-4xl px-4">
         <div className="mb-4 flex justify-between">
           {STEPS.map((step, index) => {
             const isCompleted = step.id < currentStep;

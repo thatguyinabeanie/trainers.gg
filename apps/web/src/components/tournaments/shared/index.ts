@@ -3,10 +3,6 @@ export {
   type TournamentPhasesEditorProps,
 } from "./tournament-phases-editor";
 export {
-  TournamentTeamRequirements,
-  type TournamentTeamRequirementsProps,
-} from "./tournament-team-requirements";
-export {
   TournamentGameFormat,
   type TournamentGameFormatProps,
 } from "./tournament-game-format";

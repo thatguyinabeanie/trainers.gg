@@ -1,5 +1,6 @@
 "use client";
 
+import * as React from "react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useSupabaseMutation } from "@/lib/supabase";
@@ -15,16 +16,36 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Calendar } from "@/components/ui/calendar";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
-import { Save, AlertTriangle, Trash2, Layers } from "lucide-react";
+import {
+  Save,
+  AlertTriangle,
+  Trash2,
+  Layers,
+  CalendarIcon,
+  Clock,
+} from "lucide-react";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 import { saveTournamentPhasesAction } from "@/actions/tournaments";
 import type { PhaseConfig, CutRule } from "@/lib/types/tournament";
 import { dbPhasesToPhaseConfigs } from "@/lib/tournament/adapters";
 import {
   TournamentPhasesEditor,
-  TournamentTeamRequirements,
   TournamentGameFormat,
   TournamentPresetSelector,
 } from "../shared";
@@ -47,6 +68,156 @@ interface Phase {
   current_round: number | null;
 }
 
+interface DateTimeFieldProps {
+  label: string;
+  description: string;
+  value?: string | null;
+  onChange: (isoString: string | undefined) => void;
+  minDate?: Date;
+  maxDate?: Date;
+  disabled?: boolean;
+}
+
+function DateTimeField({
+  label,
+  description,
+  value,
+  onChange,
+  minDate,
+  maxDate,
+  disabled,
+}: DateTimeFieldProps) {
+  const [open, setOpen] = React.useState(false);
+
+  const date = value ? new Date(value) : undefined;
+  const hours = date ? date.getHours() : 12;
+  const minutes = date ? date.getMinutes() : 0;
+
+  const handleDateSelect = (selected: Date | undefined) => {
+    if (!selected) {
+      onChange(undefined);
+      return;
+    }
+    const newDate = new Date(selected);
+    newDate.setHours(hours);
+    newDate.setMinutes(minutes);
+    onChange(newDate.toISOString());
+  };
+
+  const handleTimeChange = (type: "hours" | "minutes", val: string) => {
+    const numVal = parseInt(val, 10);
+    const newDate = date ? new Date(date) : new Date();
+
+    if (type === "hours") {
+      newDate.setHours(numVal);
+    } else {
+      newDate.setMinutes(numVal);
+    }
+
+    onChange(newDate.toISOString());
+  };
+
+  const formatDisplay = (d: Date) => {
+    return d.toLocaleDateString("en-US", {
+      weekday: "short",
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+    });
+  };
+
+  const hoursOptions = Array.from({ length: 24 }, (_, i) => i);
+  const minutesOptions = [0, 15, 30, 45];
+
+  return (
+    <div className="space-y-2">
+      <Label>{label}</Label>
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger
+          disabled={disabled}
+          className={cn(
+            "border-input bg-background hover:bg-accent hover:text-accent-foreground focus-visible:border-ring focus-visible:ring-ring/50 inline-flex h-9 w-full items-center justify-start gap-2 rounded-lg border px-3 py-2 text-sm font-normal whitespace-nowrap transition-colors outline-none focus-visible:ring-[3px]",
+            !date && "text-muted-foreground",
+            disabled && "cursor-not-allowed opacity-50"
+          )}
+        >
+          <CalendarIcon className="h-4 w-4 shrink-0 opacity-50" />
+          {date ? formatDisplay(date) : "Pick a date"}
+        </PopoverTrigger>
+        <PopoverContent align="start" className="w-auto p-0">
+          <Calendar
+            mode="single"
+            selected={date}
+            onSelect={handleDateSelect}
+            disabled={(d) => {
+              if (minDate && d < minDate) return true;
+              if (maxDate && d > maxDate) return true;
+              return false;
+            }}
+            defaultMonth={date}
+          />
+
+          <div className="border-border flex items-center gap-2 border-t p-3">
+            <Clock className="text-muted-foreground h-4 w-4" />
+            <Select
+              value={hours.toString()}
+              onValueChange={(val) => val && handleTimeChange("hours", val)}
+            >
+              <SelectTrigger className="w-[70px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {hoursOptions.map((h) => (
+                  <SelectItem key={h} value={h.toString()}>
+                    {h.toString().padStart(2, "0")}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <span className="text-muted-foreground">:</span>
+            <Select
+              value={minutes.toString()}
+              onValueChange={(val) => val && handleTimeChange("minutes", val)}
+            >
+              <SelectTrigger className="w-[70px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {minutesOptions.map((m) => (
+                  <SelectItem key={m} value={m.toString()}>
+                    {m.toString().padStart(2, "0")}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="border-border flex justify-end gap-2 border-t p-2">
+            {date && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  onChange(undefined);
+                  setOpen(false);
+                }}
+              >
+                Clear
+              </Button>
+            )}
+            <Button size="sm" onClick={() => setOpen(false)}>
+              Done
+            </Button>
+          </div>
+        </PopoverContent>
+      </Popover>
+      <p className="text-muted-foreground text-sm">{description}</p>
+    </div>
+  );
+}
+
 interface TournamentSettingsProps {
   tournament: {
     id: number;
@@ -60,8 +231,6 @@ interface TournamentSettingsProps {
     end_date?: string | null;
     registration_deadline?: string | null;
     round_time_minutes?: number | null;
-    rental_team_photos_enabled?: boolean | null;
-    rental_team_photos_required?: boolean | null;
   };
   phases?: Phase[];
 }
@@ -80,9 +249,9 @@ export function TournamentSettings({
     description: tournament.description || "",
     format: tournament.format || "",
     maxParticipants: tournament.max_participants?.toString() || "",
-    roundTimeMinutes: tournament.round_time_minutes || 50,
-    rentalTeamPhotosEnabled: tournament.rental_team_photos_enabled || false,
-    rentalTeamPhotosRequired: tournament.rental_team_photos_required || false,
+    startDate: tournament.start_date || undefined,
+    endDate: tournament.end_date || undefined,
+    registrationDeadline: tournament.registration_deadline || undefined,
   });
 
   // Phase state - local until Save is clicked
@@ -102,6 +271,9 @@ export function TournamentSettings({
           name?: string;
           description?: string;
           format?: string;
+          startDate?: string;
+          endDate?: string;
+          registrationDeadline?: string;
         };
       }
     ) => updateTournament(supabase, args.tournamentId, args.updates)
@@ -140,6 +312,9 @@ export function TournamentSettings({
           name: formData.name,
           description: formData.description,
           format: formData.format,
+          startDate: formData.startDate,
+          endDate: formData.endDate,
+          registrationDeadline: formData.registrationDeadline,
         },
       });
 
@@ -182,9 +357,9 @@ export function TournamentSettings({
       description: tournament.description || "",
       format: tournament.format || "",
       maxParticipants: tournament.max_participants?.toString() || "",
-      roundTimeMinutes: tournament.round_time_minutes || 50,
-      rentalTeamPhotosEnabled: tournament.rental_team_photos_enabled || false,
-      rentalTeamPhotosRequired: tournament.rental_team_photos_required || false,
+      startDate: tournament.start_date || undefined,
+      endDate: tournament.end_date || undefined,
+      registrationDeadline: tournament.registration_deadline || undefined,
     });
     // Reset phases to original
     setPhaseConfigs(dbPhasesToPhaseConfigs(originalPhases));
@@ -318,50 +493,81 @@ export function TournamentSettings({
         </CardContent>
       </Card>
 
-      {/* Tournament Configuration */}
+      {/* Schedule */}
       <Card>
         <CardHeader>
-          <CardTitle>Tournament Configuration</CardTitle>
+          <CardTitle>Schedule</CardTitle>
           <CardDescription>
-            Participant limits, timing, and format settings
+            Tournament dates and registration deadline
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="maxParticipants">Max Participants</Label>
-              <Input
-                id="maxParticipants"
-                type="number"
-                value={formData.maxParticipants}
-                onChange={(e) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    maxParticipants: e.target.value,
-                  }))
-                }
-                disabled={!isEditing}
-                placeholder="No limit"
-              />
-            </div>
+            <DateTimeField
+              label="Start Date & Time"
+              description="When the tournament begins"
+              value={formData.startDate}
+              onChange={(val) =>
+                setFormData((prev) => ({ ...prev, startDate: val }))
+              }
+              disabled={!isEditing}
+            />
 
-            <div className="space-y-2">
-              <Label htmlFor="roundTime">Round Time (minutes)</Label>
-              <Input
-                id="roundTime"
-                type="number"
-                value={formData.roundTimeMinutes}
-                onChange={(e) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    roundTimeMinutes: parseInt(e.target.value),
-                  }))
-                }
-                disabled={!isEditing}
-                min="15"
-                max="120"
-              />
-            </div>
+            <DateTimeField
+              label="End Date & Time"
+              description="Expected end time (optional)"
+              value={formData.endDate}
+              onChange={(val) =>
+                setFormData((prev) => ({ ...prev, endDate: val }))
+              }
+              minDate={
+                formData.startDate ? new Date(formData.startDate) : undefined
+              }
+              disabled={!isEditing}
+            />
+          </div>
+
+          <DateTimeField
+            label="Registration Deadline"
+            description="When registration closes (defaults to tournament start)"
+            value={formData.registrationDeadline}
+            onChange={(val) =>
+              setFormData((prev) => ({ ...prev, registrationDeadline: val }))
+            }
+            maxDate={
+              formData.startDate ? new Date(formData.startDate) : undefined
+            }
+            disabled={!isEditing}
+          />
+        </CardContent>
+      </Card>
+
+      {/* Tournament Configuration */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Tournament Configuration</CardTitle>
+          <CardDescription>Participant limits and settings</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-2">
+            <Label htmlFor="maxParticipants">Max Participants</Label>
+            <Input
+              id="maxParticipants"
+              type="number"
+              value={formData.maxParticipants}
+              onChange={(e) =>
+                setFormData((prev) => ({
+                  ...prev,
+                  maxParticipants: e.target.value,
+                }))
+              }
+              disabled={!isEditing}
+              placeholder="No limit"
+              className="max-w-[200px]"
+            />
+            <p className="text-muted-foreground text-sm">
+              Leave empty for unlimited participants
+            </p>
           </div>
         </CardContent>
       </Card>
@@ -392,26 +598,6 @@ export function TournamentSettings({
             mode="edit"
             disabled={!isEditing}
             canAddRemove={canAddRemovePhases}
-          />
-        </CardContent>
-      </Card>
-
-      {/* Team Requirements - Using shared component */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Team Requirements</CardTitle>
-          <CardDescription>
-            Configure team submission and verification settings
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <TournamentTeamRequirements
-            rentalTeamPhotosEnabled={formData.rentalTeamPhotosEnabled}
-            rentalTeamPhotosRequired={formData.rentalTeamPhotosRequired}
-            onChange={(updates) =>
-              setFormData((prev) => ({ ...prev, ...updates }))
-            }
-            disabled={!isEditing}
           />
         </CardContent>
       </Card>

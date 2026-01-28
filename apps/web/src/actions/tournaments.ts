@@ -64,8 +64,6 @@ export async function createTournament(data: {
   swissRounds?: number;
   tournamentFormat?: TournamentFormat;
   roundTimeMinutes?: number;
-  rentalTeamPhotosEnabled?: boolean;
-  rentalTeamPhotosRequired?: boolean;
 }): Promise<ActionResult<{ id: number; slug: string }>> {
   try {
     const supabase = await createClient();
