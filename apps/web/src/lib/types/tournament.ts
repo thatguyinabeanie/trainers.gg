@@ -41,12 +41,7 @@ export interface PhaseConfig {
 /**
  * Preset template identifiers
  */
-export type TournamentPreset =
-  | "swiss_only"
-  | "swiss_with_cut"
-  | "single_elimination"
-  | "double_elimination"
-  | "custom";
+export type TournamentPreset = "swiss_only" | "swiss_with_cut" | "custom";
 
 /**
  * Form data for creating a new tournament

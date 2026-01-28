@@ -1,13 +1,13 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { useSupabaseMutation } from "@/lib/supabase";
 import { updateTournament, deleteTournament } from "@trainers/supabase";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Switch } from "@/components/ui/switch";
 import {
   Card,
   CardContent,
@@ -19,8 +19,15 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
 import { Save, AlertTriangle, Trash2, Layers } from "lucide-react";
 import { toast } from "sonner";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { updatePhase } from "@/actions/tournaments";
+import { saveTournamentPhasesAction } from "@/actions/tournaments";
+import type { PhaseConfig, CutRule } from "@/lib/types/tournament";
+import { dbPhasesToPhaseConfigs } from "@/lib/tournament/adapters";
+import {
+  TournamentPhasesEditor,
+  TournamentTeamRequirements,
+  TournamentGameFormat,
+  TournamentPresetSelector,
+} from "../shared";
 
 interface Phase {
   id: number;
@@ -34,6 +41,10 @@ interface Phase {
   cut_rule: string | null;
   planned_rounds: number | null;
   status: string | null;
+  started_at: string | null;
+  completed_at: string | null;
+  created_at: string | null;
+  current_round: number | null;
 }
 
 interface TournamentSettingsProps {
@@ -57,10 +68,13 @@ interface TournamentSettingsProps {
 
 export function TournamentSettings({
   tournament,
-  phases = [],
+  phases: initialPhases = [],
 }: TournamentSettingsProps) {
+  const router = useRouter();
   const [isEditing, setIsEditing] = useState(false);
-  const [updatingPhaseId, setUpdatingPhaseId] = useState<number | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+
+  // Form state - all changes are local until Save is clicked
   const [formData, setFormData] = useState({
     name: tournament.name || "",
     description: tournament.description || "",
@@ -70,6 +84,14 @@ export function TournamentSettings({
     rentalTeamPhotosEnabled: tournament.rental_team_photos_enabled || false,
     rentalTeamPhotosRequired: tournament.rental_team_photos_required || false,
   });
+
+  // Phase state - local until Save is clicked
+  const [phaseConfigs, setPhaseConfigs] = useState<PhaseConfig[]>(() =>
+    dbPhasesToPhaseConfigs(initialPhases)
+  );
+
+  // Store original phases for comparison
+  const [originalPhases] = useState<Phase[]>(initialPhases);
 
   const { mutateAsync: updateTournamentMutation } = useSupabaseMutation(
     (
@@ -90,8 +112,28 @@ export function TournamentSettings({
       deleteTournament(supabase, args.tournamentId)
   );
 
+  // Convert PhaseConfig to the format expected by the server action
+  const convertPhasesForSave = (phases: PhaseConfig[]) => {
+    return phases.map((phase) => ({
+      // Extract DB ID if it exists (format: "db-123")
+      id: phase.id.startsWith("db-")
+        ? parseInt(phase.id.replace("db-", ""), 10)
+        : undefined,
+      name: phase.name,
+      phaseType: phase.phaseType,
+      bestOf: phase.bestOf,
+      roundTimeMinutes: phase.roundTimeMinutes,
+      checkInTimeMinutes: phase.checkInTimeMinutes,
+      plannedRounds: phase.plannedRounds,
+      cutRule: phase.cutRule as CutRule | undefined,
+    }));
+  };
+
   const handleSave = async () => {
+    setIsSaving(true);
+
     try {
+      // Save tournament settings
       await updateTournamentMutation({
         tournamentId: tournament.id,
         updates: {
@@ -101,10 +143,26 @@ export function TournamentSettings({
         },
       });
 
+      // Save phases in a single batch operation
+      const phasesForSave = convertPhasesForSave(phaseConfigs);
+      const phasesResult = await saveTournamentPhasesAction(
+        tournament.id,
+        phasesForSave
+      );
+
+      if (!phasesResult.success) {
+        toast.error("Error saving phases", {
+          description: phasesResult.error,
+        });
+        return;
+      }
+
       toast.success("Settings saved", {
         description: "Tournament settings have been updated successfully.",
       });
+
       setIsEditing(false);
+      router.refresh();
     } catch (error) {
       toast.error("Error saving settings", {
         description:
@@ -112,7 +170,25 @@ export function TournamentSettings({
             ? error.message
             : "An unexpected error occurred",
       });
+    } finally {
+      setIsSaving(false);
     }
+  };
+
+  const handleCancel = () => {
+    // Reset form data to original values
+    setFormData({
+      name: tournament.name || "",
+      description: tournament.description || "",
+      format: tournament.format || "",
+      maxParticipants: tournament.max_participants?.toString() || "",
+      roundTimeMinutes: tournament.round_time_minutes || 50,
+      rentalTeamPhotosEnabled: tournament.rental_team_photos_enabled || false,
+      rentalTeamPhotosRequired: tournament.rental_team_photos_required || false,
+    });
+    // Reset phases to original
+    setPhaseConfigs(dbPhasesToPhaseConfigs(originalPhases));
+    setIsEditing(false);
   };
 
   const handleDelete = async () => {
@@ -141,9 +217,16 @@ export function TournamentSettings({
     }
   };
 
+  // Handle phase changes - just update local state, no API calls
+  const handlePhasesChange = (newPhases: PhaseConfig[]) => {
+    setPhaseConfigs(newPhases);
+  };
+
   const canEdit =
     tournament.status === "draft" || tournament.status === "upcoming";
   const canDelete = tournament.status === "draft";
+  // Allow adding/removing phases only when actively editing
+  const canAddRemovePhases = isEditing && canEdit;
 
   return (
     <div className="space-y-6">
@@ -158,12 +241,16 @@ export function TournamentSettings({
         <div className="flex items-center gap-2">
           {isEditing ? (
             <>
-              <Button variant="outline" onClick={() => setIsEditing(false)}>
+              <Button
+                variant="outline"
+                onClick={handleCancel}
+                disabled={isSaving}
+              >
                 Cancel
               </Button>
-              <Button onClick={handleSave}>
+              <Button onClick={handleSave} disabled={isSaving}>
                 <Save className="mr-2 h-4 w-4" />
-                Save Changes
+                {isSaving ? "Saving..." : "Save Changes"}
               </Button>
             </>
           ) : (
@@ -221,18 +308,13 @@ export function TournamentSettings({
             />
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="format">Game Format</Label>
-            <Input
-              id="format"
-              value={formData.format}
-              onChange={(e) =>
-                setFormData((prev) => ({ ...prev, format: e.target.value }))
-              }
-              disabled={!isEditing}
-              placeholder="e.g., VGC 2024 Regulation H"
-            />
-          </div>
+          <TournamentGameFormat
+            value={formData.format || undefined}
+            onChange={(value) =>
+              setFormData((prev) => ({ ...prev, format: value || "" }))
+            }
+            disabled={!isEditing}
+          />
         </CardContent>
       </Card>
 
@@ -284,112 +366,37 @@ export function TournamentSettings({
         </CardContent>
       </Card>
 
-      {/* Phase Configuration */}
-      {phases.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Layers className="h-5 w-5" />
-              Phase Configuration
-            </CardTitle>
-            <CardDescription>
-              Configure match format for each tournament phase
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            {phases.map((phase) => {
-              const currentBestOf = phase.best_of?.toString() || "3";
-              const isUpdating = updatingPhaseId === phase.id;
+      {/* Phase Configuration - Using shared component */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Layers className="h-5 w-5" />
+            Phase Configuration
+          </CardTitle>
+          <CardDescription>
+            Configure match format for each tournament phase
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {/* Preset selector - always visible, disabled when not editing */}
+          <TournamentPresetSelector
+            phases={phaseConfigs}
+            onPresetSelect={(phases) => handlePhasesChange(phases)}
+            label="Apply preset:"
+            disabled={!canAddRemovePhases}
+          />
 
-              const handleBestOfChange = async (value: string) => {
-                if (!canEdit || isUpdating) return;
+          <TournamentPhasesEditor
+            phases={phaseConfigs}
+            onPhasesChange={handlePhasesChange}
+            mode="edit"
+            disabled={!isEditing}
+            canAddRemove={canAddRemovePhases}
+          />
+        </CardContent>
+      </Card>
 
-                setUpdatingPhaseId(phase.id);
-                try {
-                  const result = await updatePhase(phase.id, tournament.id, {
-                    bestOf: parseInt(value) as 1 | 3 | 5,
-                  });
-
-                  if (result.success) {
-                    toast.success("Phase updated", {
-                      description: `${phase.name} match format updated to Best of ${value}`,
-                    });
-                  } else {
-                    toast.error("Error updating phase", {
-                      description: result.error,
-                    });
-                  }
-                } catch (error) {
-                  toast.error("Error updating phase", {
-                    description:
-                      error instanceof Error
-                        ? error.message
-                        : "An unexpected error occurred",
-                  });
-                } finally {
-                  setUpdatingPhaseId(null);
-                }
-              };
-
-              return (
-                <div key={phase.id} className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h4 className="font-medium">{phase.name}</h4>
-                      <p className="text-muted-foreground text-sm capitalize">
-                        {phase.phase_type.replace(/_/g, " ")}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-muted-foreground text-sm">
-                      Best Of
-                    </Label>
-                    <RadioGroup
-                      value={currentBestOf}
-                      onValueChange={handleBestOfChange}
-                      disabled={!canEdit || isUpdating}
-                      className="flex gap-6"
-                    >
-                      {[
-                        { value: "1", label: "1" },
-                        { value: "3", label: "3" },
-                        { value: "5", label: "5" },
-                      ].map((option) => (
-                        <div
-                          key={option.value}
-                          className="flex items-center gap-2"
-                        >
-                          <RadioGroupItem
-                            value={option.value}
-                            id={`${phase.id}-${option.value}`}
-                            disabled={!canEdit || isUpdating}
-                          />
-                          <Label
-                            htmlFor={`${phase.id}-${option.value}`}
-                            className={
-                              !canEdit || isUpdating
-                                ? "cursor-not-allowed opacity-50"
-                                : "cursor-pointer"
-                            }
-                          >
-                            {option.label}
-                          </Label>
-                        </div>
-                      ))}
-                    </RadioGroup>
-                  </div>
-                  {phase !== phases[phases.length - 1] && (
-                    <Separator className="mt-4" />
-                  )}
-                </div>
-              );
-            })}
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Team Requirements */}
+      {/* Team Requirements - Using shared component */}
       <Card>
         <CardHeader>
           <CardTitle>Team Requirements</CardTitle>
@@ -397,46 +404,15 @@ export function TournamentSettings({
             Configure team submission and verification settings
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div className="space-y-0.5">
-              <Label>Enable Rental Team Photos</Label>
-              <p className="text-muted-foreground text-sm">
-                Allow players to submit photos of their rental teams
-              </p>
-            </div>
-            <Switch
-              checked={formData.rentalTeamPhotosEnabled}
-              onCheckedChange={(checked: boolean) =>
-                setFormData((prev) => ({
-                  ...prev,
-                  rentalTeamPhotosEnabled: checked,
-                }))
-              }
-              disabled={!isEditing}
-            />
-          </div>
-
-          {formData.rentalTeamPhotosEnabled && (
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label>Require Rental Team Photos</Label>
-                <p className="text-muted-foreground text-sm">
-                  Make rental team photos mandatory for registration
-                </p>
-              </div>
-              <Switch
-                checked={formData.rentalTeamPhotosRequired}
-                onCheckedChange={(checked: boolean) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    rentalTeamPhotosRequired: checked,
-                  }))
-                }
-                disabled={!isEditing}
-              />
-            </div>
-          )}
+        <CardContent>
+          <TournamentTeamRequirements
+            rentalTeamPhotosEnabled={formData.rentalTeamPhotosEnabled}
+            rentalTeamPhotosRequired={formData.rentalTeamPhotosRequired}
+            onChange={(updates) =>
+              setFormData((prev) => ({ ...prev, ...updates }))
+            }
+            disabled={!isEditing}
+          />
         </CardContent>
       </Card>
 

@@ -27,6 +27,7 @@ import type { TournamentFormData } from "@/lib/types/tournament";
 import {
   ArrowLeft,
   ArrowRight,
+  Check,
   Loader2,
   Trophy,
   Building2,
@@ -51,6 +52,7 @@ export function CreateTournamentClient({
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
 
   const { user: currentUser, isLoading: userLoading } = useCurrentUser();
 
@@ -173,18 +175,46 @@ export function CreateTournamentClient({
     });
   };
 
+  const markTouched = (field: string) => {
+    setTouched((prev) => ({ ...prev, [field]: true }));
+  };
+
+  // Validation helpers
+  const getFieldError = (field: string): string | null => {
+    if (!touched[field]) return null;
+
+    switch (field) {
+      case "name":
+        if (!formData.name.trim()) return "Tournament name is required";
+        if (formData.name.length < 3)
+          return "Name must be at least 3 characters";
+        return null;
+      case "slug":
+        if (!formData.slug.trim()) return "URL slug is required";
+        if (!/^[a-z0-9-]+$/.test(formData.slug))
+          return "Only lowercase letters, numbers, and hyphens allowed";
+        return null;
+      default:
+        return null;
+    }
+  };
+
   const validateStep = (step: number): boolean => {
     switch (step) {
-      case 1:
-        if (!formData.name.trim()) {
-          toast.error("Tournament name is required");
-          return false;
-        }
-        if (!formData.slug.trim()) {
-          toast.error("URL slug is required");
+      case 1: {
+        // Mark fields as touched to show validation
+        setTouched((prev) => ({ ...prev, name: true, slug: true }));
+
+        const nameError = !formData.name.trim() || formData.name.length < 3;
+        const slugError =
+          !formData.slug.trim() || !/^[a-z0-9-]+$/.test(formData.slug);
+
+        if (nameError || slugError) {
+          toast.error("Please fix the errors before continuing");
           return false;
         }
         return true;
+      }
       case 2:
         if (!formData.tournamentFormat) {
           toast.error("Please select a tournament format");
@@ -358,31 +388,54 @@ export function CreateTournamentClient({
       {/* Progress */}
       <div>
         <div className="mb-4 flex justify-between">
-          {STEPS.map((step) => (
-            <div
-              key={step.id}
-              className={`flex flex-col items-center ${
-                step.id <= currentStep
-                  ? "text-primary"
-                  : "text-muted-foreground"
-              }`}
-            >
-              <div
-                className={`flex h-8 w-8 items-center justify-center rounded-full border-2 text-sm font-medium ${
-                  step.id < currentStep
-                    ? "border-primary bg-primary text-primary-foreground"
-                    : step.id === currentStep
-                      ? "border-primary"
-                      : "border-muted"
-                }`}
-              >
-                {step.id}
+          {STEPS.map((step, index) => {
+            const isCompleted = step.id < currentStep;
+            const isCurrent = step.id === currentStep;
+            const isClickable = step.id < currentStep;
+
+            return (
+              <div key={step.id} className="flex flex-1 items-center">
+                <button
+                  type="button"
+                  onClick={() => isClickable && setCurrentStep(step.id)}
+                  disabled={!isClickable}
+                  className={`flex flex-col items-center ${
+                    isClickable ? "cursor-pointer" : "cursor-default"
+                  } ${
+                    step.id <= currentStep
+                      ? "text-primary"
+                      : "text-muted-foreground"
+                  }`}
+                >
+                  <div
+                    className={`flex h-8 w-8 items-center justify-center rounded-full border-2 text-sm font-medium transition-colors ${
+                      isCompleted
+                        ? "border-primary bg-primary text-primary-foreground"
+                        : isCurrent
+                          ? "border-primary bg-primary/10"
+                          : "border-muted"
+                    } ${isClickable ? "hover:bg-primary/20" : ""}`}
+                  >
+                    {isCompleted ? <Check className="h-4 w-4" /> : step.id}
+                  </div>
+                  <span className="mt-1 hidden text-xs sm:block">
+                    {step.title}
+                  </span>
+                </button>
+
+                {/* Connector line */}
+                {index < STEPS.length - 1 && (
+                  <div
+                    className={`mx-2 hidden h-0.5 flex-1 sm:block ${
+                      step.id < currentStep ? "bg-primary" : "bg-muted"
+                    }`}
+                  />
+                )}
               </div>
-              <span className="mt-1 hidden text-xs sm:block">{step.title}</span>
-            </div>
-          ))}
+            );
+          })}
         </div>
-        <Progress value={progressPercentage} />
+        <Progress value={progressPercentage} className="sm:hidden" />
       </div>
 
       {/* Step Content */}
@@ -402,11 +455,20 @@ export function CreateTournamentClient({
                   id="name"
                   value={formData.name}
                   onChange={(e) => handleNameChange(e.target.value)}
+                  onBlur={() => markTouched("name")}
                   placeholder="e.g., Spring Regional Championship"
+                  aria-invalid={!!getFieldError("name")}
+                  className={getFieldError("name") ? "border-destructive" : ""}
                 />
-                <FieldDescription>
-                  Give your tournament a descriptive name
-                </FieldDescription>
+                {getFieldError("name") ? (
+                  <p className="text-destructive text-sm">
+                    {getFieldError("name")}
+                  </p>
+                ) : (
+                  <FieldDescription>
+                    Give your tournament a descriptive name
+                  </FieldDescription>
+                )}
               </Field>
 
               <Field>
@@ -415,12 +477,21 @@ export function CreateTournamentClient({
                   id="slug"
                   value={formData.slug}
                   onChange={(e) => updateFormData({ slug: e.target.value })}
+                  onBlur={() => markTouched("slug")}
                   placeholder="spring-regional-championship"
+                  aria-invalid={!!getFieldError("slug")}
+                  className={getFieldError("slug") ? "border-destructive" : ""}
                 />
-                <FieldDescription>
-                  This will be used in the tournament URL:
-                  trainers.gg/tournaments/{formData.slug || "your-slug"}
-                </FieldDescription>
+                {getFieldError("slug") ? (
+                  <p className="text-destructive text-sm">
+                    {getFieldError("slug")}
+                  </p>
+                ) : (
+                  <FieldDescription>
+                    This will be used in the tournament URL:
+                    trainers.gg/tournaments/{formData.slug || "your-slug"}
+                  </FieldDescription>
+                )}
               </Field>
 
               <Field>

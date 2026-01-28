@@ -612,3 +612,100 @@ export async function updatePhase(
     };
   }
 }
+
+/**
+ * Create a new tournament phase
+ */
+export async function createTournamentPhase(
+  tournamentId: number,
+  phase: {
+    name: string;
+    phaseType: "swiss" | "single_elimination" | "double_elimination";
+    bestOf: 1 | 3 | 5;
+    roundTimeMinutes: number;
+    checkInTimeMinutes: number;
+    plannedRounds?: number;
+    cutRule?: "x-1" | "x-2" | "x-3" | "top-4" | "top-8" | "top-16" | "top-32";
+  }
+): Promise<ActionResult<{ phaseId: number }>> {
+  try {
+    const supabase = await createClient();
+    const { createPhase: createPhaseMutation } =
+      await import("@trainers/supabase");
+    const result = await createPhaseMutation(supabase, tournamentId, phase);
+    updateTag(CacheTags.tournament(tournamentId));
+    return { success: true, data: { phaseId: result.phase.id } };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Failed to create phase",
+    };
+  }
+}
+
+/**
+ * Delete a tournament phase
+ */
+export async function deleteTournamentPhase(
+  phaseId: number,
+  tournamentId: number
+): Promise<ActionResult<{ success: true }>> {
+  try {
+    const supabase = await createClient();
+    const { deletePhase: deletePhaseMutation } =
+      await import("@trainers/supabase");
+    await deletePhaseMutation(supabase, phaseId);
+    updateTag(CacheTags.tournament(tournamentId));
+    return { success: true, data: { success: true } };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Failed to delete phase",
+    };
+  }
+}
+
+/**
+ * Phase input for batch save
+ */
+interface PhaseInput {
+  id?: number;
+  name: string;
+  phaseType: "swiss" | "single_elimination" | "double_elimination";
+  bestOf: 1 | 3 | 5;
+  roundTimeMinutes: number;
+  checkInTimeMinutes: number;
+  plannedRounds?: number;
+  cutRule?: "x-1" | "x-2" | "x-3" | "top-4" | "top-8" | "top-16" | "top-32";
+}
+
+/**
+ * Save all tournament phases in a single batch operation
+ * Creates, updates, and deletes phases as needed
+ */
+export async function saveTournamentPhasesAction(
+  tournamentId: number,
+  phases: PhaseInput[]
+): Promise<
+  ActionResult<{ deleted: number; updated: number; created: number }>
+> {
+  try {
+    const supabase = await createClient();
+    const { saveTournamentPhases } = await import("@trainers/supabase");
+    const result = await saveTournamentPhases(supabase, tournamentId, phases);
+    updateTag(CacheTags.tournament(tournamentId));
+    return {
+      success: true,
+      data: {
+        deleted: result.deleted,
+        updated: result.updated,
+        created: result.created,
+      },
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Failed to save phases",
+    };
+  }
+}
