@@ -1,7 +1,7 @@
 import { Providers } from "@/components/providers";
 import { TopNav } from "@/components/topnav";
 import { Toaster } from "@/components/ui/sonner";
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist_Mono, Inter } from "next/font/google";
 import type { ReactNode } from "react";
 import "@/styles/globals.css";
@@ -23,6 +23,19 @@ export const metadata: Metadata = {
   title: "trainers.gg - Pokemon Community",
   description:
     "The social platform for Pokemon trainers. Build teams, compete in tournaments, and connect with the community.",
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "trainers.gg",
+  },
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  themeColor: "#1db6a5",
 };
 
 export default function RootLayout({

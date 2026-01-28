@@ -23,7 +23,7 @@ export function PageContainer({
   return (
     <div
       className={cn(
-        "container mx-auto",
+        "animate-in fade-in slide-in-from-bottom-2 container mx-auto duration-300",
         !noPadding && "px-4 py-8 md:px-6",
         variantStyles[variant],
         className

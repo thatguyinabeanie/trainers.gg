@@ -49,7 +49,7 @@ export function TopNav() {
         </nav>
 
         {/* Right: Auth & Theme */}
-        <div className="flex items-center">
+        <div className="ml-auto flex items-center">
           <TopNavAuthSection />
         </div>
       </div>

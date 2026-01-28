@@ -724,6 +724,71 @@ function Card({ children }) {
 
 ---
 
+## Frontend Polish Guidelines
+
+When building or modifying UI components, follow these standards for a polished experience:
+
+### Animation & Transitions
+
+| Pattern       | Implementation                                                                        |
+| ------------- | ------------------------------------------------------------------------------------- |
+| Page entrance | `animate-in fade-in slide-in-from-bottom-2 duration-300` via PageContainer            |
+| Card hover    | `hover:scale-[1.02] hover:-translate-y-0.5 transition-all duration-200`               |
+| Focus state   | Ring utilities with subtle glow: `focus-visible:ring-2 focus-visible:ring-primary/50` |
+| Loading       | Pulsing skeletons: `animate-pulse`                                                    |
+
+**Important:** Use CSS-first animations via Tailwind utilities. Do not use Motion/Framer Motion library as it forces client components.
+
+### Status Colors
+
+Use `StatusBadge` component with these semantic mappings:
+
+| Status    | Color   | Usage                                |
+| --------- | ------- | ------------------------------------ |
+| active    | Emerald | Currently running tournaments/events |
+| upcoming  | Blue    | Scheduled future events              |
+| draft     | Amber   | Unpublished, work in progress        |
+| completed | Gray    | Finished events                      |
+| cancelled | Red     | Cancelled events                     |
+
+### Responsive Patterns
+
+| Viewport          | Pattern                                                             |
+| ----------------- | ------------------------------------------------------------------- |
+| Mobile (<640px)   | Icon-only tabs with tooltips, card layouts, stacked forms           |
+| Tablet (768px)    | Scrollable containers with fade indicators, hide non-essential text |
+| Desktop (1024px+) | Full text labels, table layouts, side-by-side forms                 |
+
+### Loading & Empty States
+
+| Scenario      | Component                             |
+| ------------- | ------------------------------------- |
+| Page loading  | `SkeletonCard` or `SkeletonTable`     |
+| User action   | Optimistic UI with rollback on error  |
+| Empty list    | `EmptyState` with appropriate variant |
+| Empty section | `EmptyState variant="inline"`         |
+
+### Component Checklist
+
+When creating new components:
+
+- [ ] Uses Server Component unless interactivity required
+- [ ] Responsive at 375px, 768px, 1024px breakpoints
+- [ ] Has appropriate loading state
+- [ ] Has empty state if displays data
+- [ ] Uses semantic status colors if applicable
+- [ ] Follows existing naming patterns
+- [ ] Interactive elements have hover/focus states
+
+### Brand Voice in UI
+
+- Professional warmth with Pokemon soul
+- Not corporate sterile, not gaming chaos
+- Celebrate the community: competitive players, shiny hunters, and everyone in between
+- Use encouraging microcopy in empty states and confirmations
+
+---
+
 ## UI Component Guidelines (Web)
 
 ### Always Use shadcn/ui Components
