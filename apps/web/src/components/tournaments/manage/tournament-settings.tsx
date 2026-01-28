@@ -1,13 +1,14 @@
 "use client";
 
+import * as React from "react";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { useSupabaseMutation } from "@/lib/supabase";
 import { updateTournament, deleteTournament } from "@trainers/supabase";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Switch } from "@/components/ui/switch";
 import {
   Card,
   CardContent,
@@ -15,10 +16,214 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Calendar } from "@/components/ui/calendar";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
-import { Save, AlertTriangle, Trash2 } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import {
+  Save,
+  AlertTriangle,
+  Trash2,
+  Layers,
+  CalendarIcon,
+  Clock,
+  Globe,
+  Lock,
+  Users,
+} from "lucide-react";
+import { ButtonGroup } from "@/components/ui/button-group";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
+import { saveTournamentPhasesAction } from "@/actions/tournaments";
+import type { PhaseConfig, CutRule } from "@/lib/types/tournament";
+import { dbPhasesToPhaseConfigs } from "@/lib/tournament/adapters";
+import {
+  TournamentPhasesEditor,
+  TournamentGameSettings,
+  TournamentPresetSelector,
+  type BattlePlatform,
+  type BattleFormat,
+} from "../shared";
+
+interface Phase {
+  id: number;
+  tournament_id: number;
+  name: string;
+  phase_order: number;
+  phase_type: string;
+  best_of: number | null;
+  round_time_minutes: number | null;
+  check_in_time_minutes: number | null;
+  cut_rule: string | null;
+  planned_rounds: number | null;
+  status: string | null;
+  started_at: string | null;
+  completed_at: string | null;
+  created_at: string | null;
+  current_round: number | null;
+}
+
+interface DateTimeFieldProps {
+  label: string;
+  description: string;
+  value?: string | null;
+  onChange: (isoString: string | undefined) => void;
+  minDate?: Date;
+  maxDate?: Date;
+  disabled?: boolean;
+}
+
+function DateTimeField({
+  label,
+  description,
+  value,
+  onChange,
+  minDate,
+  maxDate,
+  disabled,
+}: DateTimeFieldProps) {
+  const [open, setOpen] = React.useState(false);
+
+  const date = value ? new Date(value) : undefined;
+  const hours = date ? date.getHours() : 12;
+  const minutes = date ? date.getMinutes() : 0;
+
+  const handleDateSelect = (selected: Date | undefined) => {
+    if (!selected) {
+      onChange(undefined);
+      return;
+    }
+    const newDate = new Date(selected);
+    newDate.setHours(hours);
+    newDate.setMinutes(minutes);
+    onChange(newDate.toISOString());
+  };
+
+  const handleTimeChange = (type: "hours" | "minutes", val: string) => {
+    const numVal = parseInt(val, 10);
+    const newDate = date ? new Date(date) : new Date();
+
+    if (type === "hours") {
+      newDate.setHours(numVal);
+    } else {
+      newDate.setMinutes(numVal);
+    }
+
+    onChange(newDate.toISOString());
+  };
+
+  const formatDisplay = (d: Date) => {
+    return d.toLocaleDateString("en-US", {
+      weekday: "short",
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+    });
+  };
+
+  const hoursOptions = Array.from({ length: 24 }, (_, i) => i);
+  const minutesOptions = [0, 15, 30, 45];
+
+  return (
+    <div className="space-y-2">
+      <Label>{label}</Label>
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger
+          disabled={disabled}
+          className={cn(
+            "border-input bg-background hover:bg-accent hover:text-accent-foreground focus-visible:border-ring focus-visible:ring-ring/50 inline-flex h-9 w-full items-center justify-start gap-2 rounded-lg border px-3 py-2 text-sm font-normal whitespace-nowrap transition-colors outline-none focus-visible:ring-[3px]",
+            !date && "text-muted-foreground",
+            disabled && "cursor-not-allowed opacity-50"
+          )}
+        >
+          <CalendarIcon className="h-4 w-4 shrink-0 opacity-50" />
+          {date ? formatDisplay(date) : "Pick a date"}
+        </PopoverTrigger>
+        <PopoverContent align="start" className="w-auto p-0">
+          <Calendar
+            mode="single"
+            selected={date}
+            onSelect={handleDateSelect}
+            disabled={(d) => {
+              if (minDate && d < minDate) return true;
+              if (maxDate && d > maxDate) return true;
+              return false;
+            }}
+            defaultMonth={date}
+          />
+
+          <div className="border-border flex items-center gap-2 border-t p-3">
+            <Clock className="text-muted-foreground h-4 w-4" />
+            <Select
+              value={hours.toString()}
+              onValueChange={(val) => val && handleTimeChange("hours", val)}
+            >
+              <SelectTrigger className="w-[70px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {hoursOptions.map((h) => (
+                  <SelectItem key={h} value={h.toString()}>
+                    {h.toString().padStart(2, "0")}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <span className="text-muted-foreground">:</span>
+            <Select
+              value={minutes.toString()}
+              onValueChange={(val) => val && handleTimeChange("minutes", val)}
+            >
+              <SelectTrigger className="w-[70px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {minutesOptions.map((m) => (
+                  <SelectItem key={m} value={m.toString()}>
+                    {m.toString().padStart(2, "0")}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="border-border flex justify-end gap-2 border-t p-2">
+            {date && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  onChange(undefined);
+                  setOpen(false);
+                }}
+              >
+                Clear
+              </Button>
+            )}
+            <Button size="sm" onClick={() => setOpen(false)}>
+              Done
+            </Button>
+          </div>
+        </PopoverContent>
+      </Popover>
+      <p className="text-muted-foreground text-sm">{description}</p>
+    </div>
+  );
+}
 
 interface TournamentSettingsProps {
   tournament: {
@@ -27,28 +232,58 @@ interface TournamentSettingsProps {
     slug: string;
     description?: string | null;
     status: string;
-    format: string | null;
+    game?: string | null;
+    game_format?: string | null;
+    platform?: string | null;
+    battle_format?: string | null;
     max_participants?: number | null;
     start_date?: string | null;
     end_date?: string | null;
     registration_deadline?: string | null;
     round_time_minutes?: number | null;
-    rental_team_photos_enabled?: boolean | null;
-    rental_team_photos_required?: boolean | null;
+    // Registration settings
+    registration_type?: string | null;
+    check_in_required?: boolean | null;
+    allow_late_registration?: boolean | null;
   };
+  phases?: Phase[];
 }
 
-export function TournamentSettings({ tournament }: TournamentSettingsProps) {
+export function TournamentSettings({
+  tournament,
+  phases: initialPhases = [],
+}: TournamentSettingsProps) {
+  const router = useRouter();
   const [isEditing, setIsEditing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+
+  // Form state - all changes are local until Save is clicked
   const [formData, setFormData] = useState({
     name: tournament.name || "",
     description: tournament.description || "",
-    format: tournament.format || "",
+    game: tournament.game || "sv",
+    gameFormat: tournament.game_format || "reg-i",
+    platform: (tournament.platform as BattlePlatform) || "cartridge",
+    battleFormat: (tournament.battle_format as BattleFormat) || "doubles",
     maxParticipants: tournament.max_participants?.toString() || "",
-    roundTimeMinutes: tournament.round_time_minutes || 50,
-    rentalTeamPhotosEnabled: tournament.rental_team_photos_enabled || false,
-    rentalTeamPhotosRequired: tournament.rental_team_photos_required || false,
+    playerCapEnabled: tournament.max_participants !== null,
+    startDate: tournament.start_date || undefined,
+    endDate: tournament.end_date || undefined,
+    registrationDeadline: tournament.registration_deadline || undefined,
+    // Registration settings
+    registrationType:
+      (tournament.registration_type as "open" | "invite_only") || "open",
+    checkInRequired: tournament.check_in_required ?? false,
+    allowLateRegistration: tournament.allow_late_registration ?? false,
   });
+
+  // Phase state - local until Save is clicked
+  const [phaseConfigs, setPhaseConfigs] = useState<PhaseConfig[]>(() =>
+    dbPhasesToPhaseConfigs(initialPhases)
+  );
+
+  // Store original phases for comparison
+  const [originalPhases] = useState<Phase[]>(initialPhases);
 
   const { mutateAsync: updateTournamentMutation } = useSupabaseMutation(
     (
@@ -59,6 +294,17 @@ export function TournamentSettings({ tournament }: TournamentSettingsProps) {
           name?: string;
           description?: string;
           format?: string;
+          startDate?: string;
+          endDate?: string;
+          registrationDeadline?: string;
+          maxParticipants?: number | null;
+          game?: string;
+          gameFormat?: string;
+          platform?: string;
+          battleFormat?: string;
+          registrationType?: string;
+          checkInRequired?: boolean;
+          allowLateRegistration?: boolean;
         };
       }
     ) => updateTournament(supabase, args.tournamentId, args.updates)
@@ -69,21 +315,69 @@ export function TournamentSettings({ tournament }: TournamentSettingsProps) {
       deleteTournament(supabase, args.tournamentId)
   );
 
+  // Convert PhaseConfig to the format expected by the server action
+  const convertPhasesForSave = (phases: PhaseConfig[]) => {
+    return phases.map((phase) => ({
+      // Extract DB ID if it exists (format: "db-123")
+      id: phase.id.startsWith("db-")
+        ? parseInt(phase.id.replace("db-", ""), 10)
+        : undefined,
+      name: phase.name,
+      phaseType: phase.phaseType,
+      bestOf: phase.bestOf,
+      roundTimeMinutes: phase.roundTimeMinutes,
+      checkInTimeMinutes: phase.checkInTimeMinutes,
+      plannedRounds: phase.plannedRounds,
+      cutRule: phase.cutRule as CutRule | undefined,
+    }));
+  };
+
   const handleSave = async () => {
+    setIsSaving(true);
+
     try {
+      // Save tournament settings
       await updateTournamentMutation({
         tournamentId: tournament.id,
         updates: {
           name: formData.name,
           description: formData.description,
-          format: formData.format,
+          startDate: formData.startDate,
+          endDate: formData.endDate,
+          registrationDeadline: formData.registrationDeadline,
+          maxParticipants: formData.playerCapEnabled
+            ? parseInt(formData.maxParticipants) || null
+            : null,
+          game: formData.game,
+          gameFormat: formData.gameFormat,
+          platform: formData.platform,
+          battleFormat: formData.battleFormat,
+          registrationType: formData.registrationType,
+          checkInRequired: formData.checkInRequired,
+          allowLateRegistration: formData.allowLateRegistration,
         },
       });
+
+      // Save phases in a single batch operation
+      const phasesForSave = convertPhasesForSave(phaseConfigs);
+      const phasesResult = await saveTournamentPhasesAction(
+        tournament.id,
+        phasesForSave
+      );
+
+      if (!phasesResult.success) {
+        toast.error("Error saving phases", {
+          description: phasesResult.error,
+        });
+        return;
+      }
 
       toast.success("Settings saved", {
         description: "Tournament settings have been updated successfully.",
       });
+
       setIsEditing(false);
+      router.refresh();
     } catch (error) {
       toast.error("Error saving settings", {
         description:
@@ -91,7 +385,33 @@ export function TournamentSettings({ tournament }: TournamentSettingsProps) {
             ? error.message
             : "An unexpected error occurred",
       });
+    } finally {
+      setIsSaving(false);
     }
+  };
+
+  const handleCancel = () => {
+    // Reset form data to original values
+    setFormData({
+      name: tournament.name || "",
+      description: tournament.description || "",
+      game: tournament.game || "sv",
+      gameFormat: tournament.game_format || "reg-i",
+      platform: (tournament.platform as BattlePlatform) || "cartridge",
+      battleFormat: (tournament.battle_format as BattleFormat) || "doubles",
+      maxParticipants: tournament.max_participants?.toString() || "",
+      playerCapEnabled: tournament.max_participants !== null,
+      startDate: tournament.start_date || undefined,
+      endDate: tournament.end_date || undefined,
+      registrationDeadline: tournament.registration_deadline || undefined,
+      registrationType:
+        (tournament.registration_type as "open" | "invite_only") || "open",
+      checkInRequired: tournament.check_in_required ?? false,
+      allowLateRegistration: tournament.allow_late_registration ?? false,
+    });
+    // Reset phases to original
+    setPhaseConfigs(dbPhasesToPhaseConfigs(originalPhases));
+    setIsEditing(false);
   };
 
   const handleDelete = async () => {
@@ -120,9 +440,16 @@ export function TournamentSettings({ tournament }: TournamentSettingsProps) {
     }
   };
 
+  // Handle phase changes - just update local state, no API calls
+  const handlePhasesChange = (newPhases: PhaseConfig[]) => {
+    setPhaseConfigs(newPhases);
+  };
+
   const canEdit =
     tournament.status === "draft" || tournament.status === "upcoming";
   const canDelete = tournament.status === "draft";
+  // Allow adding/removing phases only when actively editing
+  const canAddRemovePhases = isEditing && canEdit;
 
   return (
     <div className="space-y-6">
@@ -137,12 +464,16 @@ export function TournamentSettings({ tournament }: TournamentSettingsProps) {
         <div className="flex items-center gap-2">
           {isEditing ? (
             <>
-              <Button variant="outline" onClick={() => setIsEditing(false)}>
+              <Button
+                variant="outline"
+                onClick={handleCancel}
+                disabled={isSaving}
+              >
                 Cancel
               </Button>
-              <Button onClick={handleSave}>
+              <Button onClick={handleSave} disabled={isSaving}>
                 <Save className="mr-2 h-4 w-4" />
-                Save Changes
+                {isSaving ? "Saving..." : "Save Changes"}
               </Button>
             </>
           ) : (
@@ -167,9 +498,7 @@ export function TournamentSettings({ tournament }: TournamentSettingsProps) {
       <Card>
         <CardHeader>
           <CardTitle>Basic Information</CardTitle>
-          <CardDescription>
-            Tournament name, description, and basic details
-          </CardDescription>
+          <CardDescription>Tournament name and description</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
@@ -199,118 +528,259 @@ export function TournamentSettings({ tournament }: TournamentSettingsProps) {
               rows={3}
             />
           </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="format">Game Format</Label>
-            <Input
-              id="format"
-              value={formData.format}
-              onChange={(e) =>
-                setFormData((prev) => ({ ...prev, format: e.target.value }))
-              }
-              disabled={!isEditing}
-              placeholder="e.g., VGC 2024 Regulation H"
-            />
-          </div>
         </CardContent>
       </Card>
 
-      {/* Tournament Configuration */}
+      {/* Game Settings */}
       <Card>
         <CardHeader>
-          <CardTitle>Tournament Configuration</CardTitle>
+          <CardTitle>Game Settings</CardTitle>
           <CardDescription>
-            Participant limits, timing, and format settings
+            Pokemon game, format, and battle platform
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <TournamentGameSettings
+            game={formData.game}
+            gameFormat={formData.gameFormat}
+            platform={formData.platform}
+            battleFormat={formData.battleFormat}
+            onGameChange={(game) =>
+              setFormData((prev) => ({ ...prev, game: game || "" }))
+            }
+            onGameFormatChange={(gameFormat) =>
+              setFormData((prev) => ({ ...prev, gameFormat: gameFormat || "" }))
+            }
+            onPlatformChange={(platform) =>
+              setFormData((prev) => ({ ...prev, platform }))
+            }
+            onBattleFormatChange={(battleFormat) =>
+              setFormData((prev) => ({ ...prev, battleFormat }))
+            }
+            disabled={!isEditing}
+          />
+        </CardContent>
+      </Card>
+
+      {/* Schedule */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Schedule</CardTitle>
+          <CardDescription>
+            Tournament dates and registration deadline
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="maxParticipants">Max Participants</Label>
-              <Input
-                id="maxParticipants"
-                type="number"
-                value={formData.maxParticipants}
-                onChange={(e) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    maxParticipants: e.target.value,
-                  }))
-                }
-                disabled={!isEditing}
-                placeholder="No limit"
-              />
-            </div>
+            <DateTimeField
+              label="Start Date & Time"
+              description="When the tournament begins"
+              value={formData.startDate}
+              onChange={(val) =>
+                setFormData((prev) => ({ ...prev, startDate: val }))
+              }
+              disabled={!isEditing}
+            />
 
-            <div className="space-y-2">
-              <Label htmlFor="roundTime">Round Time (minutes)</Label>
-              <Input
-                id="roundTime"
-                type="number"
-                value={formData.roundTimeMinutes}
-                onChange={(e) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    roundTimeMinutes: parseInt(e.target.value),
-                  }))
-                }
-                disabled={!isEditing}
-                min="15"
-                max="120"
-              />
-            </div>
+            <DateTimeField
+              label="End Date & Time"
+              description="Expected end time (optional)"
+              value={formData.endDate}
+              onChange={(val) =>
+                setFormData((prev) => ({ ...prev, endDate: val }))
+              }
+              minDate={
+                formData.startDate ? new Date(formData.startDate) : undefined
+              }
+              disabled={!isEditing}
+            />
           </div>
+
+          <DateTimeField
+            label="Registration Deadline"
+            description="When registration closes (defaults to tournament start)"
+            value={formData.registrationDeadline}
+            onChange={(val) =>
+              setFormData((prev) => ({ ...prev, registrationDeadline: val }))
+            }
+            maxDate={
+              formData.startDate ? new Date(formData.startDate) : undefined
+            }
+            disabled={!isEditing}
+          />
         </CardContent>
       </Card>
 
-      {/* Team Requirements */}
+      {/* Registration */}
       <Card>
         <CardHeader>
-          <CardTitle>Team Requirements</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            <Users className="h-5 w-5" />
+            Registration
+          </CardTitle>
           <CardDescription>
-            Configure team submission and verification settings
+            Registration type, player cap, and check-in settings
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-6">
+          {/* Registration Type */}
+          <div className="space-y-2">
+            <Label>Registration Type</Label>
+            <ButtonGroup className="mt-1">
+              <Button
+                type="button"
+                variant={
+                  formData.registrationType === "open" ? "default" : "outline"
+                }
+                onClick={() =>
+                  setFormData((prev) => ({ ...prev, registrationType: "open" }))
+                }
+                disabled={!isEditing}
+                size="sm"
+                className="flex items-center gap-1.5"
+              >
+                <Globe className="h-3.5 w-3.5" />
+                Open Registration
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                disabled={true}
+                size="sm"
+                className="flex items-center gap-1.5"
+              >
+                <Lock className="h-3.5 w-3.5" />
+                Invite Only (coming soon)
+              </Button>
+            </ButtonGroup>
+          </div>
+
+          {/* Player Cap */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <Label htmlFor="playerCap" className="text-base">
+                  Player Cap
+                </Label>
+                <p className="text-muted-foreground text-sm">
+                  Limit the number of participants
+                </p>
+              </div>
+              <Switch
+                id="playerCap"
+                checked={formData.playerCapEnabled}
+                onCheckedChange={(checked) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    playerCapEnabled: checked,
+                    maxParticipants: checked
+                      ? prev.maxParticipants || "32"
+                      : "",
+                  }))
+                }
+                disabled={!isEditing}
+              />
+            </div>
+
+            {formData.playerCapEnabled && (
+              <div className="space-y-2">
+                <Label htmlFor="maxParticipants">Maximum Players</Label>
+                <div className="flex items-center gap-2">
+                  <Users className="text-muted-foreground h-4 w-4" />
+                  <Input
+                    id="maxParticipants"
+                    type="number"
+                    value={formData.maxParticipants}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        maxParticipants: e.target.value,
+                      }))
+                    }
+                    disabled={!isEditing}
+                    placeholder="32"
+                    min="4"
+                    max="512"
+                    className="w-32"
+                  />
+                  <span className="text-muted-foreground text-sm">players</span>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Check-in Required */}
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
-              <Label>Enable Rental Team Photos</Label>
+              <Label htmlFor="checkInRequired" className="text-base">
+                Check-in Required
+              </Label>
               <p className="text-muted-foreground text-sm">
-                Allow players to submit photos of their rental teams
+                Players must check in before the tournament starts
               </p>
             </div>
             <Switch
-              checked={formData.rentalTeamPhotosEnabled}
-              onCheckedChange={(checked: boolean) =>
+              id="checkInRequired"
+              checked={formData.checkInRequired}
+              onCheckedChange={(checked) =>
+                setFormData((prev) => ({ ...prev, checkInRequired: checked }))
+              }
+              disabled={!isEditing}
+            />
+          </div>
+
+          {/* Late Registration */}
+          <div className="flex items-center justify-between">
+            <div className="space-y-0.5">
+              <Label htmlFor="lateRegistration" className="text-base">
+                Late Registration
+              </Label>
+              <p className="text-muted-foreground text-sm">
+                Allow players to register after the tournament has started
+              </p>
+            </div>
+            <Switch
+              id="lateRegistration"
+              checked={formData.allowLateRegistration}
+              onCheckedChange={(checked) =>
                 setFormData((prev) => ({
                   ...prev,
-                  rentalTeamPhotosEnabled: checked,
+                  allowLateRegistration: checked,
                 }))
               }
               disabled={!isEditing}
             />
           </div>
+        </CardContent>
+      </Card>
 
-          {formData.rentalTeamPhotosEnabled && (
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label>Require Rental Team Photos</Label>
-                <p className="text-muted-foreground text-sm">
-                  Make rental team photos mandatory for registration
-                </p>
-              </div>
-              <Switch
-                checked={formData.rentalTeamPhotosRequired}
-                onCheckedChange={(checked: boolean) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    rentalTeamPhotosRequired: checked,
-                  }))
-                }
-                disabled={!isEditing}
-              />
-            </div>
-          )}
+      {/* Tournament Structure */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Layers className="h-5 w-5" />
+            Tournament Structure
+          </CardTitle>
+          <CardDescription>
+            Tournament phases and format settings
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          {/* Preset selector - always visible, disabled when not editing */}
+          <TournamentPresetSelector
+            phases={phaseConfigs}
+            onPresetSelect={(phases) => handlePhasesChange(phases)}
+            label="Apply preset:"
+            disabled={!canAddRemovePhases}
+          />
+
+          <TournamentPhasesEditor
+            phases={phaseConfigs}
+            onPhasesChange={handlePhasesChange}
+            mode="edit"
+            disabled={!isEditing}
+            canAddRemove={canAddRemovePhases}
+          />
         </CardContent>
       </Card>
 

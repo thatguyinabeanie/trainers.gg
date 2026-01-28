@@ -14,7 +14,7 @@ export interface BracketPlayer {
 export interface BracketSettings {
   bracketSize: number;
   format: "single_elimination" | "double_elimination";
-  matchFormat: "best_of_1" | "best_of_3";
+  bestOf: 1 | 3 | 5;
 }
 
 export interface BracketMatch {
@@ -31,7 +31,7 @@ export interface BracketMatch {
   player2GameWins: number;
   winnerId: string | null;
   isComplete: boolean;
-  matchFormat: "best_of_1" | "best_of_3";
+  bestOf: 1 | 3 | 5;
   prerequisiteMatch1Id: string | null;
   prerequisiteMatch2Id: string | null;
 }
@@ -156,7 +156,7 @@ export function generateTopCutBracket(
     const roundMatches = generateRoundMatches(
       round,
       settings.bracketSize,
-      settings.matchFormat,
+      settings.bestOf,
       players,
       matches
     );
@@ -177,7 +177,7 @@ export function generateTopCutBracket(
 function generateRoundMatches(
   round: number,
   bracketSize: number,
-  matchFormat: "best_of_1" | "best_of_3",
+  bestOf: 1 | 3 | 5,
   players: BracketPlayer[],
   existingMatches: BracketMatch[]
 ): BracketMatch[] {
@@ -216,7 +216,7 @@ function generateRoundMatches(
         player2GameWins: 0,
         winnerId: null,
         isComplete: false,
-        matchFormat,
+        bestOf,
         prerequisiteMatch1Id: null,
         prerequisiteMatch2Id: null,
       };
@@ -258,7 +258,7 @@ function generateRoundMatches(
         player2GameWins: 0,
         winnerId: null,
         isComplete: false,
-        matchFormat,
+        bestOf,
         prerequisiteMatch1Id: prereq1.id,
         prerequisiteMatch2Id: prereq2.id,
       };

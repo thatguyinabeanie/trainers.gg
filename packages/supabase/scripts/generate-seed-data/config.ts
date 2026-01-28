@@ -109,6 +109,18 @@ export const SEED_CONFIG = {
   FLAGSHIP_TOURNAMENTS: [
     { orgSlug: "vgc-league", week: 6, name: "VGC League Championship" },
     { orgSlug: "sinnoh-champions", week: 10, name: "Sinnoh Grand Finals" },
+    {
+      orgSlug: "pallet-town",
+      week: 11,
+      name: "Pallet Town Trainers Week 11 Championship",
+      active: true,
+    },
+    {
+      orgSlug: "kanto-elite",
+      week: 11,
+      name: "Kanto Elite Series Week 11 Championship",
+      active: true,
+    },
   ],
 
   // Main tournament size distribution (excluding flagships)

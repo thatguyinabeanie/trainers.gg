@@ -425,11 +425,11 @@ function generateTournamentsSql(
     phasesByTournament.get(phase.tournamentId)!.push(phase);
   }
 
-  // Insert phases for each tournament (only completed tournaments need phases for now)
-  const completedTournaments = tournaments.filter(
-    (t) => t.status === "completed"
+  // Insert phases for each tournament (completed and active tournaments have phases)
+  const tournamentsWithPhases = tournaments.filter(
+    (t) => t.status === "completed" || t.status === "active"
   );
-  for (const tournament of completedTournaments) {
+  for (const tournament of tournamentsWithPhases) {
     const tournamentPhases = phasesByTournament.get(tournament.id) || [];
     if (tournamentPhases.length === 0) continue;
 
@@ -443,18 +443,18 @@ function generateTournamentsSql(
       lines.push(`    INSERT INTO public.tournament_phases (`);
       lines.push(`      tournament_id, name, phase_order, phase_type, status,`);
       lines.push(
-        `      match_format, round_time_minutes, planned_rounds, current_round,`
+        `      best_of, round_time_minutes, planned_rounds, current_round,`
       );
-      lines.push(`      advancement_count, bracket_size, total_rounds`);
+      lines.push(`      cut_rule, check_in_time_minutes`);
       lines.push(`    ) VALUES (`);
       lines.push(
         `      t_id, '${escapeString(phase.name)}', ${phase.phaseOrder}, '${phase.phaseType}', '${phase.status}',`
       );
       lines.push(
-        `      '${phase.matchFormat}', ${phase.roundTimeMinutes}, ${phase.plannedRounds ?? "NULL"}, ${phase.currentRound},`
+        `      ${phase.bestOf}, ${phase.roundTimeMinutes}, ${phase.plannedRounds ?? "NULL"}, ${phase.currentRound},`
       );
       lines.push(
-        `      ${phase.advancementCount ?? "NULL"}, ${phase.bracketSize ?? "NULL"}, ${phase.totalRounds ?? "NULL"}`
+        `      ${phase.cutRule ? `'${phase.cutRule}'` : "NULL"}, ${phase.checkInTimeMinutes}`
       );
       lines.push(`    ) ON CONFLICT DO NOTHING;`);
     }
@@ -463,7 +463,7 @@ function generateTournamentsSql(
   }
 
   lines.push(
-    `  RAISE NOTICE 'Created phases for ${completedTournaments.length} completed tournaments';`
+    `  RAISE NOTICE 'Created phases for ${tournamentsWithPhases.length} tournaments';`
   );
   lines.push(`END $$;\n`);
 
@@ -618,8 +618,8 @@ function generateMatchesSql(
   interface RoundInfo {
     phaseId: number;
     roundNumber: number;
-    startTime: Date;
-    endTime: Date;
+    startTime: Date | null;
+    endTime: Date | null;
   }
 
   const rounds: RoundInfo[] = [];
@@ -628,12 +628,20 @@ function generateMatchesSql(
     const phaseId = parseInt(phaseIdStr!, 10);
     const roundNumber = parseInt(roundStr!, 10);
 
-    // Get round timing from first and last match
-    const sortedMatches = roundMatches.sort(
-      (a, b) => a.startedAt.getTime() - b.startedAt.getTime()
+    // Get round timing from first and last match (filter to only started matches)
+    const startedMatches = roundMatches.filter((m) => m.startedAt !== null);
+    const completedMatches = roundMatches.filter((m) => m.completedAt !== null);
+
+    const sortedStarted = startedMatches.sort(
+      (a, b) => a.startedAt!.getTime() - b.startedAt!.getTime()
     );
-    const startTime = sortedMatches[0]!.startedAt;
-    const endTime = sortedMatches[sortedMatches.length - 1]!.completedAt;
+    const sortedCompleted = completedMatches.sort(
+      (a, b) => a.completedAt!.getTime() - b.completedAt!.getTime()
+    );
+
+    const startTime = sortedStarted[0]?.startedAt ?? null;
+    const endTime =
+      sortedCompleted[sortedCompleted.length - 1]?.completedAt ?? null;
 
     rounds.push({ phaseId, roundNumber, startTime, endTime });
   }
@@ -669,15 +677,15 @@ function generateMatchesSql(
     phasesByTournament.get(phase.tournamentId)!.push(phase);
   }
 
-  // Process only completed tournaments (they have phases)
-  const completedTournaments = tournaments.filter(
-    (t) => t.status === "completed"
+  // Process completed and active tournaments (they have phases)
+  const tournamentsWithMatches = tournaments.filter(
+    (t) => t.status === "completed" || t.status === "active"
   );
 
   let totalRounds = 0;
   let totalMatches = 0;
 
-  for (const tournament of completedTournaments) {
+  for (const tournament of tournamentsWithMatches) {
     const tournamentPhases = phasesByTournament.get(tournament.id) || [];
     if (tournamentPhases.length === 0) continue;
 
@@ -711,6 +719,33 @@ function generateMatchesSql(
         if (!roundMatches || roundMatches.length === 0) continue;
 
         // Insert round
+        // Determine round status based on matches
+        const hasCompletedMatches = roundMatches.some(
+          (m) => m.status === "completed"
+        );
+        const hasActiveMatches = roundMatches.some(
+          (m) => m.status === "active"
+        );
+        const hasPendingMatches = roundMatches.some(
+          (m) => m.status === "pending"
+        );
+
+        let roundStatus: string;
+        if (hasActiveMatches || (hasCompletedMatches && hasPendingMatches)) {
+          roundStatus = "active";
+        } else if (hasCompletedMatches && !hasPendingMatches) {
+          roundStatus = "completed";
+        } else {
+          roundStatus = "pending";
+        }
+
+        const startTimeStr = round.startTime
+          ? `'${round.startTime.toISOString()}'::timestamptz`
+          : "NULL";
+        const endTimeStr = round.endTime
+          ? `'${round.endTime.toISOString()}'::timestamptz`
+          : "NULL";
+
         lines.push(`    -- Round ${round.roundNumber}`);
         lines.push(`    INSERT INTO public.tournament_rounds (`);
         lines.push(
@@ -718,11 +753,9 @@ function generateMatchesSql(
         );
         lines.push(`    ) VALUES (`);
         lines.push(
-          `      phase_id, ${round.roundNumber}, 'Round ${round.roundNumber}', 'completed'::phase_status,`
+          `      phase_id, ${round.roundNumber}, 'Round ${round.roundNumber}', '${roundStatus}'::phase_status,`
         );
-        lines.push(
-          `      '${round.startTime.toISOString()}'::timestamptz, '${round.endTime.toISOString()}'::timestamptz`
-        );
+        lines.push(`      ${startTimeStr}, ${endTimeStr}`);
         lines.push(`    ) RETURNING id INTO round_id;`);
         totalRounds++;
 
@@ -730,11 +763,23 @@ function generateMatchesSql(
         for (const match of roundMatches) {
           const alt1Username = altUsernameById.get(match.alt1Id);
           const alt2Username = altUsernameById.get(match.alt2Id);
-          const winnerUsername = altUsernameById.get(match.winnerAltId);
+          const winnerUsername = match.winnerAltId
+            ? altUsernameById.get(match.winnerAltId)
+            : null;
 
-          if (!alt1Username || !alt2Username || !winnerUsername) {
+          if (!alt1Username || !alt2Username) {
             throw new Error(`Alt username not found for match ${match.id}`);
           }
+
+          const winnerAltIdStr = winnerUsername
+            ? `(SELECT aw.id FROM public.alts aw WHERE aw.username = '${escapeString(winnerUsername)}')`
+            : "NULL";
+          const matchStartTimeStr = match.startedAt
+            ? `'${match.startedAt.toISOString()}'::timestamptz`
+            : "NULL";
+          const matchEndTimeStr = match.completedAt
+            ? `'${match.completedAt.toISOString()}'::timestamptz`
+            : "NULL";
 
           lines.push(`    INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -742,13 +787,13 @@ function generateMatchesSql(
       round_id,
       (SELECT a1.id FROM public.alts a1 WHERE a1.username = '${escapeString(alt1Username)}'),
       (SELECT a2.id FROM public.alts a2 WHERE a2.username = '${escapeString(alt2Username)}'),
-      (SELECT aw.id FROM public.alts aw WHERE aw.username = '${escapeString(winnerUsername)}'),
+      ${winnerAltIdStr},
       ${match.alt1Score},
       ${match.alt2Score},
-      'completed'::phase_status,
+      '${match.status}'::phase_status,
       ${match.tableNumber},
-      '${match.startedAt.toISOString()}'::timestamptz,
-      '${match.completedAt.toISOString()}'::timestamptz
+      ${matchStartTimeStr},
+      ${matchEndTimeStr}
     );`);
 
           totalMatches++;

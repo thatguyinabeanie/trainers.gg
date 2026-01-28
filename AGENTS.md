@@ -30,18 +30,19 @@ tooling/
 
 ## Tech Stack
 
-| Layer            | Technology              | Notes                                     |
-| ---------------- | ----------------------- | ----------------------------------------- |
-| Auth             | Supabase Auth           | Native auth with email/password and OAuth |
-| Database         | Supabase (PostgreSQL)   | Row Level Security with auth.uid()        |
-| Edge Functions   | Supabase Edge Functions | Deno runtime                              |
-| Social/Identity  | AT Protocol (Bluesky)   | Decentralized identity and federation     |
-| PDS              | Fly.io                  | Self-hosted at pds.trainers.gg            |
-| Web              | Next.js 16              | React 19, App Router, Server Components   |
-| Mobile           | Expo 54                 | React Native with Tamagui                 |
-| Styling (Web)    | Tailwind CSS 4          | Uses @tailwindcss/postcss                 |
-| Styling (Mobile) | Tamagui                 | Universal UI components with theme tokens |
-| Theme            | @trainers/theme         | OKLCH colors, light/dark mode support     |
+| Layer            | Technology              | Notes                                        |
+| ---------------- | ----------------------- | -------------------------------------------- |
+| Auth             | Supabase Auth           | Native auth with email/password and OAuth    |
+| Database         | Supabase (PostgreSQL)   | Row Level Security with auth.uid()           |
+| Edge Functions   | Supabase Edge Functions | Deno runtime                                 |
+| Social/Identity  | AT Protocol (Bluesky)   | Decentralized identity and federation        |
+| PDS              | Fly.io                  | Self-hosted at pds.trainers.gg               |
+| Web              | Next.js 16              | React 19, App Router, Server Components      |
+| Mobile           | Expo 54                 | React Native with Tamagui                    |
+| UI Components    | shadcn/ui + Base UI     | Base UI primitives (NOT Radix), no `asChild` |
+| Styling (Web)    | Tailwind CSS 4          | Uses @tailwindcss/postcss                    |
+| Styling (Mobile) | Tamagui                 | Universal UI components with theme tokens    |
+| Theme            | @trainers/theme         | OKLCH colors, light/dark mode support        |
 
 ---
 
@@ -720,6 +721,70 @@ function Card({ children }) {
   return <div className="bg-card space-y-3 rounded-lg p-4">{children}</div>;
 }
 ```
+
+---
+
+## UI Component Guidelines (Web)
+
+### Always Use shadcn/ui Components
+
+When building UI for the web app, **always check for and use existing shadcn/ui components** before creating custom solutions.
+
+**Browse all available components:** `apps/web/src/components/ui/`
+
+Each `.tsx` file in that directory is a shadcn/ui component ready to use. Common ones include:
+
+- Layout: `Card`, `Separator`, `Accordion`, `Collapsible`, `Tabs`
+- Forms: `Input`, `Button`, `Select`, `Switch`, `Checkbox`, `RadioGroup`, `Textarea`, `Label`
+- Feedback: `Alert`, `Badge`, `Progress`, `Skeleton`, `Spinner`
+- Overlays: `Dialog`, `Sheet`, `Popover`, `Tooltip`, `DropdownMenu`, `ContextMenu`
+- Data: `Table`, `Pagination`, `Calendar`
+- Navigation: `Breadcrumb`, `NavigationMenu`, `Sidebar`
+- Composition: `ButtonGroup`, `InputGroup`, `Command`
+
+### Adding New shadcn Components
+
+```bash
+npx shadcn@latest add <component-name>
+```
+
+### Component Patterns
+
+```tsx
+// Use ButtonGroup for segmented controls
+import { ButtonGroup } from "@/components/ui/button-group";
+import { Button } from "@/components/ui/button";
+
+<ButtonGroup>
+  <Button variant={selected === "a" ? "default" : "outline"}>Option A</Button>
+  <Button variant={selected === "b" ? "default" : "outline"}>Option B</Button>
+</ButtonGroup>;
+
+// Use Select for dropdowns
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+
+<Select value={value} onValueChange={onChange}>
+  <SelectTrigger>
+    <SelectValue placeholder="Select..." />
+  </SelectTrigger>
+  <SelectContent>
+    <SelectItem value="option1">Option 1</SelectItem>
+  </SelectContent>
+</Select>;
+```
+
+### Important Notes
+
+- This project uses **shadcn/ui v4 with Base UI primitives** (NOT Radix)
+- Do NOT use `asChild` prop - Base UI doesn't support it
+- Check existing components before building custom ones
+- Prefer composition of existing components over custom implementations
 
 ---
 

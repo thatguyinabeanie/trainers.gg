@@ -9,6 +9,7 @@
 
 import { updateTag } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { getErrorMessage } from "@/lib/utils";
 import {
   createTournament as createTournamentMutation,
   updateTournament as updateTournamentMutation,
@@ -19,6 +20,14 @@ import {
   checkIn as checkInMutation,
   undoCheckIn as undoCheckInMutation,
   withdrawFromTournament as withdrawFromTournamentMutation,
+  // Round management mutations
+  createRound as createRoundMutation,
+  generateRoundPairings as generateRoundPairingsMutation,
+  startRound as startRoundMutation,
+  completeRound as completeRoundMutation,
+  recalculateStandings as recalculateStandingsMutation,
+  dropPlayer as dropPlayerMutation,
+  reportMatchResult as reportMatchResultMutation,
   getCurrentUserAlts,
 } from "@trainers/supabase";
 import type { Database } from "@trainers/supabase";
@@ -56,8 +65,6 @@ export async function createTournament(data: {
   swissRounds?: number;
   tournamentFormat?: TournamentFormat;
   roundTimeMinutes?: number;
-  rentalTeamPhotosEnabled?: boolean;
-  rentalTeamPhotosRequired?: boolean;
 }): Promise<ActionResult<{ id: number; slug: string }>> {
   try {
     const supabase = await createClient();
@@ -67,8 +74,7 @@ export async function createTournament(data: {
   } catch (error) {
     return {
       success: false,
-      error:
-        error instanceof Error ? error.message : "Failed to create tournament",
+      error: getErrorMessage(error, "Failed to create tournament"),
     };
   }
 }
@@ -105,8 +111,7 @@ export async function updateTournament(
   } catch (error) {
     return {
       success: false,
-      error:
-        error instanceof Error ? error.message : "Failed to update tournament",
+      error: getErrorMessage(error, "Failed to update tournament"),
     };
   }
 }
@@ -132,8 +137,7 @@ export async function publishTournament(
   } catch (error) {
     return {
       success: false,
-      error:
-        error instanceof Error ? error.message : "Failed to publish tournament",
+      error: getErrorMessage(error, "Failed to publish tournament"),
     };
   }
 }
@@ -159,8 +163,7 @@ export async function startTournament(
   } catch (error) {
     return {
       success: false,
-      error:
-        error instanceof Error ? error.message : "Failed to start tournament",
+      error: getErrorMessage(error, "Failed to start tournament"),
     };
   }
 }
@@ -186,10 +189,7 @@ export async function completeTournament(
   } catch (error) {
     return {
       success: false,
-      error:
-        error instanceof Error
-          ? error.message
-          : "Failed to complete tournament",
+      error: getErrorMessage(error, "Failed to complete tournament"),
     };
   }
 }
@@ -213,8 +213,7 @@ export async function archiveTournament(
   } catch (error) {
     return {
       success: false,
-      error:
-        error instanceof Error ? error.message : "Failed to archive tournament",
+      error: getErrorMessage(error, "Failed to archive tournament"),
     };
   }
 }
@@ -234,8 +233,7 @@ export async function deleteTournament(
   } catch (error) {
     return {
       success: false,
-      error:
-        error instanceof Error ? error.message : "Failed to delete tournament",
+      error: getErrorMessage(error, "Failed to delete tournament"),
     };
   }
 }
@@ -272,7 +270,7 @@ export async function registerForTournament(
   } catch (error) {
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Failed to register",
+      error: getErrorMessage(error, "Failed to register"),
     };
   }
 }
@@ -298,10 +296,7 @@ export async function cancelRegistration(
   } catch (error) {
     return {
       success: false,
-      error:
-        error instanceof Error
-          ? error.message
-          : "Failed to cancel registration",
+      error: getErrorMessage(error, "Failed to cancel registration"),
     };
   }
 }
@@ -320,7 +315,7 @@ export async function checkIn(
   } catch (error) {
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Failed to check in",
+      error: getErrorMessage(error, "Failed to check in"),
     };
   }
 }
@@ -339,7 +334,7 @@ export async function undoCheckIn(
   } catch (error) {
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Failed to undo check-in",
+      error: getErrorMessage(error, "Failed to undo check-in"),
     };
   }
 }
@@ -364,7 +359,7 @@ export async function withdrawFromTournament(
   } catch (error) {
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Failed to withdraw",
+      error: getErrorMessage(error, "Failed to withdraw"),
     };
   }
 }
@@ -393,8 +388,302 @@ export async function getCurrentUserAltsAction(): Promise<
   } catch (error) {
     return {
       success: false,
-      error:
-        error instanceof Error ? error.message : "Failed to fetch user alts",
+      error: getErrorMessage(error, "Failed to fetch user alts"),
+    };
+  }
+}
+
+// =============================================================================
+// Round Management Actions
+// =============================================================================
+
+/**
+ * Create a new round for a phase
+ */
+export async function createRound(
+  phaseId: number,
+  roundNumber: number,
+  tournamentId: number
+): Promise<ActionResult<{ roundId: number }>> {
+  try {
+    const supabase = await createClient();
+    const result = await createRoundMutation(supabase, phaseId, roundNumber);
+    updateTag(CacheTags.tournament(tournamentId));
+    return { success: true, data: { roundId: result.round.id } };
+  } catch (error) {
+    return {
+      success: false,
+      error: getErrorMessage(error, "Failed to create round"),
+    };
+  }
+}
+
+/**
+ * Generate pairings for a round using Swiss algorithm
+ */
+export async function generatePairings(
+  roundId: number,
+  tournamentId: number
+): Promise<
+  ActionResult<{
+    matchesCreated: number;
+    warnings: string[];
+  }>
+> {
+  try {
+    const supabase = await createClient();
+    const result = await generateRoundPairingsMutation(supabase, roundId);
+    updateTag(CacheTags.tournament(tournamentId));
+    return {
+      success: true,
+      data: {
+        matchesCreated: result.matchesCreated,
+        warnings: result.warnings,
+      },
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: getErrorMessage(error, "Failed to generate pairings"),
+    };
+  }
+}
+
+/**
+ * Start a round (set status to active)
+ */
+export async function startRound(
+  roundId: number,
+  tournamentId: number
+): Promise<ActionResult<{ success: true }>> {
+  try {
+    const supabase = await createClient();
+    await startRoundMutation(supabase, roundId);
+    updateTag(CacheTags.tournament(tournamentId));
+    return { success: true, data: { success: true } };
+  } catch (error) {
+    return {
+      success: false,
+      error: getErrorMessage(error, "Failed to start round"),
+    };
+  }
+}
+
+/**
+ * Complete a round (set status to completed, recalculate standings)
+ */
+export async function completeRound(
+  roundId: number,
+  tournamentId: number
+): Promise<ActionResult<{ success: true }>> {
+  try {
+    const supabase = await createClient();
+    await completeRoundMutation(supabase, roundId);
+    updateTag(CacheTags.tournament(tournamentId));
+    return { success: true, data: { success: true } };
+  } catch (error) {
+    return {
+      success: false,
+      error: getErrorMessage(error, "Failed to complete round"),
+    };
+  }
+}
+
+/**
+ * Recalculate tournament standings
+ */
+export async function recalculateStandings(
+  tournamentId: number
+): Promise<ActionResult<{ playersUpdated: number }>> {
+  try {
+    const supabase = await createClient();
+    const result = await recalculateStandingsMutation(supabase, tournamentId);
+    updateTag(CacheTags.tournament(tournamentId));
+    return { success: true, data: { playersUpdated: result.playersUpdated } };
+  } catch (error) {
+    return {
+      success: false,
+      error: getErrorMessage(error, "Failed to recalculate standings"),
+    };
+  }
+}
+
+/**
+ * Drop a player from the tournament
+ */
+export async function dropPlayer(
+  tournamentId: number,
+  altId: number
+): Promise<ActionResult<{ success: true }>> {
+  try {
+    const supabase = await createClient();
+    await dropPlayerMutation(supabase, tournamentId, altId);
+    updateTag(CacheTags.tournament(tournamentId));
+    return { success: true, data: { success: true } };
+  } catch (error) {
+    return {
+      success: false,
+      error: getErrorMessage(error, "Failed to drop player"),
+    };
+  }
+}
+
+/**
+ * Report match result
+ */
+export async function reportMatchResult(
+  matchId: number,
+  tournamentId: number,
+  winnerAltId: number,
+  player1GamesWon: number,
+  player2GamesWon: number
+): Promise<ActionResult<{ success: true }>> {
+  try {
+    const supabase = await createClient();
+    await reportMatchResultMutation(
+      supabase,
+      matchId,
+      winnerAltId,
+      player1GamesWon,
+      player2GamesWon
+    );
+    updateTag(CacheTags.tournament(tournamentId));
+    return { success: true, data: { success: true } };
+  } catch (error) {
+    return {
+      success: false,
+      error: getErrorMessage(error, "Failed to report match result"),
+    };
+  }
+}
+
+// =============================================================================
+// Phase Management Actions
+// =============================================================================
+
+/**
+ * Update a tournament phase
+ */
+export async function updatePhase(
+  phaseId: number,
+  tournamentId: number,
+  updates: {
+    name?: string;
+    bestOf?: 1 | 3 | 5;
+    roundTimeMinutes?: number;
+    checkInTimeMinutes?: number;
+    plannedRounds?: number;
+    cutRule?: "x-1" | "x-2" | "x-3" | "top-4" | "top-8" | "top-16" | "top-32";
+  }
+): Promise<ActionResult<{ success: true }>> {
+  try {
+    const supabase = await createClient();
+    const { updatePhase: updatePhaseMutation } =
+      await import("@trainers/supabase");
+    await updatePhaseMutation(supabase, phaseId, updates);
+    updateTag(CacheTags.tournament(tournamentId));
+    return { success: true, data: { success: true } };
+  } catch (error) {
+    return {
+      success: false,
+      error: getErrorMessage(error, "Failed to update phase"),
+    };
+  }
+}
+
+/**
+ * Create a new tournament phase
+ */
+export async function createTournamentPhase(
+  tournamentId: number,
+  phase: {
+    name: string;
+    phaseType: "swiss" | "single_elimination" | "double_elimination";
+    bestOf: 1 | 3 | 5;
+    roundTimeMinutes: number;
+    checkInTimeMinutes: number;
+    plannedRounds?: number;
+    cutRule?: "x-1" | "x-2" | "x-3" | "top-4" | "top-8" | "top-16" | "top-32";
+  }
+): Promise<ActionResult<{ phaseId: number }>> {
+  try {
+    const supabase = await createClient();
+    const { createPhase: createPhaseMutation } =
+      await import("@trainers/supabase");
+    const result = await createPhaseMutation(supabase, tournamentId, phase);
+    updateTag(CacheTags.tournament(tournamentId));
+    return { success: true, data: { phaseId: result.phase.id } };
+  } catch (error) {
+    return {
+      success: false,
+      error: getErrorMessage(error, "Failed to create phase"),
+    };
+  }
+}
+
+/**
+ * Delete a tournament phase
+ */
+export async function deleteTournamentPhase(
+  phaseId: number,
+  tournamentId: number
+): Promise<ActionResult<{ success: true }>> {
+  try {
+    const supabase = await createClient();
+    const { deletePhase: deletePhaseMutation } =
+      await import("@trainers/supabase");
+    await deletePhaseMutation(supabase, phaseId);
+    updateTag(CacheTags.tournament(tournamentId));
+    return { success: true, data: { success: true } };
+  } catch (error) {
+    return {
+      success: false,
+      error: getErrorMessage(error, "Failed to delete phase"),
+    };
+  }
+}
+
+/**
+ * Phase input for batch save
+ */
+interface PhaseInput {
+  id?: number;
+  name: string;
+  phaseType: "swiss" | "single_elimination" | "double_elimination";
+  bestOf: 1 | 3 | 5;
+  roundTimeMinutes: number;
+  checkInTimeMinutes: number;
+  plannedRounds?: number;
+  cutRule?: "x-1" | "x-2" | "x-3" | "top-4" | "top-8" | "top-16" | "top-32";
+}
+
+/**
+ * Save all tournament phases in a single batch operation
+ * Creates, updates, and deletes phases as needed
+ */
+export async function saveTournamentPhasesAction(
+  tournamentId: number,
+  phases: PhaseInput[]
+): Promise<
+  ActionResult<{ deleted: number; updated: number; created: number }>
+> {
+  try {
+    const supabase = await createClient();
+    const { saveTournamentPhases } = await import("@trainers/supabase");
+    const result = await saveTournamentPhases(supabase, tournamentId, phases);
+    updateTag(CacheTags.tournament(tournamentId));
+    return {
+      success: true,
+      data: {
+        deleted: result.deleted,
+        updated: result.updated,
+        created: result.created,
+      },
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: getErrorMessage(error, "Failed to save phases"),
     };
   }
 }

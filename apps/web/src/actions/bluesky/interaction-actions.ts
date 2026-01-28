@@ -9,6 +9,7 @@
 
 import { revalidatePath } from "next/cache";
 import { getCurrentUserDid } from "@/lib/atproto/agent";
+import { getErrorMessage } from "@/lib/utils";
 import {
   likePost as apiLikePost,
   unlikePost as apiUnlikePost,
@@ -60,12 +61,10 @@ export async function likeBlueskyPost(
     };
   } catch (error) {
     console.error("Failed to like post:", error);
-
-    if (error instanceof Error) {
-      return { success: false, error: error.message };
-    }
-
-    return { success: false, error: "Failed to like post. Please try again." };
+    return {
+      success: false,
+      error: getErrorMessage(error, "Failed to like post. Please try again."),
+    };
   }
 }
 
@@ -92,14 +91,9 @@ export async function unlikeBlueskyPost(
     return { success: true, data: undefined };
   } catch (error) {
     console.error("Failed to unlike post:", error);
-
-    if (error instanceof Error) {
-      return { success: false, error: error.message };
-    }
-
     return {
       success: false,
-      error: "Failed to unlike post. Please try again.",
+      error: getErrorMessage(error, "Failed to unlike post. Please try again."),
     };
   }
 }
@@ -136,12 +130,10 @@ export async function repostBlueskyPost(
     };
   } catch (error) {
     console.error("Failed to repost:", error);
-
-    if (error instanceof Error) {
-      return { success: false, error: error.message };
-    }
-
-    return { success: false, error: "Failed to repost. Please try again." };
+    return {
+      success: false,
+      error: getErrorMessage(error, "Failed to repost. Please try again."),
+    };
   }
 }
 
@@ -171,12 +163,10 @@ export async function unrepostBlueskyPost(
     return { success: true, data: undefined };
   } catch (error) {
     console.error("Failed to unrepost:", error);
-
-    if (error instanceof Error) {
-      return { success: false, error: error.message };
-    }
-
-    return { success: false, error: "Failed to unrepost. Please try again." };
+    return {
+      success: false,
+      error: getErrorMessage(error, "Failed to unrepost. Please try again."),
+    };
   }
 }
 

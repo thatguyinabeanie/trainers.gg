@@ -8,6 +8,7 @@
 "use server";
 
 import { getCurrentUserDid } from "@/lib/atproto/agent";
+import { getErrorMessage } from "@/lib/utils";
 import {
   getTimeline,
   getPokemonFeed,
@@ -46,14 +47,12 @@ export async function getTimelineAction(
     return { success: true, data: result };
   } catch (error) {
     console.error("Failed to fetch timeline:", error);
-
-    if (error instanceof Error) {
-      return { success: false, error: error.message };
-    }
-
     return {
       success: false,
-      error: "Failed to fetch timeline. Please try again.",
+      error: getErrorMessage(
+        error,
+        "Failed to fetch timeline. Please try again."
+      ),
     };
   }
 }
@@ -79,14 +78,12 @@ export async function getPokemonFeedAction(
     return { success: true, data: result };
   } catch (error) {
     console.error("Failed to fetch Pokemon feed:", error);
-
-    if (error instanceof Error) {
-      return { success: false, error: error.message };
-    }
-
     return {
       success: false,
-      error: "Failed to fetch Pokemon feed. Please try again.",
+      error: getErrorMessage(
+        error,
+        "Failed to fetch Pokemon feed. Please try again."
+      ),
     };
   }
 }
@@ -104,14 +101,12 @@ export async function getAuthorFeedAction(
     return { success: true, data: result };
   } catch (error) {
     console.error("Failed to fetch author feed:", error);
-
-    if (error instanceof Error) {
-      return { success: false, error: error.message };
-    }
-
     return {
       success: false,
-      error: "Failed to fetch author feed. Please try again.",
+      error: getErrorMessage(
+        error,
+        "Failed to fetch author feed. Please try again."
+      ),
     };
   }
 }
@@ -129,14 +124,9 @@ export async function getActorLikesAction(
     return { success: true, data: result };
   } catch (error) {
     console.error("Failed to fetch actor likes:", error);
-
-    if (error instanceof Error) {
-      return { success: false, error: error.message };
-    }
-
     return {
       success: false,
-      error: "Failed to fetch likes. Please try again.",
+      error: getErrorMessage(error, "Failed to fetch likes. Please try again."),
     };
   }
 }

@@ -1,6 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import { toast } from "sonner";
 import {
   Dialog,
@@ -19,6 +22,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Loader2, Shield } from "lucide-react";
 import { changeStaffRoleAction } from "@/actions/staff";
@@ -57,6 +68,12 @@ function getInitials(staff: StaffWithRole): string {
   return "??";
 }
 
+const changeRoleSchema = z.object({
+  groupId: z.string().min(1, "Please select a role"),
+});
+
+type ChangeRoleFormData = z.infer<typeof changeRoleSchema>;
+
 export function ChangeRoleDialog({
   open,
   onOpenChange,
@@ -66,27 +83,31 @@ export function ChangeRoleDialog({
   groups,
   onSuccess,
 }: ChangeRoleDialogProps) {
-  const [selectedGroupId, setSelectedGroupId] = useState<string>("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const form = useForm<ChangeRoleFormData>({
+    resolver: zodResolver(changeRoleSchema),
+    defaultValues: {
+      groupId: "",
+    },
+  });
 
-  // Set initial value to current group
+  const { isSubmitting } = form.formState;
+  const selectedGroupId = form.watch("groupId");
+
+  // Set initial value to current group when dialog opens
   useEffect(() => {
     if (open && staff.group) {
-      setSelectedGroupId(String(staff.group.id));
+      form.reset({ groupId: String(staff.group.id) });
     } else if (!open) {
-      setSelectedGroupId("");
+      form.reset({ groupId: "" });
     }
-  }, [open, staff.group]);
+  }, [open, staff.group, form]);
 
-  const handleSubmit = async () => {
-    if (!selectedGroupId) return;
-
-    setIsSubmitting(true);
+  const onSubmit = async (data: ChangeRoleFormData) => {
     try {
       const result = await changeStaffRoleAction(
         organizationId,
         staff.user_id,
-        parseInt(selectedGroupId, 10),
+        parseInt(data.groupId, 10),
         orgSlug
       );
 
@@ -99,16 +120,12 @@ export function ChangeRoleDialog({
       }
     } catch {
       toast.error("An unexpected error occurred");
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
   const hasChanged = staff.group
     ? selectedGroupId !== String(staff.group.id)
     : !!selectedGroupId;
-
-  const canSubmit = selectedGroupId && hasChanged && !isSubmitting;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -120,71 +137,81 @@ export function ChangeRoleDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4 py-4">
-          {/* Staff Member Info */}
-          <div className="space-y-2">
-            <Label>Staff Member</Label>
-            <div className="bg-muted flex items-center gap-3 rounded-lg p-3">
-              <Avatar className="h-8 w-8">
-                {staff.user?.image && (
-                  <AvatarImage
-                    src={staff.user.image}
-                    alt={getDisplayName(staff)}
-                  />
-                )}
-                <AvatarFallback>{getInitials(staff)}</AvatarFallback>
-              </Avatar>
-              <div>
-                <p className="font-medium">{getDisplayName(staff)}</p>
-                {staff.user?.username && (
-                  <p className="text-muted-foreground text-sm">
-                    @{staff.user.username}
-                  </p>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* Role Selection */}
-          <div className="space-y-2">
-            <Label htmlFor="role">New Role</Label>
-            <Select
-              value={selectedGroupId}
-              onValueChange={(value) => setSelectedGroupId(value ?? "")}
-            >
-              <SelectTrigger id="role">
-                <SelectValue placeholder="Select a role..." />
-              </SelectTrigger>
-              <SelectContent>
-                {groups.map((group) => (
-                  <SelectItem key={group.id} value={String(group.id)}>
-                    {group.name}
-                    {group.role?.description && (
-                      <span className="text-muted-foreground ml-2 text-xs">
-                        - {group.role.description}
-                      </span>
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <div className="py-4">
+              {/* Staff Member Info */}
+              <div className="space-y-2">
+                <Label>Staff Member</Label>
+                <div className="bg-muted flex items-center gap-3 rounded-lg p-3">
+                  <Avatar className="h-8 w-8">
+                    {staff.user?.image && (
+                      <AvatarImage
+                        src={staff.user.image}
+                        alt={getDisplayName(staff)}
+                      />
                     )}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
+                    <AvatarFallback>{getInitials(staff)}</AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <p className="font-medium">{getDisplayName(staff)}</p>
+                    {staff.user?.username && (
+                      <p className="text-muted-foreground text-sm">
+                        @{staff.user.username}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
 
-        <DialogFooter>
-          <Button
-            onClick={handleSubmit}
-            disabled={!canSubmit}
-            className="gap-2"
-          >
-            {isSubmitting ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Shield className="h-4 w-4" />
-            )}
-            Update Role
-          </Button>
-        </DialogFooter>
+              {/* Role Selection */}
+              <FormField
+                control={form.control}
+                name="groupId"
+                render={({ field }) => (
+                  <FormItem className="mt-4">
+                    <FormLabel>New Role</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a role..." />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {groups.map((group) => (
+                          <SelectItem key={group.id} value={String(group.id)}>
+                            {group.name}
+                            {group.role?.description && (
+                              <span className="text-muted-foreground ml-2 text-xs">
+                                - {group.role.description}
+                              </span>
+                            )}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <DialogFooter>
+              <Button
+                type="submit"
+                disabled={!hasChanged || isSubmitting}
+                className="gap-2"
+              >
+                {isSubmitting ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Shield className="h-4 w-4" />
+                )}
+                Update Role
+              </Button>
+            </DialogFooter>
+          </form>
+        </Form>
       </DialogContent>
     </Dialog>
   );

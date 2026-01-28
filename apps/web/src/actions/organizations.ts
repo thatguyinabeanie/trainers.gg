@@ -9,6 +9,7 @@
 
 import { updateTag } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { getErrorMessage } from "@/lib/utils";
 import {
   createOrganization as createOrganizationMutation,
   updateOrganization as updateOrganizationMutation,
@@ -56,10 +57,7 @@ export async function createOrganization(data: {
   } catch (error) {
     return {
       success: false,
-      error:
-        error instanceof Error
-          ? error.message
-          : "Failed to create organization",
+      error: getErrorMessage(error, "Failed to create organization"),
     };
   }
 }
@@ -97,10 +95,7 @@ export async function updateOrganization(
   } catch (error) {
     return {
       success: false,
-      error:
-        error instanceof Error
-          ? error.message
-          : "Failed to update organization",
+      error: getErrorMessage(error, "Failed to update organization"),
     };
   }
 }
@@ -128,8 +123,7 @@ export async function inviteToOrganization(
   } catch (error) {
     return {
       success: false,
-      error:
-        error instanceof Error ? error.message : "Failed to send invitation",
+      error: getErrorMessage(error, "Failed to send invitation"),
     };
   }
 }
@@ -154,8 +148,7 @@ export async function acceptOrganizationInvitation(
   } catch (error) {
     return {
       success: false,
-      error:
-        error instanceof Error ? error.message : "Failed to accept invitation",
+      error: getErrorMessage(error, "Failed to accept invitation"),
     };
   }
 }
@@ -173,8 +166,7 @@ export async function declineOrganizationInvitation(
   } catch (error) {
     return {
       success: false,
-      error:
-        error instanceof Error ? error.message : "Failed to decline invitation",
+      error: getErrorMessage(error, "Failed to decline invitation"),
     };
   }
 }
@@ -200,8 +192,7 @@ export async function leaveOrganization(
   } catch (error) {
     return {
       success: false,
-      error:
-        error instanceof Error ? error.message : "Failed to leave organization",
+      error: getErrorMessage(error, "Failed to leave organization"),
     };
   }
 }
@@ -228,7 +219,7 @@ export async function removeStaff(
   } catch (error) {
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Failed to remove staff",
+      error: getErrorMessage(error, "Failed to remove staff"),
     };
   }
 }

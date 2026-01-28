@@ -30,19 +30,21 @@ import {
   type GeneratedTournamentRegistration,
 } from "./tournaments.js";
 
+export type MatchStatus = "completed" | "active" | "pending";
+
 export interface GeneratedMatch {
   id: number;
   phaseId: number;
   round: number;
   tableNumber: number;
-  status: "completed";
+  status: MatchStatus;
   alt1Id: number;
   alt2Id: number;
-  winnerAltId: number;
+  winnerAltId: number | null;
   alt1Score: number;
   alt2Score: number;
-  startedAt: Date;
-  completedAt: Date;
+  startedAt: Date | null;
+  completedAt: Date | null;
 }
 
 export interface GeneratedMatchGame {
@@ -231,6 +233,12 @@ export function generateMatches(
   let gameId = 1;
 
   for (const tournament of tournaments) {
+    // Skip upcoming tournaments - no matches yet
+    if (tournament.status === "upcoming") {
+      continue;
+    }
+
+    const isActive = tournament.status === "active";
     const tournamentPhases = phases.filter(
       (p) => p.tournamentId === tournament.id
     );
@@ -256,13 +264,27 @@ export function generateMatches(
     for (const phase of tournamentPhases.sort(
       (a, b) => a.phaseOrder - b.phaseOrder
     )) {
+      // For active tournaments, only generate matches for first phase (Swiss)
+      // and only up to current_round (which is 4 for our active tournaments)
+      if (isActive && phase.phaseOrder > 1) {
+        continue; // Skip top cut for active tournaments
+      }
+
       const phaseStartTime = tournament.startDate;
 
       if (phase.phaseType === "swiss") {
         // Generate Swiss rounds
         const numRounds = phase.plannedRounds || 5;
 
-        for (let round = 1; round <= numRounds; round++) {
+        // For active tournaments, we're in round 4 (currentRound)
+        // Rounds 1-3 are completed, round 4 is in progress
+        const activeRound = isActive ? Math.min(4, numRounds) : numRounds;
+        const completedRounds = isActive ? activeRound - 1 : numRounds;
+
+        for (let round = 1; round <= activeRound; round++) {
+          const isCompletedRound = round <= completedRounds;
+          const isActiveRound = isActive && round === activeRound;
+
           const roundSeed = `swiss-${phase.id}-round-${round}`;
           const pairings = generateSwissPairings(
             Array.from(swissPlayers.values()),
@@ -287,82 +309,126 @@ export function generateMatches(
                 (20 + hash(`duration-${matchId}`) * 30) * 60 * 1000
             );
 
+            // Determine match status for active round
+            let matchStatus: MatchStatus = "completed";
+            let matchWinner: number | null = outcome.winnerId;
+            let matchAlt1Score = outcome.alt1Score;
+            let matchAlt2Score = outcome.alt2Score;
+            let matchStartedAt: Date | null = matchStartTime;
+            let matchCompletedAt: Date | null = matchEndTime;
+
+            if (isActiveRound) {
+              // Active round: 60% completed, 25% in progress, 15% pending
+              // Use more varied seed including alt IDs for better distribution
+              const matchProgress = hash(
+                `progress-${phase.id}-${round}-${alt1Id}-${alt2Id}`
+              );
+
+              if (matchProgress < 0.6) {
+                matchStatus = "completed";
+              } else if (matchProgress < 0.85) {
+                matchStatus = "active";
+                // In progress - partial scores, no winner yet
+                matchAlt1Score = Math.floor(hash(`partial1-${matchId}`) * 2);
+                matchAlt2Score = Math.floor(hash(`partial2-${matchId}`) * 2);
+                matchWinner = null;
+                matchCompletedAt = null;
+              } else {
+                matchStatus = "pending";
+                matchAlt1Score = 0;
+                matchAlt2Score = 0;
+                matchWinner = null;
+                matchStartedAt = null;
+                matchCompletedAt = null;
+              }
+            }
+
             matches.push({
               id: matchId,
               phaseId: phase.id,
               round,
               tableNumber,
-              status: "completed",
+              status: matchStatus,
               alt1Id,
               alt2Id,
-              winnerAltId: outcome.winnerId,
-              alt1Score: outcome.alt1Score,
-              alt2Score: outcome.alt2Score,
-              startedAt: matchStartTime,
-              completedAt: matchEndTime,
+              winnerAltId: matchWinner,
+              alt1Score: matchAlt1Score,
+              alt2Score: matchAlt2Score,
+              startedAt: matchStartedAt,
+              completedAt: matchCompletedAt,
             });
 
-            // Generate individual games
-            const totalGames = outcome.alt1Score + outcome.alt2Score;
-            let alt1Wins = 0;
-            let alt2Wins = 0;
-            const gameResults: number[] = [];
+            // Only update standings and generate games for completed matches
+            if (matchStatus === "completed" && matchWinner) {
+              // Update Swiss standings
+              const player1 = swissPlayers.get(alt1Id)!;
+              const player2 = swissPlayers.get(alt2Id)!;
+              if (matchWinner === alt1Id) {
+                player1.wins++;
+                player2.losses++;
+              } else {
+                player2.wins++;
+                player1.losses++;
+              }
+              player1.opponents.add(alt2Id);
+              player2.opponents.add(alt1Id);
 
-            // Determine game order
-            while (
-              alt1Wins < outcome.alt1Score ||
-              alt2Wins < outcome.alt2Score
-            ) {
-              if (
-                alt1Wins < outcome.alt1Score &&
-                alt2Wins < outcome.alt2Score
-              ) {
-                // Either could win this game - use deterministic choice
-                const gameWinnerSeed = `game-${matchId}-${gameResults.length}`;
-                if (hash(gameWinnerSeed) < 0.5) {
+              // Generate individual games
+              const totalGames = matchAlt1Score + matchAlt2Score;
+              let alt1Wins = 0;
+              let alt2Wins = 0;
+              const gameResults: number[] = [];
+
+              // Determine game order
+              while (alt1Wins < matchAlt1Score || alt2Wins < matchAlt2Score) {
+                if (alt1Wins < matchAlt1Score && alt2Wins < matchAlt2Score) {
+                  // Either could win this game - use deterministic choice
+                  const gameWinnerSeed = `game-${matchId}-${gameResults.length}`;
+                  if (hash(gameWinnerSeed) < 0.5) {
+                    gameResults.push(alt1Id);
+                    alt1Wins++;
+                  } else {
+                    gameResults.push(alt2Id);
+                    alt2Wins++;
+                  }
+                } else if (alt1Wins < matchAlt1Score) {
                   gameResults.push(alt1Id);
                   alt1Wins++;
                 } else {
                   gameResults.push(alt2Id);
                   alt2Wins++;
                 }
-              } else if (alt1Wins < outcome.alt1Score) {
-                gameResults.push(alt1Id);
-                alt1Wins++;
-              } else {
-                gameResults.push(alt2Id);
-                alt2Wins++;
               }
+
+              for (let g = 0; g < gameResults.length; g++) {
+                const gameStartTime = new Date(
+                  matchStartTime.getTime() + g * 10 * 60 * 1000
+                );
+                games.push({
+                  id: gameId++,
+                  matchId,
+                  gameNumber: g + 1,
+                  winnerAltId: gameResults[g]!,
+                  startedAt: gameStartTime,
+                  completedAt: new Date(
+                    gameStartTime.getTime() + 8 * 60 * 1000
+                  ),
+                });
+              }
+            } else if (matchStatus === "completed") {
+              // Match completed but need to update standings
+              const player1 = swissPlayers.get(alt1Id)!;
+              const player2 = swissPlayers.get(alt2Id)!;
+              if (outcome.winnerId === alt1Id) {
+                player1.wins++;
+                player2.losses++;
+              } else {
+                player2.wins++;
+                player1.losses++;
+              }
+              player1.opponents.add(alt2Id);
+              player2.opponents.add(alt1Id);
             }
-
-            for (let g = 0; g < gameResults.length; g++) {
-              const gameStartTime = new Date(
-                matchStartTime.getTime() + g * 10 * 60 * 1000
-              );
-              games.push({
-                id: gameId++,
-                matchId,
-                gameNumber: g + 1,
-                winnerAltId: gameResults[g]!,
-                startedAt: gameStartTime,
-                completedAt: new Date(gameStartTime.getTime() + 8 * 60 * 1000),
-              });
-            }
-
-            // Update standings
-            const player1 = swissPlayers.get(alt1Id)!;
-            const player2 = swissPlayers.get(alt2Id)!;
-
-            if (outcome.winnerId === alt1Id) {
-              player1.wins++;
-              player2.losses++;
-            } else {
-              player2.wins++;
-              player1.losses++;
-            }
-
-            player1.opponents.add(alt2Id);
-            player2.opponents.add(alt1Id);
 
             matchId++;
             tableNumber++;

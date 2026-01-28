@@ -308,6 +308,24 @@ export async function getTournamentByOrgAndSlug(
 }
 
 /**
+ * Check if a tournament slug is available (globally unique)
+ * Returns true if the slug is available, false if taken
+ */
+export async function checkTournamentSlugAvailable(
+  supabase: TypedClient,
+  slug: string
+): Promise<boolean> {
+  const { data, error } = await supabase
+    .from("tournaments")
+    .select("id")
+    .eq("slug", slug)
+    .maybeSingle();
+
+  if (error) throw error;
+  return data === null;
+}
+
+/**
  * Get tournament by slug (globally unique)
  * Used for /tournaments/{slug} public view
  */
@@ -550,6 +568,141 @@ export async function getPlayerTournamentStats(
 
   if (error) return null;
   return data;
+}
+
+/**
+ * Get all player stats for a tournament (for standings display)
+ * Returns players sorted by current_standing (rank)
+ */
+export async function getTournamentPlayerStats(
+  supabase: TypedClient,
+  tournamentId: number,
+  options: { includeDropped?: boolean } = {}
+) {
+  const { includeDropped = false } = options;
+
+  let query = supabase
+    .from("tournament_player_stats")
+    .select(
+      `
+      *,
+      alt:alts(id, username, display_name, avatar_url)
+    `
+    )
+    .eq("tournament_id", tournamentId)
+    .order("current_standing", { ascending: true, nullsFirst: false });
+
+  if (!includeDropped) {
+    query = query.or("is_dropped.is.null,is_dropped.eq.false");
+  }
+
+  const { data, error } = await query;
+
+  if (error) throw error;
+  return data ?? [];
+}
+
+/**
+ * Get rounds with match counts for a tournament phase
+ * Useful for round selection dropdowns and status display
+ */
+export async function getPhaseRoundsWithStats(
+  supabase: TypedClient,
+  phaseId: number
+) {
+  const { data: rounds, error } = await supabase
+    .from("tournament_rounds")
+    .select("*")
+    .eq("phase_id", phaseId)
+    .order("round_number", { ascending: true });
+
+  if (error) throw error;
+
+  // Get match counts for each round
+  const roundsWithStats = await Promise.all(
+    (rounds ?? []).map(async (round) => {
+      const { data: matches } = await supabase
+        .from("tournament_matches")
+        .select("id, status")
+        .eq("round_id", round.id);
+
+      const matchList = matches ?? [];
+      const completed = matchList.filter(
+        (m) => m.status === "completed"
+      ).length;
+      const inProgress = matchList.filter((m) => m.status === "active").length;
+      const pending = matchList.filter((m) => m.status === "pending").length;
+
+      return {
+        ...round,
+        matchCount: matchList.length,
+        completedCount: completed,
+        inProgressCount: inProgress,
+        pendingCount: pending,
+      };
+    })
+  );
+
+  return roundsWithStats;
+}
+
+/**
+ * Get matches for a round with player stats
+ * Includes current record for each player
+ */
+export async function getRoundMatchesWithStats(
+  supabase: TypedClient,
+  roundId: number,
+  tournamentId: number
+) {
+  const { data: matches, error } = await supabase
+    .from("tournament_matches")
+    .select(
+      `
+      *,
+      player1:alts!tournament_matches_alt1_id_fkey(id, username, display_name, avatar_url),
+      player2:alts!tournament_matches_alt2_id_fkey(id, username, display_name, avatar_url),
+      winner:alts!tournament_matches_winner_alt_id_fkey(id, username, display_name)
+    `
+    )
+    .eq("round_id", roundId)
+    .order("table_number", { ascending: true });
+
+  if (error) throw error;
+
+  // Get player stats for record display
+  const altIds = new Set<number>();
+  for (const match of matches ?? []) {
+    if (match.alt1_id) altIds.add(match.alt1_id);
+    if (match.alt2_id) altIds.add(match.alt2_id);
+  }
+
+  const { data: stats } = await supabase
+    .from("tournament_player_stats")
+    .select("alt_id, match_wins, match_losses, match_points")
+    .eq("tournament_id", tournamentId)
+    .in("alt_id", Array.from(altIds));
+
+  const statsMap = new Map<
+    number,
+    { wins: number; losses: number; points: number }
+  >();
+  for (const stat of stats ?? []) {
+    statsMap.set(stat.alt_id, {
+      wins: stat.match_wins ?? 0,
+      losses: stat.match_losses ?? 0,
+      points: stat.match_points ?? 0,
+    });
+  }
+
+  // Enrich matches with player records
+  const matchesWithStats = (matches ?? []).map((match) => ({
+    ...match,
+    player1Stats: match.alt1_id ? (statsMap.get(match.alt1_id) ?? null) : null,
+    player2Stats: match.alt2_id ? (statsMap.get(match.alt2_id) ?? null) : null,
+  }));
+
+  return matchesWithStats;
 }
 
 /**

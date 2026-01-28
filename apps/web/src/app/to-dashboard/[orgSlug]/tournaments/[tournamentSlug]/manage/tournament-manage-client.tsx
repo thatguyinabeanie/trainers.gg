@@ -3,7 +3,11 @@
 import { useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useSupabaseQuery } from "@/lib/supabase";
-import { getTournamentBySlug, getOrganizationBySlug } from "@trainers/supabase";
+import {
+  getTournamentBySlug,
+  getOrganizationBySlug,
+  getTournamentPhases,
+} from "@trainers/supabase";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -81,6 +85,19 @@ export function TournamentManageClient({
     tournamentQueryFn,
     [tournamentSlug]
   );
+
+  // Fetch tournament phases (depends on tournament being loaded)
+  const phasesQueryFn = useCallback(
+    (supabase: Parameters<typeof getTournamentPhases>[0]) =>
+      tournament
+        ? getTournamentPhases(supabase, tournament.id)
+        : Promise.resolve([]),
+    [tournament]
+  );
+
+  const { data: phases = [] } = useSupabaseQuery(phasesQueryFn, [
+    tournament?.id,
+  ]);
 
   // Loading state
   if (userLoading || orgLoading || tournamentLoading) {
@@ -197,11 +214,13 @@ export function TournamentManageClient({
   };
 
   const tournamentForPairings = {
+    id: tournament.id,
     status: tournament.status ?? "draft",
-    currentRound: tournament.current_round ?? undefined,
+    currentPhaseId: tournament.current_phase_id ?? null,
   };
 
   const tournamentForStandings = {
+    id: tournament.id,
     status: tournament.status ?? "draft",
   };
 
@@ -297,7 +316,10 @@ export function TournamentManageClient({
         </TabsContent>
 
         <TabsContent value="settings">
-          <TournamentSettings tournament={tournamentForSettings} />
+          <TournamentSettings
+            tournament={tournamentForSettings}
+            phases={phases}
+          />
         </TabsContent>
       </Tabs>
     </div>

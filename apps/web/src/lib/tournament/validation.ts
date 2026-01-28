@@ -47,7 +47,7 @@ export interface MatchResultData {
   matchPoints2: number;
   gameWins1: number;
   gameWins2: number;
-  matchFormat: "best_of_1" | "best_of_3";
+  bestOf: 1 | 3 | 5;
   isBye: boolean;
   winnerId: string | null;
 }
@@ -356,24 +356,31 @@ export function validateMatchResult(data: MatchResultData): ValidationResult {
   // Game count validation based on format
   if (!data.isBye) {
     const totalGames = data.gameWins1 + data.gameWins2;
+    const gamesToWin = Math.ceil(data.bestOf / 2);
 
-    if (data.matchFormat === "best_of_1") {
+    if (data.bestOf === 1) {
       if (totalGames !== 1) {
         errors.push("Best of 1 matches must have exactly 1 game");
       }
-    } else if (data.matchFormat === "best_of_3") {
-      if (totalGames < 2 || totalGames > 3) {
+    } else {
+      // Best of 3 or Best of 5
+      const minGames = gamesToWin;
+      const maxGames = data.bestOf;
+
+      if (totalGames < minGames || totalGames > maxGames) {
         errors.push(
-          "Best of 3 matches must have 2 or 3 games (can end 2-0 or 2-1)"
+          `Best of ${data.bestOf} matches must have ${minGames} to ${maxGames} games`
         );
       }
 
-      // Winner must have won at least 2 games in best of 3
+      // Winner must have won required number of games
       const winner = data.matchPoints1 > data.matchPoints2 ? 1 : 2;
       const winnerGames = winner === 1 ? data.gameWins1 : data.gameWins2;
 
-      if (winnerGames < 2) {
-        errors.push("Best of 3 winner must win at least 2 games");
+      if (winnerGames < gamesToWin) {
+        errors.push(
+          `Best of ${data.bestOf} winner must win at least ${gamesToWin} games`
+        );
       }
 
       // Ensure loser didn't win more games than winner

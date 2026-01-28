@@ -34,7 +34,6 @@ interface TournamentRegistrationsProps {
   tournament: {
     id: number;
     status: string;
-    rental_team_photos_enabled?: boolean | null;
   };
 }
 
@@ -189,7 +188,6 @@ export function TournamentRegistrations({
                   <TableHead>Team Name</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Registered</TableHead>
-                  <TableHead>Team Photo</TableHead>
                   <TableHead className="w-[50px]"></TableHead>
                 </TableRow>
               </TableHeader>
@@ -236,28 +234,11 @@ export function TournamentRegistrations({
                       {formatDate(registration.registered_at)}
                     </TableCell>
                     <TableCell>
-                      {tournament.rental_team_photos_enabled ? (
-                        registration.rental_team_photo_verified ? (
-                          <Badge className="bg-green-100 text-green-800">
-                            Verified
-                          </Badge>
-                        ) : registration.rental_team_photo_url ? (
-                          <Badge className="bg-yellow-100 text-yellow-800">
-                            Pending
-                          </Badge>
-                        ) : (
-                          <Badge variant="outline">Not uploaded</Badge>
-                        )
-                      ) : (
-                        <span className="text-muted-foreground">N/A</span>
-                      )}
-                    </TableCell>
-                    <TableCell>
                       <DropdownMenu>
-                        <DropdownMenuTrigger>
-                          <Button variant="ghost" size="sm">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
+                        <DropdownMenuTrigger
+                          render={<Button variant="ghost" size="sm" />}
+                        >
+                          <MoreHorizontal className="h-4 w-4" />
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           <DropdownMenuItem>

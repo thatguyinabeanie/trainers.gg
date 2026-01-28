@@ -37,7 +37,7 @@ export type TournamentStatus =
   | "completed"
   | "cancelled";
 
-export type PhaseStatus = "pending" | "in_progress" | "completed";
+export type PhaseStatus = "pending" | "active" | "completed";
 
 export interface GeneratedTournament {
   id: number;
@@ -69,13 +69,12 @@ export interface GeneratedTournamentPhase {
   phaseOrder: number;
   phaseType: PhaseType;
   status: PhaseStatus;
-  matchFormat: string;
+  bestOf: number; // 1, 3, or 5
   roundTimeMinutes: number;
   plannedRounds: number | null;
   currentRound: number;
-  advancementCount: number | null;
-  bracketSize: number | null;
-  totalRounds: number | null;
+  cutRule: string | null; // "x-1", "x-2", "x-3", "top-4", "top-8", "top-16", "top-32"
+  checkInTimeMinutes: number;
 }
 
 export interface GeneratedTournamentRegistration {
@@ -241,8 +240,8 @@ function getPhaseStatus(
     return "completed";
   }
   if (tournamentStatus === "active") {
-    // For simplicity, first phase is in_progress, rest are pending
-    return phaseOrder === 1 ? "in_progress" : "pending";
+    // For simplicity, first phase is active, rest are pending
+    return phaseOrder === 1 ? "active" : "pending";
   }
   return "pending";
 }
@@ -287,13 +286,25 @@ export function generateTournaments(
       const mainSeed = `tournament-${org.slug}-week${weekNumber}-main`;
       const mainSize = getTournamentSize(mainSeed, true, isFlagship);
       const mainFormat = getTournamentFormat(mainSeed, true, isFlagship);
-      const mainStartDate = getDayInWeek(weekStart, org.mainDay, 14); // 2 PM
-      const mainEndDate = new Date(
-        mainStartDate.getTime() + 6 * 60 * 60 * 1000
-      ); // 6 hours
-      const mainRegDeadline = new Date(
-        mainStartDate.getTime() - 60 * 60 * 1000
-      ); // 1 hour before
+
+      // For flagships with active: true, set dates to make the tournament currently in progress
+      const forceActive =
+        flagshipConfig && "active" in flagshipConfig && flagshipConfig.active;
+      let mainStartDate: Date;
+      let mainEndDate: Date;
+      let mainRegDeadline: Date;
+
+      if (forceActive) {
+        // Start 3 hours ago, end 5 hours from now (tournament is in round 4 of 8)
+        const now = new Date();
+        mainStartDate = new Date(now.getTime() - 3 * 60 * 60 * 1000);
+        mainEndDate = new Date(now.getTime() + 5 * 60 * 60 * 1000);
+        mainRegDeadline = new Date(mainStartDate.getTime() - 60 * 60 * 1000);
+      } else {
+        mainStartDate = getDayInWeek(weekStart, org.mainDay, 14); // 2 PM
+        mainEndDate = new Date(mainStartDate.getTime() + 6 * 60 * 60 * 1000); // 6 hours
+        mainRegDeadline = new Date(mainStartDate.getTime() - 60 * 60 * 1000); // 1 hour before
+      }
 
       tournaments.push({
         id: tournamentId++,
@@ -419,17 +430,19 @@ export function generateTournamentPhases(
           phaseOrder: 1,
           phaseType: "swiss",
           status: swissPhaseStatus,
-          matchFormat: "Best of 3",
+          bestOf: 3,
           roundTimeMinutes: tournament.roundTimeMinutes,
           plannedRounds: tournament.swissRounds,
           currentRound: swissCurrentRound,
-          advancementCount: tournament.topCutSize,
-          bracketSize: null,
-          totalRounds: null,
+          cutRule: null, // Swiss phase doesn't have cut rule
+          checkInTimeMinutes: 5,
         });
 
         // Phase 2: Top Cut (single elimination)
-        const topCutRounds = Math.ceil(Math.log2(tournament.topCutSize || 8));
+        // Determine cut rule based on top cut size
+        const topCutSize = tournament.topCutSize || 8;
+        const cutRule = `top-${topCutSize}`;
+        const topCutRounds = Math.ceil(Math.log2(topCutSize));
         const topCutPhaseStatus = getPhaseStatus(tournament.status, 2);
         const topCutCurrentRound = isCompleted ? topCutRounds : 0;
 
@@ -440,13 +453,12 @@ export function generateTournamentPhases(
           phaseOrder: 2,
           phaseType: "single_elimination",
           status: topCutPhaseStatus,
-          matchFormat: "Best of 3",
+          bestOf: 3,
           roundTimeMinutes: tournament.roundTimeMinutes,
           plannedRounds: null,
           currentRound: topCutCurrentRound,
-          advancementCount: null,
-          bracketSize: tournament.topCutSize,
-          totalRounds: topCutRounds,
+          cutRule: cutRule, // e.g., "top-8"
+          checkInTimeMinutes: 5,
         });
         break;
       }
@@ -462,13 +474,12 @@ export function generateTournamentPhases(
           phaseOrder: 1,
           phaseType: "swiss",
           status: phaseStatus,
-          matchFormat: "Best of 3",
+          bestOf: 3,
           roundTimeMinutes: tournament.roundTimeMinutes,
           plannedRounds: tournament.swissRounds,
           currentRound: currentRound,
-          advancementCount: null,
-          bracketSize: null,
-          totalRounds: null,
+          cutRule: null, // Standalone Swiss has no cut
+          checkInTimeMinutes: 5,
         });
         break;
       }
@@ -485,13 +496,12 @@ export function generateTournamentPhases(
           phaseOrder: 1,
           phaseType: "single_elimination",
           status: phaseStatus,
-          matchFormat: "Best of 3",
+          bestOf: 3,
           roundTimeMinutes: tournament.roundTimeMinutes,
           plannedRounds: null,
           currentRound: currentRound,
-          advancementCount: null,
-          bracketSize: tournament.maxParticipants,
-          totalRounds: rounds,
+          cutRule: null, // Standalone elimination has no cut rule
+          checkInTimeMinutes: 5,
         });
         break;
       }
@@ -510,13 +520,12 @@ export function generateTournamentPhases(
           phaseOrder: 1,
           phaseType: "double_elimination",
           status: phaseStatus,
-          matchFormat: "Best of 3",
+          bestOf: 3,
           roundTimeMinutes: tournament.roundTimeMinutes,
           plannedRounds: null,
           currentRound: currentRound,
-          advancementCount: null,
-          bracketSize: tournament.maxParticipants,
-          totalRounds: rounds,
+          cutRule: null, // Standalone elimination has no cut rule
+          checkInTimeMinutes: 5,
         });
         break;
       }

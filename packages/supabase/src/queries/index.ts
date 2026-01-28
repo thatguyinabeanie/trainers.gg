@@ -58,6 +58,9 @@ export {
   getRoundMatches,
   getTournamentStandings,
   getPlayerTournamentStats,
+  getTournamentPlayerStats,
+  getPhaseRoundsWithStats,
+  getRoundMatchesWithStats,
   getPlayerMatches,
   getMyDashboardData,
   getCheckInStatus,
@@ -67,6 +70,7 @@ export {
   getRegistrationStatus,
   getTournamentInvitationsSent,
   getTournamentInvitationsReceived,
+  checkTournamentSlugAvailable,
 } from "./tournaments";
 
 export type { TournamentWithOrg, GroupedTournaments } from "./tournaments";

@@ -41,13 +41,21 @@ type TournamentStatus =
   | "cancelled"
   | "paused";
 
-const statusColors: Record<TournamentStatus, string> = {
-  draft: "bg-gray-100 text-gray-800",
-  upcoming: "bg-blue-100 text-blue-800",
-  active: "bg-green-100 text-green-800",
-  completed: "bg-purple-100 text-purple-800",
-  cancelled: "bg-red-100 text-red-800",
-  paused: "bg-yellow-100 text-yellow-800",
+const statusConfig: Record<TournamentStatus, { color: string; label: string }> =
+  {
+    draft: { color: "bg-gray-100 text-gray-800", label: "Draft" },
+    upcoming: { color: "bg-blue-100 text-blue-800", label: "Upcoming" },
+    active: { color: "bg-green-100 text-green-800", label: "Active" },
+    completed: { color: "bg-purple-100 text-purple-800", label: "Completed" },
+    cancelled: { color: "bg-red-100 text-red-800", label: "Cancelled" },
+    paused: { color: "bg-yellow-100 text-yellow-800", label: "Paused" },
+  };
+
+const tournamentFormatLabels: Record<string, string> = {
+  swiss_only: "Swiss Only",
+  swiss_with_cut: "Swiss + Top Cut",
+  single_elimination: "Single Elimination",
+  double_elimination: "Double Elimination",
 };
 
 /**
@@ -113,8 +121,11 @@ function TournamentHeader({
     <div className="mb-8">
       <div className="mb-2 flex items-center gap-3">
         <h1 className="text-3xl font-bold">{tournament.name}</h1>
-        <Badge className={statusColors[tournament.status as TournamentStatus]}>
-          {tournament.status}
+        <Badge
+          className={statusConfig[tournament.status as TournamentStatus]?.color}
+        >
+          {statusConfig[tournament.status as TournamentStatus]?.label ||
+            tournament.status}
         </Badge>
       </div>
 
@@ -212,9 +223,11 @@ function FormatCard({
           </div>
           <div>
             <p className="text-muted-foreground text-sm">Tournament Format</p>
-            <p className="font-medium capitalize">
-              {tournament.tournament_format?.replace(/_/g, " ") ||
-                "Not specified"}
+            <p className="font-medium">
+              {tournament.tournament_format
+                ? tournamentFormatLabels[tournament.tournament_format] ||
+                  tournament.tournament_format
+                : "Not specified"}
             </p>
           </div>
           {tournament.round_time_minutes && (

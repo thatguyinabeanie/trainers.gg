@@ -105,7 +105,7 @@ function ActiveTournamentsTable({
         <TableBody>
           {tournaments.map((tournament) => (
             <TableRow key={tournament.id} className="hover:bg-muted/50">
-              <TableCell className="font-medium">
+              <TableCell className="text-muted-foreground">
                 <div className="flex items-center gap-2">
                   <span className="relative flex h-2 w-2">
                     <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-75"></span>
@@ -120,7 +120,16 @@ function ActiveTournamentsTable({
                 </div>
               </TableCell>
               <TableCell className="text-muted-foreground">
-                {tournament.organization?.name || "—"}
+                {tournament.organization ? (
+                  <Link
+                    href={`/organizations/${tournament.organization.slug}`}
+                    className="hover:text-primary hover:underline"
+                  >
+                    {tournament.organization.name}
+                  </Link>
+                ) : (
+                  "—"
+                )}
               </TableCell>
               <TableCell className="text-muted-foreground text-right">
                 {tournament._count.registrations}
@@ -170,7 +179,7 @@ function UpcomingTournamentsTable({
                 Spots
               </div>
             </TableHead>
-            <TableHead className="w-[100px] text-center"></TableHead>
+            <TableHead className="w-25 text-center"></TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -190,7 +199,7 @@ function UpcomingTournamentsTable({
                 <TableCell>
                   <DateChip dateString={tournament.start_date} showTime />
                 </TableCell>
-                <TableCell className="font-medium">
+                <TableCell className="text-muted-foreground">
                   <Link
                     href={`/tournaments/${tournament.slug}`}
                     className="hover:text-primary hover:underline"
@@ -199,7 +208,16 @@ function UpcomingTournamentsTable({
                   </Link>
                 </TableCell>
                 <TableCell className="text-muted-foreground hidden sm:table-cell">
-                  {tournament.organization?.name || "—"}
+                  {tournament.organization ? (
+                    <Link
+                      href={`/organizations/${tournament.organization.slug}`}
+                      className="hover:text-primary hover:underline"
+                    >
+                      {tournament.organization.name}
+                    </Link>
+                  ) : (
+                    "—"
+                  )}
                 </TableCell>
                 <TableCell className="text-right">
                   <span className="text-muted-foreground">{spotsText}</span>
@@ -254,7 +272,7 @@ function CompletedTournamentsTable({
                   showYear
                 />
               </TableCell>
-              <TableCell className="font-medium">
+              <TableCell className="text-muted-foreground">
                 <Link
                   href={`/tournaments/${tournament.slug}`}
                   className="hover:text-primary hover:underline"
@@ -263,7 +281,16 @@ function CompletedTournamentsTable({
                 </Link>
               </TableCell>
               <TableCell className="text-muted-foreground">
-                {tournament.organization?.name || "—"}
+                {tournament.organization ? (
+                  <Link
+                    href={`/organizations/${tournament.organization.slug}`}
+                    className="hover:text-primary hover:underline"
+                  >
+                    {tournament.organization.name}
+                  </Link>
+                ) : (
+                  "—"
+                )}
               </TableCell>
               <TableCell className="text-muted-foreground text-right">
                 {tournament._count.registrations}
