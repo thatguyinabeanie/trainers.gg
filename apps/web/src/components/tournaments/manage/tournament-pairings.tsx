@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useTransition } from "react";
+import { useState, useCallback, useTransition, useEffect } from "react";
 import { useSupabaseQuery } from "@/lib/supabase";
 import {
   getTournamentPhases,
@@ -100,10 +100,12 @@ export function TournamentPairings({ tournament }: TournamentPairingsProps) {
     [tournament.id, "phases"]
   );
 
-  // Set initial phase if not set
-  if (!selectedPhaseId && phases && phases.length > 0 && phases[0]) {
-    setSelectedPhaseId(phases[0].id);
-  }
+  // Set initial phase when phases load
+  useEffect(() => {
+    if (!selectedPhaseId && phases && phases.length > 0 && phases[0]) {
+      setSelectedPhaseId(phases[0].id);
+    }
+  }, [phases, selectedPhaseId]);
 
   // Fetch rounds for selected phase
   const roundsQueryFn = useCallback(
@@ -120,10 +122,15 @@ export function TournamentPairings({ tournament }: TournamentPairingsProps) {
     refetch: refetchRounds,
   } = useSupabaseQuery(roundsQueryFn, [selectedPhaseId, "rounds"]);
 
-  // Set initial round if not set
-  if (!selectedRoundId && rounds && rounds.length > 0 && rounds[0]) {
-    setSelectedRoundId(rounds[0].id);
-  }
+  // Set initial round when rounds load, or reset when phase changes
+  useEffect(() => {
+    if (rounds && rounds.length > 0 && rounds[0]) {
+      // Select first round when rounds load or phase changes
+      setSelectedRoundId(rounds[0].id);
+    } else {
+      setSelectedRoundId(null);
+    }
+  }, [rounds]);
 
   // Fetch matches for selected round
   const matchesQueryFn = useCallback(

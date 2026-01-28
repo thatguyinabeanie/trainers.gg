@@ -400,7 +400,11 @@ export async function registerForTournament(
   }
 ) {
   const alt = await getCurrentAlt(supabase, data?.altId);
-  if (!alt) throw new Error("Not authenticated");
+  if (!alt) {
+    throw new Error(
+      "Unable to load your account. Please try signing out and back in, or contact support."
+    );
+  }
 
   // Check if already registered
   const { data: existing } = await supabase
@@ -471,7 +475,11 @@ export async function cancelRegistration(
   registrationId: number
 ) {
   const alt = await getCurrentAlt(supabase);
-  if (!alt) throw new Error("Not authenticated");
+  if (!alt) {
+    throw new Error(
+      "Unable to load your account. Please try signing out and back in, or contact support."
+    );
+  }
 
   // Verify ownership
   const { data: registration } = await supabase
@@ -597,7 +605,11 @@ export async function updateRegistrationStatus(
  */
 export async function checkIn(supabase: TypedClient, tournamentId: number) {
   const profile = await getCurrentAlt(supabase);
-  if (!profile) throw new Error("Not authenticated");
+  if (!profile) {
+    throw new Error(
+      "Unable to load your account. Please try signing out and back in, or contact support."
+    );
+  }
 
   // Find the user's registration
   const { data: registration } = await supabase
@@ -645,7 +657,11 @@ export async function checkIn(supabase: TypedClient, tournamentId: number) {
  */
 export async function undoCheckIn(supabase: TypedClient, tournamentId: number) {
   const profile = await getCurrentAlt(supabase);
-  if (!profile) throw new Error("Not authenticated");
+  if (!profile) {
+    throw new Error(
+      "Unable to load your account. Please try signing out and back in, or contact support."
+    );
+  }
 
   // Find the user's registration
   const { data: registration } = await supabase
@@ -830,10 +846,12 @@ export async function reportMatchResult(
     throw new Error("You don't have permission to report this match result");
   }
 
-  // Validate match is in progress
-  if (match.status !== "active" && match.status !== "pending") {
+  // Validate match is in progress (must be started first)
+  if (match.status !== "active") {
     throw new Error(
-      `Cannot report result for match with status "${match.status}"`
+      match.status === "pending"
+        ? "Match must be started before reporting results"
+        : `Cannot report result for match with status "${match.status}"`
     );
   }
 
@@ -870,7 +888,11 @@ export async function withdrawFromTournament(
   tournamentId: number
 ) {
   const profile = await getCurrentAlt(supabase);
-  if (!profile) throw new Error("Not authenticated");
+  if (!profile) {
+    throw new Error(
+      "Unable to load your account. Please try signing out and back in, or contact support."
+    );
+  }
 
   // Find registration
   const { data: registration } = await supabase
@@ -1031,7 +1053,11 @@ export async function respondToTournamentInvitation(
   response: "accept" | "decline"
 ) {
   const alt = await getCurrentAlt(supabase);
-  if (!alt) throw new Error("Not authenticated");
+  if (!alt) {
+    throw new Error(
+      "Unable to load your account. Please try signing out and back in, or contact support."
+    );
+  }
 
   // Get invitation
   const { data: invitation } = await supabase
@@ -1176,6 +1202,22 @@ export async function generateRoundPairings(
 
   const tournamentId = phase.tournament_id;
 
+  // If not round 1, ensure previous round is completed
+  if (round.round_number > 1) {
+    const { data: previousRound } = await supabase
+      .from("tournament_rounds")
+      .select("id, status, round_number")
+      .eq("phase_id", phase.id)
+      .eq("round_number", round.round_number - 1)
+      .maybeSingle();
+
+    if (previousRound && previousRound.status !== "completed") {
+      throw new Error(
+        `Round ${previousRound.round_number} must be completed before generating pairings for round ${round.round_number}.`
+      );
+    }
+  }
+
   // Get all checked-in players with their stats
   const { data: registrations } = await supabase
     .from("tournament_registrations")
@@ -1271,27 +1313,32 @@ export async function generateRoundPairings(
   const { data: matches, error: matchError } = await supabase
     .from("tournament_matches")
     .insert(matchInserts)
-    .select("id");
+    .select("id, round_id, alt1_id, alt2_id");
 
   if (matchError) throw matchError;
 
-  // Link pairings to matches and insert
-  for (let i = 0; i < pairingInserts.length; i++) {
-    const pairingInsert = pairingInserts[i];
-    const match = matches[i];
-    if (pairingInsert && match) {
-      (pairingInsert as { match_id?: number }).match_id = match.id;
-    }
+  // Create a map to look up match IDs by their unique key (alt1_id, alt2_id)
+  // This avoids relying on array index order which isn't guaranteed by PostgreSQL
+  const matchMap = new Map<string, number>();
+  for (const match of matches) {
+    // Key format: "alt1_id:alt2_id" (alt2_id can be null for byes)
+    const key = `${match.alt1_id}:${match.alt2_id}`;
+    matchMap.set(key, match.id);
   }
+
+  // Link pairings to matches using the map
+  const pairingsWithMatchId = pairingInserts.map((p) => {
+    const key = `${p.alt1_id}:${p.alt2_id}`;
+    const matchId = matchMap.get(key);
+    return {
+      ...p,
+      match_id: matchId,
+    };
+  });
 
   const { error: pairingError } = await supabase
     .from("tournament_pairings")
-    .insert(
-      pairingInserts.map((p) => ({
-        ...p,
-        match_id: (p as { match_id?: number }).match_id,
-      }))
-    );
+    .insert(pairingsWithMatchId);
 
   if (pairingError) throw pairingError;
 
@@ -1326,17 +1373,41 @@ export async function generateRoundPairings(
       .insert(opponentHistoryInserts);
   }
 
-  // Mark players with byes
+  // Mark players with byes - ensure stats record exists first
   const byePlayers = result.pairings
     .filter((p) => p.isBye)
     .map((p) => p.alt1Id);
 
   if (byePlayers.length > 0) {
-    await supabase
-      .from("tournament_player_stats")
-      .update({ has_received_bye: true })
-      .eq("tournament_id", tournamentId)
-      .in("alt_id", byePlayers);
+    for (const altId of byePlayers) {
+      // First try to update existing record
+      const { data: updated } = await supabase
+        .from("tournament_player_stats")
+        .update({ has_received_bye: true })
+        .eq("tournament_id", tournamentId)
+        .eq("alt_id", altId)
+        .select("alt_id");
+
+      // If no record was updated, insert a new one
+      if (!updated || updated.length === 0) {
+        await supabase.from("tournament_player_stats").insert({
+          tournament_id: tournamentId,
+          alt_id: altId,
+          has_received_bye: true,
+          match_wins: 0,
+          match_losses: 0,
+          matches_played: 0,
+          game_wins: 0,
+          game_losses: 0,
+          match_points: 0,
+          match_win_percentage: 0,
+          game_win_percentage: 0,
+          opponent_match_win_percentage: 0,
+          opponent_history: [],
+          standings_need_recalc: true,
+        });
+      }
+    }
   }
 
   return {
@@ -1361,8 +1432,10 @@ export async function startRound(supabase: TypedClient, roundId: number) {
       `
       id,
       status,
+      round_number,
       phase_id,
       tournament_phases!inner (
+        id,
         tournament_id,
         tournaments!inner (
           organization_id,
@@ -1380,6 +1453,7 @@ export async function startRound(supabase: TypedClient, roundId: number) {
   if (!round) throw new Error("Round not found");
 
   const phase = round.tournament_phases as unknown as {
+    id: number;
     tournament_id: number;
     tournaments: {
       organization_id: number;
@@ -1398,6 +1472,22 @@ export async function startRound(supabase: TypedClient, roundId: number) {
   // Validate round status
   if (round.status !== "pending") {
     throw new Error(`Cannot start round with status "${round.status}"`);
+  }
+
+  // If not round 1, ensure previous round is completed
+  if (round.round_number > 1) {
+    const { data: previousRound } = await supabase
+      .from("tournament_rounds")
+      .select("id, status, round_number")
+      .eq("phase_id", phase.id)
+      .eq("round_number", round.round_number - 1)
+      .maybeSingle();
+
+    if (previousRound && previousRound.status !== "completed") {
+      throw new Error(
+        `Round ${previousRound.round_number} must be completed before starting round ${round.round_number}.`
+      );
+    }
   }
 
   // Check that pairings exist
@@ -1805,14 +1895,37 @@ export async function dropPlayer(
     throw new Error("Can only drop players from active tournaments");
   }
 
-  // Update player stats to mark as dropped
-  const { error: statsError } = await supabase
+  // Update player stats to mark as dropped - ensure record exists first
+  const { data: updated } = await supabase
     .from("tournament_player_stats")
     .update({ is_dropped: true })
     .eq("tournament_id", tournamentId)
-    .eq("alt_id", altId);
+    .eq("alt_id", altId)
+    .select("alt_id");
 
-  if (statsError) throw statsError;
+  // If no record was updated, insert a new one with is_dropped = true
+  if (!updated || updated.length === 0) {
+    const { error: insertError } = await supabase
+      .from("tournament_player_stats")
+      .insert({
+        tournament_id: tournamentId,
+        alt_id: altId,
+        is_dropped: true,
+        match_wins: 0,
+        match_losses: 0,
+        matches_played: 0,
+        game_wins: 0,
+        game_losses: 0,
+        match_points: 0,
+        match_win_percentage: 0,
+        game_win_percentage: 0,
+        opponent_match_win_percentage: 0,
+        opponent_history: [],
+        has_received_bye: false,
+        standings_need_recalc: true,
+      });
+    if (insertError) throw insertError;
+  }
 
   // Update registration status
   const { error: regError } = await supabase
@@ -1865,6 +1978,40 @@ export async function createRound(
   // Verify permission
   if (tournament.organizations.owner_user_id !== user.id) {
     throw new Error("You don't have permission to create rounds");
+  }
+
+  // Check for any active or pending rounds in this phase
+  const { data: existingRounds } = await supabase
+    .from("tournament_rounds")
+    .select("id, round_number, status")
+    .eq("phase_id", phaseId)
+    .order("round_number", { ascending: false });
+
+  if (existingRounds && existingRounds.length > 0) {
+    // Check if there's an active round
+    const activeRound = existingRounds.find((r) => r.status === "active");
+    if (activeRound) {
+      throw new Error(
+        `Round ${activeRound.round_number} is still active. Complete it before creating a new round.`
+      );
+    }
+
+    // Check if the previous round (highest round number) is completed
+    const lastRound = existingRounds[0];
+    if (lastRound && lastRound.status !== "completed") {
+      throw new Error(
+        `Round ${lastRound.round_number} must be completed before creating round ${roundNumber}.`
+      );
+    }
+
+    // Validate round number sequence
+    if (roundNumber !== (lastRound?.round_number ?? 0) + 1) {
+      throw new Error(
+        `Invalid round number. Expected ${(lastRound?.round_number ?? 0) + 1}, got ${roundNumber}.`
+      );
+    }
+  } else if (roundNumber !== 1) {
+    throw new Error("First round must be round number 1.");
   }
 
   // Create the round
