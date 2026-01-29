@@ -9,6 +9,7 @@
 
 import { getCurrentUserDid, BlueskyAuthError } from "@/lib/atproto/agent";
 import { getErrorMessage } from "@/lib/utils";
+import { serialize } from "@/lib/atproto/serialize";
 import {
   getTimeline,
   getPokemonFeed,
@@ -44,7 +45,7 @@ export async function getTimelineAction(
 
     const result = await getTimeline(did, options);
 
-    return { success: true, data: result };
+    return { success: true, data: serialize(result) };
   } catch (error) {
     if (!(error instanceof BlueskyAuthError)) {
       console.error("Failed to fetch timeline:", error);
@@ -77,7 +78,7 @@ export async function getPokemonFeedAction(
 
     const result = await getPokemonFeed(did, options);
 
-    return { success: true, data: result };
+    return { success: true, data: serialize(result) };
   } catch (error) {
     if (!(error instanceof BlueskyAuthError)) {
       console.error("Failed to fetch Pokemon feed:", error);
@@ -102,7 +103,7 @@ export async function getAuthorFeedAction(
   try {
     const result = await getAuthorFeed(actor, options);
 
-    return { success: true, data: result };
+    return { success: true, data: serialize(result) };
   } catch (error) {
     console.error("Failed to fetch author feed:", error);
     return {
@@ -125,7 +126,7 @@ export async function getActorLikesAction(
   try {
     const result = await getActorLikes(actor, options);
 
-    return { success: true, data: result };
+    return { success: true, data: serialize(result) };
   } catch (error) {
     console.error("Failed to fetch actor likes:", error);
     return {

@@ -10,6 +10,7 @@
 import { revalidatePath } from "next/cache";
 import { getCurrentUserDid } from "@/lib/atproto/agent";
 import { getErrorMessage } from "@/lib/utils";
+import { serialize } from "@/lib/atproto/serialize";
 import {
   follow as apiFollow,
   unfollow as apiUnfollow,
@@ -336,11 +337,11 @@ export async function getFollowersAction(
 
     return {
       success: true,
-      data: {
+      data: serialize({
         profiles: result.followers,
         cursor: result.cursor,
         hasMore: !!result.cursor,
-      },
+      }),
     };
   } catch (error) {
     console.error("Failed to fetch followers:", error);
@@ -371,11 +372,11 @@ export async function getFollowsAction(
 
     return {
       success: true,
-      data: {
+      data: serialize({
         profiles: result.follows,
         cursor: result.cursor,
         hasMore: !!result.cursor,
-      },
+      }),
     };
   } catch (error) {
     console.error("Failed to fetch follows:", error);

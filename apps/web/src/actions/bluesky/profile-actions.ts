@@ -9,6 +9,7 @@
 
 import { getProfile, getProfiles } from "@/lib/atproto/api";
 import { getErrorMessage } from "@/lib/utils";
+import { serialize } from "@/lib/atproto/serialize";
 import type { ProfileView } from "@/lib/atproto/api";
 
 /**
@@ -54,7 +55,7 @@ export async function getProfileAction(
 
     return {
       success: true,
-      data: profile,
+      data: serialize(profile),
     };
   } catch (error) {
     console.error("Failed to fetch profile:", error);
@@ -91,7 +92,7 @@ export async function getProfilesAction(
 
     return {
       success: true,
-      data: profiles,
+      data: serialize(profiles),
     };
   } catch (error) {
     console.error("Failed to fetch profiles:", error);
