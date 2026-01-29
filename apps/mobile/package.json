@@ -16,6 +16,8 @@
     "clean": "rm -rf .expo node_modules"
   },
   "dependencies": {
+    "@atproto/api": "^0.18.17",
+    "@atproto/oauth-client-expo": "^0.0.8",
     "@expo/vector-icons": "^15.0.3",
     "@supabase/supabase-js": "^2.49.4",
     "@tamagui/config": "^1.144.3",
