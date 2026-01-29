@@ -175,12 +175,18 @@ importers:
       '@types/react':
         specifier: 'catalog:'
         version: 19.1.17
+      babel-plugin-react-compiler:
+        specifier: ^1.0.0
+        version: 1.0.0
       babel-preset-expo:
         specifier: ~54.0.10
         version: 54.0.10(@babel/core@7.28.6)(@babel/runtime@7.28.6)(expo@54.0.32)(react-refresh@0.14.2)
       eslint:
         specifier: 'catalog:'
         version: 9.39.2(jiti@2.6.1)
+      eslint-plugin-react-compiler:
+        specifier: 19.1.0-rc.2
+        version: 19.1.0-rc.2(eslint@9.39.2(jiti@2.6.1))
       typescript:
         specifier: 'catalog:'
         version: 5.9.3

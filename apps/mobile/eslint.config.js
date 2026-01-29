@@ -1,4 +1,5 @@
 import expoConfig from "@trainers/eslint-config/expo";
+import reactCompiler from "eslint-plugin-react-compiler";
 
 /** @type {import('eslint').Linter.Config[]} */
 export default [
@@ -10,5 +11,13 @@ export default [
       "tailwind.config.js",
       "*.config.js",
     ],
+  },
+  {
+    plugins: {
+      "react-compiler": reactCompiler,
+    },
+    rules: {
+      "react-compiler/react-compiler": "error",
+    },
   },
 ];

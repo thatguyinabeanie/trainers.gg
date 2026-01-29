@@ -49,8 +49,10 @@
     "@trainers/typescript-config": "workspace:*",
     "@types/node": "catalog:",
     "@types/react": "catalog:",
+    "babel-plugin-react-compiler": "^1.0.0",
     "babel-preset-expo": "~54.0.10",
     "eslint": "catalog:",
+    "eslint-plugin-react-compiler": "19.1.0-rc.2",
     "typescript": "catalog:"
   },
   "prettier": "@trainers/prettier-config"
