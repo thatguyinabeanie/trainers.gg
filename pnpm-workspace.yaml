@@ -16,6 +16,18 @@ catalog:
   typescript: ^5.9.3
   zod: ^3.25.76
 
+# Mobile needs React 19.2 (required by React Native 0.83 / Expo SDK 55).
+# Web is blocked on React 19.2 by type incompatibilities in:
+#   - next-themes@0.4.6   — ThemeProviderProps missing children (github.com/pacocoursey/next-themes/issues/367)
+#   - recharts@2.15.4     — Tooltip component types incomplete (github.com/recharts/recharts/issues/4558)
+#   - input-otp@1.4.2     — OTPInputContext missing slots property (github.com/shadcn-ui/ui/issues/4710)
+# Once these libraries ship React 19.2 type fixes, merge catalog:mobile into the default catalog.
+catalogs:
+  mobile:
+    react: 19.2.0
+    react-dom: 19.2.0
+    "@types/react": ~19.2.10
+
 onlyBuiltDependencies:
   - "@clerk/shared"
   - browser-tabs-lock
