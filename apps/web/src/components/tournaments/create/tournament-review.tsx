@@ -11,7 +11,6 @@ import {
   Settings,
   Loader2,
   Layers,
-  ChevronRight,
   Monitor,
   Users,
   User,
