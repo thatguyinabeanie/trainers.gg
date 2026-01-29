@@ -13,4 +13,6 @@ admin-password.txt
 .ngrok.log
 .ngrok-hostname
 .ngrok-url
+.ngrok-web-url
+.ngrok-tunnels.yml
 .pds-local.env

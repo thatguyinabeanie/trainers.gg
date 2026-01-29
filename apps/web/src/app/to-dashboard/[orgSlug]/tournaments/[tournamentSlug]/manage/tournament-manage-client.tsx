@@ -277,7 +277,7 @@ export function TournamentManageClient({
             </TabsList>
           </div>
           {/* Fade indicator for more content */}
-          <div className="from-background pointer-events-none absolute bottom-0 right-0 top-0 w-8 bg-gradient-to-l to-transparent md:hidden" />
+          <div className="from-background pointer-events-none absolute top-0 right-0 bottom-0 w-8 bg-gradient-to-l to-transparent md:hidden" />
         </div>
 
         <TabsContent value="overview">

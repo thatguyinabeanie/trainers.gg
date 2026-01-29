@@ -53,7 +53,7 @@ function SectionHeader({ title, count }: { title: string; count: number }) {
   if (count === 0) return null;
 
   return (
-    <div className="flex items-center gap-2 pb-3 pt-6 first:pt-0">
+    <div className="flex items-center gap-2 pt-6 pb-3 first:pt-0">
       <h2 className="text-lg font-semibold">{title}</h2>
       <Badge variant="secondary" className="text-xs">
         {count}

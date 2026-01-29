@@ -7,7 +7,7 @@
 
 "use server";
 
-import { getCurrentUserDid } from "@/lib/atproto/agent";
+import { getCurrentUserDid, BlueskyAuthError } from "@/lib/atproto/agent";
 import { getErrorMessage } from "@/lib/utils";
 import {
   getTimeline,
@@ -46,7 +46,9 @@ export async function getTimelineAction(
 
     return { success: true, data: result };
   } catch (error) {
-    console.error("Failed to fetch timeline:", error);
+    if (!(error instanceof BlueskyAuthError)) {
+      console.error("Failed to fetch timeline:", error);
+    }
     return {
       success: false,
       error: getErrorMessage(
@@ -77,7 +79,9 @@ export async function getPokemonFeedAction(
 
     return { success: true, data: result };
   } catch (error) {
-    console.error("Failed to fetch Pokemon feed:", error);
+    if (!(error instanceof BlueskyAuthError)) {
+      console.error("Failed to fetch Pokemon feed:", error);
+    }
     return {
       success: false,
       error: getErrorMessage(
