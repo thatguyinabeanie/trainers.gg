@@ -11,6 +11,7 @@ import {
   Spinner,
 } from "tamagui";
 import { useAuth, getSupabase } from "@/lib/supabase";
+import { BlueskyAuthButton } from "@/components/auth/bluesky-auth-button";
 
 /**
  * Resolves a login identifier (email or username) to an email address.
@@ -53,7 +54,7 @@ export default function SignInScreen() {
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const { signInWithEmail, loading } = useAuth();
+  const { signInWithEmail, signInWithBluesky, loading } = useAuth();
   const router = useRouter();
 
   const handleSignIn = async () => {
@@ -184,6 +185,27 @@ export default function SignInScreen() {
               </Text>
             )}
           </Button>
+
+          {/* Separator */}
+          <XStack alignItems="center" gap="$3" marginVertical="$1">
+            <YStack flex={1} height={1} backgroundColor="$muted" />
+            <Text fontSize={12} color="$mutedForeground">
+              OR
+            </Text>
+            <YStack flex={1} height={1} backgroundColor="$muted" />
+          </XStack>
+
+          {/* Bluesky sign-in */}
+          <BlueskyAuthButton
+            onSignIn={async (handle) => {
+              const { error, isNew } = await signInWithBluesky(handle);
+              if (!error) {
+                router.replace("/(tabs)/home");
+              }
+              return { error };
+            }}
+            loading={loading}
+          />
 
           <XStack justifyContent="center" alignItems="center" marginTop="$2">
             <Text color="$mutedForeground" fontSize={14}>
