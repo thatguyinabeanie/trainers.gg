@@ -1,6 +1,6 @@
 import { useLocalSearchParams } from "expo-router";
 import { RefreshControl, ActivityIndicator } from "react-native";
-import { useState, useCallback } from "react";
+import { useState } from "react";
 import { YStack, XStack, Text, ScrollView, useTheme } from "tamagui";
 import { Ionicons } from "@expo/vector-icons";
 import { Screen, Badge } from "@/components/ui";
@@ -12,11 +12,11 @@ export default function OrganizationDetailScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const theme = useTheme();
 
-  const onRefresh = useCallback(async () => {
+  const onRefresh = async () => {
     setRefreshing(true);
     await refetch();
     setRefreshing(false);
-  }, [refetch]);
+  };
 
   if (loading && !refreshing) {
     return (

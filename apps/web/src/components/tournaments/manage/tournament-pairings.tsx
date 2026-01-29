@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useTransition, useEffect } from "react";
+import { useState, useTransition, useEffect } from "react";
 import { useSupabaseQuery } from "@/lib/supabase";
 import {
   getTournamentPhases,
@@ -89,11 +89,8 @@ export function TournamentPairings({ tournament }: TournamentPairingsProps) {
   const [player2Score, setPlayer2Score] = useState("0");
 
   // Fetch phases
-  const phasesQueryFn = useCallback(
-    (supabase: Parameters<typeof getTournamentPhases>[0]) =>
-      getTournamentPhases(supabase, tournament.id),
-    [tournament.id]
-  );
+  const phasesQueryFn = (supabase: Parameters<typeof getTournamentPhases>[0]) =>
+    getTournamentPhases(supabase, tournament.id);
 
   const { data: phases, isLoading: phasesLoading } = useSupabaseQuery(
     phasesQueryFn,
@@ -108,13 +105,12 @@ export function TournamentPairings({ tournament }: TournamentPairingsProps) {
   }, [phases, selectedPhaseId]);
 
   // Fetch rounds for selected phase
-  const roundsQueryFn = useCallback(
-    (supabase: Parameters<typeof getPhaseRoundsWithStats>[0]) =>
-      selectedPhaseId
-        ? getPhaseRoundsWithStats(supabase, selectedPhaseId)
-        : Promise.resolve([]),
-    [selectedPhaseId]
-  );
+  const roundsQueryFn = (
+    supabase: Parameters<typeof getPhaseRoundsWithStats>[0]
+  ) =>
+    selectedPhaseId
+      ? getPhaseRoundsWithStats(supabase, selectedPhaseId)
+      : Promise.resolve([]);
 
   const {
     data: rounds,
@@ -133,13 +129,12 @@ export function TournamentPairings({ tournament }: TournamentPairingsProps) {
   }, [rounds]);
 
   // Fetch matches for selected round
-  const matchesQueryFn = useCallback(
-    (supabase: Parameters<typeof getRoundMatchesWithStats>[0]) =>
-      selectedRoundId
-        ? getRoundMatchesWithStats(supabase, selectedRoundId, tournament.id)
-        : Promise.resolve([]),
-    [selectedRoundId, tournament.id]
-  );
+  const matchesQueryFn = (
+    supabase: Parameters<typeof getRoundMatchesWithStats>[0]
+  ) =>
+    selectedRoundId
+      ? getRoundMatchesWithStats(supabase, selectedRoundId, tournament.id)
+      : Promise.resolve([]);
 
   const {
     data: matches,

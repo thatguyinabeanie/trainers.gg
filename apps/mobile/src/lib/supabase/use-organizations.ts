@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { getSupabase } from "./client";
 import {
   listPublicOrganizations,
@@ -23,7 +23,7 @@ export function useOrganizations() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
-  const fetchOrganizations = useCallback(async () => {
+  const fetchOrganizations = async () => {
     try {
       setLoading(true);
       setError(null);
@@ -37,11 +37,11 @@ export function useOrganizations() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  };
 
   useEffect(() => {
     fetchOrganizations();
-  }, [fetchOrganizations]);
+  }, []);
 
   return {
     organizations,
@@ -61,7 +61,7 @@ export function useOrganization(slug: string | undefined) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
-  const fetchOrganization = useCallback(async () => {
+  const fetchOrganization = async () => {
     if (!slug) {
       setLoading(false);
       return;
@@ -80,11 +80,11 @@ export function useOrganization(slug: string | undefined) {
     } finally {
       setLoading(false);
     }
-  }, [slug]);
+  };
 
   useEffect(() => {
     fetchOrganization();
-  }, [fetchOrganization]);
+  }, [slug]);
 
   return {
     organization,

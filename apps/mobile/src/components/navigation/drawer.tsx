@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback } from "react";
+import React, { createContext, useContext, useState } from "react";
 import {
   Modal,
   Pressable,
@@ -315,7 +315,7 @@ export function DrawerProvider({ children }: { children: React.ReactNode }) {
   const [fadeAnim] = useState(new Animated.Value(0));
   const theme = useTheme();
 
-  const openDrawer = useCallback(() => {
+  const openDrawer = () => {
     setIsOpen(true);
     Animated.parallel([
       Animated.timing(slideAnim, {
@@ -329,9 +329,9 @@ export function DrawerProvider({ children }: { children: React.ReactNode }) {
         useNativeDriver: true,
       }),
     ]).start();
-  }, [slideAnim, fadeAnim]);
+  };
 
-  const closeDrawer = useCallback(() => {
+  const closeDrawer = () => {
     Animated.parallel([
       Animated.timing(slideAnim, {
         toValue: -DRAWER_WIDTH,
@@ -346,15 +346,15 @@ export function DrawerProvider({ children }: { children: React.ReactNode }) {
     ]).start(() => {
       setIsOpen(false);
     });
-  }, [slideAnim, fadeAnim]);
+  };
 
-  const toggleDrawer = useCallback(() => {
+  const toggleDrawer = () => {
     if (isOpen) {
       closeDrawer();
     } else {
       openDrawer();
     }
-  }, [isOpen, openDrawer, closeDrawer]);
+  };
 
   return (
     <DrawerContext.Provider

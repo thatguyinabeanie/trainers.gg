@@ -1,6 +1,5 @@
 "use client";
 
-import { useCallback } from "react";
 import { useAuth, getUserDisplayName } from "@/components/auth/auth-provider";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ThemeSwitcher } from "@/components/theme-switcher";
@@ -35,11 +34,8 @@ export function TopNavAuthSection() {
 
   const userId = user?.id;
 
-  const myOrganizationsQueryFn = useCallback(
-    (client: TypedSupabaseClient) =>
-      userId ? listMyOrganizations(client, userId) : Promise.resolve([]),
-    [userId]
-  );
+  const myOrganizationsQueryFn = (client: TypedSupabaseClient) =>
+    userId ? listMyOrganizations(client, userId) : Promise.resolve([]);
 
   const { data: myOrganizations } = useSupabaseQuery(myOrganizationsQueryFn, [
     userId,
@@ -98,7 +94,7 @@ export function TopNavAuthSection() {
 
       {/* User Dropdown */}
       <DropdownMenu>
-        <DropdownMenuTrigger className="hover:bg-accent focus-visible:ring-ring inline-flex cursor-pointer items-center justify-center gap-2 rounded-md bg-transparent px-2 py-1.5 text-sm font-medium whitespace-nowrap transition-colors focus-visible:ring-1 focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50">
+        <DropdownMenuTrigger className="hover:bg-accent focus-visible:ring-ring inline-flex cursor-pointer items-center justify-center gap-2 whitespace-nowrap rounded-md bg-transparent px-2 py-1.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:opacity-50">
           <Avatar className="h-8 w-8">
             {avatarUrl && <AvatarImage src={avatarUrl} alt={displayName} />}
             <AvatarFallback className="bg-primary/10 text-primary text-sm font-semibold">
@@ -111,7 +107,7 @@ export function TopNavAuthSection() {
         </DropdownMenuTrigger>
         <DropdownMenuContent className="w-56" align="end">
           <div className="px-1.5 py-1.5">
-            <p className="text-sm leading-none font-medium">{displayName}</p>
+            <p className="text-sm font-medium leading-none">{displayName}</p>
           </div>
           <DropdownMenuSeparator />
           <DropdownMenuItem onClick={() => router.push("/dashboard")}>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import {
@@ -348,11 +348,9 @@ export function StaffListClient({
   );
 
   // Fetch staff data
-  const queryFn = useCallback(
-    (supabase: Parameters<typeof listOrganizationStaffWithRoles>[0]) =>
-      listOrganizationStaffWithRoles(supabase, organizationId),
-    [organizationId]
-  );
+  const queryFn = (
+    supabase: Parameters<typeof listOrganizationStaffWithRoles>[0]
+  ) => listOrganizationStaffWithRoles(supabase, organizationId);
 
   const {
     data: staffMembers,
@@ -382,21 +380,20 @@ export function StaffListClient({
   }, [staffMembers]);
 
   // Apply optimistic moves to staff data
-  const staff = useMemo(() => {
-    const baseStaff = staffMembers ?? initialStaff;
-    if (optimisticMoves.size === 0) return baseStaff;
-
-    return baseStaff.map((member) => {
-      const optimisticMove = optimisticMoves.get(member.user_id);
-      if (optimisticMove) {
-        return {
-          ...member,
-          group: optimisticMove.group,
-        };
-      }
-      return member;
-    });
-  }, [staffMembers, initialStaff, optimisticMoves]);
+  const baseStaff = staffMembers ?? initialStaff;
+  const staff =
+    optimisticMoves.size === 0
+      ? baseStaff
+      : baseStaff.map((member) => {
+          const optimisticMove = optimisticMoves.get(member.user_id);
+          if (optimisticMove) {
+            return {
+              ...member,
+              group: optimisticMove.group,
+            };
+          }
+          return member;
+        });
 
   // Group staff by their group assignment
   const unassignedStaff = staff.filter((s) => !s.group && !s.isOwner);

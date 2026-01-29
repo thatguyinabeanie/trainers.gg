@@ -2,7 +2,7 @@
 
 /* global window */
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { type User, type Session } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/client";
 
@@ -12,7 +12,7 @@ export function useAuth() {
   const [loading, setLoading] = useState(true);
 
   // Create SSR-compatible client that syncs session to cookies
-  const supabase = useMemo(() => createClient(), []);
+  const supabase = createClient();
 
   useEffect(() => {
     const getInitialSession = async () => {

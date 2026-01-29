@@ -1,6 +1,5 @@
 "use client";
 
-import { useCallback } from "react";
 import { useSupabaseQuery } from "@/lib/supabase";
 import { getTournamentPlayerStats } from "@trainers/supabase";
 import {
@@ -31,13 +30,10 @@ interface TournamentStandingsProps {
 
 export function TournamentStandings({ tournament }: TournamentStandingsProps) {
   // Fetch player stats for standings
-  const queryFn = useCallback(
-    (supabase: Parameters<typeof getTournamentPlayerStats>[0]) =>
-      getTournamentPlayerStats(supabase, tournament.id, {
-        includeDropped: true,
-      }),
-    [tournament.id]
-  );
+  const queryFn = (supabase: Parameters<typeof getTournamentPlayerStats>[0]) =>
+    getTournamentPlayerStats(supabase, tournament.id, {
+      includeDropped: true,
+    });
 
   const { data: playerStats, isLoading } = useSupabaseQuery(queryFn, [
     tournament.id,

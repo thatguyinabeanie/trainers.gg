@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState } from "react";
 import { RefreshControl, Pressable } from "react-native";
 import { YStack, XStack, Text, useTheme } from "tamagui";
 import { Ionicons } from "@expo/vector-icons";
@@ -647,12 +647,12 @@ export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const scrollVisibility = useScrollVisibilitySafe();
 
-  const onRefresh = useCallback(() => {
+  const onRefresh = () => {
     setRefreshing(true);
     // Show the header when pull-to-refresh is triggered
     scrollVisibility?.show();
     setTimeout(() => setRefreshing(false), 1500);
-  }, [scrollVisibility]);
+  };
 
   const posts = activeTab === "following" ? MOCK_POSTS : MOCK_FOR_YOU_POSTS;
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useState } from "react";
 import { Bell, Loader2, AlertCircle } from "lucide-react";
 import {
   Popover,
@@ -20,13 +20,10 @@ export function NotificationBell({ userId }: NotificationBellProps) {
   const [open, setOpen] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
 
-  const invitationsQueryFn = useCallback(
-    (client: TypedSupabaseClient) => {
-      if (!userId) return Promise.resolve([]);
-      return getMyOrganizationInvitations(client, userId);
-    },
-    [userId]
-  );
+  const invitationsQueryFn = (client: TypedSupabaseClient) => {
+    if (!userId) return Promise.resolve([]);
+    return getMyOrganizationInvitations(client, userId);
+  };
 
   const {
     data: invitations,
@@ -53,7 +50,7 @@ export function NotificationBell({ userId }: NotificationBellProps) {
       <PopoverTrigger className="hover:bg-accent relative inline-flex h-10 w-10 cursor-pointer items-center justify-center rounded-md">
         <Bell className="h-5 w-5" />
         {hasNotifications && (
-          <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white">
+          <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white">
             {count > 99 ? "99+" : count}
           </span>
         )}

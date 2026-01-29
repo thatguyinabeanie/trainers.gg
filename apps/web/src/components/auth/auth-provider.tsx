@@ -3,7 +3,6 @@
 import {
   createContext,
   type ReactNode,
-  useCallback,
   useContext,
   useEffect,
   useState,
@@ -38,7 +37,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const supabase = createClient();
 
-  const fetchUser = useCallback(async () => {
+  const fetchUser = async () => {
     try {
       const {
         data: { session },
@@ -56,7 +55,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } finally {
       setLoading(false);
     }
-  }, [supabase.auth]);
+  };
 
   useEffect(() => {
     fetchUser();
@@ -84,10 +83,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const refetchUser = useCallback(async () => {
+  const refetchUser = async () => {
     setLoading(true);
     await fetchUser();
-  }, [fetchUser]);
+  };
 
   const value: AuthContextType = {
     user,

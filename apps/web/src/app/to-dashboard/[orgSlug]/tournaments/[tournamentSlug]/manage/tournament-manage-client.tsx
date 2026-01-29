@@ -1,6 +1,5 @@
 "use client";
 
-import { useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useSupabaseQuery } from "@/lib/supabase";
 import {
@@ -48,11 +47,8 @@ export function TournamentManageClient({
   const { user: currentUser, isLoading: userLoading } = useCurrentUser();
 
   // Fetch organization by slug
-  const orgQueryFn = useCallback(
-    (supabase: Parameters<typeof getOrganizationBySlug>[0]) =>
-      getOrganizationBySlug(supabase, orgSlug),
-    [orgSlug]
-  );
+  const orgQueryFn = (supabase: Parameters<typeof getOrganizationBySlug>[0]) =>
+    getOrganizationBySlug(supabase, orgSlug);
 
   const { data: organization, isLoading: orgLoading } = useSupabaseQuery(
     orgQueryFn,
@@ -60,11 +56,9 @@ export function TournamentManageClient({
   );
 
   // Fetch tournament by slug
-  const tournamentQueryFn = useCallback(
-    (supabase: Parameters<typeof getTournamentBySlug>[0]) =>
-      getTournamentBySlug(supabase, tournamentSlug),
-    [tournamentSlug]
-  );
+  const tournamentQueryFn = (
+    supabase: Parameters<typeof getTournamentBySlug>[0]
+  ) => getTournamentBySlug(supabase, tournamentSlug);
 
   const { data: tournament, isLoading: tournamentLoading } = useSupabaseQuery(
     tournamentQueryFn,
@@ -72,13 +66,12 @@ export function TournamentManageClient({
   );
 
   // Fetch tournament phases (depends on tournament being loaded)
-  const phasesQueryFn = useCallback(
-    (supabase: Parameters<typeof getTournamentPhases>[0]) =>
-      tournament
-        ? getTournamentPhases(supabase, tournament.id)
-        : Promise.resolve([]),
-    [tournament]
-  );
+  const phasesQueryFn = (
+    supabase: Parameters<typeof getTournamentPhases>[0]
+  ) =>
+    tournament
+      ? getTournamentPhases(supabase, tournament.id)
+      : Promise.resolve([]);
 
   const { data: phases = [] } = useSupabaseQuery(phasesQueryFn, [
     tournament?.id,
@@ -284,7 +277,7 @@ export function TournamentManageClient({
             </TabsList>
           </div>
           {/* Fade indicator for more content */}
-          <div className="from-background pointer-events-none absolute top-0 right-0 bottom-0 w-8 bg-gradient-to-l to-transparent md:hidden" />
+          <div className="from-background pointer-events-none absolute bottom-0 right-0 top-0 w-8 bg-gradient-to-l to-transparent md:hidden" />
         </div>
 
         <TabsContent value="overview">

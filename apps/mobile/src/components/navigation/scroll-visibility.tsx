@@ -1,10 +1,4 @@
-import {
-  createContext,
-  useContext,
-  type ReactNode,
-  useCallback,
-  useMemo,
-} from "react";
+import { createContext, useContext, type ReactNode } from "react";
 import {
   useSharedValue,
   useAnimatedStyle,
@@ -57,44 +51,41 @@ export function ScrollVisibilityProvider({
   const lastScrollY = useSharedValue(0);
   const scrollDirection = useSharedValue<"up" | "down" | null>(null);
 
-  const show = useCallback(() => {
+  const show = () => {
     "worklet";
     isVisible.value = withTiming(1, { duration: ANIMATION_DURATION });
-  }, [isVisible]);
+  };
 
-  const handleScroll = useCallback(
-    (event: NativeSyntheticEvent<NativeScrollEvent>) => {
-      const currentY = event.nativeEvent.contentOffset.y;
-      const diff = currentY - lastScrollY.value;
+  const handleScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const currentY = event.nativeEvent.contentOffset.y;
+    const diff = currentY - lastScrollY.value;
 
-      // Don't do anything if we're at the top
-      if (currentY <= 0) {
-        isVisible.value = withTiming(1, { duration: ANIMATION_DURATION });
-        lastScrollY.value = currentY;
-        return;
-      }
+    // Don't do anything if we're at the top
+    if (currentY <= 0) {
+      isVisible.value = withTiming(1, { duration: ANIMATION_DURATION });
+      lastScrollY.value = currentY;
+      return;
+    }
 
-      // Only act if we've scrolled past the threshold
-      if (Math.abs(diff) > SCROLL_THRESHOLD) {
-        const newDirection = diff > 0 ? "down" : "up";
+    // Only act if we've scrolled past the threshold
+    if (Math.abs(diff) > SCROLL_THRESHOLD) {
+      const newDirection = diff > 0 ? "down" : "up";
 
-        if (newDirection !== scrollDirection.value) {
-          scrollDirection.value = newDirection;
+      if (newDirection !== scrollDirection.value) {
+        scrollDirection.value = newDirection;
 
-          if (newDirection === "down") {
-            // Scrolling down - hide bars
-            isVisible.value = withTiming(0, { duration: ANIMATION_DURATION });
-          } else {
-            // Scrolling up - show bars
-            isVisible.value = withTiming(1, { duration: ANIMATION_DURATION });
-          }
+        if (newDirection === "down") {
+          // Scrolling down - hide bars
+          isVisible.value = withTiming(0, { duration: ANIMATION_DURATION });
+        } else {
+          // Scrolling up - show bars
+          isVisible.value = withTiming(1, { duration: ANIMATION_DURATION });
         }
-
-        lastScrollY.value = currentY;
       }
-    },
-    [isVisible, lastScrollY, scrollDirection]
-  );
+
+      lastScrollY.value = currentY;
+    }
+  };
 
   // Animated style for header - slides up when hidden
   const headerAnimatedStyle = useAnimatedStyle(() => {
@@ -130,26 +121,15 @@ export function ScrollVisibilityProvider({
     };
   }, [tabBarHeight]);
 
-  const value = useMemo(
-    () => ({
-      isVisible,
-      handleScroll,
-      show,
-      headerAnimatedStyle,
-      tabBarAnimatedStyle,
-      headerHeight,
-      tabBarHeight,
-    }),
-    [
-      isVisible,
-      handleScroll,
-      show,
-      headerAnimatedStyle,
-      tabBarAnimatedStyle,
-      headerHeight,
-      tabBarHeight,
-    ]
-  );
+  const value = {
+    isVisible,
+    handleScroll,
+    show,
+    headerAnimatedStyle,
+    tabBarAnimatedStyle,
+    headerHeight,
+    tabBarHeight,
+  };
 
   return (
     <ScrollVisibilityContext.Provider value={value}>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { useSupabaseQuery, useSupabaseMutation } from "@/lib/supabase";
 import {
   getCheckInStatus,
@@ -48,18 +48,12 @@ export function CheckInCard({
   const [timeRemaining, setTimeRemaining] = useState<string>("");
 
   const { data: checkInStatus, refetch: refetchStatus } = useSupabaseQuery(
-    useCallback(
-      (supabase) => getCheckInStatus(supabase, tournamentId),
-      [tournamentId]
-    ),
+    (supabase) => getCheckInStatus(supabase, tournamentId),
     [tournamentId]
   );
 
   const { data: checkInStats, refetch: refetchStats } = useSupabaseQuery(
-    useCallback(
-      (supabase) => getCheckInStats(supabase, tournamentId),
-      [tournamentId]
-    ),
+    (supabase) => getCheckInStats(supabase, tournamentId),
     [tournamentId]
   );
 

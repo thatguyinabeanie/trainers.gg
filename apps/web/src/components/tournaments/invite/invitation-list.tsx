@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState } from "react";
 import { useSupabaseQuery } from "@/lib/supabase";
 import { getTournamentInvitationsSent } from "@trainers/supabase";
 import {
@@ -110,10 +110,7 @@ export function InvitationList({
   // Use the getTournamentInvitationsSent query filtered by tournamentId
   const { data: invitations, isLoading: isLoadingInvitations } =
     useSupabaseQuery(
-      useCallback(
-        (supabase) => getTournamentInvitationsSent(supabase, tournamentId),
-        [tournamentId]
-      ),
+      (supabase) => getTournamentInvitationsSent(supabase, tournamentId),
       [tournamentId]
     );
 
@@ -220,7 +217,7 @@ export function InvitationList({
                 {/* Pending Invitations */}
                 {pendingInvitations.length > 0 && (
                   <div className="space-y-2">
-                    <h4 className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+                    <h4 className="text-muted-foreground text-xs font-medium uppercase tracking-wide">
                       Awaiting Response
                     </h4>
                     <div className="space-y-2">
@@ -240,7 +237,7 @@ export function InvitationList({
                 {/* Responded Invitations */}
                 {respondedInvitations.length > 0 && (
                   <div className="space-y-2">
-                    <h4 className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+                    <h4 className="text-muted-foreground text-xs font-medium uppercase tracking-wide">
                       Responded
                     </h4>
                     <div className="space-y-2">
