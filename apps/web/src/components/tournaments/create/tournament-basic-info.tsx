@@ -1,6 +1,5 @@
 "use client";
 
-import { useCallback } from "react";
 import { useSupabaseQuery } from "@/lib/supabase";
 import { listMyOrganizations } from "@trainers/supabase";
 import { Input } from "@/components/ui/input";
@@ -25,7 +24,7 @@ export function TournamentBasicInfo({
   updateFormData,
 }: TournamentBasicInfoProps) {
   const { data: organizations } = useSupabaseQuery(
-    useCallback((supabase) => listMyOrganizations(supabase), []),
+    (supabase) => listMyOrganizations(supabase),
     []
   );
 

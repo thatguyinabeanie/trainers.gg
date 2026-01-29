@@ -32,8 +32,10 @@ export function OrgSelectorClient({ organizations }: OrgSelectorClientProps) {
     return (
       <div className="space-y-6">
         <div>
-          <h1 className="mb-2 text-4xl font-bold">Tournament Organizer</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-2xl font-bold sm:text-4xl">
+            Tournament Organizer
+          </h1>
+          <p className="text-muted-foreground text-sm sm:text-base">
             Manage your organizations and tournaments
           </p>
         </div>
@@ -64,13 +66,15 @@ export function OrgSelectorClient({ organizations }: OrgSelectorClientProps) {
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="mb-2 text-4xl font-bold">Tournament Organizer</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-2xl font-bold sm:text-4xl">
+            Tournament Organizer
+          </h1>
+          <p className="text-muted-foreground text-sm sm:text-base">
             Select an organization to manage
           </p>
         </div>
-        <Link href="/organizations/create">
-          <Button>
+        <Link href="/organizations/create" className="w-full sm:w-auto">
+          <Button className="w-full sm:w-auto">
             <Plus className="mr-2 h-4 w-4" />
             New Organization
           </Button>

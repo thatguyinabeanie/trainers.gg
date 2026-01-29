@@ -20,10 +20,10 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = join(__dirname, "../../..");
 const PDS_DIR = join(__dirname, "..");
 const WEB_APP_DIR = join(REPO_ROOT, "apps/web");
-const ENV_FILE = join(REPO_ROOT, ".env.local");
+const ENV_FILE = join(WEB_APP_DIR, ".env.local");
 const JWKS_DIR = join(WEB_APP_DIR, "public/oauth");
 const JWKS_FILE = join(JWKS_DIR, "jwks.json");
-const NGROK_URL_FILE = join(PDS_DIR, ".ngrok-url");
+const NGROK_URL_FILE = join(PDS_DIR, ".ngrok-web-url");
 
 // Colors for terminal output
 const colors = {
@@ -70,7 +70,7 @@ function isOAuthConfigured() {
  */
 function getNgrokUrl() {
   if (!existsSync(NGROK_URL_FILE)) {
-    logError("ngrok URL file not found. Please start PDS first.");
+    logError("Web app ngrok URL not found. Run setup-local.sh first.");
     return null;
   }
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState } from "react";
 import { useSupabaseQuery, useSupabaseMutation } from "@/lib/supabase";
 import {
   getTournamentInvitationsReceived,
@@ -53,7 +53,7 @@ export function TournamentInvitationsView({
     isLoading,
     refetch,
   } = useSupabaseQuery(
-    useCallback((supabase) => getTournamentInvitationsReceived(supabase), []),
+    (supabase) => getTournamentInvitationsReceived(supabase),
     []
   );
 

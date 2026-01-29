@@ -1,6 +1,5 @@
 "use client";
 
-import { useCallback } from "react";
 import { useAuth } from "@/components/auth/auth-provider";
 import { useSupabaseQuery } from "@/lib/supabase";
 import { getMyDashboardData } from "@trainers/supabase";
@@ -16,26 +15,25 @@ export function OverviewClient() {
   const { user } = useAuth();
   const profileId = user?.profile?.id;
 
-  const dashboardDataQueryFn = useCallback(
-    (supabase: Parameters<typeof getMyDashboardData>[0]) =>
-      profileId
-        ? getMyDashboardData(supabase, profileId)
-        : Promise.resolve({
-            myTournaments: [],
-            recentActivity: [],
-            achievements: [],
-            stats: {
-              winRate: 0,
-              winRateChange: 0,
-              currentRating: 0,
-              ratingRank: 0,
-              activeTournaments: 0,
-              totalEnrolled: 0,
-              championPoints: 0,
-            },
-          }),
-    [profileId]
-  );
+  const dashboardDataQueryFn = (
+    supabase: Parameters<typeof getMyDashboardData>[0]
+  ) =>
+    profileId
+      ? getMyDashboardData(supabase, profileId)
+      : Promise.resolve({
+          myTournaments: [],
+          recentActivity: [],
+          achievements: [],
+          stats: {
+            winRate: 0,
+            winRateChange: 0,
+            currentRating: 0,
+            ratingRank: 0,
+            activeTournaments: 0,
+            totalEnrolled: 0,
+            championPoints: 0,
+          },
+        });
 
   const { data: dashboardData } = useSupabaseQuery(dashboardDataQueryFn, [
     profileId,

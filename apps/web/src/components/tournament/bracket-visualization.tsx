@@ -1,6 +1,5 @@
 "use client";
 
-import { useMemo } from "react";
 import { cn } from "@/lib/utils";
 import { Trophy, ChevronRight, Users, Clock } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -23,19 +22,12 @@ export function BracketVisualization({
   onMatchClick,
 }: BracketVisualizationProps) {
   // Find the elimination bracket phase
-  const eliminationPhase = useMemo(
-    () =>
-      phases.find(
-        (p) =>
-          p.format === "single_elimination" || p.format === "double_elimination"
-      ),
-    [phases]
+  const eliminationPhase = phases.find(
+    (p) =>
+      p.format === "single_elimination" || p.format === "double_elimination"
   );
 
-  const swissPhase = useMemo(
-    () => phases.find((p) => p.format === "swiss"),
-    [phases]
-  );
+  const swissPhase = phases.find((p) => p.format === "swiss");
 
   if (!eliminationPhase && !swissPhase) {
     return (

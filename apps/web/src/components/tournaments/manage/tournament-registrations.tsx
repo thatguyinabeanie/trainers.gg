@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState } from "react";
 import { useSupabaseQuery } from "@/lib/supabase";
 import { getTournamentRegistrations } from "@trainers/supabase";
 import { Input } from "@/components/ui/input";
@@ -43,10 +43,7 @@ export function TournamentRegistrations({
   const [searchTerm, setSearchTerm] = useState("");
 
   const { data: registrations } = useSupabaseQuery(
-    useCallback(
-      (supabase) => getTournamentRegistrations(supabase, tournament.id),
-      [tournament.id]
-    ),
+    (supabase) => getTournamentRegistrations(supabase, tournament.id),
     [tournament.id]
   );
 

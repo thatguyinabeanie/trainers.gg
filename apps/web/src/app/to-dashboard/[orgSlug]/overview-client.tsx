@@ -76,86 +76,93 @@ export function OverviewClient({
 
   return (
     <div className="space-y-6">
-      {/* Stats Grid */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardContent className="flex items-center gap-4 pt-6">
-            <div className="bg-primary/10 rounded-full p-3">
-              <Trophy className="text-primary h-6 w-6" />
+      {/* Stats Grid - compact 2x2 on mobile */}
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+        <div className="bg-card rounded-lg p-3 sm:p-4">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <div className="bg-primary/10 rounded-full p-2 sm:p-3">
+              <Trophy className="text-primary h-4 w-4 sm:h-5 sm:w-5" />
             </div>
             <div>
-              <p className="text-2xl font-bold">
+              <p className="text-lg font-bold sm:text-2xl">
                 {organization.totalTournaments}
               </p>
-              <p className="text-muted-foreground text-sm">Total Tournaments</p>
+              <p className="text-muted-foreground text-xs sm:text-sm">
+                Tournaments
+              </p>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
-        <Card>
-          <CardContent className="flex items-center gap-4 pt-6">
-            <div className="bg-primary/10 rounded-full p-3">
-              <Clock className="text-primary h-6 w-6" />
+        <div className="bg-card rounded-lg p-3 sm:p-4">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <div className="bg-primary/10 rounded-full p-2 sm:p-3">
+              <Clock className="text-primary h-4 w-4 sm:h-5 sm:w-5" />
             </div>
             <div>
-              <p className="text-2xl font-bold">
+              <p className="text-lg font-bold sm:text-2xl">
                 {(organization.tournamentCounts.upcoming ?? 0) +
                   (organization.tournamentCounts.active ?? 0)}
               </p>
-              <p className="text-muted-foreground text-sm">Active/Upcoming</p>
+              <p className="text-muted-foreground text-xs sm:text-sm">Active</p>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
-        <Card>
-          <CardContent className="flex items-center gap-4 pt-6">
-            <div className="bg-primary/10 rounded-full p-3">
-              <Users className="text-primary h-6 w-6" />
+        <div className="bg-card rounded-lg p-3 sm:p-4">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <div className="bg-primary/10 rounded-full p-2 sm:p-3">
+              <Users className="text-primary h-4 w-4 sm:h-5 sm:w-5" />
             </div>
             <div>
-              <p className="text-2xl font-bold">
+              <p className="text-lg font-bold sm:text-2xl">
                 {organization.totalParticipants}
               </p>
-              <p className="text-muted-foreground text-sm">
-                Total Registrations
+              <p className="text-muted-foreground text-xs sm:text-sm">
+                Registrations
               </p>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
-        <Card>
-          <CardContent className="flex items-center gap-4 pt-6">
-            <div className="bg-primary/10 rounded-full p-3">
-              <Users className="text-primary h-6 w-6" />
+        <div className="bg-card rounded-lg p-3 sm:p-4">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <div className="bg-primary/10 rounded-full p-2 sm:p-3">
+              <Users className="text-primary h-4 w-4 sm:h-5 sm:w-5" />
             </div>
             <div>
-              <p className="text-2xl font-bold">{organization.staffCount}</p>
-              <p className="text-muted-foreground text-sm">Staff</p>
+              <p className="text-lg font-bold sm:text-2xl">
+                {organization.staffCount}
+              </p>
+              <p className="text-muted-foreground text-xs sm:text-sm">Staff</p>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </div>
 
       {/* Quick Actions */}
       <Card>
-        <CardHeader>
-          <CardTitle>Quick Actions</CardTitle>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base sm:text-lg">Quick Actions</CardTitle>
         </CardHeader>
-        <CardContent className="flex flex-wrap gap-3">
-          <Link href={`${basePath}/tournaments/create`}>
-            <Button className="gap-2">
+        <CardContent className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:gap-3">
+          <Link
+            href={`${basePath}/tournaments/create`}
+            className="w-full sm:w-auto"
+          >
+            <Button className="w-full gap-2 sm:w-auto">
               <Plus className="h-4 w-4" />
               Create Tournament
             </Button>
           </Link>
-          <Link href={`${basePath}/tournaments`}>
-            <Button variant="outline" className="gap-2">
+          <Link href={`${basePath}/tournaments`} className="w-full sm:w-auto">
+            <Button variant="outline" className="w-full gap-2 sm:w-auto">
               <Trophy className="h-4 w-4" />
-              View All Tournaments
+              View Tournaments
             </Button>
           </Link>
-          <Link href={`${basePath}/staff`}>
-            <Button variant="outline" className="gap-2">
+          <Link href={`${basePath}/staff`} className="w-full sm:w-auto">
+            <Button variant="outline" className="w-full gap-2 sm:w-auto">
               <Users className="h-4 w-4" />
               Manage Staff
             </Button>
@@ -165,12 +172,13 @@ export function OverviewClient({
 
       {/* Tournament Status Breakdown */}
       <Card>
-        <CardHeader>
-          <CardTitle>Tournament Status</CardTitle>
-          <CardDescription>Overview of tournaments by status</CardDescription>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base sm:text-lg">
+            Tournament Status
+          </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid gap-3 sm:grid-cols-5">
+          <div className="scrollbar-hide -mx-1 flex gap-2 overflow-x-auto px-1 pb-1 sm:mx-0 sm:grid sm:grid-cols-5 sm:gap-3 sm:overflow-visible sm:px-0">
             {(
               ["draft", "upcoming", "active", "completed", "cancelled"] as const
             ).map((status) => {
@@ -182,15 +190,15 @@ export function OverviewClient({
                 <Link
                   key={status}
                   href={`${basePath}/tournaments?status=${status}`}
-                  className="hover:bg-muted rounded-lg border p-4 text-center transition-colors"
+                  className="hover:bg-muted flex min-w-[72px] shrink-0 flex-col items-center rounded-lg border p-3 text-center transition-colors sm:min-w-0 sm:p-4"
                 >
-                  <div className="mb-2 flex justify-center">
-                    <div className={`rounded-full p-2 ${config.color}`}>
-                      <Icon className="h-4 w-4" />
-                    </div>
+                  <div
+                    className={`mb-1.5 rounded-full p-1.5 sm:mb-2 sm:p-2 ${config.color}`}
+                  >
+                    <Icon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                   </div>
-                  <p className="text-2xl font-bold">{count}</p>
-                  <p className="text-muted-foreground text-xs capitalize">
+                  <p className="text-lg font-bold sm:text-2xl">{count}</p>
+                  <p className="text-muted-foreground text-[10px] capitalize sm:text-xs">
                     {status}
                   </p>
                 </Link>

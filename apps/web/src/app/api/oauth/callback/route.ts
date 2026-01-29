@@ -50,7 +50,10 @@ function sanitizeUsername(handle: string): string {
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
-  const baseUrl = new URL(request.url).origin;
+  // Prefer explicit site URL for tunnel/proxy scenarios where request.url
+  // may combine forwarded protocol (https) with internal host (localhost)
+  const baseUrl =
+    process.env.NEXT_PUBLIC_SITE_URL || new URL(request.url).origin;
 
   try {
     // Step 1: Exchange auth code for tokens, get DID

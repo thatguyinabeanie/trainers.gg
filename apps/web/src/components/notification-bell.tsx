@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useState } from "react";
 import { Bell, Loader2, AlertCircle } from "lucide-react";
 import {
   Popover,
@@ -20,13 +20,10 @@ export function NotificationBell({ userId }: NotificationBellProps) {
   const [open, setOpen] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
 
-  const invitationsQueryFn = useCallback(
-    (client: TypedSupabaseClient) => {
-      if (!userId) return Promise.resolve([]);
-      return getMyOrganizationInvitations(client, userId);
-    },
-    [userId]
-  );
+  const invitationsQueryFn = (client: TypedSupabaseClient) => {
+    if (!userId) return Promise.resolve([]);
+    return getMyOrganizationInvitations(client, userId);
+  };
 
   const {
     data: invitations,

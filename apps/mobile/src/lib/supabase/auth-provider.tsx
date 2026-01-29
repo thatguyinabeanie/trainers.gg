@@ -1,7 +1,6 @@
 import {
   createContext,
   type ReactNode,
-  useCallback,
   useContext,
   useEffect,
   useState,
@@ -41,7 +40,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const fetchSession = useCallback(async () => {
+  const fetchSession = async () => {
     try {
       const {
         data: { session },
@@ -57,7 +56,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } finally {
       setLoading(false);
     }
-  }, []);
+  };
 
   useEffect(() => {
     fetchSession();
@@ -71,7 +70,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
 
     return () => subscription.unsubscribe();
-  }, [fetchSession]);
+  }, []);
 
   const signOut = async () => {
     setLoading(true);
@@ -167,10 +166,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { error };
   };
 
-  const refetchUser = useCallback(async () => {
+  const refetchUser = async () => {
     setLoading(true);
     await fetchSession();
-  }, [fetchSession]);
+  };
 
   const value: AuthContextType = {
     user,

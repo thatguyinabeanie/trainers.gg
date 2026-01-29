@@ -52,35 +52,46 @@ export function TODashboardNav({ orgSlug, isOwner }: TODashboardNavProps) {
 
   return (
     <nav className="flex items-center justify-between border-b bg-transparent p-0">
-      <div className="flex gap-0">
-        {visibleTabs.map((tab) => {
-          const isActive = tab.exact
-            ? pathname === tab.href
-            : pathname.startsWith(tab.href);
-          const Icon = tab.icon;
+      {/* Scrollable tabs container */}
+      <div className="relative min-w-0 flex-1">
+        <div className="scrollbar-hide overflow-x-auto">
+          <div className="flex min-w-max gap-0">
+            {visibleTabs.map((tab) => {
+              const isActive = tab.exact
+                ? pathname === tab.href
+                : pathname.startsWith(tab.href);
+              const Icon = tab.icon;
 
-          return (
-            <Link
-              key={tab.href}
-              href={tab.href}
-              className={cn(
-                "flex items-center gap-2 border-b-2 px-4 py-2 text-sm font-medium transition-colors",
-                isActive
-                  ? "border-primary text-foreground"
-                  : "text-muted-foreground hover:text-foreground border-transparent"
-              )}
-            >
-              <Icon className="h-4 w-4" />
-              {tab.label}
-            </Link>
-          );
-        })}
+              return (
+                <Link
+                  key={tab.href}
+                  href={tab.href}
+                  className={cn(
+                    "flex items-center gap-2 border-b-2 px-4 py-2 text-sm font-medium transition-colors",
+                    isActive
+                      ? "border-primary text-foreground"
+                      : "text-muted-foreground hover:text-foreground border-transparent"
+                  )}
+                >
+                  <Icon className="h-4 w-4" />
+                  <span className="hidden sm:inline">{tab.label}</span>
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+        {/* Fade indicator for more content */}
+        <div className="from-background pointer-events-none absolute top-0 right-0 bottom-0 w-8 bg-gradient-to-l to-transparent sm:hidden" />
       </div>
 
-      <Link href={`/organizations/${orgSlug}`} target="_blank">
+      <Link
+        href={`/organizations/${orgSlug}`}
+        target="_blank"
+        className="shrink-0"
+      >
         <Button variant="ghost" size="sm" className="gap-2">
           <ExternalLink className="h-4 w-4" />
-          View Public Page
+          <span className="hidden sm:inline">View Public Page</span>
         </Button>
       </Link>
     </nav>

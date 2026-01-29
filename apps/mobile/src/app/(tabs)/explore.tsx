@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState } from "react";
 import { RefreshControl, ActivityIndicator } from "react-native";
 import { YStack, XStack, Text, ScrollView, Input, useTheme } from "tamagui";
 import { Ionicons } from "@expo/vector-icons";
@@ -418,10 +418,10 @@ export default function ExploreScreen() {
   const [searchQuery, setSearchQuery] = useState("");
   const theme = useTheme();
 
-  const onRefresh = useCallback(() => {
+  const onRefresh = () => {
     setRefreshing(true);
     setTimeout(() => setRefreshing(false), 1500);
-  }, []);
+  };
 
   return (
     <Screen>

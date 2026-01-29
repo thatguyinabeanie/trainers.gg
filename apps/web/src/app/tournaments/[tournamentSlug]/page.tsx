@@ -4,7 +4,6 @@ import { createStaticClient } from "@/lib/supabase/server";
 import { getTournamentBySlug } from "@trainers/supabase";
 import { CacheTags } from "@/lib/cache";
 import Link from "next/link";
-import { Badge } from "@/components/ui/badge";
 import {
   Card,
   CardContent,
@@ -23,6 +22,8 @@ import {
   ExternalLink,
 } from "lucide-react";
 import { TournamentTabs } from "./tournament-tabs";
+import { PageContainer } from "@/components/layout/page-container";
+import { StatusBadge } from "@/components/ui/status-badge";
 
 // On-demand revalidation only (no time-based)
 export const revalidate = false;
@@ -32,24 +33,6 @@ interface PageProps {
     tournamentSlug: string;
   }>;
 }
-
-type TournamentStatus =
-  | "draft"
-  | "upcoming"
-  | "active"
-  | "completed"
-  | "cancelled"
-  | "paused";
-
-const statusConfig: Record<TournamentStatus, { color: string; label: string }> =
-  {
-    draft: { color: "bg-gray-100 text-gray-800", label: "Draft" },
-    upcoming: { color: "bg-blue-100 text-blue-800", label: "Upcoming" },
-    active: { color: "bg-green-100 text-green-800", label: "Active" },
-    completed: { color: "bg-purple-100 text-purple-800", label: "Completed" },
-    cancelled: { color: "bg-red-100 text-red-800", label: "Cancelled" },
-    paused: { color: "bg-yellow-100 text-yellow-800", label: "Paused" },
-  };
 
 const tournamentFormatLabels: Record<string, string> = {
   swiss_only: "Swiss Only",
@@ -121,12 +104,13 @@ function TournamentHeader({
     <div className="mb-8">
       <div className="mb-2 flex items-center gap-3">
         <h1 className="text-3xl font-bold">{tournament.name}</h1>
-        <Badge
-          className={statusConfig[tournament.status as TournamentStatus]?.color}
-        >
-          {statusConfig[tournament.status as TournamentStatus]?.label ||
-            tournament.status}
-        </Badge>
+        {(tournament.status === "active" ||
+          tournament.status === "upcoming" ||
+          tournament.status === "draft" ||
+          tournament.status === "completed" ||
+          tournament.status === "cancelled") && (
+          <StatusBadge status={tournament.status} />
+        )}
       </div>
 
       <div className="text-muted-foreground flex flex-wrap items-center gap-4 text-sm">
@@ -347,7 +331,7 @@ export default async function TournamentPage({ params }: PageProps) {
   } | null;
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <PageContainer>
       <Breadcrumb tournamentName={tournament.name} />
       <TournamentHeader tournament={tournament} />
 
@@ -368,6 +352,6 @@ export default async function TournamentPage({ params }: PageProps) {
           <OrganizerCard organization={organization} />
         </div>
       </div>
-    </div>
+    </PageContainer>
   );
 }

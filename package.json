@@ -48,7 +48,7 @@
     "prettier": "catalog:",
     "prettier-plugin-tailwindcss": "^0.6.9",
     "supabase": "^2.72.8",
-    "turbo": "^2.7.6",
+    "turbo": "^2.8.0",
     "typescript": "catalog:"
   },
   "lint-staged": {

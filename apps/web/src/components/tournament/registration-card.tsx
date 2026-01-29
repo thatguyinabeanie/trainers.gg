@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState } from "react";
 import { useSupabaseQuery, useSupabaseMutation } from "@/lib/supabase";
 import {
   getRegistrationStatus,
@@ -63,15 +63,12 @@ export function RegistrationCard({ tournamentId }: RegistrationCardProps) {
     isLoading: isLoadingStatus,
     refetch: refetchStatus,
   } = useSupabaseQuery(
-    useCallback(
-      (supabase) => getRegistrationStatus(supabase, tournamentId),
-      [tournamentId]
-    ),
+    (supabase) => getRegistrationStatus(supabase, tournamentId),
     [tournamentId]
   );
 
   const { data: userTeams } = useSupabaseQuery(
-    useCallback((supabase) => getUserTeams(supabase), []),
+    (supabase) => getUserTeams(supabase),
     []
   );
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback, useRef, useMemo } from "react";
+import { useEffect, useState, useRef } from "react";
 import { createClient } from "./client";
 import type { TypedSupabaseClient } from "@trainers/supabase";
 import type { User } from "@supabase/supabase-js";
@@ -10,7 +10,7 @@ import type { User } from "@supabase/supabase-js";
  * Creates a stable client instance that persists across re-renders.
  */
 export function useSupabase() {
-  const client = useMemo(() => createClient(), []);
+  const client = createClient();
   return client;
 }
 
@@ -77,7 +77,7 @@ export function useSupabaseQuery<T>(
   // Stringify deps to trigger re-execution when values change
   const depsKey = JSON.stringify(deps);
 
-  const execute = useCallback(async () => {
+  const execute = async () => {
     setIsLoading(true);
     setError(null);
 
@@ -95,8 +95,7 @@ export function useSupabaseQuery<T>(
         setIsLoading(false);
       }
     }
-    // Dependencies are intentionally limited to supabase client and depsKey
-  }, [supabase, depsKey]);
+  };
 
   useEffect(() => {
     mountedRef.current = true;
@@ -105,7 +104,7 @@ export function useSupabaseQuery<T>(
     return () => {
       mountedRef.current = false;
     };
-  }, [execute]);
+  }, [supabase, depsKey]);
 
   return {
     data,
@@ -137,36 +136,30 @@ export function useSupabaseMutation<TArgs, TResult>(
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
 
-  const mutateAsync = useCallback(
-    async (args: TArgs): Promise<TResult> => {
-      setIsLoading(true);
-      setError(null);
+  const mutateAsync = async (args: TArgs): Promise<TResult> => {
+    setIsLoading(true);
+    setError(null);
 
-      try {
-        const result = await mutationFn(supabase, args);
-        return result;
-      } catch (err) {
-        const error = err instanceof Error ? err : new Error(String(err));
-        setError(error);
-        throw error;
-      } finally {
-        setIsLoading(false);
-      }
-    },
-    [supabase, mutationFn]
-  );
+    try {
+      const result = await mutationFn(supabase, args);
+      return result;
+    } catch (err) {
+      const error = err instanceof Error ? err : new Error(String(err));
+      setError(error);
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-  const mutate = useCallback(
-    async (args: TArgs): Promise<TResult> => {
-      return mutateAsync(args);
-    },
-    [mutateAsync]
-  );
+  const mutate = async (args: TArgs): Promise<TResult> => {
+    return mutateAsync(args);
+  };
 
-  const reset = useCallback(() => {
+  const reset = () => {
     setError(null);
     setIsLoading(false);
-  }, []);
+  };
 
   return {
     mutate,

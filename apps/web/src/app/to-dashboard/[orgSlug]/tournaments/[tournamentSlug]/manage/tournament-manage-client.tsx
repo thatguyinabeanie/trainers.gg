@@ -1,6 +1,5 @@
 "use client";
 
-import { useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useSupabaseQuery } from "@/lib/supabase";
 import {
@@ -12,7 +11,7 @@ import { useCurrentUser } from "@/hooks/use-current-user";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { StatusBadge, type Status } from "@/components/ui/status-badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   TournamentOverview,
@@ -39,21 +38,6 @@ interface TournamentManageClientProps {
   tournamentSlug: string;
 }
 
-type TournamentStatus =
-  | "draft"
-  | "upcoming"
-  | "active"
-  | "completed"
-  | "cancelled";
-
-const statusColors: Record<TournamentStatus, string> = {
-  draft: "bg-gray-100 text-gray-800",
-  upcoming: "bg-blue-100 text-blue-800",
-  active: "bg-green-100 text-green-800",
-  completed: "bg-purple-100 text-purple-800",
-  cancelled: "bg-red-100 text-red-800",
-};
-
 export function TournamentManageClient({
   orgSlug,
   tournamentSlug,
@@ -63,11 +47,8 @@ export function TournamentManageClient({
   const { user: currentUser, isLoading: userLoading } = useCurrentUser();
 
   // Fetch organization by slug
-  const orgQueryFn = useCallback(
-    (supabase: Parameters<typeof getOrganizationBySlug>[0]) =>
-      getOrganizationBySlug(supabase, orgSlug),
-    [orgSlug]
-  );
+  const orgQueryFn = (supabase: Parameters<typeof getOrganizationBySlug>[0]) =>
+    getOrganizationBySlug(supabase, orgSlug);
 
   const { data: organization, isLoading: orgLoading } = useSupabaseQuery(
     orgQueryFn,
@@ -75,11 +56,9 @@ export function TournamentManageClient({
   );
 
   // Fetch tournament by slug
-  const tournamentQueryFn = useCallback(
-    (supabase: Parameters<typeof getTournamentBySlug>[0]) =>
-      getTournamentBySlug(supabase, tournamentSlug),
-    [tournamentSlug]
-  );
+  const tournamentQueryFn = (
+    supabase: Parameters<typeof getTournamentBySlug>[0]
+  ) => getTournamentBySlug(supabase, tournamentSlug);
 
   const { data: tournament, isLoading: tournamentLoading } = useSupabaseQuery(
     tournamentQueryFn,
@@ -87,13 +66,12 @@ export function TournamentManageClient({
   );
 
   // Fetch tournament phases (depends on tournament being loaded)
-  const phasesQueryFn = useCallback(
-    (supabase: Parameters<typeof getTournamentPhases>[0]) =>
-      tournament
-        ? getTournamentPhases(supabase, tournament.id)
-        : Promise.resolve([]),
-    [tournament]
-  );
+  const phasesQueryFn = (
+    supabase: Parameters<typeof getTournamentPhases>[0]
+  ) =>
+    tournament
+      ? getTournamentPhases(supabase, tournament.id)
+      : Promise.resolve([]);
 
   const { data: phases = [] } = useSupabaseQuery(phasesQueryFn, [
     tournament?.id,
@@ -253,11 +231,7 @@ export function TournamentManageClient({
           <div>
             <div className="flex items-center gap-2">
               <h1 className="text-2xl font-bold">{tournament.name}</h1>
-              <Badge
-                className={statusColors[tournament.status as TournamentStatus]}
-              >
-                {tournament.status}
-              </Badge>
+              <StatusBadge status={tournament.status as Status} />
             </div>
             <p className="text-muted-foreground text-sm">
               Hosted by {organization.name}
@@ -276,28 +250,35 @@ export function TournamentManageClient({
 
       {/* Tabs */}
       <Tabs defaultValue="overview" className="space-y-6">
-        <TabsList>
-          <TabsTrigger value="overview" className="gap-2">
-            <Trophy className="h-4 w-4" />
-            Overview
-          </TabsTrigger>
-          <TabsTrigger value="registrations" className="gap-2">
-            <Users className="h-4 w-4" />
-            Registrations
-          </TabsTrigger>
-          <TabsTrigger value="pairings" className="gap-2">
-            <LayoutList className="h-4 w-4" />
-            Pairings
-          </TabsTrigger>
-          <TabsTrigger value="standings" className="gap-2">
-            <Medal className="h-4 w-4" />
-            Standings
-          </TabsTrigger>
-          <TabsTrigger value="settings" className="gap-2">
-            <Settings className="h-4 w-4" />
-            Settings
-          </TabsTrigger>
-        </TabsList>
+        {/* Scrollable tabs container */}
+        <div className="relative">
+          <div className="scrollbar-hide -mx-4 overflow-x-auto px-4 md:mx-0 md:px-0">
+            <TabsList className="min-w-max md:min-w-0">
+              <TabsTrigger value="overview" className="gap-2">
+                <Trophy className="h-4 w-4" />
+                <span className="hidden sm:inline">Overview</span>
+              </TabsTrigger>
+              <TabsTrigger value="registrations" className="gap-2">
+                <Users className="h-4 w-4" />
+                <span className="hidden sm:inline">Registrations</span>
+              </TabsTrigger>
+              <TabsTrigger value="pairings" className="gap-2">
+                <LayoutList className="h-4 w-4" />
+                <span className="hidden sm:inline">Pairings</span>
+              </TabsTrigger>
+              <TabsTrigger value="standings" className="gap-2">
+                <Medal className="h-4 w-4" />
+                <span className="hidden sm:inline">Standings</span>
+              </TabsTrigger>
+              <TabsTrigger value="settings" className="gap-2">
+                <Settings className="h-4 w-4" />
+                <span className="hidden sm:inline">Settings</span>
+              </TabsTrigger>
+            </TabsList>
+          </div>
+          {/* Fade indicator for more content */}
+          <div className="from-background pointer-events-none absolute top-0 right-0 bottom-0 w-8 bg-gradient-to-l to-transparent md:hidden" />
+        </div>
 
         <TabsContent value="overview">
           <TournamentOverview tournament={tournamentForOverview} />

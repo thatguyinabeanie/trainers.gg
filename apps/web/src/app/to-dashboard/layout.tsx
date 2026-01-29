@@ -17,9 +17,5 @@ export default async function TODashboardLayout({
     redirect("/sign-in?redirect=/to-dashboard");
   }
 
-  return (
-    <PageContainer variant="wide" noPadding>
-      <div className="w-full py-8">{children}</div>
-    </PageContainer>
-  );
+  return <PageContainer variant="wide">{children}</PageContainer>;
 }

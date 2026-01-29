@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState } from "react";
 import { useSupabaseQuery } from "@/lib/supabase";
 import { getTournamentInvitationsSent } from "@trainers/supabase";
 import {
@@ -110,10 +110,7 @@ export function InvitationList({
   // Use the getTournamentInvitationsSent query filtered by tournamentId
   const { data: invitations, isLoading: isLoadingInvitations } =
     useSupabaseQuery(
-      useCallback(
-        (supabase) => getTournamentInvitationsSent(supabase, tournamentId),
-        [tournamentId]
-      ),
+      (supabase) => getTournamentInvitationsSent(supabase, tournamentId),
       [tournamentId]
     );
 

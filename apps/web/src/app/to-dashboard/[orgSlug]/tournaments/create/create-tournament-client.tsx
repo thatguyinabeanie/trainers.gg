@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -184,11 +184,8 @@ export function CreateTournamentClient({
   const [currentStep, setCurrentStep] = useState(1);
 
   // Fetch organization by slug
-  const orgQueryFn = useCallback(
-    (supabase: Parameters<typeof getOrganizationBySlug>[0]) =>
-      getOrganizationBySlug(supabase, orgSlug),
-    [orgSlug]
-  );
+  const orgQueryFn = (supabase: Parameters<typeof getOrganizationBySlug>[0]) =>
+    getOrganizationBySlug(supabase, orgSlug);
 
   const { data: organization, isLoading: orgLoading } = useSupabaseQuery(
     orgQueryFn,

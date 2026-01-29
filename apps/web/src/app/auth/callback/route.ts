@@ -4,7 +4,11 @@ import { createClient } from "@/lib/supabase/server";
 import { isProfileComplete } from "@/app/onboarding/actions";
 
 export async function GET(request: NextRequest) {
-  const { searchParams, origin } = new URL(request.url);
+  const { searchParams } = new URL(request.url);
+  // Prefer explicit site URL for tunnel/proxy scenarios where request.url
+  // may combine forwarded protocol (https) with internal host (localhost)
+  const origin =
+    process.env.NEXT_PUBLIC_SITE_URL || new URL(request.url).origin;
   const code = searchParams.get("code");
   const tokenHash = searchParams.get("token_hash");
   const type = searchParams.get("type");

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useSupabaseQuery } from "@/lib/supabase";
@@ -93,14 +93,13 @@ export function TournamentsListClient({
     initialStatus ||
     "all") as TournamentStatus;
 
-  const queryFn = useCallback(
-    (supabase: Parameters<typeof listOrganizationTournaments>[0]) =>
-      listOrganizationTournaments(supabase, organizationId, {
-        status: currentStatus === "all" ? undefined : currentStatus,
-        limit: 50,
-      }),
-    [organizationId, currentStatus]
-  );
+  const queryFn = (
+    supabase: Parameters<typeof listOrganizationTournaments>[0]
+  ) =>
+    listOrganizationTournaments(supabase, organizationId, {
+      status: currentStatus === "all" ? undefined : currentStatus,
+      limit: 50,
+    });
 
   const { data, isLoading, error } = useSupabaseQuery(queryFn, [
     organizationId,

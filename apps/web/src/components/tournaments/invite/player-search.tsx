@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useCallback } from "react";
+import { useState } from "react";
 import { useSupabaseQuery } from "@/lib/supabase";
 import { searchProfiles } from "@trainers/supabase";
 import type { SelectedPlayer } from "@/lib/types/tournament";
@@ -39,18 +39,15 @@ export function PlayerSearch({
 
   // Search for players when query is at least 2 characters
   const { data: searchResults, isLoading } = useSupabaseQuery(
-    useCallback(
-      (supabase) =>
-        searchQuery.length >= 2
-          ? searchProfiles(supabase, searchQuery, 20)
-          : Promise.resolve([]),
-      [searchQuery]
-    ),
+    (supabase) =>
+      searchQuery.length >= 2
+        ? searchProfiles(supabase, searchQuery, 20)
+        : Promise.resolve([]),
     [searchQuery]
   );
 
   // Filter out already selected and excluded players
-  const filteredResults = useMemo(() => {
+  const filteredResults = (() => {
     if (!searchResults) return [];
 
     const selectedIds = new Set(selectedPlayers.map((p) => p.id));
@@ -60,7 +57,7 @@ export function PlayerSearch({
       (player: SearchResult) =>
         !selectedIds.has(player.id) && !excludedIds.has(player.id)
     );
-  }, [searchResults, selectedPlayers, excludePlayerIds]);
+  })();
 
   const handleSelectPlayer = (player: SearchResult) => {
     if (maxSelections && selectedPlayers.length >= maxSelections) {

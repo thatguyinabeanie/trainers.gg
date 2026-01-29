@@ -68,6 +68,23 @@ const JWKS_URI = `${siteUrl}/oauth/jwks.json`;
 // Singleton client instance
 let oauthClient: NodeOAuthClient | null = null;
 
+// In-memory lock to prevent concurrent token refreshes from revoking each other.
+// Uses a Map of promises keyed by lock name — when a lock is held, subsequent
+// requests for the same key wait for the existing promise to resolve.
+const locks = new Map<string, Promise<unknown>>();
+
+async function requestLock<T>(
+  name: string,
+  fn: () => T | PromiseLike<T>
+): Promise<T> {
+  while (locks.has(name)) {
+    await locks.get(name);
+  }
+  const promise = Promise.resolve(fn()).finally(() => locks.delete(name));
+  locks.set(name, promise);
+  return promise;
+}
+
 /**
  * State store implementation using Supabase
  * Stores temporary OAuth state during authorization flow
@@ -221,6 +238,7 @@ export async function getAtprotoOAuthClient(): Promise<NodeOAuthClient> {
     keyset: [privateKey],
     stateStore,
     sessionStore,
+    requestLock,
   });
 
   return oauthClient;
@@ -298,10 +316,23 @@ export async function handleAtprotoCallback(params: URLSearchParams): Promise<{
 
 /**
  * Get an authenticated session for a DID
+ *
+ * Returns null if:
+ * - AT Protocol OAuth is not configured (missing ATPROTO_PRIVATE_KEY)
+ * - The DID is invalid (e.g., fake seed data DIDs)
+ * - The session cannot be restored
  */
 export async function getAtprotoSession(did: string) {
-  const client = await getAtprotoOAuthClient();
-  return client.restore(did);
+  if (!process.env.ATPROTO_PRIVATE_KEY) {
+    return null;
+  }
+  try {
+    const client = await getAtprotoOAuthClient();
+    return await client.restore(did);
+  } catch (error) {
+    // Expected for seed data with fake DIDs or invalidated sessions
+    return null;
+  }
 }
 
 /**

@@ -14,8 +14,11 @@
 import { NextResponse } from "next/server";
 
 export async function GET(request: Request) {
+  // Prefer explicit site URL for tunnel/proxy scenarios where request.url
+  // reflects the internal host (e.g., 127.0.0.1) instead of the public URL
   const url = new URL(request.url);
-  const baseUrl = `${url.protocol}//${url.host}`;
+  const baseUrl =
+    process.env.NEXT_PUBLIC_SITE_URL || `${url.protocol}//${url.host}`;
 
   // The client_id IS this endpoint's URL (self-referential)
   const clientId = `${baseUrl}/api/oauth/client-metadata`;

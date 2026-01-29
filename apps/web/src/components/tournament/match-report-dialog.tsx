@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect } from "react";
+import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -83,13 +83,10 @@ export function MatchReportDialog({
   const player2Score = form.watch("player2Score");
 
   const { data: matchDetails } = useSupabaseQuery(
-    useCallback(
-      async (supabase) => {
-        if (!matchId) return null;
-        return getMatchDetails(supabase, matchId);
-      },
-      [matchId]
-    ),
+    async (supabase) => {
+      if (!matchId) return null;
+      return getMatchDetails(supabase, matchId);
+    },
     [matchId]
   );
 

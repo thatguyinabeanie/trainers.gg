@@ -26,6 +26,8 @@ import { TournamentSearch } from "./tournament-search";
 import { DateChip } from "./date-chip";
 import { QuickRegisterButton } from "./quick-register-button";
 import { CacheTags } from "@/lib/cache";
+import { PageContainer } from "@/components/layout/page-container";
+import { ResponsiveTable } from "@/components/ui/responsive-table";
 
 // On-demand revalidation via cache tags (no time-based revalidation)
 export const revalidate = false;
@@ -84,7 +86,7 @@ function EmptyState({ isSearching }: { isSearching: boolean }) {
 // Active Tournaments Table (Server Component)
 // ============================================================================
 
-function ActiveTournamentsTable({
+function ActiveTournaments({
   tournaments,
 }: {
   tournaments: TournamentWithOrg[];
@@ -92,66 +94,105 @@ function ActiveTournamentsTable({
   if (tournaments.length === 0) return null;
 
   return (
-    <div className="rounded-lg border">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Name</TableHead>
-            <TableHead>Organization</TableHead>
-            <TableHead className="text-right">Players</TableHead>
-            <TableHead>Progress</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {tournaments.map((tournament) => (
-            <TableRow key={tournament.id} className="hover:bg-muted/50">
-              <TableCell className="text-muted-foreground">
-                <div className="flex items-center gap-2">
-                  <span className="relative flex h-2 w-2">
-                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-75"></span>
-                    <span className="relative inline-flex h-2 w-2 rounded-full bg-green-500"></span>
-                  </span>
-                  <Link
-                    href={`/tournaments/${tournament.slug}`}
-                    className="hover:text-primary hover:underline"
-                  >
-                    {tournament.name}
-                  </Link>
-                </div>
-              </TableCell>
-              <TableCell className="text-muted-foreground">
-                {tournament.organization ? (
-                  <Link
-                    href={`/organizations/${tournament.organization.slug}`}
-                    className="hover:text-primary hover:underline"
-                  >
-                    {tournament.organization.name}
-                  </Link>
-                ) : (
-                  "—"
-                )}
-              </TableCell>
-              <TableCell className="text-muted-foreground text-right">
-                {tournament._count.registrations}
-              </TableCell>
-              <TableCell className="text-muted-foreground">
-                {tournament.current_round
-                  ? `Round ${tournament.current_round}${tournament.swiss_rounds ? ` of ${tournament.swiss_rounds}` : ""}`
-                  : "In Progress"}
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </div>
+    <>
+      {/* Mobile: Card list */}
+      <div className="divide-y rounded-lg border md:hidden">
+        {tournaments.map((tournament) => {
+          const progressText = tournament.current_round
+            ? `Round ${tournament.current_round}${tournament.swiss_rounds ? `/${tournament.swiss_rounds}` : ""}`
+            : "In Progress";
+
+          return (
+            <Link
+              key={tournament.id}
+              href={`/tournaments/${tournament.slug}`}
+              className="hover:bg-muted/50 flex items-center gap-3 p-3 transition-colors"
+            >
+              <span className="relative flex h-2.5 w-2.5 shrink-0">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-75"></span>
+                <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-green-500"></span>
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="truncate font-semibold">{tournament.name}</p>
+                <p className="text-muted-foreground truncate text-xs">
+                  {tournament.organization?.name}
+                  {tournament.organization && " · "}
+                  <Users className="inline h-3 w-3" />{" "}
+                  {tournament._count.registrations}
+                  {" · "}
+                  {progressText}
+                </p>
+              </div>
+            </Link>
+          );
+        })}
+      </div>
+
+      {/* Desktop: Table */}
+      <div className="hidden rounded-lg border md:block">
+        <ResponsiveTable>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Name</TableHead>
+                <TableHead>Organization</TableHead>
+                <TableHead className="text-right">Players</TableHead>
+                <TableHead>Progress</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {tournaments.map((tournament) => (
+                <TableRow key={tournament.id} className="hover:bg-muted/50">
+                  <TableCell className="text-muted-foreground">
+                    <div className="flex items-center gap-2">
+                      <span className="relative flex h-2 w-2 shrink-0">
+                        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-75"></span>
+                        <span className="relative inline-flex h-2 w-2 rounded-full bg-green-500"></span>
+                      </span>
+                      <Link
+                        href={`/tournaments/${tournament.slug}`}
+                        className="hover:text-primary hover:underline"
+                      >
+                        {tournament.name}
+                      </Link>
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {tournament.organization ? (
+                      <Link
+                        href={`/organizations/${tournament.organization.slug}`}
+                        className="hover:text-primary hover:underline"
+                      >
+                        {tournament.organization.name}
+                      </Link>
+                    ) : (
+                      "—"
+                    )}
+                  </TableCell>
+                  <TableCell className="text-muted-foreground text-right">
+                    {tournament._count.registrations}
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {tournament.current_round
+                      ? `Round ${tournament.current_round}${tournament.swiss_rounds ? ` of ${tournament.swiss_rounds}` : ""}`
+                      : "In Progress"}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </ResponsiveTable>
+      </div>
+    </>
   );
 }
 
 // ============================================================================
-// Upcoming Tournaments Table (Server Component)
+// Upcoming Tournaments (Server Component)
+// Table on desktop, card list on mobile
 // ============================================================================
 
-function UpcomingTournamentsTable({
+function UpcomingTournaments({
   tournaments,
   registeredTournamentIds,
 }: {
@@ -161,90 +202,159 @@ function UpcomingTournamentsTable({
   if (tournaments.length === 0) return null;
 
   return (
-    <div className="rounded-lg border">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>
-              <div className="flex items-center gap-1">
-                <Calendar className="h-3.5 w-3.5" />
-                Date & Time
+    <>
+      {/* Mobile: Card list */}
+      <div className="divide-y rounded-lg border md:hidden">
+        {tournaments.map((tournament) => {
+          const spotsText = tournament.max_participants
+            ? `${tournament._count.registrations}/${tournament.max_participants}`
+            : `${tournament._count.registrations}`;
+
+          const isFull =
+            tournament.max_participants &&
+            tournament._count.registrations >= tournament.max_participants;
+
+          const isRegistered = registeredTournamentIds.has(tournament.id);
+
+          // Format date compactly for mobile
+          const date = tournament.start_date
+            ? new Date(tournament.start_date)
+            : null;
+          const dateStr = date
+            ? date.toLocaleDateString("en-US", {
+                month: "short",
+                day: "numeric",
+              })
+            : "";
+          const timeStr = date
+            ? date
+                .toLocaleTimeString("en-US", {
+                  hour: "numeric",
+                  minute: "2-digit",
+                })
+                .toLowerCase()
+            : "";
+
+          return (
+            <div key={tournament.id} className="flex items-center gap-3 p-3">
+              <div className="min-w-0 flex-1">
+                <p className="text-muted-foreground mb-0.5 text-xs">
+                  {dateStr} · {timeStr}
+                </p>
+                <Link
+                  href={`/tournaments/${tournament.slug}`}
+                  className="hover:text-primary mb-0.5 block truncate font-semibold hover:underline"
+                >
+                  {tournament.name}
+                </Link>
+                <p className="text-muted-foreground truncate text-xs">
+                  {tournament.organization?.name}
+                  {tournament.organization && " · "}
+                  <Users className="inline h-3 w-3" /> {spotsText}
+                </p>
               </div>
-            </TableHead>
-            <TableHead>Name</TableHead>
-            <TableHead className="hidden sm:table-cell">Organization</TableHead>
-            <TableHead className="text-right">
-              <div className="flex items-center justify-end gap-1">
-                <Users className="h-3.5 w-3.5" />
-                Spots
-              </div>
-            </TableHead>
-            <TableHead className="w-25 text-center"></TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {tournaments.map((tournament) => {
-            const spotsText = tournament.max_participants
-              ? `${tournament._count.registrations} / ${tournament.max_participants}`
-              : `${tournament._count.registrations}`;
+              <QuickRegisterButton
+                tournamentId={tournament.id}
+                tournamentSlug={tournament.slug}
+                tournamentName={tournament.name}
+                isFull={!!isFull}
+                isRegistered={isRegistered}
+              />
+            </div>
+          );
+        })}
+      </div>
 
-            const isFull =
-              tournament.max_participants &&
-              tournament._count.registrations >= tournament.max_participants;
-
-            const isRegistered = registeredTournamentIds.has(tournament.id);
-
-            return (
-              <TableRow key={tournament.id} className="hover:bg-muted/50">
-                <TableCell>
-                  <DateChip dateString={tournament.start_date} showTime />
-                </TableCell>
-                <TableCell className="text-muted-foreground">
-                  <Link
-                    href={`/tournaments/${tournament.slug}`}
-                    className="hover:text-primary hover:underline"
-                  >
-                    {tournament.name}
-                  </Link>
-                </TableCell>
-                <TableCell className="text-muted-foreground hidden sm:table-cell">
-                  {tournament.organization ? (
-                    <Link
-                      href={`/organizations/${tournament.organization.slug}`}
-                      className="hover:text-primary hover:underline"
-                    >
-                      {tournament.organization.name}
-                    </Link>
-                  ) : (
-                    "—"
-                  )}
-                </TableCell>
-                <TableCell className="text-right">
-                  <span className="text-muted-foreground">{spotsText}</span>
-                </TableCell>
-                <TableCell className="text-center">
-                  <QuickRegisterButton
-                    tournamentId={tournament.id}
-                    tournamentSlug={tournament.slug}
-                    tournamentName={tournament.name}
-                    isFull={!!isFull}
-                    isRegistered={isRegistered}
-                  />
-                </TableCell>
+      {/* Desktop: Table */}
+      <div className="hidden rounded-lg border md:block">
+        <ResponsiveTable>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="whitespace-nowrap">
+                  <div className="flex items-center gap-1">
+                    <Calendar className="h-3.5 w-3.5" />
+                    Date & Time
+                  </div>
+                </TableHead>
+                <TableHead>Name</TableHead>
+                <TableHead>Organization</TableHead>
+                <TableHead className="text-right">
+                  <div className="flex items-center justify-end gap-1">
+                    <Users className="h-3.5 w-3.5" />
+                    Spots
+                  </div>
+                </TableHead>
+                <TableHead className="w-25 text-center"></TableHead>
               </TableRow>
-            );
-          })}
-        </TableBody>
-      </Table>
-    </div>
+            </TableHeader>
+            <TableBody>
+              {tournaments.map((tournament) => {
+                const spotsText = tournament.max_participants
+                  ? `${tournament._count.registrations} / ${tournament.max_participants}`
+                  : `${tournament._count.registrations}`;
+
+                const isFull =
+                  tournament.max_participants &&
+                  tournament._count.registrations >=
+                    tournament.max_participants;
+
+                const isRegistered = registeredTournamentIds.has(tournament.id);
+
+                return (
+                  <TableRow key={tournament.id} className="hover:bg-muted/50">
+                    <TableCell className="whitespace-nowrap">
+                      <DateChip dateString={tournament.start_date} showTime />
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">
+                      <Link
+                        href={`/tournaments/${tournament.slug}`}
+                        className="hover:text-primary hover:underline"
+                      >
+                        {tournament.name}
+                      </Link>
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {tournament.organization ? (
+                        <Link
+                          href={`/organizations/${tournament.organization.slug}`}
+                          className="hover:text-primary hover:underline"
+                        >
+                          {tournament.organization.name}
+                        </Link>
+                      ) : (
+                        "—"
+                      )}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <span className="text-muted-foreground">{spotsText}</span>
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <QuickRegisterButton
+                        tournamentId={tournament.id}
+                        tournamentSlug={tournament.slug}
+                        tournamentName={tournament.name}
+                        isFull={!!isFull}
+                        isRegistered={isRegistered}
+                      />
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </ResponsiveTable>
+      </div>
+    </>
   );
 }
 
 // ============================================================================
-// Completed Tournaments Table (Server Component)
+// Completed Tournaments (Server Component)
+// Table on desktop, card list on mobile
 // ============================================================================
 
-function CompletedTournamentsTable({
+function CompletedTournaments({
   tournaments,
 }: {
   tournaments: TournamentWithOrg[];
@@ -252,54 +362,98 @@ function CompletedTournamentsTable({
   if (tournaments.length === 0) return null;
 
   return (
-    <div className="rounded-lg border">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Date</TableHead>
-            <TableHead>Name</TableHead>
-            <TableHead>Organization</TableHead>
-            <TableHead className="text-right">Players</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {tournaments.map((tournament) => (
-            <TableRow key={tournament.id} className="hover:bg-muted/50">
-              <TableCell>
-                <DateChip
-                  dateString={tournament.end_date || tournament.start_date}
-                  showTime={false}
-                  showYear
-                />
-              </TableCell>
-              <TableCell className="text-muted-foreground">
-                <Link
-                  href={`/tournaments/${tournament.slug}`}
-                  className="hover:text-primary hover:underline"
-                >
+    <>
+      {/* Mobile: Card list */}
+      <div className="divide-y rounded-lg border md:hidden">
+        {tournaments.map((tournament) => {
+          const date =
+            tournament.end_date || tournament.start_date
+              ? new Date(tournament.end_date || tournament.start_date!)
+              : null;
+          const dateStr = date
+            ? date.toLocaleDateString("en-US", {
+                month: "short",
+                day: "numeric",
+              })
+            : "";
+
+          return (
+            <Link
+              key={tournament.id}
+              href={`/tournaments/${tournament.slug}`}
+              className="hover:bg-muted/50 flex items-center gap-3 p-3 transition-colors"
+            >
+              <div className="min-w-0 flex-1">
+                <p className="text-muted-foreground mb-0.5 text-xs">
+                  {dateStr}
+                </p>
+                <p className="mb-0.5 truncate font-semibold">
                   {tournament.name}
-                </Link>
-              </TableCell>
-              <TableCell className="text-muted-foreground">
-                {tournament.organization ? (
-                  <Link
-                    href={`/organizations/${tournament.organization.slug}`}
-                    className="hover:text-primary hover:underline"
-                  >
-                    {tournament.organization.name}
-                  </Link>
-                ) : (
-                  "—"
-                )}
-              </TableCell>
-              <TableCell className="text-muted-foreground text-right">
-                {tournament._count.registrations}
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </div>
+                </p>
+                <p className="text-muted-foreground truncate text-xs">
+                  {tournament.organization?.name}
+                  {tournament.organization && " · "}
+                  <Users className="inline h-3 w-3" />{" "}
+                  {tournament._count.registrations}
+                </p>
+              </div>
+            </Link>
+          );
+        })}
+      </div>
+
+      {/* Desktop: Table */}
+      <div className="hidden rounded-lg border md:block">
+        <ResponsiveTable>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Date</TableHead>
+                <TableHead>Name</TableHead>
+                <TableHead>Organization</TableHead>
+                <TableHead className="text-right">Players</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {tournaments.map((tournament) => (
+                <TableRow key={tournament.id} className="hover:bg-muted/50">
+                  <TableCell className="whitespace-nowrap">
+                    <DateChip
+                      dateString={tournament.end_date || tournament.start_date}
+                      showTime={false}
+                      showYear
+                    />
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">
+                    <Link
+                      href={`/tournaments/${tournament.slug}`}
+                      className="hover:text-primary hover:underline"
+                    >
+                      {tournament.name}
+                    </Link>
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {tournament.organization ? (
+                      <Link
+                        href={`/organizations/${tournament.organization.slug}`}
+                        className="hover:text-primary hover:underline"
+                      >
+                        {tournament.organization.name}
+                      </Link>
+                    ) : (
+                      "—"
+                    )}
+                  </TableCell>
+                  <TableCell className="text-muted-foreground text-right">
+                    {tournament._count.registrations}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </ResponsiveTable>
+      </div>
+    </>
   );
 }
 
@@ -359,7 +513,7 @@ export default async function TournamentsPage({
   const isSearching = !!searchQuery;
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <PageContainer>
       {/* Header */}
       <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
@@ -386,14 +540,14 @@ export default async function TournamentsPage({
           {data.active.length > 0 && (
             <>
               <SectionHeader title="Active Now" count={data.active.length} />
-              <ActiveTournamentsTable tournaments={data.active} />
+              <ActiveTournaments tournaments={data.active} />
             </>
           )}
 
           {data.upcoming.length > 0 && (
             <>
               <SectionHeader title="Upcoming" count={data.upcoming.length} />
-              <UpcomingTournamentsTable
+              <UpcomingTournaments
                 tournaments={data.upcoming}
                 registeredTournamentIds={registeredTournamentIds}
               />
@@ -406,11 +560,11 @@ export default async function TournamentsPage({
                 title="Recently Completed"
                 count={data.completed.length}
               />
-              <CompletedTournamentsTable tournaments={data.completed} />
+              <CompletedTournaments tournaments={data.completed} />
             </>
           )}
         </div>
       )}
-    </div>
+    </PageContainer>
   );
 }
