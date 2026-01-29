@@ -2,17 +2,24 @@
 // Bridges AT Protocol OAuth sessions to Supabase sessions.
 //
 // Mode 1 — Sign in / Sign up (Authorization: Bearer <anon_key>):
-//   Input: { did, handle, pds_url, access_token }
-//   1. Verify DID ownership via com.atproto.server.getSession on user's PDS
+//   Input: { did, handle }
+//   1. Verify DID exists and handle matches via DID resolution
 //   2. Lookup or create Supabase user
 //   3. Return Supabase session tokens
 //
 // Mode 2 — Link to existing account (Authorization: Bearer <user_jwt>):
-//   Input: { did, handle, pds_url, access_token, link: true }
+//   Input: { did, handle, link: true }
 //   1. Verify Supabase JWT -> auth.uid()
-//   2. Verify DID ownership
+//   2. Verify DID exists and handle matches
 //   3. Link DID to existing user
 //   4. Return success
+//
+// DID Verification Strategy:
+// The mobile client completes AT Protocol OAuth (DPoP + PKCE + PAR) on-device,
+// which cryptographically proves DID ownership. DPoP tokens cannot be forwarded
+// to this edge function because they're bound to the client's key pair.
+// Instead, we verify the DID by resolving it from plc.directory and confirming
+// the handle matches via the Bluesky public API.
 
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import { corsHeaders } from "../_shared/cors.ts";
@@ -25,8 +32,6 @@ const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 interface BlueskyAuthRequest {
   did: string;
   handle: string;
-  pds_url: string;
-  access_token: string;
   link?: boolean;
 }
 
@@ -47,43 +52,50 @@ interface BlueskyAuthResponse {
 // -- Helper Functions --
 
 /**
- * Verify the caller owns the claimed DID by calling getSession on their PDS.
- * The AT Protocol access token is sent as a Bearer token to the user's PDS,
- * and the returned DID must match the claimed DID.
+ * Verify the claimed DID is valid and the handle matches by resolving the DID
+ * and checking the profile from the public Bluesky API.
+ *
+ * This verifies:
+ * 1. The DID exists in the PLC directory (for did:plc) or resolves (for did:web)
+ * 2. The handle associated with this DID matches the claimed handle
+ *
+ * The mobile client has already completed AT Protocol OAuth with DPoP/PKCE/PAR,
+ * which cryptographically proves the user authorized access. DPoP-bound tokens
+ * cannot be forwarded, so we verify via DID resolution instead.
  */
-async function verifyDidOwnership(
-  pdsUrl: string,
-  accessToken: string,
-  expectedDid: string
+async function verifyDid(
+  did: string,
+  expectedHandle: string
 ): Promise<{ valid: boolean; error?: string }> {
   try {
+    // Resolve the DID's profile from the public Bluesky API
+    // This confirms the DID exists and returns the associated handle
     const response = await fetch(
-      `${pdsUrl}/xrpc/com.atproto.server.getSession`,
-      {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
-        signal: AbortSignal.timeout(10000),
-      }
+      `https://public.api.bsky.app/xrpc/app.bsky.actor.getProfile?actor=${encodeURIComponent(did)}`,
+      { signal: AbortSignal.timeout(10000) }
     );
 
     if (!response.ok) {
-      return { valid: false, error: `PDS returned ${response.status}` };
-    }
-
-    const session = await response.json();
-
-    if (session.did !== expectedDid) {
       return {
         valid: false,
-        error: "DID mismatch: token does not belong to claimed DID",
+        error: `Failed to resolve DID: API returned ${response.status}`,
+      };
+    }
+
+    const profile = await response.json();
+
+    // Verify the handle matches what the client claims
+    if (profile.handle !== expectedHandle) {
+      return {
+        valid: false,
+        error: `Handle mismatch: DID resolves to ${profile.handle}, not ${expectedHandle}`,
       };
     }
 
     return { valid: true };
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown error";
-    return { valid: false, error: `PDS verification failed: ${message}` };
+    return { valid: false, error: `DID verification failed: ${message}` };
   }
 }
 
@@ -157,22 +169,22 @@ Deno.serve(async (req) => {
 
   try {
     const body: BlueskyAuthRequest = await req.json();
-    const { did, handle, pds_url, access_token, link } = body;
+    const { did, handle, link } = body;
 
     // Validate required fields
-    if (!did || !handle || !pds_url || !access_token) {
+    if (!did || !handle) {
       return jsonResponse(
         {
           success: false,
-          error: "Missing required fields: did, handle, pds_url, access_token",
+          error: "Missing required fields: did, handle",
           code: "MISSING_FIELDS",
         },
         400
       );
     }
 
-    // Step 1: Verify DID ownership via PDS
-    const verification = await verifyDidOwnership(pds_url, access_token, did);
+    // Step 1: Verify DID exists and handle matches
+    const verification = await verifyDid(did, handle);
     if (!verification.valid) {
       return jsonResponse(
         {

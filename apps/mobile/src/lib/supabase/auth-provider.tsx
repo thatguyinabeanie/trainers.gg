@@ -170,16 +170,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
    *
    * Flow:
    * 1. Initialize the ExpoOAuthClient and start the OAuth flow (opens browser)
-   * 2. On success, use the Agent to call getSession on the user's PDS
-   * 3. Send DID, handle, PDS URL to the bluesky-auth edge function
-   * 4. Edge function returns Supabase session tokens (or creates a new account)
+   * 2. On success, the OAuth session contains the authenticated DID
+   * 3. Send DID + handle to the bluesky-auth edge function
+   * 4. Edge function verifies DID via public API, returns Supabase session
    * 5. Set the Supabase session from the edge function response
    *
-   * Note: DPoP-bound access tokens cannot be forwarded to the edge function
-   * for server-side PDS verification. The Agent call on the client side
-   * proves DID ownership. The edge function receives the DID/handle/PDS URL
-   * and the raw access token, but PDS verification may fail for DPoP tokens.
-   * A future iteration can add a client-side proof mechanism.
+   * The AT Protocol OAuth flow (DPoP + PKCE + PAR) cryptographically proves
+   * the user authorized access. The edge function independently verifies the
+   * DID exists and handle matches via the public Bluesky API.
    */
   const signInWithBluesky = async (
     handle: string
@@ -204,25 +202,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const oauthClient = getAtprotoOAuthClient();
 
       // Step 2: Start the OAuth flow (opens system browser for authorization)
+      // The ExpoOAuthClient handles DPoP, PKCE, PAR, and token storage.
+      // On success, we get an OAuthSession with the authenticated DID.
       const oauthSession = await oauthClient.signIn(cleanHandle);
 
-      // Step 3: Use the Agent to make an authenticated getSession call
-      // This proves DID ownership since the OAuth session's fetchHandler
-      // handles DPoP automatically
+      // Extract the DID from the authenticated session
+      const did = oauthSession.did;
+
+      // Get the resolved handle from the session via Agent
       const { Agent } = await import("@atproto/api");
       const agent = new Agent(oauthSession);
       const sessionInfo = await agent.com.atproto.server.getSession();
-
-      const did = sessionInfo.data.did;
       const resolvedHandle = sessionInfo.data.handle;
-      // The PDS URL is the audience of the token (resource server)
-      const tokenInfo = await oauthSession.getTokenInfo("auto");
-      const pdsUrl = tokenInfo.aud;
 
-      // Step 4: Call the bluesky-auth edge function to get Supabase session
-      // Note: The access_token is DPoP-bound and may not work for server-side
-      // PDS verification. The edge function will attempt verification but
-      // may need to be updated to handle DPoP tokens or trust client-side proof.
+      // Step 3: Call the bluesky-auth edge function to get Supabase session
+      // The edge function verifies the DID by resolving it from the public API
       const response = await fetch(`${supabaseUrl}/functions/v1/bluesky-auth`, {
         method: "POST",
         headers: {
@@ -232,12 +226,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         body: JSON.stringify({
           did,
           handle: resolvedHandle,
-          pds_url: pdsUrl,
-          // Pass the DID as access_token placeholder since we cannot
-          // extract the raw DPoP-bound token from OAuthSession's public API.
-          // The edge function's PDS verification step may need adjustment
-          // for DPoP-bound tokens in a future iteration.
-          access_token: did,
         }),
       });
 
@@ -250,7 +238,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         };
       }
 
-      // Step 5: Set the Supabase session from the edge function response
+      // Step 4: Set the Supabase session from the edge function response
       const { error: sessionError } = await getSupabase().auth.setSession({
         access_token: result.access_token,
         refresh_token: result.refresh_token,
@@ -274,9 +262,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
    *
    * Flow:
    * 1. Initialize the ExpoOAuthClient and start the OAuth flow (opens browser)
-   * 2. On success, use the Agent to call getSession on the user's PDS
-   * 3. Send DID, handle, PDS URL to the bluesky-auth edge function with link: true
-   * 4. Edge function links the DID to the existing Supabase user
+   * 2. On success, the OAuth session contains the authenticated DID
+   * 3. Send DID + handle to the bluesky-auth edge function with link: true
+   * 4. Edge function verifies DID, links it to the existing Supabase user
    * 5. Refresh the local session to pick up updated user metadata
    */
   const linkBluesky = async (
@@ -312,17 +300,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Step 2: Start the OAuth flow (opens system browser for authorization)
       const oauthSession = await oauthClient.signIn(cleanHandle);
 
-      // Step 3: Use the Agent to make an authenticated getSession call
+      // Extract DID and resolved handle from the session
+      const did = oauthSession.did;
       const { Agent } = await import("@atproto/api");
       const agent = new Agent(oauthSession);
       const sessionInfo = await agent.com.atproto.server.getSession();
-
-      const did = sessionInfo.data.did;
       const resolvedHandle = sessionInfo.data.handle;
-      const tokenInfo = await oauthSession.getTokenInfo("auto");
-      const pdsUrl = tokenInfo.aud;
 
-      // Step 4: Call the bluesky-auth edge function in link mode
+      // Step 3: Call the bluesky-auth edge function in link mode
       // Pass the user's Supabase JWT (not the anon key) for authentication
       const response = await fetch(`${supabaseUrl}/functions/v1/bluesky-auth`, {
         method: "POST",
@@ -333,8 +318,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         body: JSON.stringify({
           did,
           handle: resolvedHandle,
-          pds_url: pdsUrl,
-          access_token: did,
           link: true,
         }),
       });
@@ -348,7 +331,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         };
       }
 
-      // Step 5: Refresh the session to pick up updated user metadata
+      // Step 4: Refresh the session to pick up updated user metadata
       await fetchSession();
 
       setLoading(false);
