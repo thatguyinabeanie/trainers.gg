@@ -141,8 +141,8 @@ function TabLayoutContent() {
 
   return (
     <Tabs
-      tabBar={(props) => (
-        <CustomTabBar {...(props as Parameters<typeof CustomTabBar>[0])} />
+      tabBar={(props: Parameters<typeof CustomTabBar>[0]) => (
+        <CustomTabBar {...props} />
       )}
       screenOptions={{
         tabBarActiveTintColor: colors.primary.DEFAULT,
