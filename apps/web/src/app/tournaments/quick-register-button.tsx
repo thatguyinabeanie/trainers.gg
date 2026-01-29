@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useForm } from "react-hook-form";
@@ -102,27 +102,27 @@ export function QuickRegisterButton({
   // Get currently selected alt
   const selectedAlt = alts.find((a) => a.id.toString() === selectedAltId);
 
-  const loadAlts = useCallback(async () => {
-    setIsLoadingAlts(true);
-    const result = await getCurrentUserAltsAction();
-    if (result.success) {
-      setAlts(result.data);
-      // Auto-select first alt if only one
-      if (result.data.length === 1 && result.data[0]) {
-        form.setValue("altId", result.data[0].id.toString());
-      }
-    } else if (result.error === "Failed to fetch user alts") {
-      // User not logged in - will redirect on submit
-    }
-    setIsLoadingAlts(false);
-  }, [form]);
-
   // Load alts when dialog opens
   useEffect(() => {
-    if (open && alts.length === 0) {
-      loadAlts();
+    if (!open || alts.length > 0) return;
+
+    async function loadAlts() {
+      setIsLoadingAlts(true);
+      const result = await getCurrentUserAltsAction();
+      if (result.success) {
+        setAlts(result.data);
+        // Auto-select first alt if only one
+        if (result.data.length === 1 && result.data[0]) {
+          form.setValue("altId", result.data[0].id.toString());
+        }
+      } else if (result.error === "Failed to fetch user alts") {
+        // User not logged in - will redirect on submit
+      }
+      setIsLoadingAlts(false);
     }
-  }, [open, alts.length, loadAlts]);
+
+    loadAlts();
+  }, [open, alts.length, form]);
 
   // Reset form when dialog closes
   useEffect(() => {
