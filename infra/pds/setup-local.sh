@@ -96,6 +96,7 @@ start_ngrok() {
 
     # Create tunnel config for both PDS and web app
     cat > "$NGROK_TUNNELS_FILE" << EOF
+version: "3"
 tunnels:
   pds:
     proto: http
