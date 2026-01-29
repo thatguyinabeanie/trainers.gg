@@ -1,3 +1,4 @@
+import { Alert, Platform } from "react-native";
 import { Link } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { YStack, XStack, Text, ScrollView, useTheme } from "tamagui";
@@ -52,7 +53,7 @@ function StatItem({
 }
 
 export default function ProfileScreen() {
-  const { user, loading, isAuthenticated } = useAuth();
+  const { user, loading, isAuthenticated, linkBluesky } = useAuth();
   const { siteRoles } = useSiteRoles();
   const theme = useTheme();
 
@@ -115,6 +116,36 @@ export default function ProfileScreen() {
 
   const displayName = getUserDisplayName(user);
   const username = user?.user_metadata?.username as string | undefined;
+  const blueskyHandle = user?.user_metadata?.bluesky_handle as
+    | string
+    | undefined;
+  const did = user?.user_metadata?.did as string | undefined;
+
+  const handleLinkBluesky = () => {
+    if (Platform.OS === "ios") {
+      Alert.prompt(
+        "Link Bluesky",
+        "Enter your Bluesky handle (e.g., username.bsky.social)",
+        async (handle) => {
+          if (handle?.trim()) {
+            const { error } = await linkBluesky(handle.trim());
+            if (error) {
+              Alert.alert("Error", error.message);
+            } else {
+              Alert.alert("Success", "Bluesky account linked!");
+            }
+          }
+        },
+        "plain-text"
+      );
+    } else {
+      // Alert.prompt is iOS-only; show a basic alert on Android
+      Alert.alert(
+        "Link Bluesky",
+        "To link your Bluesky account, use the web app or sign in with Bluesky from the sign-in screen."
+      );
+    }
+  };
 
   return (
     <Screen>
@@ -209,9 +240,15 @@ export default function ProfileScreen() {
             >
               <ListItem
                 title="Bluesky"
-                subtitle="Connect your Bluesky account"
+                subtitle={
+                  did
+                    ? `Connected as @${blueskyHandle || "linked"}`
+                    : "Connect your Bluesky account"
+                }
                 icon="at-outline"
                 iconColor={theme.primary.val}
+                rightText={did ? "Connected" : "Connect"}
+                onPress={did ? undefined : handleLinkBluesky}
               />
               <ListItem
                 title="Pokemon Showdown"
