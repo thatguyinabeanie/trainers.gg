@@ -298,8 +298,14 @@ export async function handleAtprotoCallback(params: URLSearchParams): Promise<{
 
 /**
  * Get an authenticated session for a DID
+ *
+ * Returns null if AT Protocol OAuth is not configured (e.g., missing
+ * ATPROTO_PRIVATE_KEY in local development).
  */
 export async function getAtprotoSession(did: string) {
+  if (!process.env.ATPROTO_PRIVATE_KEY) {
+    return null;
+  }
   const client = await getAtprotoOAuthClient();
   return client.restore(did);
 }
