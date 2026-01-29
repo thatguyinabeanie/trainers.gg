@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useForm } from "react-hook-form";
@@ -42,7 +42,7 @@ import {
 } from "@/actions/tournaments";
 import { Loader2 } from "lucide-react";
 
-type DisplayNameOption = "username" | "shortened" | "full";
+type _DisplayNameOption = "username" | "shortened" | "full";
 
 interface Alt {
   id: number;
@@ -102,12 +102,27 @@ export function QuickRegisterButton({
   // Get currently selected alt
   const selectedAlt = alts.find((a) => a.id.toString() === selectedAltId);
 
+  const loadAlts = useCallback(async () => {
+    setIsLoadingAlts(true);
+    const result = await getCurrentUserAltsAction();
+    if (result.success) {
+      setAlts(result.data);
+      // Auto-select first alt if only one
+      if (result.data.length === 1 && result.data[0]) {
+        form.setValue("altId", result.data[0].id.toString());
+      }
+    } else if (result.error === "Failed to fetch user alts") {
+      // User not logged in - will redirect on submit
+    }
+    setIsLoadingAlts(false);
+  }, [form]);
+
   // Load alts when dialog opens
   useEffect(() => {
     if (open && alts.length === 0) {
       loadAlts();
     }
-  }, [open, alts.length]);
+  }, [open, alts.length, loadAlts]);
 
   // Reset form when dialog closes
   useEffect(() => {
@@ -121,21 +136,6 @@ export function QuickRegisterButton({
       setError(null);
     }
   }, [open, form]);
-
-  async function loadAlts() {
-    setIsLoadingAlts(true);
-    const result = await getCurrentUserAltsAction();
-    if (result.success) {
-      setAlts(result.data);
-      // Auto-select first alt if only one
-      if (result.data.length === 1 && result.data[0]) {
-        form.setValue("altId", result.data[0].id.toString());
-      }
-    } else if (result.error === "Failed to fetch user alts") {
-      // User not logged in - will redirect on submit
-    }
-    setIsLoadingAlts(false);
-  }
 
   async function onSubmit(data: RegistrationFormData) {
     setError(null);
