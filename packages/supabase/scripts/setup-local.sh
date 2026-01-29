@@ -247,6 +247,9 @@ EXPO_PUBLIC_SUPABASE_ANON_KEY=$ANON_KEY
 
 # Server-side only (never expose to client)
 SUPABASE_SERVICE_ROLE_KEY=$SERVICE_KEY
+
+# AT Protocol OAuth (set to your ngrok URL for Bluesky OAuth testing)
+# EXPO_PUBLIC_SITE_URL=https://<your-ngrok-id>.ngrok-free.app
 EOF
     echo -e "${GREEN}Created $ENV_FILE${NC}"
   else
