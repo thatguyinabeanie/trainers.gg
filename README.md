@@ -51,7 +51,7 @@ tooling/
 - Node.js 20+
 - pnpm 9+
 - Docker (for local Supabase development)
-- ngrok (for Bluesky OAuth in local development)
+- [ngrok](https://ngrok.com/) (for Bluesky OAuth in local development) — see [Bluesky OAuth Setup](#bluesky-oauth-setup-local-development)
 
 ### Installation
 
@@ -82,41 +82,57 @@ SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
 # Run all apps in parallel
 pnpm dev
 
-# Run specific app
-pnpm dev:web
-pnpm dev:mobile
+# Run specific apps
+pnpm dev:web              # Web app only
+pnpm dev:mobile           # Mobile app only
+pnpm dev:backend          # Supabase backend only
+pnpm dev:web+backend      # Web + Supabase in parallel
 
-# Run Supabase locally (requires Docker)
-cd packages/supabase && pnpm local:start
+# Database management
+pnpm db:start             # Start local Supabase (requires Docker)
+pnpm db:stop              # Stop local Supabase
+pnpm db:reset             # Reset and re-seed local database
 ```
 
-### Bluesky OAuth Setup
+### Bluesky OAuth Setup (Local Development)
 
-OAuth credentials are **automatically configured** when you run `pnpm dev`:
+AT Protocol OAuth requires HTTPS with a publicly accessible URL — `localhost` is not allowed. Local development uses **ngrok** to tunnel requests.
 
-1. ES256 private key is generated
-2. JWKS file is created from the public key
-3. ngrok URL is set as the OAuth redirect URI
-
-#### Requirements for Local Development
-
-**Install and authenticate ngrok (one-time setup):**
+#### 1. Install ngrok (one-time)
 
 ```bash
-# Install ngrok
+# Install
 brew install ngrok    # macOS
 choco install ngrok   # Windows
 snap install ngrok    # Linux
 
-# Get free auth token from https://dashboard.ngrok.com/get-started/your-authtoken
+# Authenticate (get token from https://dashboard.ngrok.com/get-started/your-authtoken)
 ngrok config add-authtoken <your-token>
 ```
 
-After setup, `pnpm dev` will automatically:
+#### 2. Automatic setup via `pnpm dev`
 
-- Start ngrok tunnel
-- Generate OAuth credentials
-- Configure environment variables
+When you run `pnpm dev`, the setup script automatically:
+
+1. Starts an ngrok tunnel to `localhost:3000`
+2. Generates an ES256 private key (if not present)
+3. Creates the JWKS file from the public key
+4. Sets `NEXT_PUBLIC_SITE_URL` and `ATPROTO_PRIVATE_KEY` in `.env.local`
+
+#### 3. Manual setup (if needed)
+
+If automatic setup doesn't work, you can configure manually:
+
+```bash
+# Start ngrok
+ngrok http 3000
+
+# Add to .env.local
+NEXT_PUBLIC_SITE_URL=https://<your-subdomain>.ngrok-free.app
+ATPROTO_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n"
+```
+
+`NEXT_PUBLIC_SITE_URL` is used by OAuth callback routes, client metadata, and auth redirects to ensure URLs point to the public tunnel instead of `localhost`.
 
 #### Production Setup (Vercel)
 
@@ -209,16 +225,16 @@ Every user gets a Bluesky identity:
 
 ## Test Users (Local Development)
 
-After running `pnpm supabase db reset` in the supabase package, the following test users are available:
+After running `pnpm db:reset`, the following test users are available:
 
-| Email                      | Password      | Username      | Site Admin |
-| -------------------------- | ------------- | ------------- | ---------- |
-| `admin@trainers.local`     | `password123` | admin_trainer | Yes        |
-| `player@trainers.local`    | `password123` | ash_ketchum   | No         |
-| `champion@trainers.local`  | `password123` | cynthia       | No         |
-| `gymleader@trainers.local` | `password123` | brock         | No         |
-| `elite@trainers.local`     | `password123` | karen         | No         |
-| `casual@trainers.local`    | `password123` | red           | No         |
+| Email                      | Password       | Username      | Site Admin |
+| -------------------------- | -------------- | ------------- | ---------- |
+| `admin@trainers.local`     | `Password123!` | admin_trainer | Yes        |
+| `player@trainers.local`    | `Password123!` | ash_ketchum   | No         |
+| `champion@trainers.local`  | `Password123!` | cynthia       | No         |
+| `gymleader@trainers.local` | `Password123!` | brock         | No         |
+| `elite@trainers.local`     | `Password123!` | karen         | No         |
+| `casual@trainers.local`    | `Password123!` | red           | No         |
 
 ## Deployment
 
@@ -254,17 +270,23 @@ See [infra/pds/README.md](./infra/pds/README.md) for full documentation.
 
 ## Commands
 
-| Command           | Description                   |
-| ----------------- | ----------------------------- |
-| `pnpm dev`        | Start all apps in development |
-| `pnpm dev:web`    | Start web app only            |
-| `pnpm dev:mobile` | Start mobile app only         |
-| `pnpm build`      | Build all packages            |
-| `pnpm build:web`  | Build web app                 |
-| `pnpm lint`       | Lint all packages             |
-| `pnpm typecheck`  | TypeScript check all packages |
-| `pnpm format`     | Format with Prettier          |
-| `pnpm clean`      | Remove build artifacts        |
+| Command                | Description                      |
+| ---------------------- | -------------------------------- |
+| `pnpm dev`             | Start all apps in development    |
+| `pnpm dev:web`         | Start web app only               |
+| `pnpm dev:mobile`      | Start mobile app only            |
+| `pnpm dev:backend`     | Start Supabase backend only      |
+| `pnpm dev:web+backend` | Start web + Supabase in parallel |
+| `pnpm build`           | Build all packages               |
+| `pnpm build:web`       | Build web app                    |
+| `pnpm lint`            | Lint all packages                |
+| `pnpm typecheck`       | TypeScript check all packages    |
+| `pnpm format`          | Format with Prettier             |
+| `pnpm clean`           | Remove build artifacts           |
+| `pnpm db:start`        | Start local Supabase             |
+| `pnpm db:stop`         | Stop local Supabase              |
+| `pnpm db:reset`        | Reset and re-seed local database |
+| `pnpm db:migrate`      | Push migrations to local DB      |
 
 ## Contributing
 
