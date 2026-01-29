@@ -40,8 +40,10 @@
     "prepare": "husky"
   },
   "devDependencies": {
+    "@atproto/jwk-jose": "^0.1.11",
     "@trainers/prettier-config": "workspace:*",
     "husky": "^9.1.7",
+    "jose": "^5.10.0",
     "lint-staged": "^16.2.7",
     "prettier": "catalog:",
     "prettier-plugin-tailwindcss": "^0.6.9",

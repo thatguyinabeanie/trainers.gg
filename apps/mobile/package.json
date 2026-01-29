@@ -47,6 +47,7 @@
     "@trainers/eslint-config": "workspace:*",
     "@trainers/prettier-config": "workspace:*",
     "@trainers/typescript-config": "workspace:*",
+    "@types/node": "catalog:",
     "@types/react": "catalog:",
     "babel-preset-expo": "~54.0.10",
     "eslint": "catalog:",

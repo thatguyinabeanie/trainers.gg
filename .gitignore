@@ -68,3 +68,6 @@ next-app
 
 # Playwright MCP
 .playwright-mcp/
+
+# AT Protocol OAuth - auto-generated locally
+apps/web/public/oauth/jwks.json

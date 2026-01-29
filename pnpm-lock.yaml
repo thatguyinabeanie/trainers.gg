@@ -45,12 +45,18 @@ importers:
 
   .:
     devDependencies:
+      '@atproto/jwk-jose':
+        specifier: ^0.1.11
+        version: 0.1.11
       '@trainers/prettier-config':
         specifier: workspace:*
         version: link:tooling/prettier
       husky:
         specifier: ^9.1.7
         version: 9.1.7
+      jose:
+        specifier: ^5.10.0
+        version: 5.10.0
       lint-staged:
         specifier: ^16.2.7
         version: 16.2.7
@@ -163,6 +169,9 @@ importers:
       '@trainers/typescript-config':
         specifier: workspace:*
         version: link:../../tooling/typescript
+      '@types/node':
+        specifier: 'catalog:'
+        version: 22.19.7
       '@types/react':
         specifier: 'catalog:'
         version: 19.1.17
@@ -329,6 +338,9 @@ importers:
       eslint:
         specifier: 'catalog:'
         version: 9.39.2(jiti@2.6.1)
+      jose:
+        specifier: ^5.10.0
+        version: 5.10.0
       postcss:
         specifier: ^8.4.49
         version: 8.5.6

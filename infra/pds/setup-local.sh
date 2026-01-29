@@ -233,7 +233,22 @@ main() {
     # Update env files
     NGROK_URL=$(cat "$PDS_DIR/.ngrok-url")
     update_env_files "$NGROK_URL"
-    
+
+    # Setup OAuth credentials
+    echo ""
+    log_info "Setting up AT Protocol OAuth credentials..."
+    if command -v node &>/dev/null; then
+        # Run from repo root so Node can resolve @atproto/jwk-jose
+        (cd "$REPO_ROOT" && node "$PDS_DIR/scripts/setup-oauth.mjs")
+        if [ $? -ne 0 ]; then
+            log_warn "OAuth setup failed, but PDS is running"
+            log_warn "Bluesky login will not work until OAuth is configured"
+        fi
+    else
+        log_warn "Node.js not found, skipping OAuth setup"
+        log_warn "Bluesky login will not work without OAuth credentials"
+    fi
+
     echo ""
     log_success "Local PDS ready at $NGROK_URL"
     echo ""

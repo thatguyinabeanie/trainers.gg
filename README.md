@@ -51,6 +51,7 @@ tooling/
 - Node.js 20+
 - pnpm 9+
 - Docker (for local Supabase development)
+- ngrok (for Bluesky OAuth in local development)
 
 ### Installation
 
@@ -88,6 +89,51 @@ pnpm dev:mobile
 # Run Supabase locally (requires Docker)
 cd packages/supabase && pnpm local:start
 ```
+
+### Bluesky OAuth Setup
+
+OAuth credentials are **automatically configured** when you run `pnpm dev`:
+
+1. ES256 private key is generated
+2. JWKS file is created from the public key
+3. ngrok URL is set as the OAuth redirect URI
+
+#### Requirements for Local Development
+
+**Install and authenticate ngrok (one-time setup):**
+
+```bash
+# Install ngrok
+brew install ngrok    # macOS
+choco install ngrok   # Windows
+snap install ngrok    # Linux
+
+# Get free auth token from https://dashboard.ngrok.com/get-started/your-authtoken
+ngrok config add-authtoken <your-token>
+```
+
+After setup, `pnpm dev` will automatically:
+
+- Start ngrok tunnel
+- Generate OAuth credentials
+- Configure environment variables
+
+#### Production Setup (Vercel)
+
+**Generate a production private key:**
+
+```bash
+openssl ecparam -name prime256v1 -genkey -noout | openssl pkcs8 -topk8 -nocrypt
+```
+
+**Add to Vercel environment variables:**
+
+1. Go to Vercel project settings > Environment Variables
+2. Add `ATPROTO_PRIVATE_KEY` with the entire PEM output (including `-----BEGIN PRIVATE KEY-----` and `-----END PRIVATE KEY-----`)
+3. Escape newlines as `\n` (or use Vercel's multiline input)
+4. JWKS is auto-generated during builds
+
+**Important:** Never commit your private key or JWKS file to git!
 
 ### Build
 
