@@ -323,10 +323,14 @@ email_optional = false
 enabled = false
 
 [auth.external.discord]
-enabled = false
+enabled = true
+client_id = "env(SUPABASE_AUTH_EXTERNAL_DISCORD_CLIENT_ID)"
+secret = "env(SUPABASE_AUTH_EXTERNAL_DISCORD_SECRET)"
 
 [auth.external.github]
-enabled = false
+enabled = true
+client_id = "env(SUPABASE_AUTH_EXTERNAL_GITHUB_CLIENT_ID)"
+secret = "env(SUPABASE_AUTH_EXTERNAL_GITHUB_SECRET)"
 
 [auth.external.twitch]
 enabled = false
@@ -382,6 +386,7 @@ deno_version = 2
 [edge_runtime.secrets]
 PDS_HOST = "env(PDS_HOST)"
 PDS_ADMIN_PASSWORD = "env(PDS_ADMIN_PASSWORD)"
+PDS_HANDLE_DOMAIN = "env(PDS_HANDLE_DOMAIN)"
 
 [analytics]
 enabled = true
