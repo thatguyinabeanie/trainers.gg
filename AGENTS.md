@@ -30,19 +30,19 @@ tooling/
 
 ## Tech Stack
 
-| Layer            | Technology              | Notes                                        |
-| ---------------- | ----------------------- | -------------------------------------------- |
-| Auth             | Supabase Auth           | Native auth with email/password and OAuth    |
-| Database         | Supabase (PostgreSQL)   | Row Level Security with auth.uid()           |
-| Edge Functions   | Supabase Edge Functions | Deno runtime                                 |
-| Social/Identity  | AT Protocol (Bluesky)   | Decentralized identity and federation        |
-| PDS              | Fly.io                  | Self-hosted at pds.trainers.gg               |
-| Web              | Next.js 16              | React 19, App Router, Server Components      |
-| Mobile           | Expo 54                 | React Native with Tamagui                    |
-| UI Components    | shadcn/ui + Base UI     | Base UI primitives (NOT Radix), no `asChild` |
-| Styling (Web)    | Tailwind CSS 4          | Uses @tailwindcss/postcss                    |
-| Styling (Mobile) | Tamagui                 | Universal UI components with theme tokens    |
-| Theme            | @trainers/theme         | OKLCH colors, light/dark mode support        |
+| Layer            | Technology              | Notes                                                        |
+| ---------------- | ----------------------- | ------------------------------------------------------------ |
+| Auth             | Supabase Auth           | Email/password + OAuth (Google, X, Discord, GitHub, Bluesky) |
+| Database         | Supabase (PostgreSQL)   | Row Level Security with auth.uid()                           |
+| Edge Functions   | Supabase Edge Functions | Deno runtime                                                 |
+| Social/Identity  | AT Protocol (Bluesky)   | Decentralized identity and federation                        |
+| PDS              | Fly.io                  | Self-hosted at pds.trainers.gg                               |
+| Web              | Next.js 16              | React 19, App Router, Server Components                      |
+| Mobile           | Expo 54                 | React Native with Tamagui                                    |
+| UI Components    | shadcn/ui + Base UI     | Base UI primitives (NOT Radix), no `asChild`                 |
+| Styling (Web)    | Tailwind CSS 4          | Uses @tailwindcss/postcss                                    |
+| Styling (Mobile) | Tamagui                 | Universal UI components with theme tokens                    |
+| Theme            | @trainers/theme         | OKLCH colors, light/dark mode support                        |
 
 ---
 
@@ -85,15 +85,19 @@ All DNS for `trainers.gg` is managed via **Vercel DNS**.
 
 ```bash
 # 📦 Setup & Installation
-pnpm install              # Install all dependencies
+pnpm install              # Install deps + auto-creates .env.local, symlinks, OAuth keys
 pnpm setup                # Run Supabase setup (auto-runs before dev)
 
 # 🚀 Development
 pnpm dev                  # Run all apps in parallel (includes setup)
+                          # Fast-paths: <1s if Supabase + PDS already running
 pnpm dev:web              # Run web app only
 pnpm dev:mobile           # Run mobile app only
 pnpm dev:backend          # Run Supabase backend only
 pnpm dev:web+backend      # Run web + Supabase in parallel
+
+# 🌐 ngrok Tunnel (on-demand, for OAuth testing)
+pnpm setup:ngrok          # Start ngrok tunnel with static domain on port 3000
 
 # 🏗️ Build
 pnpm build                # Build all packages
@@ -510,13 +514,54 @@ Alternate player identities for tournaments. A user can have multiple alts for d
 
 ## Environment Variables
 
-### Web App (.env.local)
+### Single Source of Truth: `.env.local`
+
+All local development environment variables live in a **single root `.env.local` file**. This file is symlinked into every app and package directory that needs it:
+
+```
+.env.local                                    ← single source of truth (gitignored)
+apps/web/.env.local                           → ../../.env.local
+apps/mobile/.env.local                        → ../../.env.local
+packages/supabase/.env                        → ../../.env.local
+packages/supabase/supabase/.env               → ../../../.env.local
+packages/supabase/supabase/functions/.env      → ../../../../.env.local
+```
+
+Symlinks are created automatically by `postinstall.sh` (runs at `pnpm install` time) or `setup-local.sh`.
+
+### Root `.env.local` Contents
 
 ```bash
-# Supabase
-NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
-SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+# Supabase (hardcoded demo keys — deterministic for local dev)
+NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321
+NEXT_PUBLIC_SUPABASE_ANON_KEY=<hardcoded-demo-key>
+EXPO_PUBLIC_SUPABASE_URL=http://<local-ip>:54321
+EXPO_PUBLIC_SUPABASE_ANON_KEY=<hardcoded-demo-key>
+SUPABASE_SERVICE_ROLE_KEY=<hardcoded-demo-key>
+
+# AT Protocol / Bluesky OAuth (auto-generated by postinstall.sh)
+ATPROTO_PRIVATE_KEY=<auto-generated>
+NEXT_PUBLIC_SITE_URL=<ngrok-static-domain or localhost>
+
+# PDS Configuration (edge functions reach PDS via Docker networking)
+PDS_HOST=http://host.docker.internal:3001
+PDS_ADMIN_PASSWORD=localdevpassword
+PDS_HANDLE_DOMAIN=localhost
+
+# OAuth Provider Credentials (manual — used by Supabase config.toml)
+SUPABASE_AUTH_EXTERNAL_DISCORD_CLIENT_ID=<from Discord Developer Portal>
+SUPABASE_AUTH_EXTERNAL_DISCORD_SECRET=<from Discord Developer Portal>
+SUPABASE_AUTH_EXTERNAL_GITHUB_CLIENT_ID=<from GitHub Developer Settings>
+SUPABASE_AUTH_EXTERNAL_GITHUB_SECRET=<from GitHub Developer Settings>
+```
+
+### ngrok Static Domain (`.env.ngrok`)
+
+Per-developer ngrok configuration (gitignored). Used by `pnpm setup:ngrok` to start a web tunnel with a stable URL for OAuth testing.
+
+```bash
+# Copy .env.ngrok.example to .env.ngrok and set your static domain
+NGROK_STATIC_DOMAIN=your-domain.ngrok-free.app
 ```
 
 ### Turborepo Environment Variables (turbo.json)
@@ -581,9 +626,14 @@ infra/pds/
 ├── fly.toml          # Fly.io container config
 ├── deploy.sh         # Full deployment automation
 ├── create-account.sh # Create PDS user accounts
-├── setup.sh          # Initial setup script
+├── setup-local.sh    # Local PDS setup (called by pnpm dev)
+├── local-dev.sh      # PDS dev commands (start/stop/tunnel/status)
 ├── Makefile          # Common operations
 └── README.md         # PDS documentation
+
+scripts/
+├── postinstall.sh        # One-time setup (env, symlinks, OAuth keys)
+└── generate-oauth-keys.mjs  # Standalone OAuth key generation
 ```
 
 ---
@@ -592,9 +642,9 @@ infra/pds/
 
 ### React Version
 
-Both web and mobile use **React 19.1** for consistency.
+Both web and mobile use **React 19.1** for consistency. `@types/react` is pinned to `~19.1.10` in both `pnpm-workspace.yaml` (catalog) and `package.json` (pnpm override) to prevent duplicate type versions.
 
-**Important:** Always use the lowest common denominator React version across the monorepo. Check [Expo SDK bundledNativeModules.json](https://github.com/expo/expo/blob/sdk-54/packages/expo/bundledNativeModules.json) before upgrading.
+**Important:** Always use the lowest common denominator React version across the monorepo. Expo SDK 54 requires React 19.1 — do not upgrade `@types/react` to 19.2+ until Expo supports it. Check [Expo SDK bundledNativeModules.json](https://github.com/expo/expo/blob/sdk-54/packages/expo/bundledNativeModules.json) before upgrading.
 
 ### Tailwind Versions
 
