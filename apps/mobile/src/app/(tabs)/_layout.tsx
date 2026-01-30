@@ -23,22 +23,15 @@ function TabIcon({ name, color, focused: _focused }: TabIconProps) {
 const TAB_BAR_HEIGHT = 88;
 const HEADER_CONTENT_HEIGHT = 44; // Only the content, not the safe area
 
+// Extract the tabBar prop type from Tabs component
+type TabBarProps = NonNullable<
+  React.ComponentProps<typeof Tabs>["tabBar"]
+> extends (props: infer P) => unknown
+  ? P
+  : never;
+
 // Custom tab bar that supports scroll-based hide/show animation
-function CustomTabBar(props: {
-  state: {
-    routes: Array<{ key: string; name: string; params?: object }>;
-    index: number;
-  };
-  descriptors: Record<string, { options: Record<string, unknown> } | undefined>;
-  navigation: {
-    emit: (event: {
-      type: string;
-      target: string;
-      canPreventDefault?: boolean;
-    }) => { defaultPrevented: boolean };
-    navigate: (name: string, params?: object) => void;
-  };
-}) {
+function CustomTabBar(props: TabBarProps) {
   const { state, descriptors, navigation } = props;
   const colorScheme = useColorScheme();
   const colors = colorScheme === "dark" ? darkColors : lightColors;
@@ -141,9 +134,7 @@ function TabLayoutContent() {
 
   return (
     <Tabs
-      tabBar={(props: Parameters<typeof CustomTabBar>[0]) => (
-        <CustomTabBar {...props} />
-      )}
+      tabBar={(props) => <CustomTabBar {...props} />}
       screenOptions={{
         tabBarActiveTintColor: colors.primary.DEFAULT,
         tabBarInactiveTintColor: colors.muted.foreground,

@@ -1,92 +1,74 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
-import { BlueskyIcon } from "@/components/icons/bluesky-icon";
+import { useState } from "react";
+import { Trophy } from "lucide-react";
+import Link from "next/link";
+import { SocialAuthButtons } from "./social-auth-buttons";
+import { SignInForm } from "./sign-in-form";
 
-interface LoginScreenProps {
-  onBlueskyLogin: () => void;
-  isLoading?: boolean;
-}
+export function LoginScreen() {
+  const [showEmailForm, setShowEmailForm] = useState(false);
 
-export function LoginScreen({ onBlueskyLogin, isLoading }: LoginScreenProps) {
+  if (showEmailForm) {
+    return (
+      <main className="flex min-h-screen flex-col items-center justify-center p-8">
+        <div className="flex w-full max-w-md flex-col items-center gap-8">
+          <Link href="/" className="flex items-center gap-2">
+            <div className="bg-primary flex size-8 items-center justify-center rounded-lg">
+              <Trophy className="size-4 text-white" />
+            </div>
+            <span className="text-lg font-bold tracking-tight">
+              trainers.gg
+            </span>
+          </Link>
+
+          <SignInForm />
+
+          <button
+            type="button"
+            onClick={() => setShowEmailForm(false)}
+            className="text-muted-foreground hover:text-foreground text-sm"
+          >
+            Back to all sign-in options
+          </button>
+        </div>
+      </main>
+    );
+  }
+
   return (
     <main className="flex min-h-screen flex-col items-center justify-center p-8">
-      <div className="mx-auto max-w-md text-center">
-        {/* Logo / Brand */}
-        <h1 className="text-primary mb-2 text-5xl font-bold tracking-tight">
-          trainers.gg
-        </h1>
-        <p className="text-muted-foreground mb-12 text-lg">
-          The social platform for Pokemon trainers
+      <div className="flex w-full max-w-sm flex-col items-center gap-8">
+        {/* Branding */}
+        <div className="flex flex-col items-center gap-3">
+          <div className="bg-primary flex size-16 items-center justify-center rounded-2xl">
+            <Trophy className="size-8 text-white" />
+          </div>
+          <div className="text-center">
+            <h1 className="text-2xl font-bold tracking-tight">trainers.gg</h1>
+            <p className="text-muted-foreground mt-1 text-sm">
+              The competitive Pokemon community platform
+            </p>
+          </div>
+        </div>
+
+        {/* Social login buttons */}
+        <div className="w-full">
+          <SocialAuthButtons onEmailClick={() => setShowEmailForm(true)} />
+        </div>
+
+        {/* Terms */}
+        <p className="text-muted-foreground max-w-xs text-center text-xs">
+          By continuing, you agree to our{" "}
+          <Link href="/terms" className="text-primary hover:underline">
+            Terms of Service
+          </Link>{" "}
+          and{" "}
+          <Link href="/privacy" className="text-primary hover:underline">
+            Privacy Policy
+          </Link>
         </p>
-
-        {/* Main CTA */}
-        <div className="space-y-4">
-          <Button
-            size="lg"
-            className="w-full gap-3 text-base"
-            onClick={onBlueskyLogin}
-            disabled={isLoading}
-          >
-            <BlueskyIcon className="size-5" />
-            {isLoading ? "Connecting..." : "Sign in with Bluesky"}
-          </Button>
-
-          <p className="text-muted-foreground text-sm">
-            Powered by the AT Protocol for decentralized social networking
-          </p>
-        </div>
-
-        {/* Features */}
-        <div className="mt-16 grid gap-6 text-left sm:grid-cols-2">
-          <FeatureCard
-            title="Pokemon Feed"
-            description="Stay updated with posts from trainers across Bluesky"
-          />
-          <FeatureCard
-            title="Tournaments"
-            description="Find and join competitive Pokemon events"
-          />
-          <FeatureCard
-            title="Team Builder"
-            description="Build and share your competitive teams"
-          />
-          <FeatureCard
-            title="Community"
-            description="Connect with trainers who share your passion"
-          />
-        </div>
-
-        {/* Footer links */}
-        <nav className="text-muted-foreground mt-12 flex flex-wrap justify-center gap-6 text-sm">
-          <a
-            href="https://bsky.app"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="hover:text-primary transition-colors"
-          >
-            What is Bluesky?
-          </a>
-          <a href="/about" className="hover:text-primary transition-colors">
-            About
-          </a>
-        </nav>
       </div>
     </main>
-  );
-}
-
-function FeatureCard({
-  title,
-  description,
-}: {
-  title: string;
-  description: string;
-}) {
-  return (
-    <div className="bg-muted/50 rounded-lg p-4">
-      <h3 className="mb-1 font-semibold">{title}</h3>
-      <p className="text-muted-foreground text-sm">{description}</p>
-    </div>
   );
 }
