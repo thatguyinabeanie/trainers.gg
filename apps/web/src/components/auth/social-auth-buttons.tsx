@@ -3,14 +3,6 @@
 import * as React from "react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
 import { useAuth } from "@/hooks/use-auth";
 import { oauthProviders } from "@/lib/supabase/auth";
@@ -77,6 +69,8 @@ const providerIcons: Record<string, () => React.ReactNode> = {
 interface SocialAuthButtonsProps {
   /** Called when user clicks the email button */
   onEmailClick?: () => void;
+  /** Called when user clicks the Bluesky button */
+  onBlueskyClick?: () => void;
 }
 
 /**
@@ -90,45 +84,18 @@ interface SocialAuthButtonsProps {
  * ---separator---
  * 5. Email (outline, muted)
  */
-export function SocialAuthButtons({ onEmailClick }: SocialAuthButtonsProps) {
+export function SocialAuthButtons({
+  onEmailClick,
+  onBlueskyClick,
+}: SocialAuthButtonsProps) {
   const { signInWithOAuth } = useAuth();
   const [loadingProvider, setLoadingProvider] = useState<string | null>(null);
-  const [showBlueskyDialog, setShowBlueskyDialog] = useState(false);
-  const [blueskyHandle, setBlueskyHandle] = useState("");
-  const [blueskyError, setBlueskyError] = useState<string | null>(null);
 
   const handleOAuthSignIn = async (provider: string) => {
     setLoadingProvider(provider);
     try {
       await signInWithOAuth(provider as "google" | "twitter");
     } finally {
-      setLoadingProvider(null);
-    }
-  };
-
-  const handleBlueskyClick = () => {
-    setBlueskyError(null);
-    setBlueskyHandle("");
-    setShowBlueskyDialog(true);
-  };
-
-  const handleBlueskySubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setBlueskyError(null);
-
-    const handle = blueskyHandle.trim();
-    if (!handle) {
-      setBlueskyError("Please enter your Bluesky handle");
-      return;
-    }
-
-    setLoadingProvider("bluesky");
-
-    try {
-      const params = new URLSearchParams({ handle });
-      window.location.href = `/api/oauth/login?${params.toString()}`;
-    } catch {
-      setBlueskyError("Failed to start Bluesky login");
       setLoadingProvider(null);
     }
   };
@@ -142,13 +109,9 @@ export function SocialAuthButtons({ onEmailClick }: SocialAuthButtonsProps) {
         type="button"
         className="bg-primary hover:bg-primary/90 h-11 w-full gap-2.5 text-white"
         disabled={isDisabled}
-        onClick={handleBlueskyClick}
+        onClick={onBlueskyClick}
       >
-        {loadingProvider === "bluesky" ? (
-          <span className="size-5 animate-spin rounded-full border-2 border-white border-t-transparent" />
-        ) : (
-          <BlueskyIcon className="size-5" />
-        )}
+        <BlueskyIcon className="size-5" />
         Continue with Bluesky
       </Button>
 
@@ -194,56 +157,6 @@ export function SocialAuthButtons({ onEmailClick }: SocialAuthButtonsProps) {
         <MailIcon />
         Continue with Email
       </Button>
-
-      {/* Bluesky Handle Dialog */}
-      <Dialog open={showBlueskyDialog} onOpenChange={setShowBlueskyDialog}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <BlueskyIcon className="size-4" />
-              Continue with Bluesky
-            </DialogTitle>
-            <DialogDescription>
-              Enter your Bluesky handle to continue. This can be your
-              trainers.gg handle or any Bluesky account.
-            </DialogDescription>
-          </DialogHeader>
-
-          <form onSubmit={handleBlueskySubmit} className="flex flex-col gap-4">
-            <div className="flex flex-col gap-2">
-              <Input
-                type="text"
-                placeholder="username.bsky.social or username.trainers.gg"
-                value={blueskyHandle}
-                onChange={(e) => setBlueskyHandle(e.target.value)}
-                disabled={loadingProvider === "bluesky"}
-                autoFocus
-              />
-              {blueskyError && (
-                <p className="text-destructive text-sm">{blueskyError}</p>
-              )}
-            </div>
-
-            <div className="flex justify-end gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setShowBlueskyDialog(false)}
-                disabled={loadingProvider === "bluesky"}
-              >
-                Cancel
-              </Button>
-              <Button type="submit" disabled={loadingProvider === "bluesky"}>
-                {loadingProvider === "bluesky" ? (
-                  <span className="size-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                ) : (
-                  "Continue"
-                )}
-              </Button>
-            </div>
-          </form>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

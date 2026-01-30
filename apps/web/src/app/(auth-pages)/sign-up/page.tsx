@@ -5,15 +5,38 @@ import { Trophy } from "lucide-react";
 import Link from "next/link";
 import { SocialAuthButtons } from "@/components/auth/social-auth-buttons";
 import { SignInForm } from "@/components/auth/sign-in-form";
+import { BlueskyHandleForm } from "@/components/auth/bluesky-handle-form";
 import { WaitlistForm } from "@/components/auth/waitlist-form";
 
 export default function SignUpPage() {
   const maintenanceMode = process.env.NEXT_PUBLIC_MAINTENANCE_MODE === "true";
   const [showEmailForm, setShowEmailForm] = useState(false);
+  const [showBlueskyForm, setShowBlueskyForm] = useState(false);
+  const [blueskyLoading, setBlueskyLoading] = useState(false);
+  const [blueskyError, setBlueskyError] = useState<string | null>(null);
 
   if (maintenanceMode) {
     return <WaitlistForm />;
   }
+
+  const handleBlueskySubmit = (handle: string) => {
+    setBlueskyError(null);
+    setBlueskyLoading(true);
+    try {
+      const params = new URLSearchParams({ handle });
+      window.location.href = `/api/oauth/login?${params.toString()}`;
+    } catch {
+      setBlueskyError("Failed to start Bluesky login");
+      setBlueskyLoading(false);
+    }
+  };
+
+  const handleBack = () => {
+    setShowEmailForm(false);
+    setShowBlueskyForm(false);
+    setBlueskyError(null);
+    setBlueskyLoading(false);
+  };
 
   if (showEmailForm) {
     return (
@@ -30,11 +53,33 @@ export default function SignUpPage() {
 
         <button
           type="button"
-          onClick={() => setShowEmailForm(false)}
+          onClick={handleBack}
           className="text-muted-foreground hover:text-foreground text-sm"
         >
           Back to all sign-in options
         </button>
+      </div>
+    );
+  }
+
+  if (showBlueskyForm) {
+    return (
+      <div className="flex w-full max-w-md flex-col items-center gap-8">
+        {/* Compact branding */}
+        <Link href="/" className="flex items-center gap-2">
+          <div className="bg-primary flex size-8 items-center justify-center rounded-lg">
+            <Trophy className="size-4 text-white" />
+          </div>
+          <span className="text-lg font-bold tracking-tight">trainers.gg</span>
+        </Link>
+
+        <BlueskyHandleForm
+          onSubmit={handleBlueskySubmit}
+          loading={blueskyLoading}
+          error={blueskyError}
+          onErrorClear={() => setBlueskyError(null)}
+          onBack={handleBack}
+        />
       </div>
     );
   }
@@ -58,7 +103,10 @@ export default function SignUpPage() {
 
       {/* Social login buttons */}
       <div className="w-full">
-        <SocialAuthButtons onEmailClick={() => setShowEmailForm(true)} />
+        <SocialAuthButtons
+          onEmailClick={() => setShowEmailForm(true)}
+          onBlueskyClick={() => setShowBlueskyForm(true)}
+        />
       </div>
 
       {/* Terms */}
