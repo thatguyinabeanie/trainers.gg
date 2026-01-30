@@ -50,6 +50,18 @@ export const oauthProviders = [
     icon: "twitter",
     type: "supabase",
   },
+  {
+    name: "discord",
+    displayName: "Discord",
+    icon: "discord",
+    type: "supabase",
+  },
+  {
+    name: "github",
+    displayName: "GitHub",
+    icon: "github",
+    type: "supabase",
+  },
 ] as const;
 
 /**

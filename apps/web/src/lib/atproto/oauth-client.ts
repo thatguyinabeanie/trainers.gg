@@ -329,7 +329,7 @@ export async function getAtprotoSession(did: string) {
   try {
     const client = await getAtprotoOAuthClient();
     return await client.restore(did);
-  } catch (error) {
+  } catch {
     // Expected for seed data with fake DIDs or invalidated sessions
     return null;
   }

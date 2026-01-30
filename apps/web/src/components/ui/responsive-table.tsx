@@ -13,12 +13,12 @@ export function ResponsiveTable({ children, className }: ResponsiveTableProps) {
   const [canScrollRight, setCanScrollRight] = React.useState(false);
   const containerRef = React.useRef<HTMLDivElement>(null);
 
-  const checkScroll = () => {
+  const checkScroll = React.useCallback(() => {
     const el = containerRef.current;
     if (!el) return;
     setCanScrollLeft(el.scrollLeft > 0);
     setCanScrollRight(el.scrollLeft < el.scrollWidth - el.clientWidth - 1);
-  };
+  }, []);
 
   React.useEffect(() => {
     checkScroll();
@@ -36,7 +36,7 @@ export function ResponsiveTable({ children, className }: ResponsiveTableProps) {
       {/* Left shadow */}
       <div
         className={cn(
-          "from-background pointer-events-none absolute top-0 bottom-0 left-0 z-10 w-4 bg-gradient-to-r to-transparent transition-opacity duration-200",
+          "from-background pointer-events-none absolute bottom-0 left-0 top-0 z-10 w-4 bg-gradient-to-r to-transparent transition-opacity duration-200",
           canScrollLeft ? "opacity-100" : "opacity-0"
         )}
       />
@@ -53,7 +53,7 @@ export function ResponsiveTable({ children, className }: ResponsiveTableProps) {
       {/* Right shadow */}
       <div
         className={cn(
-          "from-background pointer-events-none absolute top-0 right-0 bottom-0 z-10 w-4 bg-gradient-to-l to-transparent transition-opacity duration-200",
+          "from-background pointer-events-none absolute bottom-0 right-0 top-0 z-10 w-4 bg-gradient-to-l to-transparent transition-opacity duration-200",
           canScrollRight ? "opacity-100" : "opacity-0"
         )}
       />

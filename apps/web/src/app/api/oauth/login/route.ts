@@ -49,16 +49,12 @@ export async function GET(request: Request) {
   const handle = searchParams.get("handle");
   const returnUrl = searchParams.get("returnUrl") || "/";
 
-  // Validate handle
-  if (!handle) {
-    return NextResponse.json(
-      { error: "Handle is required. Example: ?handle=user.bsky.social" },
-      { status: 400 }
-    );
-  }
-
-  // Normalize handle (remove @ prefix if present)
-  const normalizedHandle = handle.replace(/^@/, "");
+  // If no handle provided, default to bsky.social as the authorization server.
+  // The AT Protocol OAuth client accepts PDS/auth server URLs as input,
+  // which lets the user authenticate directly on bsky.social's login page.
+  const normalizedHandle = handle
+    ? handle.replace(/^@/, "")
+    : "https://bsky.social";
 
   try {
     // Start the OAuth flow - this discovers the user's PDS and redirects

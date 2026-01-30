@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -9,19 +9,11 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { useAuth } from "@/hooks/use-auth";
 import {
   resolveLoginIdentifier,
   checkUsernameAvailability,
 } from "@/app/(auth-pages)/actions";
-import { COUNTRIES } from "@/lib/countries";
 import {
   passwordSchema,
   usernameSchema,
@@ -47,28 +39,7 @@ const signInSchema = z.object({
 
 const signUpSchema = z
   .object({
-    firstName: z
-      .string()
-      .min(1, "First name is required")
-      .max(50, "First name must be at most 50 characters"),
-    lastName: z
-      .string()
-      .min(1, "Last name is required")
-      .max(50, "Last name must be at most 50 characters"),
     username: usernameSchema,
-    birthDate: z
-      .string()
-      .min(1, "Date of birth is required")
-      .refine(
-        (val) => {
-          const date = new Date(val);
-          const now = new Date();
-          const age = now.getFullYear() - date.getFullYear();
-          return age >= 13;
-        },
-        { message: "You must be at least 13 years old to create an account" }
-      ),
-    country: z.string().min(1, "Country is required"),
     email: emailSchema,
     password: passwordSchema,
     confirmPassword: z.string().min(1, "Please confirm your password"),
@@ -99,7 +70,13 @@ export function SignInForm({ defaultMode = "signin" }: SignInFormProps) {
 
 // --- Sign In View ---
 
-function SignInView({ onToggle }: { onToggle: () => void }) {
+export function SignInView({
+  onToggle,
+  hideHeading,
+}: {
+  onToggle?: () => void;
+  hideHeading?: boolean;
+}) {
   const router = useRouter();
   const { signInWithEmail } = useAuth();
   const [error, setError] = useState<string | null>(null);
@@ -150,12 +127,14 @@ function SignInView({ onToggle }: { onToggle: () => void }) {
 
   return (
     <div className="flex w-full max-w-md flex-col gap-6">
-      <div className="text-center">
-        <h1 className="text-2xl font-bold tracking-tight">Welcome Back</h1>
-        <p className="text-muted-foreground mt-1 text-sm">
-          Sign in to your account
-        </p>
-      </div>
+      {!hideHeading && (
+        <div className="text-center">
+          <h1 className="text-2xl font-bold tracking-tight">Welcome Back</h1>
+          <p className="text-muted-foreground mt-1 text-sm">
+            Sign in to your account
+          </p>
+        </div>
+      )}
 
       <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
         {error && (
@@ -214,16 +193,18 @@ function SignInView({ onToggle }: { onToggle: () => void }) {
         </Button>
       </form>
 
-      <p className="text-muted-foreground text-center text-sm">
-        New here?{" "}
-        <button
-          type="button"
-          onClick={onToggle}
-          className="text-primary font-medium hover:underline"
-        >
-          Create Account
-        </button>
-      </p>
+      {onToggle && (
+        <p className="text-muted-foreground text-center text-sm">
+          New here?{" "}
+          <button
+            type="button"
+            onClick={onToggle}
+            className="text-primary font-medium hover:underline"
+          >
+            Create Account
+          </button>
+        </p>
+      )}
     </div>
   );
 }
@@ -235,40 +216,14 @@ function SignUpView({ onToggle }: { onToggle: () => void }) {
   const { signUpWithEmail } = useAuth();
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [detectedCountry, setDetectedCountry] = useState<string | null>(null);
 
   const {
     register,
     handleSubmit,
-    setValue,
-    watch,
     formState: { errors },
   } = useForm<SignUpFormData>({
     resolver: zodResolver(signUpSchema),
   });
-
-  const selectedCountry = watch("country");
-
-  // Auto-detect country on mount
-  useEffect(() => {
-    const detectCountry = async () => {
-      try {
-        const response = await fetch("https://ipapi.co/json/");
-        if (response.ok) {
-          const data = await response.json();
-          if (data.country_code) {
-            setDetectedCountry(data.country_code);
-            if (!selectedCountry) {
-              setValue("country", data.country_code);
-            }
-          }
-        }
-      } catch {
-        // Silently fail — country detection is optional
-      }
-    };
-    detectCountry();
-  }, [setValue, selectedCountry]);
 
   const onSubmit = async (data: SignUpFormData) => {
     setError(null);
@@ -293,10 +248,6 @@ function SignUpView({ onToggle }: { onToggle: () => void }) {
         data.password,
         {
           username: data.username.toLowerCase(),
-          firstName: data.firstName.trim(),
-          lastName: data.lastName.trim(),
-          birthDate: data.birthDate,
-          country: data.country,
         }
       );
 
@@ -331,113 +282,27 @@ function SignUpView({ onToggle }: { onToggle: () => void }) {
           </div>
         )}
 
-        <div className="grid grid-cols-2 gap-4">
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="firstName">First Name</Label>
-            <Input
-              id="firstName"
-              type="text"
-              placeholder="Ash"
-              autoComplete="given-name"
-              aria-invalid={errors.firstName ? "true" : undefined}
-              {...register("firstName")}
-            />
-            {errors.firstName && (
-              <p className="text-destructive text-sm">
-                {errors.firstName.message}
-              </p>
-            )}
-          </div>
-
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="lastName">Last Name</Label>
-            <Input
-              id="lastName"
-              type="text"
-              placeholder="Ketchum"
-              autoComplete="family-name"
-              aria-invalid={errors.lastName ? "true" : undefined}
-              {...register("lastName")}
-            />
-            {errors.lastName && (
-              <p className="text-destructive text-sm">
-                {errors.lastName.message}
-              </p>
-            )}
-          </div>
-        </div>
-
         <div className="flex flex-col gap-2">
           <Label htmlFor="username">Username</Label>
-          <Input
-            id="username"
-            type="text"
-            placeholder="cooltrainer123"
-            autoComplete="username"
-            aria-invalid={errors.username ? "true" : undefined}
-            {...register("username")}
-          />
+          <div className="border-input focus-within:ring-ring/50 focus-within:border-ring flex items-center overflow-hidden rounded-md border focus-within:ring-[3px]">
+            <Input
+              id="username"
+              type="text"
+              placeholder="cooltrainer123"
+              autoComplete="username"
+              aria-invalid={errors.username ? "true" : undefined}
+              className="rounded-none border-0 shadow-none focus-visible:ring-0"
+              {...register("username")}
+            />
+            <span className="text-muted-foreground border-l-input bg-muted select-none whitespace-nowrap border-l px-3 text-sm">
+              .{process.env.NEXT_PUBLIC_PDS_HANDLE_DOMAIN || "trainers.gg"}
+            </span>
+          </div>
           {errors.username && (
             <p className="text-destructive text-sm">
               {errors.username.message}
             </p>
           )}
-          <p className="text-muted-foreground text-xs">
-            Your Bluesky handle will be{" "}
-            <span className="text-foreground font-medium">
-              @{watch("username")?.toLowerCase() || "username"}.trainers.gg
-            </span>
-          </p>
-        </div>
-
-        <div className="grid grid-cols-2 gap-4">
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="birthDate">Date of Birth</Label>
-            <Input
-              id="birthDate"
-              type="date"
-              autoComplete="bday"
-              aria-invalid={errors.birthDate ? "true" : undefined}
-              {...register("birthDate")}
-            />
-            {errors.birthDate && (
-              <p className="text-destructive text-sm">
-                {errors.birthDate.message}
-              </p>
-            )}
-          </div>
-
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="country">Country</Label>
-            <Select
-              value={selectedCountry ?? ""}
-              onValueChange={(value) => value && setValue("country", value)}
-            >
-              <SelectTrigger
-                id="country"
-                aria-invalid={errors.country ? "true" : undefined}
-              >
-                <SelectValue placeholder="Select country" />
-              </SelectTrigger>
-              <SelectContent>
-                {COUNTRIES.map((country) => (
-                  <SelectItem key={country.code} value={country.code}>
-                    {country.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {errors.country && (
-              <p className="text-destructive text-sm">
-                {errors.country.message}
-              </p>
-            )}
-            {detectedCountry && selectedCountry === detectedCountry && (
-              <p className="text-muted-foreground text-xs">
-                Auto-detected from your location
-              </p>
-            )}
-          </div>
         </div>
 
         <div className="flex flex-col gap-2">
