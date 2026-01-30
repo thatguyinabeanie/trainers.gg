@@ -1,3 +1,5 @@
+import "@/lib/polyfills";
+
 import React from "react";
 import { useColorScheme } from "react-native";
 import { AuthProvider } from "@/lib/supabase";

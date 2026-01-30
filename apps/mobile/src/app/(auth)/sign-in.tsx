@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { KeyboardAvoidingView, Platform, Pressable } from "react-native";
-import { Link, useRouter, type Href } from "expo-router";
+import { Alert, KeyboardAvoidingView, Platform, Pressable } from "react-native";
+import { Stack, useRouter } from "expo-router";
 import {
   YStack,
   XStack,
@@ -11,7 +11,7 @@ import {
   Spinner,
 } from "tamagui";
 import { useAuth, getSupabase } from "@/lib/supabase";
-import { BlueskyAuthButton } from "@/components/auth/bluesky-auth-button";
+import { validatePassword, usernameSchema } from "@trainers/validators";
 
 /**
  * Resolves a login identifier (email or username) to an email address.
@@ -23,12 +23,10 @@ async function resolveLoginIdentifier(
 ): Promise<{ email: string | null; error: string | null }> {
   const trimmed = identifier.trim().toLowerCase();
 
-  // If it looks like an email, return as-is
   if (trimmed.includes("@")) {
     return { email: trimmed, error: null };
   }
 
-  // Otherwise, look up username
   try {
     const { data, error } = await getSupabase()
       .from("users")
@@ -51,10 +49,23 @@ async function resolveLoginIdentifier(
 }
 
 export default function SignInScreen() {
+  const [mode, setMode] = useState<"signin" | "signup">("signin");
+  const isSignUp = mode === "signup";
+
+  // Sign-in fields
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
+
+  // Sign-up additional fields
+  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+
   const [error, setError] = useState<string | null>(null);
-  const { signInWithEmail, signInWithBluesky, loading } = useAuth();
+  const { signInWithEmail, signUpWithEmail, resetPassword, loading } =
+    useAuth();
   const router = useRouter();
 
   const handleSignIn = async () => {
@@ -65,7 +76,6 @@ export default function SignInScreen() {
       return;
     }
 
-    // Resolve username to email if needed
     const { email, error: resolveError } =
       await resolveLoginIdentifier(identifier);
 
@@ -83,11 +93,79 @@ export default function SignInScreen() {
     }
   };
 
+  const handleSignUp = async () => {
+    setError(null);
+
+    if (!username || !email || !password || !confirmPassword) {
+      setError("Please fill in all required fields");
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      setError("Passwords do not match");
+      return;
+    }
+
+    const passwordValidation = validatePassword(password);
+    if (!passwordValidation.isValid) {
+      setError(`Password requires: ${passwordValidation.errors.join(", ")}`);
+      return;
+    }
+
+    const usernameResult = usernameSchema.safeParse(username);
+    if (!usernameResult.success) {
+      setError(usernameResult.error.errors[0]?.message ?? "Invalid username");
+      return;
+    }
+
+    const { error: signUpError } = await signUpWithEmail(email, password, {
+      username,
+      firstName: firstName || undefined,
+      lastName: lastName || undefined,
+    });
+
+    if (signUpError) {
+      setError(signUpError.message);
+    } else {
+      router.replace("/(tabs)/home");
+    }
+  };
+
+  const handleForgotPassword = () => {
+    const trimmed = identifier.trim();
+    if (!trimmed || !trimmed.includes("@")) {
+      Alert.alert(
+        "Enter Your Email",
+        "Type your email address in the field above, then tap Forgot Password."
+      );
+      return;
+    }
+
+    resetPassword(trimmed).then(({ error: resetError }) => {
+      if (resetError) {
+        setError(resetError.message);
+      } else {
+        Alert.alert(
+          "Check Your Email",
+          "If an account exists with that email, we sent a password reset link."
+        );
+      }
+    });
+  };
+
+  const toggleMode = () => {
+    setMode(isSignUp ? "signin" : "signup");
+    setError(null);
+  };
+
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : "height"}
       style={{ flex: 1 }}
     >
+      <Stack.Screen
+        options={{ title: isSignUp ? "Create Account" : "Sign In" }}
+      />
       <ScrollView
         flex={1}
         backgroundColor="$background"
@@ -102,7 +180,7 @@ export default function SignInScreen() {
               color="$color"
               textAlign="center"
             >
-              Welcome Back
+              {isSignUp ? "Join trainers.gg" : "Welcome Back"}
             </Text>
             <Text
               fontSize={15}
@@ -110,7 +188,7 @@ export default function SignInScreen() {
               textAlign="center"
               marginTop="$2"
             >
-              Sign in to your account
+              {isSignUp ? "Create your account" : "Sign in to your account"}
             </Text>
           </YStack>
 
@@ -123,6 +201,120 @@ export default function SignInScreen() {
           )}
 
           <YStack gap="$3">
+            {/* Username — sign-up only */}
+            {isSignUp && (
+              <YStack gap="$1">
+                <Input
+                  backgroundColor="$muted"
+                  borderWidth={0}
+                  borderRadius="$4"
+                  paddingHorizontal="$4"
+                  paddingVertical="$3.5"
+                  fontSize={16}
+                  color="$color"
+                  placeholder="Username *"
+                  placeholderTextColor="$mutedForeground"
+                  value={username}
+                  onChangeText={setUsername}
+                  autoCapitalize="none"
+                  autoComplete="username"
+                />
+                <Text
+                  fontSize={12}
+                  color="$mutedForeground"
+                  paddingHorizontal="$1"
+                >
+                  Your Bluesky handle:{" "}
+                  <Text fontSize={12} color="$color" fontWeight="500">
+                    @{username.toLowerCase() || "username"}.trainers.gg
+                  </Text>
+                </Text>
+              </YStack>
+            )}
+
+            {/* Email/identifier field */}
+            {isSignUp ? (
+              <Input
+                backgroundColor="$muted"
+                borderWidth={0}
+                borderRadius="$4"
+                paddingHorizontal="$4"
+                paddingVertical="$3.5"
+                fontSize={16}
+                color="$color"
+                placeholder="Email *"
+                placeholderTextColor="$mutedForeground"
+                value={email}
+                onChangeText={setEmail}
+                autoCapitalize="none"
+                keyboardType="email-address"
+                autoComplete="email"
+              />
+            ) : (
+              <YStack gap="$1">
+                <Input
+                  backgroundColor="$muted"
+                  borderWidth={0}
+                  borderRadius="$4"
+                  paddingHorizontal="$4"
+                  paddingVertical="$3.5"
+                  fontSize={16}
+                  color="$color"
+                  placeholder="Email or Username"
+                  placeholderTextColor="$mutedForeground"
+                  value={identifier}
+                  onChangeText={setIdentifier}
+                  autoCapitalize="none"
+                  keyboardType="email-address"
+                  autoComplete="username"
+                />
+                <Text
+                  fontSize={12}
+                  color="$mutedForeground"
+                  paddingHorizontal="$1"
+                >
+                  No @trainers.gg needed for username
+                </Text>
+              </YStack>
+            )}
+
+            {/* Name fields — sign-up only */}
+            {isSignUp && (
+              <XStack gap="$3">
+                <Input
+                  flex={1}
+                  backgroundColor="$muted"
+                  borderWidth={0}
+                  borderRadius="$4"
+                  paddingHorizontal="$4"
+                  paddingVertical="$3.5"
+                  fontSize={16}
+                  color="$color"
+                  placeholder="First Name"
+                  placeholderTextColor="$mutedForeground"
+                  value={firstName}
+                  onChangeText={setFirstName}
+                  autoComplete="given-name"
+                />
+                <Input
+                  flex={1}
+                  backgroundColor="$muted"
+                  borderWidth={0}
+                  borderRadius="$4"
+                  paddingHorizontal="$4"
+                  paddingVertical="$3.5"
+                  fontSize={16}
+                  color="$color"
+                  placeholder="Last Name"
+                  placeholderTextColor="$mutedForeground"
+                  value={lastName}
+                  onChangeText={setLastName}
+                  autoComplete="family-name"
+                />
+              </XStack>
+            )}
+
+            {/* Password */}
             <YStack gap="$1">
               <Input
                 backgroundColor="$muted"
@@ -132,40 +324,45 @@ export default function SignInScreen() {
                 paddingVertical="$3.5"
                 fontSize={16}
                 color="$color"
-                placeholder="Email or Username"
+                placeholder={isSignUp ? "Password *" : "Password"}
                 placeholderTextColor="$mutedForeground"
-                value={identifier}
-                onChangeText={setIdentifier}
-                autoCapitalize="none"
-                keyboardType="email-address"
-                autoComplete="username"
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry
+                autoComplete={isSignUp ? "new-password" : "password"}
               />
-              <Text
-                fontSize={12}
-                color="$mutedForeground"
-                paddingHorizontal="$1"
-              >
-                No @trainers.gg needed for username
-              </Text>
+              {isSignUp && (
+                <Text
+                  fontSize={11}
+                  color="$mutedForeground"
+                  paddingHorizontal="$1"
+                >
+                  8+ chars, uppercase, lowercase, number, and symbol
+                </Text>
+              )}
             </YStack>
 
-            <Input
-              backgroundColor="$muted"
-              borderWidth={0}
-              borderRadius="$4"
-              paddingHorizontal="$4"
-              paddingVertical="$3.5"
-              fontSize={16}
-              color="$color"
-              placeholder="Password"
-              placeholderTextColor="$mutedForeground"
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry
-              autoComplete="password"
-            />
+            {/* Confirm password — sign-up only */}
+            {isSignUp && (
+              <Input
+                backgroundColor="$muted"
+                borderWidth={0}
+                borderRadius="$4"
+                paddingHorizontal="$4"
+                paddingVertical="$3.5"
+                fontSize={16}
+                color="$color"
+                placeholder="Confirm Password *"
+                placeholderTextColor="$mutedForeground"
+                value={confirmPassword}
+                onChangeText={setConfirmPassword}
+                secureTextEntry
+                autoComplete="new-password"
+              />
+            )}
           </YStack>
 
+          {/* Submit button */}
           <Button
             backgroundColor="$primary"
             borderWidth={0}
@@ -175,49 +372,41 @@ export default function SignInScreen() {
             pressStyle={{ opacity: 0.85 }}
             opacity={loading ? 0.7 : 1}
             disabled={loading}
-            onPress={handleSignIn}
+            onPress={isSignUp ? handleSignUp : handleSignIn}
           >
             {loading ? (
               <Spinner color="$primaryForeground" />
             ) : (
               <Text color="$primaryForeground" fontSize={16} fontWeight="600">
-                Sign In
+                {isSignUp ? "Create Account" : "Sign In"}
               </Text>
             )}
           </Button>
 
-          {/* Separator */}
-          <XStack alignItems="center" gap="$3" marginVertical="$1">
-            <YStack flex={1} height={1} backgroundColor="$muted" />
-            <Text fontSize={12} color="$mutedForeground">
-              OR
-            </Text>
-            <YStack flex={1} height={1} backgroundColor="$muted" />
-          </XStack>
+          {/* Forgot password — sign-in only */}
+          {!isSignUp && (
+            <Pressable onPress={handleForgotPassword}>
+              <Text
+                textAlign="center"
+                color="$primary"
+                fontSize={14}
+                fontWeight="500"
+              >
+                Forgot password?
+              </Text>
+            </Pressable>
+          )}
 
-          {/* Bluesky sign-in */}
-          <BlueskyAuthButton
-            onSignIn={async (handle) => {
-              const { error, isNew } = await signInWithBluesky(handle);
-              if (!error) {
-                router.replace("/(tabs)/home");
-              }
-              return { error };
-            }}
-            loading={loading}
-          />
-
+          {/* Mode toggle */}
           <XStack justifyContent="center" alignItems="center" marginTop="$2">
             <Text color="$mutedForeground" fontSize={14}>
-              Don&apos;t have an account?{" "}
+              {isSignUp ? "Already have an account? " : "New here? "}
             </Text>
-            <Link href={"/(auth)/sign-up" as Href} asChild>
-              <Pressable>
-                <Text color="$primary" fontSize={14} fontWeight="600">
-                  Sign Up
-                </Text>
-              </Pressable>
-            </Link>
+            <Pressable onPress={toggleMode}>
+              <Text color="$primary" fontSize={14} fontWeight="600">
+                {isSignUp ? "Sign In" : "Create Account"}
+              </Text>
+            </Pressable>
           </XStack>
         </YStack>
       </ScrollView>

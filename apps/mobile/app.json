@@ -31,7 +31,12 @@
       "output": "static",
       "favicon": "./assets/favicon.png"
     },
-    "plugins": ["expo-router", "expo-font", "expo-secure-store"],
+    "plugins": [
+      "expo-router",
+      "expo-font",
+      "expo-secure-store",
+      "./plugins/with-ios-build-fixes"
+    ],
     "experiments": {
       "typedRoutes": true
     },

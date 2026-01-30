@@ -2,6 +2,12 @@
 node = "22"
 pnpm = "latest"
 opencode = "latest"
+java = "zulu-21"
+android-sdk = "latest"
+
+[env]
+ANDROID_HOME = "{{env.HOME}}/Library/Android/sdk"
+_.path = ["{{env.HOME}}/Library/Android/sdk/platform-tools", "{{env.HOME}}/Library/Android/sdk/emulator"]
 
 [settings]
 experimental = true
