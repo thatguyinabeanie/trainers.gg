@@ -1612,7 +1612,9 @@ export type Database = {
           rental_team_photo_verified_by: number | null
           status: Database["public"]["Enums"]["registration_status"] | null
           team_id: number | null
+          team_locked: boolean | null
           team_name: string | null
+          team_submitted_at: string | null
           tournament_id: number
         }
         Insert: {
@@ -1630,7 +1632,9 @@ export type Database = {
           rental_team_photo_verified_by?: number | null
           status?: Database["public"]["Enums"]["registration_status"] | null
           team_id?: number | null
+          team_locked?: boolean | null
           team_name?: string | null
+          team_submitted_at?: string | null
           tournament_id: number
         }
         Update: {
@@ -1648,7 +1652,9 @@ export type Database = {
           rental_team_photo_verified_by?: number | null
           status?: Database["public"]["Enums"]["registration_status"] | null
           team_id?: number | null
+          team_locked?: boolean | null
           team_name?: string | null
+          team_submitted_at?: string | null
           tournament_id?: number
         }
         Relationships: [
@@ -1908,6 +1914,7 @@ export type Database = {
           id: number
           max_participants: number | null
           name: string
+          open_team_sheets: boolean | null
           organization_id: number
           participants: number[] | null
           platform: string | null
@@ -1949,6 +1956,7 @@ export type Database = {
           id?: never
           max_participants?: number | null
           name: string
+          open_team_sheets?: boolean | null
           organization_id: number
           participants?: number[] | null
           platform?: string | null
@@ -1990,6 +1998,7 @@ export type Database = {
           id?: never
           max_participants?: number | null
           name?: string
+          open_team_sheets?: boolean | null
           organization_id?: number
           participants?: number[] | null
           platform?: string | null
