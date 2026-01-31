@@ -57,4 +57,6 @@ export {
   createPhase,
   deletePhase,
   saveTournamentPhases,
+  // Team submission
+  submitTeam,
 } from "./tournaments";

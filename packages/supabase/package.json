@@ -33,6 +33,7 @@
   },
   "dependencies": {
     "@supabase/supabase-js": "catalog:",
+    "@trainers/validators": "workspace:*",
     "zod": "catalog:"
   },
   "devDependencies": {

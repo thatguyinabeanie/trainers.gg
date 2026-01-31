@@ -403,6 +403,9 @@ importers:
       '@supabase/supabase-js':
         specifier: 'catalog:'
         version: 2.91.0(bufferutil@4.1.0)(utf-8-validate@5.0.10)
+      '@trainers/validators':
+        specifier: workspace:*
+        version: link:../validators
       zod:
         specifier: 'catalog:'
         version: 3.25.76
