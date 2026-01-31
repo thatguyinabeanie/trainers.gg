@@ -7,3 +7,9 @@ export {
   type OrganizationWithCounts,
   type OrganizationDetail,
 } from "./use-organizations";
+export {
+  useTournament,
+  useTeamForRegistration,
+  type TournamentDetail,
+  type TeamForRegistration,
+} from "./use-tournament";
