@@ -45,4 +45,8 @@ export const CacheTags = {
    * @param idOrSlug - Organization ID or slug
    */
   organization: (idOrSlug: string | number) => `organization:${idOrSlug}`,
+
+  /** Tag for tournament team submissions (open teamsheet public view) */
+  tournamentTeams: (idOrSlug: string | number) =>
+    `tournament-teams:${idOrSlug}`,
 } as const;
