@@ -614,7 +614,7 @@ export async function checkIn(supabase: TypedClient, tournamentId: number) {
   // Find the user's registration
   const { data: registration } = await supabase
     .from("tournament_registrations")
-    .select("id, status")
+    .select("id, status, team_id")
     .eq("tournament_id", tournamentId)
     .eq("alt_id", profile.id)
     .single();
@@ -628,6 +628,12 @@ export async function checkIn(supabase: TypedClient, tournamentId: number) {
   ) {
     throw new Error(
       `Cannot check in from status "${registration.status}". Must be "registered" or "confirmed".`
+    );
+  }
+
+  if (!registration.team_id) {
+    throw new Error(
+      "You must submit a team before checking in. Go to the tournament page to submit your team."
     );
   }
 
