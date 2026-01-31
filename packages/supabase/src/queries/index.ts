@@ -71,6 +71,7 @@ export {
   getTournamentInvitationsSent,
   getTournamentInvitationsReceived,
   checkTournamentSlugAvailable,
+  getTeamForRegistration,
 } from "./tournaments";
 
 export type { TournamentWithOrg, GroupedTournaments } from "./tournaments";

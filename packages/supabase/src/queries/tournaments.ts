@@ -1387,3 +1387,80 @@ export async function getTournamentInvitationsReceived(supabase: TypedClient) {
       : null,
   }));
 }
+
+/**
+ * Get the submitted team for a player's tournament registration.
+ * Returns null if no team is submitted.
+ * RLS policies enforce visibility (own team, or open teamsheets).
+ */
+export async function getTeamForRegistration(
+  supabase: TypedClient,
+  tournamentId: number,
+  altId?: number
+) {
+  let targetAltId: number | undefined = altId;
+
+  if (!targetAltId) {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return null;
+
+    const { data: alt } = await supabase
+      .from("alts")
+      .select("id")
+      .eq("user_id", user.id)
+      .single();
+
+    if (!alt) return null;
+    targetAltId = alt.id as number;
+  }
+
+  // Get registration with team info
+  const { data: registration } = await supabase
+    .from("tournament_registrations")
+    .select("id, team_id, team_submitted_at, team_locked")
+    .eq("tournament_id", tournamentId)
+    .eq("alt_id", targetAltId!)
+    .single();
+
+  if (!registration?.team_id) return null;
+
+  // Get team with pokemon
+  const { data: team } = await supabase
+    .from("teams")
+    .select("id, name")
+    .eq("id", registration.team_id)
+    .single();
+
+  if (!team) return null;
+
+  const { data: teamPokemon } = await supabase
+    .from("team_pokemon")
+    .select(
+      `
+      team_position,
+      pokemon:pokemon (
+        id, species, nickname, level, ability, nature, held_item,
+        move1, move2, move3, move4,
+        ev_hp, ev_attack, ev_defense, ev_special_attack, ev_special_defense, ev_speed,
+        iv_hp, iv_attack, iv_defense, iv_special_attack, iv_special_defense, iv_speed,
+        tera_type, gender, is_shiny
+      )
+    `
+    )
+    .eq("team_id", registration.team_id)
+    .order("team_position");
+
+  return {
+    teamId: team.id,
+    teamName: team.name,
+    submittedAt: registration.team_submitted_at,
+    locked: registration.team_locked,
+    pokemon:
+      teamPokemon?.map((tp) => ({
+        position: tp.team_position,
+        ...tp.pokemon,
+      })) ?? [],
+  };
+}
