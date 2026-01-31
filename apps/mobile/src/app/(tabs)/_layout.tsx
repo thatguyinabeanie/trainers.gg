@@ -24,11 +24,12 @@ const TAB_BAR_HEIGHT = 88;
 const HEADER_CONTENT_HEIGHT = 44; // Only the content, not the safe area
 
 // Extract the tabBar prop type from Tabs component
-type TabBarProps = NonNullable<
-  React.ComponentProps<typeof Tabs>["tabBar"]
-> extends (props: infer P) => unknown
-  ? P
-  : never;
+type TabBarProps =
+  NonNullable<React.ComponentProps<typeof Tabs>["tabBar"]> extends (
+    props: infer P
+  ) => unknown
+    ? P
+    : never;
 
 // Custom tab bar that supports scroll-based hide/show animation
 function CustomTabBar(props: TabBarProps) {

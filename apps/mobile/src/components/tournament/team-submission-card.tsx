@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useEffect } from "react";
 import { Alert, TextInput, Platform } from "react-native";
-import { YStack, XStack, Text, Spinner } from "tamagui";
+import { YStack, XStack, Text } from "tamagui";
 import {
   Card,
   CardHeader,
