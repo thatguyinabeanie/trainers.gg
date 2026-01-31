@@ -46,6 +46,7 @@ export function OverviewClient() {
       name: t.name,
       startDate: t.startDate ? new Date(t.startDate).getTime() : null,
       status: t.status,
+      hasTeam: t.hasTeam,
     })) || [];
 
   const transformedActivities =

@@ -8,6 +8,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Trophy, Plus, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import type { DashboardTournament } from "@/types/dashboard";
@@ -60,18 +61,35 @@ export function UpcomingTournaments({
                   key={tournament.id}
                   className="flex items-center justify-between rounded-md border p-4"
                 >
-                  <div>
+                  <div className="space-y-1">
                     <Link
                       href={`/tournaments/${tournament.id}`}
                       className="font-semibold hover:underline"
                     >
                       {tournament.name}
                     </Link>
-                    <p className="text-muted-foreground text-sm">
-                      {tournament.startDate
-                        ? new Date(tournament.startDate).toLocaleDateString()
-                        : "Date TBD"}
-                    </p>
+                    <div className="flex items-center gap-2">
+                      <p className="text-muted-foreground text-sm">
+                        {tournament.startDate
+                          ? new Date(tournament.startDate).toLocaleDateString()
+                          : "Date TBD"}
+                      </p>
+                      {tournament.hasTeam ? (
+                        <Badge
+                          variant="secondary"
+                          className="text-xs text-emerald-600 dark:text-emerald-400"
+                        >
+                          Team submitted
+                        </Badge>
+                      ) : (
+                        <Badge
+                          variant="secondary"
+                          className="text-xs text-amber-600 dark:text-amber-400"
+                        >
+                          Team needed
+                        </Badge>
+                      )}
+                    </div>
                   </div>
                   <Link href={`/tournaments/${tournament.id}`}>
                     <Button variant="secondary" size="sm">

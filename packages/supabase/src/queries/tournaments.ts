@@ -997,6 +997,7 @@ export async function getMyDashboardData(supabase: TypedClient, altId: number) {
     name: string;
     startDate: string | null;
     status: string;
+    hasTeam: boolean;
   }[] = [];
   let activeTournamentsCount = 0;
 
@@ -1015,6 +1016,7 @@ export async function getMyDashboardData(supabase: TypedClient, altId: number) {
         name: tournament.name,
         startDate: tournament.start_date,
         status: tournament.status,
+        hasTeam: reg.team_id != null,
       });
 
       if (tournament.status === "active" || tournament.status === "upcoming") {
