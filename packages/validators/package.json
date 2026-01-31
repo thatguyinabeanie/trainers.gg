@@ -6,7 +6,8 @@
   "exports": {
     ".": "./src/index.ts",
     "./user": "./src/user.ts",
-    "./post": "./src/post.ts"
+    "./post": "./src/post.ts",
+    "./team": "./src/team.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
@@ -14,6 +15,10 @@
     "format:check": "prettier --check \"src/**/*.{ts,tsx,js,jsx,json,md}\""
   },
   "dependencies": {
+    "@pkmn/data": "^0.10.5",
+    "@pkmn/dex": "^0.10.5",
+    "@pkmn/sets": "^5.2.0",
+    "@pkmn/sim": "^0.10.5",
     "zod": "catalog:"
   },
   "devDependencies": {

@@ -449,6 +449,18 @@ importers:
 
   packages/validators:
     dependencies:
+      '@pkmn/data':
+        specifier: ^0.10.5
+        version: 0.10.5
+      '@pkmn/dex':
+        specifier: ^0.10.5
+        version: 0.10.5
+      '@pkmn/sets':
+        specifier: ^5.2.0
+        version: 5.2.0
+      '@pkmn/sim':
+        specifier: ^0.10.5
+        version: 0.10.5
       zod:
         specifier: 'catalog:'
         version: 3.25.76
