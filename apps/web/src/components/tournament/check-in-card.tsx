@@ -25,6 +25,7 @@ import {
   UserCheck,
   Users,
   AlertCircle,
+  AlertTriangle,
   Loader2,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -38,11 +39,13 @@ type CheckedInPlayer = {
 interface CheckInCardProps {
   tournamentId: number;
   isOrganizer?: boolean;
+  hasTeam?: boolean;
 }
 
 export function CheckInCard({
   tournamentId,
   isOrganizer = false,
+  hasTeam = true,
 }: CheckInCardProps) {
   const [isChecking, setIsChecking] = useState(false);
   const [timeRemaining, setTimeRemaining] = useState<string>("");
@@ -292,6 +295,16 @@ export function CheckInCard({
           </Alert>
         )}
 
+        {/* Team submission warning */}
+        {!hasTeam && !checkInStatus.isCheckedIn && (
+          <Alert className="border-amber-500/50 bg-amber-50 dark:bg-amber-950/20">
+            <AlertTriangle className="h-4 w-4 text-amber-500" />
+            <AlertDescription className="text-sm">
+              Submit your team before checking in.
+            </AlertDescription>
+          </Alert>
+        )}
+
         {/* Check-in Button */}
         <div className="flex gap-2">
           {checkInStatus.isCheckedIn ? (
@@ -311,7 +324,7 @@ export function CheckInCard({
           ) : (
             <Button
               onClick={handleCheckIn}
-              disabled={isChecking}
+              disabled={!hasTeam || isChecking}
               className="w-full"
             >
               {isChecking ? (
