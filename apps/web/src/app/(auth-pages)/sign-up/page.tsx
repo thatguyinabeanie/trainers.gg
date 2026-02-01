@@ -6,6 +6,7 @@ import Link from "next/link";
 import { SocialAuthButtons } from "@/components/auth/social-auth-buttons";
 import { SignInForm } from "@/components/auth/sign-in-form";
 import { WaitlistForm } from "@/components/auth/waitlist-form";
+import { getRedirectParam } from "@/app/(auth-pages)/utils";
 
 export default function SignUpPage() {
   const maintenanceMode = process.env.NEXT_PUBLIC_MAINTENANCE_MODE === "true";
@@ -26,7 +27,10 @@ export default function SignUpPage() {
           <span className="text-lg font-bold tracking-tight">trainers.gg</span>
         </Link>
 
-        <SignInForm defaultMode="signup" />
+        <SignInForm
+          defaultMode="signup"
+          redirectTo={getRedirectParam() ?? undefined}
+        />
 
         <button
           type="button"
@@ -58,7 +62,10 @@ export default function SignUpPage() {
 
       {/* Social login buttons */}
       <div className="w-full">
-        <SocialAuthButtons onEmailClick={() => setShowEmailForm(true)} />
+        <SocialAuthButtons
+          onEmailClick={() => setShowEmailForm(true)}
+          redirectTo={getRedirectParam() ?? undefined}
+        />
       </div>
 
       {/* Terms */}

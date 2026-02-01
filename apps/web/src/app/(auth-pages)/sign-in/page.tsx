@@ -12,12 +12,7 @@ import { SocialAuthButtons } from "@/components/auth/social-auth-buttons";
 import { SignInView } from "@/components/auth/sign-in-form";
 import { useAuth } from "@/hooks/use-auth";
 import { resolveLoginIdentifier } from "@/app/(auth-pages)/actions";
-
-/** Read the `redirect` query param directly from the URL. */
-function getRedirectParam(): string | null {
-  if (typeof window === "undefined") return null;
-  return new URLSearchParams(window.location.search).get("redirect");
-}
+import { getRedirectParam, withRedirectParam } from "@/app/(auth-pages)/utils";
 
 export default function SignInPage() {
   const router = useRouter();
@@ -204,14 +199,17 @@ export default function SignInPage() {
 
       {/* Social login buttons */}
       <div className="w-full">
-        <SocialAuthButtons onEmailClick={() => setShowEmailForm(true)} />
+        <SocialAuthButtons
+          onEmailClick={() => setShowEmailForm(true)}
+          redirectTo={getRedirectParam() ?? undefined}
+        />
       </div>
 
       {/* Sign up link */}
       <p className="text-muted-foreground text-center text-sm">
         New here?{" "}
         <Link
-          href="/sign-up"
+          href={withRedirectParam("/sign-up")}
           className="text-primary font-medium hover:underline"
         >
           Create Account

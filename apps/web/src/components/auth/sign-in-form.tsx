@@ -55,16 +55,21 @@ type SignUpFormData = z.infer<typeof signUpSchema>;
 interface SignInFormProps {
   /** Start in sign-up mode */
   defaultMode?: "signin" | "signup";
+  /** Optional path to redirect to after auth (e.g. "/tournaments/slug") */
+  redirectTo?: string;
 }
 
-export function SignInForm({ defaultMode = "signin" }: SignInFormProps) {
+export function SignInForm({
+  defaultMode = "signin",
+  redirectTo,
+}: SignInFormProps) {
   const [mode, setMode] = useState<"signin" | "signup">(defaultMode);
   const isSignUp = mode === "signup";
 
   return isSignUp ? (
-    <SignUpView onToggle={() => setMode("signin")} />
+    <SignUpView onToggle={() => setMode("signin")} redirectTo={redirectTo} />
   ) : (
-    <SignInView onToggle={() => setMode("signup")} />
+    <SignInView onToggle={() => setMode("signup")} redirectTo={redirectTo} />
   );
 }
 
@@ -214,7 +219,14 @@ export function SignInView({
 
 // --- Sign Up View ---
 
-function SignUpView({ onToggle }: { onToggle: () => void }) {
+function SignUpView({
+  onToggle,
+  redirectTo,
+}: {
+  onToggle: () => void;
+  /** Optional path to redirect to after sign-up */
+  redirectTo?: string;
+}) {
   const router = useRouter();
   const { signUpWithEmail } = useAuth();
   const [error, setError] = useState<string | null>(null);
@@ -259,7 +271,7 @@ function SignUpView({ onToggle }: { onToggle: () => void }) {
         return;
       }
 
-      router.push("/");
+      router.push(redirectTo && redirectTo.startsWith("/") ? redirectTo : "/");
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "An unexpected error occurred"

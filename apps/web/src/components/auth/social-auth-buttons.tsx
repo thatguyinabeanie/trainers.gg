@@ -92,6 +92,8 @@ const providerIcons: Record<string, () => React.ReactNode> = {
 interface SocialAuthButtonsProps {
   /** Called when user clicks the email button */
   onEmailClick?: () => void;
+  /** Optional path to redirect to after auth (e.g. "/tournaments/slug") */
+  redirectTo?: string;
 }
 
 /**
@@ -103,7 +105,10 @@ interface SocialAuthButtonsProps {
  * 3. X (outline)
  * 4. Email (outline)
  */
-export function SocialAuthButtons({ onEmailClick }: SocialAuthButtonsProps) {
+export function SocialAuthButtons({
+  onEmailClick,
+  redirectTo,
+}: SocialAuthButtonsProps) {
   const { signInWithOAuth } = useAuth();
   const [loadingProvider, setLoadingProvider] = useState<string | null>(null);
 
@@ -111,7 +116,8 @@ export function SocialAuthButtons({ onEmailClick }: SocialAuthButtonsProps) {
     setLoadingProvider(provider);
     try {
       await signInWithOAuth(
-        provider as "google" | "twitter" | "discord" | "github"
+        provider as "google" | "twitter" | "discord" | "github",
+        redirectTo
       );
     } finally {
       setLoadingProvider(null);
@@ -122,7 +128,10 @@ export function SocialAuthButtons({ onEmailClick }: SocialAuthButtonsProps) {
     setLoadingProvider("bluesky");
     // Redirect directly — the login route defaults to bsky.social
     // when no handle is provided, so the user authenticates on Bluesky's page.
-    window.location.href = "/api/oauth/login";
+    const blueskyUrl = redirectTo
+      ? `/api/oauth/login?returnUrl=${encodeURIComponent(redirectTo)}`
+      : "/api/oauth/login";
+    window.location.href = blueskyUrl;
   };
 
   const isDisabled = loadingProvider !== null;
