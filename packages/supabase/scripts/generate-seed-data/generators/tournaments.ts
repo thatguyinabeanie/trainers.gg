@@ -84,6 +84,14 @@ export interface GeneratedTournamentRegistration {
   status: "registered" | "checked_in";
   registeredAt: Date;
   checkedInAt: Date | null;
+  /** Set by team generator for checked-in registrations */
+  teamId: number | null;
+  /** When team was submitted */
+  teamSubmittedAt: Date | null;
+  /** Whether team is locked (cannot be changed) */
+  teamLocked: boolean;
+  /** Whether this upcoming registration has a team submitted (for testing enforcement) */
+  hasTeamSubmitted: boolean;
 }
 
 /**
@@ -245,8 +253,10 @@ function getPhaseStatus(
 /**
  * Generate all tournaments for all organizations
  *
- * Generates tournaments spanning from WEEKS_OF_PAST_TOURNAMENTS ago
- * to WEEKS_OF_FUTURE_TOURNAMENTS ahead, centered around the current date.
+ * Creates 3 tournaments per org:
+ * 1. Week 1 (past) — completed, full capacity, all checked in with teams
+ * 2. Week 2 (current) — active flagship, full capacity, all checked in with teams
+ * 3. Week 3 (upcoming) — starts in ~1 hour, partial registration, check-in open, no check-ins yet
  */
 export function generateTournaments(
   organizations: GeneratedOrganization[]
@@ -258,18 +268,14 @@ export function generateTournaments(
   const futureWeeks = SEED_CONFIG.WEEKS_OF_FUTURE_TOURNAMENTS;
   const totalWeeks = pastWeeks + futureWeeks + 1; // +1 for current week
 
-  // Generate tournaments for each week
-  // weekOffset: negative = past, 0 = current week, positive = future
+  // Generate weekly main tournaments
   for (let weekIndex = 0; weekIndex < totalWeeks; weekIndex++) {
-    // Map weekIndex to weekOffset: 0 -> -pastWeeks, pastWeeks -> 0, totalWeeks-1 -> futureWeeks
     const weekOffset = weekIndex - pastWeeks;
-    const weekNumber = weekIndex + 1; // 1-indexed week number for display
-
-    // getWeekStartDate takes "weeks ago" as positive, "weeks ahead" as negative
+    const weekNumber = weekIndex + 1;
     const weekStart = getWeekStartDate(-weekOffset);
 
     for (const org of organizations) {
-      // Check if this is a flagship week for this org (only for past/current weeks)
+      // Check if this is a flagship week
       const flagshipConfig =
         weekOffset <= 0
           ? SEED_CONFIG.FLAGSHIP_TOURNAMENTS.find(
@@ -278,25 +284,22 @@ export function generateTournaments(
           : undefined;
       const isFlagship = !!flagshipConfig;
 
-      // Main tournament (on org's main day)
       const mainSeed = `tournament-${org.slug}-week${weekNumber}-main`;
       const mainSize = getTournamentSize(mainSeed, true, isFlagship);
       const mainFormat = getTournamentFormat(mainSeed, true, isFlagship);
 
-      // For flagships with active: true, set dates to make the tournament currently in progress
       const forceActive =
         flagshipConfig && "active" in flagshipConfig && flagshipConfig.active;
       let mainStartDate: Date;
       let mainEndDate: Date;
 
       if (forceActive) {
-        // Start 3 hours ago, end 5 hours from now (tournament is in round 4 of 8)
         const now = new Date();
         mainStartDate = new Date(now.getTime() - 3 * 60 * 60 * 1000);
         mainEndDate = new Date(now.getTime() + 5 * 60 * 60 * 1000);
       } else {
-        mainStartDate = getDayInWeek(weekStart, org.mainDay, 14); // 2 PM
-        mainEndDate = new Date(mainStartDate.getTime() + 6 * 60 * 60 * 1000); // 6 hours
+        mainStartDate = getDayInWeek(weekStart, org.mainDay, 14);
+        mainEndDate = new Date(mainStartDate.getTime() + 6 * 60 * 60 * 1000);
       }
 
       tournaments.push({
@@ -335,46 +338,51 @@ export function generateTournaments(
         isFlagship,
         forceActive: !!forceActive,
       });
-
-      // Practice tournament (on org's practice day)
-      const practiceSeed = `tournament-${org.slug}-week${weekNumber}-practice`;
-      const practiceSize = getTournamentSize(practiceSeed, false, false);
-      const practiceFormat = getTournamentFormat(practiceSeed, false, false);
-      const practiceStartDate = getDayInWeek(weekStart, org.practiceDay, 19); // 7 PM
-      const practiceEndDate = new Date(
-        practiceStartDate.getTime() + 4 * 60 * 60 * 1000
-      ); // 4 hours
-
-      const practiceSwissRounds =
-        practiceFormat === "swiss_only"
-          ? SEED_CONFIG.SWISS_ROUNDS[
-              practiceSize as keyof typeof SEED_CONFIG.SWISS_ROUNDS
-            ] || 4
-          : null;
-
-      tournaments.push({
-        id: tournamentId++,
-        organizationId: org.id,
-        name: generateTournamentName(org, weekNumber, false, false),
-        slug: generateTournamentSlug(org, weekNumber, false, false),
-        description: `Practice tournament for ${org.name}`,
-        format: "VGC",
-        status: getTournamentStatus(practiceStartDate, practiceEndDate),
-        startDate: practiceStartDate,
-        endDate: practiceEndDate,
-        maxParticipants: practiceSize,
-        topCutSize: null, // No top cut for practice
-        swissRounds: practiceSwissRounds,
-        tournamentFormat: practiceFormat,
-        roundTimeMinutes: SEED_CONFIG.ROUND_TIME_MINUTES,
-        featured: false,
-        week: weekNumber,
-        weekOffset,
-        isMain: false,
-        isFlagship: false,
-        forceActive: false,
-      });
     }
+  }
+
+  // Generate a "starting soon" upcoming tournament per org
+  // These have check-in windows open (startDate = NOW + 1 hour)
+  for (const org of organizations) {
+    const weekNumber = totalWeeks + 1; // Week 3
+    const upcomingSeed = `tournament-${org.slug}-week${weekNumber}-upcoming`;
+    const size = getTournamentSize(upcomingSeed, true, false);
+    const format = getTournamentFormat(upcomingSeed, true, false);
+
+    const now = new Date();
+    const startDate = new Date(now.getTime() + 60 * 60 * 1000); // 1 hour from now
+    const endDate = new Date(startDate.getTime() + 6 * 60 * 60 * 1000);
+
+    tournaments.push({
+      id: tournamentId++,
+      organizationId: org.id,
+      name: `${org.name} Week ${weekNumber} Championship`,
+      slug: `${org.slug}-week-${weekNumber.toString().padStart(2, "0")}`,
+      description: `${org.name} tournament for week ${weekNumber} — check-in open!`,
+      format: "VGC",
+      status: "upcoming",
+      startDate,
+      endDate,
+      maxParticipants: size,
+      topCutSize:
+        format === "swiss_with_cut"
+          ? SEED_CONFIG.TOP_CUT_SIZES[
+              size as keyof typeof SEED_CONFIG.TOP_CUT_SIZES
+            ] || 8
+          : null,
+      swissRounds:
+        SEED_CONFIG.SWISS_ROUNDS[
+          size as keyof typeof SEED_CONFIG.SWISS_ROUNDS
+        ] || 5,
+      tournamentFormat: format,
+      roundTimeMinutes: SEED_CONFIG.ROUND_TIME_MINUTES,
+      featured: false,
+      week: weekNumber,
+      weekOffset: 1,
+      isMain: true,
+      isFlagship: false,
+      forceActive: false,
+    });
   }
 
   return tournaments;
@@ -584,7 +592,8 @@ export function generateTournamentRegistrations(
 
     // Create registrations
     const now = new Date();
-    for (const alt of participants) {
+    for (let pIdx = 0; pIdx < participants.length; pIdx++) {
+      const alt = participants[pIdx]!;
       // Registration time: random time before start (or before now for future tournaments)
       const regWindowEnd =
         tournament.startDate < now ? tournament.startDate : now;
@@ -597,6 +606,10 @@ export function generateTournamentRegistrations(
         (regWindowEnd.getTime() - regWindowStart.getTime());
       const regTime = new Date(regWindowStart.getTime() + regTimeOffset);
 
+      // For upcoming tournaments, ~60% of registered players have teams submitted
+      const hasTeamSubmitted =
+        !isCheckedIn && hash(`has-team-${tournament.id}-${alt.id}`) < 0.6;
+
       registrations.push({
         id: registrationId++,
         tournamentId: tournament.id,
@@ -604,6 +617,11 @@ export function generateTournamentRegistrations(
         status: isCheckedIn ? "checked_in" : "registered",
         registeredAt: regTime,
         checkedInAt: isCheckedIn ? tournament.startDate : null,
+        // Team fields set later by team generator for checked-in; or here for upcoming
+        teamId: null,
+        teamSubmittedAt: null,
+        teamLocked: false,
+        hasTeamSubmitted,
       });
     }
   }

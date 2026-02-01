@@ -54,36 +54,6 @@ export const SEED_CONFIG = {
       subscriptionTier: "free" as const,
       existing: true,
     },
-    {
-      slug: "sinnoh-champions",
-      name: "Sinnoh Champions",
-      ownerUsername: "cynthia",
-      mainDay: 5, // Friday
-      practiceDay: 3, // Wednesday
-      tier: "verified" as const,
-      subscriptionTier: "organization_plus" as const,
-      existing: true,
-    },
-    {
-      slug: "kanto-elite",
-      name: "Kanto Elite Series",
-      ownerUsername: "admin_trainer", // admin owns 2 orgs
-      mainDay: 4, // Thursday
-      practiceDay: 1, // Monday
-      tier: "verified" as const,
-      subscriptionTier: "organization_plus" as const,
-      existing: false,
-    },
-    {
-      slug: "johto-masters",
-      name: "Johto Masters League",
-      ownerUsername: "lance", // new user
-      mainDay: 3, // Wednesday
-      practiceDay: 2, // Tuesday
-      tier: "verified" as const,
-      subscriptionTier: "organization_plus" as const,
-      existing: false,
-    },
   ],
 
   // Staff overlap configuration
@@ -98,27 +68,25 @@ export const SEED_CONFIG = {
   // Tournament timeline (relative to current date at seed time)
   // Past tournaments have matches, results, and standings
   // Future tournaments have registrations but no matches yet
-  WEEKS_OF_PAST_TOURNAMENTS: 10,
-  WEEKS_OF_FUTURE_TOURNAMENTS: 1,
+  WEEKS_OF_PAST_TOURNAMENTS: 1,
+  WEEKS_OF_FUTURE_TOURNAMENTS: 0,
 
-  // Each org runs 2 tournaments per week (main + practice)
-  TOURNAMENTS_PER_WEEK_PER_ORG: 2,
+  // Each org runs 1 main tournament per week (no practice)
+  TOURNAMENTS_PER_WEEK_PER_ORG: 1,
 
   // Flagship tournament configuration (256 players)
   FLAGSHIP_TOURNAMENT_SIZE: 256,
   FLAGSHIP_TOURNAMENTS: [
-    { orgSlug: "vgc-league", week: 6, name: "VGC League Championship" },
-    { orgSlug: "sinnoh-champions", week: 10, name: "Sinnoh Grand Finals" },
     {
-      orgSlug: "pallet-town",
-      week: 11,
-      name: "Pallet Town Trainers Week 11 Championship",
+      orgSlug: "vgc-league",
+      week: 2,
+      name: "VGC League Week 2 Championship",
       active: true,
     },
     {
-      orgSlug: "kanto-elite",
-      week: 11,
-      name: "Kanto Elite Series Week 11 Championship",
+      orgSlug: "pallet-town",
+      week: 2,
+      name: "Pallet Town Trainers Week 2 Championship",
       active: true,
     },
   ],

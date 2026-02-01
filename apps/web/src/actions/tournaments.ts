@@ -701,7 +701,7 @@ export async function recalculateStandings(
 }
 
 /**
- * Drop a player from the tournament
+ * Drop a player from the tournament (TO action — requires alt ID)
  */
 export async function dropPlayer(
   tournamentId: number,
@@ -716,6 +716,30 @@ export async function dropPlayer(
     return {
       success: false,
       error: getErrorMessage(error, "Failed to drop player"),
+    };
+  }
+}
+
+/**
+ * Drop yourself from the tournament (player self-service)
+ */
+export async function dropFromTournament(
+  tournamentId: number
+): Promise<ActionResult<{ success: true }>> {
+  try {
+    const supabase = await createClient();
+    const alts = await getCurrentUserAlts(supabase);
+    const altId = alts[0]?.id;
+    if (!altId) {
+      return { success: false, error: "No player profile found" };
+    }
+    await dropPlayerMutation(supabase, tournamentId, altId);
+    updateTag(CacheTags.tournament(tournamentId));
+    return { success: true, data: { success: true } };
+  } catch (error) {
+    return {
+      success: false,
+      error: getErrorMessage(error, "Failed to drop from tournament"),
     };
   }
 }

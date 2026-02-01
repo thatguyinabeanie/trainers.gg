@@ -48,6 +48,12 @@ import {
   type GeneratedTournamentRegistration,
 } from "./generators/tournaments.js";
 import {
+  generateTeamsForRegistrations,
+  type GeneratedTeam,
+  type GeneratedPokemon,
+  type GeneratedTeamPokemon,
+} from "./generators/teams.js";
+import {
   generateMatches,
   type GeneratedMatch,
   type GeneratedMatchGame,
@@ -568,7 +574,7 @@ function generateTournamentsSql(
 
       lines.push(`  INSERT INTO public.tournament_registrations (`);
       lines.push(
-        `    tournament_id, alt_id, status, registered_at, checked_in_at`
+        `    tournament_id, alt_id, status, registered_at, checked_in_at, team_id, team_submitted_at, team_locked`
       );
       lines.push(`  )`);
 
@@ -583,12 +589,24 @@ function generateTournamentsSql(
           ? dateToSqlExpr(reg.checkedInAt, refDate, refName)
           : "NULL::timestamptz";
 
+        // Team fields: use subquery to find team by name if team was assigned
+        const teamIdExpr = reg.teamId
+          ? `(SELECT tm.id FROM public.teams tm WHERE tm.name = '${escapeString(`team-seed-${reg.teamId}`)}')`
+          : "NULL::bigint";
+        const teamSubmittedAtExpr = reg.teamSubmittedAt
+          ? dateToSqlExpr(reg.teamSubmittedAt, refDate, refName)
+          : "NULL::timestamptz";
+        const teamLockedExpr = reg.teamLocked ? "TRUE" : "FALSE";
+
         return `  SELECT
       t.id,
       a.id,
       '${reg.status}'::registration_status,
       ${regAtExpr},
-      ${checkedInAtExpr}
+      ${checkedInAtExpr},
+      ${teamIdExpr},
+      ${teamSubmittedAtExpr},
+      ${teamLockedExpr}
     FROM public.tournaments t, public.alts a
     WHERE t.slug = '${escapeString(tournament.slug)}'
       AND a.username = '${escapeString(altUsername)}'`;
@@ -1033,6 +1051,165 @@ function generateStandingsSql(
   return lines.join("\n");
 }
 
+/**
+ * Generate 09_teams.sql - Teams, Pokemon, and Team-Pokemon links
+ *
+ * Must run BEFORE 10_tournaments.sql since registrations reference team IDs.
+ */
+function generateTeamsSql(
+  teams: GeneratedTeam[],
+  pokemon: GeneratedPokemon[],
+  teamPokemon: GeneratedTeamPokemon[],
+  alts: GeneratedAlt[]
+): string {
+  const lines: string[] = [];
+
+  lines.push(
+    generateHeader(
+      "09_teams.sql",
+      "Create Teams, Pokemon, and Team-Pokemon Links"
+    )
+  );
+  lines.push(`-- IDEMPOTENT: Uses ON CONFLICT DO NOTHING`);
+  lines.push(`-- Depends on: 03_users.sql`);
+  lines.push(
+    `-- =============================================================================\n`
+  );
+
+  if (teams.length === 0) {
+    lines.push(`-- No teams to insert`);
+    return lines.join("\n");
+  }
+
+  // Build alt lookup
+  const altUsernameById = new Map<number, string>();
+  for (const a of alts) {
+    altUsernameById.set(a.id, a.username);
+  }
+
+  // Build pokemon lookup by ID
+  const pokemonById = new Map<number, GeneratedPokemon>();
+  for (const p of pokemon) {
+    pokemonById.set(p.id, p);
+  }
+
+  lines.push(`DO $$`);
+  lines.push(`DECLARE`);
+  lines.push(`  teams_exist boolean;`);
+  lines.push(`BEGIN`);
+  lines.push(
+    `  SELECT EXISTS(SELECT 1 FROM public.teams LIMIT 1) INTO teams_exist;`
+  );
+  lines.push(`  IF teams_exist THEN`);
+  lines.push(`    RAISE NOTICE 'Teams already exist, skipping';`);
+  lines.push(`    RETURN;`);
+  lines.push(`  END IF;\n`);
+
+  // Insert teams
+  lines.push(`  -- Insert teams`);
+  const teamBatchSize = 50;
+  for (let i = 0; i < teams.length; i += teamBatchSize) {
+    const batch = teams.slice(i, i + teamBatchSize);
+    lines.push(
+      `  INSERT INTO public.teams (name, created_by, is_public) VALUES`
+    );
+    const values = batch.map((team, idx) => {
+      const altUsername = altUsernameById.get(team.createdByAltId);
+      if (!altUsername) {
+        throw new Error(
+          `Alt ID ${team.createdByAltId} not found for team ${team.id}`
+        );
+      }
+      // Use a stable name for lookup from registrations
+      const teamName = `team-seed-${team.id}`;
+      const comma = idx < batch.length - 1 ? "," : "";
+      return `    ('${escapeString(teamName)}', (SELECT a.id FROM public.alts a WHERE a.username = '${escapeString(altUsername)}'), ${team.isPublic})${comma}`;
+    });
+    lines.push(values.join("\n"));
+    lines.push(`  ON CONFLICT DO NOTHING;\n`);
+  }
+
+  // Insert pokemon
+  lines.push(`  -- Insert pokemon`);
+  const pokeBatchSize = 50;
+  for (let i = 0; i < pokemon.length; i += pokeBatchSize) {
+    const batch = pokemon.slice(i, i + pokeBatchSize);
+    lines.push(`  INSERT INTO public.pokemon (`);
+    lines.push(
+      `    species, nickname, level, nature, ability, held_item, gender, is_shiny,`
+    );
+    lines.push(`    move1, move2, move3, move4,`);
+    lines.push(
+      `    ev_hp, ev_attack, ev_defense, ev_special_attack, ev_special_defense, ev_speed,`
+    );
+    lines.push(`    tera_type`);
+    lines.push(`  ) VALUES`);
+
+    const values = batch.map((p, idx) => {
+      const gender = p.gender ? `'${p.gender}'` : "NULL";
+      const nickname = p.nickname ? `'${escapeString(p.nickname)}'` : "NULL";
+      const heldItem = p.heldItem ? `'${escapeString(p.heldItem)}'` : "NULL";
+      const move2 = p.move2 ? `'${escapeString(p.move2)}'` : "NULL";
+      const move3 = p.move3 ? `'${escapeString(p.move3)}'` : "NULL";
+      const move4 = p.move4 ? `'${escapeString(p.move4)}'` : "NULL";
+      const teraType = p.teraType ? `'${escapeString(p.teraType)}'` : "NULL";
+      const comma = idx < batch.length - 1 ? "," : "";
+      return `    ('${escapeString(p.species)}', ${nickname}, ${p.level}, '${escapeString(p.nature)}', '${escapeString(p.ability)}', ${heldItem}, ${gender}, ${p.isShiny},
+     '${escapeString(p.move1)}', ${move2}, ${move3}, ${move4},
+     ${p.evHp}, ${p.evAttack}, ${p.evDefense}, ${p.evSpecialAttack}, ${p.evSpecialDefense}, ${p.evSpeed},
+     ${teraType})${comma}`;
+    });
+    lines.push(values.join("\n"));
+    lines.push(`  ON CONFLICT DO NOTHING;\n`);
+  }
+
+  // Insert team_pokemon links
+  // We need to match by team name and pokemon sequential position
+  // Since pokemon IDs are auto-generated, use row order within each team
+  lines.push(`  -- Insert team_pokemon links`);
+  lines.push(
+    `  -- Uses subqueries to resolve auto-generated IDs by team name and pokemon attributes`
+  );
+
+  // Group team_pokemon by team for ordered insertion
+  const teamPokemonByTeam = new Map<number, GeneratedTeamPokemon[]>();
+  for (const tp of teamPokemon) {
+    if (!teamPokemonByTeam.has(tp.teamId)) {
+      teamPokemonByTeam.set(tp.teamId, []);
+    }
+    teamPokemonByTeam.get(tp.teamId)!.push(tp);
+  }
+
+  for (const [teamId, links] of teamPokemonByTeam) {
+    const teamName = `team-seed-${teamId}`;
+    for (const link of links.sort((a, b) => a.teamPosition - b.teamPosition)) {
+      const poke = pokemonById.get(link.pokemonId);
+      if (!poke) continue;
+
+      // Match pokemon by species + ability + nature + move1 (should be unique enough per team context)
+      lines.push(`  INSERT INTO public.team_pokemon (team_id, pokemon_id, team_position)
+    SELECT
+      (SELECT tm.id FROM public.teams tm WHERE tm.name = '${escapeString(teamName)}'),
+      p.id,
+      ${link.teamPosition}
+    FROM public.pokemon p
+    WHERE p.species = '${escapeString(poke.species)}'
+      AND p.ability = '${escapeString(poke.ability)}'
+      AND p.nature = '${escapeString(poke.nature)}'
+      AND p.move1 = '${escapeString(poke.move1)}'
+    LIMIT 1
+    ON CONFLICT DO NOTHING;`);
+    }
+  }
+
+  lines.push(
+    `\n  RAISE NOTICE 'Created ${teams.length} teams, ${pokemon.length} pokemon, ${teamPokemon.length} team_pokemon links';`
+  );
+  lines.push(`END $$;\n`);
+
+  return lines.join("\n");
+}
+
 // ============================================================================
 // Main
 // ============================================================================
@@ -1064,6 +1241,60 @@ async function main() {
   const registrations = generateTournamentRegistrations(tournaments, alts);
   console.log(`  ✓ Registrations: ${registrations.length}`);
 
+  // Generate teams for checked-in registrations
+  const { teams, pokemon, teamPokemon, registrationTeamMap } =
+    generateTeamsForRegistrations(registrations, alts);
+  console.log(`  ✓ Teams: ${teams.length}`);
+  console.log(`  ✓ Pokemon: ${pokemon.length}`);
+  console.log(`  ✓ Team-Pokemon links: ${teamPokemon.length}`);
+
+  // Update registrations with team assignments
+  for (const reg of registrations) {
+    const teamId = registrationTeamMap.get(reg.id);
+    if (teamId) {
+      reg.teamId = teamId;
+      reg.teamSubmittedAt = reg.registeredAt; // Submitted at registration time
+      reg.teamLocked = true; // Locked for checked-in players
+    }
+  }
+
+  // Also generate teams for upcoming registrations that have hasTeamSubmitted
+  const upcomingWithTeams = registrations.filter(
+    (r) => r.status === "registered" && r.hasTeamSubmitted && !r.teamId
+  );
+  if (upcomingWithTeams.length > 0) {
+    const upcomingTeamResult = generateTeamsForRegistrations(
+      // Temporarily mark as checked_in so generator picks them up
+      upcomingWithTeams.map((r) => ({ ...r, status: "checked_in" as const })),
+      alts
+    );
+    // Offset team IDs to avoid collisions
+    const teamIdOffset = teams.length;
+    for (const team of upcomingTeamResult.teams) {
+      team.id += teamIdOffset;
+      teams.push(team);
+    }
+    for (const p of upcomingTeamResult.pokemon) {
+      pokemon.push(p);
+    }
+    for (const tp of upcomingTeamResult.teamPokemon) {
+      tp.teamId += teamIdOffset;
+      teamPokemon.push(tp);
+    }
+    // Update the original registrations
+    for (const reg of upcomingWithTeams) {
+      const originalTeamId = upcomingTeamResult.registrationTeamMap.get(reg.id);
+      if (originalTeamId) {
+        reg.teamId = originalTeamId + teamIdOffset;
+        reg.teamSubmittedAt = reg.registeredAt;
+        reg.teamLocked = false; // Not locked yet for upcoming tournaments
+      }
+    }
+    console.log(
+      `  ✓ Upcoming teams (submitted but not locked): ${upcomingTeamResult.teams.length}`
+    );
+  }
+
   const { matches, games } = generateMatches(
     tournaments,
     phases,
@@ -1091,6 +1322,10 @@ async function main() {
     {
       name: "04_organizations.sql",
       content: generateOrganizationsSql(organizations, orgStaff),
+    },
+    {
+      name: "09_teams.sql",
+      content: generateTeamsSql(teams, pokemon, teamPokemon, alts),
     },
     {
       name: "10_tournaments.sql",

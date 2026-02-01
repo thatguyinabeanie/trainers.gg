@@ -50,6 +50,7 @@ import {
   submitTeamAction,
   selectTeamAction,
   getUserTeamsAction,
+  dropFromTournament,
 } from "@/actions/tournaments";
 import {
   parseAndValidateTeam,
@@ -140,7 +141,7 @@ function SectionSeparator({ label }: { label: string }) {
   return (
     <div className="relative py-2">
       <Separator />
-      <span className="bg-card text-muted-foreground absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 px-2 text-xs font-medium">
+      <span className="bg-card text-muted-foreground absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 px-2 text-xs font-medium">
         {label}
       </span>
     </div>
@@ -161,6 +162,7 @@ export function TournamentSidebarCard({
   // ---- Registration / check-in state ----
   const [isRegistering, setIsRegistering] = useState(false);
   const [isChecking, setIsChecking] = useState(false);
+  const [isDropping, setIsDropping] = useState(false);
   const [showRegistrationDialog, setShowRegistrationDialog] = useState(false);
   const [timeRemaining, setTimeRemaining] = useState<string>("");
 
@@ -353,6 +355,42 @@ export function TournamentSidebarCard({
       });
     } finally {
       setIsChecking(false);
+    }
+  };
+
+  const handleDrop = async () => {
+    if (
+      !confirm(
+        "You will forfeit all remaining matches. Your results will stay on the standings. This cannot be undone."
+      )
+    ) {
+      return;
+    }
+
+    setIsDropping(true);
+    try {
+      const result = await dropFromTournament(tournamentId);
+      if (result.success) {
+        toast.success("Dropped from tournament", {
+          description: "You have been dropped from the tournament",
+        });
+        refetchRegistration();
+        refetchCheckIn();
+        refetchCheckInStats();
+      } else {
+        toast.error("Failed to drop", {
+          description: result.error,
+        });
+      }
+    } catch (error) {
+      toast.error("Failed to drop", {
+        description:
+          error instanceof Error
+            ? error.message
+            : "An unexpected error occurred",
+      });
+    } finally {
+      setIsDropping(false);
     }
   };
 
@@ -574,7 +612,8 @@ export function TournamentSidebarCard({
     ? checkInEndTime - Date.now() < 5 * 60 * 1000 && !isCheckedIn
     : false;
 
-  const hasTeam = !!submittedTeam;
+  const isDropped = userStatus?.status === "dropped";
+  const hasTeam = registrationStatus?.userStatus?.hasTeam ?? !!submittedTeam;
 
   // ---- Badge logic ----
 
@@ -897,6 +936,28 @@ export function TournamentSidebarCard({
   };
 
   // =========================================================================
+  // PHASE 5: Dropped
+  // =========================================================================
+
+  if (isDropped) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Registration</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <StatusBanner
+            icon={<X className="text-muted-foreground h-5 w-5" />}
+            title="Dropped"
+            subtitle="You have dropped from this tournament"
+            variant="muted"
+          />
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // =========================================================================
   // PHASE 4: Checked In
   // =========================================================================
 
@@ -935,19 +996,36 @@ export function TournamentSidebarCard({
               }
             />
 
-            {/* Undo button */}
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleUndoCheckIn}
-              disabled={isChecking}
-              className="w-full"
-            >
-              {isChecking ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : null}
-              Undo Check-In
-            </Button>
+            {/* Undo check-in (during check-in window) or Drop (after tournament starts) */}
+            {tournament.status === "active" ? (
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={handleDrop}
+                disabled={isDropping}
+                className="w-full"
+              >
+                {isDropping ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <X className="mr-2 h-4 w-4" />
+                )}
+                Drop from Tournament
+              </Button>
+            ) : (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleUndoCheckIn}
+                disabled={isChecking}
+                className="w-full"
+              >
+                {isChecking ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : null}
+                Undo Check-In
+              </Button>
+            )}
           </CardContent>
         </Card>
 

@@ -1267,13 +1267,14 @@ export async function getRegistrationStatus(
   // Get user's registration if logged in
   let userStatus: {
     status: string;
+    hasTeam: boolean;
     waitlistPosition?: number;
   } | null = null;
 
   if (altId) {
     const { data: userReg } = await supabase
       .from("tournament_registrations")
-      .select("status")
+      .select("status, team_id")
       .eq("tournament_id", tournamentId)
       .eq("alt_id", altId)
       .single();
@@ -1296,6 +1297,7 @@ export async function getRegistrationStatus(
 
       userStatus = {
         status: userReg.status ?? "unknown",
+        hasTeam: !!userReg.team_id,
         waitlistPosition,
       };
     }

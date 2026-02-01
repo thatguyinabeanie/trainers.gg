@@ -65,8 +65,7 @@ sql_paths = [
   "./seeds/03_users.sql",
   "./seeds/04_organizations.sql",
   "./seeds/05_invitations.sql",
-  "./seeds/06_pokemon.sql",
-  "./seeds/07_teams.sql",
+  "./seeds/09_teams.sql",
   "./seeds/10_tournaments.sql",
   "./seeds/11_matches.sql",
   "./seeds/12_standings.sql"
