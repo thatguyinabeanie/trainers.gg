@@ -110,7 +110,8 @@ export default function TournamentDetailScreen() {
   // Derive late registration / late check-in status
   const { isOpen: isRegistrationOpen, isLateRegistration } =
     checkRegistrationOpen(tournament);
-  const { isOpen: isCheckInOpen, isLateCheckIn } = checkCheckInOpen(tournament);
+  const { isOpen: _isCheckInOpen, isLateCheckIn } =
+    checkCheckInOpen(tournament);
 
   return (
     <Screen>
