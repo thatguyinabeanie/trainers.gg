@@ -204,43 +204,50 @@ export function CheckInCard({
     );
   }
 
-  // Check-in closed
+  // Check-in closed (but late check-in may still be available)
   if (
     !checkInStatus.checkInOpen &&
     checkInStatus.checkInEndTime &&
     checkInStatus.checkInEndTime < Date.now()
   ) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <AlertCircle className="h-5 w-5" />
-            Check-In Closed
-          </CardTitle>
-          <CardDescription>The check-in window has ended</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {checkInStatus.isCheckedIn ? (
-            <Alert className="border-green-500/50 bg-green-500/10">
-              <CheckCircle2 className="h-4 w-4 text-green-600" />
-              <AlertDescription className="text-green-600">
-                You successfully checked in before the deadline
-              </AlertDescription>
-            </Alert>
-          ) : (
-            <Alert variant="destructive">
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>
-                You missed the check-in deadline and cannot participate
-              </AlertDescription>
-            </Alert>
-          )}
-        </CardContent>
-      </Card>
-    );
+    // Late check-in available — show option to check in
+    if (checkInStatus.isLateCheckIn && !checkInStatus.isCheckedIn) {
+      // Fall through to the open check-in UI below
+    } else {
+      return (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <AlertCircle className="h-5 w-5" />
+              Check-In Closed
+            </CardTitle>
+            <CardDescription>The check-in window has ended</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {checkInStatus.isCheckedIn ? (
+              <Alert className="border-green-500/50 bg-green-500/10">
+                <CheckCircle2 className="h-4 w-4 text-green-600" />
+                <AlertDescription className="text-green-600">
+                  You successfully checked in before the deadline
+                </AlertDescription>
+              </Alert>
+            ) : (
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>
+                  You missed the check-in deadline and cannot participate
+                </AlertDescription>
+              </Alert>
+            )}
+          </CardContent>
+        </Card>
+      );
+    }
   }
 
-  // Check-in is open
+  // Check-in is open (normal or late)
+  const isLate = checkInStatus.isLateCheckIn;
+
   return (
     <Card>
       <CardHeader>
@@ -251,18 +258,37 @@ export function CheckInCard({
               Tournament Check-In
             </CardTitle>
             <CardDescription>
-              Confirm your attendance for the tournament
+              {isLate
+                ? "Late check-in is available"
+                : "Confirm your attendance for the tournament"}
             </CardDescription>
           </div>
-          {timeRemaining && (
-            <Badge variant="outline" className="gap-1">
-              <Clock className="h-3 w-3" />
-              {timeRemaining}
+          {isLate ? (
+            <Badge className="border-amber-500/50 bg-amber-500/10 text-amber-600">
+              Late Check-In
             </Badge>
+          ) : (
+            timeRemaining && (
+              <Badge variant="outline" className="gap-1">
+                <Clock className="h-3 w-3" />
+                {timeRemaining}
+              </Badge>
+            )
           )}
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
+        {/* Late check-in info */}
+        {isLate && !checkInStatus.isCheckedIn && (
+          <Alert className="border-amber-500/50 bg-amber-50 dark:bg-amber-950/20">
+            <AlertTriangle className="h-4 w-4 text-amber-500" />
+            <AlertDescription className="text-sm">
+              The tournament has started. Checking in now will include you from
+              the next round.
+            </AlertDescription>
+          </Alert>
+        )}
+
         {/* Check-in Progress */}
         <div className="space-y-2">
           <div className="flex items-center justify-between text-sm">
@@ -290,7 +316,9 @@ export function CheckInCard({
           <Alert>
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>
-              You need to check in to confirm your participation
+              {isLate
+                ? "You missed the initial check-in. Checking in now will include you from the next round."
+                : "You need to check in to confirm your participation"}
             </AlertDescription>
           </Alert>
         )}

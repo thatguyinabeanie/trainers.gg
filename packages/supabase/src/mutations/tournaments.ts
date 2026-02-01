@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "../types";
 import { getInvitationExpiryDate } from "../constants";
+import { checkRegistrationOpen, checkCheckInOpen } from "../utils/registration";
 
 type TypedClient = SupabaseClient<Database>;
 type TournamentFormat = Database["public"]["Enums"]["tournament_format"];
@@ -421,15 +422,15 @@ export async function registerForTournament(
   // Check tournament status
   const { data: tournament } = await supabase
     .from("tournaments")
-    .select("status, max_participants, allow_late_registration")
+    .select(
+      "status, max_participants, allow_late_registration, registration_deadline"
+    )
     .eq("id", tournamentId)
     .single();
 
   if (!tournament) throw new Error("Tournament not found");
-  const isLateRegistration =
-    tournament.status === "active" &&
-    tournament.allow_late_registration === true;
-  if (tournament.status !== "upcoming" && !isLateRegistration) {
+  const { isOpen: isRegistrationOpen } = checkRegistrationOpen(tournament);
+  if (!isRegistrationOpen) {
     throw new Error("Tournament is not open for registration");
   }
 
@@ -640,21 +641,29 @@ export async function checkIn(supabase: TypedClient, tournamentId: number) {
     );
   }
 
-  // Check tournament allows check-in (should be upcoming or active)
+  // Check tournament allows check-in
   const { data: tournament } = await supabase
     .from("tournaments")
-    .select("status")
+    .select(
+      "status, start_date, check_in_window_minutes, current_round, late_check_in_max_round"
+    )
     .eq("id", tournamentId)
     .single();
 
   if (!tournament) throw new Error("Tournament not found");
-  if (tournament.status !== "upcoming" && tournament.status !== "active") {
+  const { isOpen: checkInOpen, isLateCheckIn } = checkCheckInOpen(tournament);
+  if (!checkInOpen) {
     throw new Error("Tournament is not open for check-in");
+  }
+
+  const updateData: Record<string, unknown> = { status: "checked_in" };
+  if (isLateCheckIn) {
+    updateData.checked_in_at = new Date().toISOString();
   }
 
   const { error } = await supabase
     .from("tournament_registrations")
-    .update({ status: "checked_in" })
+    .update(updateData)
     .eq("id", registration.id);
 
   if (error) throw error;

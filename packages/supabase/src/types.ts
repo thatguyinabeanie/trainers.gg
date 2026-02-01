@@ -1912,6 +1912,7 @@ export type Database = {
           game: string | null
           game_format: string | null
           id: number
+          late_check_in_max_round: number | null
           max_participants: number | null
           name: string
           open_team_sheets: boolean | null
@@ -1954,6 +1955,7 @@ export type Database = {
           game?: string | null
           game_format?: string | null
           id?: never
+          late_check_in_max_round?: number | null
           max_participants?: number | null
           name: string
           open_team_sheets?: boolean | null
@@ -1996,6 +1998,7 @@ export type Database = {
           game?: string | null
           game_format?: string | null
           id?: never
+          late_check_in_max_round?: number | null
           max_participants?: number | null
           name?: string
           open_team_sheets?: boolean | null

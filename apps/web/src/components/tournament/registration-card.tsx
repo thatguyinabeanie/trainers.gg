@@ -41,6 +41,7 @@ import {
   Clock,
   AlertCircle,
   CheckCircle2,
+  Info,
   Loader2,
   Trophy,
   X,
@@ -156,6 +157,7 @@ export function RegistrationCard({ tournamentId }: RegistrationCardProps) {
     registrationStats,
     userStatus,
     isRegistrationOpen,
+    isLateRegistration,
     isFull,
   } = registrationStatus;
   const registrationPercentage = tournament.maxParticipants
@@ -186,8 +188,19 @@ export function RegistrationCard({ tournamentId }: RegistrationCardProps) {
               </CardDescription>
             </div>
             {isRegistrationOpen && (
-              <Badge variant={isFull ? "secondary" : "default"}>
-                {isFull ? "Waitlist Open" : "Registration Open"}
+              <Badge
+                variant={isFull ? "secondary" : "default"}
+                className={
+                  isLateRegistration
+                    ? "border-amber-500/50 bg-amber-500/10 text-amber-600"
+                    : ""
+                }
+              >
+                {isFull
+                  ? "Waitlist Open"
+                  : isLateRegistration
+                    ? "Late Registration"
+                    : "Registration Open"}
               </Badge>
             )}
           </div>
@@ -214,8 +227,8 @@ export function RegistrationCard({ tournamentId }: RegistrationCardProps) {
             </div>
           )}
 
-          {/* Registration Deadline */}
-          {tournament.registrationDeadline && (
+          {/* Registration Deadline (hidden during late registration) */}
+          {tournament.registrationDeadline && !isLateRegistration && (
             <div
               className={`rounded-lg border p-3 ${isDeadlineSoon ? "border-orange-500/50 bg-orange-500/10" : ""}`}
             >
@@ -233,6 +246,16 @@ export function RegistrationCard({ tournamentId }: RegistrationCardProps) {
                 </span>
               </div>
             </div>
+          )}
+
+          {/* Late registration info alert */}
+          {isLateRegistration && !userStatus && (
+            <Alert className="border-amber-500/50 bg-amber-50 dark:bg-amber-950/20">
+              <Info className="h-4 w-4 text-amber-500" />
+              <AlertDescription className="text-sm">
+                This tournament is in progress and accepting late registrations.
+              </AlertDescription>
+            </Alert>
           )}
 
           {/* User Registration Status */}
@@ -386,7 +409,7 @@ export function RegistrationCard({ tournamentId }: RegistrationCardProps) {
                 <input
                   id="team-name"
                   type="text"
-                  className="border-input bg-background ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring flex h-10 w-full rounded-md border px-3 py-2 text-sm file:border-0 file:bg-transparent file:text-sm file:font-medium focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+                  className="border-input bg-background ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring flex h-10 w-full rounded-md border px-3 py-2 text-sm file:border-0 file:bg-transparent file:text-sm file:font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                   placeholder="Enter your team name"
                   value={teamName}
                   onChange={(e) => setTeamName(e.target.value)}

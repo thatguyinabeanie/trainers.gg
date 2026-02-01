@@ -13,6 +13,7 @@ import {
 } from "@/components/ui";
 import { TeamPreview } from "@/components/tournament/team-preview";
 import { useTournament, useTeamForRegistration, useAuth } from "@/lib/supabase";
+import { checkRegistrationOpen, checkCheckInOpen } from "@trainers/supabase";
 
 /**
  * Tournament detail screen.
@@ -106,6 +107,11 @@ export default function TournamentDetailScreen() {
       (r) => r.status === "registered" || r.status === "checked_in"
     );
 
+  // Derive late registration / late check-in status
+  const { isOpen: isRegistrationOpen, isLateRegistration } =
+    checkRegistrationOpen(tournament);
+  const { isOpen: isCheckInOpen, isLateCheckIn } = checkCheckInOpen(tournament);
+
   return (
     <Screen>
       <Stack.Screen options={{ title: tournament.name }} />
@@ -132,6 +138,10 @@ export default function TournamentDetailScreen() {
                     tournament.status.slice(1)}
               </Badge>
             )}
+            {isLateRegistration && (
+              <Badge variant="outline">Late Registration</Badge>
+            )}
+            {isLateCheckIn && <Badge variant="outline">Late Check-In</Badge>}
             {tournament.format && (
               <Badge variant="secondary">{tournament.format}</Badge>
             )}
@@ -365,6 +375,33 @@ export default function TournamentDetailScreen() {
           </Card>
         </YStack>
 
+        {/* Late check-in notice (registered but not checked in) */}
+        {isAuthenticated && isRegistered && isLateCheckIn && (
+          <YStack paddingHorizontal="$5" marginTop="$4">
+            <Card>
+              <CardContent paddingVertical="$5" alignItems="center" gap="$2">
+                <Ionicons
+                  name="checkmark-circle-outline"
+                  size={32}
+                  color={String(theme.primary.get())}
+                />
+                <Text
+                  fontSize="$4"
+                  fontWeight="600"
+                  color="$color"
+                  textAlign="center"
+                >
+                  Late Check-In Available
+                </Text>
+                <Text fontSize="$3" color="$mutedForeground" textAlign="center">
+                  The tournament has started. You can still check in and join
+                  from the next round.
+                </Text>
+              </CardContent>
+            </Card>
+          </YStack>
+        )}
+
         {/* Registration Status (if not registered) */}
         {isAuthenticated && !isRegistered && !teamLoading && (
           <YStack paddingHorizontal="$5" marginTop="$4">
@@ -373,7 +410,11 @@ export default function TournamentDetailScreen() {
                 <Ionicons
                   name="person-add-outline"
                   size={32}
-                  color={String(theme.mutedForeground.get())}
+                  color={
+                    isLateRegistration
+                      ? String(theme.primary.get())
+                      : String(theme.mutedForeground.get())
+                  }
                 />
                 <Text
                   fontSize="$4"
@@ -381,10 +422,16 @@ export default function TournamentDetailScreen() {
                   color="$color"
                   textAlign="center"
                 >
-                  Not registered
+                  {isLateRegistration
+                    ? "Late Registration Open"
+                    : "Not registered"}
                 </Text>
                 <Text fontSize="$3" color="$mutedForeground" textAlign="center">
-                  You are not currently registered for this tournament.
+                  {isLateRegistration
+                    ? "This tournament is in progress and accepting late registrations."
+                    : isRegistrationOpen
+                      ? "You are not currently registered for this tournament."
+                      : "Registration is closed for this tournament."}
                 </Text>
               </CardContent>
             </Card>

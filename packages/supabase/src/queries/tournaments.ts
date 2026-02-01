@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "../types";
+import { checkRegistrationOpen, checkCheckInOpen } from "../utils/registration";
 
 type TypedClient = SupabaseClient<Database>;
 type TournamentStatus = Database["public"]["Enums"]["tournament_status"];
@@ -752,7 +753,9 @@ export async function getCheckInStatus(
 
   const { data: tournament } = await supabase
     .from("tournaments")
-    .select("start_date, check_in_window_minutes")
+    .select(
+      "status, start_date, check_in_window_minutes, current_round, late_check_in_max_round"
+    )
     .eq("id", tournamentId)
     .single();
 
@@ -767,24 +770,18 @@ export async function getCheckInStatus(
     .eq("alt_id", targetAltId!)
     .single();
 
-  const now = Date.now();
-  const checkInWindowMinutes = tournament.check_in_window_minutes ?? 60;
-  const startDate = tournament.start_date
-    ? new Date(tournament.start_date).getTime()
-    : null;
-  const checkInStartTime = startDate
-    ? startDate - checkInWindowMinutes * 60 * 1000
-    : null;
-  const checkInEndTime = startDate;
-
-  const checkInOpen =
-    (!checkInStartTime || now >= checkInStartTime) &&
-    (!checkInEndTime || now <= checkInEndTime);
+  const {
+    isOpen: checkInOpen,
+    isLateCheckIn,
+    checkInStartTime,
+    checkInEndTime,
+  } = checkCheckInOpen(tournament);
 
   return {
     isRegistered: !!registration,
     isCheckedIn: registration?.status === "checked_in",
     checkInOpen,
+    isLateCheckIn,
     checkInStartTime,
     checkInEndTime,
     registrationStatus: registration?.status ?? null,
@@ -1265,17 +1262,11 @@ export async function getRegistrationStatus(
     ? registeredCount >= tournament.max_participants
     : false;
 
-  const now = Date.now();
   const registrationDeadline = tournament.registration_deadline
     ? new Date(tournament.registration_deadline).getTime()
     : null;
-  const isLateRegistration =
-    tournament.status === "active" &&
-    tournament.allow_late_registration === true;
-  const isRegistrationOpen =
-    (tournament.status === "upcoming" &&
-      (!registrationDeadline || now < registrationDeadline)) ||
-    isLateRegistration;
+  const { isOpen: isRegistrationOpen, isLateRegistration } =
+    checkRegistrationOpen(tournament);
 
   return {
     tournament: {
@@ -1291,6 +1282,7 @@ export async function getRegistrationStatus(
     },
     userStatus,
     isRegistrationOpen,
+    isLateRegistration,
     isFull,
   };
 }

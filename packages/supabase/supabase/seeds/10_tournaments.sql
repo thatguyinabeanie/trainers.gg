@@ -1419,7 +1419,7 @@ BEGIN
     organization_id, name, slug, description, format, status,
     start_date, end_date, registration_deadline, max_participants,
     tournament_format, swiss_rounds, round_time_minutes, featured, top_cut_size,
-    allow_late_registration
+    allow_late_registration, late_check_in_max_round
   ) VALUES (
     pallet_town_id, 'Pallet Town Trainers Week 11 Championship', 'pallet-town-championship-week-11',
     'Pallet Town Trainers tournament for week 11',
@@ -1427,7 +1427,7 @@ BEGIN
     '2026-01-27T20:15:45.442Z'::timestamptz, '2026-01-28T04:15:45.442Z'::timestamptz,
     '2026-01-27T19:15:45.442Z'::timestamptz, NULL,
     'swiss_with_cut', 8, 50, true, 8,
-    true
+    true, 2
   ) ON CONFLICT (slug) DO NOTHING;
 
   INSERT INTO public.tournaments (
@@ -1473,7 +1473,7 @@ BEGIN
     organization_id, name, slug, description, format, status,
     start_date, end_date, registration_deadline, max_participants,
     tournament_format, swiss_rounds, round_time_minutes, featured, top_cut_size,
-    allow_late_registration
+    allow_late_registration, late_check_in_max_round
   ) VALUES (
     kanto_elite_id, 'Kanto Elite Series Week 11 Championship', 'kanto-elite-championship-week-11',
     'Kanto Elite Series tournament for week 11',
@@ -1481,7 +1481,7 @@ BEGIN
     '2026-01-27T20:15:45.442Z'::timestamptz, '2026-01-28T04:15:45.442Z'::timestamptz,
     '2026-01-27T19:15:45.442Z'::timestamptz, NULL,
     'swiss_with_cut', 8, 50, true, 8,
-    true
+    true, 2
   ) ON CONFLICT (slug) DO NOTHING;
 
   INSERT INTO public.tournaments (
