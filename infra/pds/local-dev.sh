@@ -114,9 +114,11 @@ start_pds() {
     docker compose -f "$SCRIPT_DIR/docker-compose.yml" down 2>/dev/null || true
 
     # Create environment file for docker-compose
+    # PDS_DEV_MODE=true bypasses HTTPS requirement for localhost
     cat > "$PDS_ENV_FILE" << EOF
 PDS_HOSTNAME=localhost
 PDS_PORT=3000
+PDS_DEV_MODE=true
 PDS_ADMIN_PASSWORD=localdevpassword
 PDS_JWT_SECRET=deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef
 PDS_PLC_ROTATION_KEY_K256_PRIVATE_KEY_HEX=cafebabecafebabecafebabecafebabecafebabecafebabecafebabecafebabe
