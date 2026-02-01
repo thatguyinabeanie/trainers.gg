@@ -73,9 +73,12 @@ export function SignInForm({ defaultMode = "signin" }: SignInFormProps) {
 export function SignInView({
   onToggle,
   hideHeading,
+  redirectTo,
 }: {
   onToggle?: () => void;
   hideHeading?: boolean;
+  /** URL path to navigate to after sign-in (e.g. "/tournaments/slug") */
+  redirectTo?: string;
 }) {
   const router = useRouter();
   const { signInWithEmail } = useAuth();
@@ -114,7 +117,7 @@ export function SignInView({
         return;
       }
 
-      router.push("/");
+      router.push(redirectTo && redirectTo.startsWith("/") ? redirectTo : "/");
       router.refresh();
     } catch (err) {
       setError(
@@ -294,7 +297,7 @@ function SignUpView({ onToggle }: { onToggle: () => void }) {
               className="rounded-none border-0 shadow-none focus-visible:ring-0"
               {...register("username")}
             />
-            <span className="text-muted-foreground border-l-input bg-muted select-none whitespace-nowrap border-l px-3 text-sm">
+            <span className="text-muted-foreground border-l-input bg-muted border-l px-3 text-sm whitespace-nowrap select-none">
               .{process.env.NEXT_PUBLIC_PDS_HANDLE_DOMAIN || "trainers.gg"}
             </span>
           </div>

@@ -13,6 +13,12 @@ import { SignInView } from "@/components/auth/sign-in-form";
 import { useAuth } from "@/hooks/use-auth";
 import { resolveLoginIdentifier } from "@/app/(auth-pages)/actions";
 
+/** Read the `redirect` query param directly from the URL. */
+function getRedirectParam(): string | null {
+  if (typeof window === "undefined") return null;
+  return new URLSearchParams(window.location.search).get("redirect");
+}
+
 export default function SignInPage() {
   const router = useRouter();
   const { signInWithEmail } = useAuth();
@@ -52,7 +58,10 @@ export default function SignInPage() {
           return;
         }
 
-        router.push("/");
+        const redirectTo = getRedirectParam();
+        router.push(
+          redirectTo && redirectTo.startsWith("/") ? redirectTo : "/"
+        );
         router.refresh();
       } catch {
         setError("An unexpected error occurred");
@@ -92,7 +101,7 @@ export default function SignInPage() {
           <span className="text-lg font-bold tracking-tight">trainers.gg</span>
         </Link>
 
-        <SignInView hideHeading />
+        <SignInView hideHeading redirectTo={getRedirectParam() ?? undefined} />
 
         <button
           type="button"
@@ -145,7 +154,7 @@ export default function SignInPage() {
               className="rounded-none border-0 shadow-none focus-visible:ring-0"
               autoFocus
             />
-            <span className="text-muted-foreground border-l-input bg-muted select-none whitespace-nowrap border-l px-3 text-sm">
+            <span className="text-muted-foreground border-l-input bg-muted border-l px-3 text-sm whitespace-nowrap select-none">
               .{process.env.NEXT_PUBLIC_PDS_HANDLE_DOMAIN || "trainers.gg"}
             </span>
           </div>
