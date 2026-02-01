@@ -398,6 +398,8 @@ export async function registerForTournament(
     altId?: number;
     teamName?: string;
     inGameName?: string;
+    displayNameOption?: string;
+    showCountryFlag?: boolean;
   }
 ) {
   const alt = await getCurrentAlt(supabase, data?.altId);
@@ -459,6 +461,8 @@ export async function registerForTournament(
       registered_at: new Date().toISOString(),
       team_name: data?.teamName,
       in_game_name: data?.inGameName,
+      display_name_option: data?.displayNameOption,
+      show_country_flag: data?.showCountryFlag,
     })
     .select()
     .single();

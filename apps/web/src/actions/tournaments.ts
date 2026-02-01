@@ -31,6 +31,7 @@ import {
   dropPlayer as dropPlayerMutation,
   reportMatchResult as reportMatchResultMutation,
   getCurrentUserAlts,
+  getUserTeams,
 } from "@trainers/supabase";
 import type { Database } from "@trainers/supabase";
 import { CacheTags } from "@/lib/cache";
@@ -250,7 +251,13 @@ export async function deleteTournament(
  */
 export async function registerForTournament(
   tournamentId: number,
-  data?: { altId?: number; teamName?: string; inGameName?: string }
+  data?: {
+    altId?: number;
+    teamName?: string;
+    inGameName?: string;
+    displayNameOption?: string;
+    showCountryFlag?: boolean;
+  }
 ): Promise<ActionResult<{ registrationId: number; status: string }>> {
   try {
     const supabase = await createClient();
@@ -424,6 +431,37 @@ export async function getCurrentUserAltsAction(): Promise<
     return {
       success: false,
       error: getErrorMessage(error, "Failed to fetch user alts"),
+    };
+  }
+}
+
+/**
+ * Get current user's teams for registration selection
+ */
+export async function getUserTeamsAction(): Promise<
+  ActionResult<
+    Array<{
+      id: number;
+      name: string | null;
+      pokemonCount: number;
+    }>
+  >
+> {
+  try {
+    const supabase = await createClient();
+    const teams = await getUserTeams(supabase);
+    return {
+      success: true,
+      data: teams.map((t) => ({
+        id: t.id,
+        name: t.name,
+        pokemonCount: t.pokemonCount,
+      })),
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: getErrorMessage(error, "Failed to fetch user teams"),
     };
   }
 }

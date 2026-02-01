@@ -4,8 +4,6 @@ import { useState } from "react";
 import { useSupabaseQuery, useSupabaseMutation } from "@/lib/supabase";
 import {
   getRegistrationStatus,
-  getUserTeams,
-  registerForTournament,
   withdrawFromTournament,
 } from "@trainers/supabase";
 import {
@@ -20,44 +18,30 @@ import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Progress } from "@/components/ui/progress";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import {
   UserPlus,
   Clock,
   AlertCircle,
   CheckCircle2,
   Info,
   Loader2,
-  Trophy,
   X,
 } from "lucide-react";
 import { toast } from "sonner";
+import { RegisterModal } from "./register-modal";
 
 interface RegistrationCardProps {
   tournamentId: number;
+  tournamentSlug: string;
+  tournamentName: string;
 }
 
-export function RegistrationCard({ tournamentId }: RegistrationCardProps) {
+export function RegistrationCard({
+  tournamentId,
+  tournamentSlug,
+  tournamentName,
+}: RegistrationCardProps) {
   const [isRegistering, setIsRegistering] = useState(false);
   const [showRegistrationDialog, setShowRegistrationDialog] = useState(false);
-  const [selectedTeamId, setSelectedTeamId] = useState<number | null>(null);
-  const [teamName, setTeamName] = useState("");
-  const [notes, setNotes] = useState("");
 
   const {
     data: registrationStatus,
@@ -68,55 +52,10 @@ export function RegistrationCard({ tournamentId }: RegistrationCardProps) {
     [tournamentId]
   );
 
-  const { data: userTeams } = useSupabaseQuery(
-    (supabase) => getUserTeams(supabase),
-    []
-  );
-
-  const { mutateAsync: registerMutation } = useSupabaseMutation(
-    (supabase, data: { teamName?: string; notes?: string }) =>
-      registerForTournament(supabase, tournamentId, data)
-  );
-
   const { mutateAsync: withdrawMutation } = useSupabaseMutation(
     (supabase, _args: Record<string, never>) =>
       withdrawFromTournament(supabase, tournamentId)
   );
-
-  const handleRegister = async () => {
-    setIsRegistering(true);
-    try {
-      const result = await registerMutation({
-        teamName: teamName || undefined,
-        notes: notes || undefined,
-      });
-
-      toast.success(
-        result.status === "waitlist"
-          ? "Added to waitlist"
-          : "Registration successful",
-        {
-          description:
-            result.status === "waitlist"
-              ? "You'll be notified if a spot opens up"
-              : "You're registered for the tournament!",
-        }
-      );
-
-      setShowRegistrationDialog(false);
-      setSelectedTeamId(null);
-      setTeamName("");
-      setNotes("");
-      refetchStatus();
-    } catch (error) {
-      toast.error("Registration failed", {
-        description:
-          error instanceof Error ? error.message : "Failed to register",
-      });
-    } finally {
-      setIsRegistering(false);
-    }
-  };
 
   const handleWithdraw = async () => {
     if (!confirm("Are you sure you want to withdraw from this tournament?")) {
@@ -325,7 +264,7 @@ export function RegistrationCard({ tournamentId }: RegistrationCardProps) {
                       0,
                       tournament.maxParticipants - registrationStats.registered
                     )
-                  : "∞"}
+                  : "\u221E"}
               </p>
               <p className="text-muted-foreground text-xs">Spots Left</p>
             </div>
@@ -365,89 +304,26 @@ export function RegistrationCard({ tournamentId }: RegistrationCardProps) {
         </CardContent>
       </Card>
 
-      {/* Registration Dialog */}
-      <Dialog
+      {/* Shared Registration Modal */}
+      <RegisterModal
         open={showRegistrationDialog}
         onOpenChange={setShowRegistrationDialog}
-      >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Register for Tournament</DialogTitle>
-            <DialogDescription>
-              Choose a team and provide any additional information
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-4">
-            {/* Team Selection */}
-            <div className="space-y-2">
-              <Label>Select Team (Optional)</Label>
-              <Select
-                value={selectedTeamId?.toString() ?? ""}
-                onValueChange={(value) =>
-                  setSelectedTeamId(value ? Number(value) : null)
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="">No team selected</SelectItem>
-                  {userTeams?.map((team) => (
-                    <SelectItem key={team.id} value={team.id.toString()}>
-                      {team.name} ({team.pokemonCount}/6 Pokemon)
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Team Name (if no team selected) */}
-            {!selectedTeamId && (
-              <div className="space-y-2">
-                <Label htmlFor="team-name">Team Name</Label>
-                <input
-                  id="team-name"
-                  type="text"
-                  className="border-input bg-background ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring flex h-10 w-full rounded-md border px-3 py-2 text-sm file:border-0 file:bg-transparent file:text-sm file:font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                  placeholder="Enter your team name"
-                  value={teamName}
-                  onChange={(e) => setTeamName(e.target.value)}
-                />
-              </div>
-            )}
-
-            {/* Notes */}
-            <div className="space-y-2">
-              <Label htmlFor="notes">Notes (Optional)</Label>
-              <Textarea
-                id="notes"
-                placeholder="Any additional information for the organizer"
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                rows={3}
-              />
-            </div>
-          </div>
-
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setShowRegistrationDialog(false)}
-            >
-              Cancel
-            </Button>
-            <Button onClick={handleRegister} disabled={isRegistering}>
-              {isRegistering ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <Trophy className="mr-2 h-4 w-4" />
-              )}
-              {isFull ? "Join Waitlist" : "Confirm Registration"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        tournamentId={tournamentId}
+        tournamentSlug={tournamentSlug}
+        tournamentName={tournamentName}
+        isFull={isFull}
+        onSuccess={() => {
+          refetchStatus();
+          toast.success(
+            isFull ? "Added to waitlist" : "Registration successful",
+            {
+              description: isFull
+                ? "You'll be notified if a spot opens up"
+                : "You're registered for the tournament!",
+            }
+          );
+        }}
+      />
     </>
   );
 }

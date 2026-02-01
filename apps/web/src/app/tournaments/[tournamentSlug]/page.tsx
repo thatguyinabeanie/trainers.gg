@@ -339,7 +339,13 @@ function RegistrationCard({
 
   if (!showRegistration) return null;
 
-  return <RegistrationCardClient tournamentId={tournament.id} />;
+  return (
+    <RegistrationCardClient
+      tournamentId={tournament.id}
+      tournamentSlug={tournament.slug}
+      tournamentName={tournament.name}
+    />
+  );
 }
 
 function CheckInCard({
