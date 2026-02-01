@@ -93,7 +93,7 @@ function DateTimeField({
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger
           className={cn(
-            "border-input bg-background hover:bg-accent hover:text-accent-foreground focus-visible:border-ring focus-visible:ring-ring/50 inline-flex h-9 w-full items-center justify-start gap-2 rounded-lg border px-3 py-2 text-sm font-normal whitespace-nowrap transition-colors outline-none focus-visible:ring-[3px]",
+            "border-input bg-background hover:bg-accent hover:text-accent-foreground focus-visible:border-ring focus-visible:ring-ring/50 inline-flex h-9 w-full items-center justify-start gap-2 whitespace-nowrap rounded-lg border px-3 py-2 text-sm font-normal outline-none transition-colors focus-visible:ring-[3px]",
             !date && "text-muted-foreground"
           )}
         >
@@ -199,27 +199,14 @@ export function TournamentSchedule({
         />
       </div>
 
-      <DateTimeField
-        label="Registration Deadline"
-        description="When registration closes (defaults to tournament start)"
-        value={formData.registrationDeadline}
-        onChange={(timestamp) =>
-          updateFormData({ registrationDeadline: timestamp })
-        }
-        maxDate={startDate}
-      />
-
       <Alert>
         <Lightbulb className="h-4 w-4" />
         <AlertTitle>Schedule Tips</AlertTitle>
         <AlertDescription>
           <ul className="mt-2 list-inside list-disc space-y-1">
             <li>All dates can be updated later from tournament management</li>
-            <li>
-              Registration closes at the deadline or tournament start time
-            </li>
+            <li>Registration closes when the tournament starts</li>
             <li>Consider time zones for online tournaments</li>
-            <li>Allow buffer time between registration close and start</li>
           </ul>
         </AlertDescription>
       </Alert>

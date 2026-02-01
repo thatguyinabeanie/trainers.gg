@@ -6,7 +6,6 @@ export interface TournamentValidationSettings {
   swissRounds: number;
   format: "swiss_only" | "swiss_with_cut" | "single_elimination";
   roundTimeMinutes: number;
-  registrationDeadline: Date;
   startDate: Date;
   endDate: Date;
   allowLateRegistration: boolean;
@@ -19,7 +18,6 @@ export interface TournamentTimingData {
   currentRound: number;
   totalRounds: number;
   startDate: Date;
-  registrationDeadline: Date;
   currentTime: Date;
   roundStartTime: Date | null;
   roundTimeMinutes: number;
@@ -125,17 +123,6 @@ export function validateTournamentSettings(
 
   // Date validation (flexible for organizer preferences)
   const now = new Date();
-
-  if (settings.registrationDeadline <= now) {
-    warnings.push("Registration deadline is in the past");
-  }
-
-  // Allow tournaments to start immediately or have flexible scheduling
-  if (settings.startDate < settings.registrationDeadline) {
-    warnings.push(
-      "Start date is before registration deadline - ensure this is intentional"
-    );
-  }
 
   if (settings.endDate <= settings.startDate) {
     errors.push("End date must be after start date");
@@ -339,7 +326,6 @@ export function validateMatchResult(data: MatchResultData): ValidationResult {
 export function canStartTournament(data: {
   currentParticipants: number;
   minParticipants: number;
-  registrationDeadline: Date;
   startDate: Date;
   currentTime: Date;
 }): TournamentStartCheck {

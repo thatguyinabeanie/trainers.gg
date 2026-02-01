@@ -346,22 +346,6 @@ export default function TournamentDetailScreen() {
                     theme={theme}
                   />
                 )}
-                {tournament.registration_deadline && (
-                  <DetailRow
-                    icon="hourglass-outline"
-                    label="Reg. Deadline"
-                    value={new Date(
-                      tournament.registration_deadline
-                    ).toLocaleDateString(undefined, {
-                      month: "short",
-                      day: "numeric",
-                      year: "numeric",
-                      hour: "numeric",
-                      minute: "2-digit",
-                    })}
-                    theme={theme}
-                  />
-                )}
                 {tournament.open_team_sheets !== null &&
                   tournament.open_team_sheets !== undefined && (
                     <DetailRow

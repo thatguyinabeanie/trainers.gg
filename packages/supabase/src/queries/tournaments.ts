@@ -1306,9 +1306,6 @@ export async function getRegistrationStatus(
     ? registeredCount >= tournament.max_participants
     : false;
 
-  const registrationDeadline = tournament.registration_deadline
-    ? new Date(tournament.registration_deadline).getTime()
-    : null;
   const { isOpen: isRegistrationOpen, isLateRegistration } =
     checkRegistrationOpen(tournament);
 
@@ -1318,7 +1315,6 @@ export async function getRegistrationStatus(
       name: tournament.name,
       status: tournament.status,
       maxParticipants: tournament.max_participants,
-      registrationDeadline: registrationDeadline,
     },
     registrationStats: {
       registered: registeredCount,

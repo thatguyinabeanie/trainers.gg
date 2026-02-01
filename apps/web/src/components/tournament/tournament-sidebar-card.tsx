@@ -559,19 +559,6 @@ export function TournamentSidebarCard({
       )
     : 0;
 
-  const isDeadlineSoon = tournament.registrationDeadline
-    ? tournament.registrationDeadline - Date.now() < 24 * 60 * 60 * 1000
-    : false;
-
-  const deadlineText = tournament.registrationDeadline
-    ? new Date(tournament.registrationDeadline).toLocaleString(undefined, {
-        month: "short",
-        day: "numeric",
-        hour: "numeric",
-        minute: "2-digit",
-      })
-    : null;
-
   // Check-in derived state
   const isCheckInOpen = checkInStatus?.checkInOpen ?? false;
   const isCheckedIn = checkInStatus?.isCheckedIn ?? false;
@@ -1316,7 +1303,7 @@ export function TournamentSidebarCard({
             )
           )}
 
-          {/* Deadline / info text */}
+          {/* Info text */}
           {!isRegistrationOpen && !isLateRegistration ? (
             <p className="text-muted-foreground text-sm">
               Registration is closed
@@ -1324,18 +1311,6 @@ export function TournamentSidebarCard({
           ) : isLateRegistration ? (
             <p className="text-sm font-medium text-amber-600">
               Tournament in progress
-            </p>
-          ) : deadlineText ? (
-            <p
-              className={cn(
-                "flex items-center gap-1.5 text-xs",
-                isDeadlineSoon
-                  ? "font-medium text-orange-600"
-                  : "text-muted-foreground"
-              )}
-            >
-              <Clock className="h-3.5 w-3.5" />
-              Closes {deadlineText}
             </p>
           ) : null}
 

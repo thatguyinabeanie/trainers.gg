@@ -1926,7 +1926,6 @@ export type Database = {
           participants: number[] | null
           platform: string | null
           prize_pool: string | null
-          registration_deadline: string | null
           registration_type: string | null
           rental_team_photos_enabled: boolean | null
           rental_team_photos_required: boolean | null
@@ -1969,7 +1968,6 @@ export type Database = {
           participants?: number[] | null
           platform?: string | null
           prize_pool?: string | null
-          registration_deadline?: string | null
           registration_type?: string | null
           rental_team_photos_enabled?: boolean | null
           rental_team_photos_required?: boolean | null
@@ -2012,7 +2010,6 @@ export type Database = {
           participants?: number[] | null
           platform?: string | null
           prize_pool?: string | null
-          registration_deadline?: string | null
           registration_type?: string | null
           rental_team_photos_enabled?: boolean | null
           rental_team_photos_required?: boolean | null

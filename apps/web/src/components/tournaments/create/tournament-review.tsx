@@ -212,10 +212,6 @@ export function TournamentReview({
                 <span className="font-medium">End Date:</span>{" "}
                 {formatDate(formData.endDate)}
               </div>
-              <div>
-                <span className="font-medium">Registration Deadline:</span>{" "}
-                {formatDate(formData.registrationDeadline)}
-              </div>
             </CardContent>
           </Card>
         </div>

@@ -49,7 +49,6 @@ export interface GeneratedTournament {
   status: TournamentStatus;
   startDate: Date;
   endDate: Date;
-  registrationDeadline: Date;
   maxParticipants: number;
   topCutSize: number | null;
   swissRounds: number | null;
@@ -214,11 +213,7 @@ function getTournamentFormat(
  * - active: tournament is in progress
  * - completed: tournament has ended
  */
-function getTournamentStatus(
-  startDate: Date,
-  endDate: Date,
-  _registrationDeadline: Date
-): TournamentStatus {
+function getTournamentStatus(startDate: Date, endDate: Date): TournamentStatus {
   const now = new Date();
 
   if (now < startDate) {
@@ -293,18 +288,15 @@ export function generateTournaments(
         flagshipConfig && "active" in flagshipConfig && flagshipConfig.active;
       let mainStartDate: Date;
       let mainEndDate: Date;
-      let mainRegDeadline: Date;
 
       if (forceActive) {
         // Start 3 hours ago, end 5 hours from now (tournament is in round 4 of 8)
         const now = new Date();
         mainStartDate = new Date(now.getTime() - 3 * 60 * 60 * 1000);
         mainEndDate = new Date(now.getTime() + 5 * 60 * 60 * 1000);
-        mainRegDeadline = new Date(mainStartDate.getTime() - 60 * 60 * 1000);
       } else {
         mainStartDate = getDayInWeek(weekStart, org.mainDay, 14); // 2 PM
         mainEndDate = new Date(mainStartDate.getTime() + 6 * 60 * 60 * 1000); // 6 hours
-        mainRegDeadline = new Date(mainStartDate.getTime() - 60 * 60 * 1000); // 1 hour before
       }
 
       tournaments.push({
@@ -320,14 +312,9 @@ export function generateTournaments(
         slug: generateTournamentSlug(org, weekNumber, true, isFlagship),
         description: `${org.name} tournament for week ${weekNumber}`,
         format: "VGC",
-        status: getTournamentStatus(
-          mainStartDate,
-          mainEndDate,
-          mainRegDeadline
-        ),
+        status: getTournamentStatus(mainStartDate, mainEndDate),
         startDate: mainStartDate,
         endDate: mainEndDate,
-        registrationDeadline: mainRegDeadline,
         maxParticipants: mainSize,
         topCutSize:
           mainFormat === "swiss_with_cut"
@@ -357,9 +344,6 @@ export function generateTournaments(
       const practiceEndDate = new Date(
         practiceStartDate.getTime() + 4 * 60 * 60 * 1000
       ); // 4 hours
-      const practiceRegDeadline = new Date(
-        practiceStartDate.getTime() - 30 * 60 * 1000
-      ); // 30 min before
 
       const practiceSwissRounds =
         practiceFormat === "swiss_only"
@@ -375,14 +359,9 @@ export function generateTournaments(
         slug: generateTournamentSlug(org, weekNumber, false, false),
         description: `Practice tournament for ${org.name}`,
         format: "VGC",
-        status: getTournamentStatus(
-          practiceStartDate,
-          practiceEndDate,
-          practiceRegDeadline
-        ),
+        status: getTournamentStatus(practiceStartDate, practiceEndDate),
         startDate: practiceStartDate,
         endDate: practiceEndDate,
-        registrationDeadline: practiceRegDeadline,
         maxParticipants: practiceSize,
         topCutSize: null, // No top cut for practice
         swissRounds: practiceSwissRounds,
@@ -606,9 +585,9 @@ export function generateTournamentRegistrations(
     // Create registrations
     const now = new Date();
     for (const alt of participants) {
-      // Registration time: random time before deadline (or before now for future tournaments)
-      const regDeadline = tournament.registrationDeadline;
-      const regWindowEnd = regDeadline < now ? regDeadline : now;
+      // Registration time: random time before start (or before now for future tournaments)
+      const regWindowEnd =
+        tournament.startDate < now ? tournament.startDate : now;
       const regWindowStart = new Date(
         regWindowEnd.getTime() - 7 * 24 * 60 * 60 * 1000
       ); // Up to 7 days before

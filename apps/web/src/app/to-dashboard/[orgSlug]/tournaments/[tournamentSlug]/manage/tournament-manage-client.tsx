@@ -169,9 +169,6 @@ export function TournamentManageClient({
     endDate: tournament.end_date
       ? new Date(tournament.end_date).getTime()
       : undefined,
-    registrationDeadline: tournament.registration_deadline
-      ? new Date(tournament.registration_deadline).getTime()
-      : undefined,
     tournamentFormat: tournament.tournament_format ?? "swiss_with_cut",
     format: tournament.format ?? "VGC 2025",
     currentRound: tournament.current_round ?? undefined,
@@ -212,7 +209,6 @@ export function TournamentManageClient({
     max_participants: tournament.max_participants,
     start_date: tournament.start_date,
     end_date: tournament.end_date,
-    registration_deadline: tournament.registration_deadline,
     round_time_minutes: tournament.round_time_minutes,
     rental_team_photos_enabled: tournament.rental_team_photos_enabled,
     rental_team_photos_required: tournament.rental_team_photos_required,
@@ -277,7 +273,7 @@ export function TournamentManageClient({
             </TabsList>
           </div>
           {/* Fade indicator for more content */}
-          <div className="from-background pointer-events-none absolute top-0 right-0 bottom-0 w-8 bg-gradient-to-l to-transparent md:hidden" />
+          <div className="from-background pointer-events-none absolute bottom-0 right-0 top-0 w-8 bg-gradient-to-l to-transparent md:hidden" />
         </div>
 
         <TabsContent value="overview">

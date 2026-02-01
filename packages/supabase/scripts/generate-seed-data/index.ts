@@ -397,19 +397,12 @@ function generateTournamentsSql(
 
       const startDateExpr = dateToSqlExpr(t.startDate, refDate, refName);
       const endDateExpr = dateToSqlExpr(t.endDate, refDate, refName);
-      const regDeadlineExpr = dateToSqlExpr(
-        t.registrationDeadline,
-        refDate,
-        refName
-      );
 
       lines.push(`  INSERT INTO public.tournaments (`);
       lines.push(
         `    organization_id, name, slug, description, format, status,`
       );
-      lines.push(
-        `    start_date, end_date, registration_deadline, max_participants,`
-      );
+      lines.push(`    start_date, end_date, max_participants,`);
       lines.push(
         `    tournament_format, swiss_rounds, round_time_minutes, featured, top_cut_size`
       );
@@ -419,8 +412,7 @@ function generateTournamentsSql(
       );
       lines.push(`    '${escapeString(t.description)}',`);
       lines.push(`    '${t.format}', 'upcoming',`);
-      lines.push(`    ${startDateExpr}, ${endDateExpr},`);
-      lines.push(`    ${regDeadlineExpr}, ${t.maxParticipants},`);
+      lines.push(`    ${startDateExpr}, ${endDateExpr}, ${t.maxParticipants},`);
       lines.push(
         `    '${t.tournamentFormat}', ${t.swissRounds ?? "NULL"}, ${t.roundTimeMinutes}, ${t.featured}, ${t.topCutSize ?? "NULL"}`
       );

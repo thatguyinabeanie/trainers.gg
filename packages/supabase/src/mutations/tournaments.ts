@@ -101,7 +101,6 @@ export async function createTournament(
     format?: string;
     startDate?: string;
     endDate?: string;
-    registrationDeadline?: string;
     maxParticipants?: number;
     topCutSize?: number;
     swissRounds?: number;
@@ -162,7 +161,6 @@ export async function createTournament(
       status: "draft",
       start_date: data.startDate,
       end_date: data.endDate,
-      registration_deadline: data.registrationDeadline,
       max_participants: data.maxParticipants,
       top_cut_size: data.topCutSize,
       swiss_rounds: data.swissRounds,
@@ -314,7 +312,6 @@ export async function updateTournament(
     format?: string;
     startDate?: string;
     endDate?: string;
-    registrationDeadline?: string;
     maxParticipants?: number | null;
     status?: TournamentStatus;
     // Game settings
@@ -359,8 +356,6 @@ export async function updateTournament(
   if (updates.startDate !== undefined)
     updateData.start_date = updates.startDate;
   if (updates.endDate !== undefined) updateData.end_date = updates.endDate;
-  if (updates.registrationDeadline !== undefined)
-    updateData.registration_deadline = updates.registrationDeadline;
   if (updates.maxParticipants !== undefined)
     updateData.max_participants = updates.maxParticipants;
   if (updates.status !== undefined) updateData.status = updates.status;
@@ -424,9 +419,7 @@ export async function registerForTournament(
   // Check tournament status
   const { data: tournament } = await supabase
     .from("tournaments")
-    .select(
-      "status, max_participants, allow_late_registration, registration_deadline"
-    )
+    .select("status, max_participants, allow_late_registration")
     .eq("id", tournamentId)
     .single();
 

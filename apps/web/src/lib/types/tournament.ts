@@ -86,7 +86,6 @@ export interface TournamentFormData {
   topCutSize?: number;
   startDate?: number;
   endDate?: number;
-  registrationDeadline?: number;
   // Registration settings
   registrationType: RegistrationType;
   playerCapEnabled: boolean; // When false, maxParticipants is unlimited (null in DB)

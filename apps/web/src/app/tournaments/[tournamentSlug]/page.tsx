@@ -17,7 +17,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
 import { Trophy, Calendar, Users, Clock, Building2 } from "lucide-react";
 import { TournamentTabs } from "./tournament-tabs";
 import { PageContainer } from "@/components/layout/page-container";
@@ -214,19 +213,6 @@ function ScheduleCard({
             <p className="font-medium">{formatDate(tournament.end_date)}</p>
           </div>
         </div>
-        {tournament.registration_deadline && (
-          <>
-            <Separator />
-            <div>
-              <p className="text-muted-foreground text-sm">
-                Registration Deadline
-              </p>
-              <p className="font-medium">
-                {formatDate(tournament.registration_deadline)}
-              </p>
-            </div>
-          </>
-        )}
       </CardContent>
     </Card>
   );

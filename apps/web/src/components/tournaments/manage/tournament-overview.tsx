@@ -22,7 +22,6 @@ interface TournamentOverviewProps {
     maxParticipants?: number;
     startDate?: number;
     endDate?: number;
-    registrationDeadline?: number;
     tournamentFormat: string;
     format: string;
     currentRound?: number;
@@ -213,12 +212,6 @@ export function TournamentOverview({ tournament }: TournamentOverviewProps) {
               <span className="text-muted-foreground">End</span>
               <span>{formatDate(tournament.endDate)}</span>
             </div>
-            {tournament.registrationDeadline && (
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Reg. Deadline</span>
-                <span>{formatDate(tournament.registrationDeadline)}</span>
-              </div>
-            )}
           </CardContent>
         </Card>
 

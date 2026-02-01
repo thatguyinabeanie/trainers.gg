@@ -65,7 +65,6 @@ export async function createTournament(data: {
   format?: string;
   startDate?: string;
   endDate?: string;
-  registrationDeadline?: string;
   maxParticipants?: number;
   topCutSize?: number;
   swissRounds?: number;
