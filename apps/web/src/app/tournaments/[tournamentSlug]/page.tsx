@@ -30,7 +30,10 @@ import {
 import { TournamentTabs } from "./tournament-tabs";
 import { PageContainer } from "@/components/layout/page-container";
 import { StatusBadge } from "@/components/ui/status-badge";
-import { CheckInCard as CheckInCardClient } from "@/components/tournament";
+import {
+  CheckInCard as CheckInCardClient,
+  RegistrationCard as RegistrationCardClient,
+} from "@/components/tournament";
 import { TeamSubmissionCard } from "@/components/tournament/team-submission-card";
 import { TeamPreview } from "@/components/tournament/team-preview";
 
@@ -65,8 +68,40 @@ const getCachedTournament = (slug: string) =>
   )();
 
 /**
+ * Check if the current user is registered for a tournament (auth-dependent, NOT cached).
+ * Returns the registration record or null.
+ */
+async function getMyRegistrationStatus(tournamentId: number) {
+  try {
+    const supabase = await createClientReadOnly();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return null;
+
+    const { data: alt } = await supabase
+      .from("alts")
+      .select("id")
+      .eq("user_id", user.id)
+      .single();
+    if (!alt) return null;
+
+    const { data: reg } = await supabase
+      .from("tournament_registrations")
+      .select("id, team_id, team_submitted_at, team_locked, status")
+      .eq("tournament_id", tournamentId)
+      .eq("alt_id", alt.id)
+      .single();
+
+    return reg;
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Fetch the current user's submitted team (auth-dependent, NOT cached).
- * Returns null if the user is not logged in or not registered.
+ * Returns null if the user is not logged in or has no team submitted.
  */
 async function getMyTeam(tournamentId: number) {
   try {
@@ -297,29 +332,15 @@ function RegistrationCard({
 }: {
   tournament: NonNullable<Awaited<ReturnType<typeof getTournamentBySlug>>>;
 }) {
-  const registrationCount = tournament.registrations?.length || 0;
+  // Show registration for upcoming tournaments and active tournaments with late registration
+  const showRegistration =
+    tournament.status === "upcoming" ||
+    (tournament.status === "active" &&
+      tournament.allow_late_registration === true);
 
-  if (tournament.status !== "upcoming") return null;
+  if (!showRegistration) return null;
 
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Registration</CardTitle>
-        <CardDescription>
-          {registrationCount}
-          {tournament.max_participants
-            ? ` / ${tournament.max_participants}`
-            : ""}{" "}
-          registered
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <p className="text-muted-foreground text-sm">
-          Registration functionality is being migrated. Check back soon!
-        </p>
-      </CardContent>
-    </Card>
-  );
+  return <RegistrationCardClient tournamentId={tournament.id} />;
 }
 
 function CheckInCard({
@@ -378,14 +399,16 @@ export default async function TournamentPage({ params }: PageProps) {
     slug: string;
   } | null;
 
-  // User's own team — auth-dependent, not cached
-  const myTeam = tournament.id ? await getMyTeam(tournament.id) : null;
+  // Check registration status (auth-dependent, not cached)
+  const myRegistration = tournament.id
+    ? await getMyRegistrationStatus(tournament.id)
+    : null;
+  const isRegistered = !!myRegistration;
+  const hasTeam = !!myRegistration?.team_id;
 
-  // Whether the current user is registered (implied by having a team query result
-  // or being in the registrations list — getTeamForRegistration returns null if
-  // the user has no registration at all, but they may be registered without a
-  // team yet, so we also check from the team result)
-  const isRegistered = !!myTeam;
+  // Fetch full team data only if the user has submitted a team
+  const myTeam =
+    hasTeam && tournament.id ? await getMyTeam(tournament.id) : null;
 
   // Public team list for open teamsheet tournaments (active/completed only)
   const showPublicTeams =
@@ -477,7 +500,7 @@ export default async function TournamentPage({ params }: PageProps) {
               }
             />
           )}
-          <CheckInCard tournament={tournament} hasTeam={!!myTeam} />
+          <CheckInCard tournament={tournament} hasTeam={hasTeam} />
           <OrganizerCard organization={organization} />
         </div>
       </div>

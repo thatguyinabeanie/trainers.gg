@@ -1269,9 +1269,13 @@ export async function getRegistrationStatus(
   const registrationDeadline = tournament.registration_deadline
     ? new Date(tournament.registration_deadline).getTime()
     : null;
+  const isLateRegistration =
+    tournament.status === "active" &&
+    tournament.allow_late_registration === true;
   const isRegistrationOpen =
-    tournament.status === "upcoming" &&
-    (!registrationDeadline || now < registrationDeadline);
+    (tournament.status === "upcoming" &&
+      (!registrationDeadline || now < registrationDeadline)) ||
+    isLateRegistration;
 
   return {
     tournament: {

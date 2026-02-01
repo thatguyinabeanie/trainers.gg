@@ -421,12 +421,15 @@ export async function registerForTournament(
   // Check tournament status
   const { data: tournament } = await supabase
     .from("tournaments")
-    .select("status, max_participants")
+    .select("status, max_participants, allow_late_registration")
     .eq("id", tournamentId)
     .single();
 
   if (!tournament) throw new Error("Tournament not found");
-  if (tournament.status !== "upcoming") {
+  const isLateRegistration =
+    tournament.status === "active" &&
+    tournament.allow_late_registration === true;
+  if (tournament.status !== "upcoming" && !isLateRegistration) {
     throw new Error("Tournament is not open for registration");
   }
 
