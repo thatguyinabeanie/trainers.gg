@@ -772,6 +772,23 @@ function Card({ children }) {
 }
 ```
 
+### Dynamic Class Names (Web)
+
+**Always use the `cn()` utility** (`@/lib/utils`) for conditional or dynamic class names. Template literal concatenation (`` `class-a ${condition ? "class-b" : ""}` ``) is fragile and can cause Tailwind to miss class detection during purging.
+
+```tsx
+// Bad - Tailwind may not detect dynamically constructed classes
+<div
+  className={`text-sm ${isActive ? "text-primary" : "text-muted-foreground"}`}
+/>;
+
+// Good - cn() merges classes safely and Tailwind detects all class names
+import { cn } from "@/lib/utils";
+<div
+  className={cn("text-sm", isActive ? "text-primary" : "text-muted-foreground")}
+/>;
+```
+
 ---
 
 ## Frontend Polish Guidelines

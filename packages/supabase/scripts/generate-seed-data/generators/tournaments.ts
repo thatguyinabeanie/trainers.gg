@@ -60,6 +60,7 @@ export interface GeneratedTournament {
   weekOffset: number; // negative = past, 0 = current, positive = future
   isMain: boolean; // main tournament vs practice
   isFlagship: boolean;
+  forceActive: boolean; // true for flagship tournaments that should always appear in-progress
 }
 
 export interface GeneratedTournamentPhase {
@@ -345,6 +346,7 @@ export function generateTournaments(
         weekOffset,
         isMain: true,
         isFlagship,
+        forceActive: !!forceActive,
       });
 
       // Practice tournament (on org's practice day)
@@ -391,6 +393,7 @@ export function generateTournaments(
         weekOffset,
         isMain: false,
         isFlagship: false,
+        forceActive: false,
       });
     }
   }

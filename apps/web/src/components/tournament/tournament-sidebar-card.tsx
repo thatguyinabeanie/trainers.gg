@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, type ReactNode } from "react";
+import { cn } from "@/lib/utils";
 import { useSupabaseQuery, useSupabaseMutation } from "@/lib/supabase";
 import {
   getRegistrationStatus,
@@ -116,11 +117,11 @@ function StatusBanner({
   };
 
   return (
-    <div className={`rounded-lg p-3 ${variantStyles[variant]}`}>
+    <div className={cn("rounded-lg p-3", variantStyles[variant])}>
       <div className="flex items-center gap-2">
         {icon}
         <div>
-          <p className={`text-sm font-medium ${titleStyles[variant]}`}>
+          <p className={cn("text-sm font-medium", titleStyles[variant])}>
             {title}
           </p>
           {subtitle && (
@@ -139,7 +140,7 @@ function SectionSeparator({ label }: { label: string }) {
   return (
     <div className="relative py-2">
       <Separator />
-      <span className="bg-card text-muted-foreground absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 px-2 text-xs font-medium">
+      <span className="bg-card text-muted-foreground absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 px-2 text-xs font-medium">
         {label}
       </span>
     </div>
@@ -1014,7 +1015,12 @@ export function TournamentSidebarCard({
                 <p className="text-sm font-medium">Check-In</p>
                 {timeRemaining && (
                   <span
-                    className={`text-xs font-medium ${isCheckInTimeLow ? "text-orange-600" : "text-muted-foreground"}`}
+                    className={cn(
+                      "text-xs font-medium",
+                      isCheckInTimeLow
+                        ? "text-orange-600"
+                        : "text-muted-foreground"
+                    )}
                   >
                     {timeRemaining}
                   </span>
@@ -1321,11 +1327,12 @@ export function TournamentSidebarCard({
             </p>
           ) : deadlineText ? (
             <p
-              className={`flex items-center gap-1.5 text-xs ${
+              className={cn(
+                "flex items-center gap-1.5 text-xs",
                 isDeadlineSoon
                   ? "font-medium text-orange-600"
                   : "text-muted-foreground"
-              }`}
+              )}
             >
               <Clock className="h-3.5 w-3.5" />
               Closes {deadlineText}

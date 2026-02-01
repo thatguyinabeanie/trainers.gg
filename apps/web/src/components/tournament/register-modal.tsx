@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { cn } from "@/lib/utils";
 import {
   Dialog,
   DialogContent,
@@ -421,7 +422,10 @@ export function RegisterModal({
                           />
                           <FormLabel
                             htmlFor="display-shortened"
-                            className={`font-normal ${!hasName ? "text-muted-foreground" : ""}`}
+                            className={cn(
+                              "font-normal",
+                              !hasName && "text-muted-foreground"
+                            )}
                           >
                             Shortened name
                             {selectedAlt && hasName ? (
@@ -443,7 +447,10 @@ export function RegisterModal({
                           />
                           <FormLabel
                             htmlFor="display-full"
-                            className={`font-normal ${!hasName ? "text-muted-foreground" : ""}`}
+                            className={cn(
+                              "font-normal",
+                              !hasName && "text-muted-foreground"
+                            )}
                           >
                             Full name
                             {selectedAlt && hasName ? (
@@ -478,7 +485,10 @@ export function RegisterModal({
                       />
                     </FormControl>
                     <FormLabel
-                      className={`font-normal ${!selectedAlt?.country ? "text-muted-foreground" : ""}`}
+                      className={cn(
+                        "font-normal",
+                        !selectedAlt?.country && "text-muted-foreground"
+                      )}
                     >
                       Show country flag
                       {selectedAlt?.country ? (

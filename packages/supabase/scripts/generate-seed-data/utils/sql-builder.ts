@@ -5,6 +5,39 @@
  */
 
 /**
+ * Convert a JS Date to a SQL interval expression relative to a reference date.
+ *
+ * Returns a SQL expression like `(base_date + interval '3 days 14 hours')`
+ * that computes the correct timestamp at seed-time rather than baking in
+ * a hardcoded ISO string that goes stale.
+ */
+export function dateToSqlExpr(
+  date: Date,
+  refDate: Date,
+  refName: string
+): string {
+  const diffMs = date.getTime() - refDate.getTime();
+  if (diffMs === 0) return refName;
+
+  const absDiffMs = Math.abs(diffMs);
+  const sign = diffMs >= 0 ? "+" : "-";
+
+  const totalMinutes = Math.round(absDiffMs / (1000 * 60));
+  const days = Math.floor(totalMinutes / (60 * 24));
+  const hours = Math.floor((totalMinutes % (60 * 24)) / 60);
+  const minutes = totalMinutes % 60;
+
+  const parts: string[] = [];
+  if (days > 0) parts.push(`${days} days`);
+  if (hours > 0) parts.push(`${hours} hours`);
+  if (minutes > 0) parts.push(`${minutes} minutes`);
+
+  if (parts.length === 0) return refName;
+
+  return `(${refName} ${sign} interval '${parts.join(" ")}')`;
+}
+
+/**
  * Escape special characters in a string for SQL.
  * Does NOT wrap in quotes - use sqlString() for that.
  */
