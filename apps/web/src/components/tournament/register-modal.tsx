@@ -76,7 +76,6 @@ const registrationSchema = z.object({
   altId: z.string().optional(),
   inGameName: z.string().optional(),
   teamId: z.string().optional(),
-  teamName: z.string().optional(),
   displayNameOption: z.enum(["username", "shortened", "full"]),
   showCountryFlag: z.boolean(),
 });
@@ -108,7 +107,6 @@ export function RegisterModal({
       altId: "",
       inGameName: "",
       teamId: "",
-      teamName: "",
       displayNameOption: "username",
       showCountryFlag: true,
     },
@@ -119,7 +117,6 @@ export function RegisterModal({
   const inGameName = form.watch("inGameName");
   const displayNameOption = form.watch("displayNameOption");
   const showCountryFlag = form.watch("showCountryFlag");
-  const selectedTeamId = form.watch("teamId");
 
   // Derived state
   const selectedAlt = alts.find((a) => a.id.toString() === selectedAltId);
@@ -179,10 +176,15 @@ export function RegisterModal({
   async function onSubmit(data: RegistrationFormData) {
     setError(null);
 
+    // Derive team name from selected team
+    const selectedTeam = data.teamId
+      ? teams.find((t) => t.id.toString() === data.teamId)
+      : undefined;
+
     const result = await registerForTournament(tournamentId, {
       altId: data.altId ? Number(data.altId) : undefined,
       inGameName: data.inGameName || undefined,
-      teamName: data.teamName || undefined,
+      teamName: selectedTeam?.name || undefined,
       displayNameOption: data.displayNameOption,
       showCountryFlag: data.showCountryFlag,
     });
@@ -282,14 +284,14 @@ export function RegisterModal({
                 )}
               />
 
-              {/* Team Selection (only show if user has teams) */}
+              {/* Team Selection (only show if user has saved teams) */}
               {teams.length > 0 && (
                 <FormField
                   control={form.control}
                   name="teamId"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Select Team (Optional)</FormLabel>
+                      <FormLabel>Team (Optional)</FormLabel>
                       <Select
                         onValueChange={field.onChange}
                         value={field.value}
@@ -312,23 +314,9 @@ export function RegisterModal({
                           ))}
                         </SelectContent>
                       </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              )}
-
-              {/* Team Name (shown when no saved team selected) */}
-              {!selectedTeamId && (
-                <FormField
-                  control={form.control}
-                  name="teamName"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Team Name (Optional)</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Enter your team name" {...field} />
-                      </FormControl>
+                      <FormDescription>
+                        You can submit your team later from the tournament page
+                      </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
