@@ -59,7 +59,6 @@ export interface GeneratedTournament {
   weekOffset: number; // negative = past, 0 = current, positive = future
   isMain: boolean; // main tournament vs practice
   isFlagship: boolean;
-  forceActive: boolean; // true for flagship tournaments that should always appear in-progress
 }
 
 export interface GeneratedTournamentPhase {
@@ -288,12 +287,12 @@ export function generateTournaments(
       const mainSize = getTournamentSize(mainSeed, true, isFlagship);
       const mainFormat = getTournamentFormat(mainSeed, true, isFlagship);
 
-      const forceActive =
+      const isFlagshipActive =
         flagshipConfig && "active" in flagshipConfig && flagshipConfig.active;
       let mainStartDate: Date;
       let mainEndDate: Date;
 
-      if (forceActive) {
+      if (isFlagshipActive) {
         const now = new Date();
         mainStartDate = new Date(now.getTime() - 3 * 60 * 60 * 1000);
         mainEndDate = new Date(now.getTime() + 5 * 60 * 60 * 1000);
@@ -336,7 +335,6 @@ export function generateTournaments(
         weekOffset,
         isMain: true,
         isFlagship,
-        forceActive: !!forceActive,
       });
     }
   }
@@ -381,7 +379,6 @@ export function generateTournaments(
       weekOffset: 1,
       isMain: true,
       isFlagship: false,
-      forceActive: false,
     });
   }
 

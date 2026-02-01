@@ -2,7 +2,7 @@
 -- 12_standings.sql - Create Tournament Standings
 -- =============================================================================
 -- GENERATED FILE - DO NOT EDIT MANUALLY
--- Generated at: 2026-02-01T23:33:10.287Z
+-- Generated at: 2026-02-01T23:55:30.243Z
 -- IDEMPOTENT: Uses ON CONFLICT and existence checks
 -- =============================================================================
 

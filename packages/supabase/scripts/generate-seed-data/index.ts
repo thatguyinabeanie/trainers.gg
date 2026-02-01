@@ -304,22 +304,6 @@ function generateOrganizationsSql(
 }
 
 /**
- * Compute the Monday of the current week at midnight (local time).
- * This matches getWeekStartDate(0) in tournaments.ts.
- */
-function getBaseDate(): Date {
-  const today = new Date();
-  const dayOfWeek = today.getDay(); // 0 = Sunday
-  const daysToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
-
-  const monday = new Date(today);
-  monday.setDate(today.getDate() - daysToMonday);
-  monday.setHours(0, 0, 0, 0);
-
-  return monday;
-}
-
-/**
  * Generate 10_tournaments.sql - Tournaments, phases, and registrations
  */
 function generateTournamentsSql(
@@ -327,8 +311,7 @@ function generateTournamentsSql(
   phases: GeneratedTournamentPhase[],
   registrations: GeneratedTournamentRegistration[],
   organizations: GeneratedOrganization[],
-  alts: GeneratedAlt[],
-  baseDate: Date
+  alts: GeneratedAlt[]
 ): string {
   const lines: string[] = [];
 
@@ -343,7 +326,7 @@ function generateTournamentsSql(
   lines.push(
     `-- NOTE: All dates use relative expressions (interval offsets from`
   );
-  lines.push(`-- date_trunc('week', NOW())) so seed data never goes stale.`);
+  lines.push(`-- NOW()) so seed data never goes stale.`);
   lines.push(
     `-- =============================================================================\n`
   );
@@ -351,8 +334,7 @@ function generateTournamentsSql(
   lines.push(`DO $$`);
   lines.push(`DECLARE`);
 
-  // Declare date reference variables
-  lines.push(`  base_date timestamptz := date_trunc('week', NOW());`);
+  // Declare date reference variable
   lines.push(`  seed_now timestamptz := NOW();`);
 
   // Declare org IDs
@@ -397,9 +379,9 @@ function generateTournamentsSql(
     for (const t of batch) {
       const org = organizations.find((o) => o.id === t.organizationId)!;
 
-      // Choose reference point: forceActive uses seed_now, others use base_date
-      const refName = t.forceActive ? "seed_now" : "base_date";
-      const refDate = t.forceActive ? new Date() : baseDate;
+      // All dates are relative to seed_now (NOW()) to avoid timezone mismatch
+      const refName = "seed_now";
+      const refDate = new Date();
 
       const startDateExpr = dateToSqlExpr(t.startDate, refDate, refName);
       const endDateExpr = dateToSqlExpr(t.endDate, refDate, refName);
@@ -523,7 +505,6 @@ function generateTournamentsSql(
   lines.push(`-- Tournament Registrations`);
   lines.push(`DO $$`);
   lines.push(`DECLARE`);
-  lines.push(`  base_date timestamptz := date_trunc('week', NOW());`);
   lines.push(`  seed_now timestamptz := NOW();`);
   lines.push(`  registrations_exist boolean;`);
   lines.push(`BEGIN`);
@@ -546,12 +527,6 @@ function generateTournamentsSql(
     regsByTournament.get(reg.tournamentId)!.push(reg);
   }
 
-  // Build tournament lookup for forceActive
-  const tournamentById = new Map<number, GeneratedTournament>();
-  for (const t of tournaments) {
-    tournamentById.set(t.id, t);
-  }
-
   // Insert in batches per tournament
   const regBatchSize = 100;
   let totalInserted = 0;
@@ -560,9 +535,9 @@ function generateTournamentsSql(
     const tournamentRegs = regsByTournament.get(tournament.id) || [];
     if (tournamentRegs.length === 0) continue;
 
-    // Choose reference point matching the tournament's date generation
-    const refName = tournament.forceActive ? "seed_now" : "base_date";
-    const refDate = tournament.forceActive ? new Date() : baseDate;
+    // All dates are relative to seed_now (NOW())
+    const refName = "seed_now";
+    const refDate = new Date();
 
     lines.push(
       `  -- Registrations for: ${tournament.name} (${tournamentRegs.length} players)`
@@ -640,8 +615,7 @@ function generateMatchesSql(
   games: GeneratedMatchGame[],
   phases: GeneratedTournamentPhase[],
   tournaments: GeneratedTournament[],
-  alts: GeneratedAlt[],
-  baseDate: Date
+  alts: GeneratedAlt[]
 ): string {
   const lines: string[] = [];
 
@@ -656,16 +630,6 @@ function generateMatchesSql(
   );
 
   // Build lookup maps
-  const tournamentById = new Map<number, GeneratedTournament>();
-  for (const t of tournaments) {
-    tournamentById.set(t.id, t);
-  }
-
-  const phaseById = new Map<number, GeneratedTournamentPhase>();
-  for (const p of phases) {
-    phaseById.set(p.id, p);
-  }
-
   const altUsernameById = new Map<number, string>();
   for (const a of alts) {
     altUsernameById.set(a.id, a.username);
@@ -719,19 +683,9 @@ function generateMatchesSql(
     return a.roundNumber - b.roundNumber;
   });
 
-  // Build a map from phase ID to tournament for date reference lookups
-  const phaseTournamentMap = new Map<number, GeneratedTournament>();
-  for (const phase of phases) {
-    const tournament = tournamentById.get(phase.tournamentId);
-    if (tournament) {
-      phaseTournamentMap.set(phase.id, tournament);
-    }
-  }
-
   // Start the main DO block
   lines.push(`DO $$`);
   lines.push(`DECLARE`);
-  lines.push(`  base_date timestamptz := date_trunc('week', NOW());`);
   lines.push(`  seed_now timestamptz := NOW();`);
   lines.push(`  matches_exist boolean;`);
   lines.push(`  phase_id bigint;`);
@@ -817,14 +771,9 @@ function generateMatchesSql(
           roundStatus = "pending";
         }
 
-        // Determine the date reference for this round based on its tournament
-        const roundTournament = phaseTournamentMap.get(phase.id);
-        const roundRefName = roundTournament?.forceActive
-          ? "seed_now"
-          : "base_date";
-        const roundRefDate = roundTournament?.forceActive
-          ? new Date()
-          : baseDate;
+        // All dates are relative to seed_now (NOW())
+        const roundRefName = "seed_now";
+        const roundRefDate = new Date();
 
         const startTimeStr = round.startTime
           ? dateToSqlExpr(round.startTime, roundRefDate, roundRefName)
@@ -862,13 +811,9 @@ function generateMatchesSql(
             ? `(SELECT aw.id FROM public.alts aw WHERE aw.username = '${escapeString(winnerUsername)}')`
             : "NULL";
 
-          // Use the same date reference as the round
-          const matchRefName = roundTournament?.forceActive
-            ? "seed_now"
-            : "base_date";
-          const matchRefDate = roundTournament?.forceActive
-            ? new Date()
-            : baseDate;
+          // All dates are relative to seed_now (NOW())
+          const matchRefName = "seed_now";
+          const matchRefDate = new Date();
 
           const matchStartTimeStr = match.startedAt
             ? dateToSqlExpr(match.startedAt, matchRefDate, matchRefName)
@@ -1314,9 +1259,6 @@ async function main() {
   // Generate SQL files
   console.log("\n📝 Generating SQL files...");
 
-  // Compute base date (Monday of current week) for relative date expressions
-  const baseDate = getBaseDate();
-
   const files = [
     { name: "03_users.sql", content: generateUsersSql(users, alts) },
     {
@@ -1334,20 +1276,12 @@ async function main() {
         phases,
         registrations,
         organizations,
-        alts,
-        baseDate
+        alts
       ),
     },
     {
       name: "11_matches.sql",
-      content: generateMatchesSql(
-        matches,
-        games,
-        phases,
-        tournaments,
-        alts,
-        baseDate
-      ),
+      content: generateMatchesSql(matches, games, phases, tournaments, alts),
     },
     {
       name: "12_standings.sql",

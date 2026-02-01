@@ -2,7 +2,7 @@
 -- 11_matches.sql - Create Rounds, Matches, and Games
 -- =============================================================================
 -- GENERATED FILE - DO NOT EDIT MANUALLY
--- Generated at: 2026-02-01T23:33:10.284Z
+-- Generated at: 2026-02-01T23:55:30.239Z
 -- IDEMPOTENT: Uses ON CONFLICT and existence checks
 -- =============================================================================
 
@@ -13,7 +13,6 @@
 
 DO $$
 DECLARE
-  base_date timestamptz := date_trunc('week', NOW());
   seed_now timestamptz := NOW();
   matches_exist boolean;
   phase_id bigint;
@@ -39,7 +38,7 @@ BEGIN
       phase_id, round_number, name, status, start_time, end_time
     ) VALUES (
       phase_id, 1, 'Round 1', 'completed'::phase_status,
-      (base_date - interval '1 days 10 hours'), (base_date - interval '1 days 9 hours 30 minutes')
+      (seed_now - interval '8 days 3 hours 56 minutes'), (seed_now - interval '8 days 3 hours 25 minutes')
     ) RETURNING id INTO round_id;
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -52,8 +51,8 @@ BEGIN
       1,
       'completed'::phase_status,
       1,
-      (base_date - interval '1 days 10 hours'),
-      (base_date - interval '1 days 9 hours 32 minutes')
+      (seed_now - interval '8 days 3 hours 56 minutes'),
+      (seed_now - interval '8 days 3 hours 28 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -66,8 +65,8 @@ BEGIN
       2,
       'completed'::phase_status,
       2,
-      (base_date - interval '1 days 10 hours'),
-      (base_date - interval '1 days 9 hours 32 minutes')
+      (seed_now - interval '8 days 3 hours 55 minutes'),
+      (seed_now - interval '8 days 3 hours 28 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -80,8 +79,8 @@ BEGIN
       1,
       'completed'::phase_status,
       3,
-      (base_date - interval '1 days 10 hours'),
-      (base_date - interval '1 days 9 hours 32 minutes')
+      (seed_now - interval '8 days 3 hours 55 minutes'),
+      (seed_now - interval '8 days 3 hours 28 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -94,8 +93,8 @@ BEGIN
       0,
       'completed'::phase_status,
       4,
-      (base_date - interval '1 days 10 hours'),
-      (base_date - interval '1 days 9 hours 32 minutes')
+      (seed_now - interval '8 days 3 hours 55 minutes'),
+      (seed_now - interval '8 days 3 hours 28 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -108,8 +107,8 @@ BEGIN
       0,
       'completed'::phase_status,
       5,
-      (base_date - interval '1 days 10 hours'),
-      (base_date - interval '1 days 9 hours 32 minutes')
+      (seed_now - interval '8 days 3 hours 55 minutes'),
+      (seed_now - interval '8 days 3 hours 28 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -122,8 +121,8 @@ BEGIN
       1,
       'completed'::phase_status,
       6,
-      (base_date - interval '1 days 10 hours'),
-      (base_date - interval '1 days 9 hours 32 minutes')
+      (seed_now - interval '8 days 3 hours 55 minutes'),
+      (seed_now - interval '8 days 3 hours 28 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -136,8 +135,8 @@ BEGIN
       2,
       'completed'::phase_status,
       7,
-      (base_date - interval '1 days 10 hours'),
-      (base_date - interval '1 days 9 hours 32 minutes')
+      (seed_now - interval '8 days 3 hours 55 minutes'),
+      (seed_now - interval '8 days 3 hours 28 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -150,8 +149,8 @@ BEGIN
       2,
       'completed'::phase_status,
       8,
-      (base_date - interval '1 days 10 hours'),
-      (base_date - interval '1 days 9 hours 32 minutes')
+      (seed_now - interval '8 days 3 hours 55 minutes'),
+      (seed_now - interval '8 days 3 hours 28 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -164,8 +163,8 @@ BEGIN
       2,
       'completed'::phase_status,
       9,
-      (base_date - interval '1 days 10 hours'),
-      (base_date - interval '1 days 9 hours 32 minutes')
+      (seed_now - interval '8 days 3 hours 55 minutes'),
+      (seed_now - interval '8 days 3 hours 28 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -178,8 +177,8 @@ BEGIN
       1,
       'completed'::phase_status,
       10,
-      (base_date - interval '1 days 10 hours'),
-      (base_date - interval '1 days 9 hours 30 minutes')
+      (seed_now - interval '8 days 3 hours 55 minutes'),
+      (seed_now - interval '8 days 3 hours 25 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -192,8 +191,8 @@ BEGIN
       2,
       'completed'::phase_status,
       11,
-      (base_date - interval '1 days 10 hours'),
-      (base_date - interval '1 days 9 hours 30 minutes')
+      (seed_now - interval '8 days 3 hours 55 minutes'),
+      (seed_now - interval '8 days 3 hours 25 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -206,8 +205,8 @@ BEGIN
       2,
       'completed'::phase_status,
       12,
-      (base_date - interval '1 days 10 hours'),
-      (base_date - interval '1 days 9 hours 30 minutes')
+      (seed_now - interval '8 days 3 hours 55 minutes'),
+      (seed_now - interval '8 days 3 hours 25 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -220,8 +219,8 @@ BEGIN
       0,
       'completed'::phase_status,
       13,
-      (base_date - interval '1 days 10 hours'),
-      (base_date - interval '1 days 9 hours 30 minutes')
+      (seed_now - interval '8 days 3 hours 55 minutes'),
+      (seed_now - interval '8 days 3 hours 25 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -234,8 +233,8 @@ BEGIN
       2,
       'completed'::phase_status,
       14,
-      (base_date - interval '1 days 10 hours'),
-      (base_date - interval '1 days 9 hours 30 minutes')
+      (seed_now - interval '8 days 3 hours 55 minutes'),
+      (seed_now - interval '8 days 3 hours 25 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -248,8 +247,8 @@ BEGIN
       2,
       'completed'::phase_status,
       15,
-      (base_date - interval '1 days 10 hours'),
-      (base_date - interval '1 days 9 hours 30 minutes')
+      (seed_now - interval '8 days 3 hours 55 minutes'),
+      (seed_now - interval '8 days 3 hours 25 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -262,15 +261,15 @@ BEGIN
       0,
       'completed'::phase_status,
       16,
-      (base_date - interval '1 days 10 hours'),
-      (base_date - interval '1 days 9 hours 30 minutes')
+      (seed_now - interval '8 days 3 hours 55 minutes'),
+      (seed_now - interval '8 days 3 hours 25 minutes')
     );
     -- Round 2
     INSERT INTO public.tournament_rounds (
       phase_id, round_number, name, status, start_time, end_time
     ) VALUES (
       phase_id, 2, 'Round 2', 'completed'::phase_status,
-      (base_date - interval '1 days 9 hours 10 minutes'), (base_date - interval '1 days 8 hours 40 minutes')
+      (seed_now - interval '8 days 3 hours 6 minutes'), (seed_now - interval '8 days 2 hours 35 minutes')
     ) RETURNING id INTO round_id;
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -283,8 +282,8 @@ BEGIN
       0,
       'completed'::phase_status,
       1,
-      (base_date - interval '1 days 9 hours 10 minutes'),
-      (base_date - interval '1 days 8 hours 40 minutes')
+      (seed_now - interval '8 days 3 hours 6 minutes'),
+      (seed_now - interval '8 days 2 hours 35 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -297,8 +296,8 @@ BEGIN
       0,
       'completed'::phase_status,
       2,
-      (base_date - interval '1 days 9 hours 10 minutes'),
-      (base_date - interval '1 days 8 hours 40 minutes')
+      (seed_now - interval '8 days 3 hours 5 minutes'),
+      (seed_now - interval '8 days 2 hours 35 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -311,8 +310,8 @@ BEGIN
       2,
       'completed'::phase_status,
       3,
-      (base_date - interval '1 days 9 hours 10 minutes'),
-      (base_date - interval '1 days 8 hours 40 minutes')
+      (seed_now - interval '8 days 3 hours 5 minutes'),
+      (seed_now - interval '8 days 2 hours 35 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -325,8 +324,8 @@ BEGIN
       2,
       'completed'::phase_status,
       4,
-      (base_date - interval '1 days 9 hours 10 minutes'),
-      (base_date - interval '1 days 8 hours 40 minutes')
+      (seed_now - interval '8 days 3 hours 5 minutes'),
+      (seed_now - interval '8 days 2 hours 35 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -339,8 +338,8 @@ BEGIN
       2,
       'completed'::phase_status,
       5,
-      (base_date - interval '1 days 9 hours 10 minutes'),
-      (base_date - interval '1 days 8 hours 40 minutes')
+      (seed_now - interval '8 days 3 hours 5 minutes'),
+      (seed_now - interval '8 days 2 hours 35 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -353,8 +352,8 @@ BEGIN
       0,
       'completed'::phase_status,
       6,
-      (base_date - interval '1 days 9 hours 10 minutes'),
-      (base_date - interval '1 days 8 hours 40 minutes')
+      (seed_now - interval '8 days 3 hours 5 minutes'),
+      (seed_now - interval '8 days 2 hours 35 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -367,8 +366,8 @@ BEGIN
       0,
       'completed'::phase_status,
       7,
-      (base_date - interval '1 days 9 hours 10 minutes'),
-      (base_date - interval '1 days 8 hours 40 minutes')
+      (seed_now - interval '8 days 3 hours 5 minutes'),
+      (seed_now - interval '8 days 2 hours 35 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -381,8 +380,8 @@ BEGIN
       2,
       'completed'::phase_status,
       8,
-      (base_date - interval '1 days 9 hours 10 minutes'),
-      (base_date - interval '1 days 8 hours 40 minutes')
+      (seed_now - interval '8 days 3 hours 5 minutes'),
+      (seed_now - interval '8 days 2 hours 35 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -395,8 +394,8 @@ BEGIN
       2,
       'completed'::phase_status,
       9,
-      (base_date - interval '1 days 9 hours 10 minutes'),
-      (base_date - interval '1 days 8 hours 40 minutes')
+      (seed_now - interval '8 days 3 hours 5 minutes'),
+      (seed_now - interval '8 days 2 hours 35 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -409,8 +408,8 @@ BEGIN
       1,
       'completed'::phase_status,
       10,
-      (base_date - interval '1 days 9 hours 10 minutes'),
-      (base_date - interval '1 days 8 hours 40 minutes')
+      (seed_now - interval '8 days 3 hours 5 minutes'),
+      (seed_now - interval '8 days 2 hours 35 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -423,8 +422,8 @@ BEGIN
       0,
       'completed'::phase_status,
       11,
-      (base_date - interval '1 days 9 hours 10 minutes'),
-      (base_date - interval '1 days 8 hours 40 minutes')
+      (seed_now - interval '8 days 3 hours 5 minutes'),
+      (seed_now - interval '8 days 2 hours 35 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -437,8 +436,8 @@ BEGIN
       0,
       'completed'::phase_status,
       12,
-      (base_date - interval '1 days 9 hours 10 minutes'),
-      (base_date - interval '1 days 8 hours 40 minutes')
+      (seed_now - interval '8 days 3 hours 5 minutes'),
+      (seed_now - interval '8 days 2 hours 35 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -451,8 +450,8 @@ BEGIN
       1,
       'completed'::phase_status,
       13,
-      (base_date - interval '1 days 9 hours 10 minutes'),
-      (base_date - interval '1 days 8 hours 40 minutes')
+      (seed_now - interval '8 days 3 hours 5 minutes'),
+      (seed_now - interval '8 days 2 hours 35 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -465,8 +464,8 @@ BEGIN
       2,
       'completed'::phase_status,
       14,
-      (base_date - interval '1 days 9 hours 10 minutes'),
-      (base_date - interval '1 days 8 hours 40 minutes')
+      (seed_now - interval '8 days 3 hours 5 minutes'),
+      (seed_now - interval '8 days 2 hours 35 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -479,8 +478,8 @@ BEGIN
       2,
       'completed'::phase_status,
       15,
-      (base_date - interval '1 days 9 hours 10 minutes'),
-      (base_date - interval '1 days 8 hours 40 minutes')
+      (seed_now - interval '8 days 3 hours 5 minutes'),
+      (seed_now - interval '8 days 2 hours 35 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -493,15 +492,15 @@ BEGIN
       2,
       'completed'::phase_status,
       16,
-      (base_date - interval '1 days 9 hours 10 minutes'),
-      (base_date - interval '1 days 8 hours 40 minutes')
+      (seed_now - interval '8 days 3 hours 5 minutes'),
+      (seed_now - interval '8 days 2 hours 35 minutes')
     );
     -- Round 3
     INSERT INTO public.tournament_rounds (
       phase_id, round_number, name, status, start_time, end_time
     ) VALUES (
       phase_id, 3, 'Round 3', 'completed'::phase_status,
-      (base_date - interval '1 days 8 hours 20 minutes'), (base_date - interval '1 days 7 hours 50 minutes')
+      (seed_now - interval '8 days 2 hours 16 minutes'), (seed_now - interval '8 days 1 hours 45 minutes')
     ) RETURNING id INTO round_id;
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -514,8 +513,8 @@ BEGIN
       2,
       'completed'::phase_status,
       1,
-      (base_date - interval '1 days 8 hours 20 minutes'),
-      (base_date - interval '1 days 7 hours 50 minutes')
+      (seed_now - interval '8 days 2 hours 16 minutes'),
+      (seed_now - interval '8 days 1 hours 45 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -528,8 +527,8 @@ BEGIN
       2,
       'completed'::phase_status,
       2,
-      (base_date - interval '1 days 8 hours 20 minutes'),
-      (base_date - interval '1 days 7 hours 50 minutes')
+      (seed_now - interval '8 days 2 hours 15 minutes'),
+      (seed_now - interval '8 days 1 hours 45 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -542,8 +541,8 @@ BEGIN
       2,
       'completed'::phase_status,
       3,
-      (base_date - interval '1 days 8 hours 20 minutes'),
-      (base_date - interval '1 days 7 hours 50 minutes')
+      (seed_now - interval '8 days 2 hours 15 minutes'),
+      (seed_now - interval '8 days 1 hours 45 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -556,8 +555,8 @@ BEGIN
       0,
       'completed'::phase_status,
       4,
-      (base_date - interval '1 days 8 hours 20 minutes'),
-      (base_date - interval '1 days 7 hours 50 minutes')
+      (seed_now - interval '8 days 2 hours 15 minutes'),
+      (seed_now - interval '8 days 1 hours 45 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -570,8 +569,8 @@ BEGIN
       1,
       'completed'::phase_status,
       5,
-      (base_date - interval '1 days 8 hours 20 minutes'),
-      (base_date - interval '1 days 7 hours 50 minutes')
+      (seed_now - interval '8 days 2 hours 15 minutes'),
+      (seed_now - interval '8 days 1 hours 45 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -584,8 +583,8 @@ BEGIN
       1,
       'completed'::phase_status,
       6,
-      (base_date - interval '1 days 8 hours 20 minutes'),
-      (base_date - interval '1 days 7 hours 50 minutes')
+      (seed_now - interval '8 days 2 hours 15 minutes'),
+      (seed_now - interval '8 days 1 hours 45 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -598,8 +597,8 @@ BEGIN
       2,
       'completed'::phase_status,
       7,
-      (base_date - interval '1 days 8 hours 20 minutes'),
-      (base_date - interval '1 days 7 hours 50 minutes')
+      (seed_now - interval '8 days 2 hours 15 minutes'),
+      (seed_now - interval '8 days 1 hours 45 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -612,8 +611,8 @@ BEGIN
       2,
       'completed'::phase_status,
       8,
-      (base_date - interval '1 days 8 hours 20 minutes'),
-      (base_date - interval '1 days 7 hours 50 minutes')
+      (seed_now - interval '8 days 2 hours 15 minutes'),
+      (seed_now - interval '8 days 1 hours 45 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -626,8 +625,8 @@ BEGIN
       2,
       'completed'::phase_status,
       9,
-      (base_date - interval '1 days 8 hours 20 minutes'),
-      (base_date - interval '1 days 7 hours 50 minutes')
+      (seed_now - interval '8 days 2 hours 15 minutes'),
+      (seed_now - interval '8 days 1 hours 45 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -640,8 +639,8 @@ BEGIN
       2,
       'completed'::phase_status,
       10,
-      (base_date - interval '1 days 8 hours 20 minutes'),
-      (base_date - interval '1 days 7 hours 50 minutes')
+      (seed_now - interval '8 days 2 hours 15 minutes'),
+      (seed_now - interval '8 days 1 hours 45 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -654,8 +653,8 @@ BEGIN
       2,
       'completed'::phase_status,
       11,
-      (base_date - interval '1 days 8 hours 20 minutes'),
-      (base_date - interval '1 days 7 hours 50 minutes')
+      (seed_now - interval '8 days 2 hours 15 minutes'),
+      (seed_now - interval '8 days 1 hours 45 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -668,8 +667,8 @@ BEGIN
       2,
       'completed'::phase_status,
       12,
-      (base_date - interval '1 days 8 hours 20 minutes'),
-      (base_date - interval '1 days 7 hours 50 minutes')
+      (seed_now - interval '8 days 2 hours 15 minutes'),
+      (seed_now - interval '8 days 1 hours 45 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -682,8 +681,8 @@ BEGIN
       2,
       'completed'::phase_status,
       13,
-      (base_date - interval '1 days 8 hours 20 minutes'),
-      (base_date - interval '1 days 7 hours 50 minutes')
+      (seed_now - interval '8 days 2 hours 15 minutes'),
+      (seed_now - interval '8 days 1 hours 45 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -696,8 +695,8 @@ BEGIN
       2,
       'completed'::phase_status,
       14,
-      (base_date - interval '1 days 8 hours 20 minutes'),
-      (base_date - interval '1 days 7 hours 50 minutes')
+      (seed_now - interval '8 days 2 hours 15 minutes'),
+      (seed_now - interval '8 days 1 hours 45 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -710,8 +709,8 @@ BEGIN
       0,
       'completed'::phase_status,
       15,
-      (base_date - interval '1 days 8 hours 20 minutes'),
-      (base_date - interval '1 days 7 hours 50 minutes')
+      (seed_now - interval '8 days 2 hours 15 minutes'),
+      (seed_now - interval '8 days 1 hours 45 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -724,15 +723,15 @@ BEGIN
       2,
       'completed'::phase_status,
       16,
-      (base_date - interval '1 days 8 hours 20 minutes'),
-      (base_date - interval '1 days 7 hours 50 minutes')
+      (seed_now - interval '8 days 2 hours 15 minutes'),
+      (seed_now - interval '8 days 1 hours 45 minutes')
     );
     -- Round 4
     INSERT INTO public.tournament_rounds (
       phase_id, round_number, name, status, start_time, end_time
     ) VALUES (
       phase_id, 4, 'Round 4', 'completed'::phase_status,
-      (base_date - interval '1 days 7 hours 30 minutes'), (base_date - interval '1 days 7 hours')
+      (seed_now - interval '8 days 1 hours 26 minutes'), (seed_now - interval '8 days 55 minutes')
     ) RETURNING id INTO round_id;
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -745,8 +744,8 @@ BEGIN
       1,
       'completed'::phase_status,
       1,
-      (base_date - interval '1 days 7 hours 30 minutes'),
-      (base_date - interval '1 days 7 hours')
+      (seed_now - interval '8 days 1 hours 26 minutes'),
+      (seed_now - interval '8 days 55 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -759,8 +758,8 @@ BEGIN
       2,
       'completed'::phase_status,
       2,
-      (base_date - interval '1 days 7 hours 30 minutes'),
-      (base_date - interval '1 days 7 hours')
+      (seed_now - interval '8 days 1 hours 25 minutes'),
+      (seed_now - interval '8 days 55 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -773,8 +772,8 @@ BEGIN
       2,
       'completed'::phase_status,
       3,
-      (base_date - interval '1 days 7 hours 30 minutes'),
-      (base_date - interval '1 days 7 hours')
+      (seed_now - interval '8 days 1 hours 25 minutes'),
+      (seed_now - interval '8 days 55 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -787,8 +786,8 @@ BEGIN
       2,
       'completed'::phase_status,
       4,
-      (base_date - interval '1 days 7 hours 30 minutes'),
-      (base_date - interval '1 days 7 hours')
+      (seed_now - interval '8 days 1 hours 25 minutes'),
+      (seed_now - interval '8 days 55 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -801,8 +800,8 @@ BEGIN
       2,
       'completed'::phase_status,
       5,
-      (base_date - interval '1 days 7 hours 30 minutes'),
-      (base_date - interval '1 days 7 hours')
+      (seed_now - interval '8 days 1 hours 25 minutes'),
+      (seed_now - interval '8 days 55 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -815,8 +814,8 @@ BEGIN
       2,
       'completed'::phase_status,
       6,
-      (base_date - interval '1 days 7 hours 30 minutes'),
-      (base_date - interval '1 days 7 hours')
+      (seed_now - interval '8 days 1 hours 25 minutes'),
+      (seed_now - interval '8 days 55 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -829,8 +828,8 @@ BEGIN
       2,
       'completed'::phase_status,
       7,
-      (base_date - interval '1 days 7 hours 30 minutes'),
-      (base_date - interval '1 days 7 hours')
+      (seed_now - interval '8 days 1 hours 25 minutes'),
+      (seed_now - interval '8 days 55 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -843,8 +842,8 @@ BEGIN
       2,
       'completed'::phase_status,
       8,
-      (base_date - interval '1 days 7 hours 30 minutes'),
-      (base_date - interval '1 days 7 hours')
+      (seed_now - interval '8 days 1 hours 25 minutes'),
+      (seed_now - interval '8 days 55 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -857,8 +856,8 @@ BEGIN
       2,
       'completed'::phase_status,
       9,
-      (base_date - interval '1 days 7 hours 30 minutes'),
-      (base_date - interval '1 days 7 hours')
+      (seed_now - interval '8 days 1 hours 25 minutes'),
+      (seed_now - interval '8 days 55 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -871,8 +870,8 @@ BEGIN
       0,
       'completed'::phase_status,
       10,
-      (base_date - interval '1 days 7 hours 30 minutes'),
-      (base_date - interval '1 days 7 hours')
+      (seed_now - interval '8 days 1 hours 25 minutes'),
+      (seed_now - interval '8 days 55 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -885,8 +884,8 @@ BEGIN
       0,
       'completed'::phase_status,
       11,
-      (base_date - interval '1 days 7 hours 30 minutes'),
-      (base_date - interval '1 days 7 hours')
+      (seed_now - interval '8 days 1 hours 25 minutes'),
+      (seed_now - interval '8 days 55 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -899,8 +898,8 @@ BEGIN
       2,
       'completed'::phase_status,
       12,
-      (base_date - interval '1 days 7 hours 30 minutes'),
-      (base_date - interval '1 days 7 hours')
+      (seed_now - interval '8 days 1 hours 25 minutes'),
+      (seed_now - interval '8 days 55 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -913,8 +912,8 @@ BEGIN
       2,
       'completed'::phase_status,
       13,
-      (base_date - interval '1 days 7 hours 30 minutes'),
-      (base_date - interval '1 days 7 hours')
+      (seed_now - interval '8 days 1 hours 25 minutes'),
+      (seed_now - interval '8 days 55 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -927,8 +926,8 @@ BEGIN
       2,
       'completed'::phase_status,
       14,
-      (base_date - interval '1 days 7 hours 30 minutes'),
-      (base_date - interval '1 days 7 hours')
+      (seed_now - interval '8 days 1 hours 25 minutes'),
+      (seed_now - interval '8 days 55 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -941,8 +940,8 @@ BEGIN
       2,
       'completed'::phase_status,
       15,
-      (base_date - interval '1 days 7 hours 30 minutes'),
-      (base_date - interval '1 days 7 hours')
+      (seed_now - interval '8 days 1 hours 25 minutes'),
+      (seed_now - interval '8 days 55 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -955,15 +954,15 @@ BEGIN
       0,
       'completed'::phase_status,
       16,
-      (base_date - interval '1 days 7 hours 30 minutes'),
-      (base_date - interval '1 days 7 hours')
+      (seed_now - interval '8 days 1 hours 25 minutes'),
+      (seed_now - interval '8 days 55 minutes')
     );
     -- Round 5
     INSERT INTO public.tournament_rounds (
       phase_id, round_number, name, status, start_time, end_time
     ) VALUES (
       phase_id, 5, 'Round 5', 'completed'::phase_status,
-      (base_date - interval '1 days 6 hours 40 minutes'), (base_date - interval '1 days 6 hours 10 minutes')
+      (seed_now - interval '8 days 36 minutes'), (seed_now - interval '8 days 5 minutes')
     ) RETURNING id INTO round_id;
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -976,8 +975,8 @@ BEGIN
       2,
       'completed'::phase_status,
       1,
-      (base_date - interval '1 days 6 hours 40 minutes'),
-      (base_date - interval '1 days 6 hours 10 minutes')
+      (seed_now - interval '8 days 36 minutes'),
+      (seed_now - interval '8 days 5 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -990,8 +989,8 @@ BEGIN
       1,
       'completed'::phase_status,
       2,
-      (base_date - interval '1 days 6 hours 40 minutes'),
-      (base_date - interval '1 days 6 hours 10 minutes')
+      (seed_now - interval '8 days 35 minutes'),
+      (seed_now - interval '8 days 5 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -1004,8 +1003,8 @@ BEGIN
       2,
       'completed'::phase_status,
       3,
-      (base_date - interval '1 days 6 hours 40 minutes'),
-      (base_date - interval '1 days 6 hours 10 minutes')
+      (seed_now - interval '8 days 35 minutes'),
+      (seed_now - interval '8 days 5 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -1018,8 +1017,8 @@ BEGIN
       1,
       'completed'::phase_status,
       4,
-      (base_date - interval '1 days 6 hours 40 minutes'),
-      (base_date - interval '1 days 6 hours 10 minutes')
+      (seed_now - interval '8 days 35 minutes'),
+      (seed_now - interval '8 days 5 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -1032,8 +1031,8 @@ BEGIN
       0,
       'completed'::phase_status,
       5,
-      (base_date - interval '1 days 6 hours 40 minutes'),
-      (base_date - interval '1 days 6 hours 10 minutes')
+      (seed_now - interval '8 days 35 minutes'),
+      (seed_now - interval '8 days 5 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -1046,8 +1045,8 @@ BEGIN
       0,
       'completed'::phase_status,
       6,
-      (base_date - interval '1 days 6 hours 40 minutes'),
-      (base_date - interval '1 days 6 hours 10 minutes')
+      (seed_now - interval '8 days 35 minutes'),
+      (seed_now - interval '8 days 5 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -1060,8 +1059,8 @@ BEGIN
       2,
       'completed'::phase_status,
       7,
-      (base_date - interval '1 days 6 hours 40 minutes'),
-      (base_date - interval '1 days 6 hours 10 minutes')
+      (seed_now - interval '8 days 35 minutes'),
+      (seed_now - interval '8 days 5 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -1074,8 +1073,8 @@ BEGIN
       0,
       'completed'::phase_status,
       8,
-      (base_date - interval '1 days 6 hours 40 minutes'),
-      (base_date - interval '1 days 6 hours 10 minutes')
+      (seed_now - interval '8 days 35 minutes'),
+      (seed_now - interval '8 days 5 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -1088,8 +1087,8 @@ BEGIN
       2,
       'completed'::phase_status,
       9,
-      (base_date - interval '1 days 6 hours 40 minutes'),
-      (base_date - interval '1 days 6 hours 10 minutes')
+      (seed_now - interval '8 days 35 minutes'),
+      (seed_now - interval '8 days 5 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -1102,8 +1101,8 @@ BEGIN
       1,
       'completed'::phase_status,
       10,
-      (base_date - interval '1 days 6 hours 40 minutes'),
-      (base_date - interval '1 days 6 hours 10 minutes')
+      (seed_now - interval '8 days 35 minutes'),
+      (seed_now - interval '8 days 5 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -1116,8 +1115,8 @@ BEGIN
       0,
       'completed'::phase_status,
       11,
-      (base_date - interval '1 days 6 hours 40 minutes'),
-      (base_date - interval '1 days 6 hours 10 minutes')
+      (seed_now - interval '8 days 35 minutes'),
+      (seed_now - interval '8 days 5 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -1130,8 +1129,8 @@ BEGIN
       1,
       'completed'::phase_status,
       12,
-      (base_date - interval '1 days 6 hours 40 minutes'),
-      (base_date - interval '1 days 6 hours 10 minutes')
+      (seed_now - interval '8 days 35 minutes'),
+      (seed_now - interval '8 days 5 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -1144,8 +1143,8 @@ BEGIN
       2,
       'completed'::phase_status,
       13,
-      (base_date - interval '1 days 6 hours 40 minutes'),
-      (base_date - interval '1 days 6 hours 10 minutes')
+      (seed_now - interval '8 days 35 minutes'),
+      (seed_now - interval '8 days 5 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -1158,8 +1157,8 @@ BEGIN
       0,
       'completed'::phase_status,
       14,
-      (base_date - interval '1 days 6 hours 40 minutes'),
-      (base_date - interval '1 days 6 hours 10 minutes')
+      (seed_now - interval '8 days 35 minutes'),
+      (seed_now - interval '8 days 5 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -1172,8 +1171,8 @@ BEGIN
       0,
       'completed'::phase_status,
       15,
-      (base_date - interval '1 days 6 hours 40 minutes'),
-      (base_date - interval '1 days 6 hours 10 minutes')
+      (seed_now - interval '8 days 35 minutes'),
+      (seed_now - interval '8 days 5 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -1186,8 +1185,8 @@ BEGIN
       0,
       'completed'::phase_status,
       16,
-      (base_date - interval '1 days 6 hours 40 minutes'),
-      (base_date - interval '1 days 6 hours 10 minutes')
+      (seed_now - interval '8 days 35 minutes'),
+      (seed_now - interval '8 days 5 minutes')
     );
   END IF;
 
@@ -1203,7 +1202,7 @@ BEGIN
       phase_id, round_number, name, status, start_time, end_time
     ) VALUES (
       phase_id, 1, 'Round 1', 'completed'::phase_status,
-      (base_date - interval '1 days 10 hours'), (base_date - interval '1 days 9 hours 30 minutes')
+      (seed_now - interval '8 days 3 hours 56 minutes'), (seed_now - interval '8 days 3 hours 25 minutes')
     ) RETURNING id INTO round_id;
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -1216,8 +1215,8 @@ BEGIN
       2,
       'completed'::phase_status,
       1,
-      (base_date - interval '1 days 10 hours'),
-      (base_date - interval '1 days 9 hours 30 minutes')
+      (seed_now - interval '8 days 3 hours 56 minutes'),
+      (seed_now - interval '8 days 3 hours 25 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -1230,8 +1229,8 @@ BEGIN
       2,
       'completed'::phase_status,
       2,
-      (base_date - interval '1 days 10 hours'),
-      (base_date - interval '1 days 9 hours 30 minutes')
+      (seed_now - interval '8 days 3 hours 55 minutes'),
+      (seed_now - interval '8 days 3 hours 25 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -1244,8 +1243,8 @@ BEGIN
       2,
       'completed'::phase_status,
       3,
-      (base_date - interval '1 days 10 hours'),
-      (base_date - interval '1 days 9 hours 30 minutes')
+      (seed_now - interval '8 days 3 hours 55 minutes'),
+      (seed_now - interval '8 days 3 hours 25 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -1258,8 +1257,8 @@ BEGIN
       2,
       'completed'::phase_status,
       4,
-      (base_date - interval '1 days 10 hours'),
-      (base_date - interval '1 days 9 hours 30 minutes')
+      (seed_now - interval '8 days 3 hours 55 minutes'),
+      (seed_now - interval '8 days 3 hours 25 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -1272,8 +1271,8 @@ BEGIN
       0,
       'completed'::phase_status,
       5,
-      (base_date - interval '1 days 10 hours'),
-      (base_date - interval '1 days 9 hours 30 minutes')
+      (seed_now - interval '8 days 3 hours 55 minutes'),
+      (seed_now - interval '8 days 3 hours 25 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -1286,8 +1285,8 @@ BEGIN
       1,
       'completed'::phase_status,
       6,
-      (base_date - interval '1 days 10 hours'),
-      (base_date - interval '1 days 9 hours 30 minutes')
+      (seed_now - interval '8 days 3 hours 55 minutes'),
+      (seed_now - interval '8 days 3 hours 25 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -1300,8 +1299,8 @@ BEGIN
       2,
       'completed'::phase_status,
       7,
-      (base_date - interval '1 days 10 hours'),
-      (base_date - interval '1 days 9 hours 30 minutes')
+      (seed_now - interval '8 days 3 hours 55 minutes'),
+      (seed_now - interval '8 days 3 hours 25 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -1314,8 +1313,8 @@ BEGIN
       0,
       'completed'::phase_status,
       8,
-      (base_date - interval '1 days 10 hours'),
-      (base_date - interval '1 days 9 hours 30 minutes')
+      (seed_now - interval '8 days 3 hours 55 minutes'),
+      (seed_now - interval '8 days 3 hours 25 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -1328,8 +1327,8 @@ BEGIN
       2,
       'completed'::phase_status,
       9,
-      (base_date - interval '1 days 10 hours'),
-      (base_date - interval '1 days 9 hours 30 minutes')
+      (seed_now - interval '8 days 3 hours 55 minutes'),
+      (seed_now - interval '8 days 3 hours 25 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -1342,8 +1341,8 @@ BEGIN
       2,
       'completed'::phase_status,
       10,
-      (base_date - interval '1 days 10 hours'),
-      (base_date - interval '1 days 9 hours 30 minutes')
+      (seed_now - interval '8 days 3 hours 55 minutes'),
+      (seed_now - interval '8 days 3 hours 25 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -1356,8 +1355,8 @@ BEGIN
       1,
       'completed'::phase_status,
       11,
-      (base_date - interval '1 days 10 hours'),
-      (base_date - interval '1 days 9 hours 30 minutes')
+      (seed_now - interval '8 days 3 hours 55 minutes'),
+      (seed_now - interval '8 days 3 hours 25 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -1370,8 +1369,8 @@ BEGIN
       2,
       'completed'::phase_status,
       12,
-      (base_date - interval '1 days 10 hours'),
-      (base_date - interval '1 days 9 hours 30 minutes')
+      (seed_now - interval '8 days 3 hours 55 minutes'),
+      (seed_now - interval '8 days 3 hours 25 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -1384,8 +1383,8 @@ BEGIN
       2,
       'completed'::phase_status,
       13,
-      (base_date - interval '1 days 10 hours'),
-      (base_date - interval '1 days 9 hours 30 minutes')
+      (seed_now - interval '8 days 3 hours 55 minutes'),
+      (seed_now - interval '8 days 3 hours 25 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -1398,8 +1397,8 @@ BEGIN
       0,
       'completed'::phase_status,
       14,
-      (base_date - interval '1 days 10 hours'),
-      (base_date - interval '1 days 9 hours 30 minutes')
+      (seed_now - interval '8 days 3 hours 55 minutes'),
+      (seed_now - interval '8 days 3 hours 25 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -1412,8 +1411,8 @@ BEGIN
       2,
       'completed'::phase_status,
       15,
-      (base_date - interval '1 days 10 hours'),
-      (base_date - interval '1 days 9 hours 30 minutes')
+      (seed_now - interval '8 days 3 hours 55 minutes'),
+      (seed_now - interval '8 days 3 hours 25 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -1426,15 +1425,15 @@ BEGIN
       0,
       'completed'::phase_status,
       16,
-      (base_date - interval '1 days 10 hours'),
-      (base_date - interval '1 days 9 hours 30 minutes')
+      (seed_now - interval '8 days 3 hours 55 minutes'),
+      (seed_now - interval '8 days 3 hours 25 minutes')
     );
     -- Round 2
     INSERT INTO public.tournament_rounds (
       phase_id, round_number, name, status, start_time, end_time
     ) VALUES (
       phase_id, 2, 'Round 2', 'completed'::phase_status,
-      (base_date - interval '1 days 9 hours 10 minutes'), (base_date - interval '1 days 8 hours 40 minutes')
+      (seed_now - interval '8 days 3 hours 6 minutes'), (seed_now - interval '8 days 2 hours 35 minutes')
     ) RETURNING id INTO round_id;
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -1447,8 +1446,8 @@ BEGIN
       0,
       'completed'::phase_status,
       1,
-      (base_date - interval '1 days 9 hours 10 minutes'),
-      (base_date - interval '1 days 8 hours 40 minutes')
+      (seed_now - interval '8 days 3 hours 6 minutes'),
+      (seed_now - interval '8 days 2 hours 35 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -1461,8 +1460,8 @@ BEGIN
       2,
       'completed'::phase_status,
       2,
-      (base_date - interval '1 days 9 hours 10 minutes'),
-      (base_date - interval '1 days 8 hours 40 minutes')
+      (seed_now - interval '8 days 3 hours 5 minutes'),
+      (seed_now - interval '8 days 2 hours 35 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -1475,8 +1474,8 @@ BEGIN
       2,
       'completed'::phase_status,
       3,
-      (base_date - interval '1 days 9 hours 10 minutes'),
-      (base_date - interval '1 days 8 hours 40 minutes')
+      (seed_now - interval '8 days 3 hours 5 minutes'),
+      (seed_now - interval '8 days 2 hours 35 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -1489,8 +1488,8 @@ BEGIN
       2,
       'completed'::phase_status,
       4,
-      (base_date - interval '1 days 9 hours 10 minutes'),
-      (base_date - interval '1 days 8 hours 45 minutes')
+      (seed_now - interval '8 days 3 hours 5 minutes'),
+      (seed_now - interval '8 days 2 hours 40 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -1503,8 +1502,8 @@ BEGIN
       0,
       'completed'::phase_status,
       5,
-      (base_date - interval '1 days 9 hours 10 minutes'),
-      (base_date - interval '1 days 8 hours 45 minutes')
+      (seed_now - interval '8 days 3 hours 5 minutes'),
+      (seed_now - interval '8 days 2 hours 40 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -1517,8 +1516,8 @@ BEGIN
       0,
       'completed'::phase_status,
       6,
-      (base_date - interval '1 days 9 hours 10 minutes'),
-      (base_date - interval '1 days 8 hours 45 minutes')
+      (seed_now - interval '8 days 3 hours 5 minutes'),
+      (seed_now - interval '8 days 2 hours 40 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -1531,8 +1530,8 @@ BEGIN
       2,
       'completed'::phase_status,
       7,
-      (base_date - interval '1 days 9 hours 10 minutes'),
-      (base_date - interval '1 days 8 hours 45 minutes')
+      (seed_now - interval '8 days 3 hours 5 minutes'),
+      (seed_now - interval '8 days 2 hours 40 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -1545,15 +1544,15 @@ BEGIN
       0,
       'completed'::phase_status,
       8,
-      (base_date - interval '1 days 9 hours 10 minutes'),
-      (base_date - interval '1 days 8 hours 45 minutes')
+      (seed_now - interval '8 days 3 hours 5 minutes'),
+      (seed_now - interval '8 days 2 hours 40 minutes')
     );
     -- Round 3
     INSERT INTO public.tournament_rounds (
       phase_id, round_number, name, status, start_time, end_time
     ) VALUES (
       phase_id, 3, 'Round 3', 'completed'::phase_status,
-      (base_date - interval '1 days 8 hours 20 minutes'), (base_date - interval '1 days 7 hours 55 minutes')
+      (seed_now - interval '8 days 2 hours 16 minutes'), (seed_now - interval '8 days 1 hours 50 minutes')
     ) RETURNING id INTO round_id;
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -1566,8 +1565,8 @@ BEGIN
       0,
       'completed'::phase_status,
       1,
-      (base_date - interval '1 days 8 hours 20 minutes'),
-      (base_date - interval '1 days 7 hours 55 minutes')
+      (seed_now - interval '8 days 2 hours 16 minutes'),
+      (seed_now - interval '8 days 1 hours 50 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -1580,8 +1579,8 @@ BEGIN
       2,
       'completed'::phase_status,
       2,
-      (base_date - interval '1 days 8 hours 20 minutes'),
-      (base_date - interval '1 days 7 hours 55 minutes')
+      (seed_now - interval '8 days 2 hours 15 minutes'),
+      (seed_now - interval '8 days 1 hours 50 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -1594,8 +1593,8 @@ BEGIN
       1,
       'completed'::phase_status,
       3,
-      (base_date - interval '1 days 8 hours 20 minutes'),
-      (base_date - interval '1 days 7 hours 55 minutes')
+      (seed_now - interval '8 days 2 hours 15 minutes'),
+      (seed_now - interval '8 days 1 hours 50 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -1608,15 +1607,15 @@ BEGIN
       1,
       'completed'::phase_status,
       4,
-      (base_date - interval '1 days 8 hours 20 minutes'),
-      (base_date - interval '1 days 7 hours 55 minutes')
+      (seed_now - interval '8 days 2 hours 15 minutes'),
+      (seed_now - interval '8 days 1 hours 50 minutes')
     );
     -- Round 4
     INSERT INTO public.tournament_rounds (
       phase_id, round_number, name, status, start_time, end_time
     ) VALUES (
       phase_id, 4, 'Round 4', 'completed'::phase_status,
-      (base_date - interval '1 days 7 hours 30 minutes'), (base_date - interval '1 days 7 hours 5 minutes')
+      (seed_now - interval '8 days 1 hours 26 minutes'), (seed_now - interval '8 days 1 hours')
     ) RETURNING id INTO round_id;
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -1629,8 +1628,8 @@ BEGIN
       0,
       'completed'::phase_status,
       1,
-      (base_date - interval '1 days 7 hours 30 minutes'),
-      (base_date - interval '1 days 7 hours 5 minutes')
+      (seed_now - interval '8 days 1 hours 26 minutes'),
+      (seed_now - interval '8 days 1 hours')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -1643,15 +1642,15 @@ BEGIN
       2,
       'completed'::phase_status,
       2,
-      (base_date - interval '1 days 7 hours 30 minutes'),
-      (base_date - interval '1 days 7 hours 5 minutes')
+      (seed_now - interval '8 days 1 hours 25 minutes'),
+      (seed_now - interval '8 days 1 hours')
     );
     -- Round 5
     INSERT INTO public.tournament_rounds (
       phase_id, round_number, name, status, start_time, end_time
     ) VALUES (
       phase_id, 5, 'Round 5', 'completed'::phase_status,
-      (base_date - interval '1 days 6 hours 40 minutes'), (base_date - interval '1 days 6 hours 15 minutes')
+      (seed_now - interval '8 days 36 minutes'), (seed_now - interval '8 days 10 minutes')
     ) RETURNING id INTO round_id;
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -1664,8 +1663,8 @@ BEGIN
       1,
       'completed'::phase_status,
       1,
-      (base_date - interval '1 days 6 hours 40 minutes'),
-      (base_date - interval '1 days 6 hours 15 minutes')
+      (seed_now - interval '8 days 36 minutes'),
+      (seed_now - interval '8 days 10 minutes')
     );
   END IF;
 
@@ -1682,7 +1681,7 @@ BEGIN
       phase_id, round_number, name, status, start_time, end_time
     ) VALUES (
       phase_id, 1, 'Round 1', 'completed'::phase_status,
-      (base_date - interval '10 hours'), (base_date - interval '9 hours 34 minutes')
+      (seed_now - interval '7 days 3 hours 56 minutes'), (seed_now - interval '7 days 3 hours 30 minutes')
     ) RETURNING id INTO round_id;
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -1695,8 +1694,8 @@ BEGIN
       2,
       'completed'::phase_status,
       1,
-      (base_date - interval '10 hours'),
-      (base_date - interval '9 hours 35 minutes')
+      (seed_now - interval '7 days 3 hours 56 minutes'),
+      (seed_now - interval '7 days 3 hours 30 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -1709,8 +1708,8 @@ BEGIN
       1,
       'completed'::phase_status,
       2,
-      (base_date - interval '10 hours'),
-      (base_date - interval '9 hours 35 minutes')
+      (seed_now - interval '7 days 3 hours 55 minutes'),
+      (seed_now - interval '7 days 3 hours 30 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -1723,8 +1722,8 @@ BEGIN
       2,
       'completed'::phase_status,
       3,
-      (base_date - interval '10 hours'),
-      (base_date - interval '9 hours 35 minutes')
+      (seed_now - interval '7 days 3 hours 55 minutes'),
+      (seed_now - interval '7 days 3 hours 30 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -1737,8 +1736,8 @@ BEGIN
       2,
       'completed'::phase_status,
       4,
-      (base_date - interval '10 hours'),
-      (base_date - interval '9 hours 35 minutes')
+      (seed_now - interval '7 days 3 hours 55 minutes'),
+      (seed_now - interval '7 days 3 hours 30 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -1751,8 +1750,8 @@ BEGIN
       2,
       'completed'::phase_status,
       5,
-      (base_date - interval '10 hours'),
-      (base_date - interval '9 hours 35 minutes')
+      (seed_now - interval '7 days 3 hours 55 minutes'),
+      (seed_now - interval '7 days 3 hours 30 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -1765,8 +1764,8 @@ BEGIN
       2,
       'completed'::phase_status,
       6,
-      (base_date - interval '10 hours'),
-      (base_date - interval '9 hours 35 minutes')
+      (seed_now - interval '7 days 3 hours 55 minutes'),
+      (seed_now - interval '7 days 3 hours 30 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -1779,8 +1778,8 @@ BEGIN
       2,
       'completed'::phase_status,
       7,
-      (base_date - interval '10 hours'),
-      (base_date - interval '9 hours 35 minutes')
+      (seed_now - interval '7 days 3 hours 55 minutes'),
+      (seed_now - interval '7 days 3 hours 30 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -1793,8 +1792,8 @@ BEGIN
       0,
       'completed'::phase_status,
       8,
-      (base_date - interval '10 hours'),
-      (base_date - interval '9 hours 35 minutes')
+      (seed_now - interval '7 days 3 hours 55 minutes'),
+      (seed_now - interval '7 days 3 hours 30 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -1807,8 +1806,8 @@ BEGIN
       0,
       'completed'::phase_status,
       9,
-      (base_date - interval '10 hours'),
-      (base_date - interval '9 hours 35 minutes')
+      (seed_now - interval '7 days 3 hours 55 minutes'),
+      (seed_now - interval '7 days 3 hours 30 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -1821,8 +1820,8 @@ BEGIN
       2,
       'completed'::phase_status,
       10,
-      (base_date - interval '10 hours'),
-      (base_date - interval '9 hours 35 minutes')
+      (seed_now - interval '7 days 3 hours 55 minutes'),
+      (seed_now - interval '7 days 3 hours 30 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -1835,8 +1834,8 @@ BEGIN
       2,
       'completed'::phase_status,
       11,
-      (base_date - interval '10 hours'),
-      (base_date - interval '9 hours 34 minutes')
+      (seed_now - interval '7 days 3 hours 55 minutes'),
+      (seed_now - interval '7 days 3 hours 30 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -1849,8 +1848,8 @@ BEGIN
       2,
       'completed'::phase_status,
       12,
-      (base_date - interval '10 hours'),
-      (base_date - interval '9 hours 34 minutes')
+      (seed_now - interval '7 days 3 hours 55 minutes'),
+      (seed_now - interval '7 days 3 hours 30 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -1863,8 +1862,8 @@ BEGIN
       2,
       'completed'::phase_status,
       13,
-      (base_date - interval '10 hours'),
-      (base_date - interval '9 hours 34 minutes')
+      (seed_now - interval '7 days 3 hours 55 minutes'),
+      (seed_now - interval '7 days 3 hours 30 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -1877,8 +1876,8 @@ BEGIN
       2,
       'completed'::phase_status,
       14,
-      (base_date - interval '10 hours'),
-      (base_date - interval '9 hours 34 minutes')
+      (seed_now - interval '7 days 3 hours 55 minutes'),
+      (seed_now - interval '7 days 3 hours 30 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -1891,8 +1890,8 @@ BEGIN
       2,
       'completed'::phase_status,
       15,
-      (base_date - interval '10 hours'),
-      (base_date - interval '9 hours 34 minutes')
+      (seed_now - interval '7 days 3 hours 55 minutes'),
+      (seed_now - interval '7 days 3 hours 30 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -1905,15 +1904,15 @@ BEGIN
       2,
       'completed'::phase_status,
       16,
-      (base_date - interval '10 hours'),
-      (base_date - interval '9 hours 34 minutes')
+      (seed_now - interval '7 days 3 hours 55 minutes'),
+      (seed_now - interval '7 days 3 hours 30 minutes')
     );
     -- Round 2
     INSERT INTO public.tournament_rounds (
       phase_id, round_number, name, status, start_time, end_time
     ) VALUES (
       phase_id, 2, 'Round 2', 'completed'::phase_status,
-      (base_date - interval '9 hours 10 minutes'), (base_date - interval '8 hours 44 minutes')
+      (seed_now - interval '7 days 3 hours 6 minutes'), (seed_now - interval '7 days 2 hours 40 minutes')
     ) RETURNING id INTO round_id;
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -1926,8 +1925,8 @@ BEGIN
       2,
       'completed'::phase_status,
       1,
-      (base_date - interval '9 hours 10 minutes'),
-      (base_date - interval '8 hours 45 minutes')
+      (seed_now - interval '7 days 3 hours 6 minutes'),
+      (seed_now - interval '7 days 2 hours 40 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -1940,8 +1939,8 @@ BEGIN
       2,
       'completed'::phase_status,
       2,
-      (base_date - interval '9 hours 10 minutes'),
-      (base_date - interval '8 hours 45 minutes')
+      (seed_now - interval '7 days 3 hours 5 minutes'),
+      (seed_now - interval '7 days 2 hours 40 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -1954,8 +1953,8 @@ BEGIN
       2,
       'completed'::phase_status,
       3,
-      (base_date - interval '9 hours 10 minutes'),
-      (base_date - interval '8 hours 45 minutes')
+      (seed_now - interval '7 days 3 hours 5 minutes'),
+      (seed_now - interval '7 days 2 hours 40 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -1968,8 +1967,8 @@ BEGIN
       2,
       'completed'::phase_status,
       4,
-      (base_date - interval '9 hours 10 minutes'),
-      (base_date - interval '8 hours 45 minutes')
+      (seed_now - interval '7 days 3 hours 5 minutes'),
+      (seed_now - interval '7 days 2 hours 40 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -1982,8 +1981,8 @@ BEGIN
       0,
       'completed'::phase_status,
       5,
-      (base_date - interval '9 hours 10 minutes'),
-      (base_date - interval '8 hours 45 minutes')
+      (seed_now - interval '7 days 3 hours 5 minutes'),
+      (seed_now - interval '7 days 2 hours 40 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -1996,8 +1995,8 @@ BEGIN
       1,
       'completed'::phase_status,
       6,
-      (base_date - interval '9 hours 10 minutes'),
-      (base_date - interval '8 hours 45 minutes')
+      (seed_now - interval '7 days 3 hours 5 minutes'),
+      (seed_now - interval '7 days 2 hours 40 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -2010,8 +2009,8 @@ BEGIN
       1,
       'completed'::phase_status,
       7,
-      (base_date - interval '9 hours 10 minutes'),
-      (base_date - interval '8 hours 45 minutes')
+      (seed_now - interval '7 days 3 hours 5 minutes'),
+      (seed_now - interval '7 days 2 hours 40 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -2024,8 +2023,8 @@ BEGIN
       2,
       'completed'::phase_status,
       8,
-      (base_date - interval '9 hours 10 minutes'),
-      (base_date - interval '8 hours 45 minutes')
+      (seed_now - interval '7 days 3 hours 5 minutes'),
+      (seed_now - interval '7 days 2 hours 40 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -2038,8 +2037,8 @@ BEGIN
       1,
       'completed'::phase_status,
       9,
-      (base_date - interval '9 hours 10 minutes'),
-      (base_date - interval '8 hours 45 minutes')
+      (seed_now - interval '7 days 3 hours 5 minutes'),
+      (seed_now - interval '7 days 2 hours 40 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -2052,8 +2051,8 @@ BEGIN
       2,
       'completed'::phase_status,
       10,
-      (base_date - interval '9 hours 10 minutes'),
-      (base_date - interval '8 hours 45 minutes')
+      (seed_now - interval '7 days 3 hours 5 minutes'),
+      (seed_now - interval '7 days 2 hours 40 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -2066,8 +2065,8 @@ BEGIN
       1,
       'completed'::phase_status,
       11,
-      (base_date - interval '9 hours 10 minutes'),
-      (base_date - interval '8 hours 44 minutes')
+      (seed_now - interval '7 days 3 hours 5 minutes'),
+      (seed_now - interval '7 days 2 hours 40 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -2080,8 +2079,8 @@ BEGIN
       2,
       'completed'::phase_status,
       12,
-      (base_date - interval '9 hours 10 minutes'),
-      (base_date - interval '8 hours 44 minutes')
+      (seed_now - interval '7 days 3 hours 5 minutes'),
+      (seed_now - interval '7 days 2 hours 40 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -2094,8 +2093,8 @@ BEGIN
       2,
       'completed'::phase_status,
       13,
-      (base_date - interval '9 hours 10 minutes'),
-      (base_date - interval '8 hours 44 minutes')
+      (seed_now - interval '7 days 3 hours 5 minutes'),
+      (seed_now - interval '7 days 2 hours 40 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -2108,8 +2107,8 @@ BEGIN
       2,
       'completed'::phase_status,
       14,
-      (base_date - interval '9 hours 10 minutes'),
-      (base_date - interval '8 hours 44 minutes')
+      (seed_now - interval '7 days 3 hours 5 minutes'),
+      (seed_now - interval '7 days 2 hours 40 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -2122,8 +2121,8 @@ BEGIN
       0,
       'completed'::phase_status,
       15,
-      (base_date - interval '9 hours 10 minutes'),
-      (base_date - interval '8 hours 44 minutes')
+      (seed_now - interval '7 days 3 hours 5 minutes'),
+      (seed_now - interval '7 days 2 hours 40 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -2136,15 +2135,15 @@ BEGIN
       2,
       'completed'::phase_status,
       16,
-      (base_date - interval '9 hours 10 minutes'),
-      (base_date - interval '8 hours 44 minutes')
+      (seed_now - interval '7 days 3 hours 5 minutes'),
+      (seed_now - interval '7 days 2 hours 40 minutes')
     );
     -- Round 3
     INSERT INTO public.tournament_rounds (
       phase_id, round_number, name, status, start_time, end_time
     ) VALUES (
       phase_id, 3, 'Round 3', 'completed'::phase_status,
-      (base_date - interval '8 hours 20 minutes'), (base_date - interval '7 hours 54 minutes')
+      (seed_now - interval '7 days 2 hours 16 minutes'), (seed_now - interval '7 days 1 hours 50 minutes')
     ) RETURNING id INTO round_id;
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -2157,8 +2156,8 @@ BEGIN
       2,
       'completed'::phase_status,
       1,
-      (base_date - interval '8 hours 20 minutes'),
-      (base_date - interval '7 hours 55 minutes')
+      (seed_now - interval '7 days 2 hours 16 minutes'),
+      (seed_now - interval '7 days 1 hours 50 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -2171,8 +2170,8 @@ BEGIN
       0,
       'completed'::phase_status,
       2,
-      (base_date - interval '8 hours 20 minutes'),
-      (base_date - interval '7 hours 55 minutes')
+      (seed_now - interval '7 days 2 hours 15 minutes'),
+      (seed_now - interval '7 days 1 hours 50 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -2185,8 +2184,8 @@ BEGIN
       1,
       'completed'::phase_status,
       3,
-      (base_date - interval '8 hours 20 minutes'),
-      (base_date - interval '7 hours 55 minutes')
+      (seed_now - interval '7 days 2 hours 15 minutes'),
+      (seed_now - interval '7 days 1 hours 50 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -2199,8 +2198,8 @@ BEGIN
       2,
       'completed'::phase_status,
       4,
-      (base_date - interval '8 hours 20 minutes'),
-      (base_date - interval '7 hours 55 minutes')
+      (seed_now - interval '7 days 2 hours 15 minutes'),
+      (seed_now - interval '7 days 1 hours 50 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -2213,8 +2212,8 @@ BEGIN
       0,
       'completed'::phase_status,
       5,
-      (base_date - interval '8 hours 20 minutes'),
-      (base_date - interval '7 hours 55 minutes')
+      (seed_now - interval '7 days 2 hours 15 minutes'),
+      (seed_now - interval '7 days 1 hours 50 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -2227,8 +2226,8 @@ BEGIN
       2,
       'completed'::phase_status,
       6,
-      (base_date - interval '8 hours 20 minutes'),
-      (base_date - interval '7 hours 55 minutes')
+      (seed_now - interval '7 days 2 hours 15 minutes'),
+      (seed_now - interval '7 days 1 hours 50 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -2241,8 +2240,8 @@ BEGIN
       2,
       'completed'::phase_status,
       7,
-      (base_date - interval '8 hours 20 minutes'),
-      (base_date - interval '7 hours 55 minutes')
+      (seed_now - interval '7 days 2 hours 15 minutes'),
+      (seed_now - interval '7 days 1 hours 50 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -2255,8 +2254,8 @@ BEGIN
       1,
       'completed'::phase_status,
       8,
-      (base_date - interval '8 hours 20 minutes'),
-      (base_date - interval '7 hours 55 minutes')
+      (seed_now - interval '7 days 2 hours 15 minutes'),
+      (seed_now - interval '7 days 1 hours 50 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -2269,8 +2268,8 @@ BEGIN
       2,
       'completed'::phase_status,
       9,
-      (base_date - interval '8 hours 20 minutes'),
-      (base_date - interval '7 hours 55 minutes')
+      (seed_now - interval '7 days 2 hours 15 minutes'),
+      (seed_now - interval '7 days 1 hours 50 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -2283,8 +2282,8 @@ BEGIN
       0,
       'completed'::phase_status,
       10,
-      (base_date - interval '8 hours 20 minutes'),
-      (base_date - interval '7 hours 55 minutes')
+      (seed_now - interval '7 days 2 hours 15 minutes'),
+      (seed_now - interval '7 days 1 hours 50 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -2297,8 +2296,8 @@ BEGIN
       0,
       'completed'::phase_status,
       11,
-      (base_date - interval '8 hours 20 minutes'),
-      (base_date - interval '7 hours 54 minutes')
+      (seed_now - interval '7 days 2 hours 15 minutes'),
+      (seed_now - interval '7 days 1 hours 50 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -2311,8 +2310,8 @@ BEGIN
       2,
       'completed'::phase_status,
       12,
-      (base_date - interval '8 hours 20 minutes'),
-      (base_date - interval '7 hours 54 minutes')
+      (seed_now - interval '7 days 2 hours 15 minutes'),
+      (seed_now - interval '7 days 1 hours 50 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -2325,8 +2324,8 @@ BEGIN
       2,
       'completed'::phase_status,
       13,
-      (base_date - interval '8 hours 20 minutes'),
-      (base_date - interval '7 hours 54 minutes')
+      (seed_now - interval '7 days 2 hours 15 minutes'),
+      (seed_now - interval '7 days 1 hours 50 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -2339,8 +2338,8 @@ BEGIN
       1,
       'completed'::phase_status,
       14,
-      (base_date - interval '8 hours 20 minutes'),
-      (base_date - interval '7 hours 54 minutes')
+      (seed_now - interval '7 days 2 hours 15 minutes'),
+      (seed_now - interval '7 days 1 hours 50 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -2353,8 +2352,8 @@ BEGIN
       0,
       'completed'::phase_status,
       15,
-      (base_date - interval '8 hours 20 minutes'),
-      (base_date - interval '7 hours 54 minutes')
+      (seed_now - interval '7 days 2 hours 15 minutes'),
+      (seed_now - interval '7 days 1 hours 50 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -2367,15 +2366,15 @@ BEGIN
       0,
       'completed'::phase_status,
       16,
-      (base_date - interval '8 hours 20 minutes'),
-      (base_date - interval '7 hours 54 minutes')
+      (seed_now - interval '7 days 2 hours 15 minutes'),
+      (seed_now - interval '7 days 1 hours 50 minutes')
     );
     -- Round 4
     INSERT INTO public.tournament_rounds (
       phase_id, round_number, name, status, start_time, end_time
     ) VALUES (
       phase_id, 4, 'Round 4', 'completed'::phase_status,
-      (base_date - interval '7 hours 30 minutes'), (base_date - interval '7 hours 4 minutes')
+      (seed_now - interval '7 days 1 hours 26 minutes'), (seed_now - interval '7 days 1 hours')
     ) RETURNING id INTO round_id;
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -2388,8 +2387,8 @@ BEGIN
       2,
       'completed'::phase_status,
       1,
-      (base_date - interval '7 hours 30 minutes'),
-      (base_date - interval '7 hours 5 minutes')
+      (seed_now - interval '7 days 1 hours 26 minutes'),
+      (seed_now - interval '7 days 1 hours')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -2402,8 +2401,8 @@ BEGIN
       2,
       'completed'::phase_status,
       2,
-      (base_date - interval '7 hours 30 minutes'),
-      (base_date - interval '7 hours 5 minutes')
+      (seed_now - interval '7 days 1 hours 25 minutes'),
+      (seed_now - interval '7 days 1 hours')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -2416,8 +2415,8 @@ BEGIN
       1,
       'completed'::phase_status,
       3,
-      (base_date - interval '7 hours 30 minutes'),
-      (base_date - interval '7 hours 5 minutes')
+      (seed_now - interval '7 days 1 hours 25 minutes'),
+      (seed_now - interval '7 days 1 hours')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -2430,8 +2429,8 @@ BEGIN
       2,
       'completed'::phase_status,
       4,
-      (base_date - interval '7 hours 30 minutes'),
-      (base_date - interval '7 hours 5 minutes')
+      (seed_now - interval '7 days 1 hours 25 minutes'),
+      (seed_now - interval '7 days 1 hours')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -2444,8 +2443,8 @@ BEGIN
       2,
       'completed'::phase_status,
       5,
-      (base_date - interval '7 hours 30 minutes'),
-      (base_date - interval '7 hours 5 minutes')
+      (seed_now - interval '7 days 1 hours 25 minutes'),
+      (seed_now - interval '7 days 1 hours')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -2458,8 +2457,8 @@ BEGIN
       2,
       'completed'::phase_status,
       6,
-      (base_date - interval '7 hours 30 minutes'),
-      (base_date - interval '7 hours 5 minutes')
+      (seed_now - interval '7 days 1 hours 25 minutes'),
+      (seed_now - interval '7 days 1 hours')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -2472,8 +2471,8 @@ BEGIN
       0,
       'completed'::phase_status,
       7,
-      (base_date - interval '7 hours 30 minutes'),
-      (base_date - interval '7 hours 5 minutes')
+      (seed_now - interval '7 days 1 hours 25 minutes'),
+      (seed_now - interval '7 days 1 hours')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -2486,8 +2485,8 @@ BEGIN
       2,
       'completed'::phase_status,
       8,
-      (base_date - interval '7 hours 30 minutes'),
-      (base_date - interval '7 hours 5 minutes')
+      (seed_now - interval '7 days 1 hours 25 minutes'),
+      (seed_now - interval '7 days 1 hours')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -2500,8 +2499,8 @@ BEGIN
       2,
       'completed'::phase_status,
       9,
-      (base_date - interval '7 hours 30 minutes'),
-      (base_date - interval '7 hours 5 minutes')
+      (seed_now - interval '7 days 1 hours 25 minutes'),
+      (seed_now - interval '7 days 1 hours')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -2514,8 +2513,8 @@ BEGIN
       2,
       'completed'::phase_status,
       10,
-      (base_date - interval '7 hours 30 minutes'),
-      (base_date - interval '7 hours 5 minutes')
+      (seed_now - interval '7 days 1 hours 25 minutes'),
+      (seed_now - interval '7 days 1 hours')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -2528,8 +2527,8 @@ BEGIN
       0,
       'completed'::phase_status,
       11,
-      (base_date - interval '7 hours 30 minutes'),
-      (base_date - interval '7 hours 4 minutes')
+      (seed_now - interval '7 days 1 hours 25 minutes'),
+      (seed_now - interval '7 days 1 hours')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -2542,8 +2541,8 @@ BEGIN
       0,
       'completed'::phase_status,
       12,
-      (base_date - interval '7 hours 30 minutes'),
-      (base_date - interval '7 hours 4 minutes')
+      (seed_now - interval '7 days 1 hours 25 minutes'),
+      (seed_now - interval '7 days 1 hours')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -2556,8 +2555,8 @@ BEGIN
       0,
       'completed'::phase_status,
       13,
-      (base_date - interval '7 hours 30 minutes'),
-      (base_date - interval '7 hours 4 minutes')
+      (seed_now - interval '7 days 1 hours 25 minutes'),
+      (seed_now - interval '7 days 1 hours')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -2570,8 +2569,8 @@ BEGIN
       2,
       'completed'::phase_status,
       14,
-      (base_date - interval '7 hours 30 minutes'),
-      (base_date - interval '7 hours 4 minutes')
+      (seed_now - interval '7 days 1 hours 25 minutes'),
+      (seed_now - interval '7 days 1 hours')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -2584,8 +2583,8 @@ BEGIN
       0,
       'completed'::phase_status,
       15,
-      (base_date - interval '7 hours 30 minutes'),
-      (base_date - interval '7 hours 4 minutes')
+      (seed_now - interval '7 days 1 hours 25 minutes'),
+      (seed_now - interval '7 days 1 hours')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -2598,15 +2597,15 @@ BEGIN
       2,
       'completed'::phase_status,
       16,
-      (base_date - interval '7 hours 30 minutes'),
-      (base_date - interval '7 hours 4 minutes')
+      (seed_now - interval '7 days 1 hours 25 minutes'),
+      (seed_now - interval '7 days 1 hours')
     );
     -- Round 5
     INSERT INTO public.tournament_rounds (
       phase_id, round_number, name, status, start_time, end_time
     ) VALUES (
       phase_id, 5, 'Round 5', 'completed'::phase_status,
-      (base_date - interval '6 hours 40 minutes'), (base_date - interval '6 hours 14 minutes')
+      (seed_now - interval '7 days 36 minutes'), (seed_now - interval '7 days 10 minutes')
     ) RETURNING id INTO round_id;
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -2619,8 +2618,8 @@ BEGIN
       0,
       'completed'::phase_status,
       1,
-      (base_date - interval '6 hours 40 minutes'),
-      (base_date - interval '6 hours 15 minutes')
+      (seed_now - interval '7 days 36 minutes'),
+      (seed_now - interval '7 days 10 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -2633,8 +2632,8 @@ BEGIN
       2,
       'completed'::phase_status,
       2,
-      (base_date - interval '6 hours 40 minutes'),
-      (base_date - interval '6 hours 15 minutes')
+      (seed_now - interval '7 days 35 minutes'),
+      (seed_now - interval '7 days 10 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -2647,8 +2646,8 @@ BEGIN
       2,
       'completed'::phase_status,
       3,
-      (base_date - interval '6 hours 40 minutes'),
-      (base_date - interval '6 hours 15 minutes')
+      (seed_now - interval '7 days 35 minutes'),
+      (seed_now - interval '7 days 10 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -2661,8 +2660,8 @@ BEGIN
       0,
       'completed'::phase_status,
       4,
-      (base_date - interval '6 hours 40 minutes'),
-      (base_date - interval '6 hours 15 minutes')
+      (seed_now - interval '7 days 35 minutes'),
+      (seed_now - interval '7 days 10 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -2675,8 +2674,8 @@ BEGIN
       2,
       'completed'::phase_status,
       5,
-      (base_date - interval '6 hours 40 minutes'),
-      (base_date - interval '6 hours 15 minutes')
+      (seed_now - interval '7 days 35 minutes'),
+      (seed_now - interval '7 days 10 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -2689,8 +2688,8 @@ BEGIN
       2,
       'completed'::phase_status,
       6,
-      (base_date - interval '6 hours 40 minutes'),
-      (base_date - interval '6 hours 15 minutes')
+      (seed_now - interval '7 days 35 minutes'),
+      (seed_now - interval '7 days 10 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -2703,8 +2702,8 @@ BEGIN
       2,
       'completed'::phase_status,
       7,
-      (base_date - interval '6 hours 40 minutes'),
-      (base_date - interval '6 hours 15 minutes')
+      (seed_now - interval '7 days 35 minutes'),
+      (seed_now - interval '7 days 10 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -2717,8 +2716,8 @@ BEGIN
       2,
       'completed'::phase_status,
       8,
-      (base_date - interval '6 hours 40 minutes'),
-      (base_date - interval '6 hours 15 minutes')
+      (seed_now - interval '7 days 35 minutes'),
+      (seed_now - interval '7 days 10 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -2731,8 +2730,8 @@ BEGIN
       0,
       'completed'::phase_status,
       9,
-      (base_date - interval '6 hours 40 minutes'),
-      (base_date - interval '6 hours 15 minutes')
+      (seed_now - interval '7 days 35 minutes'),
+      (seed_now - interval '7 days 10 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -2745,8 +2744,8 @@ BEGIN
       2,
       'completed'::phase_status,
       10,
-      (base_date - interval '6 hours 40 minutes'),
-      (base_date - interval '6 hours 15 minutes')
+      (seed_now - interval '7 days 35 minutes'),
+      (seed_now - interval '7 days 10 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -2759,8 +2758,8 @@ BEGIN
       0,
       'completed'::phase_status,
       11,
-      (base_date - interval '6 hours 40 minutes'),
-      (base_date - interval '6 hours 14 minutes')
+      (seed_now - interval '7 days 35 minutes'),
+      (seed_now - interval '7 days 10 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -2773,8 +2772,8 @@ BEGIN
       0,
       'completed'::phase_status,
       12,
-      (base_date - interval '6 hours 40 minutes'),
-      (base_date - interval '6 hours 14 minutes')
+      (seed_now - interval '7 days 35 minutes'),
+      (seed_now - interval '7 days 10 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -2787,8 +2786,8 @@ BEGIN
       1,
       'completed'::phase_status,
       13,
-      (base_date - interval '6 hours 40 minutes'),
-      (base_date - interval '6 hours 14 minutes')
+      (seed_now - interval '7 days 35 minutes'),
+      (seed_now - interval '7 days 10 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -2801,8 +2800,8 @@ BEGIN
       2,
       'completed'::phase_status,
       14,
-      (base_date - interval '6 hours 40 minutes'),
-      (base_date - interval '6 hours 14 minutes')
+      (seed_now - interval '7 days 35 minutes'),
+      (seed_now - interval '7 days 10 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -2815,8 +2814,8 @@ BEGIN
       0,
       'completed'::phase_status,
       15,
-      (base_date - interval '6 hours 40 minutes'),
-      (base_date - interval '6 hours 14 minutes')
+      (seed_now - interval '7 days 35 minutes'),
+      (seed_now - interval '7 days 10 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -2829,8 +2828,8 @@ BEGIN
       2,
       'completed'::phase_status,
       16,
-      (base_date - interval '6 hours 40 minutes'),
-      (base_date - interval '6 hours 14 minutes')
+      (seed_now - interval '7 days 35 minutes'),
+      (seed_now - interval '7 days 10 minutes')
     );
   END IF;
 
@@ -2846,7 +2845,7 @@ BEGIN
       phase_id, round_number, name, status, start_time, end_time
     ) VALUES (
       phase_id, 1, 'Round 1', 'completed'::phase_status,
-      (base_date - interval '10 hours'), (base_date - interval '9 hours 34 minutes')
+      (seed_now - interval '7 days 3 hours 56 minutes'), (seed_now - interval '7 days 3 hours 30 minutes')
     ) RETURNING id INTO round_id;
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -2859,8 +2858,8 @@ BEGIN
       0,
       'completed'::phase_status,
       1,
-      (base_date - interval '10 hours'),
-      (base_date - interval '9 hours 35 minutes')
+      (seed_now - interval '7 days 3 hours 56 minutes'),
+      (seed_now - interval '7 days 3 hours 30 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -2873,8 +2872,8 @@ BEGIN
       2,
       'completed'::phase_status,
       2,
-      (base_date - interval '10 hours'),
-      (base_date - interval '9 hours 35 minutes')
+      (seed_now - interval '7 days 3 hours 55 minutes'),
+      (seed_now - interval '7 days 3 hours 30 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -2887,8 +2886,8 @@ BEGIN
       0,
       'completed'::phase_status,
       3,
-      (base_date - interval '10 hours'),
-      (base_date - interval '9 hours 35 minutes')
+      (seed_now - interval '7 days 3 hours 55 minutes'),
+      (seed_now - interval '7 days 3 hours 30 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -2901,8 +2900,8 @@ BEGIN
       2,
       'completed'::phase_status,
       4,
-      (base_date - interval '10 hours'),
-      (base_date - interval '9 hours 35 minutes')
+      (seed_now - interval '7 days 3 hours 55 minutes'),
+      (seed_now - interval '7 days 3 hours 30 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -2915,8 +2914,8 @@ BEGIN
       2,
       'completed'::phase_status,
       5,
-      (base_date - interval '10 hours'),
-      (base_date - interval '9 hours 35 minutes')
+      (seed_now - interval '7 days 3 hours 55 minutes'),
+      (seed_now - interval '7 days 3 hours 30 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -2929,8 +2928,8 @@ BEGIN
       2,
       'completed'::phase_status,
       6,
-      (base_date - interval '10 hours'),
-      (base_date - interval '9 hours 35 minutes')
+      (seed_now - interval '7 days 3 hours 55 minutes'),
+      (seed_now - interval '7 days 3 hours 30 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -2943,8 +2942,8 @@ BEGIN
       0,
       'completed'::phase_status,
       7,
-      (base_date - interval '10 hours'),
-      (base_date - interval '9 hours 35 minutes')
+      (seed_now - interval '7 days 3 hours 55 minutes'),
+      (seed_now - interval '7 days 3 hours 30 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -2957,8 +2956,8 @@ BEGIN
       2,
       'completed'::phase_status,
       8,
-      (base_date - interval '10 hours'),
-      (base_date - interval '9 hours 35 minutes')
+      (seed_now - interval '7 days 3 hours 55 minutes'),
+      (seed_now - interval '7 days 3 hours 30 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -2971,8 +2970,8 @@ BEGIN
       0,
       'completed'::phase_status,
       9,
-      (base_date - interval '10 hours'),
-      (base_date - interval '9 hours 35 minutes')
+      (seed_now - interval '7 days 3 hours 55 minutes'),
+      (seed_now - interval '7 days 3 hours 30 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -2985,8 +2984,8 @@ BEGIN
       2,
       'completed'::phase_status,
       10,
-      (base_date - interval '10 hours'),
-      (base_date - interval '9 hours 35 minutes')
+      (seed_now - interval '7 days 3 hours 55 minutes'),
+      (seed_now - interval '7 days 3 hours 30 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -2999,8 +2998,8 @@ BEGIN
       0,
       'completed'::phase_status,
       11,
-      (base_date - interval '10 hours'),
-      (base_date - interval '9 hours 34 minutes')
+      (seed_now - interval '7 days 3 hours 55 minutes'),
+      (seed_now - interval '7 days 3 hours 30 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -3013,8 +3012,8 @@ BEGIN
       2,
       'completed'::phase_status,
       12,
-      (base_date - interval '10 hours'),
-      (base_date - interval '9 hours 34 minutes')
+      (seed_now - interval '7 days 3 hours 55 minutes'),
+      (seed_now - interval '7 days 3 hours 30 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -3027,8 +3026,8 @@ BEGIN
       0,
       'completed'::phase_status,
       13,
-      (base_date - interval '10 hours'),
-      (base_date - interval '9 hours 34 minutes')
+      (seed_now - interval '7 days 3 hours 55 minutes'),
+      (seed_now - interval '7 days 3 hours 30 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -3041,8 +3040,8 @@ BEGIN
       2,
       'completed'::phase_status,
       14,
-      (base_date - interval '10 hours'),
-      (base_date - interval '9 hours 34 minutes')
+      (seed_now - interval '7 days 3 hours 55 minutes'),
+      (seed_now - interval '7 days 3 hours 30 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -3055,8 +3054,8 @@ BEGIN
       2,
       'completed'::phase_status,
       15,
-      (base_date - interval '10 hours'),
-      (base_date - interval '9 hours 34 minutes')
+      (seed_now - interval '7 days 3 hours 55 minutes'),
+      (seed_now - interval '7 days 3 hours 30 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -3069,15 +3068,15 @@ BEGIN
       0,
       'completed'::phase_status,
       16,
-      (base_date - interval '10 hours'),
-      (base_date - interval '9 hours 34 minutes')
+      (seed_now - interval '7 days 3 hours 55 minutes'),
+      (seed_now - interval '7 days 3 hours 30 minutes')
     );
     -- Round 2
     INSERT INTO public.tournament_rounds (
       phase_id, round_number, name, status, start_time, end_time
     ) VALUES (
       phase_id, 2, 'Round 2', 'completed'::phase_status,
-      (base_date - interval '9 hours 10 minutes'), (base_date - interval '8 hours 45 minutes')
+      (seed_now - interval '7 days 3 hours 6 minutes'), (seed_now - interval '7 days 2 hours 40 minutes')
     ) RETURNING id INTO round_id;
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -3090,8 +3089,8 @@ BEGIN
       2,
       'completed'::phase_status,
       1,
-      (base_date - interval '9 hours 10 minutes'),
-      (base_date - interval '8 hours 45 minutes')
+      (seed_now - interval '7 days 3 hours 6 minutes'),
+      (seed_now - interval '7 days 2 hours 40 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -3104,8 +3103,8 @@ BEGIN
       2,
       'completed'::phase_status,
       2,
-      (base_date - interval '9 hours 10 minutes'),
-      (base_date - interval '8 hours 45 minutes')
+      (seed_now - interval '7 days 3 hours 5 minutes'),
+      (seed_now - interval '7 days 2 hours 40 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -3118,8 +3117,8 @@ BEGIN
       0,
       'completed'::phase_status,
       3,
-      (base_date - interval '9 hours 10 minutes'),
-      (base_date - interval '8 hours 45 minutes')
+      (seed_now - interval '7 days 3 hours 5 minutes'),
+      (seed_now - interval '7 days 2 hours 40 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -3132,8 +3131,8 @@ BEGIN
       0,
       'completed'::phase_status,
       4,
-      (base_date - interval '9 hours 10 minutes'),
-      (base_date - interval '8 hours 45 minutes')
+      (seed_now - interval '7 days 3 hours 5 minutes'),
+      (seed_now - interval '7 days 2 hours 40 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -3146,8 +3145,8 @@ BEGIN
       0,
       'completed'::phase_status,
       5,
-      (base_date - interval '9 hours 10 minutes'),
-      (base_date - interval '8 hours 45 minutes')
+      (seed_now - interval '7 days 3 hours 5 minutes'),
+      (seed_now - interval '7 days 2 hours 40 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -3160,8 +3159,8 @@ BEGIN
       0,
       'completed'::phase_status,
       6,
-      (base_date - interval '9 hours 10 minutes'),
-      (base_date - interval '8 hours 45 minutes')
+      (seed_now - interval '7 days 3 hours 5 minutes'),
+      (seed_now - interval '7 days 2 hours 40 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -3174,8 +3173,8 @@ BEGIN
       0,
       'completed'::phase_status,
       7,
-      (base_date - interval '9 hours 10 minutes'),
-      (base_date - interval '8 hours 45 minutes')
+      (seed_now - interval '7 days 3 hours 5 minutes'),
+      (seed_now - interval '7 days 2 hours 40 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -3188,15 +3187,15 @@ BEGIN
       2,
       'completed'::phase_status,
       8,
-      (base_date - interval '9 hours 10 minutes'),
-      (base_date - interval '8 hours 45 minutes')
+      (seed_now - interval '7 days 3 hours 5 minutes'),
+      (seed_now - interval '7 days 2 hours 40 minutes')
     );
     -- Round 3
     INSERT INTO public.tournament_rounds (
       phase_id, round_number, name, status, start_time, end_time
     ) VALUES (
       phase_id, 3, 'Round 3', 'completed'::phase_status,
-      (base_date - interval '8 hours 20 minutes'), (base_date - interval '7 hours 55 minutes')
+      (seed_now - interval '7 days 2 hours 16 minutes'), (seed_now - interval '7 days 1 hours 50 minutes')
     ) RETURNING id INTO round_id;
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -3209,8 +3208,8 @@ BEGIN
       2,
       'completed'::phase_status,
       1,
-      (base_date - interval '8 hours 20 minutes'),
-      (base_date - interval '7 hours 55 minutes')
+      (seed_now - interval '7 days 2 hours 16 minutes'),
+      (seed_now - interval '7 days 1 hours 50 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -3223,8 +3222,8 @@ BEGIN
       2,
       'completed'::phase_status,
       2,
-      (base_date - interval '8 hours 20 minutes'),
-      (base_date - interval '7 hours 55 minutes')
+      (seed_now - interval '7 days 2 hours 15 minutes'),
+      (seed_now - interval '7 days 1 hours 50 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -3237,8 +3236,8 @@ BEGIN
       1,
       'completed'::phase_status,
       3,
-      (base_date - interval '8 hours 20 minutes'),
-      (base_date - interval '7 hours 55 minutes')
+      (seed_now - interval '7 days 2 hours 15 minutes'),
+      (seed_now - interval '7 days 1 hours 50 minutes')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -3251,15 +3250,15 @@ BEGIN
       2,
       'completed'::phase_status,
       4,
-      (base_date - interval '8 hours 20 minutes'),
-      (base_date - interval '7 hours 55 minutes')
+      (seed_now - interval '7 days 2 hours 15 minutes'),
+      (seed_now - interval '7 days 1 hours 50 minutes')
     );
     -- Round 4
     INSERT INTO public.tournament_rounds (
       phase_id, round_number, name, status, start_time, end_time
     ) VALUES (
       phase_id, 4, 'Round 4', 'completed'::phase_status,
-      (base_date - interval '7 hours 30 minutes'), (base_date - interval '7 hours 5 minutes')
+      (seed_now - interval '7 days 1 hours 26 minutes'), (seed_now - interval '7 days 1 hours')
     ) RETURNING id INTO round_id;
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -3272,8 +3271,8 @@ BEGIN
       0,
       'completed'::phase_status,
       1,
-      (base_date - interval '7 hours 30 minutes'),
-      (base_date - interval '7 hours 5 minutes')
+      (seed_now - interval '7 days 1 hours 26 minutes'),
+      (seed_now - interval '7 days 1 hours')
     );
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -3286,15 +3285,15 @@ BEGIN
       1,
       'completed'::phase_status,
       2,
-      (base_date - interval '7 hours 30 minutes'),
-      (base_date - interval '7 hours 5 minutes')
+      (seed_now - interval '7 days 1 hours 25 minutes'),
+      (seed_now - interval '7 days 1 hours')
     );
     -- Round 5
     INSERT INTO public.tournament_rounds (
       phase_id, round_number, name, status, start_time, end_time
     ) VALUES (
       phase_id, 5, 'Round 5', 'completed'::phase_status,
-      (base_date - interval '6 hours 40 minutes'), (base_date - interval '6 hours 15 minutes')
+      (seed_now - interval '7 days 36 minutes'), (seed_now - interval '7 days 10 minutes')
     ) RETURNING id INTO round_id;
     INSERT INTO public.tournament_matches (
       round_id, alt1_id, alt2_id, winner_alt_id, game_wins1, game_wins2, status, table_number, start_time, end_time
@@ -3307,8 +3306,8 @@ BEGIN
       2,
       'completed'::phase_status,
       1,
-      (base_date - interval '6 hours 40 minutes'),
-      (base_date - interval '6 hours 15 minutes')
+      (seed_now - interval '7 days 36 minutes'),
+      (seed_now - interval '7 days 10 minutes')
     );
   END IF;
 

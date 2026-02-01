@@ -2,19 +2,18 @@
 -- 10_tournaments.sql - Create Tournaments, Phases, and Registrations
 -- =============================================================================
 -- GENERATED FILE - DO NOT EDIT MANUALLY
--- Generated at: 2026-02-01T23:33:10.283Z
+-- Generated at: 2026-02-01T23:55:30.237Z
 -- IDEMPOTENT: Uses ON CONFLICT and existence checks
 -- =============================================================================
 
 -- IDEMPOTENT: Uses ON CONFLICT DO NOTHING
 -- Depends on: 03_users.sql, 04_organizations.sql
 -- NOTE: All dates use relative expressions (interval offsets from
--- date_trunc('week', NOW())) so seed data never goes stale.
+-- NOW()) so seed data never goes stale.
 -- =============================================================================
 
 DO $$
 DECLARE
-  base_date timestamptz := date_trunc('week', NOW());
   seed_now timestamptz := NOW();
   vgc_league_id bigint;
   pallet_town_id bigint;
@@ -46,7 +45,7 @@ BEGIN
     vgc_league_id, 'VGC League Week 1 Championship', 'vgc-league-week-01',
     'VGC League tournament for week 1',
     'VGC', 'upcoming',
-    (base_date - interval '1 days 10 hours'), (base_date - interval '1 days 4 hours'), 32,
+    (seed_now - interval '8 days 3 hours 56 minutes'), (seed_now - interval '7 days 21 hours 56 minutes'), 32,
     'swiss_with_cut', 5, 50, false, 4
   ) RETURNING id INTO tournament_1_id;
 
@@ -58,7 +57,7 @@ BEGIN
     pallet_town_id, 'Pallet Town Trainers Week 1 Championship', 'pallet-town-week-01',
     'Pallet Town Trainers tournament for week 1',
     'VGC', 'upcoming',
-    (base_date - interval '10 hours'), (base_date - interval '4 hours'), 32,
+    (seed_now - interval '7 days 3 hours 56 minutes'), (seed_now - interval '6 days 21 hours 56 minutes'), 32,
     'swiss_with_cut', 5, 50, false, 4
   ) RETURNING id INTO tournament_2_id;
 
@@ -94,7 +93,7 @@ BEGIN
     vgc_league_id, 'VGC League Week 3 Championship', 'vgc-league-week-03',
     'VGC League tournament for week 3 — check-in open!',
     'VGC', 'upcoming',
-    (base_date + interval '6 days 18 hours 33 minutes'), (base_date + interval '7 days 33 minutes'), 64,
+    (seed_now + interval '1 hours'), (seed_now + interval '7 hours'), 64,
     'swiss_with_cut', 6, 50, false, 8
   ) RETURNING id INTO tournament_5_id;
 
@@ -106,7 +105,7 @@ BEGIN
     pallet_town_id, 'Pallet Town Trainers Week 3 Championship', 'pallet-town-week-03',
     'Pallet Town Trainers tournament for week 3 — check-in open!',
     'VGC', 'upcoming',
-    (base_date + interval '6 days 18 hours 33 minutes'), (base_date + interval '7 days 33 minutes'), 32,
+    (seed_now + interval '1 hours'), (seed_now + interval '7 hours'), 32,
     'swiss_with_cut', 5, 50, false, 4
   ) RETURNING id INTO tournament_6_id;
 
@@ -224,7 +223,6 @@ END $$;
 -- Tournament Registrations
 DO $$
 DECLARE
-  base_date timestamptz := date_trunc('week', NOW());
   seed_now timestamptz := NOW();
   registrations_exist boolean;
 BEGIN
@@ -243,10 +241,10 @@ BEGIN
       t.id,
       a.id,
       'checked_in'::registration_status,
-      (base_date - interval '5 days 17 hours 48 minutes'),
-      (base_date - interval '1 days 10 hours'),
+      (seed_now - interval '12 days 11 hours 43 minutes'),
+      (seed_now - interval '8 days 3 hours 56 minutes'),
       (SELECT tm.id FROM public.teams tm WHERE tm.name = 'team-seed-1'),
-      (base_date - interval '5 days 17 hours 48 minutes'),
+      (seed_now - interval '12 days 11 hours 43 minutes'),
       TRUE
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-01'
@@ -256,10 +254,10 @@ BEGIN
       t.id,
       a.id,
       'checked_in'::registration_status,
-      (base_date - interval '5 days 17 hours 48 minutes'),
-      (base_date - interval '1 days 10 hours'),
+      (seed_now - interval '12 days 11 hours 43 minutes'),
+      (seed_now - interval '8 days 3 hours 56 minutes'),
       (SELECT tm.id FROM public.teams tm WHERE tm.name = 'team-seed-2'),
-      (base_date - interval '5 days 17 hours 48 minutes'),
+      (seed_now - interval '12 days 11 hours 43 minutes'),
       TRUE
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-01'
@@ -269,10 +267,10 @@ BEGIN
       t.id,
       a.id,
       'checked_in'::registration_status,
-      (base_date - interval '5 days 17 hours 48 minutes'),
-      (base_date - interval '1 days 10 hours'),
+      (seed_now - interval '12 days 11 hours 43 minutes'),
+      (seed_now - interval '8 days 3 hours 56 minutes'),
       (SELECT tm.id FROM public.teams tm WHERE tm.name = 'team-seed-3'),
-      (base_date - interval '5 days 17 hours 48 minutes'),
+      (seed_now - interval '12 days 11 hours 43 minutes'),
       TRUE
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-01'
@@ -282,10 +280,10 @@ BEGIN
       t.id,
       a.id,
       'checked_in'::registration_status,
-      (base_date - interval '5 days 17 hours 48 minutes'),
-      (base_date - interval '1 days 10 hours'),
+      (seed_now - interval '12 days 11 hours 43 minutes'),
+      (seed_now - interval '8 days 3 hours 56 minutes'),
       (SELECT tm.id FROM public.teams tm WHERE tm.name = 'team-seed-4'),
-      (base_date - interval '5 days 17 hours 48 minutes'),
+      (seed_now - interval '12 days 11 hours 43 minutes'),
       TRUE
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-01'
@@ -295,10 +293,10 @@ BEGIN
       t.id,
       a.id,
       'checked_in'::registration_status,
-      (base_date - interval '5 days 17 hours 48 minutes'),
-      (base_date - interval '1 days 10 hours'),
+      (seed_now - interval '12 days 11 hours 43 minutes'),
+      (seed_now - interval '8 days 3 hours 56 minutes'),
       (SELECT tm.id FROM public.teams tm WHERE tm.name = 'team-seed-5'),
-      (base_date - interval '5 days 17 hours 48 minutes'),
+      (seed_now - interval '12 days 11 hours 43 minutes'),
       TRUE
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-01'
@@ -308,10 +306,10 @@ BEGIN
       t.id,
       a.id,
       'checked_in'::registration_status,
-      (base_date - interval '5 days 17 hours 48 minutes'),
-      (base_date - interval '1 days 10 hours'),
+      (seed_now - interval '12 days 11 hours 43 minutes'),
+      (seed_now - interval '8 days 3 hours 56 minutes'),
       (SELECT tm.id FROM public.teams tm WHERE tm.name = 'team-seed-6'),
-      (base_date - interval '5 days 17 hours 48 minutes'),
+      (seed_now - interval '12 days 11 hours 43 minutes'),
       TRUE
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-01'
@@ -321,10 +319,10 @@ BEGIN
       t.id,
       a.id,
       'checked_in'::registration_status,
-      (base_date - interval '5 days 17 hours 48 minutes'),
-      (base_date - interval '1 days 10 hours'),
+      (seed_now - interval '12 days 11 hours 43 minutes'),
+      (seed_now - interval '8 days 3 hours 56 minutes'),
       (SELECT tm.id FROM public.teams tm WHERE tm.name = 'team-seed-7'),
-      (base_date - interval '5 days 17 hours 48 minutes'),
+      (seed_now - interval '12 days 11 hours 43 minutes'),
       TRUE
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-01'
@@ -334,10 +332,10 @@ BEGIN
       t.id,
       a.id,
       'checked_in'::registration_status,
-      (base_date - interval '2 days 7 hours 5 minutes'),
-      (base_date - interval '1 days 10 hours'),
+      (seed_now - interval '9 days 1 hours'),
+      (seed_now - interval '8 days 3 hours 56 minutes'),
       (SELECT tm.id FROM public.teams tm WHERE tm.name = 'team-seed-8'),
-      (base_date - interval '2 days 7 hours 5 minutes'),
+      (seed_now - interval '9 days 1 hours'),
       TRUE
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-01'
@@ -347,10 +345,10 @@ BEGIN
       t.id,
       a.id,
       'checked_in'::registration_status,
-      (base_date - interval '5 days 17 hours 48 minutes'),
-      (base_date - interval '1 days 10 hours'),
+      (seed_now - interval '12 days 11 hours 43 minutes'),
+      (seed_now - interval '8 days 3 hours 56 minutes'),
       (SELECT tm.id FROM public.teams tm WHERE tm.name = 'team-seed-9'),
-      (base_date - interval '5 days 17 hours 48 minutes'),
+      (seed_now - interval '12 days 11 hours 43 minutes'),
       TRUE
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-01'
@@ -360,10 +358,10 @@ BEGIN
       t.id,
       a.id,
       'checked_in'::registration_status,
-      (base_date - interval '5 days 17 hours 48 minutes'),
-      (base_date - interval '1 days 10 hours'),
+      (seed_now - interval '12 days 11 hours 43 minutes'),
+      (seed_now - interval '8 days 3 hours 56 minutes'),
       (SELECT tm.id FROM public.teams tm WHERE tm.name = 'team-seed-10'),
-      (base_date - interval '5 days 17 hours 48 minutes'),
+      (seed_now - interval '12 days 11 hours 43 minutes'),
       TRUE
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-01'
@@ -373,10 +371,10 @@ BEGIN
       t.id,
       a.id,
       'checked_in'::registration_status,
-      (base_date - interval '5 days 17 hours 48 minutes'),
-      (base_date - interval '1 days 10 hours'),
+      (seed_now - interval '12 days 11 hours 43 minutes'),
+      (seed_now - interval '8 days 3 hours 56 minutes'),
       (SELECT tm.id FROM public.teams tm WHERE tm.name = 'team-seed-11'),
-      (base_date - interval '5 days 17 hours 48 minutes'),
+      (seed_now - interval '12 days 11 hours 43 minutes'),
       TRUE
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-01'
@@ -386,10 +384,10 @@ BEGIN
       t.id,
       a.id,
       'checked_in'::registration_status,
-      (base_date - interval '5 days 17 hours 48 minutes'),
-      (base_date - interval '1 days 10 hours'),
+      (seed_now - interval '12 days 11 hours 43 minutes'),
+      (seed_now - interval '8 days 3 hours 56 minutes'),
       (SELECT tm.id FROM public.teams tm WHERE tm.name = 'team-seed-12'),
-      (base_date - interval '5 days 17 hours 48 minutes'),
+      (seed_now - interval '12 days 11 hours 43 minutes'),
       TRUE
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-01'
@@ -399,10 +397,10 @@ BEGIN
       t.id,
       a.id,
       'checked_in'::registration_status,
-      (base_date - interval '5 days 17 hours 48 minutes'),
-      (base_date - interval '1 days 10 hours'),
+      (seed_now - interval '12 days 11 hours 43 minutes'),
+      (seed_now - interval '8 days 3 hours 56 minutes'),
       (SELECT tm.id FROM public.teams tm WHERE tm.name = 'team-seed-13'),
-      (base_date - interval '5 days 17 hours 48 minutes'),
+      (seed_now - interval '12 days 11 hours 43 minutes'),
       TRUE
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-01'
@@ -412,10 +410,10 @@ BEGIN
       t.id,
       a.id,
       'checked_in'::registration_status,
-      (base_date - interval '5 days 17 hours 48 minutes'),
-      (base_date - interval '1 days 10 hours'),
+      (seed_now - interval '12 days 11 hours 43 minutes'),
+      (seed_now - interval '8 days 3 hours 56 minutes'),
       (SELECT tm.id FROM public.teams tm WHERE tm.name = 'team-seed-14'),
-      (base_date - interval '5 days 17 hours 48 minutes'),
+      (seed_now - interval '12 days 11 hours 43 minutes'),
       TRUE
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-01'
@@ -425,10 +423,10 @@ BEGIN
       t.id,
       a.id,
       'checked_in'::registration_status,
-      (base_date - interval '5 days 17 hours 48 minutes'),
-      (base_date - interval '1 days 10 hours'),
+      (seed_now - interval '12 days 11 hours 43 minutes'),
+      (seed_now - interval '8 days 3 hours 56 minutes'),
       (SELECT tm.id FROM public.teams tm WHERE tm.name = 'team-seed-15'),
-      (base_date - interval '5 days 17 hours 48 minutes'),
+      (seed_now - interval '12 days 11 hours 43 minutes'),
       TRUE
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-01'
@@ -438,10 +436,10 @@ BEGIN
       t.id,
       a.id,
       'checked_in'::registration_status,
-      (base_date - interval '2 days 9 hours 31 minutes'),
-      (base_date - interval '1 days 10 hours'),
+      (seed_now - interval '9 days 3 hours 26 minutes'),
+      (seed_now - interval '8 days 3 hours 56 minutes'),
       (SELECT tm.id FROM public.teams tm WHERE tm.name = 'team-seed-16'),
-      (base_date - interval '2 days 9 hours 31 minutes'),
+      (seed_now - interval '9 days 3 hours 26 minutes'),
       TRUE
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-01'
@@ -451,10 +449,10 @@ BEGIN
       t.id,
       a.id,
       'checked_in'::registration_status,
-      (base_date - interval '5 days 17 hours 48 minutes'),
-      (base_date - interval '1 days 10 hours'),
+      (seed_now - interval '12 days 11 hours 43 minutes'),
+      (seed_now - interval '8 days 3 hours 56 minutes'),
       (SELECT tm.id FROM public.teams tm WHERE tm.name = 'team-seed-17'),
-      (base_date - interval '5 days 17 hours 48 minutes'),
+      (seed_now - interval '12 days 11 hours 43 minutes'),
       TRUE
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-01'
@@ -464,10 +462,10 @@ BEGIN
       t.id,
       a.id,
       'checked_in'::registration_status,
-      (base_date - interval '5 days 17 hours 48 minutes'),
-      (base_date - interval '1 days 10 hours'),
+      (seed_now - interval '12 days 11 hours 43 minutes'),
+      (seed_now - interval '8 days 3 hours 56 minutes'),
       (SELECT tm.id FROM public.teams tm WHERE tm.name = 'team-seed-18'),
-      (base_date - interval '5 days 17 hours 48 minutes'),
+      (seed_now - interval '12 days 11 hours 43 minutes'),
       TRUE
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-01'
@@ -477,10 +475,10 @@ BEGIN
       t.id,
       a.id,
       'checked_in'::registration_status,
-      (base_date - interval '5 days 17 hours 48 minutes'),
-      (base_date - interval '1 days 10 hours'),
+      (seed_now - interval '12 days 11 hours 43 minutes'),
+      (seed_now - interval '8 days 3 hours 56 minutes'),
       (SELECT tm.id FROM public.teams tm WHERE tm.name = 'team-seed-19'),
-      (base_date - interval '5 days 17 hours 48 minutes'),
+      (seed_now - interval '12 days 11 hours 43 minutes'),
       TRUE
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-01'
@@ -490,10 +488,10 @@ BEGIN
       t.id,
       a.id,
       'checked_in'::registration_status,
-      (base_date - interval '5 days 17 hours 48 minutes'),
-      (base_date - interval '1 days 10 hours'),
+      (seed_now - interval '12 days 11 hours 43 minutes'),
+      (seed_now - interval '8 days 3 hours 56 minutes'),
       (SELECT tm.id FROM public.teams tm WHERE tm.name = 'team-seed-20'),
-      (base_date - interval '5 days 17 hours 48 minutes'),
+      (seed_now - interval '12 days 11 hours 43 minutes'),
       TRUE
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-01'
@@ -503,10 +501,10 @@ BEGIN
       t.id,
       a.id,
       'checked_in'::registration_status,
-      (base_date - interval '5 days 17 hours 48 minutes'),
-      (base_date - interval '1 days 10 hours'),
+      (seed_now - interval '12 days 11 hours 43 minutes'),
+      (seed_now - interval '8 days 3 hours 56 minutes'),
       (SELECT tm.id FROM public.teams tm WHERE tm.name = 'team-seed-21'),
-      (base_date - interval '5 days 17 hours 48 minutes'),
+      (seed_now - interval '12 days 11 hours 43 minutes'),
       TRUE
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-01'
@@ -516,10 +514,10 @@ BEGIN
       t.id,
       a.id,
       'checked_in'::registration_status,
-      (base_date - interval '5 days 17 hours 48 minutes'),
-      (base_date - interval '1 days 10 hours'),
+      (seed_now - interval '12 days 11 hours 43 minutes'),
+      (seed_now - interval '8 days 3 hours 56 minutes'),
       (SELECT tm.id FROM public.teams tm WHERE tm.name = 'team-seed-22'),
-      (base_date - interval '5 days 17 hours 48 minutes'),
+      (seed_now - interval '12 days 11 hours 43 minutes'),
       TRUE
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-01'
@@ -529,10 +527,10 @@ BEGIN
       t.id,
       a.id,
       'checked_in'::registration_status,
-      (base_date - interval '5 days 17 hours 48 minutes'),
-      (base_date - interval '1 days 10 hours'),
+      (seed_now - interval '12 days 11 hours 43 minutes'),
+      (seed_now - interval '8 days 3 hours 56 minutes'),
       (SELECT tm.id FROM public.teams tm WHERE tm.name = 'team-seed-23'),
-      (base_date - interval '5 days 17 hours 48 minutes'),
+      (seed_now - interval '12 days 11 hours 43 minutes'),
       TRUE
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-01'
@@ -542,10 +540,10 @@ BEGIN
       t.id,
       a.id,
       'checked_in'::registration_status,
-      (base_date - interval '5 days 17 hours 48 minutes'),
-      (base_date - interval '1 days 10 hours'),
+      (seed_now - interval '12 days 11 hours 43 minutes'),
+      (seed_now - interval '8 days 3 hours 56 minutes'),
       (SELECT tm.id FROM public.teams tm WHERE tm.name = 'team-seed-24'),
-      (base_date - interval '5 days 17 hours 48 minutes'),
+      (seed_now - interval '12 days 11 hours 43 minutes'),
       TRUE
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-01'
@@ -555,10 +553,10 @@ BEGIN
       t.id,
       a.id,
       'checked_in'::registration_status,
-      (base_date - interval '5 days 17 hours 48 minutes'),
-      (base_date - interval '1 days 10 hours'),
+      (seed_now - interval '12 days 11 hours 43 minutes'),
+      (seed_now - interval '8 days 3 hours 56 minutes'),
       (SELECT tm.id FROM public.teams tm WHERE tm.name = 'team-seed-25'),
-      (base_date - interval '5 days 17 hours 48 minutes'),
+      (seed_now - interval '12 days 11 hours 43 minutes'),
       TRUE
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-01'
@@ -568,10 +566,10 @@ BEGIN
       t.id,
       a.id,
       'checked_in'::registration_status,
-      (base_date - interval '5 days 17 hours 48 minutes'),
-      (base_date - interval '1 days 10 hours'),
+      (seed_now - interval '12 days 11 hours 43 minutes'),
+      (seed_now - interval '8 days 3 hours 56 minutes'),
       (SELECT tm.id FROM public.teams tm WHERE tm.name = 'team-seed-26'),
-      (base_date - interval '5 days 17 hours 48 minutes'),
+      (seed_now - interval '12 days 11 hours 43 minutes'),
       TRUE
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-01'
@@ -581,10 +579,10 @@ BEGIN
       t.id,
       a.id,
       'checked_in'::registration_status,
-      (base_date - interval '5 days 17 hours 48 minutes'),
-      (base_date - interval '1 days 10 hours'),
+      (seed_now - interval '12 days 11 hours 43 minutes'),
+      (seed_now - interval '8 days 3 hours 56 minutes'),
       (SELECT tm.id FROM public.teams tm WHERE tm.name = 'team-seed-27'),
-      (base_date - interval '5 days 17 hours 48 minutes'),
+      (seed_now - interval '12 days 11 hours 43 minutes'),
       TRUE
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-01'
@@ -594,10 +592,10 @@ BEGIN
       t.id,
       a.id,
       'checked_in'::registration_status,
-      (base_date - interval '5 days 17 hours 48 minutes'),
-      (base_date - interval '1 days 10 hours'),
+      (seed_now - interval '12 days 11 hours 43 minutes'),
+      (seed_now - interval '8 days 3 hours 56 minutes'),
       (SELECT tm.id FROM public.teams tm WHERE tm.name = 'team-seed-28'),
-      (base_date - interval '5 days 17 hours 48 minutes'),
+      (seed_now - interval '12 days 11 hours 43 minutes'),
       TRUE
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-01'
@@ -607,10 +605,10 @@ BEGIN
       t.id,
       a.id,
       'checked_in'::registration_status,
-      (base_date - interval '5 days 17 hours 48 minutes'),
-      (base_date - interval '1 days 10 hours'),
+      (seed_now - interval '12 days 11 hours 43 minutes'),
+      (seed_now - interval '8 days 3 hours 56 minutes'),
       (SELECT tm.id FROM public.teams tm WHERE tm.name = 'team-seed-29'),
-      (base_date - interval '5 days 17 hours 48 minutes'),
+      (seed_now - interval '12 days 11 hours 43 minutes'),
       TRUE
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-01'
@@ -620,10 +618,10 @@ BEGIN
       t.id,
       a.id,
       'checked_in'::registration_status,
-      (base_date - interval '5 days 17 hours 48 minutes'),
-      (base_date - interval '1 days 10 hours'),
+      (seed_now - interval '12 days 11 hours 43 minutes'),
+      (seed_now - interval '8 days 3 hours 56 minutes'),
       (SELECT tm.id FROM public.teams tm WHERE tm.name = 'team-seed-30'),
-      (base_date - interval '5 days 17 hours 48 minutes'),
+      (seed_now - interval '12 days 11 hours 43 minutes'),
       TRUE
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-01'
@@ -633,10 +631,10 @@ BEGIN
       t.id,
       a.id,
       'checked_in'::registration_status,
-      (base_date - interval '5 days 17 hours 48 minutes'),
-      (base_date - interval '1 days 10 hours'),
+      (seed_now - interval '12 days 11 hours 43 minutes'),
+      (seed_now - interval '8 days 3 hours 56 minutes'),
       (SELECT tm.id FROM public.teams tm WHERE tm.name = 'team-seed-31'),
-      (base_date - interval '5 days 17 hours 48 minutes'),
+      (seed_now - interval '12 days 11 hours 43 minutes'),
       TRUE
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-01'
@@ -646,10 +644,10 @@ BEGIN
       t.id,
       a.id,
       'checked_in'::registration_status,
-      (base_date - interval '5 days 17 hours 48 minutes'),
-      (base_date - interval '1 days 10 hours'),
+      (seed_now - interval '12 days 11 hours 43 minutes'),
+      (seed_now - interval '8 days 3 hours 56 minutes'),
       (SELECT tm.id FROM public.teams tm WHERE tm.name = 'team-seed-32'),
-      (base_date - interval '5 days 17 hours 48 minutes'),
+      (seed_now - interval '12 days 11 hours 43 minutes'),
       TRUE
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-01'
@@ -664,10 +662,10 @@ BEGIN
       t.id,
       a.id,
       'checked_in'::registration_status,
-      (base_date - interval '4 days 17 hours 53 minutes'),
-      (base_date - interval '10 hours'),
+      (seed_now - interval '11 days 11 hours 48 minutes'),
+      (seed_now - interval '7 days 3 hours 56 minutes'),
       (SELECT tm.id FROM public.teams tm WHERE tm.name = 'team-seed-33'),
-      (base_date - interval '4 days 17 hours 53 minutes'),
+      (seed_now - interval '11 days 11 hours 48 minutes'),
       TRUE
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-01'
@@ -677,10 +675,10 @@ BEGIN
       t.id,
       a.id,
       'checked_in'::registration_status,
-      (base_date - interval '4 days 17 hours 53 minutes'),
-      (base_date - interval '10 hours'),
+      (seed_now - interval '11 days 11 hours 48 minutes'),
+      (seed_now - interval '7 days 3 hours 56 minutes'),
       (SELECT tm.id FROM public.teams tm WHERE tm.name = 'team-seed-34'),
-      (base_date - interval '4 days 17 hours 53 minutes'),
+      (seed_now - interval '11 days 11 hours 48 minutes'),
       TRUE
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-01'
@@ -690,10 +688,10 @@ BEGIN
       t.id,
       a.id,
       'checked_in'::registration_status,
-      (base_date - interval '4 days 17 hours 53 minutes'),
-      (base_date - interval '10 hours'),
+      (seed_now - interval '11 days 11 hours 48 minutes'),
+      (seed_now - interval '7 days 3 hours 56 minutes'),
       (SELECT tm.id FROM public.teams tm WHERE tm.name = 'team-seed-35'),
-      (base_date - interval '4 days 17 hours 53 minutes'),
+      (seed_now - interval '11 days 11 hours 48 minutes'),
       TRUE
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-01'
@@ -703,10 +701,10 @@ BEGIN
       t.id,
       a.id,
       'checked_in'::registration_status,
-      (base_date - interval '4 days 17 hours 53 minutes'),
-      (base_date - interval '10 hours'),
+      (seed_now - interval '11 days 11 hours 48 minutes'),
+      (seed_now - interval '7 days 3 hours 56 minutes'),
       (SELECT tm.id FROM public.teams tm WHERE tm.name = 'team-seed-36'),
-      (base_date - interval '4 days 17 hours 53 minutes'),
+      (seed_now - interval '11 days 11 hours 48 minutes'),
       TRUE
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-01'
@@ -716,10 +714,10 @@ BEGIN
       t.id,
       a.id,
       'checked_in'::registration_status,
-      (base_date - interval '4 days 17 hours 53 minutes'),
-      (base_date - interval '10 hours'),
+      (seed_now - interval '11 days 11 hours 48 minutes'),
+      (seed_now - interval '7 days 3 hours 56 minutes'),
       (SELECT tm.id FROM public.teams tm WHERE tm.name = 'team-seed-37'),
-      (base_date - interval '4 days 17 hours 53 minutes'),
+      (seed_now - interval '11 days 11 hours 48 minutes'),
       TRUE
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-01'
@@ -729,10 +727,10 @@ BEGIN
       t.id,
       a.id,
       'checked_in'::registration_status,
-      (base_date - interval '4 days 17 hours 53 minutes'),
-      (base_date - interval '10 hours'),
+      (seed_now - interval '11 days 11 hours 48 minutes'),
+      (seed_now - interval '7 days 3 hours 56 minutes'),
       (SELECT tm.id FROM public.teams tm WHERE tm.name = 'team-seed-38'),
-      (base_date - interval '4 days 17 hours 53 minutes'),
+      (seed_now - interval '11 days 11 hours 48 minutes'),
       TRUE
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-01'
@@ -742,10 +740,10 @@ BEGIN
       t.id,
       a.id,
       'checked_in'::registration_status,
-      (base_date - interval '4 days 17 hours 53 minutes'),
-      (base_date - interval '10 hours'),
+      (seed_now - interval '11 days 11 hours 48 minutes'),
+      (seed_now - interval '7 days 3 hours 56 minutes'),
       (SELECT tm.id FROM public.teams tm WHERE tm.name = 'team-seed-39'),
-      (base_date - interval '4 days 17 hours 53 minutes'),
+      (seed_now - interval '11 days 11 hours 48 minutes'),
       TRUE
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-01'
@@ -755,10 +753,10 @@ BEGIN
       t.id,
       a.id,
       'checked_in'::registration_status,
-      (base_date - interval '1 days 9 hours 31 minutes'),
-      (base_date - interval '10 hours'),
+      (seed_now - interval '8 days 3 hours 26 minutes'),
+      (seed_now - interval '7 days 3 hours 56 minutes'),
       (SELECT tm.id FROM public.teams tm WHERE tm.name = 'team-seed-40'),
-      (base_date - interval '1 days 9 hours 31 minutes'),
+      (seed_now - interval '8 days 3 hours 26 minutes'),
       TRUE
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-01'
@@ -768,10 +766,10 @@ BEGIN
       t.id,
       a.id,
       'checked_in'::registration_status,
-      (base_date - interval '4 days 17 hours 53 minutes'),
-      (base_date - interval '10 hours'),
+      (seed_now - interval '11 days 11 hours 48 minutes'),
+      (seed_now - interval '7 days 3 hours 56 minutes'),
       (SELECT tm.id FROM public.teams tm WHERE tm.name = 'team-seed-41'),
-      (base_date - interval '4 days 17 hours 53 minutes'),
+      (seed_now - interval '11 days 11 hours 48 minutes'),
       TRUE
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-01'
@@ -781,10 +779,10 @@ BEGIN
       t.id,
       a.id,
       'checked_in'::registration_status,
-      (base_date - interval '4 days 17 hours 53 minutes'),
-      (base_date - interval '10 hours'),
+      (seed_now - interval '11 days 11 hours 48 minutes'),
+      (seed_now - interval '7 days 3 hours 56 minutes'),
       (SELECT tm.id FROM public.teams tm WHERE tm.name = 'team-seed-42'),
-      (base_date - interval '4 days 17 hours 53 minutes'),
+      (seed_now - interval '11 days 11 hours 48 minutes'),
       TRUE
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-01'
@@ -794,10 +792,10 @@ BEGIN
       t.id,
       a.id,
       'checked_in'::registration_status,
-      (base_date - interval '4 days 17 hours 53 minutes'),
-      (base_date - interval '10 hours'),
+      (seed_now - interval '11 days 11 hours 48 minutes'),
+      (seed_now - interval '7 days 3 hours 56 minutes'),
       (SELECT tm.id FROM public.teams tm WHERE tm.name = 'team-seed-43'),
-      (base_date - interval '4 days 17 hours 53 minutes'),
+      (seed_now - interval '11 days 11 hours 48 minutes'),
       TRUE
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-01'
@@ -807,10 +805,10 @@ BEGIN
       t.id,
       a.id,
       'checked_in'::registration_status,
-      (base_date - interval '4 days 17 hours 53 minutes'),
-      (base_date - interval '10 hours'),
+      (seed_now - interval '11 days 11 hours 48 minutes'),
+      (seed_now - interval '7 days 3 hours 56 minutes'),
       (SELECT tm.id FROM public.teams tm WHERE tm.name = 'team-seed-44'),
-      (base_date - interval '4 days 17 hours 53 minutes'),
+      (seed_now - interval '11 days 11 hours 48 minutes'),
       TRUE
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-01'
@@ -820,10 +818,10 @@ BEGIN
       t.id,
       a.id,
       'checked_in'::registration_status,
-      (base_date - interval '4 days 17 hours 53 minutes'),
-      (base_date - interval '10 hours'),
+      (seed_now - interval '11 days 11 hours 48 minutes'),
+      (seed_now - interval '7 days 3 hours 56 minutes'),
       (SELECT tm.id FROM public.teams tm WHERE tm.name = 'team-seed-45'),
-      (base_date - interval '4 days 17 hours 53 minutes'),
+      (seed_now - interval '11 days 11 hours 48 minutes'),
       TRUE
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-01'
@@ -833,10 +831,10 @@ BEGIN
       t.id,
       a.id,
       'checked_in'::registration_status,
-      (base_date - interval '4 days 17 hours 53 minutes'),
-      (base_date - interval '10 hours'),
+      (seed_now - interval '11 days 11 hours 48 minutes'),
+      (seed_now - interval '7 days 3 hours 56 minutes'),
       (SELECT tm.id FROM public.teams tm WHERE tm.name = 'team-seed-46'),
-      (base_date - interval '4 days 17 hours 53 minutes'),
+      (seed_now - interval '11 days 11 hours 48 minutes'),
       TRUE
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-01'
@@ -846,10 +844,10 @@ BEGIN
       t.id,
       a.id,
       'checked_in'::registration_status,
-      (base_date - interval '4 days 17 hours 53 minutes'),
-      (base_date - interval '10 hours'),
+      (seed_now - interval '11 days 11 hours 48 minutes'),
+      (seed_now - interval '7 days 3 hours 56 minutes'),
       (SELECT tm.id FROM public.teams tm WHERE tm.name = 'team-seed-47'),
-      (base_date - interval '4 days 17 hours 53 minutes'),
+      (seed_now - interval '11 days 11 hours 48 minutes'),
       TRUE
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-01'
@@ -859,10 +857,10 @@ BEGIN
       t.id,
       a.id,
       'checked_in'::registration_status,
-      (base_date - interval '1 days 9 hours 31 minutes'),
-      (base_date - interval '10 hours'),
+      (seed_now - interval '8 days 3 hours 26 minutes'),
+      (seed_now - interval '7 days 3 hours 56 minutes'),
       (SELECT tm.id FROM public.teams tm WHERE tm.name = 'team-seed-48'),
-      (base_date - interval '1 days 9 hours 31 minutes'),
+      (seed_now - interval '8 days 3 hours 26 minutes'),
       TRUE
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-01'
@@ -872,10 +870,10 @@ BEGIN
       t.id,
       a.id,
       'checked_in'::registration_status,
-      (base_date - interval '4 days 17 hours 53 minutes'),
-      (base_date - interval '10 hours'),
+      (seed_now - interval '11 days 11 hours 48 minutes'),
+      (seed_now - interval '7 days 3 hours 56 minutes'),
       (SELECT tm.id FROM public.teams tm WHERE tm.name = 'team-seed-49'),
-      (base_date - interval '4 days 17 hours 53 minutes'),
+      (seed_now - interval '11 days 11 hours 48 minutes'),
       TRUE
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-01'
@@ -885,10 +883,10 @@ BEGIN
       t.id,
       a.id,
       'checked_in'::registration_status,
-      (base_date - interval '4 days 17 hours 53 minutes'),
-      (base_date - interval '10 hours'),
+      (seed_now - interval '11 days 11 hours 48 minutes'),
+      (seed_now - interval '7 days 3 hours 56 minutes'),
       (SELECT tm.id FROM public.teams tm WHERE tm.name = 'team-seed-50'),
-      (base_date - interval '4 days 17 hours 53 minutes'),
+      (seed_now - interval '11 days 11 hours 48 minutes'),
       TRUE
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-01'
@@ -898,10 +896,10 @@ BEGIN
       t.id,
       a.id,
       'checked_in'::registration_status,
-      (base_date - interval '4 days 17 hours 53 minutes'),
-      (base_date - interval '10 hours'),
+      (seed_now - interval '11 days 11 hours 48 minutes'),
+      (seed_now - interval '7 days 3 hours 56 minutes'),
       (SELECT tm.id FROM public.teams tm WHERE tm.name = 'team-seed-51'),
-      (base_date - interval '4 days 17 hours 53 minutes'),
+      (seed_now - interval '11 days 11 hours 48 minutes'),
       TRUE
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-01'
@@ -911,10 +909,10 @@ BEGIN
       t.id,
       a.id,
       'checked_in'::registration_status,
-      (base_date - interval '4 days 17 hours 53 minutes'),
-      (base_date - interval '10 hours'),
+      (seed_now - interval '11 days 11 hours 48 minutes'),
+      (seed_now - interval '7 days 3 hours 56 minutes'),
       (SELECT tm.id FROM public.teams tm WHERE tm.name = 'team-seed-52'),
-      (base_date - interval '4 days 17 hours 53 minutes'),
+      (seed_now - interval '11 days 11 hours 48 minutes'),
       TRUE
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-01'
@@ -924,10 +922,10 @@ BEGIN
       t.id,
       a.id,
       'checked_in'::registration_status,
-      (base_date - interval '4 days 17 hours 53 minutes'),
-      (base_date - interval '10 hours'),
+      (seed_now - interval '11 days 11 hours 48 minutes'),
+      (seed_now - interval '7 days 3 hours 56 minutes'),
       (SELECT tm.id FROM public.teams tm WHERE tm.name = 'team-seed-53'),
-      (base_date - interval '4 days 17 hours 53 minutes'),
+      (seed_now - interval '11 days 11 hours 48 minutes'),
       TRUE
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-01'
@@ -937,10 +935,10 @@ BEGIN
       t.id,
       a.id,
       'checked_in'::registration_status,
-      (base_date - interval '4 days 17 hours 53 minutes'),
-      (base_date - interval '10 hours'),
+      (seed_now - interval '11 days 11 hours 48 minutes'),
+      (seed_now - interval '7 days 3 hours 56 minutes'),
       (SELECT tm.id FROM public.teams tm WHERE tm.name = 'team-seed-54'),
-      (base_date - interval '4 days 17 hours 53 minutes'),
+      (seed_now - interval '11 days 11 hours 48 minutes'),
       TRUE
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-01'
@@ -950,10 +948,10 @@ BEGIN
       t.id,
       a.id,
       'checked_in'::registration_status,
-      (base_date - interval '4 days 17 hours 53 minutes'),
-      (base_date - interval '10 hours'),
+      (seed_now - interval '11 days 11 hours 48 minutes'),
+      (seed_now - interval '7 days 3 hours 56 minutes'),
       (SELECT tm.id FROM public.teams tm WHERE tm.name = 'team-seed-55'),
-      (base_date - interval '4 days 17 hours 53 minutes'),
+      (seed_now - interval '11 days 11 hours 48 minutes'),
       TRUE
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-01'
@@ -963,10 +961,10 @@ BEGIN
       t.id,
       a.id,
       'checked_in'::registration_status,
-      (base_date - interval '4 days 17 hours 53 minutes'),
-      (base_date - interval '10 hours'),
+      (seed_now - interval '11 days 11 hours 48 minutes'),
+      (seed_now - interval '7 days 3 hours 56 minutes'),
       (SELECT tm.id FROM public.teams tm WHERE tm.name = 'team-seed-56'),
-      (base_date - interval '4 days 17 hours 53 minutes'),
+      (seed_now - interval '11 days 11 hours 48 minutes'),
       TRUE
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-01'
@@ -976,10 +974,10 @@ BEGIN
       t.id,
       a.id,
       'checked_in'::registration_status,
-      (base_date - interval '4 days 17 hours 53 minutes'),
-      (base_date - interval '10 hours'),
+      (seed_now - interval '11 days 11 hours 48 minutes'),
+      (seed_now - interval '7 days 3 hours 56 minutes'),
       (SELECT tm.id FROM public.teams tm WHERE tm.name = 'team-seed-57'),
-      (base_date - interval '4 days 17 hours 53 minutes'),
+      (seed_now - interval '11 days 11 hours 48 minutes'),
       TRUE
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-01'
@@ -989,10 +987,10 @@ BEGIN
       t.id,
       a.id,
       'checked_in'::registration_status,
-      (base_date - interval '4 days 17 hours 53 minutes'),
-      (base_date - interval '10 hours'),
+      (seed_now - interval '11 days 11 hours 48 minutes'),
+      (seed_now - interval '7 days 3 hours 56 minutes'),
       (SELECT tm.id FROM public.teams tm WHERE tm.name = 'team-seed-58'),
-      (base_date - interval '4 days 17 hours 53 minutes'),
+      (seed_now - interval '11 days 11 hours 48 minutes'),
       TRUE
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-01'
@@ -1002,10 +1000,10 @@ BEGIN
       t.id,
       a.id,
       'checked_in'::registration_status,
-      (base_date - interval '4 days 17 hours 53 minutes'),
-      (base_date - interval '10 hours'),
+      (seed_now - interval '11 days 11 hours 48 minutes'),
+      (seed_now - interval '7 days 3 hours 56 minutes'),
       (SELECT tm.id FROM public.teams tm WHERE tm.name = 'team-seed-59'),
-      (base_date - interval '4 days 17 hours 53 minutes'),
+      (seed_now - interval '11 days 11 hours 48 minutes'),
       TRUE
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-01'
@@ -1015,10 +1013,10 @@ BEGIN
       t.id,
       a.id,
       'checked_in'::registration_status,
-      (base_date - interval '4 days 17 hours 53 minutes'),
-      (base_date - interval '10 hours'),
+      (seed_now - interval '11 days 11 hours 48 minutes'),
+      (seed_now - interval '7 days 3 hours 56 minutes'),
       (SELECT tm.id FROM public.teams tm WHERE tm.name = 'team-seed-60'),
-      (base_date - interval '4 days 17 hours 53 minutes'),
+      (seed_now - interval '11 days 11 hours 48 minutes'),
       TRUE
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-01'
@@ -1028,10 +1026,10 @@ BEGIN
       t.id,
       a.id,
       'checked_in'::registration_status,
-      (base_date - interval '4 days 17 hours 53 minutes'),
-      (base_date - interval '10 hours'),
+      (seed_now - interval '11 days 11 hours 48 minutes'),
+      (seed_now - interval '7 days 3 hours 56 minutes'),
       (SELECT tm.id FROM public.teams tm WHERE tm.name = 'team-seed-61'),
-      (base_date - interval '4 days 17 hours 53 minutes'),
+      (seed_now - interval '11 days 11 hours 48 minutes'),
       TRUE
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-01'
@@ -1041,10 +1039,10 @@ BEGIN
       t.id,
       a.id,
       'checked_in'::registration_status,
-      (base_date - interval '4 days 17 hours 53 minutes'),
-      (base_date - interval '10 hours'),
+      (seed_now - interval '11 days 11 hours 48 minutes'),
+      (seed_now - interval '7 days 3 hours 56 minutes'),
       (SELECT tm.id FROM public.teams tm WHERE tm.name = 'team-seed-62'),
-      (base_date - interval '4 days 17 hours 53 minutes'),
+      (seed_now - interval '11 days 11 hours 48 minutes'),
       TRUE
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-01'
@@ -1054,10 +1052,10 @@ BEGIN
       t.id,
       a.id,
       'checked_in'::registration_status,
-      (base_date - interval '4 days 17 hours 53 minutes'),
-      (base_date - interval '10 hours'),
+      (seed_now - interval '11 days 11 hours 48 minutes'),
+      (seed_now - interval '7 days 3 hours 56 minutes'),
       (SELECT tm.id FROM public.teams tm WHERE tm.name = 'team-seed-63'),
-      (base_date - interval '4 days 17 hours 53 minutes'),
+      (seed_now - interval '11 days 11 hours 48 minutes'),
       TRUE
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-01'
@@ -1067,10 +1065,10 @@ BEGIN
       t.id,
       a.id,
       'checked_in'::registration_status,
-      (base_date - interval '4 days 17 hours 53 minutes'),
-      (base_date - interval '10 hours'),
+      (seed_now - interval '11 days 11 hours 48 minutes'),
+      (seed_now - interval '7 days 3 hours 56 minutes'),
       (SELECT tm.id FROM public.teams tm WHERE tm.name = 'team-seed-64'),
-      (base_date - interval '4 days 17 hours 53 minutes'),
+      (seed_now - interval '11 days 11 hours 48 minutes'),
       TRUE
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-01'
@@ -7767,7 +7765,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      (base_date + interval '2 days 10 hours 6 minutes'),
+      (seed_now - interval '4 days 7 hours 27 minutes'),
       NULL::timestamptz,
       NULL::bigint,
       NULL::timestamptz,
@@ -7780,7 +7778,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      (base_date + interval '2 days 10 hours 6 minutes'),
+      (seed_now - interval '4 days 7 hours 27 minutes'),
       NULL::timestamptz,
       NULL::bigint,
       NULL::timestamptz,
@@ -7793,7 +7791,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      (base_date + interval '2 days 10 hours 6 minutes'),
+      (seed_now - interval '4 days 7 hours 27 minutes'),
       NULL::timestamptz,
       NULL::bigint,
       NULL::timestamptz,
@@ -7806,7 +7804,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      (base_date + interval '2 days 10 hours 6 minutes'),
+      (seed_now - interval '4 days 7 hours 27 minutes'),
       NULL::timestamptz,
       NULL::bigint,
       NULL::timestamptz,
@@ -7819,7 +7817,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      (base_date + interval '2 days 10 hours 6 minutes'),
+      (seed_now - interval '4 days 7 hours 27 minutes'),
       NULL::timestamptz,
       NULL::bigint,
       NULL::timestamptz,
@@ -7832,7 +7830,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      (base_date + interval '2 days 10 hours 6 minutes'),
+      (seed_now - interval '4 days 7 hours 27 minutes'),
       NULL::timestamptz,
       NULL::bigint,
       NULL::timestamptz,
@@ -7845,7 +7843,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      (base_date + interval '2 days 10 hours 6 minutes'),
+      (seed_now - interval '4 days 7 hours 27 minutes'),
       NULL::timestamptz,
       NULL::bigint,
       NULL::timestamptz,
@@ -7858,10 +7856,10 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      (base_date + interval '5 days 18 hours 3 minutes'),
+      (seed_now - interval '23 hours 30 minutes'),
       NULL::timestamptz,
       (SELECT tm.id FROM public.teams tm WHERE tm.name = 'team-seed-577'),
-      (base_date + interval '5 days 18 hours 3 minutes'),
+      (seed_now - interval '23 hours 30 minutes'),
       FALSE
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-03'
@@ -7871,7 +7869,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      (base_date + interval '2 days 10 hours 6 minutes'),
+      (seed_now - interval '4 days 7 hours 27 minutes'),
       NULL::timestamptz,
       NULL::bigint,
       NULL::timestamptz,
@@ -7884,7 +7882,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      (base_date + interval '2 days 10 hours 6 minutes'),
+      (seed_now - interval '4 days 7 hours 27 minutes'),
       NULL::timestamptz,
       NULL::bigint,
       NULL::timestamptz,
@@ -7897,7 +7895,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      (base_date + interval '2 days 10 hours 6 minutes'),
+      (seed_now - interval '4 days 7 hours 27 minutes'),
       NULL::timestamptz,
       NULL::bigint,
       NULL::timestamptz,
@@ -7910,7 +7908,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      (base_date + interval '2 days 10 hours 6 minutes'),
+      (seed_now - interval '4 days 7 hours 27 minutes'),
       NULL::timestamptz,
       NULL::bigint,
       NULL::timestamptz,
@@ -7923,7 +7921,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      (base_date + interval '2 days 10 hours 6 minutes'),
+      (seed_now - interval '4 days 7 hours 27 minutes'),
       NULL::timestamptz,
       NULL::bigint,
       NULL::timestamptz,
@@ -7936,7 +7934,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      (base_date + interval '2 days 10 hours 6 minutes'),
+      (seed_now - interval '4 days 7 hours 27 minutes'),
       NULL::timestamptz,
       NULL::bigint,
       NULL::timestamptz,
@@ -7949,7 +7947,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      (base_date + interval '2 days 10 hours 6 minutes'),
+      (seed_now - interval '4 days 7 hours 27 minutes'),
       NULL::timestamptz,
       NULL::bigint,
       NULL::timestamptz,
@@ -7962,7 +7960,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      (base_date + interval '2 days 10 hours 6 minutes'),
+      (seed_now - interval '4 days 7 hours 27 minutes'),
       NULL::timestamptz,
       NULL::bigint,
       NULL::timestamptz,
@@ -7975,10 +7973,10 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      (base_date + interval '5 days 18 hours 3 minutes'),
+      (seed_now - interval '23 hours 30 minutes'),
       NULL::timestamptz,
       (SELECT tm.id FROM public.teams tm WHERE tm.name = 'team-seed-578'),
-      (base_date + interval '5 days 18 hours 3 minutes'),
+      (seed_now - interval '23 hours 30 minutes'),
       FALSE
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'vgc-league-week-03'
@@ -7988,7 +7986,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      (base_date + interval '2 days 10 hours 6 minutes'),
+      (seed_now - interval '4 days 7 hours 27 minutes'),
       NULL::timestamptz,
       NULL::bigint,
       NULL::timestamptz,
@@ -8001,7 +7999,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      (base_date + interval '2 days 10 hours 6 minutes'),
+      (seed_now - interval '4 days 7 hours 27 minutes'),
       NULL::timestamptz,
       NULL::bigint,
       NULL::timestamptz,
@@ -8014,7 +8012,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      (base_date + interval '2 days 10 hours 6 minutes'),
+      (seed_now - interval '4 days 7 hours 27 minutes'),
       NULL::timestamptz,
       NULL::bigint,
       NULL::timestamptz,
@@ -8027,7 +8025,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      (base_date + interval '2 days 10 hours 6 minutes'),
+      (seed_now - interval '4 days 7 hours 27 minutes'),
       NULL::timestamptz,
       NULL::bigint,
       NULL::timestamptz,
@@ -8040,7 +8038,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      (base_date + interval '2 days 10 hours 6 minutes'),
+      (seed_now - interval '4 days 7 hours 27 minutes'),
       NULL::timestamptz,
       NULL::bigint,
       NULL::timestamptz,
@@ -8053,7 +8051,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      (base_date + interval '2 days 10 hours 6 minutes'),
+      (seed_now - interval '4 days 7 hours 27 minutes'),
       NULL::timestamptz,
       NULL::bigint,
       NULL::timestamptz,
@@ -8066,7 +8064,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      (base_date + interval '2 days 10 hours 6 minutes'),
+      (seed_now - interval '4 days 7 hours 27 minutes'),
       NULL::timestamptz,
       NULL::bigint,
       NULL::timestamptz,
@@ -8079,7 +8077,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      (base_date + interval '2 days 10 hours 6 minutes'),
+      (seed_now - interval '4 days 7 hours 27 minutes'),
       NULL::timestamptz,
       NULL::bigint,
       NULL::timestamptz,
@@ -8092,7 +8090,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      (base_date + interval '2 days 10 hours 6 minutes'),
+      (seed_now - interval '4 days 7 hours 27 minutes'),
       NULL::timestamptz,
       NULL::bigint,
       NULL::timestamptz,
@@ -8105,7 +8103,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      (base_date + interval '2 days 10 hours 6 minutes'),
+      (seed_now - interval '4 days 7 hours 27 minutes'),
       NULL::timestamptz,
       NULL::bigint,
       NULL::timestamptz,
@@ -8118,7 +8116,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      (base_date + interval '2 days 10 hours 6 minutes'),
+      (seed_now - interval '4 days 7 hours 27 minutes'),
       NULL::timestamptz,
       NULL::bigint,
       NULL::timestamptz,
@@ -8131,7 +8129,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      (base_date + interval '2 days 10 hours 6 minutes'),
+      (seed_now - interval '4 days 7 hours 27 minutes'),
       NULL::timestamptz,
       NULL::bigint,
       NULL::timestamptz,
@@ -8144,7 +8142,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      (base_date + interval '2 days 10 hours 6 minutes'),
+      (seed_now - interval '4 days 7 hours 27 minutes'),
       NULL::timestamptz,
       NULL::bigint,
       NULL::timestamptz,
@@ -8157,7 +8155,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      (base_date + interval '2 days 10 hours 6 minutes'),
+      (seed_now - interval '4 days 7 hours 27 minutes'),
       NULL::timestamptz,
       NULL::bigint,
       NULL::timestamptz,
@@ -8170,7 +8168,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      (base_date + interval '2 days 10 hours 6 minutes'),
+      (seed_now - interval '4 days 7 hours 27 minutes'),
       NULL::timestamptz,
       NULL::bigint,
       NULL::timestamptz,
@@ -8183,7 +8181,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      (base_date + interval '2 days 10 hours 6 minutes'),
+      (seed_now - interval '4 days 7 hours 27 minutes'),
       NULL::timestamptz,
       NULL::bigint,
       NULL::timestamptz,
@@ -8196,7 +8194,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      (base_date + interval '2 days 10 hours 6 minutes'),
+      (seed_now - interval '4 days 7 hours 27 minutes'),
       NULL::timestamptz,
       NULL::bigint,
       NULL::timestamptz,
@@ -8209,7 +8207,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      (base_date + interval '2 days 10 hours 6 minutes'),
+      (seed_now - interval '4 days 7 hours 27 minutes'),
       NULL::timestamptz,
       NULL::bigint,
       NULL::timestamptz,
@@ -8222,7 +8220,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      (base_date + interval '2 days 10 hours 6 minutes'),
+      (seed_now - interval '4 days 7 hours 27 minutes'),
       NULL::timestamptz,
       NULL::bigint,
       NULL::timestamptz,
@@ -8235,7 +8233,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      (base_date + interval '2 days 10 hours 6 minutes'),
+      (seed_now - interval '4 days 7 hours 27 minutes'),
       NULL::timestamptz,
       NULL::bigint,
       NULL::timestamptz,
@@ -8248,7 +8246,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      (base_date + interval '2 days 10 hours 6 minutes'),
+      (seed_now - interval '4 days 7 hours 27 minutes'),
       NULL::timestamptz,
       NULL::bigint,
       NULL::timestamptz,
@@ -8261,7 +8259,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      (base_date + interval '2 days 10 hours 6 minutes'),
+      (seed_now - interval '4 days 7 hours 27 minutes'),
       NULL::timestamptz,
       NULL::bigint,
       NULL::timestamptz,
@@ -8274,7 +8272,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      (base_date + interval '2 days 10 hours 6 minutes'),
+      (seed_now - interval '4 days 7 hours 27 minutes'),
       NULL::timestamptz,
       NULL::bigint,
       NULL::timestamptz,
@@ -8287,7 +8285,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      (base_date + interval '2 days 10 hours 6 minutes'),
+      (seed_now - interval '4 days 7 hours 27 minutes'),
       NULL::timestamptz,
       NULL::bigint,
       NULL::timestamptz,
@@ -8305,7 +8303,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      (base_date + interval '2 days 10 hours 1 minutes'),
+      (seed_now - interval '4 days 7 hours 32 minutes'),
       NULL::timestamptz,
       NULL::bigint,
       NULL::timestamptz,
@@ -8318,7 +8316,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      (base_date + interval '2 days 10 hours 1 minutes'),
+      (seed_now - interval '4 days 7 hours 32 minutes'),
       NULL::timestamptz,
       NULL::bigint,
       NULL::timestamptz,
@@ -8331,7 +8329,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      (base_date + interval '2 days 10 hours 1 minutes'),
+      (seed_now - interval '4 days 7 hours 32 minutes'),
       NULL::timestamptz,
       NULL::bigint,
       NULL::timestamptz,
@@ -8344,7 +8342,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      (base_date + interval '2 days 10 hours 1 minutes'),
+      (seed_now - interval '4 days 7 hours 32 minutes'),
       NULL::timestamptz,
       NULL::bigint,
       NULL::timestamptz,
@@ -8357,7 +8355,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      (base_date + interval '2 days 10 hours 1 minutes'),
+      (seed_now - interval '4 days 7 hours 32 minutes'),
       NULL::timestamptz,
       NULL::bigint,
       NULL::timestamptz,
@@ -8370,7 +8368,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      (base_date + interval '2 days 10 hours 1 minutes'),
+      (seed_now - interval '4 days 7 hours 32 minutes'),
       NULL::timestamptz,
       NULL::bigint,
       NULL::timestamptz,
@@ -8383,7 +8381,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      (base_date + interval '2 days 10 hours 1 minutes'),
+      (seed_now - interval '4 days 7 hours 32 minutes'),
       NULL::timestamptz,
       NULL::bigint,
       NULL::timestamptz,
@@ -8396,7 +8394,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      (base_date + interval '2 days 10 hours 1 minutes'),
+      (seed_now - interval '4 days 7 hours 32 minutes'),
       NULL::timestamptz,
       NULL::bigint,
       NULL::timestamptz,
@@ -8409,7 +8407,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      (base_date + interval '2 days 10 hours 1 minutes'),
+      (seed_now - interval '4 days 7 hours 32 minutes'),
       NULL::timestamptz,
       NULL::bigint,
       NULL::timestamptz,
@@ -8422,7 +8420,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      (base_date + interval '2 days 10 hours 1 minutes'),
+      (seed_now - interval '4 days 7 hours 32 minutes'),
       NULL::timestamptz,
       NULL::bigint,
       NULL::timestamptz,
@@ -8435,7 +8433,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      (base_date + interval '2 days 10 hours 1 minutes'),
+      (seed_now - interval '4 days 7 hours 32 minutes'),
       NULL::timestamptz,
       NULL::bigint,
       NULL::timestamptz,
@@ -8448,7 +8446,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      (base_date + interval '2 days 10 hours 1 minutes'),
+      (seed_now - interval '4 days 7 hours 32 minutes'),
       NULL::timestamptz,
       NULL::bigint,
       NULL::timestamptz,
@@ -8461,7 +8459,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      (base_date + interval '2 days 10 hours 1 minutes'),
+      (seed_now - interval '4 days 7 hours 32 minutes'),
       NULL::timestamptz,
       NULL::bigint,
       NULL::timestamptz,
@@ -8474,7 +8472,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      (base_date + interval '2 days 10 hours 1 minutes'),
+      (seed_now - interval '4 days 7 hours 32 minutes'),
       NULL::timestamptz,
       NULL::bigint,
       NULL::timestamptz,
@@ -8487,7 +8485,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      (base_date + interval '2 days 10 hours 1 minutes'),
+      (seed_now - interval '4 days 7 hours 32 minutes'),
       NULL::timestamptz,
       NULL::bigint,
       NULL::timestamptz,
@@ -8500,7 +8498,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      (base_date + interval '2 days 10 hours 1 minutes'),
+      (seed_now - interval '4 days 7 hours 32 minutes'),
       NULL::timestamptz,
       NULL::bigint,
       NULL::timestamptz,
@@ -8513,7 +8511,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      (base_date + interval '2 days 10 hours 1 minutes'),
+      (seed_now - interval '4 days 7 hours 32 minutes'),
       NULL::timestamptz,
       NULL::bigint,
       NULL::timestamptz,
@@ -8526,10 +8524,10 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      (base_date + interval '5 days 18 hours 3 minutes'),
+      (seed_now - interval '23 hours 30 minutes'),
       NULL::timestamptz,
       (SELECT tm.id FROM public.teams tm WHERE tm.name = 'team-seed-579'),
-      (base_date + interval '5 days 18 hours 3 minutes'),
+      (seed_now - interval '23 hours 30 minutes'),
       FALSE
     FROM public.tournaments t, public.alts a
     WHERE t.slug = 'pallet-town-week-03'
@@ -8539,7 +8537,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      (base_date + interval '2 days 10 hours 1 minutes'),
+      (seed_now - interval '4 days 7 hours 32 minutes'),
       NULL::timestamptz,
       NULL::bigint,
       NULL::timestamptz,
@@ -8552,7 +8550,7 @@ BEGIN
       t.id,
       a.id,
       'registered'::registration_status,
-      (base_date + interval '2 days 10 hours 1 minutes'),
+      (seed_now - interval '4 days 7 hours 32 minutes'),
       NULL::timestamptz,
       NULL::bigint,
       NULL::timestamptz,
