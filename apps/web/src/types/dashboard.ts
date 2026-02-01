@@ -3,6 +3,7 @@ export interface DashboardTournament {
   name: string;
   startDate?: number | null;
   status: string;
+  hasTeam: boolean;
 }
 
 export interface DashboardOrganization {

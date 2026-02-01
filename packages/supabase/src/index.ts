@@ -29,6 +29,16 @@ export type {
   Json,
 } from "./types";
 
+// Utility exports
+export {
+  checkRegistrationOpen,
+  checkCheckInOpen,
+  type RegistrationOpenInput,
+  type RegistrationOpenResult,
+  type CheckInOpenInput,
+  type CheckInOpenResult,
+} from "./utils/registration";
+
 // AT Protocol extended types
 export type {
   AtprotoDatabase,

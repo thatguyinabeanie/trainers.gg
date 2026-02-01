@@ -20,8 +20,6 @@ export default function HomePage() {
   const { user, loading: authLoading } = useAuth();
   const { blueskyDid, isLoading: blueskyLoading } = useBlueskyUser();
   const [selectedTab, setSelectedTab] = useState<"pokemon" | "all">("pokemon");
-  const [blueskyLoginLoading, setBlueskyLoginLoading] = useState(false);
-
   // Compose dialog state
   const [composeOpen, setComposeOpen] = useState(false);
   const [replyContext, setReplyContext] = useState<ReplyContext | undefined>();
@@ -52,21 +50,9 @@ export default function HomePage() {
     pokemonFeed.refetch();
   };
 
-  // Handler for Bluesky login
-  const handleBlueskyLogin = () => {
-    setBlueskyLoginLoading(true);
-    // Redirect to Bluesky login with default handle prompt
-    window.location.href = "/sign-in";
-  };
-
   // Not signed in state - show login screen
   if (!isLoading && !user) {
-    return (
-      <LoginScreen
-        onBlueskyLogin={handleBlueskyLogin}
-        isLoading={blueskyLoginLoading}
-      />
-    );
+    return <LoginScreen />;
   }
 
   // Loading state

@@ -20,6 +20,8 @@ import {
   checkIn as checkInMutation,
   undoCheckIn as undoCheckInMutation,
   withdrawFromTournament as withdrawFromTournamentMutation,
+  // Team submission
+  submitTeam as submitTeamMutation,
   // Round management mutations
   createRound as createRoundMutation,
   generateRoundPairings as generateRoundPairingsMutation,
@@ -360,6 +362,39 @@ export async function withdrawFromTournament(
     return {
       success: false,
       error: getErrorMessage(error, "Failed to withdraw"),
+    };
+  }
+}
+
+// =============================================================================
+// Team Submission Actions
+// =============================================================================
+
+/**
+ * Submit a team for a tournament registration.
+ * Revalidates: tournament detail page, tournament team list
+ */
+export async function submitTeamAction(
+  tournamentId: number,
+  rawText: string
+): Promise<ActionResult<{ teamId: number; pokemonCount: number }>> {
+  try {
+    const supabase = await createClient();
+    const result = await submitTeamMutation(supabase, tournamentId, rawText);
+
+    // Revalidate tournament detail page (shows team submission status)
+    updateTag(CacheTags.tournament(tournamentId));
+    // Revalidate tournament team list (for open teamsheet public view)
+    updateTag(CacheTags.tournamentTeams(tournamentId));
+
+    return {
+      success: true,
+      data: { teamId: result.teamId, pokemonCount: result.pokemonCount },
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: getErrorMessage(error, "Failed to submit team"),
     };
   }
 }

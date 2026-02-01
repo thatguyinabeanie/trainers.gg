@@ -13,18 +13,6 @@ export interface TournamentValidationSettings {
   requiresApproval: boolean;
 }
 
-export interface TournamentRegistrationData {
-  profileId: string;
-  tournamentId: string;
-  teamName?: string;
-  registeredAt: Date;
-  currentParticipants: number;
-  maxParticipants: number;
-  registrationDeadline: Date;
-  requiresApproval: boolean;
-  allowLateRegistration: boolean;
-}
-
 export interface TournamentTimingData {
   tournamentId: string;
   status: string;
@@ -61,14 +49,6 @@ export interface ValidationResult {
 export interface TournamentStartCheck {
   canStart: boolean;
   reason?: string;
-}
-
-export interface RegistrationCheck {
-  registrationDeadline: Date;
-  currentTime: Date;
-  allowLateRegistration: boolean;
-  currentParticipants: number;
-  maxParticipants: number;
 }
 
 export interface RoundStartData {
@@ -188,50 +168,6 @@ export function validateTournamentSettings(
     isValid: errors.length === 0,
     errors,
     warnings,
-  };
-}
-
-/**
- * Validate tournament registration
- */
-export function validateRegistration(
-  data: TournamentRegistrationData
-): ValidationResult {
-  const errors: string[] = [];
-
-  // Required fields
-  if (!data.profileId || data.profileId.trim().length === 0) {
-    errors.push("Profile ID is required");
-  }
-
-  if (!data.tournamentId || data.tournamentId.trim().length === 0) {
-    errors.push("Tournament ID is required");
-  }
-
-  // Team name validation (optional but if provided, must be valid)
-  if (data.teamName && data.teamName.length > 50) {
-    errors.push("Team name must be 50 characters or less");
-  }
-
-  // Capacity check
-  if (data.currentParticipants >= data.maxParticipants) {
-    errors.push("Tournament is at maximum capacity");
-  }
-
-  // Registration deadline check
-  if (
-    !isWithinRegistrationDeadline(
-      data.registrationDeadline,
-      data.registeredAt,
-      data.allowLateRegistration
-    )
-  ) {
-    errors.push("Registration deadline has passed");
-  }
-
-  return {
-    isValid: errors.length === 0,
-    errors,
   };
 }
 
@@ -422,38 +358,6 @@ export function canStartTournament(data: {
   }
 
   return { canStart: true };
-}
-
-/**
- * Check if registration is currently open
- */
-export function isRegistrationOpen(data: RegistrationCheck): boolean {
-  // Tournament full
-  if (data.currentParticipants >= data.maxParticipants) {
-    return false;
-  }
-
-  // Check deadline
-  return isWithinRegistrationDeadline(
-    data.registrationDeadline,
-    data.currentTime,
-    data.allowLateRegistration
-  );
-}
-
-/**
- * Check if registration is within deadline
- */
-export function isWithinRegistrationDeadline(
-  deadline: Date,
-  currentTime: Date,
-  allowLateRegistration: boolean
-): boolean {
-  if (currentTime <= deadline) {
-    return true; // Within deadline
-  }
-
-  return allowLateRegistration; // Past deadline, depends on late registration policy
 }
 
 /**

@@ -1,92 +1,229 @@
 "use client";
 
+import { type FormEvent, useState } from "react";
+import { useRouter } from "next/navigation";
+import { Trophy } from "lucide-react";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { BlueskyIcon } from "@/components/icons/bluesky-icon";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
+import { SocialAuthButtons } from "./social-auth-buttons";
+import { SignInView } from "./sign-in-form";
+import { useAuth } from "@/hooks/use-auth";
+import { resolveLoginIdentifier } from "@/app/(auth-pages)/actions";
 
-interface LoginScreenProps {
-  onBlueskyLogin: () => void;
-  isLoading?: boolean;
-}
+export function LoginScreen() {
+  const router = useRouter();
+  const { signInWithEmail } = useAuth();
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showEmailForm, setShowEmailForm] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-export function LoginScreen({ onBlueskyLogin, isLoading }: LoginScreenProps) {
+  const handleContinue = async (e: FormEvent) => {
+    e.preventDefault();
+
+    const trimmed = username.trim();
+    if (!trimmed) return;
+
+    if (showPassword) {
+      if (!password) return;
+
+      setError(null);
+      setIsSubmitting(true);
+
+      try {
+        const { email, error: resolveError } =
+          await resolveLoginIdentifier(trimmed);
+
+        if (resolveError || !email) {
+          setError(resolveError || "No account found with that username");
+          return;
+        }
+
+        const { error: signInError } = await signInWithEmail(email, password);
+
+        if (signInError) {
+          setError(signInError.message);
+          return;
+        }
+
+        router.push("/");
+        router.refresh();
+      } catch {
+        setError("An unexpected error occurred");
+      } finally {
+        setIsSubmitting(false);
+      }
+    } else {
+      setError(null);
+      setIsSubmitting(true);
+
+      try {
+        const { email, error: resolveError } =
+          await resolveLoginIdentifier(trimmed);
+
+        if (resolveError || !email) {
+          setError(resolveError || "No account found with that username");
+          return;
+        }
+
+        setShowPassword(true);
+      } catch {
+        setError("An unexpected error occurred");
+      } finally {
+        setIsSubmitting(false);
+      }
+    }
+  };
+
+  if (showEmailForm) {
+    return (
+      <main className="flex min-h-screen flex-col items-center justify-center p-8">
+        <div className="flex w-full max-w-md flex-col items-center gap-8">
+          <Link href="/" className="flex items-center gap-2">
+            <div className="bg-primary flex size-8 items-center justify-center rounded-lg">
+              <Trophy className="size-4 text-white" />
+            </div>
+            <span className="text-lg font-bold tracking-tight">
+              trainers.gg
+            </span>
+          </Link>
+
+          <SignInView hideHeading />
+
+          <button
+            type="button"
+            onClick={() => setShowEmailForm(false)}
+            className="text-muted-foreground hover:text-foreground text-sm"
+          >
+            Back to all sign-in options
+          </button>
+        </div>
+      </main>
+    );
+  }
+
   return (
     <main className="flex min-h-screen flex-col items-center justify-center p-8">
-      <div className="mx-auto max-w-md text-center">
-        {/* Logo / Brand */}
-        <h1 className="text-primary mb-2 text-5xl font-bold tracking-tight">
-          trainers.gg
-        </h1>
-        <p className="text-muted-foreground mb-12 text-lg">
-          The social platform for Pokemon trainers
+      <div className="flex w-full max-w-sm flex-col items-center gap-8">
+        {/* Branding */}
+        <div className="flex flex-col items-center gap-3">
+          <div className="bg-primary flex size-16 items-center justify-center rounded-2xl">
+            <Trophy className="size-8 text-white" />
+          </div>
+          <div className="text-center">
+            <h1 className="text-2xl font-bold tracking-tight">trainers.gg</h1>
+            <p className="text-muted-foreground mt-1 text-sm">
+              The competitive Pokemon community platform
+            </p>
+          </div>
+        </div>
+
+        {/* Username sign-in */}
+        <form onSubmit={handleContinue} className="flex w-full flex-col gap-4">
+          {error && (
+            <div className="bg-destructive/10 text-destructive rounded-lg p-3 text-sm">
+              {error}
+            </div>
+          )}
+
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="username">Username</Label>
+            <div className="border-input focus-within:ring-ring/50 focus-within:border-ring flex items-center overflow-hidden rounded-md border focus-within:ring-[3px]">
+              <Input
+                id="username"
+                type="text"
+                placeholder="username"
+                autoComplete="username"
+                value={username}
+                onChange={(e) => {
+                  setUsername(e.target.value);
+                  setError(null);
+                  if (showPassword) setShowPassword(false);
+                }}
+                className="rounded-none border-0 shadow-none focus-visible:ring-0"
+                autoFocus
+              />
+              <span className="text-muted-foreground border-l-input bg-muted select-none whitespace-nowrap border-l px-3 text-sm">
+                .{process.env.NEXT_PUBLIC_PDS_HANDLE_DOMAIN || "trainers.gg"}
+              </span>
+            </div>
+          </div>
+
+          {showPassword && (
+            <div className="flex flex-col gap-2">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="password">Password</Label>
+                <Link
+                  href="/forgot-password"
+                  className="text-muted-foreground hover:text-foreground text-sm"
+                >
+                  Forgot password?
+                </Link>
+              </div>
+              <Input
+                id="password"
+                type="password"
+                placeholder="Enter your password"
+                autoComplete="current-password"
+                value={password}
+                onChange={(e) => {
+                  setPassword(e.target.value);
+                  setError(null);
+                }}
+                autoFocus
+              />
+            </div>
+          )}
+
+          <Button type="submit" className="w-full" disabled={isSubmitting}>
+            {isSubmitting
+              ? "Signing in..."
+              : showPassword
+                ? "Sign In"
+                : "Continue"}
+          </Button>
+        </form>
+
+        {/* Separator */}
+        <div className="flex w-full items-center gap-4">
+          <Separator className="flex-1" />
+          <span className="text-muted-foreground text-sm">or</span>
+          <Separator className="flex-1" />
+        </div>
+
+        {/* Social login buttons */}
+        <div className="w-full">
+          <SocialAuthButtons onEmailClick={() => setShowEmailForm(true)} />
+        </div>
+
+        {/* Sign up link */}
+        <p className="text-muted-foreground text-center text-sm">
+          New here?{" "}
+          <Link
+            href="/sign-up"
+            className="text-primary font-medium hover:underline"
+          >
+            Create Account
+          </Link>
         </p>
 
-        {/* Main CTA */}
-        <div className="space-y-4">
-          <Button
-            size="lg"
-            className="w-full gap-3 text-base"
-            onClick={onBlueskyLogin}
-            disabled={isLoading}
-          >
-            <BlueskyIcon className="size-5" />
-            {isLoading ? "Connecting..." : "Sign in with Bluesky"}
-          </Button>
-
-          <p className="text-muted-foreground text-sm">
-            Powered by the AT Protocol for decentralized social networking
-          </p>
-        </div>
-
-        {/* Features */}
-        <div className="mt-16 grid gap-6 text-left sm:grid-cols-2">
-          <FeatureCard
-            title="Pokemon Feed"
-            description="Stay updated with posts from trainers across Bluesky"
-          />
-          <FeatureCard
-            title="Tournaments"
-            description="Find and join competitive Pokemon events"
-          />
-          <FeatureCard
-            title="Team Builder"
-            description="Build and share your competitive teams"
-          />
-          <FeatureCard
-            title="Community"
-            description="Connect with trainers who share your passion"
-          />
-        </div>
-
-        {/* Footer links */}
-        <nav className="text-muted-foreground mt-12 flex flex-wrap justify-center gap-6 text-sm">
-          <a
-            href="https://bsky.app"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="hover:text-primary transition-colors"
-          >
-            What is Bluesky?
-          </a>
-          <a href="/about" className="hover:text-primary transition-colors">
-            About
-          </a>
-        </nav>
+        {/* Terms */}
+        <p className="text-muted-foreground max-w-xs text-center text-xs">
+          By continuing, you agree to our{" "}
+          <Link href="/terms" className="text-primary hover:underline">
+            Terms of Service
+          </Link>{" "}
+          and{" "}
+          <Link href="/privacy" className="text-primary hover:underline">
+            Privacy Policy
+          </Link>
+        </p>
       </div>
     </main>
-  );
-}
-
-function FeatureCard({
-  title,
-  description,
-}: {
-  title: string;
-  description: string;
-}) {
-  return (
-    <div className="bg-muted/50 rounded-lg p-4">
-      <h3 className="mb-1 font-semibold">{title}</h3>
-      <p className="text-muted-foreground text-sm">{description}</p>
-    </div>
   );
 }

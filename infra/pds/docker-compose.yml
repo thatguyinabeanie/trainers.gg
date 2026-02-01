@@ -1,7 +1,7 @@
 # Local PDS Development Environment
 #
-# The PDS requires HTTPS, so this uses ngrok for a secure tunnel.
-# DO NOT run directly - use ./local-dev.sh start instead
+# PDS_DEV_MODE=true bypasses the HTTPS requirement for localhost.
+# For OAuth testing with external providers, use ngrok (pnpm setup:ngrok).
 #
 # Production PDS runs on Fly.io (see fly.toml)
 
@@ -15,6 +15,7 @@ services:
       # These are set via --env-file from local-dev.sh
       PDS_HOSTNAME: ${PDS_HOSTNAME}
       PDS_PORT: ${PDS_PORT:-3000}
+      PDS_DEV_MODE: ${PDS_DEV_MODE:-false}
       PDS_ADMIN_PASSWORD: ${PDS_ADMIN_PASSWORD}
       PDS_JWT_SECRET: ${PDS_JWT_SECRET}
       PDS_PLC_ROTATION_KEY_K256_PRIVATE_KEY_HEX: ${PDS_PLC_ROTATION_KEY_K256_PRIVATE_KEY_HEX}

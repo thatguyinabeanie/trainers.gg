@@ -2148,23 +2148,6 @@ BEGIN
       opponent_game_win_percentage, rank
     ) VALUES (
       t_id,
-      (SELECT a.id FROM public.alts a WHERE a.username = 'admin_trainer'),
-      8,
-      15,
-      11,
-      10,
-      0.5556,
-      0.5238,
-      0.5298,
-      0.5121,
-      12
-    );
-    INSERT INTO public.tournament_standings (
-      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
-      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
-      opponent_game_win_percentage, rank
-    ) VALUES (
-      t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'titus_kohler60'),
       8,
       15,
@@ -4057,23 +4040,6 @@ BEGIN
       0.5907,
       0.5639,
       43
-    );
-    INSERT INTO public.tournament_standings (
-      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
-      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
-      opponent_game_win_percentage, rank
-    ) VALUES (
-      t_id,
-      (SELECT a.id FROM public.alts a WHERE a.username = 'admin_trainer'),
-      8,
-      9,
-      9,
-      10,
-      0.4286,
-      0.4737,
-      0.5702,
-      0.5376,
-      44
     );
     INSERT INTO public.tournament_standings (
       tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
@@ -10924,23 +10890,6 @@ BEGIN
       opponent_game_win_percentage, rank
     ) VALUES (
       t_id,
-      (SELECT a.id FROM public.alts a WHERE a.username = 'admin_trainer'),
-      8,
-      6,
-      5,
-      14,
-      0.25,
-      0.2632,
-      0.4986,
-      0.4849,
-      116
-    );
-    INSERT INTO public.tournament_standings (
-      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
-      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
-      opponent_game_win_percentage, rank
-    ) VALUES (
-      t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'broderick40'),
       8,
       6,
@@ -12465,23 +12414,6 @@ BEGIN
       0.5,
       0.6,
       29
-    );
-    INSERT INTO public.tournament_standings (
-      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
-      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
-      opponent_game_win_percentage, rank
-    ) VALUES (
-      t_id,
-      (SELECT a.id FROM public.alts a WHERE a.username = 'admin_trainer'),
-      8,
-      0,
-      0,
-      2,
-      0,
-      0,
-      0.5,
-      0.6,
-      30
     );
     INSERT INTO public.tournament_standings (
       tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
@@ -24008,23 +23940,6 @@ BEGIN
       0.4046,
       0.4182,
       54
-    );
-    INSERT INTO public.tournament_standings (
-      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
-      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
-      opponent_game_win_percentage, rank
-    ) VALUES (
-      t_id,
-      (SELECT a.id FROM public.alts a WHERE a.username = 'admin_trainer'),
-      7,
-      9,
-      9,
-      9,
-      0.4286,
-      0.5,
-      0.3963,
-      0.4241,
-      55
     );
     INSERT INTO public.tournament_standings (
       tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
@@ -36237,23 +36152,6 @@ BEGIN
       opponent_game_win_percentage, rank
     ) VALUES (
       t_id,
-      (SELECT a.id FROM public.alts a WHERE a.username = 'admin_trainer'),
-      8,
-      12,
-      11,
-      11,
-      0.4444,
-      0.5,
-      0.4852,
-      0.4903,
-      201
-    );
-    INSERT INTO public.tournament_standings (
-      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
-      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
-      opponent_game_win_percentage, rank
-    ) VALUES (
-      t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'stunning_gym'),
       8,
       12,
@@ -41832,23 +41730,6 @@ BEGIN
       opponent_game_win_percentage, rank
     ) VALUES (
       t_id,
-      (SELECT a.id FROM public.alts a WHERE a.username = 'admin_trainer'),
-      1,
-      6,
-      8,
-      14,
-      0.25,
-      0.3636,
-      0.5272,
-      0.5151,
-      32
-    );
-    INSERT INTO public.tournament_standings (
-      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
-      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
-      opponent_game_win_percentage, rank
-    ) VALUES (
-      t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'annette_harber2'),
       1,
       18,
@@ -47133,23 +47014,6 @@ BEGIN
       opponent_game_win_percentage, rank
     ) VALUES (
       t_id,
-      (SELECT a.id FROM public.alts a WHERE a.username = 'admin_trainer'),
-      1,
-      6,
-      6,
-      10,
-      0.2857,
-      0.375,
-      0.5374,
-      0.5155,
-      53
-    );
-    INSERT INTO public.tournament_standings (
-      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
-      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
-      opponent_game_win_percentage, rank
-    ) VALUES (
-      t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'aged_trainer_120'),
       1,
       6,
@@ -50637,23 +50501,6 @@ BEGIN
       opponent_game_win_percentage, rank
     ) VALUES (
       t_id,
-      (SELECT a.id FROM public.alts a WHERE a.username = 'admin_trainer'),
-      1,
-      12,
-      10,
-      10,
-      0.5,
-      0.5,
-      0.4433,
-      0.4467,
-      25
-    );
-    INSERT INTO public.tournament_standings (
-      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
-      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
-      opponent_game_win_percentage, rank
-    ) VALUES (
-      t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'shy_ace'),
       1,
       9,
@@ -53063,23 +52910,6 @@ BEGIN
       opponent_game_win_percentage, rank
     ) VALUES (
       t_id,
-      (SELECT a.id FROM public.alts a WHERE a.username = 'admin_trainer_vgc'),
-      7,
-      12,
-      9,
-      9,
-      0.5,
-      0.5,
-      0.5953,
-      0.5699,
-      79
-    );
-    INSERT INTO public.tournament_standings (
-      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
-      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
-      opponent_game_win_percentage, rank
-    ) VALUES (
-      t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'viviane_rempel'),
       7,
       12,
@@ -55278,23 +55108,6 @@ BEGIN
       0.5983,
       0.5772,
       48
-    );
-    INSERT INTO public.tournament_standings (
-      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
-      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
-      opponent_game_win_percentage, rank
-    ) VALUES (
-      t_id,
-      (SELECT a.id FROM public.alts a WHERE a.username = 'admin_trainer'),
-      1,
-      9,
-      7,
-      9,
-      0.4286,
-      0.4375,
-      0.5635,
-      0.5401,
-      49
     );
     INSERT INTO public.tournament_standings (
       tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
@@ -60540,23 +60353,6 @@ BEGIN
       opponent_game_win_percentage, rank
     ) VALUES (
       t_id,
-      (SELECT a.id FROM public.alts a WHERE a.username = 'admin_trainer'),
-      1,
-      9,
-      8,
-      10,
-      0.4286,
-      0.4444,
-      0.4906,
-      0.4991,
-      52
-    );
-    INSERT INTO public.tournament_standings (
-      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
-      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
-      opponent_game_win_percentage, rank
-    ) VALUES (
-      t_id,
       (SELECT a.id FROM public.alts a WHERE a.username = 'quick_trainer_532'),
       1,
       9,
@@ -63974,23 +63770,6 @@ BEGIN
       0.4792,
       0.4825,
       12
-    );
-    INSERT INTO public.tournament_standings (
-      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
-      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
-      opponent_game_win_percentage, rank
-    ) VALUES (
-      t_id,
-      (SELECT a.id FROM public.alts a WHERE a.username = 'admin_trainer'),
-      1,
-      12,
-      9,
-      11,
-      0.4444,
-      0.45,
-      0.458,
-      0.4638,
-      13
     );
     INSERT INTO public.tournament_standings (
       tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
@@ -76444,23 +76223,6 @@ BEGIN
       0.5563,
       0.5325,
       182
-    );
-    INSERT INTO public.tournament_standings (
-      tournament_id, alt_id, round_number, match_points, game_wins, game_losses,
-      match_win_percentage, game_win_percentage, opponent_match_win_percentage,
-      opponent_game_win_percentage, rank
-    ) VALUES (
-      t_id,
-      (SELECT a.id FROM public.alts a WHERE a.username = 'admin_trainer'),
-      1,
-      12,
-      11,
-      11,
-      0.4444,
-      0.5,
-      0.5464,
-      0.5084,
-      183
     );
     INSERT INTO public.tournament_standings (
       tournament_id, alt_id, round_number, match_points, game_wins, game_losses,

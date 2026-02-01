@@ -69,5 +69,8 @@ next-app
 # Playwright MCP
 .playwright-mcp/
 
+# ngrok per-developer config
+.env.ngrok
+
 # AT Protocol OAuth - auto-generated locally
 apps/web/public/oauth/jwks.json

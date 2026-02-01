@@ -35,20 +35,31 @@ export const getAuthUrls = () => {
 /**
  * OAuth provider configurations.
  * Includes both Supabase OAuth providers and AT Protocol (Bluesky).
+ *
+ * Provider order:
+ * 1. Bluesky — platform-native identity (most prominent)
+ * 2. Apple — required first by App Store guidelines
+ * 3. Google — highest user base
+ * 4. Twitter/X — social platform overlap
  */
 export const oauthProviders = [
   { name: "google", displayName: "Google", icon: "google", type: "supabase" },
+  {
+    name: "twitter",
+    displayName: "X",
+    icon: "twitter",
+    type: "supabase",
+  },
   {
     name: "discord",
     displayName: "Discord",
     icon: "discord",
     type: "supabase",
   },
-  { name: "github", displayName: "GitHub", icon: "github", type: "supabase" },
   {
-    name: "twitter",
-    displayName: "Twitter",
-    icon: "twitter",
+    name: "github",
+    displayName: "GitHub",
+    icon: "github",
     type: "supabase",
   },
 ] as const;

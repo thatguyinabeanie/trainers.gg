@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "../types";
 import { getInvitationExpiryDate } from "../constants";
+import { checkRegistrationOpen, checkCheckInOpen } from "../utils/registration";
 
 type TypedClient = SupabaseClient<Database>;
 type TournamentFormat = Database["public"]["Enums"]["tournament_format"];
@@ -421,12 +422,15 @@ export async function registerForTournament(
   // Check tournament status
   const { data: tournament } = await supabase
     .from("tournaments")
-    .select("status, max_participants")
+    .select(
+      "status, max_participants, allow_late_registration, registration_deadline"
+    )
     .eq("id", tournamentId)
     .single();
 
   if (!tournament) throw new Error("Tournament not found");
-  if (tournament.status !== "upcoming") {
+  const { isOpen: isRegistrationOpen } = checkRegistrationOpen(tournament);
+  if (!isRegistrationOpen) {
     throw new Error("Tournament is not open for registration");
   }
 
@@ -614,7 +618,7 @@ export async function checkIn(supabase: TypedClient, tournamentId: number) {
   // Find the user's registration
   const { data: registration } = await supabase
     .from("tournament_registrations")
-    .select("id, status")
+    .select("id, status, team_id")
     .eq("tournament_id", tournamentId)
     .eq("alt_id", profile.id)
     .single();
@@ -631,21 +635,35 @@ export async function checkIn(supabase: TypedClient, tournamentId: number) {
     );
   }
 
-  // Check tournament allows check-in (should be upcoming or active)
+  if (!registration.team_id) {
+    throw new Error(
+      "You must submit a team before checking in. Go to the tournament page to submit your team."
+    );
+  }
+
+  // Check tournament allows check-in
   const { data: tournament } = await supabase
     .from("tournaments")
-    .select("status")
+    .select(
+      "status, start_date, check_in_window_minutes, current_round, late_check_in_max_round"
+    )
     .eq("id", tournamentId)
     .single();
 
   if (!tournament) throw new Error("Tournament not found");
-  if (tournament.status !== "upcoming" && tournament.status !== "active") {
+  const { isOpen: checkInOpen, isLateCheckIn } = checkCheckInOpen(tournament);
+  if (!checkInOpen) {
     throw new Error("Tournament is not open for check-in");
+  }
+
+  const updateData: Record<string, unknown> = { status: "checked_in" };
+  if (isLateCheckIn) {
+    updateData.checked_in_at = new Date().toISOString();
   }
 
   const { error } = await supabase
     .from("tournament_registrations")
-    .update({ status: "checked_in" })
+    .update(updateData)
     .eq("id", registration.id);
 
   if (error) throw error;
@@ -2452,5 +2470,163 @@ export async function saveTournamentPhases(
     deleted: toDelete.length,
     updated: toUpdate.length,
     created: toCreate.length,
+  };
+}
+
+/**
+ * Submit a team for a tournament registration.
+ * Parses Showdown format text, validates, and stores structured data.
+ * If the player already has a team submitted, it replaces it.
+ */
+export async function submitTeam(
+  supabase: TypedClient,
+  tournamentId: number,
+  rawText: string
+) {
+  const alt = await getCurrentAlt(supabase);
+  if (!alt) {
+    throw new Error(
+      "Unable to load your account. Please try signing out and back in, or contact support."
+    );
+  }
+
+  // 1. Find registration
+  const { data: registration } = await supabase
+    .from("tournament_registrations")
+    .select("id, team_id, team_locked, tournament_id")
+    .eq("tournament_id", tournamentId)
+    .eq("alt_id", alt.id)
+    .single();
+
+  if (!registration) {
+    throw new Error(
+      "You must be registered for this tournament to submit a team."
+    );
+  }
+
+  if (registration.team_locked) {
+    throw new Error("Teams are locked — the tournament has already started.");
+  }
+
+  // 2. Get tournament format for validation
+  const { data: tournament } = await supabase
+    .from("tournaments")
+    .select("game_format")
+    .eq("id", tournamentId)
+    .single();
+
+  if (!tournament) throw new Error("Tournament not found.");
+
+  // 3. Parse and validate (server-side enforcement)
+  const { parseAndValidateTeam } = await import("@trainers/validators/team");
+  const result = parseAndValidateTeam(rawText, tournament.game_format ?? "");
+
+  if (!result.valid || result.team.length === 0) {
+    throw new Error(
+      `Team validation failed:\n${result.errors.map((e) => `• ${e.message}`).join("\n")}`
+    );
+  }
+
+  // 4. If replacing an existing team, delete old data
+  if (registration.team_id) {
+    const { data: oldTeamPokemon } = await supabase
+      .from("team_pokemon")
+      .select("pokemon_id")
+      .eq("team_id", registration.team_id);
+
+    await supabase
+      .from("team_pokemon")
+      .delete()
+      .eq("team_id", registration.team_id);
+
+    if (oldTeamPokemon?.length) {
+      const pokemonIds = oldTeamPokemon.map((tp) => tp.pokemon_id);
+      await supabase.from("pokemon").delete().in("id", pokemonIds);
+    }
+
+    await supabase.from("teams").delete().eq("id", registration.team_id);
+  }
+
+  // 5. Create new team
+  const { data: newTeam, error: teamError } = await supabase
+    .from("teams")
+    .insert({
+      name: "Tournament Team",
+      created_by: alt.id,
+      is_public: false,
+    })
+    .select("id")
+    .single();
+
+  if (teamError || !newTeam) throw new Error("Failed to create team.");
+
+  // 6. Insert pokemon records
+  // Note: move1 is required in the schema, so we fall back to empty string
+  // gender must match the pokemon_gender enum ("Male" | "Female" | null)
+  const pokemonInserts = result.team.map((mon) => ({
+    species: mon.species,
+    nickname: mon.nickname,
+    level: mon.level,
+    ability: mon.ability,
+    nature: mon.nature,
+    held_item: mon.held_item,
+    move1: mon.move1 ?? "",
+    move2: mon.move2,
+    move3: mon.move3,
+    move4: mon.move4,
+    ev_hp: mon.ev_hp,
+    ev_attack: mon.ev_attack,
+    ev_defense: mon.ev_defense,
+    ev_special_attack: mon.ev_special_attack,
+    ev_special_defense: mon.ev_special_defense,
+    ev_speed: mon.ev_speed,
+    iv_hp: mon.iv_hp,
+    iv_attack: mon.iv_attack,
+    iv_defense: mon.iv_defense,
+    iv_special_attack: mon.iv_special_attack,
+    iv_special_defense: mon.iv_special_defense,
+    iv_speed: mon.iv_speed,
+    tera_type: mon.tera_type,
+    gender: mon.gender as Database["public"]["Enums"]["pokemon_gender"] | null,
+    is_shiny: mon.is_shiny,
+  }));
+
+  const { data: newPokemon, error: pokemonError } = await supabase
+    .from("pokemon")
+    .insert(pokemonInserts)
+    .select("id");
+
+  if (pokemonError || !newPokemon) {
+    throw new Error("Failed to create pokemon records.");
+  }
+
+  // 7. Link pokemon to team with positions
+  const teamPokemonInserts = newPokemon.map((p, index) => ({
+    team_id: newTeam.id,
+    pokemon_id: p.id,
+    team_position: index + 1,
+  }));
+
+  const { error: linkError } = await supabase
+    .from("team_pokemon")
+    .insert(teamPokemonInserts);
+
+  if (linkError) throw new Error("Failed to link pokemon to team.");
+
+  // 8. Update registration with team reference
+  const { error: regError } = await supabase
+    .from("tournament_registrations")
+    .update({
+      team_id: newTeam.id,
+      team_submitted_at: new Date().toISOString(),
+    })
+    .eq("id", registration.id);
+
+  if (regError) throw new Error("Failed to update registration with team.");
+
+  return {
+    success: true,
+    teamId: newTeam.id,
+    pokemonCount: result.team.length,
   };
 }

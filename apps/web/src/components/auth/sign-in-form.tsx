@@ -9,11 +9,18 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
-import { SocialAuthButtons } from "./social-auth-buttons";
 import { useAuth } from "@/hooks/use-auth";
-import { resolveLoginIdentifier } from "@/app/(auth-pages)/actions";
+import {
+  resolveLoginIdentifier,
+  checkUsernameAvailability,
+} from "@/app/(auth-pages)/actions";
+import {
+  passwordSchema,
+  usernameSchema,
+  emailSchema,
+} from "@trainers/validators";
+
+// --- Schemas ---
 
 const signInSchema = z.object({
   identifier: z
@@ -21,7 +28,6 @@ const signInSchema = z.object({
     .min(1, "Email or username is required")
     .refine(
       (val) => {
-        // Allow email format or username format (alphanumeric, underscores, hyphens)
         const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val);
         const isUsername = /^[a-zA-Z0-9_-]{3,20}$/.test(val);
         return isEmail || isUsername;
@@ -31,9 +37,46 @@ const signInSchema = z.object({
   password: z.string().min(1, "Password is required"),
 });
 
-type SignInFormData = z.infer<typeof signInSchema>;
+const signUpSchema = z
+  .object({
+    username: usernameSchema,
+    email: emailSchema,
+    password: passwordSchema,
+    confirmPassword: z.string().min(1, "Please confirm your password"),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: "Passwords do not match",
+    path: ["confirmPassword"],
+  });
 
-export function SignInForm() {
+type SignInFormData = z.infer<typeof signInSchema>;
+type SignUpFormData = z.infer<typeof signUpSchema>;
+
+interface SignInFormProps {
+  /** Start in sign-up mode */
+  defaultMode?: "signin" | "signup";
+}
+
+export function SignInForm({ defaultMode = "signin" }: SignInFormProps) {
+  const [mode, setMode] = useState<"signin" | "signup">(defaultMode);
+  const isSignUp = mode === "signup";
+
+  return isSignUp ? (
+    <SignUpView onToggle={() => setMode("signin")} />
+  ) : (
+    <SignInView onToggle={() => setMode("signup")} />
+  );
+}
+
+// --- Sign In View ---
+
+export function SignInView({
+  onToggle,
+  hideHeading,
+}: {
+  onToggle?: () => void;
+  hideHeading?: boolean;
+}) {
   const router = useRouter();
   const { signInWithEmail } = useAuth();
   const [error, setError] = useState<string | null>(null);
@@ -52,7 +95,6 @@ export function SignInForm() {
     setIsSubmitting(true);
 
     try {
-      // Resolve username to email if needed
       const { email, error: resolveError } = await resolveLoginIdentifier(
         data.identifier
       );
@@ -84,83 +126,256 @@ export function SignInForm() {
   };
 
   return (
-    <Card className="w-full max-w-md">
-      <CardHeader className="text-center">
-        <CardTitle className="text-2xl">Sign In</CardTitle>
-      </CardHeader>
-      <CardContent className="flex flex-col gap-6">
-        <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
-          {error && (
-            <div className="bg-destructive/10 text-destructive rounded-lg p-3 text-sm">
-              {error}
-            </div>
-          )}
+    <div className="flex w-full max-w-md flex-col gap-6">
+      {!hideHeading && (
+        <div className="text-center">
+          <h1 className="text-2xl font-bold tracking-tight">Welcome Back</h1>
+          <p className="text-muted-foreground mt-1 text-sm">
+            Sign in to your account
+          </p>
+        </div>
+      )}
 
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="identifier">Email or Username</Label>
-            <Input
-              id="identifier"
-              type="text"
-              placeholder="you@example.com or ash"
-              autoComplete="username"
-              aria-invalid={errors.identifier ? "true" : undefined}
-              {...register("identifier")}
-            />
-            {errors.identifier && (
-              <p className="text-destructive text-sm">
-                {errors.identifier.message}
-              </p>
-            )}
-            <p className="text-muted-foreground text-xs">
-              Enter your email or username (no @trainers.gg needed)
+      <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
+        {error && (
+          <div className="bg-destructive/10 text-destructive rounded-lg p-3 text-sm">
+            {error}
+          </div>
+        )}
+
+        <div className="flex flex-col gap-2">
+          <Label htmlFor="identifier">Email or Username</Label>
+          <Input
+            id="identifier"
+            type="text"
+            placeholder="you@example.com or ash"
+            autoComplete="username"
+            aria-invalid={errors.identifier ? "true" : undefined}
+            {...register("identifier")}
+          />
+          {errors.identifier && (
+            <p className="text-destructive text-sm">
+              {errors.identifier.message}
             </p>
-          </div>
-
-          <div className="flex flex-col gap-2">
-            <div className="flex items-center justify-between">
-              <Label htmlFor="password">Password</Label>
-              <Link
-                href="/forgot-password"
-                className="text-muted-foreground hover:text-foreground text-sm"
-              >
-                Forgot password?
-              </Link>
-            </div>
-            <Input
-              id="password"
-              type="password"
-              placeholder="Enter your password"
-              autoComplete="current-password"
-              aria-invalid={errors.password ? "true" : undefined}
-              {...register("password")}
-            />
-            {errors.password && (
-              <p className="text-destructive text-sm">
-                {errors.password.message}
-              </p>
-            )}
-          </div>
-
-          <Button type="submit" className="w-full" disabled={isSubmitting}>
-            {isSubmitting ? "Signing in..." : "Sign In"}
-          </Button>
-        </form>
-
-        <div className="flex items-center gap-4">
-          <Separator className="flex-1" />
-          <span className="text-muted-foreground text-sm">or</span>
-          <Separator className="flex-1" />
+          )}
+          <p className="text-muted-foreground text-xs">
+            Enter your email or username (no @trainers.gg needed)
+          </p>
         </div>
 
-        <SocialAuthButtons mode="signin" />
+        <div className="flex flex-col gap-2">
+          <div className="flex items-center justify-between">
+            <Label htmlFor="password">Password</Label>
+            <Link
+              href="/forgot-password"
+              className="text-muted-foreground hover:text-foreground text-sm"
+            >
+              Forgot password?
+            </Link>
+          </div>
+          <Input
+            id="password"
+            type="password"
+            placeholder="Enter your password"
+            autoComplete="current-password"
+            aria-invalid={errors.password ? "true" : undefined}
+            {...register("password")}
+          />
+          {errors.password && (
+            <p className="text-destructive text-sm">
+              {errors.password.message}
+            </p>
+          )}
+        </div>
 
+        <Button type="submit" className="w-full" disabled={isSubmitting}>
+          {isSubmitting ? "Signing in..." : "Sign In"}
+        </Button>
+      </form>
+
+      {onToggle && (
         <p className="text-muted-foreground text-center text-sm">
-          Don&apos;t have an account?{" "}
-          <Link href="/sign-up" className="text-primary hover:underline">
-            Sign up
-          </Link>
+          New here?{" "}
+          <button
+            type="button"
+            onClick={onToggle}
+            className="text-primary font-medium hover:underline"
+          >
+            Create Account
+          </button>
         </p>
-      </CardContent>
-    </Card>
+      )}
+    </div>
+  );
+}
+
+// --- Sign Up View ---
+
+function SignUpView({ onToggle }: { onToggle: () => void }) {
+  const router = useRouter();
+  const { signUpWithEmail } = useAuth();
+  const [error, setError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<SignUpFormData>({
+    resolver: zodResolver(signUpSchema),
+  });
+
+  const onSubmit = async (data: SignUpFormData) => {
+    setError(null);
+    setIsSubmitting(true);
+
+    try {
+      const { available, error: usernameError } =
+        await checkUsernameAvailability(data.username);
+
+      if (usernameError) {
+        setError(usernameError);
+        return;
+      }
+
+      if (!available) {
+        setError("Username is already taken");
+        return;
+      }
+
+      const { error: signUpError } = await signUpWithEmail(
+        data.email,
+        data.password,
+        {
+          username: data.username.toLowerCase(),
+        }
+      );
+
+      if (signUpError) {
+        setError(signUpError.message);
+        return;
+      }
+
+      router.push("/");
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "An unexpected error occurred"
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="flex w-full max-w-md flex-col gap-6">
+      <div className="text-center">
+        <h1 className="text-2xl font-bold tracking-tight">Join trainers.gg</h1>
+        <p className="text-muted-foreground mt-1 text-sm">
+          Create your account
+        </p>
+      </div>
+
+      <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
+        {error && (
+          <div className="bg-destructive/10 text-destructive rounded-lg p-3 text-sm">
+            {error}
+          </div>
+        )}
+
+        <div className="flex flex-col gap-2">
+          <Label htmlFor="username">Username</Label>
+          <div className="border-input focus-within:ring-ring/50 focus-within:border-ring flex items-center overflow-hidden rounded-md border focus-within:ring-[3px]">
+            <Input
+              id="username"
+              type="text"
+              placeholder="cooltrainer123"
+              autoComplete="username"
+              aria-invalid={errors.username ? "true" : undefined}
+              className="rounded-none border-0 shadow-none focus-visible:ring-0"
+              {...register("username")}
+            />
+            <span className="text-muted-foreground border-l-input bg-muted select-none whitespace-nowrap border-l px-3 text-sm">
+              .{process.env.NEXT_PUBLIC_PDS_HANDLE_DOMAIN || "trainers.gg"}
+            </span>
+          </div>
+          {errors.username && (
+            <p className="text-destructive text-sm">
+              {errors.username.message}
+            </p>
+          )}
+        </div>
+
+        <div className="flex flex-col gap-2">
+          <Label htmlFor="email">Email</Label>
+          <Input
+            id="email"
+            type="email"
+            placeholder="you@example.com"
+            autoComplete="email"
+            aria-invalid={errors.email ? "true" : undefined}
+            {...register("email")}
+          />
+          {errors.email && (
+            <p className="text-destructive text-sm">{errors.email.message}</p>
+          )}
+        </div>
+
+        <div className="flex flex-col gap-2">
+          <Label htmlFor="password">Password</Label>
+          <Input
+            id="password"
+            type="password"
+            placeholder="Create a password"
+            autoComplete="new-password"
+            aria-invalid={errors.password ? "true" : undefined}
+            {...register("password")}
+          />
+          {errors.password && (
+            <p className="text-destructive text-sm">
+              {errors.password.message}
+            </p>
+          )}
+          <ul className="text-muted-foreground list-inside list-disc text-xs">
+            <li>At least 8 characters</li>
+            <li>At least one uppercase letter</li>
+            <li>At least one lowercase letter</li>
+            <li>At least one number</li>
+            <li>At least one symbol (!@#$%^&*...)</li>
+          </ul>
+        </div>
+
+        <div className="flex flex-col gap-2">
+          <Label htmlFor="confirmPassword">Confirm Password</Label>
+          <Input
+            id="confirmPassword"
+            type="password"
+            placeholder="Confirm your password"
+            autoComplete="new-password"
+            aria-invalid={errors.confirmPassword ? "true" : undefined}
+            {...register("confirmPassword")}
+          />
+          {errors.confirmPassword && (
+            <p className="text-destructive text-sm">
+              {errors.confirmPassword.message}
+            </p>
+          )}
+        </div>
+
+        <Button type="submit" className="w-full" disabled={isSubmitting}>
+          {isSubmitting ? "Creating account..." : "Create Account"}
+        </Button>
+      </form>
+
+      <p className="text-muted-foreground text-center text-sm">
+        Already have an account?{" "}
+        <button
+          type="button"
+          onClick={onToggle}
+          className="text-primary font-medium hover:underline"
+        >
+          Sign In
+        </button>
+      </p>
+    </div>
   );
 }

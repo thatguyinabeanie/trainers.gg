@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import type { AppBskyFeedDefs } from "@atproto/api";
 import { cn } from "@/lib/utils";
 import { PostCard, PostCardSkeleton } from "./post-card";
@@ -48,17 +48,20 @@ export function FeedContainer({
   const loadMoreRef = useRef<HTMLDivElement>(null);
 
   // Intersection Observer for infinite scroll
-  const handleObserver = (entries: IntersectionObserverEntry[]) => {
-    const [entry] = entries;
-    if (
-      entry?.isIntersecting &&
-      hasNextPage &&
-      !isFetchingNextPage &&
-      fetchNextPage
-    ) {
-      fetchNextPage();
-    }
-  };
+  const handleObserver = useCallback(
+    (entries: IntersectionObserverEntry[]) => {
+      const [entry] = entries;
+      if (
+        entry?.isIntersecting &&
+        hasNextPage &&
+        !isFetchingNextPage &&
+        fetchNextPage
+      ) {
+        fetchNextPage();
+      }
+    },
+    [hasNextPage, isFetchingNextPage, fetchNextPage]
+  );
 
   useEffect(() => {
     const element = loadMoreRef.current;

@@ -1,5 +1,6 @@
 {
   "$schema": "https://turbo.build/schema.json",
+  "ui": "tui",
   "globalEnv": [
     "FORCE_REDIRECT_TO_HOME",
     "MAINTENANCE_MODE",
@@ -29,7 +30,9 @@
     "POSTGRES_HOST",
     "POSTGRES_PASSWORD",
     "POSTGRES_DATABASE",
-    "ATPROTO_PRIVATE_KEY"
+    "ATPROTO_PRIVATE_KEY",
+    "NGROK_STATIC_DOMAIN",
+    "PDS_HANDLE_DOMAIN"
   ],
   "tasks": {
     "build": {
@@ -48,7 +51,8 @@
     },
     "dev:mobile": {
       "cache": false,
-      "persistent": true
+      "persistent": true,
+      "interactive": true
     },
     "lint": {
       "dependsOn": ["^build"]
@@ -96,6 +100,29 @@
       "cache": false
     },
     "db:dump": {
+      "cache": false
+    },
+    "prebuild": {
+      "cache": false,
+      "outputs": ["ios/**", "android/**"]
+    },
+    "prebuild:clean": {
+      "cache": false,
+      "outputs": ["ios/**", "android/**"]
+    },
+    "prebuild:ios": {
+      "cache": false,
+      "outputs": ["ios/**"]
+    },
+    "prebuild:android": {
+      "cache": false,
+      "outputs": ["android/**"]
+    },
+    "functions:serve": {
+      "cache": false,
+      "persistent": true
+    },
+    "generate-types": {
       "cache": false
     }
   }

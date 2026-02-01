@@ -1,3 +1,5 @@
+import "@/lib/polyfills";
+
 import React from "react";
 import { useColorScheme } from "react-native";
 import { AuthProvider } from "@/lib/supabase";
@@ -9,15 +11,12 @@ import { DrawerProvider } from "@/components/navigation";
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
-  const isDark = colorScheme === "dark";
-  const colors = isDark ? darkColors : lightColors;
+  const themeName = colorScheme === "dark" ? "dark" : "light";
+  const colors = themeName === "dark" ? darkColors : lightColors;
 
   return (
-    <TamaguiProvider
-      config={tamaguiConfig}
-      defaultTheme={colorScheme ?? "light"}
-    >
-      <Theme name={colorScheme ?? "light"}>
+    <TamaguiProvider config={tamaguiConfig} defaultTheme={themeName}>
+      <Theme name={themeName}>
         <AuthProvider>
           <DrawerProvider>
             <Stack
