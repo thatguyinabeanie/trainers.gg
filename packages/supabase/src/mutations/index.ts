@@ -34,6 +34,7 @@ export {
   createTournament,
   updateTournament,
   registerForTournament,
+  updateRegistrationPreferences,
   cancelRegistration,
   archiveTournament,
   updateRegistrationStatus,
@@ -59,4 +60,5 @@ export {
   saveTournamentPhases,
   // Team submission
   submitTeam,
+  selectTeamForTournament,
 } from "./tournaments";

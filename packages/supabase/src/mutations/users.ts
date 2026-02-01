@@ -183,7 +183,8 @@ export async function createAlt(
     .from("alts")
     .select("id")
     .eq("user_id", user.id)
-    .single();
+    .limit(1)
+    .maybeSingle();
 
   if (existing) {
     throw new Error("Alt already exists for this user");

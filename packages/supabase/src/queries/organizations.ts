@@ -258,7 +258,9 @@ export async function listMyOrganizations(
     .from("alts")
     .select("id")
     .eq("user_id", targetUserId)
-    .single();
+    .order("id", { ascending: true })
+    .limit(1)
+    .maybeSingle();
 
   const altId = alt?.id as number | undefined;
 

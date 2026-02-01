@@ -3209,36 +3209,43 @@ ON CONFLICT (provider, provider_id) DO NOTHING;
 -- -----------------------------------------------------------------------------
 
 UPDATE public.users SET
+  first_name = 'Admin', last_name = 'Trainer',
   birth_date = '1990-01-15', country = 'US',
   did = 'did:plc:admin_trainer00000000000', pds_status = 'active'
 WHERE id = 'a1b2c3d4-e5f6-4a5b-8c9d-0e1f2a3b4c5d';
 
 UPDATE public.users SET
+  first_name = 'Ash', last_name = 'Ketchum',
   birth_date = '1997-05-22', country = 'JP',
   did = 'did:plc:ash_ketchum0000000000000', pds_status = 'active'
 WHERE id = 'b2c3d4e5-f6a7-5b6c-9d0e-1f2a3b4c5d6e';
 
 UPDATE public.users SET
+  first_name = 'Cynthia', last_name = 'Shirona',
   birth_date = '1988-07-10', country = 'JP',
   did = 'did:plc:cynthia00000000000000000', pds_status = 'active'
 WHERE id = 'c3d4e5f6-a7b8-6c7d-0e1f-2a3b4c5d6e7f';
 
 UPDATE public.users SET
+  first_name = 'Brock', last_name = 'Harrison',
   birth_date = '1995-11-03', country = 'US',
   did = 'did:plc:brock0000000000000000000', pds_status = 'active'
 WHERE id = 'd4e5f6a7-b8c9-7d8e-1f2a-3b4c5d6e7f8a';
 
 UPDATE public.users SET
+  first_name = 'Karen', last_name = 'Dark',
   birth_date = '1992-08-18', country = 'JP',
   did = 'did:plc:karen0000000000000000000', pds_status = 'active'
 WHERE id = 'e5f6a7b8-c9d0-8e9f-2a3b-4c5d6e7f8a9b';
 
 UPDATE public.users SET
+  first_name = 'Red', last_name = 'Champion',
   birth_date = '1996-02-27', country = 'JP',
   did = 'did:plc:red000000000000000000000', pds_status = 'active'
 WHERE id = 'f6a7b8c9-d0e1-9f0a-3b4c-5d6e7f8a9b0c';
 
 UPDATE public.users SET
+  first_name = 'Lance', last_name = 'Dragon',
   birth_date = '1985-04-01', country = 'JP',
   did = 'did:plc:lance0000000000000000000', pds_status = 'active'
 WHERE id = 'a7b8c9d0-e1f2-0a1b-4c5d-6e7f8a9b0c1d';
@@ -6920,6 +6927,27 @@ INSERT INTO public.alts (user_id, username, display_name, bio, tier) VALUES
   ('7cd97cae-7c9f-28fb-367e-aabb92cebcee', 'neat_ace_vgc', 'Davin (VGC)', 'Training hard every day!', 'free'),
   ('7cd97caf-acd1-416d-cdc6-53cd43dae85f', 'eryn_stracke_hand41_vgc', 'Guiseppe (VGC)', 'Looking for practice partners', 'free')
 ON CONFLICT (username) DO NOTHING;
+
+
+-- -----------------------------------------------------------------------------
+-- Sync first_name / last_name from auth metadata to public.users
+-- (Covers all generated users whose trigger may not have fired on re-seed)
+-- -----------------------------------------------------------------------------
+
+UPDATE public.users u SET
+  first_name = COALESCE(
+    au.raw_user_meta_data->>'first_name',
+    split_part(au.raw_user_meta_data->>'full_name', ' ', 1),
+    split_part(au.raw_user_meta_data->>'name', ' ', 1)
+  ),
+  last_name = COALESCE(
+    au.raw_user_meta_data->>'last_name',
+    NULLIF(split_part(au.raw_user_meta_data->>'full_name', ' ', 2), ''),
+    NULLIF(split_part(au.raw_user_meta_data->>'name', ' ', 2), '')
+  )
+FROM auth.users au
+WHERE u.id = au.id
+  AND u.first_name IS NULL;
 
 
 -- -----------------------------------------------------------------------------

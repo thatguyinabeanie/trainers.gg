@@ -476,6 +476,40 @@ export async function registerForTournament(
 }
 
 /**
+ * Update registration preferences (in-game name, display options)
+ * Used by the "Edit Registration" flow.
+ */
+export async function updateRegistrationPreferences(
+  supabase: TypedClient,
+  tournamentId: number,
+  data: {
+    inGameName?: string;
+    displayNameOption?: string;
+    showCountryFlag?: boolean;
+  }
+) {
+  const alt = await getCurrentAlt(supabase);
+  if (!alt) {
+    throw new Error("Unable to load your account.");
+  }
+
+  const { data: registration, error } = await supabase
+    .from("tournament_registrations")
+    .update({
+      in_game_name: data.inGameName,
+      display_name_option: data.displayNameOption,
+      show_country_flag: data.showCountryFlag,
+    })
+    .eq("tournament_id", tournamentId)
+    .eq("alt_id", alt.id)
+    .select("id")
+    .single();
+
+  if (error) throw error;
+  return { success: true, registrationId: registration.id };
+}
+
+/**
  * Cancel tournament registration
  */
 export async function cancelRegistration(
@@ -2632,5 +2666,80 @@ export async function submitTeam(
     success: true,
     teamId: newTeam.id,
     pokemonCount: result.team.length,
+  };
+}
+
+/**
+ * Select an existing team for a tournament registration.
+ * Links a team already owned by the user's alt to their registration.
+ * Unlike submitTeam, this does NOT parse/create a new team.
+ */
+export async function selectTeamForTournament(
+  supabase: TypedClient,
+  tournamentId: number,
+  teamId: number
+) {
+  const alt = await getCurrentAlt(supabase);
+  if (!alt) {
+    throw new Error(
+      "Unable to load your account. Please try signing out and back in, or contact support."
+    );
+  }
+
+  // 1. Find registration (must exist, must not be locked)
+  const { data: registration } = await supabase
+    .from("tournament_registrations")
+    .select("id, team_id, team_locked")
+    .eq("tournament_id", tournamentId)
+    .eq("alt_id", alt.id)
+    .single();
+
+  if (!registration) {
+    throw new Error(
+      "You must be registered for this tournament to submit a team."
+    );
+  }
+
+  if (registration.team_locked) {
+    throw new Error("Teams are locked — the tournament has already started.");
+  }
+
+  // 2. Verify the team belongs to this alt
+  const { data: team } = await supabase
+    .from("teams")
+    .select("id, created_by")
+    .eq("id", teamId)
+    .single();
+
+  if (!team || team.created_by !== alt.id) {
+    throw new Error("This team does not belong to your account.");
+  }
+
+  // 3. Verify team has pokemon
+  const { count } = await supabase
+    .from("team_pokemon")
+    .select("*", { count: "exact", head: true })
+    .eq("team_id", teamId);
+
+  if (!count || count === 0) {
+    throw new Error(
+      "This team has no Pokemon. Please select a team with Pokemon."
+    );
+  }
+
+  // 4. Update registration: set team_id, team_submitted_at
+  const { error: regError } = await supabase
+    .from("tournament_registrations")
+    .update({
+      team_id: teamId,
+      team_submitted_at: new Date().toISOString(),
+    })
+    .eq("id", registration.id);
+
+  if (regError) throw new Error("Failed to update registration with team.");
+
+  return {
+    teamId,
+    pokemonCount: count,
   };
 }

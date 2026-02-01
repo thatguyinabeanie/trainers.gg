@@ -476,6 +476,40 @@ export async function getCurrentUserRegisteredTournamentIds(
 }
 
 /**
+ * Get registration details for the current user in a tournament.
+ * Returns the user's registration preferences (alt, in-game name, display options).
+ */
+export async function getUserRegistrationDetails(
+  supabase: TypedClient,
+  tournamentId: number
+) {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return null;
+
+  const { data: alts } = await supabase
+    .from("alts")
+    .select("id")
+    .eq("user_id", user.id);
+
+  if (!alts || alts.length === 0) return null;
+  const altIds = alts.map((a) => a.id);
+
+  const { data: registration } = await supabase
+    .from("tournament_registrations")
+    .select(
+      "id, alt_id, in_game_name, display_name_option, show_country_flag, status"
+    )
+    .eq("tournament_id", tournamentId)
+    .in("alt_id", altIds)
+    .limit(1)
+    .maybeSingle();
+
+  return registration;
+}
+
+/**
  * Get tournament phases
  */
 export async function getTournamentPhases(
@@ -736,7 +770,9 @@ export async function getCheckInStatus(
       .from("alts")
       .select("id")
       .eq("user_id", user.id)
-      .single();
+      .order("id", { ascending: true })
+      .limit(1)
+      .maybeSingle();
 
     if (!alt) {
       return {
@@ -862,7 +898,9 @@ export async function getUserTeams(supabase: TypedClient, altId?: number) {
       .from("alts")
       .select("id")
       .eq("user_id", user.id)
-      .single();
+      .order("id", { ascending: true })
+      .limit(1)
+      .maybeSingle();
 
     if (!alt) return [];
     targetAltId = alt.id as number;
@@ -1179,10 +1217,14 @@ export async function getRegistrationStatus(
   supabase: TypedClient,
   tournamentId: number
 ) {
-  // Get current user
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // Get current user (may fail if signed out or session expired)
+  let user = null;
+  try {
+    const { data } = await supabase.auth.getUser();
+    user = data.user;
+  } catch {
+    // Auth unavailable — continue as unauthenticated
+  }
 
   let altId: number | null = null;
   if (user) {
@@ -1190,7 +1232,9 @@ export async function getRegistrationStatus(
       .from("alts")
       .select("id")
       .eq("user_id", user.id)
-      .single();
+      .order("id", { ascending: true })
+      .limit(1)
+      .maybeSingle();
     altId = (alt?.id as number) ?? null;
   }
 
@@ -1338,7 +1382,9 @@ export async function getTournamentInvitationsReceived(supabase: TypedClient) {
     .from("alts")
     .select("id")
     .eq("user_id", user.id)
-    .single();
+    .order("id", { ascending: true })
+    .limit(1)
+    .maybeSingle();
 
   if (!alt) return [];
 
@@ -1408,7 +1454,9 @@ export async function getTeamForRegistration(
       .from("alts")
       .select("id")
       .eq("user_id", user.id)
-      .single();
+      .order("id", { ascending: true })
+      .limit(1)
+      .maybeSingle();
 
     if (!alt) return null;
     targetAltId = alt.id as number;
