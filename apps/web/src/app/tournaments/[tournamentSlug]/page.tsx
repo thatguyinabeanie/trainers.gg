@@ -332,11 +332,10 @@ function RegistrationCard({
 }: {
   tournament: NonNullable<Awaited<ReturnType<typeof getTournamentBySlug>>>;
 }) {
-  // Show registration for upcoming tournaments and active tournaments with late registration
+  // Show registration card for upcoming and active tournaments.
+  // The client component handles the open/closed state internally.
   const showRegistration =
-    tournament.status === "upcoming" ||
-    (tournament.status === "active" &&
-      tournament.allow_late_registration === true);
+    tournament.status === "upcoming" || tournament.status === "active";
 
   if (!showRegistration) return null;
 
