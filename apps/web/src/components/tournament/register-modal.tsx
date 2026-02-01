@@ -37,8 +37,10 @@ import {
 import {
   registerForTournament,
   getCurrentUserAltsAction,
-  getUserTeamsAction,
+  getRegistrationDetailsAction,
+  updateRegistrationAction,
 } from "@/actions/tournaments";
+import { useAuthContext } from "@/components/auth/auth-provider";
 import { Loader2 } from "lucide-react";
 
 // --------------------------------------------------------------------------
@@ -50,12 +52,9 @@ interface Alt {
   username: string;
   display_name: string | null;
   avatar_url: string | null;
-}
-
-interface Team {
-  id: number;
-  name: string | null;
-  pokemonCount: number;
+  first_name: string | null;
+  last_name: string | null;
+  country: string | null;
 }
 
 export interface RegisterModalProps {
@@ -65,7 +64,54 @@ export interface RegisterModalProps {
   tournamentSlug: string;
   tournamentName: string;
   isFull: boolean;
+  mode?: "register" | "edit";
   onSuccess?: () => void;
+}
+
+// --------------------------------------------------------------------------
+// Helpers
+// --------------------------------------------------------------------------
+
+/** Convert ISO 3166-1 alpha-2 country code to flag emoji */
+function countryCodeToFlag(code: string): string {
+  const upper = code.toUpperCase();
+  const offset = 0x1f1e6 - 65; // Regional indicator A
+  return String.fromCodePoint(
+    upper.charCodeAt(0) + offset,
+    upper.charCodeAt(1) + offset
+  );
+}
+
+/** Compute shortened name: "First L" */
+function getShortenedName(alt: Alt): string {
+  if (alt.first_name) {
+    const lastInitial = alt.last_name?.charAt(0) ?? "";
+    return `${alt.first_name} ${lastInitial}`.trim();
+  }
+  return alt.username;
+}
+
+/** Compute full name: "First Last" */
+function getFullName(alt: Alt): string {
+  if (alt.first_name) {
+    return `${alt.first_name} ${alt.last_name ?? ""}`.trim();
+  }
+  return alt.username;
+}
+
+/** Get display name for the selected option */
+function getDisplayName(
+  alt: Alt,
+  option: "username" | "shortened" | "full"
+): string {
+  switch (option) {
+    case "username":
+      return alt.username;
+    case "shortened":
+      return getShortenedName(alt);
+    case "full":
+      return getFullName(alt);
+  }
 }
 
 // --------------------------------------------------------------------------
@@ -75,7 +121,6 @@ export interface RegisterModalProps {
 const registrationSchema = z.object({
   altId: z.string().optional(),
   inGameName: z.string().optional(),
-  teamId: z.string().optional(),
   displayNameOption: z.enum(["username", "shortened", "full"]),
   showCountryFlag: z.boolean(),
 });
@@ -93,20 +138,21 @@ export function RegisterModal({
   tournamentSlug,
   tournamentName,
   isFull,
+  mode = "register",
   onSuccess,
 }: RegisterModalProps) {
+  const isEditMode = mode === "edit";
   const router = useRouter();
+  const { isAuthenticated } = useAuthContext();
   const [isLoadingData, setIsLoadingData] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [alts, setAlts] = useState<Alt[]>([]);
-  const [teams, setTeams] = useState<Team[]>([]);
 
   const form = useForm<RegistrationFormData>({
     resolver: zodResolver(registrationSchema),
     defaultValues: {
       altId: "",
       inGameName: "",
-      teamId: "",
       displayNameOption: "username",
       showCountryFlag: true,
     },
@@ -120,6 +166,7 @@ export function RegisterModal({
 
   // Derived state
   const selectedAlt = alts.find((a) => a.id.toString() === selectedAltId);
+  const hasName = !!selectedAlt?.first_name;
 
   // Load alts + teams when dialog opens
   useEffect(() => {
@@ -130,9 +177,11 @@ export function RegisterModal({
     async function loadData() {
       setIsLoadingData(true);
 
-      const [altsResult, teamsResult] = await Promise.all([
+      const [altsResult, registrationResult] = await Promise.all([
         getCurrentUserAltsAction(),
-        getUserTeamsAction(),
+        isEditMode
+          ? getRegistrationDetailsAction(tournamentId)
+          : Promise.resolve(null),
       ]);
 
       if (cancelled) return;
@@ -145,8 +194,25 @@ export function RegisterModal({
         }
       }
 
-      if (teamsResult.success) {
-        setTeams(teamsResult.data);
+      // Pre-fill form with existing registration data in edit mode
+      if (
+        isEditMode &&
+        registrationResult &&
+        registrationResult.success &&
+        registrationResult.data
+      ) {
+        const reg = registrationResult.data;
+        form.setValue("altId", reg.alt_id.toString());
+        if (reg.in_game_name) form.setValue("inGameName", reg.in_game_name);
+        if (reg.display_name_option) {
+          form.setValue(
+            "displayNameOption",
+            reg.display_name_option as "username" | "shortened" | "full"
+          );
+        }
+        if (reg.show_country_flag !== null) {
+          form.setValue("showCountryFlag", reg.show_country_flag);
+        }
       }
 
       setIsLoadingData(false);
@@ -157,7 +223,15 @@ export function RegisterModal({
     return () => {
       cancelled = true;
     };
-  }, [open, form]);
+  }, [open, form, isEditMode, tournamentId]);
+
+  // Redirect unauthenticated users to sign-in when modal opens
+  useEffect(() => {
+    if (open && !isAuthenticated) {
+      onOpenChange(false);
+      router.push(`/sign-in?redirect=/tournaments/${tournamentSlug}`);
+    }
+  }, [open, isAuthenticated, onOpenChange, router, tournamentSlug]);
 
   // Reset form when dialog closes
   useEffect(() => {
@@ -165,7 +239,6 @@ export function RegisterModal({
       form.reset();
       setError(null);
       setAlts([]);
-      setTeams([]);
     }
   }, [open, form]);
 
@@ -176,30 +249,41 @@ export function RegisterModal({
   async function onSubmit(data: RegistrationFormData) {
     setError(null);
 
-    // Derive team name from selected team
-    const selectedTeam = data.teamId
-      ? teams.find((t) => t.id.toString() === data.teamId)
-      : undefined;
+    if (isEditMode) {
+      // Update existing registration preferences
+      const result = await updateRegistrationAction(tournamentId, {
+        inGameName: data.inGameName || undefined,
+        displayNameOption: data.displayNameOption,
+        showCountryFlag: data.showCountryFlag,
+      });
 
-    const result = await registerForTournament(tournamentId, {
-      altId: data.altId ? Number(data.altId) : undefined,
-      inGameName: data.inGameName || undefined,
-      teamName: selectedTeam?.name || undefined,
-      displayNameOption: data.displayNameOption,
-      showCountryFlag: data.showCountryFlag,
-    });
-
-    if (result.success) {
-      onOpenChange(false);
-      onSuccess?.();
-    } else {
-      // Redirect to login if not authenticated
-      if (result.error === "Not authenticated") {
+      if (result.success) {
         onOpenChange(false);
-        router.push(`/login?next=/tournaments/${tournamentSlug}`);
-        return;
+        onSuccess?.();
+      } else {
+        setError(result.error);
       }
-      setError(result.error);
+    } else {
+      // New registration
+      const result = await registerForTournament(tournamentId, {
+        altId: data.altId ? Number(data.altId) : undefined,
+        inGameName: data.inGameName || undefined,
+        displayNameOption: data.displayNameOption,
+        showCountryFlag: data.showCountryFlag,
+      });
+
+      if (result.success) {
+        onOpenChange(false);
+        onSuccess?.();
+      } else {
+        // Redirect to login if not authenticated
+        if (result.error === "Not authenticated") {
+          onOpenChange(false);
+          router.push(`/sign-in?redirect=/tournaments/${tournamentSlug}`);
+          return;
+        }
+        setError(result.error);
+      }
     }
   }
 
@@ -212,10 +296,18 @@ export function RegisterModal({
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>
-            {isFull ? "Join Waitlist" : "Register for Tournament"}
+            {isEditMode
+              ? "Edit Registration"
+              : isFull
+                ? "Join Waitlist"
+                : "Register for Tournament"}
           </DialogTitle>
           <DialogDescription>
-            {isFull ? "Join the waitlist for" : "Register for"}{" "}
+            {isEditMode
+              ? "Update your registration preferences for"
+              : isFull
+                ? "Join the waitlist for"
+                : "Register for"}{" "}
             <strong>{tournamentName}</strong>
           </DialogDescription>
         </DialogHeader>
@@ -230,7 +322,7 @@ export function RegisterModal({
               onSubmit={form.handleSubmit(onSubmit)}
               className="space-y-6 py-4"
             >
-              {/* Alt Selection (only show if multiple alts) */}
+              {/* Alt Selection (only show if multiple alts; disabled in edit mode) */}
               {alts.length > 1 && (
                 <FormField
                   control={form.control}
@@ -241,6 +333,7 @@ export function RegisterModal({
                       <Select
                         onValueChange={field.onChange}
                         value={field.value}
+                        disabled={isEditMode}
                       >
                         <FormControl>
                           <SelectTrigger className="w-full">
@@ -284,45 +377,6 @@ export function RegisterModal({
                 )}
               />
 
-              {/* Team Selection (only show if user has saved teams) */}
-              {teams.length > 0 && (
-                <FormField
-                  control={form.control}
-                  name="teamId"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Team (Optional)</FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        value={field.value}
-                      >
-                        <FormControl>
-                          <SelectTrigger className="w-full">
-                            <SelectValue placeholder="No team selected" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="">No team selected</SelectItem>
-                          {teams.map((team) => (
-                            <SelectItem
-                              key={team.id}
-                              value={team.id.toString()}
-                            >
-                              {team.name || "Unnamed Team"} ({team.pokemonCount}
-                              /6)
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormDescription>
-                        You can submit your team later from the tournament page
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              )}
-
               {/* Display Name Options */}
               <FormField
                 control={form.control}
@@ -345,27 +399,55 @@ export function RegisterModal({
                             className="font-normal"
                           >
                             Username
+                            {selectedAlt && (
+                              <span className="text-muted-foreground ml-1">
+                                ({selectedAlt.username})
+                              </span>
+                            )}
                           </FormLabel>
                         </div>
                         <div className="flex items-center gap-2">
                           <RadioGroupItem
                             value="shortened"
                             id="display-shortened"
+                            disabled={!hasName}
                           />
                           <FormLabel
                             htmlFor="display-shortened"
-                            className="font-normal"
+                            className={`font-normal ${!hasName ? "text-muted-foreground" : ""}`}
                           >
                             Shortened name
+                            {selectedAlt && hasName ? (
+                              <span className="text-muted-foreground ml-1">
+                                ({getShortenedName(selectedAlt)})
+                              </span>
+                            ) : (
+                              <span className="text-muted-foreground ml-1">
+                                (set name in profile)
+                              </span>
+                            )}
                           </FormLabel>
                         </div>
                         <div className="flex items-center gap-2">
-                          <RadioGroupItem value="full" id="display-full" />
+                          <RadioGroupItem
+                            value="full"
+                            id="display-full"
+                            disabled={!hasName}
+                          />
                           <FormLabel
                             htmlFor="display-full"
-                            className="font-normal"
+                            className={`font-normal ${!hasName ? "text-muted-foreground" : ""}`}
                           >
                             Full name
+                            {selectedAlt && hasName ? (
+                              <span className="text-muted-foreground ml-1">
+                                ({getFullName(selectedAlt)})
+                              </span>
+                            ) : (
+                              <span className="text-muted-foreground ml-1">
+                                (set name in profile)
+                              </span>
+                            )}
                           </FormLabel>
                         </div>
                       </RadioGroup>
@@ -385,10 +467,22 @@ export function RegisterModal({
                       <Checkbox
                         checked={field.value}
                         onCheckedChange={field.onChange}
+                        disabled={!selectedAlt?.country}
                       />
                     </FormControl>
-                    <FormLabel className="font-normal">
+                    <FormLabel
+                      className={`font-normal ${!selectedAlt?.country ? "text-muted-foreground" : ""}`}
+                    >
                       Show country flag
+                      {selectedAlt?.country ? (
+                        <span className="ml-1">
+                          {countryCodeToFlag(selectedAlt.country)}
+                        </span>
+                      ) : (
+                        <span className="text-muted-foreground ml-1">
+                          (set country in profile)
+                        </span>
+                      )}
                     </FormLabel>
                   </FormItem>
                 )}
@@ -402,14 +496,11 @@ export function RegisterModal({
                   </p>
                   <div className="space-y-0.5">
                     <p className="font-medium">
-                      {displayNameOption === "username"
-                        ? selectedAlt.username
-                        : displayNameOption === "shortened"
-                          ? (selectedAlt.display_name?.split(" ")[0] ??
-                            selectedAlt.username)
-                          : (selectedAlt.display_name ?? selectedAlt.username)}
-                      {showCountryFlag && (
-                        <span className="ml-1.5">&#x1F1FA;&#x1F1F8;</span>
+                      {getDisplayName(selectedAlt, displayNameOption)}
+                      {showCountryFlag && selectedAlt.country && (
+                        <span className="ml-1.5">
+                          {countryCodeToFlag(selectedAlt.country)}
+                        </span>
                       )}
                     </p>
                     {inGameName && (
@@ -437,17 +528,19 @@ export function RegisterModal({
                 />
                 <Button
                   type="submit"
-                  disabled={
-                    isSubmitting ||
-                    isLoadingData ||
-                    (alts.length > 1 && !selectedAltId)
-                  }
+                  disabled={isSubmitting || isLoadingData || !selectedAltId}
                 >
                   {isSubmitting ? (
                     <>
                       <Loader2 className="mr-2 size-4 animate-spin" />
-                      {isFull ? "Joining..." : "Registering..."}
+                      {isEditMode
+                        ? "Saving..."
+                        : isFull
+                          ? "Joining..."
+                          : "Registering..."}
                     </>
+                  ) : isEditMode ? (
+                    "Save Changes"
                   ) : isFull ? (
                     "Join Waitlist"
                   ) : (
