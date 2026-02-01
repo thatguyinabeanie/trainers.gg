@@ -6947,7 +6947,7 @@ UPDATE public.users u SET
   )
 FROM auth.users au
 WHERE u.id = au.id
-  AND u.first_name IS NULL;
+  AND (u.first_name IS NULL OR u.last_name IS NULL);
 
 
 -- -----------------------------------------------------------------------------

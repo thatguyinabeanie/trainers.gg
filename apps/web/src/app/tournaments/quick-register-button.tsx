@@ -68,14 +68,28 @@ export function QuickRegisterButton({
 
   if (isFull) {
     return (
-      <Button
-        variant="outline"
-        size="sm"
-        disabled
-        className="min-w-[76px] text-xs"
-      >
-        Full
-      </Button>
+      <>
+        <Button
+          variant="outline"
+          size="sm"
+          className="min-w-[76px] text-xs"
+          onClick={() => setOpen(true)}
+        >
+          Waitlist
+        </Button>
+        <RegisterModal
+          open={open}
+          onOpenChange={setOpen}
+          tournamentId={tournamentId}
+          tournamentSlug={tournamentSlug}
+          tournamentName={tournamentName}
+          isFull={isFull}
+          onSuccess={() => {
+            router.push(`/tournaments/${tournamentSlug}`);
+            router.refresh();
+          }}
+        />
+      </>
     );
   }
 

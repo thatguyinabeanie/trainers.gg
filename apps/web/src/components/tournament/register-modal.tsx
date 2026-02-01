@@ -316,6 +316,13 @@ export function RegisterModal({
           <div className="flex items-center justify-center py-8">
             <Loader2 className="size-6 animate-spin" />
           </div>
+        ) : alts.length === 0 ? (
+          <div className="text-muted-foreground py-8 text-center text-sm">
+            <p>No player profiles found.</p>
+            <p className="mt-1">
+              Please contact support if you believe this is an error.
+            </p>
+          </div>
         ) : (
           <Form {...form}>
             <form
