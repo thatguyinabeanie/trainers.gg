@@ -2,10 +2,7 @@ import { type NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/middleware";
 
 /**
- * Middleware (using middleware.ts for Vercel Edge Runtime compatibility)
- *
- * Note: Next.js 16 introduced proxy.ts but Vercel has known deployment
- * issues with it. Using middleware.ts until Vercel fully supports proxy.ts.
+ * Proxy (Next.js 16 request interception)
  *
  * Three layers of route protection:
  *
@@ -99,7 +96,7 @@ function isNextInternal(pathname: string): boolean {
   return pathname.startsWith("/_next") || pathname.startsWith("/__next");
 }
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Skip proxy for static files and Next.js internals
