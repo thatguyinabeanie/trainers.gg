@@ -7,6 +7,7 @@ import {
 import {
   getTournamentBySlug,
   getTeamForRegistration,
+  hasOrganizationAccess,
 } from "@trainers/supabase";
 import { CacheTags } from "@/lib/cache";
 import Link from "next/link";
@@ -17,7 +18,15 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Trophy, Calendar, Users, Clock, Building2 } from "lucide-react";
+import {
+  Trophy,
+  Calendar,
+  Users,
+  Clock,
+  Building2,
+  Settings,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { TournamentTabs } from "./tournament-tabs";
 import { PageContainer } from "@/components/layout/page-container";
 import { StatusBadge } from "@/components/ui/status-badge";
@@ -102,6 +111,21 @@ const getCachedTournamentTeams = (tournamentId: number, slug: string) =>
     }
   )();
 
+/**
+ * Get current user ID (not cached - user-specific)
+ */
+async function getCurrentUserId(): Promise<string | null> {
+  try {
+    const supabase = await createClientReadOnly();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    return user?.id ?? null;
+  } catch {
+    return null;
+  }
+}
+
 // ============================================================================
 // Helper Functions
 // ============================================================================
@@ -136,8 +160,10 @@ function Breadcrumb({ tournamentName }: { tournamentName: string }) {
 
 function TournamentHeader({
   tournament,
+  canManage,
 }: {
   tournament: NonNullable<Awaited<ReturnType<typeof getTournamentBySlug>>>;
+  canManage: boolean;
 }) {
   const organization = tournament.organization as {
     id: number;
@@ -148,43 +174,58 @@ function TournamentHeader({
   const registrationCount = tournament.registrations?.length || 0;
 
   return (
-    <div className="mb-8">
-      <div className="mb-2 flex items-center gap-3">
-        <h1 className="text-3xl font-bold">{tournament.name}</h1>
-        {(tournament.status === "active" ||
-          tournament.status === "upcoming" ||
-          tournament.status === "draft" ||
-          tournament.status === "completed" ||
-          tournament.status === "cancelled") && (
-          <StatusBadge status={tournament.status} />
-        )}
+    <div className="mb-8 flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
+      <div>
+        <div className="mb-2 flex items-center gap-3">
+          <h1 className="text-3xl font-bold">{tournament.name}</h1>
+          {(tournament.status === "active" ||
+            tournament.status === "upcoming" ||
+            tournament.status === "draft" ||
+            tournament.status === "completed" ||
+            tournament.status === "cancelled") && (
+            <StatusBadge status={tournament.status} />
+          )}
+        </div>
+
+        <div className="text-muted-foreground flex flex-wrap items-center gap-4 text-sm">
+          {organization && (
+            <Link
+              href={`/organizations/${organization.slug}`}
+              className="flex items-center gap-1 hover:underline"
+            >
+              <Building2 className="h-4 w-4" />
+              {organization.name}
+            </Link>
+          )}
+          {tournament.format && (
+            <span className="flex items-center gap-1">
+              <Trophy className="h-4 w-4" />
+              {tournament.format}
+            </span>
+          )}
+          <span className="flex items-center gap-1">
+            <Users className="h-4 w-4" />
+            {registrationCount}
+            {tournament.max_participants
+              ? ` / ${tournament.max_participants}`
+              : ""}{" "}
+            players
+          </span>
+        </div>
       </div>
 
-      <div className="text-muted-foreground flex flex-wrap items-center gap-4 text-sm">
-        {organization && (
+      {canManage && organization && (
+        <div className="flex gap-2">
           <Link
-            href={`/organizations/${organization.slug}`}
-            className="flex items-center gap-1 hover:underline"
+            href={`/to-dashboard/${organization.slug}/tournaments/${tournament.slug}/manage`}
           >
-            <Building2 className="h-4 w-4" />
-            {organization.name}
+            <Button variant="outline">
+              <Settings className="mr-2 h-4 w-4" />
+              Manage Tournament
+            </Button>
           </Link>
-        )}
-        {tournament.format && (
-          <span className="flex items-center gap-1">
-            <Trophy className="h-4 w-4" />
-            {tournament.format}
-          </span>
-        )}
-        <span className="flex items-center gap-1">
-          <Users className="h-4 w-4" />
-          {registrationCount}
-          {tournament.max_participants
-            ? ` / ${tournament.max_participants}`
-            : ""}{" "}
-          players
-        </span>
-      </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -275,10 +316,26 @@ function FormatCard({
 
 export default async function TournamentPage({ params }: PageProps) {
   const { tournamentSlug } = await params;
-  const tournament = await getCachedTournament(tournamentSlug);
+
+  // Fetch tournament (cached) and current user ID (not cached) in parallel
+  const [tournament, currentUserId] = await Promise.all([
+    getCachedTournament(tournamentSlug),
+    getCurrentUserId(),
+  ]);
 
   if (!tournament) {
     notFound();
+  }
+
+  // Check if user can manage (org owner or staff)
+  let canManage = false;
+  if (currentUserId && tournament.organization_id) {
+    const supabase = await createClientReadOnly();
+    canManage = await hasOrganizationAccess(
+      supabase,
+      tournament.organization_id,
+      currentUserId
+    );
   }
 
   // Fetch the user's team data (auth-dependent, not cached)
@@ -296,7 +353,7 @@ export default async function TournamentPage({ params }: PageProps) {
   return (
     <PageContainer>
       <Breadcrumb tournamentName={tournament.name} />
-      <TournamentHeader tournament={tournament} />
+      <TournamentHeader tournament={tournament} canManage={canManage} />
 
       <div className="grid gap-8 lg:grid-cols-3">
         {/* Main Content */}

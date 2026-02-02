@@ -2,7 +2,7 @@
 
 import { useAuth } from "@/components/auth/auth-provider";
 import { Button } from "@/components/ui/button";
-import { ensureProfile } from "@trainers/supabase";
+import { ensureAlt } from "@trainers/supabase";
 import { useSupabaseMutation } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
@@ -10,9 +10,9 @@ import { Suspense, useEffect, useState } from "react";
 function CreateProfileForm() {
   const router = useRouter();
   const { user, loading, refetchUser } = useAuth();
-  const { mutateAsync: ensureProfileMutation, isLoading: isSubmitting } =
+  const { mutateAsync: ensureAltMutation, isLoading: isSubmitting } =
     useSupabaseMutation((supabase, _args: Record<string, never>) =>
-      ensureProfile(supabase)
+      ensureAlt(supabase)
     );
 
   const [error, setError] = useState<string | null>(null);
@@ -32,7 +32,7 @@ function CreateProfileForm() {
     setError(null);
 
     try {
-      await ensureProfileMutation({});
+      await ensureAltMutation({});
       await refetchUser();
       router.push("/");
     } catch (err) {

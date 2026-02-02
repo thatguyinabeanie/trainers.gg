@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useCallback } from "react";
 import { useAuth, getUserDisplayName } from "@/components/auth/auth-provider";
 import { useSupabaseQuery, useSupabase } from "@/lib/supabase";
 import { getCurrentUserAlts } from "@trainers/supabase";
@@ -20,7 +20,20 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
-import { User, Shield, Swords, Loader2, Save, Mail, Lock } from "lucide-react";
+import {
+  User,
+  Shield,
+  Swords,
+  Loader2,
+  Save,
+  Mail,
+  Lock,
+  Plus,
+  Pencil,
+  Trash2,
+  Star,
+  X,
+} from "lucide-react";
 import { toast } from "sonner";
 
 export default function SettingsPage() {
@@ -185,10 +198,83 @@ function ProfileSettings() {
 }
 
 function AltsSettings() {
-  const altsQueryFn = (client: TypedSupabaseClient) =>
-    getCurrentUserAlts(client);
+  const { user } = useAuth();
+  const supabase = useSupabase();
+  const [isPending, startTransition] = useTransition();
+  const [editingAlt, setEditingAlt] = useState<number | null>(null);
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
 
-  const { data: alts, isLoading } = useSupabaseQuery(altsQueryFn, ["alts"]);
+  const altsQueryFn = useCallback(
+    (client: TypedSupabaseClient) => getCurrentUserAlts(client),
+    []
+  );
+  const {
+    data: alts,
+    isLoading,
+    refetch,
+  } = useSupabaseQuery(altsQueryFn, ["alts", refreshKey]);
+
+  // Get user's main_alt_id
+  const mainAltQueryFn = useCallback(
+    async (client: TypedSupabaseClient) => {
+      if (!user) return null;
+      const { data } = await client
+        .from("users")
+        .select("main_alt_id")
+        .eq("id", user.id)
+        .single();
+      return data?.main_alt_id ?? null;
+    },
+    [user]
+  );
+  const { data: mainAltId } = useSupabaseQuery(mainAltQueryFn, [
+    "mainAlt",
+    user?.id,
+    refreshKey,
+  ]);
+
+  const handleSetMain = (altId: number) => {
+    startTransition(async () => {
+      const { error } = await supabase
+        .from("users")
+        .update({ main_alt_id: altId })
+        .eq("id", user!.id);
+
+      if (error) {
+        toast.error("Failed to set main alt");
+      } else {
+        toast.success("Main alt updated");
+        setRefreshKey((k) => k + 1);
+        refetch();
+      }
+    });
+  };
+
+  const handleDelete = (altId: number, altName: string) => {
+    if (mainAltId === altId) {
+      toast.error("Cannot delete your main alt. Set a different main first.");
+      return;
+    }
+
+    if (!confirm(`Delete alt "${altName}"? This cannot be undone.`)) return;
+
+    startTransition(async () => {
+      const { error } = await supabase.from("alts").delete().eq("id", altId);
+
+      if (error) {
+        toast.error(
+          error.message.includes("tournament")
+            ? "Cannot delete an alt registered in active tournaments"
+            : "Failed to delete alt"
+        );
+      } else {
+        toast.success("Alt deleted");
+        setRefreshKey((k) => k + 1);
+        refetch();
+      }
+    });
+  };
 
   if (isLoading) {
     return (
@@ -204,20 +290,60 @@ function AltsSettings() {
     <div className="space-y-4">
       <Card>
         <CardHeader>
-          <CardTitle>Your Alts</CardTitle>
-          <CardDescription>
-            Manage your player identities. Alts are used for tournament
-            registration.
-          </CardDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>Your Alts</CardTitle>
+              <CardDescription>
+                Manage your player identities. Alts are used for tournament
+                registration.
+              </CardDescription>
+            </div>
+            <Button
+              size="sm"
+              onClick={() => setShowCreateForm(true)}
+              disabled={showCreateForm}
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              New Alt
+            </Button>
+          </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-3">
+          {showCreateForm && (
+            <CreateAltForm
+              onCreated={() => {
+                setShowCreateForm(false);
+                setRefreshKey((k) => k + 1);
+                refetch();
+              }}
+              onCancel={() => setShowCreateForm(false)}
+            />
+          )}
+
           {!alts || alts.length === 0 ? (
             <p className="text-muted-foreground text-sm">
-              No alts found. Your alt should have been created automatically.
+              No alts found. Create one to get started.
             </p>
           ) : (
-            <div className="space-y-3">
-              {alts.map((alt) => (
+            alts.map((alt) => {
+              const isMain = mainAltId === alt.id;
+
+              if (editingAlt === alt.id) {
+                return (
+                  <EditAltForm
+                    key={alt.id}
+                    alt={alt}
+                    onSaved={() => {
+                      setEditingAlt(null);
+                      setRefreshKey((k) => k + 1);
+                      refetch();
+                    }}
+                    onCancel={() => setEditingAlt(null)}
+                  />
+                );
+              }
+
+              return (
                 <div
                   key={alt.id}
                   className="flex items-center justify-between rounded-lg border p-4"
@@ -241,9 +367,15 @@ function AltsSettings() {
                         <p className="font-medium">
                           {alt.display_name ?? alt.username}
                         </p>
-                        <Badge variant="outline" className="text-xs">
-                          Main
-                        </Badge>
+                        {isMain && (
+                          <Badge
+                            variant="outline"
+                            className="border-primary/30 bg-primary/10 text-primary text-xs"
+                          >
+                            <Star className="mr-1 h-3 w-3" />
+                            Main
+                          </Badge>
+                        )}
                       </div>
                       <p className="text-muted-foreground text-sm">
                         @{alt.username}
@@ -255,12 +387,269 @@ function AltsSettings() {
                       )}
                     </div>
                   </div>
+                  <div className="flex items-center gap-1">
+                    {!isMain && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleSetMain(alt.id)}
+                        disabled={isPending}
+                        title="Set as main alt"
+                      >
+                        <Star className="h-4 w-4" />
+                      </Button>
+                    )}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setEditingAlt(alt.id)}
+                      title="Edit alt"
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                    {!isMain && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() =>
+                          handleDelete(alt.id, alt.display_name ?? alt.username)
+                        }
+                        disabled={isPending}
+                        className="text-destructive hover:text-destructive"
+                        title="Delete alt"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
                 </div>
-              ))}
-            </div>
+              );
+            })
           )}
         </CardContent>
       </Card>
+    </div>
+  );
+}
+
+function CreateAltForm({
+  onCreated,
+  onCancel,
+}: {
+  onCreated: () => void;
+  onCancel: () => void;
+}) {
+  const supabase = useSupabase();
+  const [isPending, startTransition] = useTransition();
+  const [username, setUsername] = useState("");
+  const [displayName, setDisplayName] = useState("");
+  const [battleTag, setBattleTag] = useState("");
+
+  const handleSubmit = () => {
+    if (!username.trim() || !displayName.trim()) {
+      toast.error("Username and display name are required");
+      return;
+    }
+
+    startTransition(async () => {
+      // Check username uniqueness
+      const { data: existing } = await supabase
+        .from("alts")
+        .select("id")
+        .eq("username", username.trim().toLowerCase())
+        .maybeSingle();
+
+      if (existing) {
+        toast.error("Username is already taken");
+        return;
+      }
+
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) {
+        toast.error("Not authenticated");
+        return;
+      }
+
+      const { error } = await supabase
+        .from("alts")
+        .insert({
+          user_id: user.id,
+          username: username.trim().toLowerCase(),
+          display_name: displayName.trim(),
+          battle_tag: battleTag.trim() || null,
+        })
+        .select()
+        .single();
+
+      if (error) {
+        toast.error("Failed to create alt");
+      } else {
+        toast.success("Alt created");
+        onCreated();
+      }
+    });
+  };
+
+  return (
+    <div className="bg-muted/30 space-y-3 rounded-lg border p-4">
+      <div className="flex items-center justify-between">
+        <p className="text-sm font-medium">Create New Alt</p>
+        <Button variant="ghost" size="sm" onClick={onCancel}>
+          <X className="h-4 w-4" />
+        </Button>
+      </div>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <div className="space-y-1">
+          <Label htmlFor="newUsername" className="text-xs">
+            Username
+          </Label>
+          <Input
+            id="newUsername"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            placeholder="username"
+          />
+        </div>
+        <div className="space-y-1">
+          <Label htmlFor="newDisplayName" className="text-xs">
+            Display Name
+          </Label>
+          <Input
+            id="newDisplayName"
+            value={displayName}
+            onChange={(e) => setDisplayName(e.target.value)}
+            placeholder="Display Name"
+          />
+        </div>
+      </div>
+      <div className="space-y-1">
+        <Label htmlFor="newBattleTag" className="text-xs">
+          Battle Tag (optional)
+        </Label>
+        <Input
+          id="newBattleTag"
+          value={battleTag}
+          onChange={(e) => setBattleTag(e.target.value)}
+          placeholder="Player#1234"
+        />
+      </div>
+      <Button size="sm" onClick={handleSubmit} disabled={isPending}>
+        {isPending ? (
+          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+        ) : (
+          <Plus className="mr-2 h-4 w-4" />
+        )}
+        Create Alt
+      </Button>
+    </div>
+  );
+}
+
+function EditAltForm({
+  alt,
+  onSaved,
+  onCancel,
+}: {
+  alt: {
+    id: number;
+    username: string;
+    display_name: string;
+    battle_tag: string | null;
+    bio: string | null;
+  };
+  onSaved: () => void;
+  onCancel: () => void;
+}) {
+  const supabase = useSupabase();
+  const [isPending, startTransition] = useTransition();
+  const [displayName, setDisplayName] = useState(alt.display_name);
+  const [battleTag, setBattleTag] = useState(alt.battle_tag ?? "");
+  const [bio, setBio] = useState(alt.bio ?? "");
+
+  const handleSubmit = () => {
+    if (!displayName.trim()) {
+      toast.error("Display name is required");
+      return;
+    }
+
+    startTransition(async () => {
+      const { error } = await supabase
+        .from("alts")
+        .update({
+          display_name: displayName.trim(),
+          battle_tag: battleTag.trim() || null,
+          bio: bio.trim() || null,
+        })
+        .eq("id", alt.id);
+
+      if (error) {
+        toast.error("Failed to update alt");
+      } else {
+        toast.success("Alt updated");
+        onSaved();
+      }
+    });
+  };
+
+  return (
+    <div className="bg-muted/30 space-y-3 rounded-lg border p-4">
+      <div className="flex items-center justify-between">
+        <p className="text-sm font-medium">Edit @{alt.username}</p>
+        <Button variant="ghost" size="sm" onClick={onCancel}>
+          <X className="h-4 w-4" />
+        </Button>
+      </div>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <div className="space-y-1">
+          <Label htmlFor={`editDisplayName-${alt.id}`} className="text-xs">
+            Display Name
+          </Label>
+          <Input
+            id={`editDisplayName-${alt.id}`}
+            value={displayName}
+            onChange={(e) => setDisplayName(e.target.value)}
+            placeholder="Display Name"
+          />
+        </div>
+        <div className="space-y-1">
+          <Label htmlFor={`editBattleTag-${alt.id}`} className="text-xs">
+            Battle Tag
+          </Label>
+          <Input
+            id={`editBattleTag-${alt.id}`}
+            value={battleTag}
+            onChange={(e) => setBattleTag(e.target.value)}
+            placeholder="Player#1234"
+          />
+        </div>
+      </div>
+      <div className="space-y-1">
+        <Label htmlFor={`editBio-${alt.id}`} className="text-xs">
+          Bio
+        </Label>
+        <Textarea
+          id={`editBio-${alt.id}`}
+          value={bio}
+          onChange={(e) => setBio(e.target.value)}
+          placeholder="About this alt..."
+          rows={2}
+        />
+      </div>
+      <div className="flex gap-2">
+        <Button size="sm" onClick={handleSubmit} disabled={isPending}>
+          {isPending ? (
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          ) : (
+            <Save className="mr-2 h-4 w-4" />
+          )}
+          Save
+        </Button>
+        <Button size="sm" variant="outline" onClick={onCancel}>
+          Cancel
+        </Button>
+      </div>
     </div>
   );
 }

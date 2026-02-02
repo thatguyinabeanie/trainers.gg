@@ -41,13 +41,13 @@ interface Tournament {
 interface OrganizationTabsProps {
   tournaments: Tournament[];
   orgSlug: string;
-  isOwner: boolean;
+  canManage: boolean;
 }
 
 export function OrganizationTabs({
   tournaments,
   orgSlug,
-  isOwner,
+  canManage,
 }: OrganizationTabsProps) {
   return (
     <Tabs defaultValue="tournaments" className="space-y-6">
@@ -71,7 +71,7 @@ export function OrganizationTabs({
               <p className="text-muted-foreground mb-4 text-center">
                 This organization hasn&apos;t created any tournaments
               </p>
-              {isOwner && (
+              {canManage && (
                 <Link href={`/to-dashboard/${orgSlug}/tournaments/create`}>
                   <Button>
                     <Trophy className="mr-2 h-4 w-4" />

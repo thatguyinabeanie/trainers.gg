@@ -119,11 +119,40 @@ export function NotificationBell({ userId }: NotificationBellProps) {
           table: "notifications",
           filter: `user_id=eq.${userId}`,
         },
-        () => {
+        (payload) => {
           setRefreshKey((k) => k + 1);
+
+          // Browser push notification when tab is not focused
+          if (
+            document.hidden &&
+            "Notification" in window &&
+            Notification.permission === "granted"
+          ) {
+            const row = payload.new as {
+              title?: string;
+              body?: string;
+              action_url?: string;
+            };
+            const n = new Notification(row.title ?? "New notification", {
+              body: row.body ?? undefined,
+              icon: "/icon-192.png",
+              tag: "trainers-notification",
+            });
+            if (row.action_url) {
+              n.onclick = () => {
+                window.focus();
+                window.location.href = row.action_url!;
+              };
+            }
+          }
         }
       )
       .subscribe();
+
+    // Request notification permission on first load
+    if ("Notification" in window && Notification.permission === "default") {
+      Notification.requestPermission();
+    }
 
     return () => {
       supabase.removeChannel(channel);

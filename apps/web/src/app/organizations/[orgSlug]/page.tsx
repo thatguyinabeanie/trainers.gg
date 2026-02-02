@@ -4,7 +4,10 @@ import {
   createStaticClient,
   createClientReadOnly,
 } from "@/lib/supabase/server";
-import { getOrganizationBySlug } from "@trainers/supabase";
+import {
+  getOrganizationBySlug,
+  hasOrganizationAccess,
+} from "@trainers/supabase";
 import { CacheTags } from "@/lib/cache";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
@@ -70,10 +73,10 @@ function Breadcrumb({ orgName }: { orgName: string }) {
 
 function OrganizationHeader({
   organization,
-  isOwner,
+  canManage,
 }: {
   organization: NonNullable<Awaited<ReturnType<typeof getOrganizationBySlug>>>;
-  isOwner: boolean;
+  canManage: boolean;
 }) {
   return (
     <div className="mb-8 flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
@@ -104,7 +107,7 @@ function OrganizationHeader({
       </div>
 
       <div className="flex gap-2">
-        {isOwner && (
+        {canManage && (
           <Link href={`/to-dashboard/${organization.slug}`}>
             <Button variant="outline">
               <Settings className="mr-2 h-4 w-4" />
@@ -191,7 +194,20 @@ export default async function OrganizationPage({
     notFound();
   }
 
-  const isOwner = currentUserId === organization.owner_user_id;
+  // Check if user can manage (owner or staff)
+  let canManage = false;
+  if (currentUserId) {
+    if (currentUserId === organization.owner_user_id) {
+      canManage = true;
+    } else {
+      const supabase = await createClientReadOnly();
+      canManage = await hasOrganizationAccess(
+        supabase,
+        organization.id,
+        currentUserId
+      );
+    }
+  }
 
   // Combine all tournament types
   const tournaments = [
@@ -203,12 +219,12 @@ export default async function OrganizationPage({
   return (
     <div className="container mx-auto px-4 py-8">
       <Breadcrumb orgName={organization.name} />
-      <OrganizationHeader organization={organization} isOwner={isOwner} />
+      <OrganizationHeader organization={organization} canManage={canManage} />
       <StatsCards organization={organization} />
       <OrganizationTabs
         tournaments={tournaments}
         orgSlug={orgSlug}
-        isOwner={isOwner}
+        canManage={canManage}
       />
     </div>
   );

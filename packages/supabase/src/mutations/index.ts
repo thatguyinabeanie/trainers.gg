@@ -6,10 +6,12 @@
 
 // User mutations
 export {
-  updateProfile,
+  updateAlt,
   updateUsername,
-  createProfile,
-  ensureProfile,
+  createAlt,
+  ensureAlt,
+  deleteAlt,
+  setMainAlt,
 } from "./users";
 
 // Organization mutations
