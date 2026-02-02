@@ -29,11 +29,15 @@ export async function requireSiteAdmin() {
     redirect("/forbidden");
   }
 
-  const payload = JSON.parse(atob(session.access_token.split(".")[1]!)) as {
-    site_roles?: string[];
-  };
-
-  const siteRoles: string[] = payload.site_roles ?? [];
+  let siteRoles: string[] = [];
+  try {
+    const payload = JSON.parse(atob(session.access_token.split(".")[1]!)) as {
+      site_roles?: string[];
+    };
+    siteRoles = payload.site_roles ?? [];
+  } catch {
+    redirect("/forbidden");
+  }
 
   if (!siteRoles.includes("site_admin")) {
     redirect("/forbidden");
