@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { Trophy } from "lucide-react";
 import Link from "next/link";
 import { SocialAuthButtons } from "@/components/auth/social-auth-buttons";
@@ -9,6 +10,7 @@ import { WaitlistForm } from "@/components/auth/waitlist-form";
 import { getRedirectParam } from "@/app/(auth-pages)/utils";
 
 export default function SignUpPage() {
+  const searchParams = useSearchParams();
   const maintenanceMode = process.env.NEXT_PUBLIC_MAINTENANCE_MODE === "true";
   const [showEmailForm, setShowEmailForm] = useState(false);
 
@@ -29,7 +31,7 @@ export default function SignUpPage() {
 
         <SignInForm
           defaultMode="signup"
-          redirectTo={getRedirectParam() ?? undefined}
+          redirectTo={getRedirectParam(searchParams) ?? undefined}
         />
 
         <button
@@ -64,7 +66,7 @@ export default function SignUpPage() {
       <div className="w-full">
         <SocialAuthButtons
           onEmailClick={() => setShowEmailForm(true)}
-          redirectTo={getRedirectParam() ?? undefined}
+          redirectTo={getRedirectParam(searchParams) ?? undefined}
         />
       </div>
 

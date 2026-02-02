@@ -12,7 +12,7 @@ export default async function OnboardingPage() {
 
   // Redirect to sign-in if not authenticated
   if (!user) {
-    redirect("/sign-in");
+    redirect("/sign-in?redirect=/onboarding");
   }
 
   // Redirect to home if profile is already complete

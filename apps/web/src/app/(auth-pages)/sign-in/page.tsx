@@ -1,7 +1,7 @@
 "use client";
 
 import { type FormEvent, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Trophy } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -16,6 +16,7 @@ import { getRedirectParam, withRedirectParam } from "@/app/(auth-pages)/utils";
 
 export default function SignInPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { signInWithEmail } = useAuth();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -53,7 +54,7 @@ export default function SignInPage() {
           return;
         }
 
-        const redirectTo = getRedirectParam();
+        const redirectTo = getRedirectParam(searchParams);
         router.push(
           redirectTo && redirectTo.startsWith("/") ? redirectTo : "/"
         );
@@ -96,7 +97,10 @@ export default function SignInPage() {
           <span className="text-lg font-bold tracking-tight">trainers.gg</span>
         </Link>
 
-        <SignInView hideHeading redirectTo={getRedirectParam() ?? undefined} />
+        <SignInView
+          hideHeading
+          redirectTo={getRedirectParam(searchParams) ?? undefined}
+        />
 
         <button
           type="button"
@@ -201,7 +205,7 @@ export default function SignInPage() {
       <div className="w-full">
         <SocialAuthButtons
           onEmailClick={() => setShowEmailForm(true)}
-          redirectTo={getRedirectParam() ?? undefined}
+          redirectTo={getRedirectParam(searchParams) ?? undefined}
         />
       </div>
 
@@ -209,7 +213,7 @@ export default function SignInPage() {
       <p className="text-muted-foreground text-center text-sm">
         New here?{" "}
         <Link
-          href={withRedirectParam("/sign-up")}
+          href={withRedirectParam("/sign-up", searchParams)}
           className="text-primary font-medium hover:underline"
         >
           Create Account
