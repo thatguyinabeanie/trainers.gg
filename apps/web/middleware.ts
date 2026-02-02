@@ -18,7 +18,7 @@ import { createClient } from "@/lib/supabase/middleware";
  *    - /dashboard, /to-dashboard, /settings, /onboarding, /organizations/create, /feed
  *    - Unauthenticated users are redirected to /sign-in?redirect=<path>
  *
- * 3. Private beta / maintenance mode (when MAINTENANCE_MODE=true):
+ * 3. Private beta / maintenance mode (when NEXT_PUBLIC_MAINTENANCE_MODE=true):
  *    - Unauthenticated users requesting non-public routes are redirected to /waitlist
  *    - Public routes (sign-in, sign-up, forgot/reset-password, waitlist) remain accessible
  *    - Authenticated users can access all pages
@@ -108,9 +108,7 @@ export async function middleware(request: NextRequest) {
   }
 
   // Read maintenance mode at runtime
-  const maintenanceMode =
-    process.env.NEXT_PUBLIC_MAINTENANCE_MODE === "true" ||
-    process.env.MAINTENANCE_MODE === "true";
+  const maintenanceMode = process.env.NEXT_PUBLIC_MAINTENANCE_MODE === "true";
 
   // Create Supabase client and refresh session
   const { supabase, response } = createClient(request);

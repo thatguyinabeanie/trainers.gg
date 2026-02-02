@@ -222,7 +222,7 @@ function generateUsersSql(
   lines.push(`  site_admin_role_id bigint;`);
   lines.push(`BEGIN`);
   lines.push(
-    `  SELECT id INTO site_admin_role_id FROM public.roles WHERE name = 'Site Admin' AND scope = 'site';`
+    `  SELECT id INTO site_admin_role_id FROM public.roles WHERE name = 'site_admin' AND scope = 'site';`
   );
   lines.push(`  IF site_admin_role_id IS NOT NULL THEN`);
   lines.push(`    INSERT INTO public.user_roles (user_id, role_id) VALUES`);

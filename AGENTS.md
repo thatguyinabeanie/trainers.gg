@@ -133,6 +133,9 @@ The proxy handles:
 
 - All local env vars live in a single root `.env.local`, symlinked into app/package directories automatically by `postinstall.sh`
 - When adding env vars used during builds, declare them in `turbo.json` under the task's `env` array (Turborepo uses this for cache invalidation)
+- `pnpm dev` always configures `.env.local` for local Supabase — even if Vercel CLI (`vercel env pull`) has overwritten it with production credentials
+- To explicitly use a remote Supabase instance during local dev, set `SKIP_LOCAL_SUPABASE=1` before running `pnpm dev`
+- The setup script preserves non-Supabase env vars (OAuth keys, PDS config, Resend API key, etc.) when reconfiguring
 
 ### UI Components (Web)
 
