@@ -155,6 +155,88 @@ export type Database = {
           },
         ]
       }
+      audit_log: {
+        Row: {
+          action: Database["public"]["Enums"]["audit_action"]
+          actor_alt_id: number | null
+          actor_user_id: string | null
+          created_at: string
+          game_id: number | null
+          id: number
+          match_id: number | null
+          metadata: Json
+          organization_id: number | null
+          tournament_id: number | null
+        }
+        Insert: {
+          action: Database["public"]["Enums"]["audit_action"]
+          actor_alt_id?: number | null
+          actor_user_id?: string | null
+          created_at?: string
+          game_id?: number | null
+          id?: never
+          match_id?: number | null
+          metadata?: Json
+          organization_id?: number | null
+          tournament_id?: number | null
+        }
+        Update: {
+          action?: Database["public"]["Enums"]["audit_action"]
+          actor_alt_id?: number | null
+          actor_user_id?: string | null
+          created_at?: string
+          game_id?: number | null
+          id?: never
+          match_id?: number | null
+          metadata?: Json
+          organization_id?: number | null
+          tournament_id?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audit_log_actor_alt_id_fkey"
+            columns: ["actor_alt_id"]
+            isOneToOne: false
+            referencedRelation: "alts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "audit_log_actor_user_id_fkey"
+            columns: ["actor_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "audit_log_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "match_games"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "audit_log_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "tournament_matches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "audit_log_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "audit_log_tournament_id_fkey"
+            columns: ["tournament_id"]
+            isOneToOne: false
+            referencedRelation: "tournaments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       beta_invites: {
         Row: {
           converted_user_id: string | null
@@ -380,6 +462,196 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "linked_atproto_accounts_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      match_games: {
+        Row: {
+          alt1_selection: number | null
+          alt1_submitted_at: string | null
+          alt2_selection: number | null
+          alt2_submitted_at: string | null
+          created_at: string
+          game_number: number
+          id: number
+          match_id: number
+          resolution_notes: string | null
+          resolved_at: string | null
+          resolved_by: number | null
+          status: Database["public"]["Enums"]["match_game_status"]
+          updated_at: string
+          winner_alt_id: number | null
+        }
+        Insert: {
+          alt1_selection?: number | null
+          alt1_submitted_at?: string | null
+          alt2_selection?: number | null
+          alt2_submitted_at?: string | null
+          created_at?: string
+          game_number: number
+          id?: never
+          match_id: number
+          resolution_notes?: string | null
+          resolved_at?: string | null
+          resolved_by?: number | null
+          status?: Database["public"]["Enums"]["match_game_status"]
+          updated_at?: string
+          winner_alt_id?: number | null
+        }
+        Update: {
+          alt1_selection?: number | null
+          alt1_submitted_at?: string | null
+          alt2_selection?: number | null
+          alt2_submitted_at?: string | null
+          created_at?: string
+          game_number?: number
+          id?: never
+          match_id?: number
+          resolution_notes?: string | null
+          resolved_at?: string | null
+          resolved_by?: number | null
+          status?: Database["public"]["Enums"]["match_game_status"]
+          updated_at?: string
+          winner_alt_id?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "match_games_alt1_selection_fkey"
+            columns: ["alt1_selection"]
+            isOneToOne: false
+            referencedRelation: "alts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "match_games_alt2_selection_fkey"
+            columns: ["alt2_selection"]
+            isOneToOne: false
+            referencedRelation: "alts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "match_games_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "tournament_matches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "match_games_resolved_by_fkey"
+            columns: ["resolved_by"]
+            isOneToOne: false
+            referencedRelation: "alts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "match_games_winner_alt_id_fkey"
+            columns: ["winner_alt_id"]
+            isOneToOne: false
+            referencedRelation: "alts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      match_messages: {
+        Row: {
+          alt_id: number | null
+          content: string
+          created_at: string
+          id: number
+          match_id: number
+          message_type: Database["public"]["Enums"]["match_message_type"]
+        }
+        Insert: {
+          alt_id?: number | null
+          content: string
+          created_at?: string
+          id?: never
+          match_id: number
+          message_type?: Database["public"]["Enums"]["match_message_type"]
+        }
+        Update: {
+          alt_id?: number | null
+          content?: string
+          created_at?: string
+          id?: never
+          match_id?: number
+          message_type?: Database["public"]["Enums"]["match_message_type"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "match_messages_alt_id_fkey"
+            columns: ["alt_id"]
+            isOneToOne: false
+            referencedRelation: "alts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "match_messages_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "tournament_matches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notifications: {
+        Row: {
+          action_url: string | null
+          body: string | null
+          created_at: string
+          id: number
+          match_id: number | null
+          read_at: string | null
+          title: string
+          tournament_id: number | null
+          type: Database["public"]["Enums"]["notification_type"]
+          user_id: string
+        }
+        Insert: {
+          action_url?: string | null
+          body?: string | null
+          created_at?: string
+          id?: never
+          match_id?: number | null
+          read_at?: string | null
+          title: string
+          tournament_id?: number | null
+          type: Database["public"]["Enums"]["notification_type"]
+          user_id: string
+        }
+        Update: {
+          action_url?: string | null
+          body?: string | null
+          created_at?: string
+          id?: never
+          match_id?: number | null
+          read_at?: string | null
+          title?: string
+          tournament_id?: number | null
+          type?: Database["public"]["Enums"]["notification_type"]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "tournament_matches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_tournament_id_fkey"
+            columns: ["tournament_id"]
+            isOneToOne: false
+            referencedRelation: "tournaments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "users"
@@ -2306,6 +2578,24 @@ export type Database = {
       custom_access_token_hook: { Args: { event: Json }; Returns: Json }
       get_current_alt_id: { Args: never; Returns: number }
       get_current_user_id: { Args: never; Returns: string }
+      get_match_games_for_player: {
+        Args: { p_match_id: number }
+        Returns: {
+          alt1_selection: number
+          alt2_selection: number
+          game_number: number
+          id: number
+          match_id: number
+          my_selection: number
+          my_submitted_at: string
+          opponent_submitted: boolean
+          resolution_notes: string
+          resolved_at: string
+          resolved_by: number
+          status: Database["public"]["Enums"]["match_game_status"]
+          winner_alt_id: number
+        }[]
+      }
       get_org_id_from_group_role: {
         Args: { p_group_role_id: number }
         Returns: number
@@ -2338,6 +2628,10 @@ export type Database = {
         Returns: boolean
       }
       is_site_admin: { Args: never; Returns: boolean }
+      submit_game_selection: {
+        Args: { p_game_id: number; p_selected_winner_alt_id: number }
+        Returns: Json
+      }
       user_has_org_role: {
         Args: { p_org_id: number; p_role_name: string; p_user_id: string }
         Returns: boolean
@@ -2352,9 +2646,50 @@ export type Database = {
       }
     }
     Enums: {
+      audit_action:
+        | "match.score_submitted"
+        | "match.score_agreed"
+        | "match.score_disputed"
+        | "match.result_reported"
+        | "match.staff_requested"
+        | "match.staff_resolved"
+        | "judge.game_reset"
+        | "judge.match_reset"
+        | "judge.game_override"
+        | "judge.match_override"
+        | "tournament.started"
+        | "tournament.round_created"
+        | "tournament.round_started"
+        | "tournament.round_completed"
+        | "tournament.phase_advanced"
+        | "tournament.completed"
+        | "team.submitted"
+        | "team.locked"
+        | "team.unlocked"
+        | "registration.checked_in"
+        | "registration.dropped"
+        | "registration.late_checkin"
       billing_interval: "monthly" | "annual"
       entity_type: "profile" | "organization" | "alt"
       invitation_status: "pending" | "accepted" | "declined" | "expired"
+      match_game_status:
+        | "pending"
+        | "awaiting_both"
+        | "awaiting_one"
+        | "agreed"
+        | "disputed"
+        | "resolved"
+        | "cancelled"
+      match_message_type: "player" | "system" | "judge"
+      notification_type:
+        | "match_ready"
+        | "match_result"
+        | "match_disputed"
+        | "judge_call"
+        | "judge_resolved"
+        | "tournament_start"
+        | "tournament_round"
+        | "tournament_complete"
       org_request_status: "pending" | "approved" | "rejected"
       organization_status: "pending" | "active" | "rejected"
       organization_subscription_tier:
@@ -2523,9 +2858,53 @@ export const Constants = {
   },
   public: {
     Enums: {
+      audit_action: [
+        "match.score_submitted",
+        "match.score_agreed",
+        "match.score_disputed",
+        "match.result_reported",
+        "match.staff_requested",
+        "match.staff_resolved",
+        "judge.game_reset",
+        "judge.match_reset",
+        "judge.game_override",
+        "judge.match_override",
+        "tournament.started",
+        "tournament.round_created",
+        "tournament.round_started",
+        "tournament.round_completed",
+        "tournament.phase_advanced",
+        "tournament.completed",
+        "team.submitted",
+        "team.locked",
+        "team.unlocked",
+        "registration.checked_in",
+        "registration.dropped",
+        "registration.late_checkin",
+      ],
       billing_interval: ["monthly", "annual"],
       entity_type: ["profile", "organization", "alt"],
       invitation_status: ["pending", "accepted", "declined", "expired"],
+      match_game_status: [
+        "pending",
+        "awaiting_both",
+        "awaiting_one",
+        "agreed",
+        "disputed",
+        "resolved",
+        "cancelled",
+      ],
+      match_message_type: ["player", "system", "judge"],
+      notification_type: [
+        "match_ready",
+        "match_result",
+        "match_disputed",
+        "judge_call",
+        "judge_resolved",
+        "tournament_start",
+        "tournament_round",
+        "tournament_complete",
+      ],
       org_request_status: ["pending", "approved", "rejected"],
       organization_status: ["pending", "active", "rejected"],
       organization_subscription_tier: [

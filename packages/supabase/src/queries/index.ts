@@ -90,3 +90,17 @@ export {
   grantSiteRole,
   revokeSiteRole,
 } from "./site-roles";
+
+// Match game queries
+export {
+  getMatchGames,
+  getMatchGamesForPlayer,
+  getMatchMessages,
+  getMatchGame,
+} from "./match-games";
+
+// Notification queries
+export { getNotifications, getUnreadNotificationCount } from "./notifications";
+
+// Audit log queries
+export { getTournamentAuditLog, getMatchAuditLog } from "./audit-log";

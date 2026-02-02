@@ -62,3 +62,20 @@ export {
   submitTeam,
   selectTeamForTournament,
 } from "./tournaments";
+
+// Match game mutations
+export {
+  submitGameSelection,
+  sendMatchMessage,
+  sendSystemMessage,
+  createMatchGames,
+  judgeOverrideGame,
+  judgeResetGame,
+} from "./match-games";
+
+// Notification mutations
+export {
+  markNotificationRead,
+  markAllNotificationsRead,
+  deleteNotification,
+} from "./notifications";
