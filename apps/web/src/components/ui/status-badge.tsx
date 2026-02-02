@@ -1,7 +1,13 @@
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
-type Status = "active" | "upcoming" | "draft" | "completed" | "cancelled";
+type Status =
+  | "active"
+  | "upcoming"
+  | "draft"
+  | "completed"
+  | "cancelled"
+  | "pending";
 
 const statusConfig: Record<Status, { label: string; className: string }> = {
   active: {
@@ -27,6 +33,11 @@ const statusConfig: Record<Status, { label: string; className: string }> = {
   cancelled: {
     label: "Cancelled",
     className: "bg-red-500/15 text-red-600 dark:text-red-400 border-red-500/25",
+  },
+  pending: {
+    label: "Pending",
+    className:
+      "bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/25",
   },
 };
 
