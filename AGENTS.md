@@ -127,7 +127,7 @@ The proxy handles:
 
 1. **Admin routes** (`/admin/*`): Requires `site_admin` role in JWT `site_roles` claim. Non-admins rewritten to `/forbidden`. Layout-level guard in `admin/layout.tsx` as defense in depth.
 2. **Protected routes** (`/dashboard`, `/to-dashboard`, `/settings`, `/onboarding`, `/organizations/create`, `/feed`): Requires authentication. Redirects to `/sign-in?redirect=<path>`. Layout-level guards in dashboard layouts as defense in depth.
-3. **Maintenance mode** (`MAINTENANCE_MODE=true`): Unauthenticated users redirected to `/maintenance`. Public routes (`/sign-in`, `/sign-up`, `/forgot-password`, `/reset-password`, `/maintenance`, `/auth/*`, `/api/*`) remain accessible.
+3. **Maintenance mode** (`MAINTENANCE_MODE=true`): Unauthenticated users redirected to `/waitlist`. Public routes (`/sign-in`, `/sign-up`, `/forgot-password`, `/reset-password`, `/waitlist`, `/auth/*`, `/api/*`) remain accessible.
 
 ### Environment Variables
 
