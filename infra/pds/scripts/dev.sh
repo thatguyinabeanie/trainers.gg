@@ -39,8 +39,9 @@ pds_healthy() {
 
 check_docker() {
   if ! docker info >/dev/null 2>&1; then
-    log_error "Docker is not running. Please start Docker Desktop."
-    exit 1
+    log_warn "Docker is not running — skipping PDS"
+    log_warn "Start Docker Desktop and re-run pnpm dev to enable PDS"
+    exit 0
   fi
 }
 

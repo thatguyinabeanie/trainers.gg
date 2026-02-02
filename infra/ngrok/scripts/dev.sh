@@ -80,10 +80,10 @@ update_env_with_url() {
 }
 
 # =============================================================================
-# Check prerequisites
+# Check prerequisites (exit 0 on failure — ngrok is optional, don't block other tasks)
 # =============================================================================
 if ! command -v ngrok &>/dev/null; then
-  log_error "ngrok is not installed."
+  log_warn "ngrok is not installed — skipping tunnel"
   echo ""
   echo "  Install ngrok:"
   echo "    brew install ngrok    # macOS"
@@ -95,19 +95,11 @@ if ! command -v ngrok &>/dev/null; then
   echo "    2. Get your auth token from https://dashboard.ngrok.com/get-started/your-authtoken"
   echo "    3. Run: ngrok config add-authtoken <your-token>"
   echo ""
-  exit 1
+  exit 0
 fi
 
-if ! ngrok config check 2>/dev/null | grep -q "Valid"; then
-  log_error "ngrok is not authenticated"
-  echo ""
-  echo "  To authenticate ngrok:"
-  echo "    1. Sign up at https://ngrok.com"
-  echo "    2. Get your auth token from https://dashboard.ngrok.com/get-started/your-authtoken"
-  echo "    3. Run: ngrok config add-authtoken <your-token>"
-  echo ""
-  exit 1
-fi
+# Auth check removed — unreliable across shell environments (Turbo TUI, pnpm).
+# If ngrok isn't authenticated, it will fail to start and show the error in the panel.
 
 # =============================================================================
 # If ngrok is already running, show status and tail log

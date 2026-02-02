@@ -391,6 +391,13 @@ check_fast_path() {
   check_supabase_cli
   check_supabase_status || return 1
 
+  # Verify service role key matches running instance (catches HS256→ES256 mismatch)
+  local LIVE_KEY
+  LIVE_KEY=$($SUPABASE_CMD status --output json 2>/dev/null | grep '"SERVICE_ROLE_KEY"' | sed 's/.*"SERVICE_ROLE_KEY": *"\([^"]*\)".*/\1/')
+  local ENV_KEY
+  ENV_KEY=$(grep "^SUPABASE_SERVICE_ROLE_KEY=" "$ENV_FILE" 2>/dev/null | cut -d'=' -f2-)
+  [ "$LIVE_KEY" = "$ENV_KEY" ] || return 1
+
   return 0
 }
 
