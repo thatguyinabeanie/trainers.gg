@@ -22,7 +22,8 @@ import { createClient } from "@/lib/supabase/middleware";
  *    - /auth/*, /api/*, /_next/*, static files are always allowed
  */
 
-const MAINTENANCE_MODE = process.env.MAINTENANCE_MODE === "true";
+// Maintenance mode is read at runtime inside the proxy function
+// to avoid build-time inlining issues with the Edge Runtime bundler.
 
 // Admin routes — require site_admin JWT role (checked separately from PROTECTED_ROUTES)
 const ADMIN_ROUTES = ["/admin"];
@@ -163,8 +164,14 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(signInUrl);
   }
 
+  // Read maintenance mode at runtime (not module scope) to avoid
+  // build-time inlining issues with the Edge Runtime bundler
+  const maintenanceMode =
+    process.env.NEXT_PUBLIC_MAINTENANCE_MODE === "true" ||
+    process.env.MAINTENANCE_MODE === "true";
+
   // If not in maintenance mode, just refresh session and continue
-  if (!MAINTENANCE_MODE) {
+  if (!maintenanceMode) {
     return response;
   }
 
