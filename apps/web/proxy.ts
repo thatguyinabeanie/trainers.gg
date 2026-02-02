@@ -2,33 +2,29 @@ import { type NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/middleware";
 
 /**
- * Maintenance Mode Proxy (Next.js 16)
+ * Request Proxy (Next.js 16)
  *
- * When MAINTENANCE_MODE=true:
- * - Unauthenticated users are redirected to /maintenance
- * - Sign-up page shows waitlist form instead
- * - Sign-in page remains accessible
- * - Authenticated users can access all pages
+ * Two layers of route protection:
  *
- * Allowed routes in maintenance mode (unauthenticated):
- * - /maintenance - maintenance landing page
- * - /sign-in - allow login
- * - /sign-up - shows waitlist form
- * - /forgot-password - allow password reset
- * - /reset-password - allow password reset
- * - /auth/* - OAuth callbacks
- * - /api/* - API routes (for waitlist submission, etc.)
- * - /_next/* - Next.js internals
- * - Static files
+ * 1. Protected routes (always enforced):
+ *    - /dashboard, /to-dashboard require authentication
+ *    - Unauthenticated users are redirected to /sign-in?redirect=<path>
+ *
+ * 2. Maintenance mode (when MAINTENANCE_MODE=true):
+ *    - Unauthenticated users are redirected to /sign-in
+ *    - Sign-in, sign-up, forgot/reset-password remain accessible
+ *    - Authenticated users can access all pages
+ *    - /auth/*, /api/*, /_next/*, static files are always allowed
  */
 
 const MAINTENANCE_MODE = process.env.MAINTENANCE_MODE === "true";
 
+// Routes that require authentication (enforced regardless of maintenance mode)
+const PROTECTED_ROUTES = ["/dashboard", "/to-dashboard"];
+
 // Routes that are always accessible (even in maintenance mode)
 const PUBLIC_ROUTES = [
-  "/maintenance",
   "/sign-in",
-  "/sign-up",
   "/forgot-password",
   "/reset-password",
   "/auth",
@@ -66,6 +62,12 @@ function isPublicRoute(pathname: string): boolean {
   );
 }
 
+function isProtectedRoute(pathname: string): boolean {
+  return PROTECTED_ROUTES.some(
+    (route) => pathname === route || pathname.startsWith(`${route}/`)
+  );
+}
+
 function isNextInternal(pathname: string): boolean {
   return pathname.startsWith("/_next") || pathname.startsWith("/__next");
 }
@@ -99,6 +101,13 @@ export async function proxy(request: NextRequest) {
     console.error("Exception in proxy getUser():", err);
   }
 
+  // Protected routes always require authentication
+  if (!user && isProtectedRoute(pathname)) {
+    const signInUrl = new URL("/sign-in", request.url);
+    signInUrl.searchParams.set("redirect", pathname);
+    return NextResponse.redirect(signInUrl);
+  }
+
   // If not in maintenance mode, just refresh session and continue
   if (!MAINTENANCE_MODE) {
     return response;
@@ -116,9 +125,9 @@ export async function proxy(request: NextRequest) {
     return response;
   }
 
-  // Redirect unauthenticated users to maintenance page
-  const maintenanceUrl = new URL("/maintenance", request.url);
-  return NextResponse.redirect(maintenanceUrl);
+  // Redirect unauthenticated users to sign-in page
+  const signInUrl = new URL("/sign-in", request.url);
+  return NextResponse.redirect(signInUrl);
 }
 
 export const config = {

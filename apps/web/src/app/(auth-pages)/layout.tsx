@@ -1,5 +1,5 @@
 import { PageContainer } from "@/components/layout/page-container";
-import { type ReactNode } from "react";
+import { type ReactNode, Suspense } from "react";
 
 export default function AuthLayout({ children }: { children: ReactNode }) {
   return (
@@ -7,7 +7,7 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
       variant="narrow"
       className="flex min-h-[80vh] flex-col items-center justify-center"
     >
-      {children}
+      <Suspense>{children}</Suspense>
     </PageContainer>
   );
 }

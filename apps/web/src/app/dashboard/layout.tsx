@@ -1,8 +1,23 @@
 import type { ReactNode } from "react";
+import { redirect } from "next/navigation";
+import { createClient } from "@/lib/supabase/server";
 import { PageContainer } from "@/components/layout/page-container";
 import { DashboardNav } from "./dashboard-nav";
 
-export default function DashboardLayout({ children }: { children: ReactNode }) {
+export default async function DashboardLayout({
+  children,
+}: {
+  children: ReactNode;
+}) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect("/sign-in?redirect=/dashboard");
+  }
+
   return (
     <PageContainer variant="wide">
       <div className="mb-8 flex items-start justify-between">
