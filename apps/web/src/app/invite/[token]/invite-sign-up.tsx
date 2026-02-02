@@ -14,7 +14,6 @@ import { UsernameInput } from "@/components/ui/username-input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/hooks/use-auth";
 import { checkUsernameAvailability } from "@/app/(auth-pages)/actions";
-import { markInviteUsed } from "@/app/invite/actions";
 import { passwordSchema, usernameSchema } from "@trainers/validators";
 
 const inviteSignUpSchema = z
@@ -68,12 +67,14 @@ export function InviteSignUp({ email, token }: InviteSignUpProps) {
         return;
       }
 
-      // Call the unified signup edge function
+      // Call the unified signup edge function with invite token
+      // The edge function validates the token server-side and marks it used
       const { error: signUpError } = await signUpWithEmail(
         email,
         data.password,
         {
           username: data.username.toLowerCase(),
+          inviteToken: token,
         }
       );
 
@@ -94,11 +95,7 @@ export function InviteSignUp({ email, token }: InviteSignUpProps) {
         return;
       }
 
-      // Mark the invite as used (non-blocking — account is already created)
-      const markResult = await markInviteUsed(token, signInData.user.id);
-      if (!markResult.success) {
-        console.error("Failed to mark invite as used:", markResult.error);
-      }
+      // Invite is already marked as used by the signup edge function
 
       // Redirect to onboarding or dashboard
       router.push("/");
