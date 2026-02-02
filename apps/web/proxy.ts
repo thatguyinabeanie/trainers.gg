@@ -104,6 +104,11 @@ export async function proxy(request: NextRequest) {
     return NextResponse.next();
   }
 
+  // Read maintenance mode at runtime
+  const maintenanceMode =
+    process.env.NEXT_PUBLIC_MAINTENANCE_MODE === "true" ||
+    process.env.MAINTENANCE_MODE === "true";
+
   // Create Supabase client and refresh session
   const { supabase, response } = createClient(request);
 
@@ -157,36 +162,26 @@ export async function proxy(request: NextRequest) {
     }
   }
 
-  // Protected routes always require authentication
+  // Protected routes always require authentication (redirect to sign-in)
+  // In maintenance mode, unauthenticated users on protected routes go to /maintenance instead
   if (!user && isProtectedRoute(pathname)) {
+    if (maintenanceMode) {
+      const maintenanceUrl = new URL("/maintenance", request.url);
+      return NextResponse.redirect(maintenanceUrl);
+    }
     const signInUrl = new URL("/sign-in", request.url);
     signInUrl.searchParams.set("redirect", pathname);
     return NextResponse.redirect(signInUrl);
   }
 
-  // TEMPORARY: hardcoded to true for debugging
-  const maintenanceMode = true;
-
-  // If not in maintenance mode, just refresh session and continue
-  if (!maintenanceMode) {
-    return response;
+  // === PRIVATE BETA / MAINTENANCE MODE ===
+  // Redirect unauthenticated users on non-public routes to /maintenance
+  if (maintenanceMode && !user && !isPublicRoute(pathname)) {
+    const maintenanceUrl = new URL("/maintenance", request.url);
+    return NextResponse.redirect(maintenanceUrl);
   }
 
-  // === PRIVATE BETA / MAINTENANCE MODE LOGIC ===
-
-  // If user is authenticated, allow access to everything
-  if (user) {
-    return response;
-  }
-
-  // User is not authenticated — check if route is allowed
-  if (isPublicRoute(pathname)) {
-    return response;
-  }
-
-  // Redirect unauthenticated users to the maintenance landing page
-  const maintenanceUrl = new URL("/maintenance", request.url);
-  return NextResponse.redirect(maintenanceUrl);
+  return response;
 }
 
 export const config = {
