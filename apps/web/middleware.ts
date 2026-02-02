@@ -2,7 +2,10 @@ import { type NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/middleware";
 
 /**
- * Request Proxy (Next.js 16)
+ * Middleware (using middleware.ts for Vercel Edge Runtime compatibility)
+ *
+ * Note: Next.js 16 introduced proxy.ts but Vercel has known deployment
+ * issues with it. Using middleware.ts until Vercel fully supports proxy.ts.
  *
  * Three layers of route protection:
  *
@@ -22,8 +25,7 @@ import { createClient } from "@/lib/supabase/middleware";
  *    - /auth/*, /api/*, /_next/*, static files are always allowed
  */
 
-// Maintenance mode is read at runtime inside the proxy function
-// to avoid build-time inlining issues with the Edge Runtime bundler.
+// Maintenance mode is read inside the function at runtime.
 
 // Admin routes — require site_admin JWT role (checked separately from PROTECTED_ROUTES)
 const ADMIN_ROUTES = ["/admin"];
@@ -96,7 +98,7 @@ function isNextInternal(pathname: string): boolean {
   return pathname.startsWith("/_next") || pathname.startsWith("/__next");
 }
 
-export async function proxy(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Skip proxy for static files and Next.js internals
