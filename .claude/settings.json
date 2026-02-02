@@ -35,6 +35,9 @@
       }
     ]
   },
+  "permissions": {
+    "allow": ["mcp__context7__resolve-library-id", "mcp__context7__query-docs"]
+  },
   "enabledPlugins": {
     "frontend-design@claude-plugins-official": true,
     "context7@claude-plugins-official": true,
