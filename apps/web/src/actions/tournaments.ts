@@ -33,6 +33,11 @@ import {
   recalculateStandings as recalculateStandingsMutation,
   dropPlayer as dropPlayerMutation,
   reportMatchResult as reportMatchResultMutation,
+  // Tournament flow
+  startTournamentEnhanced as startTournamentEnhancedMutation,
+  advanceToTopCut as advanceToTopCutMutation,
+  generateEliminationPairings as generateEliminationPairingsMutation,
+  completeTournament as completeTournamentMutation,
   getCurrentUserAlts,
   getUserTeams,
   getUserRegistrationDetails,
@@ -158,24 +163,26 @@ export async function publishTournament(
 }
 
 /**
- * Start a tournament (change status to active)
+ * Start a tournament: lock teams, activate first phase, create Round 1.
  * Revalidates: tournaments list
  */
 export async function startTournament(
   tournamentId: number
-): Promise<ActionResult<{ success: true }>> {
+): Promise<
+  ActionResult<{ teamsLocked: number; phaseActivated: number | null }>
+> {
   try {
     await rejectBots();
     const supabase = await createClient();
-    await updateTournamentMutation(supabase, tournamentId, {
-      status: "active",
-    });
+    const result = await startTournamentEnhancedMutation(
+      supabase,
+      tournamentId
+    );
 
-    // Update the list to show in "Active" section
     updateTag(CacheTags.TOURNAMENTS_LIST);
     updateTag(CacheTags.tournament(tournamentId));
 
-    return { success: true, data: { success: true } };
+    return { success: true, data: result };
   } catch (error) {
     return {
       success: false,
@@ -185,7 +192,7 @@ export async function startTournament(
 }
 
 /**
- * Complete a tournament
+ * Complete a tournament: finalize standings, mark completed.
  * Revalidates: tournaments list
  */
 export async function completeTournament(
@@ -194,11 +201,8 @@ export async function completeTournament(
   try {
     await rejectBots();
     const supabase = await createClient();
-    await updateTournamentMutation(supabase, tournamentId, {
-      status: "completed",
-    });
+    await completeTournamentMutation(supabase, tournamentId);
 
-    // Update the list to show in "Completed" section
     updateTag(CacheTags.TOURNAMENTS_LIST);
     updateTag(CacheTags.tournament(tournamentId));
 
@@ -207,6 +211,58 @@ export async function completeTournament(
     return {
       success: false,
       error: getErrorMessage(error, "Failed to complete tournament"),
+    };
+  }
+}
+
+/**
+ * Advance tournament from Swiss to Top Cut elimination phase.
+ * Revalidates: tournament
+ */
+export async function advanceToTopCut(tournamentId: number): Promise<
+  ActionResult<{
+    qualifiers: number;
+    matchesCreated: number;
+    phaseId: number;
+    roundId: number;
+  }>
+> {
+  try {
+    await rejectBots();
+    const supabase = await createClient();
+    const result = await advanceToTopCutMutation(supabase, tournamentId);
+
+    updateTag(CacheTags.tournament(tournamentId));
+
+    return { success: true, data: result };
+  } catch (error) {
+    return {
+      success: false,
+      error: getErrorMessage(error, "Failed to advance to top cut"),
+    };
+  }
+}
+
+/**
+ * Generate elimination pairings for subsequent rounds (winners advance).
+ * Revalidates: tournament
+ */
+export async function generateEliminationPairings(
+  roundId: number,
+  tournamentId: number
+): Promise<ActionResult<{ matchesCreated: number; winnersAdvanced: number }>> {
+  try {
+    await rejectBots();
+    const supabase = await createClient();
+    const result = await generateEliminationPairingsMutation(supabase, roundId);
+
+    updateTag(CacheTags.tournament(tournamentId));
+
+    return { success: true, data: result };
+  } catch (error) {
+    return {
+      success: false,
+      error: getErrorMessage(error, "Failed to generate elimination pairings"),
     };
   }
 }

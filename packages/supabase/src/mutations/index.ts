@@ -61,6 +61,11 @@ export {
   // Team submission
   submitTeam,
   selectTeamForTournament,
+  // Tournament flow
+  startTournamentEnhanced,
+  advanceToTopCut,
+  generateEliminationPairings,
+  completeTournament,
 } from "./tournaments";
 
 // Match game mutations
