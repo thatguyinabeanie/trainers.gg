@@ -53,6 +53,7 @@ export {
   getTournamentRegistrations,
   isRegisteredForTournament,
   getCurrentUserRegisteredTournamentIds,
+  getUserRegistrationDetails,
   getTournamentPhases,
   getTournamentRounds,
   getRoundMatches,

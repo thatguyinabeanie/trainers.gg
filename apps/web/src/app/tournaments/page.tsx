@@ -6,6 +6,7 @@ import {
 import {
   listTournamentsGrouped,
   getCurrentUserRegisteredTournamentIds,
+  checkRegistrationOpen,
   type TournamentWithOrg,
   type GroupedTournaments,
 } from "@trainers/supabase";
@@ -216,6 +217,9 @@ function UpcomingTournaments({
 
           const isRegistered = registeredTournamentIds.has(tournament.id);
 
+          const { isOpen: isRegistrationOpen } =
+            checkRegistrationOpen(tournament);
+
           // Format date compactly for mobile
           const date = tournament.start_date
             ? new Date(tournament.start_date)
@@ -259,6 +263,7 @@ function UpcomingTournaments({
                 tournamentName={tournament.name}
                 isFull={!!isFull}
                 isRegistered={isRegistered}
+                isRegistrationClosed={!isRegistrationOpen}
               />
             </div>
           );
@@ -301,6 +306,8 @@ function UpcomingTournaments({
 
                 const isRegistered = registeredTournamentIds.has(tournament.id);
 
+                const { isOpen: isRegOpen } = checkRegistrationOpen(tournament);
+
                 return (
                   <TableRow key={tournament.id} className="hover:bg-muted/50">
                     <TableCell className="whitespace-nowrap">
@@ -336,6 +343,7 @@ function UpcomingTournaments({
                         tournamentName={tournament.name}
                         isFull={!!isFull}
                         isRegistered={isRegistered}
+                        isRegistrationClosed={!isRegOpen}
                       />
                     </TableCell>
                   </TableRow>

@@ -239,7 +239,6 @@ interface TournamentSettingsProps {
     max_participants?: number | null;
     start_date?: string | null;
     end_date?: string | null;
-    registration_deadline?: string | null;
     round_time_minutes?: number | null;
     // Registration settings
     registration_type?: string | null;
@@ -269,7 +268,6 @@ export function TournamentSettings({
     playerCapEnabled: tournament.max_participants !== null,
     startDate: tournament.start_date || undefined,
     endDate: tournament.end_date || undefined,
-    registrationDeadline: tournament.registration_deadline || undefined,
     // Registration settings
     registrationType:
       (tournament.registration_type as "open" | "invite_only") || "open",
@@ -296,7 +294,6 @@ export function TournamentSettings({
           format?: string;
           startDate?: string;
           endDate?: string;
-          registrationDeadline?: string;
           maxParticipants?: number | null;
           game?: string;
           gameFormat?: string;
@@ -344,7 +341,6 @@ export function TournamentSettings({
           description: formData.description,
           startDate: formData.startDate,
           endDate: formData.endDate,
-          registrationDeadline: formData.registrationDeadline,
           maxParticipants: formData.playerCapEnabled
             ? parseInt(formData.maxParticipants) || null
             : null,
@@ -403,7 +399,6 @@ export function TournamentSettings({
       playerCapEnabled: tournament.max_participants !== null,
       startDate: tournament.start_date || undefined,
       endDate: tournament.end_date || undefined,
-      registrationDeadline: tournament.registration_deadline || undefined,
       registrationType:
         (tournament.registration_type as "open" | "invite_only") || "open",
       checkInRequired: tournament.check_in_required ?? false,
@@ -566,9 +561,7 @@ export function TournamentSettings({
       <Card>
         <CardHeader>
           <CardTitle>Schedule</CardTitle>
-          <CardDescription>
-            Tournament dates and registration deadline
-          </CardDescription>
+          <CardDescription>Tournament dates</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -595,19 +588,6 @@ export function TournamentSettings({
               disabled={!isEditing}
             />
           </div>
-
-          <DateTimeField
-            label="Registration Deadline"
-            description="When registration closes (defaults to tournament start)"
-            value={formData.registrationDeadline}
-            onChange={(val) =>
-              setFormData((prev) => ({ ...prev, registrationDeadline: val }))
-            }
-            maxDate={
-              formData.startDate ? new Date(formData.startDate) : undefined
-            }
-            disabled={!isEditing}
-          />
         </CardContent>
       </Card>
 

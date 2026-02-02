@@ -24,12 +24,22 @@ export function TournamentTabs({
   return (
     <Tabs defaultValue="overview" className="w-full">
       <TabsList className="mb-4">
-        <TabsTrigger value="overview">Overview</TabsTrigger>
-        <TabsTrigger value="bracket">Bracket</TabsTrigger>
-        <TabsTrigger value="standings">Standings</TabsTrigger>
+        <TabsTrigger value="overview" id="tournament-tab-overview">
+          Overview
+        </TabsTrigger>
+        <TabsTrigger value="bracket" id="tournament-tab-bracket">
+          Bracket
+        </TabsTrigger>
+        <TabsTrigger value="standings" id="tournament-tab-standings">
+          Standings
+        </TabsTrigger>
       </TabsList>
 
-      <TabsContent value="overview" className="space-y-6">
+      <TabsContent
+        value="overview"
+        id="tournament-panel-overview"
+        className="space-y-6"
+      >
         {/* Description */}
         {description && (
           <Card>
@@ -51,7 +61,7 @@ export function TournamentTabs({
         {formatCard}
       </TabsContent>
 
-      <TabsContent value="bracket">
+      <TabsContent value="bracket" id="tournament-panel-bracket">
         <Card>
           <CardHeader>
             <CardTitle>Bracket</CardTitle>
@@ -65,7 +75,7 @@ export function TournamentTabs({
         </Card>
       </TabsContent>
 
-      <TabsContent value="standings">
+      <TabsContent value="standings" id="tournament-panel-standings">
         <Card>
           <CardHeader>
             <CardTitle>Standings</CardTitle>

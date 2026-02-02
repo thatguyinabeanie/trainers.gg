@@ -199,27 +199,14 @@ export function TournamentSchedule({
         />
       </div>
 
-      <DateTimeField
-        label="Registration Deadline"
-        description="When registration closes (defaults to tournament start)"
-        value={formData.registrationDeadline}
-        onChange={(timestamp) =>
-          updateFormData({ registrationDeadline: timestamp })
-        }
-        maxDate={startDate}
-      />
-
       <Alert>
         <Lightbulb className="h-4 w-4" />
         <AlertTitle>Schedule Tips</AlertTitle>
         <AlertDescription>
           <ul className="mt-2 list-inside list-disc space-y-1">
             <li>All dates can be updated later from tournament management</li>
-            <li>
-              Registration closes at the deadline or tournament start time
-            </li>
+            <li>Registration closes when the tournament starts</li>
             <li>Consider time zones for online tournaments</li>
-            <li>Allow buffer time between registration close and start</li>
           </ul>
         </AlertDescription>
       </Alert>

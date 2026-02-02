@@ -97,7 +97,6 @@ const tournamentFormSchema = z.object({
   // Schedule
   startDate: z.number().optional(),
   endDate: z.number().optional(),
-  registrationDeadline: z.number().optional(),
 
   // Registration settings
   registrationType: z.enum(["open", "invite_only"]),
@@ -171,7 +170,6 @@ export function CreateTournamentClient({
       topCutSize: 8,
       startDate: undefined,
       endDate: undefined,
-      registrationDeadline: undefined,
       registrationType: "open",
       playerCapEnabled: false,
       checkInRequired: true,
@@ -209,7 +207,6 @@ export function CreateTournamentClient({
         format?: string;
         startDate?: string;
         endDate?: string;
-        registrationDeadline?: string;
         maxParticipants?: number;
         topCutSize?: number;
         swissRounds?: number;
@@ -332,9 +329,6 @@ export function CreateTournamentClient({
           : undefined,
         endDate: data.endDate
           ? new Date(data.endDate).toISOString()
-          : undefined,
-        registrationDeadline: data.registrationDeadline
-          ? new Date(data.registrationDeadline).toISOString()
           : undefined,
         game: data.game,
         gameFormat: data.gameFormat,

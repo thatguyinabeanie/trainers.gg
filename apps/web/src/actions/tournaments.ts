@@ -16,12 +16,14 @@ import {
   deleteTournament as deleteTournamentMutation,
   archiveTournament as archiveTournamentMutation,
   registerForTournament as registerForTournamentMutation,
+  updateRegistrationPreferences as updateRegistrationPreferencesMutation,
   cancelRegistration as cancelRegistrationMutation,
   checkIn as checkInMutation,
   undoCheckIn as undoCheckInMutation,
   withdrawFromTournament as withdrawFromTournamentMutation,
   // Team submission
   submitTeam as submitTeamMutation,
+  selectTeamForTournament as selectTeamForTournamentMutation,
   // Round management mutations
   createRound as createRoundMutation,
   generateRoundPairings as generateRoundPairingsMutation,
@@ -31,6 +33,8 @@ import {
   dropPlayer as dropPlayerMutation,
   reportMatchResult as reportMatchResultMutation,
   getCurrentUserAlts,
+  getUserTeams,
+  getUserRegistrationDetails,
 } from "@trainers/supabase";
 import type { Database } from "@trainers/supabase";
 import { CacheTags } from "@/lib/cache";
@@ -61,7 +65,6 @@ export async function createTournament(data: {
   format?: string;
   startDate?: string;
   endDate?: string;
-  registrationDeadline?: string;
   maxParticipants?: number;
   topCutSize?: number;
   swissRounds?: number;
@@ -250,7 +253,13 @@ export async function deleteTournament(
  */
 export async function registerForTournament(
   tournamentId: number,
-  data?: { altId?: number; teamName?: string; inGameName?: string }
+  data?: {
+    altId?: number;
+    teamName?: string;
+    inGameName?: string;
+    displayNameOption?: string;
+    showCountryFlag?: boolean;
+  }
 ): Promise<ActionResult<{ registrationId: number; status: string }>> {
   try {
     const supabase = await createClient();
@@ -366,6 +375,66 @@ export async function withdrawFromTournament(
   }
 }
 
+/**
+ * Get registration details for the current user
+ * Used to pre-fill the "Edit Registration" modal
+ */
+export async function getRegistrationDetailsAction(
+  tournamentId: number
+): Promise<
+  ActionResult<{
+    id: number;
+    alt_id: number;
+    in_game_name: string | null;
+    display_name_option: string | null;
+    show_country_flag: boolean | null;
+    status: string | null;
+  } | null>
+> {
+  try {
+    const supabase = await createClient();
+    const details = await getUserRegistrationDetails(supabase, tournamentId);
+    return { success: true, data: details };
+  } catch (error) {
+    return {
+      success: false,
+      error: getErrorMessage(error, "Failed to load registration"),
+    };
+  }
+}
+
+/**
+ * Update registration preferences (in-game name, display options)
+ * Used by the "Edit Registration" flow
+ */
+export async function updateRegistrationAction(
+  tournamentId: number,
+  data: {
+    inGameName?: string;
+    displayNameOption?: string;
+    showCountryFlag?: boolean;
+  }
+): Promise<ActionResult<{ success: true; registrationId: number }>> {
+  try {
+    const supabase = await createClient();
+    const result = await updateRegistrationPreferencesMutation(
+      supabase,
+      tournamentId,
+      data
+    );
+    updateTag(CacheTags.tournament(tournamentId));
+    return {
+      success: true,
+      data: { success: true, registrationId: result.registrationId },
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: getErrorMessage(error, "Failed to update registration"),
+    };
+  }
+}
+
 // =============================================================================
 // Team Submission Actions
 // =============================================================================
@@ -399,12 +468,44 @@ export async function submitTeamAction(
   }
 }
 
+/**
+ * Select an existing team for a tournament registration.
+ * Links a pre-existing team (owned by the user's alt) to their registration.
+ */
+export async function selectTeamAction(
+  tournamentId: number,
+  teamId: number
+): Promise<ActionResult<{ teamId: number; pokemonCount: number }>> {
+  try {
+    const supabase = await createClient();
+    const result = await selectTeamForTournamentMutation(
+      supabase,
+      tournamentId,
+      teamId
+    );
+
+    updateTag(CacheTags.tournament(tournamentId));
+    updateTag(CacheTags.tournamentTeams(tournamentId));
+
+    return {
+      success: true,
+      data: { teamId: result.teamId, pokemonCount: result.pokemonCount },
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: getErrorMessage(error, "Failed to select team"),
+    };
+  }
+}
+
 // =============================================================================
 // User Alt Actions
 // =============================================================================
 
 /**
- * Get current user's alts for registration selection
+ * Get current user's alts for registration selection.
+ * Includes first_name/last_name from the users table for display name options.
  */
 export async function getCurrentUserAltsAction(): Promise<
   ActionResult<
@@ -413,17 +514,73 @@ export async function getCurrentUserAltsAction(): Promise<
       username: string;
       display_name: string | null;
       avatar_url: string | null;
+      first_name: string | null;
+      last_name: string | null;
+      country: string | null;
     }>
   >
 > {
   try {
     const supabase = await createClient();
     const alts = await getCurrentUserAlts(supabase);
-    return { success: true, data: alts };
+
+    if (alts.length === 0) return { success: true, data: [] };
+
+    // Fetch user's name and country for display name options and flag
+    const userId = alts[0]!.user_id;
+    const { data: user } = await supabase
+      .from("users")
+      .select("first_name, last_name, country")
+      .eq("id", userId)
+      .single();
+
+    return {
+      success: true,
+      data: alts.map((a) => ({
+        id: a.id,
+        username: a.username,
+        display_name: a.display_name,
+        avatar_url: a.avatar_url,
+        first_name: user?.first_name ?? null,
+        last_name: user?.last_name ?? null,
+        country: user?.country ?? null,
+      })),
+    };
   } catch (error) {
     return {
       success: false,
       error: getErrorMessage(error, "Failed to fetch user alts"),
+    };
+  }
+}
+
+/**
+ * Get current user's teams for registration selection
+ */
+export async function getUserTeamsAction(): Promise<
+  ActionResult<
+    Array<{
+      id: number;
+      name: string | null;
+      pokemonCount: number;
+    }>
+  >
+> {
+  try {
+    const supabase = await createClient();
+    const teams = await getUserTeams(supabase);
+    return {
+      success: true,
+      data: teams.map((t) => ({
+        id: t.id,
+        name: t.name,
+        pokemonCount: t.pokemonCount,
+      })),
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: getErrorMessage(error, "Failed to fetch user teams"),
     };
   }
 }
@@ -544,7 +701,7 @@ export async function recalculateStandings(
 }
 
 /**
- * Drop a player from the tournament
+ * Drop a player from the tournament (TO action — requires alt ID)
  */
 export async function dropPlayer(
   tournamentId: number,
@@ -559,6 +716,30 @@ export async function dropPlayer(
     return {
       success: false,
       error: getErrorMessage(error, "Failed to drop player"),
+    };
+  }
+}
+
+/**
+ * Drop yourself from the tournament (player self-service)
+ */
+export async function dropFromTournament(
+  tournamentId: number
+): Promise<ActionResult<{ success: true }>> {
+  try {
+    const supabase = await createClient();
+    const alts = await getCurrentUserAlts(supabase);
+    const altId = alts[0]?.id;
+    if (!altId) {
+      return { success: false, error: "No player profile found" };
+    }
+    await dropPlayerMutation(supabase, tournamentId, altId);
+    updateTag(CacheTags.tournament(tournamentId));
+    return { success: true, data: { success: true } };
+  } catch (error) {
+    return {
+      success: false,
+      error: getErrorMessage(error, "Failed to drop from tournament"),
     };
   }
 }

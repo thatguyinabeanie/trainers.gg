@@ -324,17 +324,17 @@ Every user signup creates **both** a Supabase Auth account AND a Bluesky PDS acc
 
 ### Key Files
 
-| File                                             | Purpose                                      |
-| ------------------------------------------------ | -------------------------------------------- |
-| `apps/web/src/lib/supabase/server.ts`            | Server-side Supabase client                  |
-| `apps/web/src/lib/supabase/client.ts`            | Client-side Supabase client                  |
-| `apps/web/src/lib/supabase/middleware.ts`        | Session refresh middleware utilities         |
-| `apps/web/src/hooks/use-auth.ts`                 | Client-side auth hook (calls signup edge fn) |
-| `apps/web/src/components/auth/auth-provider.tsx` | Client-side auth state provider              |
-| `apps/web/middleware.ts`                         | Next.js middleware for session               |
-| `apps/mobile/src/lib/supabase/auth-provider.tsx` | Mobile auth provider (calls signup edge fn)  |
-| `packages/supabase/supabase/functions/signup/`   | Unified signup edge function                 |
-| `infra/pds/`                                     | PDS deployment config (Fly.io)               |
+| File                                             | Purpose                                        |
+| ------------------------------------------------ | ---------------------------------------------- |
+| `apps/web/src/lib/supabase/server.ts`            | Server-side Supabase client                    |
+| `apps/web/src/lib/supabase/client.ts`            | Client-side Supabase client                    |
+| `apps/web/proxy.ts`                              | Next.js 16 proxy for session refresh + routing |
+| `apps/web/src/lib/supabase/middleware.ts`        | Session refresh middleware utilities           |
+| `apps/web/src/hooks/use-auth.ts`                 | Client-side auth hook (calls signup edge fn)   |
+| `apps/web/src/components/auth/auth-provider.tsx` | Client-side auth state provider                |
+| `apps/mobile/src/lib/supabase/auth-provider.tsx` | Mobile auth provider (calls signup edge fn)    |
+| `packages/supabase/supabase/functions/signup/`   | Unified signup edge function                   |
+| `infra/pds/`                                     | PDS deployment config (Fly.io)                 |
 
 ### Database Helper Functions
 
@@ -417,6 +417,13 @@ Button.displayName = "Button"; // Always set displayName
 ---
 
 ## Architecture Guidelines
+
+### Request Interception: proxy.ts (NOT middleware.ts)
+
+**CRITICAL:** Next.js 16 uses `proxy.ts` at the project root (`apps/web/proxy.ts`) for request interception — NOT `middleware.ts`. Do **NOT** create a `middleware.ts` file; it will break all routes (404 on every page).
+
+- `apps/web/proxy.ts` handles session refresh (`supabase.auth.getUser()`), maintenance mode, and admin route protection.
+- `apps/web/src/lib/supabase/middleware.ts` contains helper utilities used by the proxy — it is NOT the entry point.
 
 ### React Server Components (RSC)
 
@@ -770,6 +777,23 @@ function Card({ children }) {
 function Card({ children }) {
   return <div className="bg-card space-y-3 rounded-lg p-4">{children}</div>;
 }
+```
+
+### Dynamic Class Names (Web)
+
+**Always use the `cn()` utility** (`@/lib/utils`) for conditional or dynamic class names. Template literal concatenation (`` `class-a ${condition ? "class-b" : ""}` ``) is fragile and can cause Tailwind to miss class detection during purging.
+
+```tsx
+// Bad - Tailwind may not detect dynamically constructed classes
+<div
+  className={`text-sm ${isActive ? "text-primary" : "text-muted-foreground"}`}
+/>;
+
+// Good - cn() merges classes safely and Tailwind detects all class names
+import { cn } from "@/lib/utils";
+<div
+  className={cn("text-sm", isActive ? "text-primary" : "text-muted-foreground")}
+/>;
 ```
 
 ---

@@ -148,7 +148,7 @@ export function LoginScreen() {
                 className="rounded-none border-0 shadow-none focus-visible:ring-0"
                 autoFocus
               />
-              <span className="text-muted-foreground border-l-input bg-muted select-none whitespace-nowrap border-l px-3 text-sm">
+              <span className="text-muted-foreground border-l-input bg-muted border-l px-3 text-sm whitespace-nowrap select-none">
                 .{process.env.NEXT_PUBLIC_PDS_HANDLE_DOMAIN || "trainers.gg"}
               </span>
             </div>

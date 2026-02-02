@@ -51,13 +51,18 @@ export function useAuth() {
   };
 
   const signInWithOAuth = async (
-    provider: "google" | "discord" | "github" | "twitter"
+    provider: "google" | "discord" | "github" | "twitter",
+    /** Optional path to redirect to after auth (e.g. "/tournaments/slug") */
+    redirectPath?: string
   ) => {
     const origin = typeof window !== "undefined" ? window.location.origin : "";
+    const callbackUrl = redirectPath
+      ? `${origin}/auth/callback?next=${encodeURIComponent(redirectPath)}`
+      : `${origin}/auth/callback`;
     const { error } = await supabase.auth.signInWithOAuth({
       provider,
       options: {
-        redirectTo: `${origin}/auth/callback`,
+        redirectTo: callbackUrl,
       },
     });
     if (error) {

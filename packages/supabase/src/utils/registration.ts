@@ -12,7 +12,6 @@
 
 export interface RegistrationOpenInput {
   status: string | null;
-  registration_deadline: string | null;
   allow_late_registration: boolean | null;
 }
 
@@ -25,29 +24,20 @@ export interface RegistrationOpenResult {
  * Determine whether registration is currently open for a tournament.
  *
  * Truth table:
- * | Status      | allow_late_registration | Deadline       | Result        |
- * |-------------|------------------------|----------------|---------------|
- * | upcoming    | any                    | none or future | open          |
- * | upcoming    | any                    | past           | closed        |
- * | active      | true                   | irrelevant     | open (late)   |
- * | active      | false                  | any            | closed        |
- * | other       | any                    | any            | closed        |
+ * | Status   | allow_late_registration | Result      |
+ * |----------|------------------------|-------------|
+ * | upcoming | any                    | open        |
+ * | active   | true                   | open (late) |
+ * | active   | false                  | closed      |
+ * | other    | any                    | closed      |
  */
 export function checkRegistrationOpen(
-  tournament: RegistrationOpenInput,
-  now?: number
+  tournament: RegistrationOpenInput
 ): RegistrationOpenResult {
-  const currentTime = now ?? Date.now();
-
   // Only "upcoming" and "active" statuses can have open registration
   if (tournament.status === "upcoming") {
-    const deadline = tournament.registration_deadline
-      ? new Date(tournament.registration_deadline).getTime()
-      : null;
-    const pastDeadline = deadline !== null && currentTime >= deadline;
-
     return {
-      isOpen: !pastDeadline,
+      isOpen: true,
       isLateRegistration: false,
     };
   }

@@ -1601,6 +1601,7 @@ export type Database = {
           alt_id: number
           checked_in_at: string | null
           created_at: string | null
+          display_name_option: string | null
           id: number
           in_game_name: string | null
           registered_at: string | null
@@ -1610,6 +1611,7 @@ export type Database = {
           rental_team_photo_verified: boolean | null
           rental_team_photo_verified_at: string | null
           rental_team_photo_verified_by: number | null
+          show_country_flag: boolean | null
           status: Database["public"]["Enums"]["registration_status"] | null
           team_id: number | null
           team_locked: boolean | null
@@ -1621,6 +1623,7 @@ export type Database = {
           alt_id: number
           checked_in_at?: string | null
           created_at?: string | null
+          display_name_option?: string | null
           id?: never
           in_game_name?: string | null
           registered_at?: string | null
@@ -1630,6 +1633,7 @@ export type Database = {
           rental_team_photo_verified?: boolean | null
           rental_team_photo_verified_at?: string | null
           rental_team_photo_verified_by?: number | null
+          show_country_flag?: boolean | null
           status?: Database["public"]["Enums"]["registration_status"] | null
           team_id?: number | null
           team_locked?: boolean | null
@@ -1641,6 +1645,7 @@ export type Database = {
           alt_id?: number
           checked_in_at?: string | null
           created_at?: string | null
+          display_name_option?: string | null
           id?: never
           in_game_name?: string | null
           registered_at?: string | null
@@ -1650,6 +1655,7 @@ export type Database = {
           rental_team_photo_verified?: boolean | null
           rental_team_photo_verified_at?: string | null
           rental_team_photo_verified_by?: number | null
+          show_country_flag?: boolean | null
           status?: Database["public"]["Enums"]["registration_status"] | null
           team_id?: number | null
           team_locked?: boolean | null
@@ -1920,7 +1926,6 @@ export type Database = {
           participants: number[] | null
           platform: string | null
           prize_pool: string | null
-          registration_deadline: string | null
           registration_type: string | null
           rental_team_photos_enabled: boolean | null
           rental_team_photos_required: boolean | null
@@ -1963,7 +1968,6 @@ export type Database = {
           participants?: number[] | null
           platform?: string | null
           prize_pool?: string | null
-          registration_deadline?: string | null
           registration_type?: string | null
           rental_team_photos_enabled?: boolean | null
           rental_team_photos_required?: boolean | null
@@ -2006,7 +2010,6 @@ export type Database = {
           participants?: number[] | null
           platform?: string | null
           prize_pool?: string | null
-          registration_deadline?: string | null
           registration_type?: string | null
           rental_team_photos_enabled?: boolean | null
           rental_team_photos_required?: boolean | null

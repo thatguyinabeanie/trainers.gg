@@ -110,7 +110,8 @@ export default function TournamentDetailScreen() {
   // Derive late registration / late check-in status
   const { isOpen: isRegistrationOpen, isLateRegistration } =
     checkRegistrationOpen(tournament);
-  const { isOpen: isCheckInOpen, isLateCheckIn } = checkCheckInOpen(tournament);
+  const { isOpen: _isCheckInOpen, isLateCheckIn } =
+    checkCheckInOpen(tournament);
 
   return (
     <Screen>
@@ -342,22 +343,6 @@ export default function TournamentDetailScreen() {
                     icon="checkmark-circle-outline"
                     label="Check-in"
                     value={`Required (${tournament.check_in_window_minutes ?? 60} min window)`}
-                    theme={theme}
-                  />
-                )}
-                {tournament.registration_deadline && (
-                  <DetailRow
-                    icon="hourglass-outline"
-                    label="Reg. Deadline"
-                    value={new Date(
-                      tournament.registration_deadline
-                    ).toLocaleDateString(undefined, {
-                      month: "short",
-                      day: "numeric",
-                      year: "numeric",
-                      hour: "numeric",
-                      minute: "2-digit",
-                    })}
                     theme={theme}
                   />
                 )}

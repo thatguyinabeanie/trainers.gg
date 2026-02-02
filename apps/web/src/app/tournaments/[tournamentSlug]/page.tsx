@@ -17,24 +17,11 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
-import {
-  Trophy,
-  Calendar,
-  Users,
-  Clock,
-  Building2,
-  ExternalLink,
-} from "lucide-react";
+import { Trophy, Calendar, Users, Clock, Building2 } from "lucide-react";
 import { TournamentTabs } from "./tournament-tabs";
 import { PageContainer } from "@/components/layout/page-container";
 import { StatusBadge } from "@/components/ui/status-badge";
-import {
-  CheckInCard as CheckInCardClient,
-  RegistrationCard as RegistrationCardClient,
-} from "@/components/tournament";
-import { TeamSubmissionCard } from "@/components/tournament/team-submission-card";
+import { TournamentSidebarCard } from "@/components/tournament";
 import { TeamPreview } from "@/components/tournament/team-preview";
 
 // On-demand revalidation only (no time-based)
@@ -66,38 +53,6 @@ const getCachedTournament = (slug: string) =>
     [`tournament-detail-${slug}`],
     { tags: [CacheTags.tournament(slug), CacheTags.TOURNAMENTS_LIST] }
   )();
-
-/**
- * Check if the current user is registered for a tournament (auth-dependent, NOT cached).
- * Returns the registration record or null.
- */
-async function getMyRegistrationStatus(tournamentId: number) {
-  try {
-    const supabase = await createClientReadOnly();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) return null;
-
-    const { data: alt } = await supabase
-      .from("alts")
-      .select("id")
-      .eq("user_id", user.id)
-      .single();
-    if (!alt) return null;
-
-    const { data: reg } = await supabase
-      .from("tournament_registrations")
-      .select("id, team_id, team_submitted_at, team_locked, status")
-      .eq("tournament_id", tournamentId)
-      .eq("alt_id", alt.id)
-      .single();
-
-    return reg;
-  } catch {
-    return null;
-  }
-}
 
 /**
  * Fetch the current user's submitted team (auth-dependent, NOT cached).
@@ -258,19 +213,6 @@ function ScheduleCard({
             <p className="font-medium">{formatDate(tournament.end_date)}</p>
           </div>
         </div>
-        {tournament.registration_deadline && (
-          <>
-            <Separator />
-            <div>
-              <p className="text-muted-foreground text-sm">
-                Registration Deadline
-              </p>
-              <p className="font-medium">
-                {formatDate(tournament.registration_deadline)}
-              </p>
-            </div>
-          </>
-        )}
       </CardContent>
     </Card>
   );
@@ -327,59 +269,6 @@ function FormatCard({
   );
 }
 
-function RegistrationCard({
-  tournament,
-}: {
-  tournament: NonNullable<Awaited<ReturnType<typeof getTournamentBySlug>>>;
-}) {
-  // Show registration card for upcoming and active tournaments.
-  // The client component handles the open/closed state internally.
-  const showRegistration =
-    tournament.status === "upcoming" || tournament.status === "active";
-
-  if (!showRegistration) return null;
-
-  return <RegistrationCardClient tournamentId={tournament.id} />;
-}
-
-function CheckInCard({
-  tournament,
-  hasTeam,
-}: {
-  tournament: NonNullable<Awaited<ReturnType<typeof getTournamentBySlug>>>;
-  hasTeam: boolean;
-}) {
-  if (tournament.status !== "upcoming" && tournament.status !== "active") {
-    return null;
-  }
-
-  return <CheckInCardClient tournamentId={tournament.id} hasTeam={hasTeam} />;
-}
-
-function OrganizerCard({
-  organization,
-}: {
-  organization: { id: number; name: string; slug: string } | null;
-}) {
-  if (!organization) return null;
-
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Organizer</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <Link href={`/organizations/${organization.slug}`}>
-          <Button variant="outline" className="w-full justify-start">
-            <ExternalLink className="mr-2 h-4 w-4" />
-            {organization.name}
-          </Button>
-        </Link>
-      </CardContent>
-    </Card>
-  );
-}
-
 // ============================================================================
 // Main Page (Server Component)
 // ============================================================================
@@ -392,22 +281,8 @@ export default async function TournamentPage({ params }: PageProps) {
     notFound();
   }
 
-  const organization = tournament.organization as {
-    id: number;
-    name: string;
-    slug: string;
-  } | null;
-
-  // Check registration status (auth-dependent, not cached)
-  const myRegistration = tournament.id
-    ? await getMyRegistrationStatus(tournament.id)
-    : null;
-  const isRegistered = !!myRegistration;
-  const hasTeam = !!myRegistration?.team_id;
-
-  // Fetch full team data only if the user has submitted a team
-  const myTeam =
-    hasTeam && tournament.id ? await getMyTeam(tournament.id) : null;
+  // Fetch the user's team data (auth-dependent, not cached)
+  const myTeam = tournament.id ? await getMyTeam(tournament.id) : null;
 
   // Public team list for open teamsheet tournaments (active/completed only)
   const showPublicTeams =
@@ -476,31 +351,28 @@ export default async function TournamentPage({ params }: PageProps) {
 
         {/* Sidebar */}
         <div className="space-y-6">
-          <RegistrationCard tournament={tournament} />
-          {isRegistered && (
-            <TeamSubmissionCard
-              tournamentId={tournament.id}
-              gameFormat={tournament.game_format ?? null}
-              submittedTeam={
-                myTeam
-                  ? {
-                      teamId: myTeam.teamId,
-                      submittedAt: myTeam.submittedAt ?? null,
-                      locked: myTeam.locked ?? false,
-                      pokemon: myTeam.pokemon.map((p) => ({
-                        species: p.species ?? "",
-                        nickname: p.nickname,
-                        held_item: p.held_item,
-                        ability: p.ability ?? undefined,
-                        tera_type: p.tera_type,
-                      })),
-                    }
-                  : null
-              }
-            />
-          )}
-          <CheckInCard tournament={tournament} hasTeam={hasTeam} />
-          <OrganizerCard organization={organization} />
+          <TournamentSidebarCard
+            tournamentId={tournament.id}
+            tournamentSlug={tournament.slug}
+            tournamentName={tournament.name}
+            gameFormat={tournament.game_format ?? null}
+            initialTeam={
+              myTeam
+                ? {
+                    teamId: myTeam.teamId,
+                    submittedAt: myTeam.submittedAt ?? null,
+                    locked: myTeam.locked ?? false,
+                    pokemon: myTeam.pokemon.map((p) => ({
+                      species: p.species ?? "",
+                      nickname: p.nickname,
+                      held_item: p.held_item,
+                      ability: p.ability ?? undefined,
+                      tera_type: p.tera_type,
+                    })),
+                  }
+                : null
+            }
+          />
         </div>
       </div>
     </PageContainer>
