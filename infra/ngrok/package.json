@@ -1,0 +1,8 @@
+{
+  "name": "@trainers/ngrok",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "dev": "./scripts/dev.sh"
+  }
+}

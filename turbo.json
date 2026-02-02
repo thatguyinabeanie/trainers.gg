@@ -50,14 +50,13 @@
         "src/generated/**"
       ]
     },
+    "dev:setup": {
+      "cache": false
+    },
     "dev": {
       "cache": false,
-      "persistent": true
-    },
-    "dev:mobile": {
-      "cache": false,
       "persistent": true,
-      "interactive": true
+      "dependsOn": ["^dev:setup", "dev:setup"]
     },
     "lint": {
       "dependsOn": ["^build"]
