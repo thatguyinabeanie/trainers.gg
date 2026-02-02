@@ -8,6 +8,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { UsernameInput } from "@/components/ui/username-input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/hooks/use-auth";
 import {
@@ -299,20 +300,12 @@ function SignUpView({
 
         <div className="flex flex-col gap-2">
           <Label htmlFor="username">Username</Label>
-          <div className="border-input focus-within:ring-ring/50 focus-within:border-ring flex items-center overflow-hidden rounded-md border focus-within:ring-[3px]">
-            <Input
-              id="username"
-              type="text"
-              placeholder="cooltrainer123"
-              autoComplete="username"
-              aria-invalid={errors.username ? "true" : undefined}
-              className="rounded-none border-0 shadow-none focus-visible:ring-0"
-              {...register("username")}
-            />
-            <span className="text-muted-foreground border-l-input bg-muted border-l px-3 text-sm whitespace-nowrap select-none">
-              .{process.env.NEXT_PUBLIC_PDS_HANDLE_DOMAIN || "trainers.gg"}
-            </span>
-          </div>
+          <UsernameInput
+            id="username"
+            placeholder="cooltrainer123"
+            aria-invalid={errors.username ? "true" : undefined}
+            {...register("username")}
+          />
           {errors.username && (
             <p className="text-destructive text-sm">
               {errors.username.message}

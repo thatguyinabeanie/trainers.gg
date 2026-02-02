@@ -6,6 +6,7 @@ import { Trophy } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { UsernameInput } from "@/components/ui/username-input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { SocialAuthButtons } from "@/components/auth/social-auth-buttons";
@@ -138,25 +139,17 @@ export default function SignInPage() {
 
         <div className="flex flex-col gap-2">
           <Label htmlFor="username">Username</Label>
-          <div className="border-input focus-within:ring-ring/50 focus-within:border-ring flex items-center overflow-hidden rounded-md border focus-within:ring-[3px]">
-            <Input
-              id="username"
-              type="text"
-              placeholder="username"
-              autoComplete="username"
-              value={username}
-              onChange={(e) => {
-                setUsername(e.target.value);
-                setError(null);
-                if (showPassword) setShowPassword(false);
-              }}
-              className="rounded-none border-0 shadow-none focus-visible:ring-0"
-              autoFocus
-            />
-            <span className="text-muted-foreground border-l-input bg-muted border-l px-3 text-sm whitespace-nowrap select-none">
-              .{process.env.NEXT_PUBLIC_PDS_HANDLE_DOMAIN || "trainers.gg"}
-            </span>
-          </div>
+          <UsernameInput
+            id="username"
+            placeholder="username"
+            value={username}
+            onChange={(e) => {
+              setUsername(e.target.value);
+              setError(null);
+              if (showPassword) setShowPassword(false);
+            }}
+            autoFocus
+          />
         </div>
 
         {showPassword && (

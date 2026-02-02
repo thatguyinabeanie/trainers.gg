@@ -164,19 +164,24 @@ Deno.serve(async (req) => {
 
     const callerUserId = user.id;
 
-    // Extract custom claims from JWT for site_admin check
-    const jwt = authHeader.replace("Bearer ", "");
-    let isSiteAdmin = false;
-    try {
-      const payload = JSON.parse(atob(jwt.split(".")[1]!)) as {
-        site_roles?: string[];
-      };
-      isSiteAdmin = payload.site_roles?.includes("site_admin") ?? false;
-    } catch {
-      // JWT signature was already verified by getUser() above
-    }
+    // Create service role client for DB operations
+    const supabaseAdmin = createClient(
+      SUPABASE_URL,
+      SUPABASE_SERVICE_ROLE_KEY,
+      {
+        auth: { autoRefreshToken: false, persistSession: false },
+      }
+    );
 
-    if (!isSiteAdmin) {
+    // Check if caller is a site admin via database query
+    const { data: adminRole } = await supabaseAdmin
+      .from("user_roles")
+      .select("role_id, roles!inner(name)")
+      .eq("user_id", callerUserId)
+      .eq("roles.name", "site_admin")
+      .maybeSingle();
+
+    if (!adminRole) {
       return new Response(
         JSON.stringify({
           success: false,
@@ -225,15 +230,6 @@ Deno.serve(async (req) => {
     }
 
     const trimmedEmail = email.trim().toLowerCase();
-
-    // Create service role client for DB operations
-    const supabaseAdmin = createClient(
-      SUPABASE_URL,
-      SUPABASE_SERVICE_ROLE_KEY,
-      {
-        auth: { autoRefreshToken: false, persistSession: false },
-      }
-    );
 
     // Check if email already has an account
     const { data: existingUser } = await supabaseAdmin
