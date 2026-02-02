@@ -9,7 +9,7 @@
 // Returns: { success: boolean, error?: string, warning?: string, code?: string }
 
 import { createClient } from "jsr:@supabase/supabase-js@2";
-import { corsHeaders } from "../_shared/cors.ts";
+import { getCorsHeaders } from "../_shared/cors.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
@@ -25,6 +25,16 @@ interface SendInviteResponse {
   error?: string;
   warning?: string;
   code?: string;
+}
+
+// Escape HTML special characters to prevent injection in email templates
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
 }
 
 // Generate a cryptographically secure token (URL-safe, 32 bytes = 43 chars base64url)
@@ -84,7 +94,7 @@ function buildInviteEmail(token: string, email: string): string {
                 </tr>
               </table>
               <p style="margin: 0 0 8px; color: #71717a; font-size: 13px; line-height: 1.5;">
-                This invite is for <strong>${email}</strong> and expires in 7 days. It can only be used once.
+                This invite is for <strong>${escapeHtml(email)}</strong> and expires in 7 days. It can only be used once.
               </p>
               <p style="margin: 0; color: #a1a1aa; font-size: 12px; line-height: 1.5;">
                 If you didn't expect this email, you can safely ignore it.
@@ -100,9 +110,11 @@ function buildInviteEmail(token: string, email: string): string {
 }
 
 Deno.serve(async (req) => {
+  const cors = getCorsHeaders(req);
+
   // Handle CORS preflight
   if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
+    return new Response("ok", { headers: cors });
   }
 
   try {
@@ -117,7 +129,7 @@ Deno.serve(async (req) => {
         } satisfies SendInviteResponse),
         {
           status: 500,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          headers: { ...cors, "Content-Type": "application/json" },
         }
       );
     }
@@ -133,7 +145,7 @@ Deno.serve(async (req) => {
         } satisfies SendInviteResponse),
         {
           status: 401,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          headers: { ...cors, "Content-Type": "application/json" },
         }
       );
     }
@@ -157,7 +169,7 @@ Deno.serve(async (req) => {
         } satisfies SendInviteResponse),
         {
           status: 401,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          headers: { ...cors, "Content-Type": "application/json" },
         }
       );
     }
@@ -190,7 +202,7 @@ Deno.serve(async (req) => {
         } satisfies SendInviteResponse),
         {
           status: 403,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          headers: { ...cors, "Content-Type": "application/json" },
         }
       );
     }
@@ -208,14 +220,17 @@ Deno.serve(async (req) => {
         } satisfies SendInviteResponse),
         {
           status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          headers: { ...cors, "Content-Type": "application/json" },
         }
       );
     }
 
+    // Normalize email before validation so regex operates on canonical form
+    const trimmedEmail = email.trim().toLowerCase();
+
     // Validate email format
-    const emailRegex = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
-    if (!emailRegex.test(email)) {
+    const emailRegex = /^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$/;
+    if (!emailRegex.test(trimmedEmail)) {
       return new Response(
         JSON.stringify({
           success: false,
@@ -224,12 +239,10 @@ Deno.serve(async (req) => {
         } satisfies SendInviteResponse),
         {
           status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          headers: { ...cors, "Content-Type": "application/json" },
         }
       );
     }
-
-    const trimmedEmail = email.trim().toLowerCase();
 
     // Check if email already has an account
     const { data: existingUser } = await supabaseAdmin
@@ -247,7 +260,7 @@ Deno.serve(async (req) => {
         } satisfies SendInviteResponse),
         {
           status: 409,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          headers: { ...cors, "Content-Type": "application/json" },
         }
       );
     }
@@ -270,7 +283,7 @@ Deno.serve(async (req) => {
         } satisfies SendInviteResponse),
         {
           status: 409,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          headers: { ...cors, "Content-Type": "application/json" },
         }
       );
     }
@@ -297,7 +310,7 @@ Deno.serve(async (req) => {
         } satisfies SendInviteResponse),
         {
           status: 500,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          headers: { ...cors, "Content-Type": "application/json" },
         }
       );
     }
@@ -332,7 +345,7 @@ Deno.serve(async (req) => {
         } satisfies SendInviteResponse),
         {
           status: 201,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          headers: { ...cors, "Content-Type": "application/json" },
         }
       );
     }
@@ -349,7 +362,7 @@ Deno.serve(async (req) => {
       } satisfies SendInviteResponse),
       {
         status: 201,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...cors, "Content-Type": "application/json" },
       }
     );
   } catch (error) {
@@ -362,7 +375,7 @@ Deno.serve(async (req) => {
       } satisfies SendInviteResponse),
       {
         status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
       }
     );
   }

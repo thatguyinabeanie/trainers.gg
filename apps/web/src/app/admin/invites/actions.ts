@@ -1,17 +1,46 @@
 "use server";
 
-import { createClient, createServiceRoleClient } from "@/lib/supabase/server";
+import {
+  createClient,
+  createServiceRoleClient,
+  getUser,
+} from "@/lib/supabase/server";
 
 const EMAIL_DELIVERY_FAILED = "EMAIL_DELIVERY_FAILED";
+
+/**
+ * Verify the current user is authenticated and has the site_admin role.
+ * Returns the user ID on success, or an error object on failure.
+ */
+async function requireAdmin(): Promise<
+  { userId: string } | { success: false; error: string }
+> {
+  const user = await getUser();
+  if (!user) {
+    return { success: false, error: "Not authenticated" };
+  }
+
+  const supabase = createServiceRoleClient();
+  const { data: adminRole } = await supabase
+    .from("user_roles")
+    .select("role_id, roles!inner(name)")
+    .eq("user_id", user.id)
+    .eq("roles.name", "site_admin")
+    .maybeSingle();
+
+  if (!adminRole) {
+    return { success: false, error: "Admin access required" };
+  }
+
+  return { userId: user.id };
+}
 
 /**
  * Send a beta invite to an email address.
  * Calls the send-invite edge function which handles token generation,
  * DB insertion, and email delivery via Resend.
  */
-export async function sendBetaInvite(
-  email: string
-): Promise<{
+export async function sendBetaInvite(email: string): Promise<{
   success: boolean;
   error?: string;
   warning?: string;
@@ -77,6 +106,9 @@ export async function resendBetaInvite(
   email: string
 ): Promise<{ success: boolean; error?: string }> {
   try {
+    const adminCheck = await requireAdmin();
+    if ("success" in adminCheck) return adminCheck;
+
     const supabase = createServiceRoleClient();
 
     await supabase.from("beta_invites").delete().eq("id", inviteId);
@@ -96,6 +128,9 @@ export async function revokeBetaInvite(
   inviteId: number
 ): Promise<{ success: boolean; error?: string }> {
   try {
+    const adminCheck = await requireAdmin();
+    if ("success" in adminCheck) return adminCheck;
+
     const supabase = createServiceRoleClient();
 
     const { error } = await supabase

@@ -1,6 +1,6 @@
 "use server";
 
-import { createServiceRoleClient } from "@/lib/supabase/server";
+import { createServiceRoleClient, getUser } from "@/lib/supabase/server";
 
 export type InviteValidationResult =
   | { valid: true; email: string }
@@ -55,13 +55,40 @@ export async function validateInviteToken(
 /**
  * Mark an invite as used after the user successfully creates an account.
  * Uses service role client to bypass RLS (called during signup flow).
+ *
+ * Security: Verifies the caller is authenticated and matches the userId parameter.
+ * Also verifies the user's email matches the invite's email to prevent
+ * email substitution attacks (readOnly on the client is only a UI constraint).
  */
 export async function markInviteUsed(
   token: string,
   userId: string
 ): Promise<{ success: boolean; error?: string }> {
   try {
+    // Verify the caller is the user being registered
+    const currentUser = await getUser();
+    if (!currentUser || currentUser.id !== userId) {
+      return { success: false, error: "Unauthorized" };
+    }
+
     const supabase = createServiceRoleClient();
+
+    // Fetch the invite first to verify email binding
+    const { data: invite } = await supabase
+      .from("beta_invites")
+      .select("email")
+      .eq("token", token)
+      .is("used_at", null)
+      .maybeSingle();
+
+    if (!invite) {
+      return { success: false, error: "Invalid or already used token" };
+    }
+
+    // Verify the user's email matches the invite email
+    if (currentUser.email?.toLowerCase() !== invite.email.toLowerCase()) {
+      return { success: false, error: "Email mismatch" };
+    }
 
     const { error } = await supabase
       .from("beta_invites")
@@ -78,13 +105,7 @@ export async function markInviteUsed(
     }
 
     // Also update the waitlist entry if one exists for this email
-    const { data: invite } = await supabase
-      .from("beta_invites")
-      .select("email")
-      .eq("token", token)
-      .maybeSingle();
-
-    if (invite?.email) {
+    if (invite.email) {
       await supabase
         .from("waitlist")
         .update({ converted_user_id: userId })
