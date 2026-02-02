@@ -5,11 +5,20 @@
  * POST /api/oauth/link
  */
 
+import { checkBotId } from "botid/server";
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { createAtprotoClient } from "@/lib/supabase/server";
 
 export async function POST(request: Request) {
+  const verification = await checkBotId();
+  if (verification.isBot) {
+    return NextResponse.json(
+      { success: false, error: "Access denied" },
+      { status: 403 }
+    );
+  }
+
   try {
     const { did } = await request.json();
 

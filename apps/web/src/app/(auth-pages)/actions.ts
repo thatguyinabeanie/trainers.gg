@@ -1,5 +1,6 @@
 "use server";
 
+import { checkBotId } from "botid/server";
 import { createClient } from "@/lib/supabase/server";
 import { getEmailByUsername } from "@trainers/supabase";
 
@@ -41,6 +42,9 @@ export async function resolveLoginIdentifier(
 export async function joinWaitlist(
   email: string
 ): Promise<{ success?: boolean; error?: string }> {
+  const { isBot } = await checkBotId();
+  if (isBot) return { error: "Access denied" };
+
   const trimmed = email.trim().toLowerCase();
 
   try {

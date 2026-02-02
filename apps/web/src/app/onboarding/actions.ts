@@ -1,5 +1,6 @@
 "use server";
 
+import { checkBotId } from "botid/server";
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 
@@ -125,6 +126,9 @@ export async function completeProfile(data: {
   birthDate: string;
   country: string;
 }) {
+  const { isBot } = await checkBotId();
+  if (isBot) return { success: false, error: "Access denied" };
+
   try {
     const supabase = await createClient();
 

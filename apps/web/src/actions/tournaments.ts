@@ -7,6 +7,7 @@
 
 "use server";
 
+import { checkBotId } from "botid/server";
 import { updateTag } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { getErrorMessage } from "@/lib/utils";
@@ -49,6 +50,12 @@ export type ActionResult<T = void> =
   | { success: true; data: T }
   | { success: false; error: string };
 
+/** Reject requests classified as bots by Vercel BotID */
+async function rejectBots(): Promise<void> {
+  const { isBot } = await checkBotId();
+  if (isBot) throw new Error("Access denied");
+}
+
 // =============================================================================
 // Tournament CRUD
 // =============================================================================
@@ -72,6 +79,7 @@ export async function createTournament(data: {
   roundTimeMinutes?: number;
 }): Promise<ActionResult<{ id: number; slug: string }>> {
   try {
+    await rejectBots();
     const supabase = await createClient();
     const result = await createTournamentMutation(supabase, data);
     // Note: Don't revalidate list yet - tournament is created as draft
@@ -101,6 +109,7 @@ export async function updateTournament(
   }
 ): Promise<ActionResult<{ success: true }>> {
   try {
+    await rejectBots();
     const supabase = await createClient();
     await updateTournamentMutation(supabase, tournamentId, updates);
 
@@ -129,6 +138,7 @@ export async function publishTournament(
   tournamentId: number
 ): Promise<ActionResult<{ success: true }>> {
   try {
+    await rejectBots();
     const supabase = await createClient();
     await updateTournamentMutation(supabase, tournamentId, {
       status: "upcoming",
@@ -155,6 +165,7 @@ export async function startTournament(
   tournamentId: number
 ): Promise<ActionResult<{ success: true }>> {
   try {
+    await rejectBots();
     const supabase = await createClient();
     await updateTournamentMutation(supabase, tournamentId, {
       status: "active",
@@ -181,6 +192,7 @@ export async function completeTournament(
   tournamentId: number
 ): Promise<ActionResult<{ success: true }>> {
   try {
+    await rejectBots();
     const supabase = await createClient();
     await updateTournamentMutation(supabase, tournamentId, {
       status: "completed",
@@ -207,6 +219,7 @@ export async function archiveTournament(
   tournamentId: number
 ): Promise<ActionResult<{ success: true }>> {
   try {
+    await rejectBots();
     const supabase = await createClient();
     await archiveTournamentMutation(supabase, tournamentId);
 
@@ -231,6 +244,7 @@ export async function deleteTournament(
   tournamentId: number
 ): Promise<ActionResult<{ success: true }>> {
   try {
+    await rejectBots();
     const supabase = await createClient();
     await deleteTournamentMutation(supabase, tournamentId);
     // Draft tournaments are not visible on public list, no revalidation needed
@@ -262,6 +276,7 @@ export async function registerForTournament(
   }
 ): Promise<ActionResult<{ registrationId: number; status: string }>> {
   try {
+    await rejectBots();
     const supabase = await createClient();
     const result = await registerForTournamentMutation(
       supabase,
@@ -295,6 +310,7 @@ export async function cancelRegistration(
   tournamentId: number
 ): Promise<ActionResult<{ success: true }>> {
   try {
+    await rejectBots();
     const supabase = await createClient();
     await cancelRegistrationMutation(supabase, registrationId);
 
@@ -319,6 +335,7 @@ export async function checkIn(
   tournamentId: number
 ): Promise<ActionResult<{ success: true }>> {
   try {
+    await rejectBots();
     const supabase = await createClient();
     await checkInMutation(supabase, tournamentId);
     updateTag(CacheTags.tournament(tournamentId));
@@ -338,6 +355,7 @@ export async function undoCheckIn(
   tournamentId: number
 ): Promise<ActionResult<{ success: true }>> {
   try {
+    await rejectBots();
     const supabase = await createClient();
     await undoCheckInMutation(supabase, tournamentId);
     updateTag(CacheTags.tournament(tournamentId));
@@ -358,6 +376,7 @@ export async function withdrawFromTournament(
   tournamentId: number
 ): Promise<ActionResult<{ success: true }>> {
   try {
+    await rejectBots();
     const supabase = await createClient();
     await withdrawFromTournamentMutation(supabase, tournamentId);
 
@@ -416,6 +435,7 @@ export async function updateRegistrationAction(
   }
 ): Promise<ActionResult<{ success: true; registrationId: number }>> {
   try {
+    await rejectBots();
     const supabase = await createClient();
     const result = await updateRegistrationPreferencesMutation(
       supabase,
@@ -448,6 +468,7 @@ export async function submitTeamAction(
   rawText: string
 ): Promise<ActionResult<{ teamId: number; pokemonCount: number }>> {
   try {
+    await rejectBots();
     const supabase = await createClient();
     const result = await submitTeamMutation(supabase, tournamentId, rawText);
 
@@ -477,6 +498,7 @@ export async function selectTeamAction(
   teamId: number
 ): Promise<ActionResult<{ teamId: number; pokemonCount: number }>> {
   try {
+    await rejectBots();
     const supabase = await createClient();
     const result = await selectTeamForTournamentMutation(
       supabase,
@@ -598,6 +620,7 @@ export async function createRound(
   tournamentId: number
 ): Promise<ActionResult<{ roundId: number }>> {
   try {
+    await rejectBots();
     const supabase = await createClient();
     const result = await createRoundMutation(supabase, phaseId, roundNumber);
     updateTag(CacheTags.tournament(tournamentId));
@@ -623,6 +646,7 @@ export async function generatePairings(
   }>
 > {
   try {
+    await rejectBots();
     const supabase = await createClient();
     const result = await generateRoundPairingsMutation(supabase, roundId);
     updateTag(CacheTags.tournament(tournamentId));
@@ -649,6 +673,7 @@ export async function startRound(
   tournamentId: number
 ): Promise<ActionResult<{ success: true }>> {
   try {
+    await rejectBots();
     const supabase = await createClient();
     await startRoundMutation(supabase, roundId);
     updateTag(CacheTags.tournament(tournamentId));
@@ -669,6 +694,7 @@ export async function completeRound(
   tournamentId: number
 ): Promise<ActionResult<{ success: true }>> {
   try {
+    await rejectBots();
     const supabase = await createClient();
     await completeRoundMutation(supabase, roundId);
     updateTag(CacheTags.tournament(tournamentId));
@@ -688,6 +714,7 @@ export async function recalculateStandings(
   tournamentId: number
 ): Promise<ActionResult<{ playersUpdated: number }>> {
   try {
+    await rejectBots();
     const supabase = await createClient();
     const result = await recalculateStandingsMutation(supabase, tournamentId);
     updateTag(CacheTags.tournament(tournamentId));
@@ -708,6 +735,7 @@ export async function dropPlayer(
   altId: number
 ): Promise<ActionResult<{ success: true }>> {
   try {
+    await rejectBots();
     const supabase = await createClient();
     await dropPlayerMutation(supabase, tournamentId, altId);
     updateTag(CacheTags.tournament(tournamentId));
@@ -727,6 +755,7 @@ export async function dropFromTournament(
   tournamentId: number
 ): Promise<ActionResult<{ success: true }>> {
   try {
+    await rejectBots();
     const supabase = await createClient();
     const alts = await getCurrentUserAlts(supabase);
     const altId = alts[0]?.id;
@@ -755,6 +784,7 @@ export async function reportMatchResult(
   player2GamesWon: number
 ): Promise<ActionResult<{ success: true }>> {
   try {
+    await rejectBots();
     const supabase = await createClient();
     await reportMatchResultMutation(
       supabase,
@@ -793,6 +823,7 @@ export async function updatePhase(
   }
 ): Promise<ActionResult<{ success: true }>> {
   try {
+    await rejectBots();
     const supabase = await createClient();
     const { updatePhase: updatePhaseMutation } =
       await import("@trainers/supabase");
@@ -823,6 +854,7 @@ export async function createTournamentPhase(
   }
 ): Promise<ActionResult<{ phaseId: number }>> {
   try {
+    await rejectBots();
     const supabase = await createClient();
     const { createPhase: createPhaseMutation } =
       await import("@trainers/supabase");
@@ -845,6 +877,7 @@ export async function deleteTournamentPhase(
   tournamentId: number
 ): Promise<ActionResult<{ success: true }>> {
   try {
+    await rejectBots();
     const supabase = await createClient();
     const { deletePhase: deletePhaseMutation } =
       await import("@trainers/supabase");
@@ -884,6 +917,7 @@ export async function saveTournamentPhasesAction(
   ActionResult<{ deleted: number; updated: number; created: number }>
 > {
   try {
+    await rejectBots();
     const supabase = await createClient();
     const { saveTournamentPhases } = await import("@trainers/supabase");
     const result = await saveTournamentPhases(supabase, tournamentId, phases);

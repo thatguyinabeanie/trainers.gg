@@ -7,6 +7,7 @@
 
 "use server";
 
+import { checkBotId } from "botid/server";
 import { revalidatePath } from "next/cache";
 import { getCurrentUserDid } from "@/lib/atproto/agent";
 import { getErrorMessage } from "@/lib/utils";
@@ -43,6 +44,9 @@ export async function likeBlueskyPost(
   postUri: string,
   postCid: string
 ): Promise<ActionResult<{ likeUri: string }>> {
+  const { isBot } = await checkBotId();
+  if (isBot) return { success: false, error: "Access denied" };
+
   try {
     const did = await getCurrentUserDid();
 
@@ -76,6 +80,9 @@ export async function likeBlueskyPost(
 export async function unlikeBlueskyPost(
   likeUri: string
 ): Promise<ActionResult> {
+  const { isBot } = await checkBotId();
+  if (isBot) return { success: false, error: "Access denied" };
+
   try {
     const did = await getCurrentUserDid();
 
@@ -109,6 +116,9 @@ export async function repostBlueskyPost(
   postUri: string,
   postCid: string
 ): Promise<ActionResult<{ repostUri: string }>> {
+  const { isBot } = await checkBotId();
+  if (isBot) return { success: false, error: "Access denied" };
+
   try {
     const did = await getCurrentUserDid();
 
@@ -145,6 +155,9 @@ export async function repostBlueskyPost(
 export async function unrepostBlueskyPost(
   repostUri: string
 ): Promise<ActionResult> {
+  const { isBot } = await checkBotId();
+  if (isBot) return { success: false, error: "Access denied" };
+
   try {
     const did = await getCurrentUserDid();
 

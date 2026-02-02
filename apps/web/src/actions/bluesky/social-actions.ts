@@ -7,6 +7,7 @@
 
 "use server";
 
+import { checkBotId } from "botid/server";
 import { revalidatePath } from "next/cache";
 import { getCurrentUserDid } from "@/lib/atproto/agent";
 import { getErrorMessage } from "@/lib/utils";
@@ -47,6 +48,9 @@ export type ActionResult<T = void> =
 export async function followBlueskyUser(
   targetDid: string
 ): Promise<ActionResult<{ followUri: string }>> {
+  const { isBot } = await checkBotId();
+  if (isBot) return { success: false, error: "Access denied" };
+
   try {
     const did = await getCurrentUserDid();
 
@@ -90,6 +94,9 @@ export async function followBlueskyUser(
 export async function unfollowBlueskyUser(
   followUri: string
 ): Promise<ActionResult> {
+  const { isBot } = await checkBotId();
+  if (isBot) return { success: false, error: "Access denied" };
+
   try {
     const did = await getCurrentUserDid();
 
@@ -155,6 +162,9 @@ export async function toggleFollowBlueskyUser(
 export async function blockBlueskyUser(
   targetDid: string
 ): Promise<ActionResult<{ blockUri: string }>> {
+  const { isBot } = await checkBotId();
+  if (isBot) return { success: false, error: "Access denied" };
+
   try {
     const did = await getCurrentUserDid();
 
@@ -199,6 +209,9 @@ export async function blockBlueskyUser(
 export async function unblockBlueskyUser(
   blockUri: string
 ): Promise<ActionResult> {
+  const { isBot } = await checkBotId();
+  if (isBot) return { success: false, error: "Access denied" };
+
   try {
     const did = await getCurrentUserDid();
 
@@ -236,6 +249,9 @@ export async function unblockBlueskyUser(
 export async function muteBlueskyUser(
   targetDid: string
 ): Promise<ActionResult> {
+  const { isBot } = await checkBotId();
+  if (isBot) return { success: false, error: "Access denied" };
+
   try {
     const did = await getCurrentUserDid();
 
@@ -269,6 +285,9 @@ export async function muteBlueskyUser(
 export async function unmuteBlueskyUser(
   targetDid: string
 ): Promise<ActionResult> {
+  const { isBot } = await checkBotId();
+  if (isBot) return { success: false, error: "Access denied" };
+
   try {
     const did = await getCurrentUserDid();
 

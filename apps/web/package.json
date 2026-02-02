@@ -38,6 +38,7 @@
     "@trainers/supabase": "workspace:*",
     "@trainers/theme": "workspace:*",
     "@trainers/validators": "workspace:*",
+    "botid": "^1.5.10",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
