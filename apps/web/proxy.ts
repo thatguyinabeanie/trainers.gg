@@ -4,23 +4,38 @@ import { createClient } from "@/lib/supabase/middleware";
 /**
  * Request Proxy (Next.js 16)
  *
- * Two layers of route protection:
+ * Three layers of route protection:
  *
- * 1. Protected routes (always enforced):
- *    - /dashboard, /to-dashboard require authentication
+ * 1. Admin routes (role-based):
+ *    - /admin/* requires the `site_admin` role in the JWT `site_roles` claim
+ *    - Unauthenticated users are redirected to /sign-in
+ *    - Authenticated non-admins are rewritten to /forbidden (preserves URL)
+ *
+ * 2. Protected routes (auth required, always enforced):
+ *    - /dashboard, /to-dashboard, /settings, /onboarding, /organizations/create, /feed
  *    - Unauthenticated users are redirected to /sign-in?redirect=<path>
  *
- * 2. Maintenance mode (when MAINTENANCE_MODE=true):
- *    - Unauthenticated users requesting non-public routes are redirected to /sign-in
- *    - Routes in PUBLIC_ROUTES (sign-in, sign-up, forgot/reset-password) remain accessible
+ * 3. Private beta / maintenance mode (when MAINTENANCE_MODE=true):
+ *    - Unauthenticated users requesting non-public routes are redirected to /maintenance
+ *    - Public routes (sign-in, sign-up, forgot/reset-password, maintenance) remain accessible
  *    - Authenticated users can access all pages
  *    - /auth/*, /api/*, /_next/*, static files are always allowed
  */
 
 const MAINTENANCE_MODE = process.env.MAINTENANCE_MODE === "true";
 
+// Admin routes — require site_admin JWT role (checked separately from PROTECTED_ROUTES)
+const ADMIN_ROUTES = ["/admin"];
+
 // Routes that require authentication (enforced regardless of maintenance mode)
-const PROTECTED_ROUTES = ["/dashboard", "/to-dashboard"];
+const PROTECTED_ROUTES = [
+  "/dashboard",
+  "/to-dashboard",
+  "/settings",
+  "/onboarding",
+  "/organizations/create",
+  "/feed",
+];
 
 // Routes that are always accessible (even in maintenance mode)
 const PUBLIC_ROUTES = [
@@ -28,6 +43,7 @@ const PUBLIC_ROUTES = [
   "/sign-up",
   "/forgot-password",
   "/reset-password",
+  "/maintenance",
   "/auth",
   "/api",
   "/oauth", // OAuth JWKS and well-known files (AT Protocol requires no redirects)
@@ -69,6 +85,12 @@ function isProtectedRoute(pathname: string): boolean {
   );
 }
 
+function isAdminRoute(pathname: string): boolean {
+  return ADMIN_ROUTES.some(
+    (route) => pathname === route || pathname.startsWith(`${route}/`)
+  );
+}
+
 function isNextInternal(pathname: string): boolean {
   return pathname.startsWith("/_next") || pathname.startsWith("/__next");
 }
@@ -92,7 +114,7 @@ export async function proxy(request: NextRequest) {
       error,
     } = await supabase.auth.getUser();
 
-    // AuthSessionMissingError is expected when user is not logged in - don't log it
+    // AuthSessionMissingError is expected when user is not logged in — don't log it
     if (error && error.name !== "AuthSessionMissingError") {
       console.error("Failed to get user in proxy:", error);
     } else {
@@ -100,6 +122,38 @@ export async function proxy(request: NextRequest) {
     }
   } catch (err) {
     console.error("Exception in proxy getUser():", err);
+  }
+
+  // Admin routes require site_admin role in JWT
+  if (isAdminRoute(pathname)) {
+    if (!user) {
+      const signInUrl = new URL("/sign-in", request.url);
+      return NextResponse.redirect(signInUrl);
+    }
+
+    // Decode JWT to check site_roles claim
+    let isSiteAdmin = false;
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (session?.access_token) {
+        const payload = JSON.parse(
+          atob(session.access_token.split(".")[1]!)
+        ) as { site_roles?: string[] };
+        isSiteAdmin = payload?.site_roles?.includes("site_admin") ?? false;
+      }
+    } catch {
+      isSiteAdmin = false;
+    }
+
+    if (!isSiteAdmin) {
+      // Rewrite to /forbidden — preserves URL in browser
+      const url = request.nextUrl.clone();
+      url.pathname = "/forbidden";
+      return NextResponse.rewrite(url);
+    }
   }
 
   // Protected routes always require authentication
@@ -114,21 +168,21 @@ export async function proxy(request: NextRequest) {
     return response;
   }
 
-  // === MAINTENANCE MODE LOGIC ===
+  // === PRIVATE BETA / MAINTENANCE MODE LOGIC ===
 
   // If user is authenticated, allow access to everything
   if (user) {
     return response;
   }
 
-  // User is not authenticated - check if route is allowed
+  // User is not authenticated — check if route is allowed
   if (isPublicRoute(pathname)) {
     return response;
   }
 
-  // Redirect unauthenticated users to sign-in page
-  const signInUrl = new URL("/sign-in", request.url);
-  return NextResponse.redirect(signInUrl);
+  // Redirect unauthenticated users to the maintenance landing page
+  const maintenanceUrl = new URL("/maintenance", request.url);
+  return NextResponse.redirect(maintenanceUrl);
 }
 
 export const config = {

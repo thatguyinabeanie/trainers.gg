@@ -1,8 +1,16 @@
 import type { ReactNode } from "react";
 import { PageContainer } from "@/components/layout/page-container";
+import { requireSiteAdmin } from "@/lib/auth/require-admin";
 import { AdminNav } from "./admin-nav";
 
-export default function AdminLayout({ children }: { children: ReactNode }) {
+export default async function AdminLayout({
+  children,
+}: {
+  children: ReactNode;
+}) {
+  // Defense-in-depth: verify admin role server-side (proxy also checks)
+  await requireSiteAdmin();
+
   return (
     <PageContainer variant="wide" noPadding>
       <div className="w-full py-8">

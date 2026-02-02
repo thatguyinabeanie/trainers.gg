@@ -424,15 +424,14 @@ Button.displayName = "Button"; // Always set displayName
 
 **CRITICAL:** Next.js 16 uses `proxy.ts` at the project root (`apps/web/proxy.ts`) for request interception — NOT `middleware.ts`. Do **NOT** create a `middleware.ts` file; it will break all routes (404 on every page).
 
-- `apps/web/proxy.ts` handles session refresh (`supabase.auth.getUser()`), protected route enforcement, and maintenance mode.
+- `apps/web/proxy.ts` handles session refresh (`supabase.auth.getUser()`), admin role enforcement, protected route enforcement, and private beta / maintenance mode.
 - `apps/web/src/lib/supabase/middleware.ts` contains helper utilities used by the proxy — it is NOT the entry point.
 
-The proxy provides two layers of route protection:
+The proxy provides three layers of route protection:
 
-1. **Protected routes** (always enforced): `/dashboard` and `/to-dashboard` require authentication. Unauthenticated users are redirected to `/sign-in?redirect=<path>`. This runs before maintenance mode logic, at no extra cost since `getUser()` already executes on every request.
-2. **Maintenance mode** (when `MAINTENANCE_MODE=true`): All non-public routes require authentication. Public routes (`/sign-in`, `/forgot-password`, `/reset-password`, `/auth/*`, `/api/*`) remain accessible.
-
-Dashboard routes also have a **layout-level guard** (defense in depth) — both `dashboard/layout.tsx` and `to-dashboard/layout.tsx` call `getUser()` server-side and redirect to `/sign-in?redirect=<path>` if unauthenticated.
+1. **Admin routes** (role-based): `/admin/*` requires the `site_admin` role in the JWT `site_roles` claim. Unauthenticated users are redirected to `/sign-in`. Authenticated non-admins are rewritten to `/forbidden` (preserves URL in browser). Admin routes also have a **layout-level guard** (defense in depth) — `admin/layout.tsx` calls `requireSiteAdmin()` server-side.
+2. **Protected routes** (always enforced): `/dashboard`, `/to-dashboard`, `/settings`, `/onboarding`, `/organizations/create`, `/feed` require authentication. Unauthenticated users are redirected to `/sign-in?redirect=<path>`. Dashboard routes also have a **layout-level guard** (defense in depth) — both `dashboard/layout.tsx` and `to-dashboard/layout.tsx` call `getUser()` server-side and redirect to `/sign-in?redirect=<path>` if unauthenticated.
+3. **Private beta / maintenance mode** (when `MAINTENANCE_MODE=true`): Unauthenticated users requesting non-public routes are redirected to `/maintenance`. Public routes (`/sign-in`, `/sign-up`, `/forgot-password`, `/reset-password`, `/maintenance`, `/auth/*`, `/api/*`) remain accessible. Authenticated users can access all pages.
 
 ### React Server Components (RSC)
 
