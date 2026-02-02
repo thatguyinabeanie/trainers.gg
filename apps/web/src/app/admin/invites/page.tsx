@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -106,7 +106,7 @@ export default function AdminInvitesPage() {
   const [sendSuccess, setSendSuccess] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState<number | null>(null);
 
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
 
   const form = useForm<SendInviteFormData>({
     resolver: zodResolver(sendInviteSchema),
@@ -158,8 +158,7 @@ export default function AdminInvitesPage() {
 
   useEffect(() => {
     fetchData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [fetchData]);
 
   const onSendInvite = async (data: SendInviteFormData) => {
     setSendError(null);
@@ -173,7 +172,7 @@ export default function AdminInvitesPage() {
     }
 
     setSendSuccess(
-      result.error
+      result.warning
         ? `Invite created for ${data.email} (email delivery may have failed)`
         : `Invite sent to ${data.email}`
     );

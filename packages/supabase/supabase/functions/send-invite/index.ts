@@ -6,12 +6,13 @@
 // - RESEND_API_KEY env secret
 //
 // POST body: { email: string }
-// Returns: { success: boolean, error?: string, code?: string }
+// Returns: { success: boolean, error?: string, warning?: string, code?: string }
 
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import { corsHeaders } from "../_shared/cors.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
+const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
 
@@ -22,6 +23,7 @@ interface SendInviteRequest {
 interface SendInviteResponse {
   success: boolean;
   error?: string;
+  warning?: string;
   code?: string;
 }
 
@@ -136,28 +138,17 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Create a client with the caller's JWT to verify identity
-    const supabaseUser = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
-      auth: { autoRefreshToken: false, persistSession: false },
-      global: {
-        headers: { Authorization: authHeader },
-      },
+    // Verify the JWT via Supabase Auth (server-side signature verification)
+    const supabaseAuth = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      global: { headers: { Authorization: authHeader } },
     });
 
-    // Verify the caller's JWT and extract user
-    const jwt = authHeader.replace("Bearer ", "");
+    const {
+      data: { user },
+      error: authError,
+    } = await supabaseAuth.auth.getUser();
 
-    // Decode JWT to check site_roles claim
-    let callerUserId: string | null = null;
-    let isSiteAdmin = false;
-    try {
-      const payload = JSON.parse(atob(jwt.split(".")[1]!)) as {
-        sub?: string;
-        site_roles?: string[];
-      };
-      callerUserId = payload.sub ?? null;
-      isSiteAdmin = payload.site_roles?.includes("site_admin") ?? false;
-    } catch {
+    if (authError || !user) {
       return new Response(
         JSON.stringify({
           success: false,
@@ -171,7 +162,21 @@ Deno.serve(async (req) => {
       );
     }
 
-    if (!callerUserId || !isSiteAdmin) {
+    const callerUserId = user.id;
+
+    // Extract custom claims from JWT for site_admin check
+    const jwt = authHeader.replace("Bearer ", "");
+    let isSiteAdmin = false;
+    try {
+      const payload = JSON.parse(atob(jwt.split(".")[1]!)) as {
+        site_roles?: string[];
+      };
+      isSiteAdmin = payload.site_roles?.includes("site_admin") ?? false;
+    } catch {
+      // JWT signature was already verified by getUser() above
+    }
+
+    if (!isSiteAdmin) {
       return new Response(
         JSON.stringify({
           success: false,
@@ -325,7 +330,8 @@ Deno.serve(async (req) => {
       return new Response(
         JSON.stringify({
           success: true,
-          error: "Invite created but email delivery failed. You can resend it.",
+          warning:
+            "Invite created but email delivery failed. You can resend it.",
           code: "EMAIL_DELIVERY_FAILED",
         } satisfies SendInviteResponse),
         {

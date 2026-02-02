@@ -1,6 +1,6 @@
 "use server";
 
-import { createClient, createServiceRoleClient } from "@/lib/supabase/server";
+import { createServiceRoleClient } from "@/lib/supabase/server";
 
 export type InviteValidationResult =
   | { valid: true; email: string }
@@ -8,7 +8,9 @@ export type InviteValidationResult =
 
 /**
  * Validate a beta invite token.
- * Uses anon client since unauthenticated users need to validate tokens.
+ * Uses service role client to bypass RLS — this is a trusted server-side
+ * operation, and the new RLS policies restrict authenticated non-admin users
+ * from reading the table.
  */
 export async function validateInviteToken(
   token: string
@@ -18,7 +20,7 @@ export async function validateInviteToken(
   }
 
   try {
-    const supabase = await createClient();
+    const supabase = createServiceRoleClient();
 
     const { data: invite, error } = await supabase
       .from("beta_invites")

@@ -93,8 +93,11 @@ export function InviteSignUp({ email, token }: InviteSignUpProps) {
         return;
       }
 
-      // Mark the invite as used
-      await markInviteUsed(token, signInData.user.id);
+      // Mark the invite as used (non-blocking — account is already created)
+      const markResult = await markInviteUsed(token, signInData.user.id);
+      if (!markResult.success) {
+        console.error("Failed to mark invite as used:", markResult.error);
+      }
 
       // Redirect to onboarding or dashboard
       router.push("/");
@@ -164,7 +167,7 @@ export function InviteSignUp({ email, token }: InviteSignUpProps) {
                   className="rounded-none border-0 shadow-none focus-visible:ring-0"
                   {...register("username")}
                 />
-                <span className="text-muted-foreground border-l-input bg-muted select-none whitespace-nowrap border-l px-3 text-sm">
+                <span className="text-muted-foreground border-l-input bg-muted border-l px-3 text-sm whitespace-nowrap select-none">
                   .{process.env.NEXT_PUBLIC_PDS_HANDLE_DOMAIN || "trainers.gg"}
                 </span>
               </div>

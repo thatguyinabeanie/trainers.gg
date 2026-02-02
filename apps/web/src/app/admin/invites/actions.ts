@@ -2,6 +2,8 @@
 
 import { createClient, createServiceRoleClient } from "@/lib/supabase/server";
 
+const EMAIL_DELIVERY_FAILED = "EMAIL_DELIVERY_FAILED";
+
 /**
  * Send a beta invite to an email address.
  * Calls the send-invite edge function which handles token generation,
@@ -9,7 +11,12 @@ import { createClient, createServiceRoleClient } from "@/lib/supabase/server";
  */
 export async function sendBetaInvite(
   email: string
-): Promise<{ success: boolean; error?: string; code?: string }> {
+): Promise<{
+  success: boolean;
+  error?: string;
+  warning?: string;
+  code?: string;
+}> {
   try {
     const supabase = await createClient();
 
@@ -46,7 +53,7 @@ export async function sendBetaInvite(
 
     const result = await response.json();
 
-    if (!result.success && !result.code?.includes("EMAIL_DELIVERY_FAILED")) {
+    if (!result.success && result.code !== EMAIL_DELIVERY_FAILED) {
       return {
         success: false,
         error: result.error || "Failed to send invite",
@@ -54,7 +61,7 @@ export async function sendBetaInvite(
       };
     }
 
-    return { success: true, error: result.error };
+    return { success: true, warning: result.warning };
   } catch (err) {
     console.error("Error sending beta invite:", err);
     return { success: false, error: "An unexpected error occurred" };
