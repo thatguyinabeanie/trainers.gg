@@ -2,7 +2,7 @@
 
 import { useState, useTransition, useCallback } from "react";
 import { useAuth, getUserDisplayName } from "@/components/auth/auth-provider";
-import { useSupabaseQuery, useSupabase } from "@/lib/supabase";
+import { useSupabaseQuery } from "@/lib/supabase";
 import { getCurrentUserAlts } from "@trainers/supabase";
 import type { TypedSupabaseClient } from "@trainers/supabase";
 import { Button } from "@/components/ui/button";
@@ -35,6 +35,13 @@ import {
   X,
 } from "lucide-react";
 import { toast } from "sonner";
+import {
+  createAltAction,
+  updateAltAction,
+  updateProfileAction,
+  deleteAltAction,
+  setMainAltAction,
+} from "@/actions/alts";
 
 export default function SettingsPage() {
   const { user, loading } = useAuth();
@@ -105,7 +112,6 @@ export default function SettingsPage() {
 
 function ProfileSettings() {
   const { user } = useAuth();
-  const supabase = useSupabase();
   const [isPending, startTransition] = useTransition();
 
   const displayName = user ? getUserDisplayName(user) : "";
@@ -123,18 +129,15 @@ function ProfileSettings() {
     }
 
     startTransition(async () => {
-      const { error } = await supabase
-        .from("alts")
-        .update({
-          display_name: name,
-          bio: bio || null,
-        })
-        .eq("id", user.profile!.id);
+      const result = await updateProfileAction(user.profile!.id, {
+        displayName: name,
+        bio: bio || undefined,
+      });
 
-      if (error) {
-        toast.error("Failed to update profile");
-      } else {
+      if (result.success) {
         toast.success("Profile updated");
+      } else {
+        toast.error(result.error);
       }
     });
   };
@@ -199,7 +202,6 @@ function ProfileSettings() {
 
 function AltsSettings() {
   const { user } = useAuth();
-  const supabase = useSupabase();
   const [isPending, startTransition] = useTransition();
   const [editingAlt, setEditingAlt] = useState<number | null>(null);
   const [showCreateForm, setShowCreateForm] = useState(false);
@@ -236,17 +238,13 @@ function AltsSettings() {
 
   const handleSetMain = (altId: number) => {
     startTransition(async () => {
-      const { error } = await supabase
-        .from("users")
-        .update({ main_alt_id: altId })
-        .eq("id", user!.id);
-
-      if (error) {
-        toast.error("Failed to set main alt");
-      } else {
+      const result = await setMainAltAction(altId);
+      if (result.success) {
         toast.success("Main alt updated");
         setRefreshKey((k) => k + 1);
         refetch();
+      } else {
+        toast.error(result.error);
       }
     });
   };
@@ -260,18 +258,13 @@ function AltsSettings() {
     if (!confirm(`Delete alt "${altName}"? This cannot be undone.`)) return;
 
     startTransition(async () => {
-      const { error } = await supabase.from("alts").delete().eq("id", altId);
-
-      if (error) {
-        toast.error(
-          error.message.includes("tournament")
-            ? "Cannot delete an alt registered in active tournaments"
-            : "Failed to delete alt"
-        );
-      } else {
+      const result = await deleteAltAction(altId);
+      if (result.success) {
         toast.success("Alt deleted");
         setRefreshKey((k) => k + 1);
         refetch();
+      } else {
+        toast.error(result.error);
       }
     });
   };
@@ -439,7 +432,6 @@ function CreateAltForm({
   onCreated: () => void;
   onCancel: () => void;
 }) {
-  const supabase = useSupabase();
   const [isPending, startTransition] = useTransition();
   const [username, setUsername] = useState("");
   const [displayName, setDisplayName] = useState("");
@@ -452,42 +444,17 @@ function CreateAltForm({
     }
 
     startTransition(async () => {
-      // Check username uniqueness
-      const { data: existing } = await supabase
-        .from("alts")
-        .select("id")
-        .eq("username", username.trim().toLowerCase())
-        .maybeSingle();
+      const result = await createAltAction({
+        username: username.trim().toLowerCase(),
+        displayName: displayName.trim(),
+        battleTag: battleTag.trim() || undefined,
+      });
 
-      if (existing) {
-        toast.error("Username is already taken");
-        return;
-      }
-
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) {
-        toast.error("Not authenticated");
-        return;
-      }
-
-      const { error } = await supabase
-        .from("alts")
-        .insert({
-          user_id: user.id,
-          username: username.trim().toLowerCase(),
-          display_name: displayName.trim(),
-          battle_tag: battleTag.trim() || null,
-        })
-        .select()
-        .single();
-
-      if (error) {
-        toast.error("Failed to create alt");
-      } else {
+      if (result.success) {
         toast.success("Alt created");
         onCreated();
+      } else {
+        toast.error(result.error);
       }
     });
   };
@@ -562,7 +529,6 @@ function EditAltForm({
   onSaved: () => void;
   onCancel: () => void;
 }) {
-  const supabase = useSupabase();
   const [isPending, startTransition] = useTransition();
   const [displayName, setDisplayName] = useState(alt.display_name);
   const [battleTag, setBattleTag] = useState(alt.battle_tag ?? "");
@@ -575,20 +541,17 @@ function EditAltForm({
     }
 
     startTransition(async () => {
-      const { error } = await supabase
-        .from("alts")
-        .update({
-          display_name: displayName.trim(),
-          battle_tag: battleTag.trim() || null,
-          bio: bio.trim() || null,
-        })
-        .eq("id", alt.id);
+      const result = await updateAltAction(alt.id, {
+        displayName: displayName.trim(),
+        battleTag: battleTag.trim() || null,
+        bio: bio.trim() || undefined,
+      });
 
-      if (error) {
-        toast.error("Failed to update alt");
-      } else {
+      if (result.success) {
         toast.success("Alt updated");
         onSaved();
+      } else {
+        toast.error(result.error);
       }
     });
   };

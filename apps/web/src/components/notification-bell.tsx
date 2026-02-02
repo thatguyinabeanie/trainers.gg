@@ -99,11 +99,10 @@ export function NotificationBell({ userId }: NotificationBellProps) {
     [userId]
   );
 
-  const {
-    data: invitations,
-    refetch: refetchInvitations,
-    isLoading: invitationsLoading,
-  } = useSupabaseQuery(invitationsQueryFn, [userId, refreshKey]);
+  const { data: invitations, refetch: refetchInvitations } = useSupabaseQuery(
+    invitationsQueryFn,
+    [userId, refreshKey]
+  );
 
   // Realtime: subscribe to new notifications for this user
   useEffect(() => {
@@ -138,10 +137,16 @@ export function NotificationBell({ userId }: NotificationBellProps) {
               icon: "/icon-192.png",
               tag: "trainers-notification",
             });
-            if (row.action_url) {
+            // Only allow relative URLs to prevent open redirect via protocol-relative URLs (//evil.com)
+            if (
+              row.action_url &&
+              row.action_url.startsWith("/") &&
+              !row.action_url.startsWith("//")
+            ) {
+              const url = row.action_url;
               n.onclick = () => {
                 window.focus();
-                window.location.href = row.action_url!;
+                window.location.href = url;
               };
             }
           }
@@ -181,7 +186,7 @@ export function NotificationBell({ userId }: NotificationBellProps) {
       refetchNotifications();
       refetchUnread();
     }
-    if (actionUrl) {
+    if (actionUrl && actionUrl.startsWith("/") && !actionUrl.startsWith("//")) {
       setOpen(false);
       router.push(actionUrl);
     }

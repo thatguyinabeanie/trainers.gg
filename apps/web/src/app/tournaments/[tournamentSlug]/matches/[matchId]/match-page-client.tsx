@@ -1,6 +1,12 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import {
+  type KeyboardEvent,
+  useState,
+  useEffect,
+  useRef,
+  useCallback,
+} from "react";
 import { useSupabase, useSupabaseQuery } from "@/lib/supabase";
 import {
   getMatchGames,
@@ -664,7 +670,7 @@ function MatchChat({
     }
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+  const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSend();

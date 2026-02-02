@@ -61,6 +61,7 @@ export {
   getPlayerTournamentStats,
   getTournamentPlayerStats,
   getPhaseRoundsWithStats,
+  getPhaseRoundsWithMatches,
   getRoundMatchesWithStats,
   getPlayerMatches,
   getMyDashboardData,

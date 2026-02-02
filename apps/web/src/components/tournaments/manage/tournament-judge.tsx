@@ -289,7 +289,7 @@ export function TournamentJudge({
                       display_name?: string;
                       username?: string;
                     } | null;
-                    const winner = match.winner as {
+                    const _winner = match.winner as {
                       display_name?: string;
                       username?: string;
                     } | null;

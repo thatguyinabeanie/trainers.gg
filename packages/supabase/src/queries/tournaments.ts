@@ -741,6 +741,53 @@ export async function getRoundMatchesWithStats(
 }
 
 /**
+ * Get all rounds with their matches for a phase (bracket visualization).
+ * Fetches matches for every round in a single pass.
+ */
+export async function getPhaseRoundsWithMatches(
+  supabase: TypedClient,
+  phaseId: number
+) {
+  const { data: rounds, error } = await supabase
+    .from("tournament_rounds")
+    .select("*")
+    .eq("phase_id", phaseId)
+    .order("round_number", { ascending: true });
+
+  if (error) throw error;
+
+  const roundIds = (rounds ?? []).map((r) => r.id);
+  if (roundIds.length === 0) return [];
+
+  const { data: allMatches, error: mErr } = await supabase
+    .from("tournament_matches")
+    .select(
+      `
+      *,
+      player1:alts!tournament_matches_alt1_id_fkey(id, username, display_name),
+      player2:alts!tournament_matches_alt2_id_fkey(id, username, display_name)
+    `
+    )
+    .in("round_id", roundIds)
+    .order("table_number", { ascending: true });
+
+  if (mErr) throw mErr;
+
+  // Group matches by round_id
+  const matchesByRound = new Map<number, typeof allMatches>();
+  for (const match of allMatches ?? []) {
+    const list = matchesByRound.get(match.round_id) ?? [];
+    list.push(match);
+    matchesByRound.set(match.round_id, list);
+  }
+
+  return (rounds ?? []).map((round) => ({
+    ...round,
+    matches: matchesByRound.get(round.id) ?? [],
+  }));
+}
+
+/**
  * Get check-in status for current user
  * If no altId is provided, returns status for the current authenticated user
  */

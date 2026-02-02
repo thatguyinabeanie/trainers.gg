@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 
 const tabs = [
   { href: "/dashboard/overview", label: "Overview" },
-  { href: "/dashboard/profiles", label: "Profiles" },
+  { href: "/dashboard/profiles", label: "Alts" },
 ];
 
 export function DashboardNav() {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { useSupabaseQuery } from "@/lib/supabase";
 import { getTournamentAuditLog } from "@trainers/supabase";
 import type { TypedSupabaseClient, Database } from "@trainers/supabase";
@@ -101,33 +101,36 @@ export function TournamentAuditLog({ tournament }: TournamentAuditLogProps) {
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [refreshKey, setRefreshKey] = useState(0);
 
-  const actionsForFilter: AuditAction[] | undefined =
-    categoryFilter === "all"
-      ? undefined
-      : categoryFilter === "match"
-        ? [
-            "match.score_submitted",
-            "match.score_agreed",
-            "match.score_disputed",
-            "match.result_reported",
-            "match.staff_requested",
-            "match.staff_resolved",
-          ]
-        : categoryFilter === "judge"
+  const actionsForFilter: AuditAction[] | undefined = useMemo(
+    () =>
+      categoryFilter === "all"
+        ? undefined
+        : categoryFilter === "match"
           ? [
-              "judge.game_reset",
-              "judge.match_reset",
-              "judge.game_override",
-              "judge.match_override",
+              "match.score_submitted",
+              "match.score_agreed",
+              "match.score_disputed",
+              "match.result_reported",
+              "match.staff_requested",
+              "match.staff_resolved",
             ]
-          : [
-              "tournament.started",
-              "tournament.round_created",
-              "tournament.round_started",
-              "tournament.round_completed",
-              "tournament.phase_advanced",
-              "tournament.completed",
-            ];
+          : categoryFilter === "judge"
+            ? [
+                "judge.game_reset",
+                "judge.match_reset",
+                "judge.game_override",
+                "judge.match_override",
+              ]
+            : [
+                "tournament.started",
+                "tournament.round_created",
+                "tournament.round_started",
+                "tournament.round_completed",
+                "tournament.phase_advanced",
+                "tournament.completed",
+              ],
+    [categoryFilter]
+  );
 
   const queryFn = useCallback(
     (client: TypedSupabaseClient) =>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useSupabaseQuery, useSupabase } from "@/lib/supabase";
+import { useSupabaseQuery } from "@/lib/supabase";
 import { getCurrentUserAlts } from "@trainers/supabase";
 import type { TypedSupabaseClient } from "@trainers/supabase";
 import {
