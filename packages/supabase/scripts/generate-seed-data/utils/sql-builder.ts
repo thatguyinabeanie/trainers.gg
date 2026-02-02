@@ -7,7 +7,7 @@
 /**
  * Convert a JS Date to a SQL interval expression relative to a reference date.
  *
- * Returns a SQL expression like `(base_date + interval '3 days 14 hours')`
+ * Returns a SQL expression like `(seed_now + interval '3 days 14 hours')`
  * that computes the correct timestamp at seed-time rather than baking in
  * a hardcoded ISO string that goes stale.
  */

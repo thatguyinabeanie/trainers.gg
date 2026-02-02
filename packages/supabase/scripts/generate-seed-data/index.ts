@@ -873,11 +873,6 @@ function generateStandingsSql(
   );
 
   // Build lookup maps
-  const tournamentById = new Map<number, GeneratedTournament>();
-  for (const t of tournaments) {
-    tournamentById.set(t.id, t);
-  }
-
   const altUsernameById = new Map<number, string>();
   for (const a of alts) {
     altUsernameById.set(a.id, a.username);
