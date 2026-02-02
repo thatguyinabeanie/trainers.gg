@@ -5,3 +5,4 @@
 
 # Generated OAuth JWKS (built from ATPROTO_PRIVATE_KEY)
 /public/oauth/
+.env*.local
