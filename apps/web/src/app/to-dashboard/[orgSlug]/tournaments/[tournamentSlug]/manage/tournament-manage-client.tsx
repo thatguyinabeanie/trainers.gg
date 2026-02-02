@@ -19,6 +19,7 @@ import {
   TournamentPairings,
   TournamentRegistrations,
   TournamentStandings,
+  TournamentJudge,
 } from "@/components/tournaments";
 import {
   ArrowLeft,
@@ -31,6 +32,7 @@ import {
   Settings,
   LayoutList,
   Medal,
+  Gavel,
 } from "lucide-react";
 
 interface TournamentManageClientProps {
@@ -266,6 +268,10 @@ export function TournamentManageClient({
                 <Medal className="h-4 w-4" />
                 <span className="hidden sm:inline">Standings</span>
               </TabsTrigger>
+              <TabsTrigger value="judge" className="gap-2">
+                <Gavel className="h-4 w-4" />
+                <span className="hidden sm:inline">Judge</span>
+              </TabsTrigger>
               <TabsTrigger value="settings" className="gap-2">
                 <Settings className="h-4 w-4" />
                 <span className="hidden sm:inline">Settings</span>
@@ -290,6 +296,17 @@ export function TournamentManageClient({
 
         <TabsContent value="standings">
           <TournamentStandings tournament={tournamentForStandings} />
+        </TabsContent>
+
+        <TabsContent value="judge">
+          <TournamentJudge
+            tournament={{
+              id: tournament.id,
+              slug: tournament.slug,
+              status: tournament.status ?? "draft",
+            }}
+            tournamentSlug={tournamentSlug}
+          />
         </TabsContent>
 
         <TabsContent value="settings">

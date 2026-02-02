@@ -1011,6 +1011,84 @@ export async function getPlayerMatches(
 }
 
 /**
+ * Get all matches for a tournament across all rounds.
+ * Used by the judge/staff views to see all active and pending matches.
+ * Supports filtering by status and staff_requested flag.
+ */
+type PhaseStatus = Database["public"]["Enums"]["phase_status"];
+
+export async function getTournamentMatchesForStaff(
+  supabase: TypedClient,
+  tournamentId: number,
+  options: {
+    status?: PhaseStatus;
+    staffRequested?: boolean;
+    limit?: number;
+  } = {}
+) {
+  const { status, staffRequested, limit = 200 } = options;
+
+  // Get all phase IDs for this tournament
+  const { data: phases } = await supabase
+    .from("tournament_phases")
+    .select("id")
+    .eq("tournament_id", tournamentId);
+
+  if (!phases?.length) return [];
+
+  const phaseIds = phases.map((p) => p.id);
+
+  // Get all round IDs for those phases
+  const { data: rounds } = await supabase
+    .from("tournament_rounds")
+    .select("id, round_number, phase_id, status")
+    .in("phase_id", phaseIds)
+    .order("round_number", { ascending: true });
+
+  if (!rounds?.length) return [];
+
+  const roundIds = rounds.map((r) => r.id);
+
+  let query = supabase
+    .from("tournament_matches")
+    .select(
+      `
+      *,
+      player1:alts!tournament_matches_alt1_id_fkey(id, username, display_name, avatar_url),
+      player2:alts!tournament_matches_alt2_id_fkey(id, username, display_name, avatar_url),
+      winner:alts!tournament_matches_winner_alt_id_fkey(id, username, display_name)
+    `
+    )
+    .in("round_id", roundIds)
+    .limit(limit);
+
+  if (status) {
+    query = query.eq("status", status);
+  }
+
+  if (staffRequested !== undefined) {
+    query = query.eq("staff_requested", staffRequested);
+  }
+
+  // Order: staff_requested first, then by staff_requested_at (oldest first), then table_number
+  query = query
+    .order("staff_requested", { ascending: false })
+    .order("staff_requested_at", { ascending: true, nullsFirst: false })
+    .order("table_number", { ascending: true });
+
+  const { data, error } = await query;
+
+  if (error) throw error;
+
+  // Attach round info to each match
+  const roundMap = new Map(rounds.map((r) => [r.id, r]));
+  return (data ?? []).map((match) => ({
+    ...match,
+    roundInfo: roundMap.get(match.round_id) ?? null,
+  }));
+}
+
+/**
  * Get dashboard data for current user
  * Returns tournaments, organizations, stats, recent activity, and achievements
  */
