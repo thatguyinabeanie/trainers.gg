@@ -74,3 +74,4 @@ next-app
 
 # AT Protocol OAuth - auto-generated locally
 apps/web/public/oauth/jwks.json
+.fly

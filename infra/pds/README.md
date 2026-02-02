@@ -158,6 +158,9 @@ fly secrets set PDS_JWT_SECRET=$(openssl rand -hex 32)
 
 # Set PLC rotation key (generate once, never change!)
 fly secrets set PDS_PLC_ROTATION_KEY_K256_PRIVATE_KEY_HEX=$(openssl rand -hex 32)
+
+# Enable @username.trainers.gg handles (leading dot required)
+fly secrets set "PDS_SERVICE_HANDLE_DOMAINS=.trainers.gg"
 ```
 
 #### 5. Deploy
@@ -265,6 +268,9 @@ The web/mobile apps have an integrated signup flow that:
 | `PDS_JWT_SECRET`                            | (secret)                           | Yes      |
 | `PDS_ADMIN_PASSWORD`                        | (secret)                           | Yes      |
 | `PDS_PLC_ROTATION_KEY_K256_PRIVATE_KEY_HEX` | (secret)                           | Yes      |
+| `PDS_SERVICE_HANDLE_DOMAINS`                | `.trainers.gg`                     | Yes      |
+
+> **Note:** `PDS_SERVICE_HANDLE_DOMAINS` tells the PDS which domains are valid for user handles. Without it, the PDS only accepts handles under `*.pds.trainers.gg` (derived from `PDS_HOSTNAME`). Setting it to `.trainers.gg` (with leading dot) enables `@username.trainers.gg` handles.
 
 ## Monitoring
 
@@ -325,6 +331,17 @@ Scale up as needed:
 - Check admin password is set
 - Verify PLC rotation key is configured
 - Check logs for validation errors
+
+### "UnsupportedDomain" error when creating accounts
+
+If `create-account.sh` fails with `"Not a supported handle domain"`, the `PDS_SERVICE_HANDLE_DOMAINS` secret is missing or incorrect:
+
+```bash
+# Set it to allow @username.trainers.gg handles
+flyctl secrets set "PDS_SERVICE_HANDLE_DOMAINS=.trainers.gg" --app trainers-pds
+```
+
+The leading dot is required. Without this, the PDS only accepts handles under `*.pds.trainers.gg`.
 
 ## Resources
 

@@ -179,6 +179,13 @@ if [ "$SKIP_FLY" = false ]; then
     log_success "PLC rotation key configured"
   fi
 
+  if echo "$EXISTING_SECRETS" | grep -q "PDS_SERVICE_HANDLE_DOMAINS"; then
+    log_warning "PDS_SERVICE_HANDLE_DOMAINS already set. Skipping."
+  else
+    fly secrets set "PDS_SERVICE_HANDLE_DOMAINS=.${DOMAIN}" --app "$FLY_APP_NAME"
+    log_success "Handle domains configured (.${DOMAIN})"
+  fi
+
   # Deploy
   log_step "Deploying PDS..."
   fly deploy --app "$FLY_APP_NAME"

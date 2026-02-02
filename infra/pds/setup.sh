@@ -71,6 +71,13 @@ else
     fly secrets set PDS_PLC_ROTATION_KEY_K256_PRIVATE_KEY_HEX="$(openssl rand -hex 32)" --app trainers-pds
 fi
 
+if echo "$EXISTING_SECRETS" | grep -q "PDS_SERVICE_HANDLE_DOMAINS"; then
+    echo "⚠️  PDS_SERVICE_HANDLE_DOMAINS already set. Skipping."
+else
+    echo "   Setting PDS_SERVICE_HANDLE_DOMAINS=.trainers.gg (enables @user.trainers.gg handles)..."
+    fly secrets set "PDS_SERVICE_HANDLE_DOMAINS=.trainers.gg" --app trainers-pds
+fi
+
 echo ""
 echo "✅ Secrets configured"
 echo ""
