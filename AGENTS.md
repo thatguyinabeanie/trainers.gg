@@ -109,6 +109,16 @@ Husky runs lint-staged (Prettier auto-fix) on all staged files. If hooks fail, f
 
 **Never edit a migration file that has already been committed.** Always create a new migration file, even if fixing a previous one.
 
+### Edge Function Deployments
+
+**Never deploy edge functions manually via `supabase functions deploy`.** Edge functions deploy through the git workflow:
+
+1. Create or modify files in `packages/supabase/supabase/functions/<function-name>/`
+2. Commit and push to a feature branch
+3. Merge to main via PR to deploy to production
+
+This applies to both new functions and updates to existing ones.
+
 ### Request Interception: proxy.ts (NOT middleware.ts)
 
 **Next.js 16 uses `proxy.ts`** at `apps/web/proxy.ts` for request interception — NOT `middleware.ts`. Do NOT create a `middleware.ts` file; it will break all routes (404 on every page).
@@ -117,12 +127,15 @@ The proxy handles:
 
 1. **Admin routes** (`/admin/*`): Requires `site_admin` role in JWT `site_roles` claim. Non-admins rewritten to `/forbidden`. Layout-level guard in `admin/layout.tsx` as defense in depth.
 2. **Protected routes** (`/dashboard`, `/to-dashboard`, `/settings`, `/onboarding`, `/organizations/create`, `/feed`): Requires authentication. Redirects to `/sign-in?redirect=<path>`. Layout-level guards in dashboard layouts as defense in depth.
-3. **Maintenance mode** (`MAINTENANCE_MODE=true`): Unauthenticated users redirected to `/maintenance`. Public routes (`/sign-in`, `/sign-up`, `/forgot-password`, `/reset-password`, `/maintenance`, `/auth/*`, `/api/*`) remain accessible.
+3. **Maintenance mode** (`MAINTENANCE_MODE=true`): Unauthenticated users redirected to `/waitlist`. Public routes (`/sign-in`, `/sign-up`, `/forgot-password`, `/reset-password`, `/waitlist`, `/auth/*`, `/api/*`) remain accessible.
 
 ### Environment Variables
 
 - All local env vars live in a single root `.env.local`, symlinked into app/package directories automatically by `postinstall.sh`
 - When adding env vars used during builds, declare them in `turbo.json` under the task's `env` array (Turborepo uses this for cache invalidation)
+- `pnpm dev` always configures `.env.local` for local Supabase — even if Vercel CLI (`vercel env pull`) has overwritten it with production credentials
+- To explicitly use a remote Supabase instance during local dev, set `SKIP_LOCAL_SUPABASE=1` before running `pnpm dev`
+- The setup script preserves non-Supabase env vars (OAuth keys, PDS config, Resend API key, etc.) when reconfiguring
 
 ### UI Components (Web)
 

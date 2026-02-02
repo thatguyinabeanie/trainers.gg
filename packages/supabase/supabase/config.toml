@@ -386,6 +386,7 @@ deno_version = 2
 PDS_HOST = "env(PDS_HOST)"
 PDS_ADMIN_PASSWORD = "env(PDS_ADMIN_PASSWORD)"
 PDS_HANDLE_DOMAIN = "env(PDS_HANDLE_DOMAIN)"
+RESEND_API_KEY = "env(RESEND_API_KEY)"
 
 [analytics]
 enabled = true

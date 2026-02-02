@@ -1,5 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Users, Shield, Activity } from "lucide-react";
+import { Users, Shield, Activity, Mail } from "lucide-react";
 import Link from "next/link";
 
 export default function AdminPage() {
@@ -31,6 +31,22 @@ export default function AdminPage() {
             <CardContent>
               <p className="text-muted-foreground text-xs">
                 Manage site-wide roles and permissions
+              </p>
+            </CardContent>
+          </Card>
+        </Link>
+
+        <Link href="/admin/invites">
+          <Card className="hover:border-primary/50 transition-colors">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                Beta Invites
+              </CardTitle>
+              <Mail className="text-muted-foreground h-4 w-4" />
+            </CardHeader>
+            <CardContent>
+              <p className="text-muted-foreground text-xs">
+                Send invites and manage the waitlist
               </p>
             </CardContent>
           </Card>

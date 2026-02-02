@@ -155,6 +155,54 @@ export type Database = {
           },
         ]
       }
+      beta_invites: {
+        Row: {
+          converted_user_id: string | null
+          created_at: string
+          email: string
+          expires_at: string
+          id: number
+          invited_by: string
+          token: string
+          used_at: string | null
+        }
+        Insert: {
+          converted_user_id?: string | null
+          created_at?: string
+          email: string
+          expires_at?: string
+          id?: never
+          invited_by: string
+          token: string
+          used_at?: string | null
+        }
+        Update: {
+          converted_user_id?: string | null
+          created_at?: string
+          email?: string
+          expires_at?: string
+          id?: never
+          invited_by?: string
+          token?: string
+          used_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "beta_invites_converted_user_id_fkey"
+            columns: ["converted_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "beta_invites_invited_by_fkey"
+            columns: ["invited_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       feature_usage: {
         Row: {
           created_at: string | null

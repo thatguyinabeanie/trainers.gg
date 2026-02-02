@@ -30,21 +30,6 @@ if [ -n "$SKIP_LOCAL_SUPABASE" ]; then
   exit 0
 fi
 
-# =============================================================================
-# Skip if .env.local already exists and points to a remote Supabase
-# =============================================================================
-if [ -f "$ENV_FILE" ]; then
-  if grep -q "NEXT_PUBLIC_SUPABASE_URL=" "$ENV_FILE"; then
-    SUPABASE_URL=$(grep "NEXT_PUBLIC_SUPABASE_URL=" "$ENV_FILE" | cut -d'=' -f2)
-    # If URL is not localhost, assume they want to use remote
-    if [[ "$SUPABASE_URL" != *"127.0.0.1"* ]] && [[ "$SUPABASE_URL" != *"localhost"* ]]; then
-      echo -e "${GREEN}.env.local exists with remote Supabase URL - skipping local setup${NC}"
-      echo -e "${BLUE}To use local Supabase, delete .env.local or set URL to http://127.0.0.1:54321${NC}"
-      exit 0
-    fi
-  fi
-fi
-
 echo -e "${BLUE}========================================${NC}"
 echo -e "${BLUE}  Setting up Local Supabase            ${NC}"
 echo -e "${BLUE}========================================${NC}"
@@ -216,6 +201,16 @@ create_env_file() {
   
   # Always update .env.local with local credentials when using local Supabase
   echo -e "${YELLOW}Configuring web app environment...${NC}"
+
+  # Warn if .env.local currently points to a remote Supabase instance
+  if [ -f "$ENV_FILE" ]; then
+    CURRENT_URL=$(grep "^NEXT_PUBLIC_SUPABASE_URL=" "$ENV_FILE" 2>/dev/null | cut -d'=' -f2- || echo "")
+    if [ -n "$CURRENT_URL" ] && [[ "$CURRENT_URL" != *"127.0.0.1"* ]] && [[ "$CURRENT_URL" != *"localhost"* ]]; then
+      echo -e "${YELLOW}⚠ .env.local had a remote Supabase URL ($CURRENT_URL)${NC}"
+      echo -e "${YELLOW}  Reconfiguring for local development. Non-Supabase values will be preserved.${NC}"
+      echo -e "${YELLOW}  To use a remote instance instead, set SKIP_LOCAL_SUPABASE=1${NC}"
+    fi
+  fi
   
   # Get local IP for mobile device testing
   get_local_ip
@@ -395,6 +390,13 @@ check_fast_path() {
   # Supabase must be running
   check_supabase_cli
   check_supabase_status || return 1
+
+  # Verify service role key matches running instance (catches HS256→ES256 mismatch)
+  local LIVE_KEY
+  LIVE_KEY=$($SUPABASE_CMD status --output json 2>/dev/null | grep '"SERVICE_ROLE_KEY"' | sed 's/.*"SERVICE_ROLE_KEY": *"\([^"]*\)".*/\1/')
+  local ENV_KEY
+  ENV_KEY=$(grep "^SUPABASE_SERVICE_ROLE_KEY=" "$ENV_FILE" 2>/dev/null | cut -d'=' -f2-)
+  [ "$LIVE_KEY" = "$ENV_KEY" ] || return 1
 
   return 0
 }

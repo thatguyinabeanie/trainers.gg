@@ -2,6 +2,7 @@ packages:
   - apps/*
   - packages/*
   - tooling/*
+  - infra/*
 
 catalog:
   "@supabase/ssr": ^0.8.0

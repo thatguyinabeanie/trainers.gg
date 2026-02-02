@@ -6930,7 +6930,7 @@ DO $$
 DECLARE
   site_admin_role_id bigint;
 BEGIN
-  SELECT id INTO site_admin_role_id FROM public.roles WHERE name = 'Site Admin' AND scope = 'site';
+  SELECT id INTO site_admin_role_id FROM public.roles WHERE name = 'site_admin' AND scope = 'site';
   IF site_admin_role_id IS NOT NULL THEN
     INSERT INTO public.user_roles (user_id, role_id) VALUES
       ('a1b2c3d4-e5f6-4a5b-8c9d-0e1f2a3b4c5d', site_admin_role_id)

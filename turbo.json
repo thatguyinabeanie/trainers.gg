@@ -3,7 +3,6 @@
   "ui": "tui",
   "globalEnv": [
     "FORCE_REDIRECT_TO_HOME",
-    "MAINTENANCE_MODE",
     "NEXT_PUBLIC_MAINTENANCE_MODE",
     "NEXT_PUBLIC_SUPABASE_URL",
     "NEXT_PUBLIC_SUPABASE_ANON_KEY",
@@ -37,7 +36,8 @@
     "POSTGRES_DATABASE",
     "ATPROTO_PRIVATE_KEY",
     "NGROK_STATIC_DOMAIN",
-    "PDS_HANDLE_DOMAIN"
+    "PDS_HANDLE_DOMAIN",
+    "RESEND_API_KEY"
   ],
   "tasks": {
     "build": {
@@ -50,14 +50,13 @@
         "src/generated/**"
       ]
     },
+    "dev:setup": {
+      "cache": false
+    },
     "dev": {
       "cache": false,
-      "persistent": true
-    },
-    "dev:mobile": {
-      "cache": false,
       "persistent": true,
-      "interactive": true
+      "dependsOn": ["^dev:setup", "dev:setup"]
     },
     "lint": {
       "dependsOn": ["^build"]

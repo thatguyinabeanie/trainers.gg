@@ -12,6 +12,8 @@
   },
   "scripts": {
     "setup": "./scripts/setup-local.sh",
+    "dev:setup": "./scripts/setup-local.sh",
+    "dev": "./scripts/dev.sh",
     "db:start": "supabase start",
     "db:stop": "supabase stop",
     "db:restart": "supabase stop && supabase start",

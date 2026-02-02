@@ -10,7 +10,7 @@
 // 6. Return session
 
 import { createClient } from "jsr:@supabase/supabase-js@2";
-import { corsHeaders } from "../_shared/cors.ts";
+import { getCorsHeaders } from "../_shared/cors.ts";
 import {
   createPdsInviteCode,
   createPdsAccount,
@@ -30,6 +30,7 @@ interface SignupRequest {
   lastName?: string;
   birthDate?: string;
   country?: string;
+  inviteToken?: string;
 }
 
 interface SignupResponse {
@@ -51,9 +52,11 @@ interface SignupResponse {
 }
 
 Deno.serve(async (req) => {
+  const cors = getCorsHeaders(req);
+
   // Handle CORS preflight
   if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
+    return new Response("ok", { headers: cors });
   }
 
   try {
@@ -66,6 +69,7 @@ Deno.serve(async (req) => {
       lastName,
       birthDate,
       country,
+      inviteToken,
     } = body;
 
     // Validate required fields
@@ -78,7 +82,7 @@ Deno.serve(async (req) => {
         } satisfies SignupResponse),
         {
           status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          headers: { ...cors, "Content-Type": "application/json" },
         }
       );
     }
@@ -95,7 +99,7 @@ Deno.serve(async (req) => {
         } satisfies SignupResponse),
         {
           status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          headers: { ...cors, "Content-Type": "application/json" },
         }
       );
     }
@@ -128,7 +132,7 @@ Deno.serve(async (req) => {
         } satisfies SignupResponse),
         {
           status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          headers: { ...cors, "Content-Type": "application/json" },
         }
       );
     }
@@ -144,6 +148,92 @@ Deno.serve(async (req) => {
         },
       }
     );
+
+    // ---------- Beta invite gate ----------
+    // When maintenance mode is active, only users with a valid invite token
+    // may sign up. The token must exist, be unused, unexpired, and the email
+    // in the request must match the email on the invite. This is the
+    // authoritative server-side check — client-side readOnly is cosmetic only.
+    const maintenanceMode = Deno.env.get("MAINTENANCE_MODE") === "true";
+
+    if (maintenanceMode) {
+      if (!inviteToken) {
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error:
+              "A valid invite is required to sign up during the private beta",
+            code: "INVITE_REQUIRED",
+          } satisfies SignupResponse),
+          {
+            status: 403,
+            headers: { ...cors, "Content-Type": "application/json" },
+          }
+        );
+      }
+
+      const { data: invite, error: inviteError } = await supabaseAdmin
+        .from("beta_invites")
+        .select("id, email, expires_at, used_at")
+        .eq("token", inviteToken)
+        .maybeSingle();
+
+      if (inviteError || !invite) {
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: "Invalid invite token",
+            code: "INVALID_INVITE",
+          } satisfies SignupResponse),
+          {
+            status: 403,
+            headers: { ...cors, "Content-Type": "application/json" },
+          }
+        );
+      }
+
+      if (invite.used_at) {
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: "This invite has already been used",
+            code: "INVITE_USED",
+          } satisfies SignupResponse),
+          {
+            status: 403,
+            headers: { ...cors, "Content-Type": "application/json" },
+          }
+        );
+      }
+
+      if (new Date(invite.expires_at) < new Date()) {
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: "This invite has expired",
+            code: "INVITE_EXPIRED",
+          } satisfies SignupResponse),
+          {
+            status: 403,
+            headers: { ...cors, "Content-Type": "application/json" },
+          }
+        );
+      }
+
+      if (invite.email.toLowerCase() !== email.toLowerCase()) {
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: "Email does not match the invite",
+            code: "EMAIL_MISMATCH",
+          } satisfies SignupResponse),
+          {
+            status: 403,
+            headers: { ...cors, "Content-Type": "application/json" },
+          }
+        );
+      }
+    }
 
     // Check username availability in Supabase
     const { data: existingUser } = await supabaseAdmin
@@ -161,7 +251,7 @@ Deno.serve(async (req) => {
         } satisfies SignupResponse),
         {
           status: 409,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          headers: { ...cors, "Content-Type": "application/json" },
         }
       );
     }
@@ -182,7 +272,7 @@ Deno.serve(async (req) => {
         } satisfies SignupResponse),
         {
           status: 409,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          headers: { ...cors, "Content-Type": "application/json" },
         }
       );
     }
@@ -201,7 +291,7 @@ Deno.serve(async (req) => {
         } satisfies SignupResponse),
         {
           status: 409,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          headers: { ...cors, "Content-Type": "application/json" },
         }
       );
     }
@@ -231,7 +321,7 @@ Deno.serve(async (req) => {
         } satisfies SignupResponse),
         {
           status: 500,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          headers: { ...cors, "Content-Type": "application/json" },
         }
       );
     }
@@ -284,12 +374,28 @@ Deno.serve(async (req) => {
       // Don't fail the signup - user is created, just without DID
     }
 
-    // Generate a session for the user
-    const { data: sessionData, error: sessionError } =
-      await supabaseAdmin.auth.admin.generateLink({
-        type: "magiclink",
-        email,
-      });
+    // ---------- Mark invite as used (atomic, before returning success) ----------
+    if (inviteToken) {
+      const { error: markError } = await supabaseAdmin
+        .from("beta_invites")
+        .update({
+          used_at: new Date().toISOString(),
+          converted_user_id: userId,
+        })
+        .eq("token", inviteToken)
+        .is("used_at", null);
+
+      if (markError) {
+        console.error("Failed to mark invite as used:", markError);
+        // Don't fail the signup — account is already created
+      }
+
+      // Also update the waitlist entry if one exists for this email
+      await supabaseAdmin
+        .from("waitlist")
+        .update({ converted_user_id: userId })
+        .eq("email", email);
+    }
 
     // For now, we'll return success and let the client sign in
     // In production, you'd want to return actual session tokens
@@ -308,7 +414,7 @@ Deno.serve(async (req) => {
       } satisfies SignupResponse),
       {
         status: 201,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...cors, "Content-Type": "application/json" },
       }
     );
   } catch (error) {
@@ -321,7 +427,7 @@ Deno.serve(async (req) => {
       } satisfies SignupResponse),
       {
         status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...cors, "Content-Type": "application/json" },
       }
     );
   }

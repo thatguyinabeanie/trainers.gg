@@ -7,7 +7,7 @@
 -- =============================================================================
 
 INSERT INTO public.roles (name, description, scope) VALUES
-  ('Site Admin', 'Full administrative access to the entire platform', 'site'),
+  ('site_admin', 'Full administrative access to the entire platform', 'site'),
   ('org_owner', 'Full control over the organization', 'organization'),
   ('org_admin', 'Administrative privileges', 'organization'),
   ('org_moderator', 'Can moderate content and users', 'organization'),

@@ -18,9 +18,9 @@ import { createClient } from "@/lib/supabase/middleware";
  *    - /dashboard, /to-dashboard, /settings, /onboarding, /organizations/create, /feed
  *    - Unauthenticated users are redirected to /sign-in?redirect=<path>
  *
- * 3. Private beta / maintenance mode (when MAINTENANCE_MODE=true):
- *    - Unauthenticated users requesting non-public routes are redirected to /maintenance
- *    - Public routes (sign-in, sign-up, forgot/reset-password, maintenance) remain accessible
+ * 3. Private beta / maintenance mode (when NEXT_PUBLIC_MAINTENANCE_MODE=true):
+ *    - Unauthenticated users requesting non-public routes are redirected to /waitlist
+ *    - Public routes (sign-in, sign-up, forgot/reset-password, waitlist) remain accessible
  *    - Authenticated users can access all pages
  *    - /auth/*, /api/*, /_next/*, static files are always allowed
  */
@@ -46,7 +46,8 @@ const PUBLIC_ROUTES = [
   "/sign-up",
   "/forgot-password",
   "/reset-password",
-  "/maintenance",
+  "/waitlist",
+  "/invite", // Beta invite acceptance (unauthenticated users need access)
   "/auth",
   "/api",
   "/oauth", // OAuth JWKS and well-known files (AT Protocol requires no redirects)
@@ -107,9 +108,7 @@ export async function middleware(request: NextRequest) {
   }
 
   // Read maintenance mode at runtime
-  const maintenanceMode =
-    process.env.NEXT_PUBLIC_MAINTENANCE_MODE === "true" ||
-    process.env.MAINTENANCE_MODE === "true";
+  const maintenanceMode = process.env.NEXT_PUBLIC_MAINTENANCE_MODE === "true";
 
   // Create Supabase client and refresh session
   const { supabase, response } = createClient(request);
@@ -165,11 +164,11 @@ export async function middleware(request: NextRequest) {
   }
 
   // Protected routes always require authentication (redirect to sign-in)
-  // In maintenance mode, unauthenticated users on protected routes go to /maintenance instead
+  // In maintenance mode, unauthenticated users on protected routes go to /waitlist instead
   if (!user && isProtectedRoute(pathname)) {
     if (maintenanceMode) {
-      const maintenanceUrl = new URL("/maintenance", request.url);
-      return NextResponse.redirect(maintenanceUrl);
+      const waitlistUrl = new URL("/waitlist", request.url);
+      return NextResponse.redirect(waitlistUrl);
     }
     const signInUrl = new URL("/sign-in", request.url);
     signInUrl.searchParams.set("redirect", pathname);
@@ -177,10 +176,10 @@ export async function middleware(request: NextRequest) {
   }
 
   // === PRIVATE BETA / MAINTENANCE MODE ===
-  // Redirect unauthenticated users on non-public routes to /maintenance
+  // Redirect unauthenticated users on non-public routes to /waitlist
   if (maintenanceMode && !user && !isPublicRoute(pathname)) {
-    const maintenanceUrl = new URL("/maintenance", request.url);
-    return NextResponse.redirect(maintenanceUrl);
+    const waitlistUrl = new URL("/waitlist", request.url);
+    return NextResponse.redirect(waitlistUrl);
   }
 
   return response;

@@ -141,7 +141,7 @@ export const SEED_CONFIG = {
   // =========================================================================
 
   ROLES: {
-    SITE_ADMIN: "Site Admin",
+    SITE_ADMIN: "site_admin",
     ORG_OWNER: "org_owner",
     ORG_ADMIN: "org_admin",
     ORG_MODERATOR: "org_moderator",
