@@ -7,6 +7,7 @@
 
 "use server";
 
+import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { getErrorMessage } from "@/lib/utils";
 import {
@@ -20,6 +21,52 @@ type ActionResult<T = void> =
   | { success: true; data: T }
   | { success: false; error: string };
 
+// --- Input Schemas ---
+
+const createAltSchema = z.object({
+  username: z
+    .string()
+    .min(1, "Username is required")
+    .max(30, "Username must be 30 characters or fewer")
+    .regex(
+      /^[a-z0-9_]+$/,
+      "Username must be lowercase letters, numbers, and underscores only"
+    ),
+  displayName: z
+    .string()
+    .min(1, "Display name is required")
+    .max(64, "Display name must be 64 characters or fewer"),
+  battleTag: z
+    .string()
+    .max(50, "Battle tag must be 50 characters or fewer")
+    .optional(),
+});
+
+const updateAltSchema = z.object({
+  displayName: z
+    .string()
+    .min(1, "Display name is required")
+    .max(64, "Display name must be 64 characters or fewer")
+    .optional(),
+  bio: z.string().max(256, "Bio must be 256 characters or fewer").optional(),
+  battleTag: z
+    .string()
+    .max(50, "Battle tag must be 50 characters or fewer")
+    .nullable()
+    .optional(),
+});
+
+const updateProfileSchema = z.object({
+  displayName: z
+    .string()
+    .min(1, "Display name is required")
+    .max(64, "Display name must be 64 characters or fewer")
+    .optional(),
+  bio: z.string().max(256, "Bio must be 256 characters or fewer").optional(),
+});
+
+const idSchema = z.number().int().positive();
+
 /**
  * Create a new alt for the current user.
  */
@@ -29,14 +76,21 @@ export async function createAltAction(data: {
   battleTag?: string;
 }): Promise<ActionResult<{ id: number }>> {
   try {
+    const validated = createAltSchema.parse(data);
     const supabase = await createClient();
     const alt = await createAlt(supabase, {
-      username: data.username,
-      displayName: data.displayName,
-      battleTag: data.battleTag,
+      username: validated.username,
+      displayName: validated.displayName,
+      battleTag: validated.battleTag,
     });
     return { success: true, data: { id: alt.id } };
   } catch (error) {
+    if (error instanceof z.ZodError) {
+      return {
+        success: false,
+        error: error.errors[0]?.message ?? "Invalid input",
+      };
+    }
     return {
       success: false,
       error: getErrorMessage(error, "Failed to create alt"),
@@ -56,10 +110,18 @@ export async function updateAltAction(
   }
 ): Promise<ActionResult<{ success: true }>> {
   try {
+    const validatedId = idSchema.parse(altId);
+    const validated = updateAltSchema.parse(updates);
     const supabase = await createClient();
-    await updateAlt(supabase, altId, updates);
+    await updateAlt(supabase, validatedId, validated);
     return { success: true, data: { success: true } };
   } catch (error) {
+    if (error instanceof z.ZodError) {
+      return {
+        success: false,
+        error: error.errors[0]?.message ?? "Invalid input",
+      };
+    }
     return {
       success: false,
       error: getErrorMessage(error, "Failed to update alt"),
@@ -74,10 +136,17 @@ export async function deleteAltAction(
   altId: number
 ): Promise<ActionResult<{ success: true }>> {
   try {
+    const validatedId = idSchema.parse(altId);
     const supabase = await createClient();
-    await deleteAlt(supabase, altId);
+    await deleteAlt(supabase, validatedId);
     return { success: true, data: { success: true } };
   } catch (error) {
+    if (error instanceof z.ZodError) {
+      return {
+        success: false,
+        error: error.errors[0]?.message ?? "Invalid input",
+      };
+    }
     return {
       success: false,
       error: getErrorMessage(error, "Failed to delete alt"),
@@ -92,10 +161,17 @@ export async function setMainAltAction(
   altId: number
 ): Promise<ActionResult<{ success: true }>> {
   try {
+    const validatedId = idSchema.parse(altId);
     const supabase = await createClient();
-    await setMainAlt(supabase, altId);
+    await setMainAlt(supabase, validatedId);
     return { success: true, data: { success: true } };
   } catch (error) {
+    if (error instanceof z.ZodError) {
+      return {
+        success: false,
+        error: error.errors[0]?.message ?? "Invalid input",
+      };
+    }
     return {
       success: false,
       error: getErrorMessage(error, "Failed to set main alt"),
@@ -111,10 +187,18 @@ export async function updateProfileAction(
   updates: { displayName?: string; bio?: string }
 ): Promise<ActionResult<{ success: true }>> {
   try {
+    const validatedId = idSchema.parse(altId);
+    const validated = updateProfileSchema.parse(updates);
     const supabase = await createClient();
-    await updateAlt(supabase, altId, updates);
+    await updateAlt(supabase, validatedId, validated);
     return { success: true, data: { success: true } };
   } catch (error) {
+    if (error instanceof z.ZodError) {
+      return {
+        success: false,
+        error: error.errors[0]?.message ?? "Invalid input",
+      };
+    }
     return {
       success: false,
       error: getErrorMessage(error, "Failed to update profile"),

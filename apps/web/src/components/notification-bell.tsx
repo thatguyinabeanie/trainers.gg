@@ -40,6 +40,16 @@ interface NotificationBellProps {
   userId?: string;
 }
 
+function isSafeRelativeUrl(url: string | null | undefined): url is string {
+  if (!url) return false;
+  const trimmed = url.trim();
+  return (
+    trimmed.startsWith("/") &&
+    !trimmed.startsWith("//") &&
+    !trimmed.startsWith("/\\")
+  );
+}
+
 const notificationIcons: Record<string, typeof Swords> = {
   match_ready: Swords,
   match_result: Flag,
@@ -137,13 +147,9 @@ export function NotificationBell({ userId }: NotificationBellProps) {
               icon: "/icon-192.png",
               tag: "trainers-notification",
             });
-            // Only allow relative URLs to prevent open redirect via protocol-relative URLs (//evil.com)
-            if (
-              row.action_url &&
-              row.action_url.startsWith("/") &&
-              !row.action_url.startsWith("//")
-            ) {
-              const url = row.action_url;
+            // Only allow safe relative URLs (no protocol-relative, backslash, or whitespace bypass)
+            if (isSafeRelativeUrl(row.action_url)) {
+              const url = row.action_url.trim();
               n.onclick = () => {
                 window.focus();
                 window.location.href = url;
@@ -186,9 +192,9 @@ export function NotificationBell({ userId }: NotificationBellProps) {
       refetchNotifications();
       refetchUnread();
     }
-    if (actionUrl && actionUrl.startsWith("/") && !actionUrl.startsWith("//")) {
+    if (isSafeRelativeUrl(actionUrl)) {
       setOpen(false);
-      router.push(actionUrl);
+      router.push(actionUrl.trim());
     }
   };
 

@@ -185,7 +185,8 @@ export async function judgeResetGameAction(
 
 /**
  * Request a judge for a match (sets staff_requested = true).
- * Caller must be a match participant or org staff.
+ * Uses a SECURITY DEFINER RPC that enforces caller is a match
+ * participant or org staff with tournament.manage permission.
  */
 export async function requestJudgeAction(
   matchId: number,
@@ -195,65 +196,9 @@ export async function requestJudgeAction(
     await rejectBots();
     const supabase = await createClient();
 
-    // Verify caller is a match participant or org staff
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) throw new Error("Not authenticated");
-
-    const { data: match } = await supabase
-      .from("tournament_matches")
-      .select(
-        `
-        id,
-        alt1_id,
-        alt2_id,
-        round:tournament_rounds!inner(
-          phase:tournament_phases!inner(
-            tournament:tournaments!inner(organization_id)
-          )
-        )
-      `
-      )
-      .eq("id", matchId)
-      .single();
-
-    if (!match) throw new Error("Match not found");
-
-    // Check if caller is a match participant
-    const { data: callerAlts } = await supabase
-      .from("alts")
-      .select("id")
-      .eq("user_id", user.id);
-
-    const callerAltIds = new Set((callerAlts ?? []).map((a) => a.id));
-    const isParticipant =
-      (match.alt1_id && callerAltIds.has(match.alt1_id)) ||
-      (match.alt2_id && callerAltIds.has(match.alt2_id));
-
-    if (!isParticipant) {
-      // Check if caller is org staff (RLS on the update will also enforce this,
-      // but we provide a clearer error message)
-      const round = match.round as unknown as {
-        phase: { tournament: { organization_id: number } };
-      };
-      const { count } = await supabase
-        .from("organization_staff")
-        .select("*", { count: "exact", head: true })
-        .eq("organization_id", round.phase.tournament.organization_id)
-        .eq("user_id", user.id);
-
-      if (!count || count === 0) {
-        throw new Error(
-          "Only match participants or org staff can request a judge"
-        );
-      }
-    }
-
-    const { error } = await supabase
-      .from("tournament_matches")
-      .update({ staff_requested: true })
-      .eq("id", matchId);
+    const { error } = await supabase.rpc("request_judge", {
+      p_match_id: matchId,
+    });
 
     if (error) throw error;
     updateTag(CacheTags.tournament(tournamentId));
