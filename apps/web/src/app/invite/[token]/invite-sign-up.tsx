@@ -73,7 +73,7 @@ export function InviteSignUp({ email, token }: InviteSignUpProps) {
         email,
         data.password,
         {
-          username: data.username.toLowerCase(),
+          username: data.username,
           inviteToken: token,
         }
       );

@@ -77,7 +77,7 @@ export async function sendBetaInvite(email: string): Promise<{
         "Content-Type": "application/json",
         Authorization: `Bearer ${session.access_token}`,
       },
-      body: JSON.stringify({ email: email.trim().toLowerCase() }),
+      body: JSON.stringify({ email }),
     });
 
     const result = await response.json();

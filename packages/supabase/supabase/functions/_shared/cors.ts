@@ -10,14 +10,12 @@ const ALLOWED_ORIGINS = [
 /**
  * Get CORS headers with a validated origin.
  * Returns the request's origin if it's in the allowlist, otherwise
- * falls back to the production origin (which will block the request
+ * falls back to an empty origin (which will block the request
  * in the browser but won't leak a wildcard).
  */
 export function getCorsHeaders(request: Request): Record<string, string> {
   const origin = request.headers.get("Origin") ?? "";
-  const allowedOrigin = ALLOWED_ORIGINS.includes(origin)
-    ? origin
-    : ALLOWED_ORIGINS[0]!;
+  const allowedOrigin = ALLOWED_ORIGINS.includes(origin) ? origin : "";
 
   return {
     "Access-Control-Allow-Origin": allowedOrigin,

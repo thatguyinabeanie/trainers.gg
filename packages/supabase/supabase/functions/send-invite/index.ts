@@ -229,7 +229,7 @@ Deno.serve(async (req) => {
     const trimmedEmail = email.trim().toLowerCase();
 
     // Validate email format
-    const emailRegex = /^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$/;
+    const emailRegex = /^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$/i;
     if (!emailRegex.test(trimmedEmail)) {
       return new Response(
         JSON.stringify({
