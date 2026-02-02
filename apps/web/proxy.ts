@@ -11,8 +11,8 @@ import { createClient } from "@/lib/supabase/middleware";
  *    - Unauthenticated users are redirected to /sign-in?redirect=<path>
  *
  * 2. Maintenance mode (when MAINTENANCE_MODE=true):
- *    - Unauthenticated users are redirected to /sign-in
- *    - Sign-in, sign-up, forgot/reset-password remain accessible
+ *    - Unauthenticated users requesting non-public routes are redirected to /sign-in
+ *    - Routes in PUBLIC_ROUTES (sign-in, sign-up, forgot/reset-password) remain accessible
  *    - Authenticated users can access all pages
  *    - /auth/*, /api/*, /_next/*, static files are always allowed
  */
@@ -25,6 +25,7 @@ const PROTECTED_ROUTES = ["/dashboard", "/to-dashboard"];
 // Routes that are always accessible (even in maintenance mode)
 const PUBLIC_ROUTES = [
   "/sign-in",
+  "/sign-up",
   "/forgot-password",
   "/reset-password",
   "/auth",
