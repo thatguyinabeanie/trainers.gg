@@ -14,7 +14,7 @@ packages/
   atproto/             # AT Protocol / Bluesky utilities - @trainers/atproto
   ui/                  # Shared UI components - @trainers/ui
   theme/               # Shared theme tokens - @trainers/theme
-  validators/          # Zod schemas - @trainers/validators
+  validators/          # Zod schemas + team parsing (@pkmn/sets) - @trainers/validators
 
 infra/
   pds/                 # Bluesky PDS deployment (Fly.io) - pds.trainers.gg
@@ -102,6 +102,7 @@ pnpm setup:ngrok          # Start ngrok tunnel with static domain on port 3000
 # 🏗️ Build
 pnpm build                # Build all packages
 pnpm build:web            # Build web app only
+pnpm build:mobile         # EAS build for mobile (iOS simulator by default)
 
 # ✅ Quality Checks
 pnpm lint                 # Lint all packages
@@ -330,6 +331,7 @@ Every user signup creates **both** a Supabase Auth account AND a Bluesky PDS acc
 | `apps/web/src/lib/supabase/client.ts`            | Client-side Supabase client                    |
 | `apps/web/proxy.ts`                              | Next.js 16 proxy for session refresh + routing |
 | `apps/web/src/lib/supabase/middleware.ts`        | Session refresh middleware utilities           |
+| `apps/web/src/app/(auth-pages)/utils.ts`         | Auth redirect helpers (getRedirectParam, etc.) |
 | `apps/web/src/hooks/use-auth.ts`                 | Client-side auth hook (calls signup edge fn)   |
 | `apps/web/src/components/auth/auth-provider.tsx` | Client-side auth state provider                |
 | `apps/mobile/src/lib/supabase/auth-provider.tsx` | Mobile auth provider (calls signup edge fn)    |
@@ -422,8 +424,15 @@ Button.displayName = "Button"; // Always set displayName
 
 **CRITICAL:** Next.js 16 uses `proxy.ts` at the project root (`apps/web/proxy.ts`) for request interception — NOT `middleware.ts`. Do **NOT** create a `middleware.ts` file; it will break all routes (404 on every page).
 
-- `apps/web/proxy.ts` handles session refresh (`supabase.auth.getUser()`), maintenance mode, and admin route protection.
+- `apps/web/proxy.ts` handles session refresh (`supabase.auth.getUser()`), protected route enforcement, and maintenance mode.
 - `apps/web/src/lib/supabase/middleware.ts` contains helper utilities used by the proxy — it is NOT the entry point.
+
+The proxy provides two layers of route protection:
+
+1. **Protected routes** (always enforced): `/dashboard` and `/to-dashboard` require authentication. Unauthenticated users are redirected to `/sign-in?redirect=<path>`. This runs before maintenance mode logic, at no extra cost since `getUser()` already executes on every request.
+2. **Maintenance mode** (when `MAINTENANCE_MODE=true`): All non-public routes require authentication. Public routes (`/sign-in`, `/forgot-password`, `/reset-password`, `/auth/*`, `/api/*`) remain accessible.
+
+Dashboard routes also have a **layout-level guard** (defense in depth) — both `dashboard/layout.tsx` and `to-dashboard/layout.tsx` call `getUser()` server-side and redirect to `/sign-in?redirect=<path>` if unauthenticated.
 
 ### React Server Components (RSC)
 
@@ -516,6 +525,22 @@ Alternate player identities for tournaments. A user can have multiple alts for d
 | bio          | text   | Alt biography/description         |
 | battle_tag   | text   | In-game battle tag or player ID   |
 | tier         | enum   | Subscription tier (free, premium) |
+
+### tournament_registrations
+
+Player registrations for tournaments. Auth-gated — unauthenticated users are redirected to `/sign-in?redirect=/tournaments/{slug}` before registering.
+
+| Column              | Type      | Description                                       |
+| ------------------- | --------- | ------------------------------------------------- |
+| id                  | bigint    | Primary key                                       |
+| tournament_id       | bigint    | FK to tournaments                                 |
+| alt_id              | bigint    | FK to alts (the player identity registering)      |
+| status              | enum      | registered, checked_in, dropped, disqualified     |
+| display_name_option | text      | How to display the player's name                  |
+| show_country_flag   | boolean   | Whether to show the player's country flag         |
+| team_submitted_at   | timestamp | When the team sheet was submitted                 |
+| team_locked         | boolean   | Whether the team is locked (auto-locked at start) |
+| open_team_sheets    | boolean   | Whether the team sheet is publicly visible        |
 
 ---
 
@@ -941,6 +966,8 @@ import {
 | **PDS**                       | Personal Data Server - self-hosted Bluesky server at `pds.trainers.gg` that stores user data and federates with the AT Protocol network.            |
 | **Handle**                    | A human-readable Bluesky identity (e.g., `@username.trainers.gg`).                                                                                  |
 | **RLS**                       | Row Level Security - PostgreSQL feature used by Supabase to enforce access control at the database level using `auth.uid()`.                        |
+| **Team Sheet**                | A player's Pokemon team submitted for a tournament. Parsed from Showdown text or Pokepaste URLs via `@trainers/validators`.                         |
+| **Protected Route**           | A route that requires authentication regardless of maintenance mode (e.g., `/dashboard`, `/to-dashboard`). Enforced in `proxy.ts`.                  |
 
 ### Terminology Decisions
 

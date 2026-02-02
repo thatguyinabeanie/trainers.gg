@@ -32,7 +32,7 @@ packages/
   atproto/             # AT Protocol / Bluesky utilities (@trainers/atproto)
   ui/                  # Shared UI components (@trainers/ui)
   theme/               # Shared theme tokens (@trainers/theme)
-  validators/          # Zod schemas (@trainers/validators)
+  validators/          # Zod schemas + team parsing (@trainers/validators)
 
 infra/
   pds/                 # Bluesky PDS deployment config (Fly.io)
@@ -159,6 +159,7 @@ pnpm build
 
 # Build specific app
 pnpm build:web
+pnpm build:mobile
 ```
 
 ## Architecture
@@ -216,7 +217,7 @@ Every user gets a Bluesky identity:
 | `alts`                     | Alternate player identities for tournaments |
 | `organizations`            | Tournament organizer accounts               |
 | `tournaments`              | Tournament events                           |
-| `tournament_registrations` | Player registrations                        |
+| `tournament_registrations` | Player registrations (with team submission) |
 | `posts`                    | Local activity feed (synced with PDS)       |
 | `follows`                  | Follow relationships                        |
 | `likes`                    | Post likes                                  |
@@ -279,6 +280,7 @@ See [infra/pds/README.md](./infra/pds/README.md) for full documentation.
 | `pnpm dev:web+backend` | Start web + Supabase in parallel |
 | `pnpm build`           | Build all packages               |
 | `pnpm build:web`       | Build web app                    |
+| `pnpm build:mobile`    | EAS build for mobile (iOS sim)   |
 | `pnpm lint`            | Lint all packages                |
 | `pnpm typecheck`       | TypeScript check all packages    |
 | `pnpm format`          | Format with Prettier             |
