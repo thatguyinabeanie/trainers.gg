@@ -26,6 +26,10 @@
           {
             "type": "command",
             "command": "for f in $(echo \"$CLAUDE_FILE_PATHS\" | tr ',' ' '); do case \"$f\" in */supabase/migrations/*.sql) git -C /Users/beanie/source/trainers.gg ls-files --error-unmatch \"$f\" 2>/dev/null && echo \"BLOCK: Cannot edit committed migration $f — create a new migration instead\" && exit 2;; esac; done"
+          },
+          {
+            "type": "command",
+            "command": "for f in $(echo \"$CLAUDE_FILE_PATHS\" | tr ',' ' '); do case \"$f\" in */apps/web/middleware.ts) echo \"BLOCK: Next.js 16 uses proxy.ts for request interception. Creating middleware.ts will break all routes (404 on every page).\" && exit 2;; esac; done"
           }
         ]
       }
