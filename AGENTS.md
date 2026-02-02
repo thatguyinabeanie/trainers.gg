@@ -109,6 +109,16 @@ Husky runs lint-staged (Prettier auto-fix) on all staged files. If hooks fail, f
 
 **Never edit a migration file that has already been committed.** Always create a new migration file, even if fixing a previous one.
 
+### Edge Function Deployments
+
+**Never deploy edge functions manually via `supabase functions deploy`.** Edge functions deploy through the git workflow:
+
+1. Create or modify files in `packages/supabase/supabase/functions/<function-name>/`
+2. Commit and push to a feature branch
+3. Merge to main via PR to deploy to production
+
+This applies to both new functions and updates to existing ones.
+
 ### Request Interception: proxy.ts (NOT middleware.ts)
 
 **Next.js 16 uses `proxy.ts`** at `apps/web/proxy.ts` for request interception — NOT `middleware.ts`. Do NOT create a `middleware.ts` file; it will break all routes (404 on every page).

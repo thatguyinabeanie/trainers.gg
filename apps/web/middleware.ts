@@ -47,6 +47,7 @@ const PUBLIC_ROUTES = [
   "/forgot-password",
   "/reset-password",
   "/maintenance",
+  "/invite", // Beta invite acceptance (unauthenticated users need access)
   "/auth",
   "/api",
   "/oauth", // OAuth JWKS and well-known files (AT Protocol requires no redirects)

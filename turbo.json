@@ -37,7 +37,8 @@
     "POSTGRES_DATABASE",
     "ATPROTO_PRIVATE_KEY",
     "NGROK_STATIC_DOMAIN",
-    "PDS_HANDLE_DOMAIN"
+    "PDS_HANDLE_DOMAIN",
+    "RESEND_API_KEY"
   ],
   "tasks": {
     "build": {
