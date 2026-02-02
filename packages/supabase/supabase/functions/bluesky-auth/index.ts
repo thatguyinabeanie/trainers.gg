@@ -22,7 +22,7 @@
 // the handle matches via the Bluesky public API.
 
 import { createClient } from "jsr:@supabase/supabase-js@2";
-import { corsHeaders } from "../_shared/cors.ts";
+import { getCorsHeaders } from "../_shared/cors.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -152,19 +152,25 @@ function sanitizeUsername(handle: string): string {
 
 // -- Helper to build JSON responses --
 
-function jsonResponse(body: BlueskyAuthResponse, status: number): Response {
+function jsonResponse(
+  body: BlueskyAuthResponse,
+  status: number,
+  cors: Record<string, string>
+): Response {
   return new Response(JSON.stringify(body satisfies BlueskyAuthResponse), {
     status,
-    headers: { ...corsHeaders, "Content-Type": "application/json" },
+    headers: { ...cors, "Content-Type": "application/json" },
   });
 }
 
 // -- Main Handler --
 
 Deno.serve(async (req) => {
+  const cors = getCorsHeaders(req);
+
   // Handle CORS preflight
   if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
+    return new Response("ok", { headers: cors });
   }
 
   try {
@@ -179,7 +185,8 @@ Deno.serve(async (req) => {
           error: "Missing required fields: did, handle",
           code: "MISSING_FIELDS",
         },
-        400
+        400,
+        cors
       );
     }
 
@@ -192,7 +199,8 @@ Deno.serve(async (req) => {
           error: verification.error || "DID verification failed",
           code: "INVALID_PROOF",
         },
-        401
+        401,
+        cors
       );
     }
 
@@ -248,7 +256,8 @@ Deno.serve(async (req) => {
             error: "This Bluesky account is already linked to another user",
             code: "DID_ALREADY_LINKED",
           },
-          409
+          409,
+          cors
         );
       }
 
@@ -270,7 +279,8 @@ Deno.serve(async (req) => {
             error: "Failed to link Bluesky account",
             code: "INTERNAL_ERROR",
           },
-          500
+          500,
+          cors
         );
       }
 
@@ -279,7 +289,8 @@ Deno.serve(async (req) => {
           success: true,
           user: { id: user.id, email: user.email || "", did },
         },
-        200
+        200,
+        cors
       );
     }
 
@@ -381,7 +392,8 @@ Deno.serve(async (req) => {
                   error: "Account conflict — please contact support",
                   code: "ACCOUNT_CONFLICT",
                 },
-                409
+                409,
+                cors
               );
             }
           } else {
@@ -392,7 +404,8 @@ Deno.serve(async (req) => {
                 error: authError.message || "Failed to create account",
                 code: "AUTH_ERROR",
               },
-              500
+              500,
+              cors
             );
           }
         } else if (authData?.user) {
@@ -417,7 +430,8 @@ Deno.serve(async (req) => {
               error: "Failed to create account",
               code: "AUTH_ERROR",
             },
-            500
+            500,
+            cors
           );
         }
       }
@@ -438,7 +452,8 @@ Deno.serve(async (req) => {
           error: "Failed to create session",
           code: "SESSION_ERROR",
         },
-        500
+        500,
+        cors
       );
     }
 
@@ -457,7 +472,8 @@ Deno.serve(async (req) => {
           error: "Failed to create session",
           code: "SESSION_ERROR",
         },
-        500
+        500,
+        cors
       );
     }
 
@@ -473,7 +489,8 @@ Deno.serve(async (req) => {
         },
         is_new: isNew,
       },
-      200
+      200,
+      cors
     );
   } catch (error) {
     console.error("Bluesky auth error:", error);
@@ -483,7 +500,8 @@ Deno.serve(async (req) => {
         error: "An unexpected error occurred",
         code: "INTERNAL_ERROR",
       },
-      500
+      500,
+      cors
     );
   }
 });

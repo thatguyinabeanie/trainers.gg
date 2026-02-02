@@ -26,14 +26,3 @@ export function getCorsHeaders(request: Request): Record<string, string> {
     "Access-Control-Allow-Methods": "POST, OPTIONS",
   };
 }
-
-/**
- * @deprecated Use getCorsHeaders(request) instead for origin-validated CORS.
- * Kept for backward compatibility — migrate each edge function individually.
- */
-export const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-};

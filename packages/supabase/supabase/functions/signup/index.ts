@@ -10,7 +10,7 @@
 // 6. Return session
 
 import { createClient } from "jsr:@supabase/supabase-js@2";
-import { corsHeaders } from "../_shared/cors.ts";
+import { getCorsHeaders } from "../_shared/cors.ts";
 import {
   createPdsInviteCode,
   createPdsAccount,
@@ -51,9 +51,11 @@ interface SignupResponse {
 }
 
 Deno.serve(async (req) => {
+  const cors = getCorsHeaders(req);
+
   // Handle CORS preflight
   if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
+    return new Response("ok", { headers: cors });
   }
 
   try {
@@ -78,7 +80,7 @@ Deno.serve(async (req) => {
         } satisfies SignupResponse),
         {
           status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          headers: { ...cors, "Content-Type": "application/json" },
         }
       );
     }
@@ -95,7 +97,7 @@ Deno.serve(async (req) => {
         } satisfies SignupResponse),
         {
           status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          headers: { ...cors, "Content-Type": "application/json" },
         }
       );
     }
@@ -128,7 +130,7 @@ Deno.serve(async (req) => {
         } satisfies SignupResponse),
         {
           status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          headers: { ...cors, "Content-Type": "application/json" },
         }
       );
     }
@@ -161,7 +163,7 @@ Deno.serve(async (req) => {
         } satisfies SignupResponse),
         {
           status: 409,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          headers: { ...cors, "Content-Type": "application/json" },
         }
       );
     }
@@ -182,7 +184,7 @@ Deno.serve(async (req) => {
         } satisfies SignupResponse),
         {
           status: 409,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          headers: { ...cors, "Content-Type": "application/json" },
         }
       );
     }
@@ -201,7 +203,7 @@ Deno.serve(async (req) => {
         } satisfies SignupResponse),
         {
           status: 409,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          headers: { ...cors, "Content-Type": "application/json" },
         }
       );
     }
@@ -231,7 +233,7 @@ Deno.serve(async (req) => {
         } satisfies SignupResponse),
         {
           status: 500,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          headers: { ...cors, "Content-Type": "application/json" },
         }
       );
     }
@@ -308,7 +310,7 @@ Deno.serve(async (req) => {
       } satisfies SignupResponse),
       {
         status: 201,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...cors, "Content-Type": "application/json" },
       }
     );
   } catch (error) {
@@ -321,7 +323,7 @@ Deno.serve(async (req) => {
       } satisfies SignupResponse),
       {
         status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...cors, "Content-Type": "application/json" },
       }
     );
   }
