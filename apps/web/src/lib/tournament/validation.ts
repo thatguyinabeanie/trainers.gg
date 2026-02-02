@@ -122,7 +122,7 @@ export function validateTournamentSettings(
   }
 
   // Date validation (flexible for organizer preferences)
-  const now = new Date();
+  const _now = new Date();
 
   if (settings.endDate <= settings.startDate) {
     errors.push("End date must be after start date");
