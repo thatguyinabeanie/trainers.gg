@@ -145,10 +145,9 @@ export function TopNavAuthSection() {
           )}
 
           <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={() => router.push("/settings")} disabled>
+          <DropdownMenuItem onClick={() => router.push("/settings")}>
             <Settings className="mr-2 h-4 w-4" />
             <span>Settings</span>
-            <span className="text-muted-foreground ml-auto text-xs">Soon</span>
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem
