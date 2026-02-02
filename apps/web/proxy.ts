@@ -164,11 +164,8 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(signInUrl);
   }
 
-  // Read maintenance mode at runtime (not module scope) to avoid
-  // build-time inlining issues with the Edge Runtime bundler
-  const maintenanceMode =
-    process.env.NEXT_PUBLIC_MAINTENANCE_MODE === "true" ||
-    process.env.MAINTENANCE_MODE === "true";
+  // TEMPORARY: hardcoded to true for debugging
+  const maintenanceMode = true;
 
   // If not in maintenance mode, just refresh session and continue
   if (!maintenanceMode) {
