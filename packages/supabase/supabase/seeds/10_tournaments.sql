@@ -64,25 +64,29 @@ BEGIN
   INSERT INTO public.tournaments (
     organization_id, name, slug, description, format, status,
     start_date, end_date, max_participants,
-    tournament_format, swiss_rounds, round_time_minutes, featured, top_cut_size
+    tournament_format, swiss_rounds, round_time_minutes, featured, top_cut_size,
+    allow_late_registration, check_in_window_minutes, late_check_in_max_round
   ) VALUES (
     vgc_league_id, 'VGC League Week 2 Championship', 'vgc-league-championship-week-02',
     'VGC League tournament for week 2',
     'VGC', 'upcoming',
-    (seed_now - interval '3 hours'), (seed_now + interval '5 hours'), 256,
-    'swiss_with_cut', 8, 50, true, 8
+    (seed_now - interval '3 hours'), (seed_now + interval '5 hours'), NULL,
+    'swiss_with_cut', 8, 50, true, 8,
+    true, 60, 3
   ) RETURNING id INTO tournament_3_id;
 
   INSERT INTO public.tournaments (
     organization_id, name, slug, description, format, status,
     start_date, end_date, max_participants,
-    tournament_format, swiss_rounds, round_time_minutes, featured, top_cut_size
+    tournament_format, swiss_rounds, round_time_minutes, featured, top_cut_size,
+    allow_late_registration, check_in_window_minutes, late_check_in_max_round
   ) VALUES (
     pallet_town_id, 'Pallet Town Trainers Week 2 Championship', 'pallet-town-championship-week-02',
     'Pallet Town Trainers tournament for week 2',
     'VGC', 'upcoming',
-    (seed_now - interval '3 hours'), (seed_now + interval '5 hours'), 256,
-    'swiss_with_cut', 8, 50, true, 8
+    (seed_now - interval '3 hours'), (seed_now + interval '5 hours'), NULL,
+    'swiss_with_cut', 8, 50, true, 8,
+    true, 60, 3
   ) RETURNING id INTO tournament_4_id;
 
   INSERT INTO public.tournaments (

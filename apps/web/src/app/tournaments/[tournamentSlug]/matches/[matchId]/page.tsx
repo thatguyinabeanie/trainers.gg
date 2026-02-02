@@ -1,4 +1,4 @@
-import { notFound, redirect } from "next/navigation";
+import { notFound } from "next/navigation";
 import { createClientReadOnly } from "@/lib/supabase/server";
 import { getMatchDetails } from "@trainers/supabase";
 import { getUser } from "@/lib/supabase/server";
@@ -23,14 +23,8 @@ export default async function MatchPage({ params }: PageProps) {
 
   const [supabase, user] = await Promise.all([
     createClientReadOnly(),
-    getUser(),
+    getUser().catch(() => null),
   ]);
-
-  if (!user) {
-    redirect(
-      `/sign-in?redirect=/tournaments/${tournamentSlug}/matches/${matchId}`
-    );
-  }
 
   const matchData = await getMatchDetails(supabase, matchIdNum);
 
@@ -43,42 +37,45 @@ export default async function MatchPage({ params }: PageProps) {
     notFound();
   }
 
-  // Determine the current user's alt ID for this tournament
-  const { data: userAlts } = await supabase
-    .from("alts")
-    .select("id")
-    .eq("user_id", user.id);
-
-  const userAltIds = new Set((userAlts ?? []).map((a) => a.id));
-
-  // Check if user is a participant in this match
-  const isPlayer1 =
-    matchData.match.alt1_id !== null && userAltIds.has(matchData.match.alt1_id);
-  const isPlayer2 =
-    matchData.match.alt2_id !== null && userAltIds.has(matchData.match.alt2_id);
-  const isParticipant = isPlayer1 || isPlayer2;
-  const userAltId = isPlayer1
-    ? matchData.match.alt1_id!
-    : isPlayer2
-      ? matchData.match.alt2_id!
-      : (userAlts?.[0]?.id ?? null);
-
-  // Check if user is org staff (can act as judge)
-  const orgId = matchData.tournament.organization_id;
+  // Determine user role if authenticated
+  let isPlayer1 = false;
+  let isPlayer2 = false;
+  let isParticipant = false;
+  let userAltId: number | null = null;
   let isStaff = false;
-  if (orgId) {
-    const { data: staffRecord } = await supabase
-      .from("organization_staff")
-      .select("id")
-      .eq("organization_id", orgId)
-      .eq("user_id", user.id)
-      .maybeSingle();
-    isStaff = !!staffRecord;
-  }
 
-  // Non-participants who are not staff cannot view the match
-  if (!isParticipant && !isStaff) {
-    notFound();
+  if (user) {
+    const { data: userAlts } = await supabase
+      .from("alts")
+      .select("id")
+      .eq("user_id", user.id);
+
+    const userAltIds = new Set((userAlts ?? []).map((a) => a.id));
+
+    isPlayer1 =
+      matchData.match.alt1_id !== null &&
+      userAltIds.has(matchData.match.alt1_id);
+    isPlayer2 =
+      matchData.match.alt2_id !== null &&
+      userAltIds.has(matchData.match.alt2_id);
+    isParticipant = isPlayer1 || isPlayer2;
+    userAltId = isPlayer1
+      ? matchData.match.alt1_id!
+      : isPlayer2
+        ? matchData.match.alt2_id!
+        : (userAlts?.[0]?.id ?? null);
+
+    // Check if user is org staff (can act as judge)
+    const orgId = matchData.tournament.organization_id;
+    if (orgId) {
+      const { data: staffRecord } = await supabase
+        .from("organization_staff")
+        .select("id")
+        .eq("organization_id", orgId)
+        .eq("user_id", user.id)
+        .maybeSingle();
+      isStaff = !!staffRecord;
+    }
   }
 
   const player1 = matchData.player1 as {

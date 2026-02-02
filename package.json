@@ -10,7 +10,7 @@
     "postinstall": "./scripts/postinstall.sh",
     "prepare": "husky",
     "// dev": "",
-    "dev": "turbo run dev",
+    "dev": "rm -rf apps/web/.next/dev && turbo run dev",
     "dev:web": "turbo run dev --filter=@trainers/web",
     "dev:mobile": "turbo run dev --filter=@trainers/mobile",
     "dev:backend": "turbo run dev --filter=@trainers/supabase",

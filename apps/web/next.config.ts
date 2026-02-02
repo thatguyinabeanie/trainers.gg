@@ -6,6 +6,15 @@ const nextConfig: NextConfig = {
   transpilePackages: ["@trainers/ui", "@trainers/validators"],
   reactCompiler: true,
   allowedDevOrigins: ["*.ngrok-free.app", "*.ngrok.io"],
+  images: {
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "play.pokemonshowdown.com",
+        pathname: "/sprites/**",
+      },
+    ],
+  },
   experimental: {
     authInterrupts: true,
   },

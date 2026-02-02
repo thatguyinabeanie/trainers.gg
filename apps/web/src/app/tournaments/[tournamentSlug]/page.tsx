@@ -11,13 +11,7 @@ import {
 } from "@trainers/supabase";
 import { CacheTags } from "@/lib/cache";
 import Link from "next/link";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Trophy,
   Calendar,
@@ -31,7 +25,7 @@ import { TournamentTabs } from "./tournament-tabs";
 import { PageContainer } from "@/components/layout/page-container";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { TournamentSidebarCard } from "@/components/tournament";
-import { TeamPreview } from "@/components/tournament/team-preview";
+// import { TeamSubmissionsList } from "@/components/tournament/team-submissions-list";
 
 // On-demand revalidation only (no time-based)
 export const revalidate = false;
@@ -342,11 +336,12 @@ export default async function TournamentPage({ params }: PageProps) {
   const myTeam = tournament.id ? await getMyTeam(tournament.id) : null;
 
   // Public team list for open teamsheet tournaments (active/completed only)
-  const showPublicTeams =
+  // TODO: Re-enable when TeamSubmissionsList is ready
+  const _showPublicTeams =
     tournament.open_team_sheets &&
     ["active", "completed"].includes(tournament.status ?? "");
-  const publicTeams =
-    showPublicTeams && tournament.id
+  const _publicTeams =
+    _showPublicTeams && tournament.id
       ? await getCachedTournamentTeams(tournament.id, tournamentSlug)
       : null;
 
@@ -355,59 +350,11 @@ export default async function TournamentPage({ params }: PageProps) {
       <Breadcrumb tournamentName={tournament.name} />
       <TournamentHeader tournament={tournament} canManage={canManage} />
 
-      <div className="grid gap-8 lg:grid-cols-3">
-        {/* Main Content */}
-        <div className="space-y-8 lg:col-span-2">
-          <TournamentTabs
-            description={tournament.description}
-            scheduleCard={<ScheduleCard tournament={tournament} />}
-            formatCard={<FormatCard tournament={tournament} />}
-          />
-
-          {/* Public team submissions (open teamsheets) */}
-          {publicTeams && publicTeams.length > 0 && (
-            <section>
-              <h2 className="mb-4 text-lg font-semibold">Team Submissions</h2>
-              <div className="space-y-4">
-                {publicTeams.map((reg) => {
-                  // alts is a single object from the one-to-one join
-                  const alt = reg.alts;
-                  // team is a single object from the one-to-one join
-                  const team = reg.team;
-                  // team_pokemon is an array from the one-to-many join
-                  const pokemonList = team?.team_pokemon ?? [];
-
-                  return (
-                    <Card key={reg.alt_id}>
-                      <CardHeader>
-                        <CardTitle className="text-base">
-                          {alt?.display_name ?? alt?.username ?? "Player"}
-                        </CardTitle>
-                        {team?.name && (
-                          <CardDescription>{team.name}</CardDescription>
-                        )}
-                      </CardHeader>
-                      <CardContent>
-                        <TeamPreview
-                          pokemon={pokemonList.map((tp) => ({
-                            species: tp.pokemon?.species ?? "",
-                            nickname: tp.pokemon?.nickname,
-                            held_item: tp.pokemon?.held_item,
-                            ability: tp.pokemon?.ability ?? undefined,
-                            tera_type: tp.pokemon?.tera_type,
-                          }))}
-                        />
-                      </CardContent>
-                    </Card>
-                  );
-                })}
-              </div>
-            </section>
-          )}
-        </div>
-
-        {/* Sidebar */}
-        <div className="space-y-6">
+      <TournamentTabs
+        description={tournament.description}
+        scheduleCard={<ScheduleCard tournament={tournament} />}
+        formatCard={<FormatCard tournament={tournament} />}
+        sidebarCard={
           <TournamentSidebarCard
             tournamentId={tournament.id}
             tournamentSlug={tournament.slug}
@@ -430,8 +377,11 @@ export default async function TournamentPage({ params }: PageProps) {
                 : null
             }
           />
-        </div>
-      </div>
+        }
+        tournamentId={tournament.id}
+        tournamentSlug={tournament.slug}
+        tournamentStatus={tournament.status ?? "draft"}
+      />
     </PageContainer>
   );
 }

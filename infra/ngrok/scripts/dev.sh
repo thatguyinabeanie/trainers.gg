@@ -102,6 +102,21 @@ fi
 # If ngrok isn't authenticated, it will fail to start and show the error in the panel.
 
 # =============================================================================
+# Detect ngrok config file (Turbo TUI may resolve paths differently)
+# =============================================================================
+NGROK_CONFIG_FLAG=""
+for _cfg in \
+  "$HOME/.config/ngrok/ngrok.yml" \
+  "$HOME/Library/Application Support/ngrok/ngrok.yml" \
+  "$HOME/.ngrok2/ngrok.yml"; do
+  if [ -f "$_cfg" ]; then
+    NGROK_CONFIG_FLAG="--config=$_cfg"
+    log_info "Using ngrok config: $_cfg"
+    break
+  fi
+done
+
+# =============================================================================
 # If ngrok is already running, show status and tail log
 # =============================================================================
 EXISTING_URL=$(get_ngrok_url)
@@ -149,9 +164,15 @@ NGROK_DOMAIN=$(get_static_domain)
 
 if [ -n "$NGROK_DOMAIN" ] && [ "$NGROK_DOMAIN" != "your-domain.ngrok-free.app" ]; then
   log_info "Starting ngrok tunnel with static domain: $NGROK_DOMAIN"
-  exec ngrok http --url="$NGROK_DOMAIN" 3000 --log=stdout
+  ngrok http --url="$NGROK_DOMAIN" 3000 --log=stdout $NGROK_CONFIG_FLAG || {
+    log_error "ngrok exited — tunnel is unavailable (non-fatal)"
+    exit 0
+  }
 else
   log_warn "No static domain found in .env.ngrok — using random ngrok URL"
   log_warn "Copy .env.ngrok.example to .env.ngrok and set your static domain"
-  exec ngrok http 3000 --log=stdout
+  ngrok http 3000 --log=stdout $NGROK_CONFIG_FLAG || {
+    log_error "ngrok exited — tunnel is unavailable (non-fatal)"
+    exit 0
+  }
 fi
