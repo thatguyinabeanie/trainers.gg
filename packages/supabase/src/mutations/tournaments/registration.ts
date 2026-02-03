@@ -502,23 +502,19 @@ export async function respondToTournamentInvitation(
   // If accepted, create registration
   let registrationResult: { message?: string } | null = null;
   if (response === "accept") {
-    try {
-      const { data: registration, error: regError } = await supabase
-        .from("tournament_registrations")
-        .insert({
-          tournament_id: invitation.tournament_id,
-          alt_id: alt.id,
-          status: "registered",
-          registered_at: new Date().toISOString(),
-        })
-        .select()
-        .single();
+    const { data: registration, error: regError } = await supabase
+      .from("tournament_registrations")
+      .insert({
+        tournament_id: invitation.tournament_id,
+        alt_id: alt.id,
+        status: "registered",
+        registered_at: new Date().toISOString(),
+      })
+      .select()
+      .single();
 
-      if (regError) throw regError;
-      registrationResult = { message: `Registration ID: ${registration.id}` };
-    } catch {
-      registrationResult = { message: "Registration created from invitation" };
-    }
+    if (regError) throw regError;
+    registrationResult = { message: `Registration ID: ${registration.id}` };
   }
 
   return {
