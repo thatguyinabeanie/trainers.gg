@@ -20,6 +20,7 @@ interface TournamentTabsProps {
   tournamentId: number;
   tournamentSlug: string;
   tournamentStatus: string;
+  canManage?: boolean;
 }
 
 export function TournamentTabs({
@@ -30,6 +31,7 @@ export function TournamentTabs({
   tournamentId,
   tournamentSlug,
   tournamentStatus,
+  canManage = false,
 }: TournamentTabsProps) {
   const isPreTournament =
     tournamentStatus === "draft" || tournamentStatus === "upcoming";
@@ -99,6 +101,7 @@ export function TournamentTabs({
           <PublicPairings
             tournamentId={tournamentId}
             tournamentSlug={tournamentSlug}
+            canManage={canManage}
           />
         )}
       </TabsContent>

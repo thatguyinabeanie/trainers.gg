@@ -354,6 +354,7 @@ export default async function TournamentPage({ params }: PageProps) {
         description={tournament.description}
         scheduleCard={<ScheduleCard tournament={tournament} />}
         formatCard={<FormatCard tournament={tournament} />}
+        canManage={canManage}
         sidebarCard={
           <TournamentSidebarCard
             tournamentId={tournament.id}

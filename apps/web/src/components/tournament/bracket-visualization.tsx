@@ -14,6 +14,8 @@ interface BracketVisualizationProps {
   phases: TournamentPhase[];
   canManage?: boolean;
   onMatchClick?: (matchId: string) => void;
+  /** When provided, only matches where this returns true are clickable */
+  canClickMatch?: (match: TournamentMatch) => boolean;
 }
 
 const TOP_CUT_TAB_ID = "__top_cut__";
@@ -26,6 +28,7 @@ export function BracketVisualization({
   phases,
   canManage: _canManage = false,
   onMatchClick,
+  canClickMatch,
 }: BracketVisualizationProps) {
   const swissPhase = phases.find((p) => p.format === "swiss");
   const eliminationPhase = phases.find(
@@ -109,13 +112,18 @@ export function BracketVisualization({
           ) : (
             <MatchSections
               matches={round.matches}
-              renderMatch={(match) => (
-                <SwissMatchRow
-                  key={match.id}
-                  match={match}
-                  onClick={() => onMatchClick?.(match.id)}
-                />
-              )}
+              renderMatch={(match) => {
+                const clickable = !canClickMatch || canClickMatch(match);
+                return (
+                  <SwissMatchRow
+                    key={match.id}
+                    match={match}
+                    onClick={
+                      clickable ? () => onMatchClick?.(match.id) : undefined
+                    }
+                  />
+                );
+              }}
               layout="list"
             />
           )}
@@ -129,6 +137,7 @@ export function BracketVisualization({
             rounds={elimRounds}
             totalRounds={elimRounds.length}
             onMatchClick={onMatchClick}
+            canClickMatch={canClickMatch}
           />
         </TabsContent>
       )}
@@ -169,10 +178,12 @@ function TopCutDisplay({
   rounds,
   totalRounds,
   onMatchClick,
+  canClickMatch,
 }: {
   rounds: TournamentRound[];
   totalRounds: number;
   onMatchClick?: (matchId: string) => void;
+  canClickMatch?: (match: TournamentMatch) => boolean;
 }) {
   if (rounds.length === 0) {
     return (
@@ -198,14 +209,19 @@ function TopCutDisplay({
             ) : (
               <MatchSections
                 matches={round.matches}
-                renderMatch={(match) => (
-                  <EliminationMatchCard
-                    key={match.id}
-                    match={match}
-                    onClick={() => onMatchClick?.(match.id)}
-                    isFinals={isFinals}
-                  />
-                )}
+                renderMatch={(match) => {
+                  const clickable = !canClickMatch || canClickMatch(match);
+                  return (
+                    <EliminationMatchCard
+                      key={match.id}
+                      match={match}
+                      onClick={
+                        clickable ? () => onMatchClick?.(match.id) : undefined
+                      }
+                      isFinals={isFinals}
+                    />
+                  );
+                }}
                 layout="grid"
               />
             )}
@@ -366,8 +382,8 @@ function SwissMatchRow({
   return (
     <div
       className={cn(
-        "group/match flex cursor-pointer items-center rounded-lg border px-4 py-3 transition-all",
-        "hover:border-border hover:bg-muted/40",
+        "group/match flex items-center rounded-lg border px-4 py-3 transition-all",
+        onClick && "hover:border-border hover:bg-muted/40 cursor-pointer",
         isActive && "border-primary/20 bg-primary/[0.03]",
         !isActive && "border-transparent"
       )}
@@ -483,8 +499,8 @@ function EliminationMatchCard({
   return (
     <div
       className={cn(
-        "group/match ring-foreground/10 cursor-pointer overflow-hidden rounded-xl ring-1 transition-all",
-        "hover:ring-foreground/20 hover:shadow-sm",
+        "group/match ring-foreground/10 overflow-hidden rounded-xl ring-1 transition-all",
+        onClick && "hover:ring-foreground/20 cursor-pointer hover:shadow-sm",
         isFinals && "ring-amber-500/30 dark:ring-amber-400/20",
         isActive && "ring-primary/30"
       )}

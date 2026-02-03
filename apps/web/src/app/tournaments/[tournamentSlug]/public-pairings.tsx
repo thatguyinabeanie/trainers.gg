@@ -1,5 +1,6 @@
 "use client";
 
+import { useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useSupabaseQuery } from "@/lib/supabase";
 import {
@@ -7,20 +8,24 @@ import {
   getPhaseRoundsWithMatches,
   getPhaseRoundsWithStats,
   getUnpairedCheckedInPlayers,
+  getCurrentUserAlts,
 } from "@trainers/supabase";
 import { Loader2, Trophy, AlertCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { BracketVisualization } from "@/components/tournament/bracket-visualization";
 import { transformPhaseData } from "@/lib/tournament-utils";
+import type { TournamentMatch } from "@/lib/types/tournament";
 
 interface PublicPairingsProps {
   tournamentId: number;
   tournamentSlug: string;
+  canManage?: boolean;
 }
 
 export function PublicPairings({
   tournamentId,
   tournamentSlug,
+  canManage = false,
 }: PublicPairingsProps) {
   const router = useRouter();
 
@@ -85,6 +90,32 @@ export function PublicPairings({
     latestRound?.id,
     "public-unpaired-players",
   ]);
+
+  // Fetch current user's alt IDs for match access control
+  const altsQueryFn = (supabase: Parameters<typeof getCurrentUserAlts>[0]) =>
+    getCurrentUserAlts(supabase);
+
+  const { data: userAlts } = useSupabaseQuery(altsQueryFn, [
+    "current-user-alts",
+  ]);
+
+  const userAltIds = new Set((userAlts ?? []).map((alt) => String(alt.id)));
+
+  // Only allow clicking matches the user is in, or all matches if staff
+  const canClickMatch = useCallback(
+    (match: TournamentMatch) => {
+      if (canManage) return true;
+      if (userAltIds.size === 0) return false;
+      const p1Id = match.participant1?.id;
+      const p2Id = match.participant2?.id;
+      return (
+        (p1Id !== undefined && userAltIds.has(p1Id)) ||
+        (p2Id !== undefined && userAltIds.has(p2Id))
+      );
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [canManage, userAlts]
+  );
 
   // Navigate to match detail page on click
   const handleMatchClick = (matchId: string) => {
@@ -173,6 +204,7 @@ export function PublicPairings({
       <BracketVisualization
         phases={bracketPhases}
         onMatchClick={handleMatchClick}
+        canClickMatch={canClickMatch}
       />
     </div>
   );
