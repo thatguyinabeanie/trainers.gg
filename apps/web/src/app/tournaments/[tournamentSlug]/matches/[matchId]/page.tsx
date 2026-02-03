@@ -128,21 +128,36 @@ export default async function MatchPage({ params }: PageProps) {
       ? matchData.match.alt1_id
       : null;
 
+  // For staff who aren't participants, fetch both player teams directly
+  const staffViewBothTeams = isStaff && !isParticipant;
+
   // Fetch teams and stats in parallel
   const [myTeamRaw, opponentTeamRaw, player1StatsRaw, player2StatsRaw] =
     await Promise.all([
-      // My team: always fetch if participant
+      // My team: participant's own team, or player2's team for staff (maps to right side)
       isParticipant && myAltIdForTeam
         ? getTeamForRegistration(supabase, tournamentId, myAltIdForTeam).catch(
             () => null
           )
-        : null,
-      // Opponent team: only if allowed
+        : staffViewBothTeams && matchData.match.alt2_id
+          ? getTeamForRegistration(
+              supabase,
+              tournamentId,
+              matchData.match.alt2_id
+            ).catch(() => null)
+          : null,
+      // Opponent team: opponent's team for participants, player1's team for staff (maps to left side)
       canViewOpponentTeam && opponentAltId
         ? getTeamForRegistration(supabase, tournamentId, opponentAltId).catch(
             () => null
           )
-        : null,
+        : staffViewBothTeams && matchData.match.alt1_id
+          ? getTeamForRegistration(
+              supabase,
+              tournamentId,
+              matchData.match.alt1_id
+            ).catch(() => null)
+          : null,
       // Player 1 stats
       matchData.match.alt1_id
         ? getPlayerTournamentStats(

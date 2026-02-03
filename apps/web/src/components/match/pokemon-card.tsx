@@ -1,5 +1,3 @@
-"use client";
-
 import { PokemonSprite } from "@/components/tournament/pokemon-sprite";
 import { ItemSprite } from "@/components/tournament/item-sprite";
 import { TeraTypeBadge } from "@/components/tournament/tera-type-badge";
@@ -41,14 +39,11 @@ export function PokemonCard({ pokemon, className }: PokemonCardProps) {
         className
       )}
     >
-      {/* Sprite */}
       <div className="flex shrink-0 flex-col items-center">
         <PokemonSprite species={pokemon.species} size={48} />
       </div>
 
-      {/* Details */}
       <div className="min-w-0 flex-1">
-        {/* Species name */}
         <div className="flex items-center gap-1.5">
           <span className="truncate text-sm font-medium">
             {pokemon.species}
@@ -60,12 +55,10 @@ export function PokemonCard({ pokemon, className }: PokemonCardProps) {
           )}
         </div>
 
-        {/* Ability */}
         <div className="text-muted-foreground mt-0.5 text-xs">
           {pokemon.ability}
         </div>
 
-        {/* Item */}
         {pokemon.held_item && (
           <div className="mt-0.5 flex items-center gap-1">
             <ItemSprite item={pokemon.held_item} size={16} />
@@ -75,14 +68,12 @@ export function PokemonCard({ pokemon, className }: PokemonCardProps) {
           </div>
         )}
 
-        {/* Tera type */}
         {pokemon.tera_type && (
           <div className="mt-1">
             <TeraTypeBadge type={pokemon.tera_type} />
           </div>
         )}
 
-        {/* Moves — 2x2 grid */}
         {moves.length > 0 && (
           <div className="border-foreground/5 mt-1.5 grid grid-cols-2 gap-x-3 gap-y-0.5 border-t pt-1.5">
             {moves.map((move) => (

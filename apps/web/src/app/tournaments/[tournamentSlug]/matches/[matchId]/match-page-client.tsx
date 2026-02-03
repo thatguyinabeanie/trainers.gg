@@ -4,15 +4,8 @@ import { useState, useEffect, useCallback } from "react";
 import { useSupabase, useSupabaseQuery } from "@/lib/supabase";
 import { getMatchGames, getMatchGamesForPlayer } from "@trainers/supabase";
 import type { TypedSupabaseClient } from "@trainers/supabase";
-import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import {
-  Loader2,
-  Swords,
-  Users,
-  MessageSquare,
-  ShieldAlert,
-} from "lucide-react";
+import { Swords, Users, MessageSquare } from "lucide-react";
 import type { RealtimeChannel } from "@supabase/supabase-js";
 
 import {
@@ -20,7 +13,7 @@ import {
   type PlayerInfo,
   type PlayerStats,
 } from "@/components/match/match-header";
-import { GameCard, type GameData } from "@/components/match/game-card";
+import { GamesList, type GameData } from "@/components/match/game-card";
 import { MatchChat } from "@/components/match/match-chat";
 import { useMatchPresence } from "@/components/match/presence-indicator";
 import { TeamSheet, type TeamData } from "@/components/match/team-sheet";
@@ -78,7 +71,7 @@ export function MatchPageClient({
   player2Stats,
   myTeam,
   opponentTeam,
-  openTeamSheets,
+  openTeamSheets: _openTeamSheets,
 }: MatchPageClientProps) {
   const supabase = useSupabase();
   const [matchStatus, setMatchStatus] = useState(initialStatus);
@@ -86,7 +79,7 @@ export function MatchPageClient({
   const [gamesRefreshKey, setGamesRefreshKey] = useState(0);
   const [messagesRefreshKey, setMessagesRefreshKey] = useState(0);
 
-  // Determine perspective-based names and IDs
+  // Perspective-based names and IDs
   const myAltId = isPlayer1 ? alt1Id : isParticipant ? alt2Id : null;
   const opponentAltId = isPlayer1 ? alt2Id : isParticipant ? alt1Id : null;
 
@@ -176,7 +169,7 @@ export function MatchPageClient({
   useEffect(() => {
     const channels: RealtimeChannel[] = [];
 
-    // Subscribe to match messages for live chat
+    // Match messages for live chat
     const msgChannel = supabase
       .channel(`match-messages-${matchId}`)
       .on(
@@ -194,7 +187,7 @@ export function MatchPageClient({
       .subscribe();
     channels.push(msgChannel);
 
-    // Subscribe to match status changes
+    // Match status changes
     const matchChannel = supabase
       .channel(`match-status-${matchId}`)
       .on(
@@ -220,7 +213,7 @@ export function MatchPageClient({
       .subscribe();
     channels.push(matchChannel);
 
-    // Subscribe to game updates for live score changes
+    // Game updates for live score changes
     const gamesChannel = supabase
       .channel(`match-games-${matchId}`)
       .on(
@@ -262,104 +255,85 @@ export function MatchPageClient({
   const hasTeams = myTeam !== null || opponentTeam !== null;
 
   // ==========================================================================
-  // Shared sections
+  // Shared props for GamesList
   // ==========================================================================
+  const gamesListProps = {
+    games,
+    gamesLoading,
+    matchId,
+    myAltId: isParticipant ? myAltId : alt1Id,
+    opponentAltId: isParticipant ? opponentAltId : alt2Id,
+    myName: isParticipant
+      ? myName
+      : (player1?.display_name ?? player1?.username ?? "Player 1"),
+    opponentName: isParticipant
+      ? opponentName
+      : (player2?.display_name ?? player2?.username ?? "Player 2"),
+    isParticipant,
+    isStaff,
+    isPlayer1,
+    matchStatus,
+    tournamentId,
+    userAltId,
+    staffRequested,
+    onGameUpdated: () => refetchGames(),
+  };
 
-  const gamesSection = (
-    <div className="space-y-2">
-      {gamesLoading ? (
-        <Card>
-          <CardContent className="flex items-center justify-center py-8">
-            <Loader2 className="text-muted-foreground h-6 w-6 animate-spin" />
-          </CardContent>
-        </Card>
-      ) : !games || games.length === 0 ? (
-        <Card>
-          <CardContent className="py-8 text-center">
-            <p className="text-muted-foreground text-sm">
-              Games will appear once the round starts.
-            </p>
-          </CardContent>
-        </Card>
-      ) : (
-        games.map((game) => (
-          <GameCard
-            key={game.id}
-            game={game}
-            myAltId={isParticipant ? myAltId : alt1Id}
-            opponentAltId={isParticipant ? opponentAltId : alt2Id}
-            myName={
-              isParticipant
-                ? myName
-                : (player1?.display_name ?? player1?.username ?? "Player 1")
-            }
-            opponentName={
-              isParticipant
-                ? opponentName
-                : (player2?.display_name ?? player2?.username ?? "Player 2")
-            }
-            isParticipant={isParticipant}
-            isStaff={isStaff}
-            isPlayer1={isPlayer1}
-            matchStatus={matchStatus}
-            tournamentId={tournamentId}
-            userAltId={userAltId}
-            onGameUpdated={() => refetchGames()}
-          />
-        ))
-      )}
+  const chatProps = {
+    matchId,
+    userAltId,
+    isStaff,
+    isParticipant,
+    matchStatus,
+    staffRequested,
+    tournamentId,
+    messagesRefreshKey,
+    viewers,
+    typingUsers,
+    onTypingStart: handleTypingStart,
+    onTypingStop: handleTypingStop,
+  };
 
-      {/* Staff judge info */}
-      {isStaff && matchStatus === "active" && staffRequested && (
-        <div className="flex items-center gap-2 rounded-lg bg-amber-500/10 p-3 text-sm text-amber-700 dark:text-amber-300">
-          <ShieldAlert className="h-4 w-4 shrink-0" />A judge has been requested
-          for this match.
-        </div>
-      )}
-    </div>
-  );
+  // ==========================================================================
+  // Team toggle content (shared between mobile & desktop)
+  // ==========================================================================
+  const teamToggle = hasTeams ? (
+    <Tabs defaultValue={opponentTeam ? "opponent" : "mine"}>
+      <TabsList className="w-full">
+        {opponentTeam && (
+          <TabsTrigger value="opponent" className="flex-1 gap-1.5">
+            <Users className="h-3.5 w-3.5" />
+            {`${opponentName}'s Team`}
+          </TabsTrigger>
+        )}
+        {myTeam && (
+          <TabsTrigger value="mine" className="flex-1 gap-1.5">
+            <Users className="h-3.5 w-3.5" />
+            {isParticipant ? "Your Team" : `${myName}'s Team`}
+          </TabsTrigger>
+        )}
+      </TabsList>
 
-  const teamsSection = hasTeams ? (
-    <div className="grid gap-6 lg:grid-cols-2">
-      {myTeam && (
-        <TeamSheet
-          team={myTeam}
-          playerName={myName}
-          isOwnTeam={isParticipant}
-        />
-      )}
       {opponentTeam && (
-        <TeamSheet
-          team={opponentTeam}
-          playerName={opponentName}
-          isOwnTeam={false}
-        />
+        <TabsContent value="opponent" className="mt-3">
+          <TeamSheet
+            team={opponentTeam}
+            playerName={opponentName}
+            isOwnTeam={false}
+          />
+        </TabsContent>
       )}
-    </div>
-  ) : (
-    <div className="text-muted-foreground py-8 text-center text-sm">
-      {openTeamSheets
-        ? "No team sheets submitted yet."
-        : "Team sheets are not visible for this tournament."}
-    </div>
-  );
-
-  const chatSection = (
-    <MatchChat
-      matchId={matchId}
-      userAltId={userAltId}
-      isStaff={isStaff}
-      isParticipant={isParticipant}
-      matchStatus={matchStatus}
-      staffRequested={staffRequested}
-      tournamentId={tournamentId}
-      messagesRefreshKey={messagesRefreshKey}
-      viewers={viewers}
-      typingUsers={typingUsers}
-      onTypingStart={handleTypingStart}
-      onTypingStop={handleTypingStop}
-    />
-  );
+      {myTeam && (
+        <TabsContent value="mine" className="mt-3">
+          <TeamSheet
+            team={myTeam}
+            playerName={myName}
+            isOwnTeam={isParticipant}
+          />
+        </TabsContent>
+      )}
+    </Tabs>
+  ) : null;
 
   // ==========================================================================
   // Render
@@ -380,6 +354,7 @@ export function MatchPageClient({
         staffRequested={staffRequested}
         roundNumber={roundNumber}
         tableNumber={tableNumber}
+        isStaff={isStaff}
       />
 
       {/* Mobile layout: Tabs */}
@@ -403,33 +378,37 @@ export function MatchPageClient({
           </TabsList>
 
           <TabsContent value="games" className="mt-4">
-            {gamesSection}
+            <GamesList {...gamesListProps} />
           </TabsContent>
 
           {hasTeams && (
             <TabsContent value="teams" className="mt-4">
-              {teamsSection}
+              {teamToggle}
             </TabsContent>
           )}
 
           <TabsContent value="chat" className="mt-4">
-            {chatSection}
+            <MatchChat {...chatProps} />
           </TabsContent>
         </Tabs>
       </div>
 
-      {/* Desktop layout: Two columns + teams below */}
+      {/* Desktop layout: Games + Chat, then Teams below */}
       <div className="hidden lg:block">
-        <div className="grid gap-6 lg:grid-cols-3">
-          {/* Main column: Games */}
-          <div className="lg:col-span-2">{gamesSection}</div>
+        <div className="grid grid-cols-5 gap-6">
+          {/* Left: Games */}
+          <div className="col-span-2">
+            <GamesList {...gamesListProps} />
+          </div>
 
-          {/* Sidebar: Chat */}
-          <div>{chatSection}</div>
+          {/* Right: Chat */}
+          <div className="col-span-3">
+            <MatchChat {...chatProps} />
+          </div>
         </div>
 
-        {/* Team sheets — full width below */}
-        {hasTeams && <div className="mt-6">{teamsSection}</div>}
+        {/* Teams — full width below */}
+        {teamToggle && <div className="mt-4">{teamToggle}</div>}
       </div>
     </div>
   );

@@ -15,7 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Loader2, MessageSquare, Send, ShieldAlert } from "lucide-react";
+import { Gavel, Loader2, MessageSquare, Send, ShieldAlert } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import {
@@ -98,11 +98,9 @@ export function MatchChat({
 
     if (value.trim()) {
       onTypingStart();
-      // Clear existing timeout
       if (typingTimeoutRef.current) {
         clearTimeout(typingTimeoutRef.current);
       }
-      // Stop typing after 2 seconds of inactivity
       typingTimeoutRef.current = setTimeout(() => {
         onTypingStop();
       }, 2000);
@@ -158,32 +156,17 @@ export function MatchChat({
     matchStatus !== "completed" &&
     matchStatus !== "cancelled";
 
+  const hasMessages = messages && messages.length > 0;
+
   return (
-    <Card className="flex h-[500px] flex-col lg:h-[600px]">
-      <CardHeader className="shrink-0 pb-3">
+    <Card className="flex h-[500px] flex-col lg:h-full lg:min-h-[400px]">
+      <CardHeader className="shrink-0 pb-2">
         <div className="flex items-center justify-between">
-          <div className="space-y-1">
-            <CardTitle className="flex items-center gap-2 text-base">
-              <MessageSquare className="h-4 w-4" />
-              Match Chat
-            </CardTitle>
-            <ViewerAvatars viewers={viewers} />
-          </div>
-          {isParticipant && !staffRequested && matchStatus === "active" && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleRequestJudge}
-              disabled={isRequestingJudge}
-            >
-              {isRequestingJudge ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <ShieldAlert className="mr-2 h-4 w-4" />
-              )}
-              Call Judge
-            </Button>
-          )}
+          <CardTitle className="flex items-center gap-2 text-base">
+            <MessageSquare className="h-4 w-4" />
+            Match Chat
+          </CardTitle>
+          {viewers.length > 0 && <ViewerAvatars viewers={viewers} />}
         </div>
       </CardHeader>
       <CardContent className="flex min-h-0 flex-1 flex-col p-0">
@@ -193,9 +176,14 @@ export function MatchChat({
             <div className="flex items-center justify-center py-8">
               <Loader2 className="text-muted-foreground h-5 w-5 animate-spin" />
             </div>
-          ) : !messages || messages.length === 0 ? (
-            <div className="text-muted-foreground py-8 text-center text-sm">
-              No messages yet
+          ) : !hasMessages ? (
+            <div className="flex h-full flex-col items-center justify-center gap-2 py-8">
+              <MessageSquare className="text-muted-foreground/30 h-8 w-8" />
+              <p className="text-muted-foreground text-sm">
+                {canChat
+                  ? "Send a message to your opponent"
+                  : "No messages yet"}
+              </p>
             </div>
           ) : (
             <div className="space-y-3 py-3">
@@ -224,7 +212,7 @@ export function MatchChat({
                   <div
                     key={msg.id}
                     className={cn(
-                      "flex flex-col",
+                      "animate-in fade-in flex flex-col duration-200",
                       isOwnMessage ? "items-end" : "items-start"
                     )}
                   >
@@ -237,6 +225,7 @@ export function MatchChat({
                           variant="secondary"
                           className="h-4 px-1 text-[10px]"
                         >
+                          <Gavel className="mr-0.5 h-2.5 w-2.5" />
                           Judge
                         </Badge>
                       )}
@@ -247,7 +236,7 @@ export function MatchChat({
                         isOwnMessage
                           ? "bg-primary text-primary-foreground"
                           : isJudge
-                            ? "bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-100"
+                            ? "bg-amber-50 text-amber-900 ring-1 ring-amber-500/20 dark:bg-amber-950 dark:text-amber-100"
                             : "bg-muted"
                       )}
                     >
@@ -264,12 +253,16 @@ export function MatchChat({
         {/* Typing indicator */}
         <TypingIndicator typingUsers={typingUsers} className="px-4 py-1" />
 
-        {/* Input */}
+        {/* Input + Actions */}
         {canChat && userAltId && (
-          <div className="shrink-0 border-t p-3">
+          <div className="shrink-0 space-y-2 border-t p-3">
             <div className="flex gap-2">
               <Input
-                placeholder="Type a message..."
+                placeholder={
+                  isStaff && !isParticipant
+                    ? "Message as judge..."
+                    : "Type a message..."
+                }
                 value={message}
                 onChange={(e) => handleInputChange(e.target.value)}
                 onKeyDown={handleKeyDown}
@@ -289,6 +282,35 @@ export function MatchChat({
                 )}
               </Button>
             </div>
+
+            {/* Call Judge button — prominent for participants */}
+            {isParticipant && !staffRequested && matchStatus === "active" && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full gap-1.5 text-amber-600 hover:bg-amber-500/10 hover:text-amber-700 dark:text-amber-400 dark:hover:text-amber-300"
+                onClick={handleRequestJudge}
+                disabled={isRequestingJudge}
+              >
+                {isRequestingJudge ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <ShieldAlert className="h-3.5 w-3.5" />
+                )}
+                Call Judge
+              </Button>
+            )}
+            {isParticipant && staffRequested && (
+              <div className="flex items-center justify-center gap-1.5 text-xs text-amber-600 dark:text-amber-400">
+                <ShieldAlert className="h-3 w-3" />
+                Judge has been requested
+              </div>
+            )}
+          </div>
+        )}
+        {canChat && !userAltId && (
+          <div className="text-muted-foreground shrink-0 border-t p-3 text-center text-xs">
+            Unable to send messages — no player identity linked.
           </div>
         )}
       </CardContent>

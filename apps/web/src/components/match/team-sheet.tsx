@@ -20,18 +20,15 @@ export function TeamSheet({
   isOwnTeam = false,
   className,
 }: TeamSheetProps) {
-  // Sort pokemon by position
   const sortedPokemon = [...team.pokemon].sort(
     (a, b) => a.position - b.position
   );
 
   return (
-    <div className={cn("space-y-3", className)}>
-      <div className="flex items-center justify-between">
-        <h3 className="text-sm font-medium">
-          {isOwnTeam ? "Your Team" : `${playerName}'s Team`}
-        </h3>
-      </div>
+    <div className={cn("space-y-2", className)}>
+      <h3 className="text-sm font-medium">
+        {isOwnTeam ? "Your Team" : `${playerName}'s Team`}
+      </h3>
 
       <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
         {sortedPokemon.map((pokemon) => (

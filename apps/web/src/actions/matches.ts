@@ -210,3 +210,30 @@ export async function requestJudgeAction(
     };
   }
 }
+
+/**
+ * Clear a judge request for a match (sets staff_requested = false).
+ * Only org staff with tournament.manage permission can clear requests.
+ */
+export async function clearJudgeRequestAction(
+  matchId: number,
+  tournamentId: number
+): Promise<ActionResult<{ success: true }>> {
+  try {
+    await rejectBots();
+    const supabase = await createClient();
+
+    const { error } = await supabase.rpc("clear_judge_request", {
+      p_match_id: matchId,
+    });
+
+    if (error) throw error;
+    updateTag(CacheTags.tournament(tournamentId));
+    return { success: true, data: { success: true } };
+  } catch (error) {
+    return {
+      success: false,
+      error: getErrorMessage(error, "Failed to clear judge request"),
+    };
+  }
+}
