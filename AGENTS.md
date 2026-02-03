@@ -143,6 +143,7 @@ The proxy handles:
 - Do NOT use `asChild` prop — Base UI doesn't support it
 - Always check `apps/web/src/components/ui/` for existing components before building custom ones
 - Add new components: `npx shadcn@latest add <component-name>`
+- **Dropdowns, selects, badges, and status displays must show human-readable labels, not raw enum/database values.** Map values to labels (e.g., `checked_in` → "Checked In", `in_progress` → "In Progress"). Never render snake_case or lowercase enum values directly in the UI.
 
 ---
 
