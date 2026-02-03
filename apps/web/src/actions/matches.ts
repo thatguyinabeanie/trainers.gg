@@ -7,9 +7,9 @@
 
 "use server";
 
+import { z } from "zod";
 import { updateTag } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { getErrorMessage } from "@/lib/utils";
 import {
   submitGameSelection,
   sendMatchMessage,
@@ -20,7 +20,17 @@ import {
 } from "@trainers/supabase";
 import type { Database } from "@trainers/supabase";
 import { CacheTags } from "@/lib/cache";
-import { type ActionResult, rejectBots } from "./utils";
+import { type ActionResult, rejectBots, withAction } from "./utils";
+
+// --- Input Schemas ---
+
+const idSchema = z.number().int().positive();
+const messageContentSchema = z
+  .string()
+  .min(1, "Message cannot be empty")
+  .max(2000, "Message must be 2000 characters or fewer");
+const messageTypeSchema = z.enum(["player", "judge"]);
+const numberOfGamesSchema = z.number().int().min(1).max(9);
 
 // =============================================================================
 // Blind Scoring
@@ -35,18 +45,15 @@ export async function submitGameSelectionAction(
   selectedWinnerAltId: number,
   tournamentId: number
 ): Promise<ActionResult> {
-  try {
+  return withAction(async () => {
     await rejectBots();
+    const validGameId = idSchema.parse(gameId);
+    const validWinnerId = idSchema.parse(selectedWinnerAltId);
+    const validTournamentId = idSchema.parse(tournamentId);
     const supabase = await createClient();
-    await submitGameSelection(supabase, gameId, selectedWinnerAltId);
-    updateTag(CacheTags.tournament(tournamentId));
-    return { success: true, data: undefined };
-  } catch (error) {
-    return {
-      success: false,
-      error: getErrorMessage(error, "Failed to submit game selection"),
-    };
-  }
+    await submitGameSelection(supabase, validGameId, validWinnerId);
+    updateTag(CacheTags.tournament(validTournamentId));
+  }, "Failed to submit game selection");
 }
 
 // =============================================================================
@@ -56,38 +63,29 @@ export async function submitGameSelectionAction(
 /**
  * Send a chat message in a match.
  */
-const VALID_MESSAGE_TYPES: Database["public"]["Enums"]["match_message_type"][] =
-  ["player", "judge"];
-
 export async function sendMatchMessageAction(
   matchId: number,
   altId: number,
   content: string,
   messageType: Database["public"]["Enums"]["match_message_type"] = "player"
 ): Promise<ActionResult<{ id: number }>> {
-  try {
+  return withAction(async () => {
     await rejectBots();
-
-    // Validate messageType server-side
-    if (!VALID_MESSAGE_TYPES.includes(messageType)) {
-      return { success: false, error: "Invalid message type" };
-    }
+    const validMatchId = idSchema.parse(matchId);
+    const validAltId = idSchema.parse(altId);
+    const validContent = messageContentSchema.parse(content);
+    const validType = messageTypeSchema.parse(messageType);
 
     const supabase = await createClient();
     const data = await sendMatchMessage(
       supabase,
-      matchId,
-      altId,
-      content,
-      messageType
+      validMatchId,
+      validAltId,
+      validContent,
+      validType
     );
-    return { success: true, data: { id: data.id } };
-  } catch (error) {
-    return {
-      success: false,
-      error: getErrorMessage(error, "Failed to send message"),
-    };
-  }
+    return { id: data.id };
+  }, "Failed to send message");
 }
 
 // =============================================================================
@@ -102,18 +100,16 @@ export async function createMatchGamesAction(
   numberOfGames: number,
   tournamentId: number
 ): Promise<ActionResult<{ count: number }>> {
-  try {
+  return withAction(async () => {
     await rejectBots();
+    const validMatchId = idSchema.parse(matchId);
+    const validCount = numberOfGamesSchema.parse(numberOfGames);
+    const validTournamentId = idSchema.parse(tournamentId);
     const supabase = await createClient();
-    const data = await createMatchGames(supabase, matchId, numberOfGames);
-    updateTag(CacheTags.tournament(tournamentId));
-    return { success: true, data: { count: data.length } };
-  } catch (error) {
-    return {
-      success: false,
-      error: getErrorMessage(error, "Failed to create match games"),
-    };
-  }
+    const data = await createMatchGames(supabase, validMatchId, validCount);
+    updateTag(CacheTags.tournament(validTournamentId));
+    return { count: data.length };
+  }, "Failed to create match games");
 }
 
 // =============================================================================
@@ -129,11 +125,14 @@ export async function judgeOverrideGameAction(
   tournamentId: number,
   notes?: string
 ): Promise<ActionResult<{ gameId: number }>> {
-  try {
+  return withAction(async () => {
     await rejectBots();
+    const validGameId = idSchema.parse(gameId);
+    const validWinnerId = idSchema.parse(winnerAltId);
+    const validTournamentId = idSchema.parse(tournamentId);
     const supabase = await createClient();
 
-    // Resolve judge alt ID from authenticated session — never trust client input
+    // Resolve judge alt ID from authenticated session
     const {
       data: { user },
     } = await supabase.auth.getUser();
@@ -149,19 +148,14 @@ export async function judgeOverrideGameAction(
 
     const data = await judgeOverrideGame(
       supabase,
-      gameId,
-      winnerAltId,
+      validGameId,
+      validWinnerId,
       alt.id,
       notes
     );
-    updateTag(CacheTags.tournament(tournamentId));
-    return { success: true, data: { gameId: data.id } };
-  } catch (error) {
-    return {
-      success: false,
-      error: getErrorMessage(error, "Failed to override game"),
-    };
-  }
+    updateTag(CacheTags.tournament(validTournamentId));
+    return { gameId: data.id };
+  }, "Failed to override game");
 }
 
 /**
@@ -171,18 +165,15 @@ export async function judgeResetGameAction(
   gameId: number,
   tournamentId: number
 ): Promise<ActionResult<{ gameId: number }>> {
-  try {
+  return withAction(async () => {
     await rejectBots();
+    const validGameId = idSchema.parse(gameId);
+    const validTournamentId = idSchema.parse(tournamentId);
     const supabase = await createClient();
-    const data = await judgeResetGame(supabase, gameId);
-    updateTag(CacheTags.tournament(tournamentId));
-    return { success: true, data: { gameId: data.id } };
-  } catch (error) {
-    return {
-      success: false,
-      error: getErrorMessage(error, "Failed to reset game"),
-    };
-  }
+    const data = await judgeResetGame(supabase, validGameId);
+    updateTag(CacheTags.tournament(validTournamentId));
+    return { gameId: data.id };
+  }, "Failed to reset game");
 }
 
 /**
@@ -194,23 +185,19 @@ export async function requestJudgeAction(
   matchId: number,
   tournamentId: number
 ): Promise<ActionResult<{ success: true }>> {
-  try {
+  return withAction(async () => {
     await rejectBots();
+    const validMatchId = idSchema.parse(matchId);
+    const validTournamentId = idSchema.parse(tournamentId);
     const supabase = await createClient();
 
     const { error } = await supabase.rpc("request_judge", {
-      p_match_id: matchId,
+      p_match_id: validMatchId,
     });
-
     if (error) throw error;
-    updateTag(CacheTags.tournament(tournamentId));
-    return { success: true, data: { success: true } };
-  } catch (error) {
-    return {
-      success: false,
-      error: getErrorMessage(error, "Failed to request judge"),
-    };
-  }
+    updateTag(CacheTags.tournament(validTournamentId));
+    return { success: true as const };
+  }, "Failed to request judge");
 }
 
 /**
@@ -220,18 +207,15 @@ export async function resetMatchAction(
   matchId: number,
   tournamentId: number
 ): Promise<ActionResult<{ matchId: number }>> {
-  try {
+  return withAction(async () => {
     await rejectBots();
+    const validMatchId = idSchema.parse(matchId);
+    const validTournamentId = idSchema.parse(tournamentId);
     const supabase = await createClient();
-    const data = await resetMatch(supabase, matchId);
-    updateTag(CacheTags.tournament(tournamentId));
-    return { success: true, data: { matchId: data.id } };
-  } catch (error) {
-    return {
-      success: false,
-      error: getErrorMessage(error, "Failed to reset match"),
-    };
-  }
+    const data = await resetMatch(supabase, validMatchId);
+    updateTag(CacheTags.tournament(validTournamentId));
+    return { matchId: data.id };
+  }, "Failed to reset match");
 }
 
 /**
@@ -242,23 +226,19 @@ export async function cancelJudgeRequestAction(
   matchId: number,
   tournamentId: number
 ): Promise<ActionResult<{ success: true }>> {
-  try {
+  return withAction(async () => {
     await rejectBots();
+    const validMatchId = idSchema.parse(matchId);
+    const validTournamentId = idSchema.parse(tournamentId);
     const supabase = await createClient();
 
     const { error } = await supabase.rpc("cancel_judge_request", {
-      p_match_id: matchId,
+      p_match_id: validMatchId,
     });
-
     if (error) throw error;
-    updateTag(CacheTags.tournament(tournamentId));
-    return { success: true, data: { success: true } };
-  } catch (error) {
-    return {
-      success: false,
-      error: getErrorMessage(error, "Failed to cancel judge request"),
-    };
-  }
+    updateTag(CacheTags.tournament(validTournamentId));
+    return { success: true as const };
+  }, "Failed to cancel judge request");
 }
 
 /**
@@ -269,21 +249,17 @@ export async function clearJudgeRequestAction(
   matchId: number,
   tournamentId: number
 ): Promise<ActionResult<{ success: true }>> {
-  try {
+  return withAction(async () => {
     await rejectBots();
+    const validMatchId = idSchema.parse(matchId);
+    const validTournamentId = idSchema.parse(tournamentId);
     const supabase = await createClient();
 
     const { error } = await supabase.rpc("clear_judge_request", {
-      p_match_id: matchId,
+      p_match_id: validMatchId,
     });
-
     if (error) throw error;
-    updateTag(CacheTags.tournament(tournamentId));
-    return { success: true, data: { success: true } };
-  } catch (error) {
-    return {
-      success: false,
-      error: getErrorMessage(error, "Failed to clear judge request"),
-    };
-  }
+    updateTag(CacheTags.tournament(validTournamentId));
+    return { success: true as const };
+  }, "Failed to clear judge request");
 }

@@ -4,14 +4,16 @@
 
 "use server";
 
+import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
-import { getErrorMessage } from "@/lib/utils";
 import {
   markNotificationRead,
   markAllNotificationsRead,
   deleteNotification,
 } from "@trainers/supabase";
-import type { ActionResult } from "./utils";
+import { type ActionResult, withAction } from "./utils";
+
+const idSchema = z.number().int().positive();
 
 /**
  * Mark a single notification as read.
@@ -19,16 +21,12 @@ import type { ActionResult } from "./utils";
 export async function markNotificationReadAction(
   notificationId: number
 ): Promise<ActionResult<{ success: true }>> {
-  try {
+  return withAction(async () => {
+    const id = idSchema.parse(notificationId);
     const supabase = await createClient();
-    await markNotificationRead(supabase, notificationId);
-    return { success: true, data: { success: true } };
-  } catch (error) {
-    return {
-      success: false,
-      error: getErrorMessage(error, "Failed to mark notification as read"),
-    };
-  }
+    await markNotificationRead(supabase, id);
+    return { success: true as const };
+  }, "Failed to mark notification as read");
 }
 
 /**
@@ -37,16 +35,11 @@ export async function markNotificationReadAction(
 export async function markAllNotificationsReadAction(): Promise<
   ActionResult<{ success: true }>
 > {
-  try {
+  return withAction(async () => {
     const supabase = await createClient();
     await markAllNotificationsRead(supabase);
-    return { success: true, data: { success: true } };
-  } catch (error) {
-    return {
-      success: false,
-      error: getErrorMessage(error, "Failed to mark all as read"),
-    };
-  }
+    return { success: true as const };
+  }, "Failed to mark all as read");
 }
 
 /**
@@ -55,14 +48,10 @@ export async function markAllNotificationsReadAction(): Promise<
 export async function deleteNotificationAction(
   notificationId: number
 ): Promise<ActionResult<{ success: true }>> {
-  try {
+  return withAction(async () => {
+    const id = idSchema.parse(notificationId);
     const supabase = await createClient();
-    await deleteNotification(supabase, notificationId);
-    return { success: true, data: { success: true } };
-  } catch (error) {
-    return {
-      success: false,
-      error: getErrorMessage(error, "Failed to delete notification"),
-    };
-  }
+    await deleteNotification(supabase, id);
+    return { success: true as const };
+  }, "Failed to delete notification");
 }
