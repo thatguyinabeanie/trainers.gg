@@ -8,13 +8,7 @@ import {
   getPhaseRoundsWithMatches,
   getRoundMatchesWithStats,
 } from "@trainers/supabase";
-import {
-  generatePairings,
-  startRound,
-  completeRound,
-  createRound,
-  reportMatchResult,
-} from "@/actions/tournaments";
+import { reportMatchResult } from "@/actions/tournaments";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -47,18 +41,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
-  Shuffle,
-  Play,
   Clock,
   Trophy,
-  AlertCircle,
   Loader2,
-  CheckCircle,
-  Plus,
   LayoutGrid,
   Table as TableIcon,
 } from "lucide-react";
@@ -127,7 +115,6 @@ export function TournamentPairings({ tournament }: TournamentPairingsProps) {
   // Set initial round when rounds load, or reset when phase changes
   useEffect(() => {
     if (rounds && rounds.length > 0 && rounds[0]) {
-      // Select first round when rounds load or phase changes
       setSelectedRoundId(rounds[0].id);
     } else {
       setSelectedRoundId(null);
@@ -165,19 +152,6 @@ export function TournamentPairings({ tournament }: TournamentPairingsProps) {
   const currentRound = rounds?.find((r) => r.id === selectedRoundId);
   const currentPhase = phases?.find((p) => p.id === selectedPhaseId);
 
-  const canGeneratePairings =
-    tournament.status === "active" && currentRound?.status === "pending";
-  const canStartRound =
-    currentRound?.status === "pending" && (currentRound?.matchCount ?? 0) > 0;
-  const canCompleteRound =
-    currentRound?.status === "active" &&
-    currentRound?.completedCount === currentRound?.matchCount;
-  const canCreateNextRound =
-    tournament.status === "active" &&
-    rounds &&
-    rounds.length > 0 &&
-    rounds[rounds.length - 1]?.status === "completed";
-
   const getStatusColor = (status: string | null) => {
     switch (status) {
       case "completed":
@@ -189,69 +163,6 @@ export function TournamentPairings({ tournament }: TournamentPairingsProps) {
       default:
         return "bg-gray-100 text-gray-800";
     }
-  };
-
-  const handleGeneratePairings = () => {
-    if (!selectedRoundId) return;
-    startTransition(async () => {
-      const result = await generatePairings(selectedRoundId, tournament.id);
-      if (result.success) {
-        toast.success(`Generated ${result.data.matchesCreated} pairings`);
-        if (result.data.warnings.length > 0) {
-          result.data.warnings.forEach((w) => toast.warning(w));
-        }
-        await refetchMatches();
-        await refetchRounds();
-      } else {
-        toast.error(result.error);
-      }
-    });
-  };
-
-  const handleStartRound = () => {
-    if (!selectedRoundId) return;
-    startTransition(async () => {
-      const result = await startRound(selectedRoundId, tournament.id);
-      if (result.success) {
-        toast.success("Round started");
-        await refetchRounds();
-        await refetchMatches();
-      } else {
-        toast.error(result.error);
-      }
-    });
-  };
-
-  const handleCompleteRound = () => {
-    if (!selectedRoundId) return;
-    startTransition(async () => {
-      const result = await completeRound(selectedRoundId, tournament.id);
-      if (result.success) {
-        toast.success("Round completed, standings updated");
-        await refetchRounds();
-      } else {
-        toast.error(result.error);
-      }
-    });
-  };
-
-  const handleCreateNextRound = () => {
-    if (!selectedPhaseId || !rounds) return;
-    const nextRoundNumber = rounds.length + 1;
-    startTransition(async () => {
-      const result = await createRound(
-        selectedPhaseId,
-        nextRoundNumber,
-        tournament.id
-      );
-      if (result.success) {
-        toast.success(`Round ${nextRoundNumber} created`);
-        await refetchRounds();
-        setSelectedRoundId(result.data.roundId);
-      } else {
-        toast.error(result.error);
-      }
-    });
   };
 
   const openReportDialog = (match: {
@@ -337,7 +248,7 @@ export function TournamentPairings({ tournament }: TournamentPairingsProps) {
         <div>
           <h2 className="text-2xl font-bold">Pairings & Matches</h2>
           <p className="text-muted-foreground">
-            Manage tournament rounds and player pairings
+            View tournament rounds and player pairings
           </p>
         </div>
         <Card>
@@ -356,12 +267,12 @@ export function TournamentPairings({ tournament }: TournamentPairingsProps) {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
+      {/* Header with selectors */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h2 className="text-2xl font-bold">Pairings & Matches</h2>
           <p className="text-muted-foreground">
-            Manage tournament rounds and player pairings
+            View tournament rounds and player pairings
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -427,50 +338,6 @@ export function TournamentPairings({ tournament }: TournamentPairingsProps) {
               </SelectContent>
             </Select>
           )}
-          {canCreateNextRound && (
-            <Button
-              variant="outline"
-              onClick={handleCreateNextRound}
-              disabled={isPending}
-            >
-              {isPending ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <Plus className="mr-2 h-4 w-4" />
-              )}
-              Next Round
-            </Button>
-          )}
-          {canGeneratePairings && (
-            <Button onClick={handleGeneratePairings} disabled={isPending}>
-              {isPending ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <Shuffle className="mr-2 h-4 w-4" />
-              )}
-              Generate Pairings
-            </Button>
-          )}
-          {canStartRound && (
-            <Button onClick={handleStartRound} disabled={isPending}>
-              {isPending ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <Play className="mr-2 h-4 w-4" />
-              )}
-              Start Round
-            </Button>
-          )}
-          {canCompleteRound && (
-            <Button onClick={handleCompleteRound} disabled={isPending}>
-              {isPending ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <CheckCircle className="mr-2 h-4 w-4" />
-              )}
-              Complete Round
-            </Button>
-          )}
         </div>
       </div>
 
@@ -494,7 +361,7 @@ export function TournamentPairings({ tournament }: TournamentPairingsProps) {
         />
       ) : null}
 
-      {/* Round Status (Table View) */}
+      {/* Table View */}
       {viewMode === "table" &&
         (roundsLoading ? (
           <Card>
@@ -505,269 +372,162 @@ export function TournamentPairings({ tournament }: TournamentPairingsProps) {
         ) : !rounds || rounds.length === 0 ? (
           <Card>
             <CardContent className="flex flex-col items-center justify-center py-12">
-              <AlertCircle className="text-muted-foreground mb-4 h-12 w-12 opacity-50" />
+              <Trophy className="text-muted-foreground mb-4 h-12 w-12 opacity-50" />
               <h3 className="mb-2 text-lg font-semibold">No rounds yet</h3>
-              <p className="text-muted-foreground mb-4 text-sm">
-                Create the first round to start generating pairings.
+              <p className="text-muted-foreground text-sm">
+                Start the first round from the Overview tab.
               </p>
-              <Button
-                onClick={() => {
-                  if (!selectedPhaseId) return;
-                  startTransition(async () => {
-                    const result = await createRound(
-                      selectedPhaseId,
-                      1,
-                      tournament.id
-                    );
-                    if (result.success) {
-                      toast.success("Round 1 created");
-                      await refetchRounds();
-                      setSelectedRoundId(result.data.roundId);
-                    } else {
-                      toast.error(result.error);
-                    }
-                  });
-                }}
-                disabled={isPending}
-              >
-                {isPending ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                ) : (
-                  <Plus className="mr-2 h-4 w-4" />
-                )}
-                Create Round 1
-              </Button>
             </CardContent>
           </Card>
         ) : (
-          <>
-            <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle>
-                      {currentPhase?.name ?? "Phase"} - Round{" "}
-                      {currentRound?.round_number ?? "?"}
-                    </CardTitle>
-                    <CardDescription>
-                      {currentRound?.matchCount ?? 0} matches in this round
-                    </CardDescription>
-                  </div>
-                  <Badge
-                    className={getStatusColor(currentRound?.status ?? null)}
-                  >
-                    {(currentRound?.status ?? "pending").toUpperCase()}
-                  </Badge>
+          <Card>
+            <CardHeader>
+              <CardTitle>
+                {currentPhase?.name ?? "Phase"} - Round{" "}
+                {currentRound?.round_number ?? "?"}
+              </CardTitle>
+              <CardDescription>
+                {currentRound?.matchCount ?? 0} matches
+                {currentRound?.status && (
+                  <>
+                    {" "}
+                    &middot;{" "}
+                    <Badge className={getStatusColor(currentRound.status)}>
+                      {currentRound.status.toUpperCase()}
+                    </Badge>
+                  </>
+                )}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {matchesLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="h-6 w-6 animate-spin" />
                 </div>
-              </CardHeader>
-              <CardContent>
-                {currentRound?.status === "pending" &&
-                  (currentRound?.matchCount ?? 0) === 0 && (
-                    <Alert>
-                      <AlertCircle className="h-4 w-4" />
-                      <AlertDescription>
-                        This round hasn&apos;t started yet. Generate pairings to
-                        begin.
-                      </AlertDescription>
-                    </Alert>
-                  )}
+              ) : !matches || matches.length === 0 ? (
+                <div className="py-8 text-center">
+                  <Trophy className="text-muted-foreground mx-auto mb-4 h-12 w-12 opacity-50" />
+                  <h3 className="mb-2 text-lg font-semibold">
+                    No pairings yet
+                  </h3>
+                  <p className="text-muted-foreground">
+                    Pairings will appear here once the round is started from the
+                    Overview tab.
+                  </p>
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Table</TableHead>
+                      <TableHead>Player 1</TableHead>
+                      <TableHead>Player 2</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Result</TableHead>
+                      <TableHead>Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {matches.map((match) => {
+                      const p1 = match.player1 as {
+                        display_name?: string;
+                        username?: string;
+                      } | null;
+                      const p2 = match.player2 as {
+                        display_name?: string;
+                        username?: string;
+                      } | null;
+                      const winner = match.winner as {
+                        display_name?: string;
+                        username?: string;
+                      } | null;
+                      const isBye = !match.alt2_id;
 
-                {currentRound?.status === "pending" &&
-                  (currentRound?.matchCount ?? 0) > 0 && (
-                    <Alert>
-                      <AlertCircle className="h-4 w-4" />
-                      <AlertDescription>
-                        Pairings generated. Start the round when ready.
-                      </AlertDescription>
-                    </Alert>
-                  )}
-
-                {currentRound?.status === "active" && (
-                  <div className="grid gap-4 md:grid-cols-3">
-                    <div className="text-center">
-                      <div className="text-2xl font-bold text-blue-600">
-                        {currentRound.inProgressCount ?? 0}
-                      </div>
-                      <div className="text-muted-foreground text-sm">
-                        In Progress
-                      </div>
-                    </div>
-                    <div className="text-center">
-                      <div className="text-2xl font-bold text-green-600">
-                        {currentRound.completedCount ?? 0}
-                      </div>
-                      <div className="text-muted-foreground text-sm">
-                        Completed
-                      </div>
-                    </div>
-                    <div className="text-center">
-                      <div className="text-2xl font-bold">
-                        {currentRound.matchCount
-                          ? Math.round(
-                              ((currentRound.completedCount ?? 0) /
-                                currentRound.matchCount) *
-                                100
-                            )
-                          : 0}
-                        %
-                      </div>
-                      <div className="text-muted-foreground text-sm">
-                        Progress
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {currentRound?.status === "completed" && (
-                  <Alert className="border-green-200 bg-green-50">
-                    <CheckCircle className="h-4 w-4 text-green-600" />
-                    <AlertDescription className="text-green-800">
-                      This round is complete. Standings have been updated.
-                    </AlertDescription>
-                  </Alert>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* Pairings Table */}
-            <Card>
-              <CardHeader>
-                <CardTitle>
-                  Round {currentRound?.round_number} Pairings
-                </CardTitle>
-                <CardDescription>
-                  Match pairings and results for the current round
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {matchesLoading ? (
-                  <div className="flex items-center justify-center py-8">
-                    <Loader2 className="h-6 w-6 animate-spin" />
-                  </div>
-                ) : !matches || matches.length === 0 ? (
-                  <div className="py-8 text-center">
-                    <Trophy className="text-muted-foreground mx-auto mb-4 h-12 w-12 opacity-50" />
-                    <h3 className="mb-2 text-lg font-semibold">
-                      No pairings yet
-                    </h3>
-                    <p className="text-muted-foreground">
-                      Generate pairings to start this round.
-                    </p>
-                  </div>
-                ) : (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Table</TableHead>
-                        <TableHead>Player 1</TableHead>
-                        <TableHead>Player 2</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Result</TableHead>
-                        <TableHead>Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {matches.map((match) => {
-                        const p1 = match.player1 as {
-                          display_name?: string;
-                          username?: string;
-                        } | null;
-                        const p2 = match.player2 as {
-                          display_name?: string;
-                          username?: string;
-                        } | null;
-                        const winner = match.winner as {
-                          display_name?: string;
-                          username?: string;
-                        } | null;
-                        const isBye = !match.alt2_id;
-
-                        return (
-                          <TableRow key={match.id}>
-                            <TableCell className="font-medium">
-                              {isBye
-                                ? "BYE"
-                                : `Table ${match.table_number ?? "-"}`}
-                            </TableCell>
-                            <TableCell>
+                      return (
+                        <TableRow key={match.id}>
+                          <TableCell className="font-medium">
+                            {isBye
+                              ? "BYE"
+                              : `Table ${match.table_number ?? "-"}`}
+                          </TableCell>
+                          <TableCell>
+                            <div>
+                              <div className="font-medium">
+                                {p1?.display_name ?? p1?.username ?? "TBD"}
+                              </div>
+                              {match.player1Stats && (
+                                <div className="text-muted-foreground text-sm">
+                                  {match.player1Stats.wins}-
+                                  {match.player1Stats.losses}
+                                </div>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            {isBye ? (
+                              <span className="text-muted-foreground italic">
+                                BYE
+                              </span>
+                            ) : (
                               <div>
                                 <div className="font-medium">
-                                  {p1?.display_name ?? p1?.username ?? "TBD"}
+                                  {p2?.display_name ?? p2?.username ?? "TBD"}
                                 </div>
-                                {match.player1Stats && (
+                                {match.player2Stats && (
                                   <div className="text-muted-foreground text-sm">
-                                    {match.player1Stats.wins}-
-                                    {match.player1Stats.losses}
+                                    {match.player2Stats.wins}-
+                                    {match.player2Stats.losses}
                                   </div>
                                 )}
                               </div>
-                            </TableCell>
-                            <TableCell>
-                              {isBye ? (
-                                <span className="text-muted-foreground italic">
-                                  BYE
-                                </span>
-                              ) : (
-                                <div>
-                                  <div className="font-medium">
-                                    {p2?.display_name ?? p2?.username ?? "TBD"}
-                                  </div>
-                                  {match.player2Stats && (
-                                    <div className="text-muted-foreground text-sm">
-                                      {match.player2Stats.wins}-
-                                      {match.player2Stats.losses}
-                                    </div>
-                                  )}
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            <Badge className={getStatusColor(match.status)}>
+                              {(match.status ?? "pending").replace("_", " ")}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            {match.status === "completed" ? (
+                              <div>
+                                <div className="font-medium">
+                                  {winner?.display_name ??
+                                    winner?.username ??
+                                    "Unknown"}
                                 </div>
-                              )}
-                            </TableCell>
-                            <TableCell>
-                              <Badge className={getStatusColor(match.status)}>
-                                {(match.status ?? "pending").replace("_", " ")}
-                              </Badge>
-                            </TableCell>
-                            <TableCell>
-                              {match.status === "completed" ? (
-                                <div>
-                                  <div className="font-medium">
-                                    {winner?.display_name ??
-                                      winner?.username ??
-                                      "Unknown"}
-                                  </div>
-                                  <div className="text-muted-foreground text-sm">
-                                    {match.game_wins1 ?? 0}-
-                                    {match.game_wins2 ?? 0}
-                                  </div>
+                                <div className="text-muted-foreground text-sm">
+                                  {match.game_wins1 ?? 0}-
+                                  {match.game_wins2 ?? 0}
                                 </div>
-                              ) : isBye ? (
-                                <span className="text-muted-foreground">
-                                  Auto-win
-                                </span>
-                              ) : (
-                                <span className="text-muted-foreground">-</span>
-                              )}
-                            </TableCell>
-                            <TableCell>
-                              {match.status === "active" && !isBye && (
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => openReportDialog(match)}
-                                >
-                                  <Clock className="mr-2 h-4 w-4" />
-                                  Report
-                                </Button>
-                              )}
-                            </TableCell>
-                          </TableRow>
-                        );
-                      })}
-                    </TableBody>
-                  </Table>
-                )}
-              </CardContent>
-            </Card>
-          </>
+                              </div>
+                            ) : isBye ? (
+                              <span className="text-muted-foreground">
+                                Auto-win
+                              </span>
+                            ) : (
+                              <span className="text-muted-foreground">-</span>
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            {match.status === "active" && !isBye && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => openReportDialog(match)}
+                              >
+                                <Clock className="mr-2 h-4 w-4" />
+                                Report
+                              </Button>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              )}
+            </CardContent>
+          </Card>
         ))}
 
       {/* Report Result Dialog */}

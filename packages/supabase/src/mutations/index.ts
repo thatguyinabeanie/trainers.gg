@@ -53,6 +53,7 @@ export {
   generateRoundPairings,
   startRound,
   completeRound,
+  deleteRoundAndMatches,
   recalculateStandings,
   dropPlayer,
   // Phase management

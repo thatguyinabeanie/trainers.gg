@@ -30,6 +30,7 @@ import {
   generateRoundPairings as generateRoundPairingsMutation,
   startRound as startRoundMutation,
   completeRound as completeRoundMutation,
+  deleteRoundAndMatches as deleteRoundAndMatchesMutation,
   recalculateStandings as recalculateStandingsMutation,
   dropPlayer as dropPlayerMutation,
   reportMatchResult as reportMatchResultMutation,
@@ -41,6 +42,9 @@ import {
   getCurrentUserAlts,
   getUserTeams,
   getUserRegistrationDetails,
+  // Queries (for prepareRound preview)
+  getPhaseRoundsWithStats,
+  getRoundMatchesWithStats,
 } from "@trainers/supabase";
 import type { Database } from "@trainers/supabase";
 import { CacheTags } from "@/lib/cache";
@@ -855,6 +859,149 @@ export async function reportMatchResult(
     return {
       success: false,
       error: getErrorMessage(error, "Failed to report match result"),
+    };
+  }
+}
+
+// =============================================================================
+// Round Lifecycle Actions (Overview Command Center)
+// =============================================================================
+
+/**
+ * Prepare a round: create it, generate pairings, and return preview data.
+ * Does NOT start the round — the TO reviews the preview first.
+ */
+export async function prepareRound(
+  tournamentId: number,
+  phaseId: number
+): Promise<
+  ActionResult<{
+    roundId: number;
+    roundNumber: number;
+    matchesCreated: number;
+    byePlayer: string | null;
+    matches: Array<{
+      tableNumber: number | null;
+      player1Name: string;
+      player2Name: string | null;
+    }>;
+  }>
+> {
+  try {
+    await rejectBots();
+    const supabase = await createClient();
+
+    // Determine next round number from existing rounds in phase
+    const existingRounds = await getPhaseRoundsWithStats(supabase, phaseId);
+    const nextRoundNumber = existingRounds.length + 1;
+
+    // Create the round
+    const createResult = await createRoundMutation(
+      supabase,
+      phaseId,
+      nextRoundNumber
+    );
+    const roundId = createResult.round.id;
+
+    // Generate pairings
+    const pairingsResult = await generateRoundPairingsMutation(
+      supabase,
+      roundId
+    );
+
+    // Fetch the generated matches with player names for preview
+    const matchesWithStats = await getRoundMatchesWithStats(
+      supabase,
+      roundId,
+      tournamentId
+    );
+
+    // Build preview data
+    let byePlayer: string | null = null;
+    const matches = matchesWithStats.map((match) => {
+      const p1 = match.player1 as {
+        display_name?: string;
+        username?: string;
+      } | null;
+      const p2 = match.player2 as {
+        display_name?: string;
+        username?: string;
+      } | null;
+
+      const isBye = !match.alt2_id;
+      if (isBye && p1) {
+        byePlayer = p1.display_name ?? p1.username ?? "Unknown";
+      }
+
+      return {
+        tableNumber: match.table_number,
+        player1Name: p1?.display_name ?? p1?.username ?? "Unknown",
+        player2Name: isBye
+          ? null
+          : (p2?.display_name ?? p2?.username ?? "Unknown"),
+      };
+    });
+
+    updateTag(CacheTags.tournament(tournamentId));
+
+    return {
+      success: true,
+      data: {
+        roundId,
+        roundNumber: nextRoundNumber,
+        matchesCreated: pairingsResult.matchesCreated,
+        byePlayer,
+        matches,
+      },
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: getErrorMessage(error, "Failed to prepare round"),
+    };
+  }
+}
+
+/**
+ * Confirm and start a prepared round.
+ * Called after the TO reviews the pairings preview.
+ */
+export async function confirmAndStartRound(
+  roundId: number,
+  tournamentId: number
+): Promise<ActionResult<{ success: true }>> {
+  try {
+    await rejectBots();
+    const supabase = await createClient();
+    await startRoundMutation(supabase, roundId);
+    updateTag(CacheTags.tournament(tournamentId));
+    return { success: true, data: { success: true } };
+  } catch (error) {
+    return {
+      success: false,
+      error: getErrorMessage(error, "Failed to start round"),
+    };
+  }
+}
+
+/**
+ * Cancel a prepared round: delete the pending round and its matches.
+ * Called when the TO rejects the pairings preview.
+ */
+export async function cancelPreparedRound(
+  roundId: number,
+  tournamentId: number
+): Promise<ActionResult<{ success: true }>> {
+  try {
+    await rejectBots();
+    const supabase = await createClient();
+    await deleteRoundAndMatchesMutation(supabase, roundId);
+    updateTag(CacheTags.tournament(tournamentId));
+    return { success: true, data: { success: true } };
+  } catch (error) {
+    return {
+      success: false,
+      error: getErrorMessage(error, "Failed to cancel round"),
     };
   }
 }

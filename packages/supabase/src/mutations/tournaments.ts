@@ -2085,6 +2085,91 @@ export async function createRound(
 }
 
 /**
+ * Delete a pending round and all its matches/pairings.
+ * Only works if round status is 'pending'.
+ */
+export async function deleteRoundAndMatches(
+  supabase: TypedClient,
+  roundId: number
+) {
+  const user = await getCurrentUser(supabase);
+  if (!user) throw new Error("Not authenticated");
+
+  // Get round with tournament info for permission check
+  const { data: round } = await supabase
+    .from("tournament_rounds")
+    .select(
+      `
+      id,
+      status,
+      round_number,
+      phase_id,
+      tournament_phases!inner (
+        id,
+        tournament_id,
+        tournaments!inner (
+          organization_id,
+          organizations!inner (
+            owner_user_id
+          )
+        )
+      )
+    `
+    )
+    .eq("id", roundId)
+    .single();
+
+  if (!round) throw new Error("Round not found");
+
+  const phase = round.tournament_phases as unknown as {
+    id: number;
+    tournament_id: number;
+    tournaments: {
+      organization_id: number;
+      organizations: { owner_user_id: string };
+    };
+  };
+
+  // Verify permission
+  if (phase.tournaments.organizations.owner_user_id !== user.id) {
+    throw new Error("You don't have permission to delete this round");
+  }
+
+  // Only allow deleting pending rounds
+  if (round.status !== "pending") {
+    throw new Error(
+      `Cannot delete round with status "${round.status}". Only pending rounds can be deleted.`
+    );
+  }
+
+  // Delete pairings for matches in this round
+  const { data: matchIds } = await supabase
+    .from("tournament_matches")
+    .select("id")
+    .eq("round_id", roundId);
+
+  if (matchIds && matchIds.length > 0) {
+    const ids = matchIds.map((m) => m.id);
+
+    // Delete pairings that reference these matches
+    await supabase.from("tournament_pairings").delete().eq("round_id", roundId);
+
+    // Delete the matches
+    await supabase.from("tournament_matches").delete().eq("round_id", roundId);
+  }
+
+  // Delete the round
+  const { error } = await supabase
+    .from("tournament_rounds")
+    .delete()
+    .eq("id", roundId);
+
+  if (error) throw error;
+
+  return { success: true };
+}
+
+/**
  * Update a tournament phase
  */
 export async function updatePhase(

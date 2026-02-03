@@ -162,9 +162,17 @@ export function TournamentManageClient({
   }
 
   // Transform tournament data for the overview component
+  // Find the active phase ID from fetched phases
+  const activePhaseId =
+    tournament.current_phase_id ??
+    (phases && phases.length > 0 ? phases[0]?.id : null) ??
+    null;
+
   const tournamentForOverview = {
+    id: tournament.id,
     name: tournament.name,
     status: tournament.status ?? "draft",
+    currentPhaseId: activePhaseId,
     registrations: tournament.registrations ?? [],
     maxParticipants: tournament.max_participants ?? undefined,
     startDate: tournament.start_date
@@ -179,7 +187,6 @@ export function TournamentManageClient({
     roundTimeMinutes: tournament.round_time_minutes ?? 50,
     swissRounds: tournament.swiss_rounds ?? undefined,
     topCutSize: tournament.top_cut_size ?? undefined,
-    rentalTeamPhotosEnabled: tournament.rental_team_photos_enabled ?? false,
     _creationTime: tournament.created_at
       ? new Date(tournament.created_at).getTime()
       : undefined,

@@ -2,13 +2,13 @@
 -- 12_standings.sql - Create Tournament Standings
 -- =============================================================================
 -- GENERATED FILE - DO NOT EDIT MANUALLY
--- Generated at: 2026-02-01T23:55:30.243Z
+-- Generated at: 2026-02-03T01:10:30.378Z
 -- IDEMPOTENT: Uses ON CONFLICT and existence checks
 -- =============================================================================
 
 -- IDEMPOTENT: Uses ON CONFLICT DO NOTHING
 -- Depends on: 11_matches.sql
--- Generated: 637 standings entries
+-- Generated: 251 standings entries
 -- =============================================================================
 
 DO $$

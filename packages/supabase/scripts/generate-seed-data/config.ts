@@ -74,8 +74,8 @@ export const SEED_CONFIG = {
   // Each org runs 1 main tournament per week (no practice)
   TOURNAMENTS_PER_WEEK_PER_ORG: 1,
 
-  // Flagship tournament configuration (256 players)
-  FLAGSHIP_TOURNAMENT_SIZE: 256,
+  // Flagship tournament configuration (63 players — clean slate for round management testing)
+  FLAGSHIP_TOURNAMENT_SIZE: 63,
   FLAGSHIP_TOURNAMENTS: [
     {
       orgSlug: "vgc-league",
@@ -111,6 +111,7 @@ export const SEED_CONFIG = {
     256: 8,
     128: 7,
     64: 6,
+    63: 6,
     32: 5,
     24: 5,
     16: 4,
@@ -121,6 +122,7 @@ export const SEED_CONFIG = {
     256: 8,
     128: 8,
     64: 8,
+    63: 8,
     32: 4,
   } as Record<number, number>,
 
