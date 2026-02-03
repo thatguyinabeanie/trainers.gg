@@ -2575,6 +2575,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      cancel_judge_request: { Args: { p_match_id: number }; Returns: undefined }
       clear_judge_request: { Args: { p_match_id: number }; Returns: undefined }
       custom_access_token_hook: { Args: { event: Json }; Returns: Json }
       get_current_alt_id: { Args: never; Returns: number }

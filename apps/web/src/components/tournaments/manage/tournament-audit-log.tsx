@@ -221,6 +221,10 @@ export function TournamentAuditLog({ tournament }: TournamentAuditLogProps) {
                   string,
                   unknown
                 > | null;
+                const gameNumber = metadata?.game_number as number | undefined;
+                const tableNumber = metadata?.table_number as
+                  | number
+                  | undefined;
 
                 return (
                   <div
@@ -240,9 +244,19 @@ export function TournamentAuditLog({ tournament }: TournamentAuditLogProps) {
                             Match #{entry.match_id}
                           </span>
                         )}
+                        {gameNumber != null && (
+                          <span className="text-muted-foreground text-xs">
+                            Game {gameNumber}
+                          </span>
+                        )}
+                        {tableNumber != null && (
+                          <span className="text-muted-foreground text-xs">
+                            Table {tableNumber}
+                          </span>
+                        )}
                       </div>
                       {metadata?.description != null && (
-                        <p className="text-muted-foreground mt-0.5 text-sm">
+                        <p className="text-foreground mt-0.5 text-sm">
                           {String(metadata.description)}
                         </p>
                       )}
