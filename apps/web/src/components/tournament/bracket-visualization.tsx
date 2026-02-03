@@ -112,12 +112,13 @@ export function BracketVisualization({
           ) : (
             <MatchSections
               matches={round.matches}
-              renderMatch={(match) => {
+              renderMatch={(match, index) => {
                 const clickable = !canClickMatch || canClickMatch(match);
                 return (
                   <SwissMatchRow
                     key={match.id}
                     match={match}
+                    index={index}
                     onClick={
                       clickable ? () => onMatchClick?.(match.id) : undefined
                     }
@@ -209,7 +210,7 @@ function TopCutDisplay({
             ) : (
               <MatchSections
                 matches={round.matches}
-                renderMatch={(match) => {
+                renderMatch={(match, _index) => {
                   const clickable = !canClickMatch || canClickMatch(match);
                   return (
                     <EliminationMatchCard
@@ -257,23 +258,32 @@ function MatchSections({
   layout,
 }: {
   matches: TournamentMatch[];
-  renderMatch: (match: TournamentMatch) => ReactNode;
+  renderMatch: (match: TournamentMatch, index: number) => ReactNode;
   layout: "list" | "grid";
 }) {
   const ongoing = matches.filter((m) => m.status !== "completed");
   const completed = matches.filter((m) => m.status === "completed");
 
-  // If all matches are in one category, skip the section headers
-  if (ongoing.length === 0 || completed.length === 0) {
-    return (
+  // Wrap list-layout matches in a shared card container with dividers
+  const wrapMatches = (items: TournamentMatch[], isLive = false) =>
+    layout === "list" ? (
       <div
         className={cn(
-          layout === "list" ? "space-y-1.5" : "grid gap-3 sm:grid-cols-2"
+          "bg-card overflow-hidden rounded-xl ring-1",
+          isLive ? "ring-primary/20" : "ring-foreground/10"
         )}
       >
-        {matches.map((match) => renderMatch(match))}
+        {items.map((match, i) => renderMatch(match, i))}
+      </div>
+    ) : (
+      <div className="grid gap-3 sm:grid-cols-2">
+        {items.map((match, i) => renderMatch(match, i))}
       </div>
     );
+
+  // If all matches are in one category, skip the section headers
+  if (ongoing.length === 0 || completed.length === 0) {
+    return wrapMatches(matches);
   }
 
   return (
@@ -285,17 +295,11 @@ function MatchSections({
             <span className="bg-primary absolute inline-flex h-full w-full animate-ping rounded-full opacity-50" />
             <span className="bg-primary relative inline-flex h-full w-full rounded-full" />
           </span>
-          <h3 className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+          <h3 className="text-primary text-xs font-medium tracking-wide uppercase">
             In Progress ({ongoing.length})
           </h3>
         </div>
-        <div
-          className={cn(
-            layout === "list" ? "space-y-1.5" : "grid gap-3 sm:grid-cols-2"
-          )}
-        >
-          {ongoing.map((match) => renderMatch(match))}
-        </div>
+        {wrapMatches(ongoing, true)}
       </div>
 
       {/* Completed matches */}
@@ -306,13 +310,7 @@ function MatchSections({
             Completed ({completed.length})
           </h3>
         </div>
-        <div
-          className={cn(
-            layout === "list" ? "space-y-1.5" : "grid gap-3 sm:grid-cols-2"
-          )}
-        >
-          {completed.map((match) => renderMatch(match))}
-        </div>
+        {wrapMatches(completed)}
       </div>
     </div>
   );
@@ -328,33 +326,45 @@ function RoundSummaryBar({ round }: { round: TournamentRound }) {
     (m) => m.status === "completed"
   ).length;
   const active = round.matches.filter((m) => m.status === "active").length;
+  const pending = total - completed - active;
 
   return (
     <div className="mb-4 flex items-center gap-3">
-      <div className="text-muted-foreground flex items-center gap-4 text-xs">
-        <span>{total} matches</span>
-        {round.status === "active" && completed > 0 && (
+      <div className="text-muted-foreground flex items-center gap-2 text-xs">
+        <span className="tabular-nums">{total} matches</span>
+        {round.status === "active" && (
           <>
-            <span className="bg-border h-3 w-px" />
-            <span className="text-emerald-600 dark:text-emerald-400">
-              {completed} done
+            <span className="text-muted-foreground/30">·</span>
+            <span className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+              {completed}
             </span>
-          </>
-        )}
-        {round.status === "active" && active > 0 && (
-          <>
-            <span className="bg-border h-3 w-px" />
-            <span className="text-primary">{active} live</span>
+            <span className="text-primary inline-flex items-center gap-1">
+              <span className="relative flex h-1.5 w-1.5">
+                <span className="bg-primary absolute inline-flex h-full w-full animate-ping rounded-full opacity-40" />
+                <span className="bg-primary relative inline-flex h-full w-full rounded-full" />
+              </span>
+              {active}
+            </span>
+            {pending > 0 && (
+              <span className="text-muted-foreground/50 tabular-nums">
+                {pending}
+              </span>
+            )}
           </>
         )}
       </div>
 
-      {/* Progress bar for active rounds */}
+      {/* Segmented progress bar for active rounds */}
       {round.status === "active" && total > 0 && (
-        <div className="bg-muted ml-auto h-1 w-24 overflow-hidden rounded-full">
+        <div className="bg-muted ml-auto flex h-1.5 w-28 overflow-hidden rounded-full">
           <div
-            className="bg-primary h-full rounded-full transition-all duration-500"
+            className="rounded-full bg-emerald-500 transition-all duration-500"
             style={{ width: `${(completed / total) * 100}%` }}
+          />
+          <div
+            className="bg-primary transition-all duration-500"
+            style={{ width: `${(active / total) * 100}%` }}
           />
         </div>
       )}
@@ -363,15 +373,17 @@ function RoundSummaryBar({ round }: { round: TournamentRound }) {
 }
 
 /**
- * Swiss match row — horizontal layout inspired by Limitless TCG.
- * Table # | Player 1 | Score | Player 2 | →
+ * Swiss match row — table row inside a shared card container.
+ * Table # | Player 1 (W-L) | Score | (W-L) Player 2 | →
  */
 function SwissMatchRow({
   match,
   onClick,
+  index = 0,
 }: {
   match: TournamentMatch;
   onClick?: () => void;
+  index?: number;
 }) {
   const p1Won = match.winnerProfileId === match.participant1?.id;
   const p2Won = match.winnerProfileId === match.participant2?.id;
@@ -382,24 +394,38 @@ function SwissMatchRow({
   return (
     <div
       className={cn(
-        "group/match flex items-center rounded-lg border px-4 py-3 transition-all",
-        onClick && "hover:border-border hover:bg-muted/40 cursor-pointer",
-        isActive && "border-primary/20 bg-primary/[0.03]",
-        !isActive && "border-transparent"
+        "group/match flex items-center border-l-2 px-4 py-3 transition-colors",
+        onClick
+          ? "hover:bg-primary/[0.04] cursor-pointer"
+          : "border-l-transparent opacity-60",
+        onClick && (isActive ? "border-l-primary" : "border-l-primary/30"),
+        isActive && onClick && "bg-primary/[0.06]",
+        !isActive && index % 2 === 1 && "bg-muted/30"
       )}
       onClick={onClick}
     >
-      {/* Table number */}
-      <div className="text-muted-foreground/50 w-10 shrink-0 text-center text-xs font-medium">
+      {/* Table number badge */}
+      <div className="w-10 shrink-0 text-center">
         {isBye ? (
-          <span className="text-[10px] tracking-wider uppercase">bye</span>
+          <span className="text-muted-foreground text-[10px] font-medium tracking-wider uppercase">
+            bye
+          </span>
         ) : (
-          match.matchNumber || <Minus className="mx-auto h-3 w-3 opacity-50" />
+          <span
+            className={cn(
+              "inline-flex h-6 w-6 items-center justify-center rounded-md text-[11px] font-medium tabular-nums",
+              isActive && onClick
+                ? "bg-primary/15 text-primary"
+                : "bg-muted text-muted-foreground"
+            )}
+          >
+            {match.matchNumber || <Minus className="h-3 w-3 opacity-50" />}
+          </span>
         )}
       </div>
 
-      {/* Player 1 name — right-aligned */}
-      <div className="flex min-w-0 flex-1 items-center justify-end gap-1.5">
+      {/* Player 1 name — centered */}
+      <div className="flex min-w-0 flex-1 items-center justify-center gap-1.5">
         {isCompleted && p1Won && (
           <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-500" />
         )}
@@ -415,42 +441,56 @@ function SwissMatchRow({
         {match.participant1?.record &&
           match.participant1.record.wins + match.participant1.record.losses >
             0 && (
-            <span className="text-muted-foreground shrink-0 text-xs">
-              ({match.participant1.record.wins}-
-              {match.participant1.record.losses})
+            <span className="text-muted-foreground/50 shrink-0 text-[11px] tabular-nums">
+              {match.participant1.record.wins}-
+              {match.participant1.record.losses}
             </span>
           )}
       </div>
 
       {/* Center score / vs */}
-      <div className="mx-4 flex shrink-0 items-center justify-center">
+      <div className="mx-3 flex w-14 shrink-0 items-center justify-center sm:mx-4">
         {isCompleted || isActive ? (
-          <div className="flex items-center gap-0.5 font-mono text-sm tabular-nums">
+          <div className="flex items-center gap-1 font-mono text-sm font-medium tabular-nums">
             <span
-              className={cn(p1Won ? "font-semibold" : "text-muted-foreground")}
+              className={cn(
+                p1Won
+                  ? "text-foreground"
+                  : isActive
+                    ? "text-primary"
+                    : "text-muted-foreground"
+              )}
             >
               {match.gameWins1}
             </span>
-            <span className="text-muted-foreground/40 mx-1">-</span>
+            <span className="text-muted-foreground/30">–</span>
             <span
-              className={cn(p2Won ? "font-semibold" : "text-muted-foreground")}
+              className={cn(
+                p2Won
+                  ? "text-foreground"
+                  : isActive
+                    ? "text-primary"
+                    : "text-muted-foreground"
+              )}
             >
               {match.gameWins2}
             </span>
           </div>
         ) : (
-          <span className="text-muted-foreground/30 text-xs">vs</span>
+          <span className="text-muted-foreground/30 text-xs font-medium">
+            vs
+          </span>
         )}
       </div>
 
-      {/* Player 2 name — left-aligned */}
-      <div className="flex min-w-0 flex-1 items-center gap-1.5">
+      {/* Player 2 name — centered */}
+      <div className="flex min-w-0 flex-1 items-center justify-center gap-1.5">
         {match.participant2?.record &&
           match.participant2.record.wins + match.participant2.record.losses >
             0 && (
-            <span className="text-muted-foreground shrink-0 text-xs">
-              ({match.participant2.record.wins}-
-              {match.participant2.record.losses})
+            <span className="text-muted-foreground/50 shrink-0 text-[11px] tabular-nums">
+              {match.participant2.record.wins}-
+              {match.participant2.record.losses}
             </span>
           )}
         <span
@@ -468,8 +508,12 @@ function SwissMatchRow({
         )}
       </div>
 
-      {/* Arrow on hover */}
-      <ChevronRight className="text-muted-foreground/0 group-hover/match:text-muted-foreground/60 ml-2 h-4 w-4 shrink-0 transition-colors" />
+      {/* Arrow on hover — only for clickable rows, same width for all */}
+      <div className="flex w-8 shrink-0 items-center justify-center">
+        {onClick && (
+          <ChevronRight className="text-primary/0 group-hover/match:text-primary/60 h-4 w-4 transition-colors" />
+        )}
+      </div>
     </div>
   );
 }
@@ -500,9 +544,12 @@ function EliminationMatchCard({
     <div
       className={cn(
         "group/match ring-foreground/10 overflow-hidden rounded-xl ring-1 transition-all",
-        onClick && "hover:ring-foreground/20 cursor-pointer hover:shadow-sm",
+        onClick
+          ? "hover:ring-primary/30 cursor-pointer hover:shadow-sm"
+          : "opacity-75",
         isFinals && "ring-amber-500/30 dark:ring-amber-400/20",
-        isActive && "ring-primary/30"
+        isActive && onClick && "ring-primary/40",
+        isActive && !onClick && "ring-foreground/10"
       )}
       onClick={onClick}
     >
@@ -550,7 +597,9 @@ function EliminationMatchCard({
         <span className="text-[11px]">
           {match.isBye ? "BYE" : `Table ${match.matchNumber || "-"}`}
         </span>
-        <ChevronRight className="h-3 w-3 opacity-0 transition-opacity group-hover/match:opacity-100" />
+        {onClick && (
+          <ChevronRight className="text-primary h-3 w-3 opacity-0 transition-opacity group-hover/match:opacity-100" />
+        )}
       </div>
     </div>
   );
