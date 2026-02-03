@@ -20,6 +20,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { StatusBadge, type Status } from "@/components/ui/status-badge";
 import {
   Table,
   TableBody,
@@ -169,19 +170,6 @@ export function TournamentPairings({ tournament }: TournamentPairingsProps) {
 
   const currentRound = rounds?.find((r) => r.id === selectedRoundId);
   const currentPhase = phases?.find((p) => p.id === selectedPhaseId);
-
-  const getStatusColor = (status: string | null) => {
-    switch (status) {
-      case "completed":
-        return "bg-green-100 text-green-800";
-      case "active":
-        return "bg-blue-100 text-blue-800";
-      case "pending":
-        return "bg-yellow-100 text-yellow-800";
-      default:
-        return "bg-gray-100 text-gray-800";
-    }
-  };
 
   const openReportDialog = (match: {
     id: number;
@@ -410,9 +398,7 @@ export function TournamentPairings({ tournament }: TournamentPairingsProps) {
                   <>
                     {" "}
                     &middot;{" "}
-                    <Badge className={getStatusColor(currentRound.status)}>
-                      {currentRound.status.toUpperCase()}
-                    </Badge>
+                    <StatusBadge status={currentRound.status as Status} />
                   </>
                 )}
               </CardDescription>
@@ -509,9 +495,9 @@ export function TournamentPairings({ tournament }: TournamentPairingsProps) {
                             )}
                           </TableCell>
                           <TableCell>
-                            <Badge className={getStatusColor(match.status)}>
-                              {(match.status ?? "pending").replace("_", " ")}
-                            </Badge>
+                            <StatusBadge
+                              status={(match.status ?? "pending") as Status}
+                            />
                           </TableCell>
                           <TableCell>
                             {match.status === "completed" ? (

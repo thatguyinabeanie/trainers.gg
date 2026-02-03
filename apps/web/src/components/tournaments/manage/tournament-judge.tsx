@@ -15,6 +15,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { StatusBadge, type Status } from "@/components/ui/status-badge";
 import {
   Table,
   TableBody,
@@ -93,19 +94,6 @@ export function TournamentJudge({
 
   const navigateToMatch = (matchId: number) => {
     router.push(`/tournaments/${tournamentSlug}/matches/${matchId}`);
-  };
-
-  const getStatusColor = (status: string | null) => {
-    switch (status) {
-      case "completed":
-        return "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400";
-      case "active":
-        return "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400";
-      case "pending":
-        return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400";
-      default:
-        return "bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400";
-    }
   };
 
   if (isLoading) {
@@ -327,9 +315,9 @@ export function TournamentJudge({
                           )}
                         </TableCell>
                         <TableCell>
-                          <Badge className={getStatusColor(match.status)}>
-                            {(match.status ?? "pending").replace("_", " ")}
-                          </Badge>
+                          <StatusBadge
+                            status={(match.status ?? "pending") as Status}
+                          />
                         </TableCell>
                         <TableCell>
                           {match.staff_requested ? (

@@ -98,38 +98,37 @@ const actionCategories = [
   { value: "tournament", label: "Tournament Events" },
 ];
 
+const categoryActions: Record<string, AuditAction[]> = {
+  match: [
+    "match.score_submitted",
+    "match.score_agreed",
+    "match.score_disputed",
+    "match.result_reported",
+    "match.staff_requested",
+    "match.staff_resolved",
+  ],
+  judge: [
+    "judge.game_reset",
+    "judge.match_reset",
+    "judge.game_override",
+    "judge.match_override",
+  ],
+  tournament: [
+    "tournament.started",
+    "tournament.round_created",
+    "tournament.round_started",
+    "tournament.round_completed",
+    "tournament.phase_advanced",
+    "tournament.completed",
+  ],
+};
+
 export function TournamentAuditLog({ tournament }: TournamentAuditLogProps) {
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [refreshKey, setRefreshKey] = useState(0);
 
   const actionsForFilter: AuditAction[] | undefined = useMemo(
-    () =>
-      categoryFilter === "all"
-        ? undefined
-        : categoryFilter === "match"
-          ? [
-              "match.score_submitted",
-              "match.score_agreed",
-              "match.score_disputed",
-              "match.result_reported",
-              "match.staff_requested",
-              "match.staff_resolved",
-            ]
-          : categoryFilter === "judge"
-            ? [
-                "judge.game_reset",
-                "judge.match_reset",
-                "judge.game_override",
-                "judge.match_override",
-              ]
-            : [
-                "tournament.started",
-                "tournament.round_created",
-                "tournament.round_started",
-                "tournament.round_completed",
-                "tournament.phase_advanced",
-                "tournament.completed",
-              ],
+    () => categoryActions[categoryFilter],
     [categoryFilter]
   );
 
