@@ -1049,7 +1049,7 @@ export async function getMatchDetails(supabase: TypedClient, matchId: number) {
 
   const { data: phase } = await supabase
     .from("tournament_phases")
-    .select("*, tournament:tournaments(*)")
+    .select("*, tournament:tournaments!tournament_phases_tournament_id_fkey(*)")
     .eq("id", match.round?.phase_id)
     .single();
 
