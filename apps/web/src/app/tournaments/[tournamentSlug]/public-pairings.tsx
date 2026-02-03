@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback } from "react";
+import { useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useSupabaseQuery } from "@/lib/supabase";
 import {
@@ -99,7 +99,10 @@ export function PublicPairings({
     "current-user-alts",
   ]);
 
-  const userAltIds = new Set((userAlts ?? []).map((alt) => String(alt.id)));
+  const userAltIds = useMemo(
+    () => new Set((userAlts ?? []).map((alt) => String(alt.id))),
+    [userAlts]
+  );
 
   // Only allow clicking matches the user is in, or all matches if staff
   const canClickMatch = useCallback(
@@ -113,8 +116,7 @@ export function PublicPairings({
         (p2Id !== undefined && userAltIds.has(p2Id))
       );
     },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [canManage, userAlts]
+    [canManage, userAltIds]
   );
 
   // Navigate to match detail page on click
