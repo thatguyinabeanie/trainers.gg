@@ -83,44 +83,33 @@ export function MatchPageClient({
   const [gamesRefreshKey, setGamesRefreshKey] = useState(0);
   const [messagesRefreshKey, setMessagesRefreshKey] = useState(0);
 
-  // Perspective-based names and IDs
-  const myAltId = isPlayer1 ? alt1Id : isParticipant ? alt2Id : null;
-  const opponentAltId = isPlayer1 ? alt2Id : isParticipant ? alt1Id : null;
+  // Perspective: participants see themselves on the right, staff see player2 on the right.
+  // "swapped" means the current user is player2 (so we flip left/right).
+  const swapped = isParticipant && !isPlayer1;
 
-  const myPlayer = isPlayer1 ? player1 : isParticipant ? player2 : null;
-  const opponent = isPlayer1 ? player2 : isParticipant ? player1 : null;
+  const myAltId = isParticipant ? (isPlayer1 ? alt1Id : alt2Id) : null;
+  const opponentAltId = isParticipant ? (isPlayer1 ? alt2Id : alt1Id) : null;
 
-  const myStats = isPlayer1
-    ? player1Stats
-    : isParticipant
-      ? player2Stats
-      : null;
-  const opponentStats = isPlayer1
-    ? player2Stats
-    : isParticipant
-      ? player1Stats
-      : null;
+  const myPlayer = isParticipant ? (swapped ? player2 : player1) : null;
+  const opponent = isParticipant ? (swapped ? player1 : player2) : null;
 
   const myName = myPlayer?.display_name ?? myPlayer?.username ?? "You";
   const opponentName =
     opponent?.display_name ?? opponent?.username ?? "Opponent";
 
-  // For non-participants, show player1 as "opponent" (left) and player2 as "my" (right)
-  const headerOpponent = isParticipant ? opponent : player1;
-  const headerMyPlayer = isParticipant ? myPlayer : player2;
-  const headerOpponentStats = isParticipant ? opponentStats : player1Stats;
-  const headerMyStats = isParticipant ? myStats : player2Stats;
-
-  // Header uses perspective-adjusted names and IDs
-  // For staff: left=player1 (opponent), right=player2 (my) — match alt IDs accordingly
-  const headerMyAltId = isParticipant ? myAltId : alt2Id;
-  const headerOpponentAltId = isParticipant ? opponentAltId : alt1Id;
-  const headerMyName = isParticipant
-    ? myName
-    : (player2?.display_name ?? player2?.username ?? "Player 2");
+  // Header layout: left = opponent/player1, right = me/player2
+  const headerOpponentAltId = swapped ? alt2Id : alt1Id;
+  const headerMyAltId = swapped ? alt1Id : alt2Id;
+  const headerOpponent = swapped ? player2 : player1;
+  const headerMyPlayer = swapped ? player1 : player2;
+  const headerOpponentStats = swapped ? player2Stats : player1Stats;
+  const headerMyStats = swapped ? player1Stats : player2Stats;
   const headerOpponentName = isParticipant
     ? opponentName
     : (player1?.display_name ?? player1?.username ?? "Player 1");
+  const headerMyName = isParticipant
+    ? myName
+    : (player2?.display_name ?? player2?.username ?? "Player 2");
 
   // ==========================================================================
   // Presence — use currentUser props so staff/judges also join the channel
