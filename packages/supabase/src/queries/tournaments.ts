@@ -1686,3 +1686,68 @@ export async function getTeamForRegistration(
       })) ?? [],
   };
 }
+
+/**
+ * Get checked-in players who are NOT paired in a given round.
+ * Used to surface late arrivals who registered/checked-in after pairings
+ * were generated, so TOs know to include them in the next round.
+ */
+export async function getUnpairedCheckedInPlayers(
+  supabase: TypedClient,
+  tournamentId: number,
+  roundId: number
+) {
+  // Get all checked-in registrations
+  const { data: registrations, error: regErr } = await supabase
+    .from("tournament_registrations")
+    .select("alt_id, registered_at, checked_in_at")
+    .eq("tournament_id", tournamentId)
+    .eq("status", "checked_in");
+
+  if (regErr) throw regErr;
+  if (!registrations || registrations.length === 0) return [];
+
+  // Get all alt IDs that are paired in this round
+  const { data: matches, error: matchErr } = await supabase
+    .from("tournament_matches")
+    .select("alt1_id, alt2_id")
+    .eq("round_id", roundId);
+
+  if (matchErr) throw matchErr;
+
+  const pairedAltIds = new Set<number>();
+  for (const match of matches ?? []) {
+    if (match.alt1_id) pairedAltIds.add(match.alt1_id);
+    if (match.alt2_id) pairedAltIds.add(match.alt2_id);
+  }
+
+  // Filter to unpaired players
+  const unpairedAltIds = registrations
+    .filter((r) => r.alt_id !== null && !pairedAltIds.has(r.alt_id))
+    .map((r) => r.alt_id as number);
+
+  if (unpairedAltIds.length === 0) return [];
+
+  // Fetch alt details for display
+  const { data: alts, error: altErr } = await supabase
+    .from("alts")
+    .select("id, username, display_name")
+    .in("id", unpairedAltIds);
+
+  if (altErr) throw altErr;
+
+  // Merge registration info with alt details
+  const altMap = new Map(alts?.map((a) => [a.id, a]) ?? []);
+
+  return registrations
+    .filter((r) => r.alt_id !== null && !pairedAltIds.has(r.alt_id))
+    .map((r) => {
+      const alt = altMap.get(r.alt_id!);
+      return {
+        altId: r.alt_id!,
+        username: alt?.username ?? "Unknown",
+        displayName: alt?.display_name ?? null,
+        checkedInAt: r.checked_in_at,
+      };
+    });
+}

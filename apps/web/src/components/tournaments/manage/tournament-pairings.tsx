@@ -8,6 +8,7 @@ import {
   getPhaseRoundsWithStats,
   getPhaseRoundsWithMatches,
   getRoundMatchesWithStats,
+  getUnpairedCheckedInPlayers,
 } from "@trainers/supabase";
 import { reportMatchResult } from "@/actions/tournaments";
 import { Button } from "@/components/ui/button";
@@ -50,6 +51,7 @@ import {
   Loader2,
   LayoutGrid,
   Table as TableIcon,
+  AlertCircle,
 } from "lucide-react";
 import { toast } from "sonner";
 import { BracketVisualization } from "@/components/tournament/bracket-visualization";
@@ -150,6 +152,19 @@ export function TournamentPairings({ tournament }: TournamentPairingsProps) {
     selectedPhaseId,
     viewMode,
     "bracket-rounds",
+  ]);
+
+  // Fetch unpaired checked-in players for the selected round
+  const unpairedQueryFn = (
+    supabase: Parameters<typeof getUnpairedCheckedInPlayers>[0]
+  ) =>
+    selectedRoundId
+      ? getUnpairedCheckedInPlayers(supabase, tournament.id, selectedRoundId)
+      : Promise.resolve([]);
+
+  const { data: unpairedPlayers } = useSupabaseQuery(unpairedQueryFn, [
+    selectedRoundId,
+    "unpaired-players",
   ]);
 
   const currentRound = rounds?.find((r) => r.id === selectedRoundId);
@@ -543,6 +558,39 @@ export function TournamentPairings({ tournament }: TournamentPairingsProps) {
             </CardContent>
           </Card>
         ))}
+
+      {/* Unpaired Players Banner */}
+      {unpairedPlayers && unpairedPlayers.length > 0 && (
+        <Card className="border-amber-500/50 bg-amber-500/5">
+          <CardContent className="py-4">
+            <div className="flex items-start gap-3">
+              <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" />
+              <div className="min-w-0">
+                <p className="text-sm font-medium">
+                  {unpairedPlayers.length} checked-in{" "}
+                  {unpairedPlayers.length === 1 ? "player" : "players"} not
+                  paired in this round
+                </p>
+                <p className="text-muted-foreground mt-1 text-xs">
+                  These players checked in after pairings were generated. They
+                  will be included in the next round.
+                </p>
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  {unpairedPlayers.map((player) => (
+                    <Badge
+                      key={player.altId}
+                      variant="secondary"
+                      className="text-xs"
+                    >
+                      {player.displayName ?? player.username}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Report Result Dialog */}
       <Dialog open={reportDialogOpen} onOpenChange={setReportDialogOpen}>
