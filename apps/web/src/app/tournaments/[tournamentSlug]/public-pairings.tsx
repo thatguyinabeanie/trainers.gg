@@ -1,21 +1,14 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useSupabaseQuery } from "@/lib/supabase";
 import {
   getTournamentPhases,
   getPhaseRoundsWithMatches,
 } from "@trainers/supabase";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-} from "@/components/ui/select";
 import { Loader2, Trophy } from "lucide-react";
 import { BracketVisualization } from "@/components/tournament/bracket-visualization";
-import type { TournamentPhase } from "@/lib/types/tournament";
+import { transformPhaseData } from "@/lib/tournament-utils";
 
 interface PublicPairingsProps {
   tournamentId: number;
@@ -27,7 +20,6 @@ export function PublicPairings({
   tournamentSlug,
 }: PublicPairingsProps) {
   const router = useRouter();
-  const [selectedPhaseId, setSelectedPhaseId] = useState<number | null>(null);
 
   // Fetch phases
   const phasesQueryFn = (supabase: Parameters<typeof getTournamentPhases>[0]) =>
@@ -38,24 +30,23 @@ export function PublicPairings({
     [tournamentId, "public-phases"]
   );
 
-  // Auto-select the first phase when phases load
-  useEffect(() => {
-    if (!selectedPhaseId && phases && phases.length > 0 && phases[0]) {
-      setSelectedPhaseId(phases[0].id);
-    }
-  }, [phases, selectedPhaseId]);
-
-  // Fetch rounds + matches for selected phase
-  const bracketQueryFn = (
+  // Fetch rounds + matches for ALL phases at once
+  const allRoundsQueryFn = (
     supabase: Parameters<typeof getPhaseRoundsWithMatches>[0]
   ) =>
-    selectedPhaseId
-      ? getPhaseRoundsWithMatches(supabase, selectedPhaseId, tournamentId)
-      : Promise.resolve([]);
+    phases && phases.length > 0
+      ? Promise.all(
+          phases.map((phase) =>
+            getPhaseRoundsWithMatches(supabase, phase.id, tournamentId)
+          )
+        )
+      : Promise.resolve(
+          [] as Awaited<ReturnType<typeof getPhaseRoundsWithMatches>>[]
+        );
 
-  const { data: bracketRounds, isLoading: bracketLoading } = useSupabaseQuery(
-    bracketQueryFn,
-    [selectedPhaseId, "public-bracket-rounds"]
+  const { data: allPhaseRounds, isLoading: roundsLoading } = useSupabaseQuery(
+    allRoundsQueryFn,
+    [phases?.map((p) => p.id).join(",") ?? "", "public-all-rounds"]
   );
 
   // Navigate to match detail page on click
@@ -85,122 +76,42 @@ export function PublicPairings({
     );
   }
 
-  const currentPhase = phases.find((p) => p.id === selectedPhaseId);
+  // Still loading rounds
+  if (roundsLoading) {
+    return (
+      <div className="flex min-h-[200px] items-center justify-center">
+        <Loader2 className="text-muted-foreground h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
 
-  // Transform data for BracketVisualization
-  const bracketPhases: TournamentPhase[] =
-    currentPhase && bracketRounds
-      ? [
-          {
-            id: String(currentPhase.id),
-            name: currentPhase.name ?? `Phase ${currentPhase.phase_order}`,
-            format: currentPhase.phase_type ?? "swiss",
-            status: currentPhase.status ?? "pending",
-            rounds: bracketRounds.map((round) => ({
-              id: String(round.id),
-              roundNumber: round.round_number,
-              name: `Round ${round.round_number}`,
-              status: round.status ?? "pending",
-              matches: round.matches.map((match) => {
-                const p1 = match.player1 as {
-                  id: number;
-                  display_name?: string;
-                  username?: string;
-                } | null;
-                const p2 = match.player2 as {
-                  id: number;
-                  display_name?: string;
-                  username?: string;
-                } | null;
-                const p1Stats = (
-                  match as {
-                    player1Stats?: { wins: number; losses: number } | null;
-                  }
-                ).player1Stats;
-                const p2Stats = (
-                  match as {
-                    player2Stats?: { wins: number; losses: number } | null;
-                  }
-                ).player2Stats;
-                return {
-                  id: String(match.id),
-                  matchNumber: match.table_number ?? 0,
-                  status: match.status ?? "pending",
-                  gameWins1: match.game_wins1 ?? 0,
-                  gameWins2: match.game_wins2 ?? 0,
-                  winnerProfileId: match.winner_alt_id
-                    ? String(match.winner_alt_id)
-                    : null,
-                  isBye: !match.alt2_id,
-                  participant1: p1
-                    ? {
-                        id: String(p1.id),
-                        name: p1.display_name ?? p1.username ?? "Player 1",
-                        record: p1Stats ?? undefined,
-                      }
-                    : null,
-                  participant2: p2
-                    ? {
-                        id: String(p2.id),
-                        name: p2.display_name ?? p2.username ?? "Player 2",
-                        record: p2Stats ?? undefined,
-                      }
-                    : null,
-                };
-              }),
-            })),
-          },
-        ]
+  // Transform all phases with their rounds for BracketVisualization
+  const bracketPhases =
+    allPhaseRounds && allPhaseRounds.length > 0
+      ? phases.map((phase, index) =>
+          transformPhaseData(phase, allPhaseRounds[index] ?? [])
+        )
       : [];
 
-  return (
-    <div className="space-y-4">
-      {/* Phase selector (only if multiple phases) */}
-      {phases.length > 1 && (
-        <div className="flex items-center gap-2">
-          <Select
-            value={selectedPhaseId?.toString() ?? ""}
-            onValueChange={(value) => {
-              if (value) {
-                setSelectedPhaseId(parseInt(value));
-              }
-            }}
-          >
-            <SelectTrigger className="w-48">
-              {currentPhase
-                ? (currentPhase.name ?? `Phase ${currentPhase.phase_order}`)
-                : "Select phase"}
-            </SelectTrigger>
-            <SelectContent>
-              {phases.map((phase) => (
-                <SelectItem key={phase.id} value={phase.id.toString()}>
-                  {phase.name ?? `Phase ${phase.phase_order}`}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      )}
+  // Check if any phase has rounds with matches
+  const hasAnyRounds = bracketPhases.some((p) => p.rounds.length > 0);
 
-      {/* Bracket loading */}
-      {bracketLoading ? (
-        <div className="flex min-h-[200px] items-center justify-center">
-          <Loader2 className="text-muted-foreground h-8 w-8 animate-spin" />
-        </div>
-      ) : bracketRounds && bracketRounds.length > 0 ? (
-        <BracketVisualization
-          phases={bracketPhases}
-          onMatchClick={handleMatchClick}
-        />
-      ) : (
-        <div className="flex flex-col items-center justify-center py-12">
-          <Trophy className="text-muted-foreground mb-4 h-12 w-12 opacity-50" />
-          <h3 className="mb-2 text-lg font-semibold">No pairings yet</h3>
-          <p className="text-muted-foreground text-sm">
-            Pairings will appear once rounds are generated.
-          </p>
-        </div>
-      )}
-    </div>
+  if (!hasAnyRounds) {
+    return (
+      <div className="flex flex-col items-center justify-center py-12">
+        <Trophy className="text-muted-foreground mb-4 h-12 w-12 opacity-50" />
+        <h3 className="mb-2 text-lg font-semibold">No pairings yet</h3>
+        <p className="text-muted-foreground text-sm">
+          Pairings will appear once rounds are generated.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <BracketVisualization
+      phases={bracketPhases}
+      onMatchClick={handleMatchClick}
+    />
   );
 }

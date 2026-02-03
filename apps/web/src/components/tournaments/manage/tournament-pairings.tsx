@@ -64,7 +64,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { BracketVisualization } from "@/components/tournament/bracket-visualization";
-import type { TournamentPhase } from "@/lib/types/tournament";
+import { transformPhaseData } from "@/lib/tournament-utils";
 
 interface TournamentPairingsProps {
   tournament: {
@@ -153,7 +153,7 @@ export function TournamentPairings({ tournament }: TournamentPairingsProps) {
     supabase: Parameters<typeof getPhaseRoundsWithMatches>[0]
   ) =>
     selectedPhaseId && viewMode === "bracket"
-      ? getPhaseRoundsWithMatches(supabase, selectedPhaseId)
+      ? getPhaseRoundsWithMatches(supabase, selectedPhaseId, tournament.id)
       : Promise.resolve([]);
 
   const { data: bracketRounds } = useSupabaseQuery(bracketQueryFn, [
@@ -477,57 +477,9 @@ export function TournamentPairings({ tournament }: TournamentPairingsProps) {
       {/* Bracket View */}
       {viewMode === "bracket" && phases && bracketRounds ? (
         <BracketVisualization
-          phases={
-            phases
-              .filter((phase) => phase.id === selectedPhaseId)
-              .map((phase) => ({
-                id: String(phase.id),
-                name: phase.name ?? `Phase ${phase.phase_order}`,
-                format: phase.phase_type ?? "swiss",
-                status: phase.status ?? "pending",
-                rounds: bracketRounds.map((round) => ({
-                  id: String(round.id),
-                  roundNumber: round.round_number,
-                  name: `Round ${round.round_number}`,
-                  status: round.status ?? "pending",
-                  matches: round.matches.map((match) => {
-                    const p1 = match.player1 as {
-                      id: number;
-                      display_name?: string;
-                      username?: string;
-                    } | null;
-                    const p2 = match.player2 as {
-                      id: number;
-                      display_name?: string;
-                      username?: string;
-                    } | null;
-                    return {
-                      id: String(match.id),
-                      matchNumber: match.table_number ?? 0,
-                      status: match.status ?? "pending",
-                      gameWins1: match.game_wins1 ?? 0,
-                      gameWins2: match.game_wins2 ?? 0,
-                      winnerProfileId: match.winner_alt_id
-                        ? String(match.winner_alt_id)
-                        : null,
-                      isBye: !match.alt2_id,
-                      participant1: p1
-                        ? {
-                            id: String(p1.id),
-                            name: p1.display_name ?? p1.username ?? "Player 1",
-                          }
-                        : null,
-                      participant2: p2
-                        ? {
-                            id: String(p2.id),
-                            name: p2.display_name ?? p2.username ?? "Player 2",
-                          }
-                        : null,
-                    };
-                  }),
-                })),
-              })) as TournamentPhase[]
-          }
+          phases={phases
+            .filter((phase) => phase.id === selectedPhaseId)
+            .map((phase) => transformPhaseData(phase, bracketRounds))}
           canManage={true}
           onMatchClick={(matchId) => {
             // Find match across all bracket rounds

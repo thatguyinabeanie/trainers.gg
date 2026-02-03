@@ -652,33 +652,49 @@ export async function getPhaseRoundsWithStats(
     .order("round_number", { ascending: true });
 
   if (error) throw error;
+  if (!rounds || rounds.length === 0) return [];
 
-  // Get match counts for each round
-  const roundsWithStats = await Promise.all(
-    (rounds ?? []).map(async (round) => {
-      const { data: matches } = await supabase
-        .from("tournament_matches")
-        .select("id, status")
-        .eq("round_id", round.id);
+  // Single query for all match statuses across all rounds
+  const roundIds = rounds.map((r) => r.id);
+  const { data: matches } = await supabase
+    .from("tournament_matches")
+    .select("round_id, status")
+    .in("round_id", roundIds);
 
-      const matchList = matches ?? [];
-      const completed = matchList.filter(
-        (m) => m.status === "completed"
-      ).length;
-      const inProgress = matchList.filter((m) => m.status === "active").length;
-      const pending = matchList.filter((m) => m.status === "pending").length;
+  // Group and count by round
+  const countsByRound = new Map<
+    number,
+    { total: number; completed: number; active: number; pending: number }
+  >();
+  for (const m of matches ?? []) {
+    const counts = countsByRound.get(m.round_id) ?? {
+      total: 0,
+      completed: 0,
+      active: 0,
+      pending: 0,
+    };
+    counts.total++;
+    if (m.status === "completed") counts.completed++;
+    else if (m.status === "active") counts.active++;
+    else counts.pending++;
+    countsByRound.set(m.round_id, counts);
+  }
 
-      return {
-        ...round,
-        matchCount: matchList.length,
-        completedCount: completed,
-        inProgressCount: inProgress,
-        pendingCount: pending,
-      };
-    })
-  );
-
-  return roundsWithStats;
+  return rounds.map((round) => {
+    const counts = countsByRound.get(round.id) ?? {
+      total: 0,
+      completed: 0,
+      active: 0,
+      pending: 0,
+    };
+    return {
+      ...round,
+      matchCount: counts.total,
+      completedCount: counts.completed,
+      inProgressCount: counts.active,
+      pendingCount: counts.pending,
+    };
+  });
 }
 
 /**
@@ -747,7 +763,7 @@ export async function getRoundMatchesWithStats(
 export async function getPhaseRoundsWithMatches(
   supabase: TypedClient,
   phaseId: number,
-  tournamentId?: number
+  tournamentId: number
 ) {
   const { data: rounds, error } = await supabase
     .from("tournament_rounds")
@@ -774,10 +790,10 @@ export async function getPhaseRoundsWithMatches(
 
   if (mErr) throw mErr;
 
-  // Enrich with player stats if tournamentId provided
+  // Enrich with player stats
   const statsMap = new Map<number, { wins: number; losses: number }>();
 
-  if (tournamentId && allMatches && allMatches.length > 0) {
+  if (allMatches && allMatches.length > 0) {
     const altIds = new Set<number>();
     for (const m of allMatches) {
       if (m.alt1_id) altIds.add(m.alt1_id);

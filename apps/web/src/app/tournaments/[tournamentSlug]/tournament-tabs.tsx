@@ -40,8 +40,8 @@ export function TournamentTabs({
         <TabsTrigger value="overview" id="tournament-tab-overview">
           Overview
         </TabsTrigger>
-        <TabsTrigger value="bracket" id="tournament-tab-bracket">
-          Bracket
+        <TabsTrigger value="pairings" id="tournament-tab-pairings">
+          Pairings
         </TabsTrigger>
         <TabsTrigger value="standings" id="tournament-tab-standings">
           Standings
@@ -82,18 +82,16 @@ export function TournamentTabs({
         </div>
       </TabsContent>
 
-      <TabsContent value="bracket" id="tournament-panel-bracket">
+      <TabsContent value="pairings" id="tournament-panel-pairings">
         {isPreTournament ? (
           <Card>
             <CardHeader>
-              <CardTitle>Bracket</CardTitle>
-              <CardDescription>
-                Tournament bracket visualization
-              </CardDescription>
+              <CardTitle>Pairings</CardTitle>
+              <CardDescription>Tournament pairings and results</CardDescription>
             </CardHeader>
             <CardContent>
               <p className="text-muted-foreground py-8 text-center">
-                Bracket will be available once the tournament begins
+                Pairings will be available once the tournament begins
               </p>
             </CardContent>
           </Card>

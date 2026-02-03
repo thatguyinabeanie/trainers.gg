@@ -43,7 +43,11 @@ const getCachedMatchesByPhase = (tournamentId: number, slug: string) =>
       // Fetch rounds with matches for each phase
       const phasesWithMatches = await Promise.all(
         phases.map(async (phase) => {
-          const rounds = await getPhaseRoundsWithMatches(supabase, phase.id);
+          const rounds = await getPhaseRoundsWithMatches(
+            supabase,
+            phase.id,
+            tournamentId
+          );
           return { ...phase, rounds };
         })
       );

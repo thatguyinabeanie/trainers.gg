@@ -12,70 +12,213 @@ import type {
 
 interface BracketVisualizationProps {
   phases: TournamentPhase[];
-  _currentPhase?: string;
   canManage?: boolean;
   onMatchClick?: (matchId: string) => void;
 }
 
+const TOP_CUT_TAB_ID = "__top_cut__";
+
+/**
+ * Unified bracket view — all Swiss rounds as numbered tabs,
+ * with Top Cut as a final tab (Limitless-style).
+ */
 export function BracketVisualization({
   phases,
-  canManage = false,
+  canManage: _canManage = false,
   onMatchClick,
 }: BracketVisualizationProps) {
+  const swissPhase = phases.find((p) => p.format === "swiss");
   const eliminationPhase = phases.find(
     (p) =>
       p.format === "single_elimination" || p.format === "double_elimination"
   );
 
-  const swissPhase = phases.find((p) => p.format === "swiss");
+  const swissRounds = swissPhase?.rounds ?? [];
+  const elimRounds = eliminationPhase?.rounds ?? [];
+  const hasTopCut = elimRounds.length > 0;
 
-  if (!eliminationPhase && !swissPhase) {
+  if (swissRounds.length === 0 && !hasTopCut) {
     return (
       <EmptyBracket message="Bracket will be generated once the tournament starts" />
     );
   }
 
-  if (eliminationPhase) {
-    return (
-      <EliminationDisplay
-        phase={eliminationPhase}
-        canManage={canManage}
-        onMatchClick={onMatchClick}
+  // Pick the default tab: active Swiss round > latest completed Swiss > Top Cut if active > first
+  const activeSwiss = swissRounds.find((r) => r.status === "active");
+  const latestCompletedSwiss = [...swissRounds]
+    .filter((r) => r.status === "completed")
+    .sort((a, b) => b.roundNumber - a.roundNumber)[0];
+  const topCutActive = elimRounds.some((r) => r.status === "active");
+
+  let defaultTab: string;
+  if (activeSwiss) {
+    defaultTab = activeSwiss.id;
+  } else if (topCutActive && hasTopCut) {
+    defaultTab = TOP_CUT_TAB_ID;
+  } else if (latestCompletedSwiss) {
+    defaultTab = latestCompletedSwiss.id;
+  } else if (swissRounds[0]) {
+    defaultTab = swissRounds[0].id;
+  } else {
+    defaultTab = TOP_CUT_TAB_ID;
+  }
+
+  return (
+    <Tabs defaultValue={defaultTab} className="w-full">
+      <div className="mb-5">
+        <TabsList variant="line" className="w-full gap-0">
+          {/* Swiss round tabs: numbered 1, 2, 3, ... */}
+          {swissRounds.map((round) => (
+            <TabsTrigger
+              key={round.id}
+              value={round.id}
+              className="group/round relative flex items-center gap-2 px-3 py-2"
+            >
+              <RoundStatusDot status={round.status} />
+              <span className="text-sm">{round.roundNumber}</span>
+            </TabsTrigger>
+          ))}
+
+          {/* Top Cut tab */}
+          {hasTopCut && (
+            <TabsTrigger
+              value={TOP_CUT_TAB_ID}
+              className="group/round relative flex items-center gap-2 px-3 py-2"
+            >
+              <RoundStatusDot
+                status={
+                  elimRounds.some((r) => r.status === "active")
+                    ? "active"
+                    : elimRounds.every((r) => r.status === "completed")
+                      ? "completed"
+                      : "pending"
+                }
+              />
+              <span className="text-sm">Top Cut</span>
+            </TabsTrigger>
+          )}
+        </TabsList>
+      </div>
+
+      {/* Swiss round contents */}
+      {swissRounds.map((round) => (
+        <TabsContent key={round.id} value={round.id}>
+          <RoundSummaryBar round={round} />
+          {round.matches.length === 0 ? (
+            <EmptyBracket message="Pairings haven't been generated for this round yet." />
+          ) : (
+            <MatchSections
+              matches={round.matches}
+              renderMatch={(match) => (
+                <SwissMatchRow
+                  key={match.id}
+                  match={match}
+                  onClick={() => onMatchClick?.(match.id)}
+                />
+              )}
+              layout="list"
+            />
+          )}
+        </TabsContent>
+      ))}
+
+      {/* Top Cut content — all elimination rounds shown together */}
+      {hasTopCut && (
+        <TabsContent value={TOP_CUT_TAB_ID}>
+          <TopCutDisplay
+            rounds={elimRounds}
+            totalRounds={elimRounds.length}
+            onMatchClick={onMatchClick}
+          />
+        </TabsContent>
+      )}
+    </Tabs>
+  );
+}
+
+/**
+ * Status dot used in round tabs.
+ */
+function RoundStatusDot({ status }: { status: string }) {
+  return (
+    <span
+      className={cn(
+        "relative flex shrink-0",
+        status === "active" ? "h-2.5 w-2.5" : "h-2 w-2"
+      )}
+    >
+      {status === "active" && (
+        <span className="bg-primary absolute inline-flex h-full w-full animate-ping rounded-full opacity-50" />
+      )}
+      <span
+        className={cn(
+          "relative inline-flex h-full w-full rounded-full",
+          status === "completed" && "bg-emerald-500",
+          status === "active" && "bg-primary",
+          status === "pending" && "bg-muted-foreground/30"
+        )}
       />
+    </span>
+  );
+}
+
+/**
+ * Top Cut display — shows all elimination rounds stacked vertically.
+ */
+function TopCutDisplay({
+  rounds,
+  totalRounds,
+  onMatchClick,
+}: {
+  rounds: TournamentRound[];
+  totalRounds: number;
+  onMatchClick?: (matchId: string) => void;
+}) {
+  if (rounds.length === 0) {
+    return (
+      <EmptyBracket message="Top Cut bracket will appear once it begins." />
     );
   }
 
-  if (swissPhase) {
-    return (
-      <SwissDisplay
-        phase={swissPhase}
-        canManage={canManage}
-        onMatchClick={onMatchClick}
-      />
-    );
-  }
+  return (
+    <div className="space-y-8">
+      {rounds.map((round, index) => {
+        const isFinals = index === totalRounds - 1 && totalRounds > 1;
+        const roundLabel = isFinals ? "Finals" : round.name;
 
-  return null;
+        return (
+          <div key={round.id}>
+            <div className="mb-3 flex items-center gap-2">
+              <RoundStatusDot status={round.status} />
+              <h3 className="text-sm font-semibold">{roundLabel}</h3>
+            </div>
+            <RoundSummaryBar round={round} />
+            {round.matches.length === 0 ? (
+              <EmptyBracket message="Pairings haven't been generated for this round yet." />
+            ) : (
+              <MatchSections
+                matches={round.matches}
+                renderMatch={(match) => (
+                  <EliminationMatchCard
+                    key={match.id}
+                    match={match}
+                    onClick={() => onMatchClick?.(match.id)}
+                    isFinals={isFinals}
+                  />
+                )}
+                layout="grid"
+              />
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
 }
 
 // ============================================================================
 // Shared helpers
 // ============================================================================
-
-/**
- * Pick the best default round: active > latest completed > first.
- */
-function getDefaultRound(rounds: TournamentRound[]): string {
-  const active = rounds.find((r) => r.status === "active");
-  if (active) return active.id;
-
-  const completed = [...rounds]
-    .filter((r) => r.status === "completed")
-    .sort((a, b) => b.roundNumber - a.roundNumber);
-  if (completed[0]) return completed[0].id;
-
-  return rounds[0]?.id ?? "";
-}
 
 function EmptyBracket({ message }: { message: string }) {
   return (
@@ -160,114 +303,8 @@ function MatchSections({
 }
 
 // ============================================================================
-// Round stepper tabs — shows progression through rounds
-// ============================================================================
-
-function RoundTabs({
-  rounds,
-  defaultRound,
-  renderRoundLabel,
-  children,
-}: {
-  rounds: TournamentRound[];
-  defaultRound: string;
-  renderRoundLabel?: (round: TournamentRound, index: number) => string;
-  children: ReactNode;
-}) {
-  return (
-    <Tabs defaultValue={defaultRound} className="w-full">
-      <div className="mb-5">
-        <TabsList variant="line" className="w-full gap-0">
-          {rounds.map((round, index) => (
-            <TabsTrigger
-              key={round.id}
-              value={round.id}
-              className="group/round relative flex items-center gap-2 px-3 py-2"
-            >
-              {/* Status indicator dot */}
-              <span
-                className={cn(
-                  "relative flex h-2 w-2 shrink-0",
-                  round.status === "active" && "h-2.5 w-2.5"
-                )}
-              >
-                {/* Ping animation for active round */}
-                {round.status === "active" && (
-                  <span className="bg-primary absolute inline-flex h-full w-full animate-ping rounded-full opacity-50" />
-                )}
-                <span
-                  className={cn(
-                    "relative inline-flex h-full w-full rounded-full",
-                    round.status === "completed" && "bg-emerald-500",
-                    round.status === "active" && "bg-primary",
-                    round.status === "pending" && "bg-muted-foreground/30"
-                  )}
-                />
-              </span>
-
-              {/* Round label */}
-              <span className="text-sm">
-                {renderRoundLabel ? renderRoundLabel(round, index) : round.name}
-              </span>
-            </TabsTrigger>
-          ))}
-        </TabsList>
-      </div>
-
-      {children}
-    </Tabs>
-  );
-}
-
-// ============================================================================
 // Swiss rounds display
 // ============================================================================
-
-function SwissDisplay({
-  phase,
-  canManage: _canManage,
-  onMatchClick,
-}: {
-  phase: TournamentPhase;
-  canManage: boolean;
-  onMatchClick?: (matchId: string) => void;
-}) {
-  const rounds = phase.rounds;
-
-  if (rounds.length === 0) {
-    return (
-      <EmptyBracket message="Rounds will appear once pairings are generated." />
-    );
-  }
-
-  return (
-    <RoundTabs rounds={rounds} defaultRound={getDefaultRound(rounds)}>
-      {rounds.map((round) => (
-        <TabsContent key={round.id} value={round.id}>
-          {/* Round summary bar */}
-          <RoundSummaryBar round={round} />
-
-          {/* Match list */}
-          {round.matches.length === 0 ? (
-            <EmptyBracket message="Pairings haven't been generated for this round yet." />
-          ) : (
-            <MatchSections
-              matches={round.matches}
-              renderMatch={(match) => (
-                <SwissMatchRow
-                  key={match.id}
-                  match={match}
-                  onClick={() => onMatchClick?.(match.id)}
-                />
-              )}
-              layout="list"
-            />
-          )}
-        </TabsContent>
-      ))}
-    </RoundTabs>
-  );
-}
 
 function RoundSummaryBar({ round }: { round: TournamentRound }) {
   const total = round.matches.length;
@@ -422,59 +459,8 @@ function SwissMatchRow({
 }
 
 // ============================================================================
-// Elimination display
+// Elimination match cards
 // ============================================================================
-
-function EliminationDisplay({
-  phase,
-  canManage: _canManage,
-  onMatchClick,
-}: {
-  phase: TournamentPhase;
-  canManage: boolean;
-  onMatchClick?: (matchId: string) => void;
-}) {
-  const rounds = phase.rounds || [];
-
-  if (rounds.length === 0) {
-    return (
-      <EmptyBracket message="Bracket will appear once pairings are generated." />
-    );
-  }
-
-  return (
-    <RoundTabs
-      rounds={rounds}
-      defaultRound={getDefaultRound(rounds)}
-      renderRoundLabel={(round, index) =>
-        index === rounds.length - 1 && rounds.length > 1 ? "Finals" : round.name
-      }
-    >
-      {rounds.map((round, roundIndex) => (
-        <TabsContent key={round.id} value={round.id}>
-          <RoundSummaryBar round={round} />
-
-          {round.matches.length === 0 ? (
-            <EmptyBracket message="Pairings haven't been generated for this round yet." />
-          ) : (
-            <MatchSections
-              matches={round.matches}
-              renderMatch={(match) => (
-                <EliminationMatchCard
-                  key={match.id}
-                  match={match}
-                  onClick={() => onMatchClick?.(match.id)}
-                  isFinals={roundIndex === rounds.length - 1}
-                />
-              )}
-              layout="grid"
-            />
-          )}
-        </TabsContent>
-      ))}
-    </RoundTabs>
-  );
-}
 
 /**
  * Elimination match card — bracket-slot style with two player rows,

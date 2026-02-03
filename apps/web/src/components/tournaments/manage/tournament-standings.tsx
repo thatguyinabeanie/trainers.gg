@@ -110,7 +110,12 @@ export function TournamentStandings({ tournament }: TournamentStandingsProps) {
   const activeStandings = standings.filter((s) => !s.isDropped);
   const top3 = activeStandings.slice(0, 3);
 
-  if (standings.length === 0) {
+  // No meaningful standings until at least one round is completed
+  const hasAnyResults = standings.some(
+    (s) => s.record.wins > 0 || s.record.losses > 0
+  );
+
+  if (standings.length === 0 || !hasAnyResults) {
     return (
       <div className="space-y-6">
         <div>
