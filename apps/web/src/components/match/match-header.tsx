@@ -295,13 +295,10 @@ function GameNode({
 
   // Staff direct winner override (pick winner by name)
   const handleStaffOverride = async (winnerAltId: number) => {
-    const judgeAltId = userAltId ?? myAltId;
-    if (!judgeAltId) return;
     setIsPending(true);
     const result = await judgeOverrideGameAction(
       game.id,
       winnerAltId,
-      judgeAltId,
       tournamentId
     );
     setIsPending(false);
@@ -759,15 +756,12 @@ function DisputeAlert({
   const disputedGames = games.filter((g) => g.status === "disputed");
   if (disputedGames.length === 0) return null;
 
-  const judgeAltId = userAltId ?? myAltId;
-
   const handleOverride = async (gameId: number) => {
-    if (!overrideWinner || !judgeAltId) return;
+    if (!overrideWinner) return;
     setIsPending(true);
     const result = await judgeOverrideGameAction(
       gameId,
       overrideWinner,
-      judgeAltId,
       tournamentId
     );
     setIsPending(false);

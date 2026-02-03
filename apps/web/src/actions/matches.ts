@@ -43,17 +43,13 @@ export async function submitGameSelectionAction(
   gameId: number,
   selectedWinnerAltId: number,
   tournamentId: number
-): Promise<ActionResult<{ success: boolean; error?: string }>> {
+): Promise<ActionResult> {
   try {
     await rejectBots();
     const supabase = await createClient();
-    const result = await submitGameSelection(
-      supabase,
-      gameId,
-      selectedWinnerAltId
-    );
+    await submitGameSelection(supabase, gameId, selectedWinnerAltId);
     updateTag(CacheTags.tournament(tournamentId));
-    return { success: true, data: result };
+    return { success: true, data: undefined };
   } catch (error) {
     return {
       success: false,
@@ -70,7 +66,7 @@ export async function submitGameSelectionAction(
  * Send a chat message in a match.
  */
 const VALID_MESSAGE_TYPES: Database["public"]["Enums"]["match_message_type"][] =
-  ["player", "system", "judge"];
+  ["player", "judge"];
 
 export async function sendMatchMessageAction(
   matchId: number,
@@ -139,18 +135,32 @@ export async function createMatchGamesAction(
 export async function judgeOverrideGameAction(
   gameId: number,
   winnerAltId: number,
-  judgeAltId: number,
   tournamentId: number,
   notes?: string
 ): Promise<ActionResult<{ gameId: number }>> {
   try {
     await rejectBots();
     const supabase = await createClient();
+
+    // Resolve judge alt ID from authenticated session — never trust client input
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) throw new Error("Not authenticated");
+
+    const { data: alt } = await supabase
+      .from("alts")
+      .select("id")
+      .eq("user_id", user.id)
+      .limit(1)
+      .single();
+    if (!alt) throw new Error("No alt found for authenticated user");
+
     const data = await judgeOverrideGame(
       supabase,
       gameId,
       winnerAltId,
-      judgeAltId,
+      alt.id,
       notes
     );
     updateTag(CacheTags.tournament(tournamentId));
@@ -245,11 +255,9 @@ export async function cancelJudgeRequestAction(
     await rejectBots();
     const supabase = await createClient();
 
-    // RPC defined in migration 20260203030600 — cast needed until types are regenerated
-    const { error } = await supabase.rpc(
-      "cancel_judge_request" as "clear_judge_request",
-      { p_match_id: matchId }
-    );
+    const { error } = await supabase.rpc("cancel_judge_request", {
+      p_match_id: matchId,
+    });
 
     if (error) throw error;
     updateTag(CacheTags.tournament(tournamentId));
