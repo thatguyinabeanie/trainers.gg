@@ -231,6 +231,43 @@ type GameNodeState =
   | "self-correct"
   | "future";
 
+function ReportButtons({
+  onWon,
+  onLost,
+  isPending,
+}: {
+  onWon: () => void;
+  onLost: () => void;
+  isPending: boolean;
+}) {
+  return (
+    <>
+      <Button
+        size="sm"
+        className="h-7 gap-0.5 px-2.5 text-xs"
+        onClick={onWon}
+        disabled={isPending}
+      >
+        {isPending ? (
+          <Loader2 className="h-3 w-3 animate-spin" />
+        ) : (
+          <Trophy className="h-3 w-3" />
+        )}
+        Won
+      </Button>
+      <Button
+        variant="outline"
+        size="sm"
+        className="h-7 gap-0.5 px-2.5 text-xs"
+        onClick={onLost}
+        disabled={isPending}
+      >
+        Lost
+      </Button>
+    </>
+  );
+}
+
 function GameNode({
   game,
   state,
@@ -411,28 +448,11 @@ function GameNode({
             {game.game_number}
           </span>
           <div className="flex items-center gap-1">
-            <Button
-              size="sm"
-              className="h-7 gap-0.5 px-2.5 text-xs"
-              onClick={() => handleReport(true)}
-              disabled={isPending}
-            >
-              {isPending ? (
-                <Loader2 className="h-3 w-3 animate-spin" />
-              ) : (
-                <Trophy className="h-3 w-3" />
-              )}
-              Won
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-7 gap-0.5 px-2.5 text-xs"
-              onClick={() => handleReport(false)}
-              disabled={isPending}
-            >
-              Lost
-            </Button>
+            <ReportButtons
+              onWon={() => handleReport(true)}
+              onLost={() => handleReport(false)}
+              isPending={isPending}
+            />
             <button
               type="button"
               className="text-muted-foreground hover:text-foreground ml-0.5"
@@ -489,28 +509,11 @@ function GameNode({
           </span>
           {showEditButtons ? (
             <div className="flex items-center gap-1">
-              <Button
-                size="sm"
-                className="h-7 gap-0.5 px-2.5 text-xs"
-                onClick={() => handleReport(true)}
-                disabled={isPending}
-              >
-                {isPending ? (
-                  <Loader2 className="h-3 w-3 animate-spin" />
-                ) : (
-                  <Trophy className="h-3 w-3" />
-                )}
-                Won
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-7 gap-0.5 px-2.5 text-xs"
-                onClick={() => handleReport(false)}
-                disabled={isPending}
-              >
-                Lost
-              </Button>
+              <ReportButtons
+                onWon={() => handleReport(true)}
+                onLost={() => handleReport(false)}
+                isPending={isPending}
+              />
             </div>
           ) : showStaffPicker ? (
             <div className="flex items-center gap-1">
@@ -1089,32 +1092,12 @@ export function MatchHeader({
           </div>
 
           {/* Separator + Game reporting timeline */}
-          {games && games.length > 0 && (
+          {((games && games.length > 0) || gamesLoading) && (
             <>
               <Separator className="mt-2 sm:mt-3" />
               <GameStrip
-                games={games}
+                games={games && games.length > 0 ? games : null}
                 gamesLoading={gamesLoading}
-                matchStatus={matchStatus}
-                bestOf={bestOf}
-                myAltId={myAltId}
-                opponentAltId={opponentAltId}
-                tournamentId={tournamentId}
-                isParticipant={isParticipant}
-                isStaff={isStaff}
-                userAltId={userAltId}
-                myName={myName}
-                opponentName={opponentName}
-                onGameUpdated={onGameUpdated}
-              />
-            </>
-          )}
-          {gamesLoading && (
-            <>
-              <Separator className="mt-2 sm:mt-3" />
-              <GameStrip
-                games={null}
-                gamesLoading={true}
                 matchStatus={matchStatus}
                 bestOf={bestOf}
                 myAltId={myAltId}
