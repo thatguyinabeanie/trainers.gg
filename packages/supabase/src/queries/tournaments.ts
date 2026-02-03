@@ -746,7 +746,8 @@ export async function getRoundMatchesWithStats(
  */
 export async function getPhaseRoundsWithMatches(
   supabase: TypedClient,
-  phaseId: number
+  phaseId: number,
+  tournamentId?: number
 ) {
   const { data: rounds, error } = await supabase
     .from("tournament_rounds")
@@ -773,8 +774,37 @@ export async function getPhaseRoundsWithMatches(
 
   if (mErr) throw mErr;
 
+  // Enrich with player stats if tournamentId provided
+  const statsMap = new Map<number, { wins: number; losses: number }>();
+
+  if (tournamentId && allMatches && allMatches.length > 0) {
+    const altIds = new Set<number>();
+    for (const m of allMatches) {
+      if (m.alt1_id) altIds.add(m.alt1_id);
+      if (m.alt2_id) altIds.add(m.alt2_id);
+    }
+
+    if (altIds.size > 0) {
+      const { data: stats } = await supabase
+        .from("tournament_player_stats")
+        .select("alt_id, match_wins, match_losses")
+        .eq("tournament_id", tournamentId)
+        .in("alt_id", Array.from(altIds));
+
+      for (const s of stats ?? []) {
+        statsMap.set(s.alt_id, {
+          wins: s.match_wins ?? 0,
+          losses: s.match_losses ?? 0,
+        });
+      }
+    }
+  }
+
   // Group matches by round_id
-  const matchesByRound = new Map<number, typeof allMatches>();
+  const matchesByRound = new Map<
+    number,
+    (typeof allMatches extends (infer T)[] | null ? T : never)[]
+  >();
   for (const match of allMatches ?? []) {
     const list = matchesByRound.get(match.round_id) ?? [];
     list.push(match);
@@ -783,7 +813,15 @@ export async function getPhaseRoundsWithMatches(
 
   return (rounds ?? []).map((round) => ({
     ...round,
-    matches: matchesByRound.get(round.id) ?? [],
+    matches: (matchesByRound.get(round.id) ?? []).map((match) => ({
+      ...match,
+      player1Stats: match.alt1_id
+        ? (statsMap.get(match.alt1_id) ?? null)
+        : null,
+      player2Stats: match.alt2_id
+        ? (statsMap.get(match.alt2_id) ?? null)
+        : null,
+    })),
   }));
 }
 
@@ -807,8 +845,7 @@ export async function getCheckInStatus(
         isRegistered: false,
         isCheckedIn: false,
         checkInOpen: false,
-        checkInStartTime: null,
-        checkInEndTime: null,
+        lateMaxRound: null,
         registrationStatus: null,
       };
     }
@@ -826,8 +863,7 @@ export async function getCheckInStatus(
         isRegistered: false,
         isCheckedIn: false,
         checkInOpen: false,
-        checkInStartTime: null,
-        checkInEndTime: null,
+        lateMaxRound: null,
         registrationStatus: null,
       };
     }
@@ -837,7 +873,7 @@ export async function getCheckInStatus(
   const { data: tournament } = await supabase
     .from("tournaments")
     .select(
-      "status, start_date, check_in_window_minutes, current_round, late_check_in_max_round"
+      "status, allow_late_registration, current_round, late_check_in_max_round"
     )
     .eq("id", tournamentId)
     .single();
@@ -856,8 +892,7 @@ export async function getCheckInStatus(
   const {
     isOpen: checkInOpen,
     isLateCheckIn,
-    checkInStartTime,
-    checkInEndTime,
+    lateMaxRound,
   } = checkCheckInOpen(tournament);
 
   return {
@@ -865,8 +900,7 @@ export async function getCheckInStatus(
     isCheckedIn: registration?.status === "checked_in",
     checkInOpen,
     isLateCheckIn,
-    checkInStartTime,
-    checkInEndTime,
+    lateMaxRound,
     registrationStatus: registration?.status ?? null,
   };
 }
@@ -1442,6 +1476,9 @@ export async function getRegistrationStatus(
       name: tournament.name,
       status: tournament.status,
       maxParticipants: tournament.max_participants,
+      lateCheckInMaxRound: tournament.late_check_in_max_round,
+      currentRound: tournament.current_round,
+      allowLateRegistration: tournament.allow_late_registration,
     },
     registrationStats: {
       registered: registeredCount,

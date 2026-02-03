@@ -199,6 +199,7 @@ BEGIN
   END IF;
 
   -- Phases for: Pallet Town Trainers Week 2 Championship
+  -- Phases exist but are pending — tournament is active but not yet started (no pairings generated)
   SELECT id INTO t_id FROM public.tournaments WHERE slug = 'pallet-town-championship-week-02';
   IF t_id IS NOT NULL THEN
     INSERT INTO public.tournament_phases (
@@ -206,7 +207,7 @@ BEGIN
       best_of, round_time_minutes, planned_rounds, current_round,
       cut_rule, check_in_time_minutes
     ) VALUES (
-      t_id, 'Swiss Rounds', 1, 'swiss', 'active',
+      t_id, 'Swiss Rounds', 1, 'swiss', 'pending',
       3, 50, 8, 0,
       NULL, 5
     ) ON CONFLICT DO NOTHING;
@@ -1079,10 +1080,23 @@ BEGIN
       AND a.username = 'irma58'
   ON CONFLICT DO NOTHING;
 
-  -- Registrations for: VGC League Week 2 Championship (256 players)
+  -- Registrations for: VGC League Week 2 Championship (256 players + admin_trainer)
   INSERT INTO public.tournament_registrations (
     tournament_id, alt_id, status, registered_at, checked_in_at, team_id, team_submitted_at, team_locked
   )
+  SELECT
+      t.id,
+      a.id,
+      'checked_in'::registration_status,
+      (seed_now - interval '4 days 10 hours 37 minutes'),
+      (seed_now - interval '3 hours'),
+      (SELECT tm.id FROM public.teams tm WHERE tm.name = 'team-seed-1'),
+      (seed_now - interval '4 days 10 hours 37 minutes'),
+      TRUE
+    FROM public.tournaments t, public.alts a
+    WHERE t.slug = 'vgc-league-championship-week-02'
+      AND a.username = 'admin_trainer'
+  UNION ALL
   SELECT
       t.id,
       a.id,
@@ -8565,4 +8579,100 @@ BEGIN
   ON CONFLICT DO NOTHING;
 
   RAISE NOTICE 'Created 637 tournament registrations';
+END $$;
+
+-- Seed Round 1 for VGC League Week 2 Championship
+-- Creates round, matches (pairing all checked-in players), and player stats
+DO $$
+DECLARE
+  t_id bigint;
+  phase_id bigint;
+  round_id bigint;
+  rec RECORD;
+  prev_alt_id bigint := NULL;
+  table_num integer := 1;
+BEGIN
+  -- Get tournament
+  SELECT id INTO t_id FROM public.tournaments WHERE slug = 'vgc-league-championship-week-02';
+  IF t_id IS NULL THEN
+    RAISE NOTICE 'VGC League Week 2 not found, skipping round seeding';
+    RETURN;
+  END IF;
+
+  -- Get Swiss phase
+  SELECT id INTO phase_id FROM public.tournament_phases
+    WHERE tournament_id = t_id AND phase_type = 'swiss' AND phase_order = 1;
+  IF phase_id IS NULL THEN
+    RAISE NOTICE 'Swiss phase not found, skipping round seeding';
+    RETURN;
+  END IF;
+
+  -- Update tournament current_round
+  UPDATE public.tournaments SET current_round = 1 WHERE id = t_id;
+
+  -- Update phase current_round
+  UPDATE public.tournament_phases SET current_round = 1 WHERE id = phase_id;
+
+  -- Set current_phase_id on tournament
+  UPDATE public.tournaments SET current_phase_id = phase_id WHERE id = t_id;
+
+  -- Create Round 1
+  INSERT INTO public.tournament_rounds (phase_id, round_number, name, status, start_time)
+  VALUES (phase_id, 1, 'Round 1', 'active', NOW())
+  RETURNING id INTO round_id;
+
+  -- Create matches by pairing consecutive checked-in players
+  -- Uses row numbering to pair player 1 with player 2, player 3 with player 4, etc.
+  FOR rec IN
+    SELECT
+      alt_id,
+      ROW_NUMBER() OVER (ORDER BY registered_at, alt_id) AS rn
+    FROM public.tournament_registrations
+    WHERE tournament_id = t_id AND status = 'checked_in'
+  LOOP
+    IF rec.rn % 2 = 1 THEN
+      -- Odd row: store as player 1
+      prev_alt_id := rec.alt_id;
+    ELSE
+      -- Even row: pair with previous player
+      INSERT INTO public.tournament_matches (
+        round_id, alt1_id, alt2_id, status, table_number,
+        game_wins1, game_wins2, is_bye
+      ) VALUES (
+        round_id, prev_alt_id, rec.alt_id, 'active', table_num,
+        0, 0, false
+      );
+      table_num := table_num + 1;
+      prev_alt_id := NULL;
+    END IF;
+  END LOOP;
+
+  -- Handle odd player (bye)
+  IF prev_alt_id IS NOT NULL THEN
+    INSERT INTO public.tournament_matches (
+      round_id, alt1_id, alt2_id, status, table_number,
+      game_wins1, game_wins2, is_bye, winner_alt_id
+    ) VALUES (
+      round_id, prev_alt_id, NULL, 'completed', table_num,
+      2, 0, true, prev_alt_id
+    );
+  END IF;
+
+  -- Create tournament_player_stats for all checked-in players (initial 0-0 records)
+  INSERT INTO public.tournament_player_stats (
+    tournament_id, alt_id, match_points, matches_played,
+    match_wins, match_losses, match_win_percentage,
+    game_wins, game_losses, game_win_percentage,
+    current_standing, standings_need_recalc
+  )
+  SELECT
+    t_id, tr.alt_id, 0, 0,
+    0, 0, 0,
+    0, 0, 0,
+    NULL, true
+  FROM public.tournament_registrations tr
+  WHERE tr.tournament_id = t_id AND tr.status = 'checked_in'
+  ON CONFLICT DO NOTHING;
+
+  RAISE NOTICE 'Seeded Round 1 for VGC League Week 2 with % matches', table_num - 1;
 END $$;

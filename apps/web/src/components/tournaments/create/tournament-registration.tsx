@@ -135,23 +135,56 @@ export function TournamentRegistration({
       </div>
 
       {/* Late Registration */}
-      <div className="flex items-center justify-between">
-        <div className="space-y-0.5">
-          <Label htmlFor="lateRegistration" className="text-base">
-            Late Registration
-          </Label>
-          <p className="text-muted-foreground text-sm">
-            Allow players to register after the tournament has started
-          </p>
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="space-y-0.5">
+            <Label htmlFor="lateRegistration" className="text-base">
+              Late Registration
+            </Label>
+            <p className="text-muted-foreground text-sm">
+              Allow players to register and check in after the tournament starts
+            </p>
+          </div>
+          <Switch
+            id="lateRegistration"
+            checked={formData.allowLateRegistration}
+            onCheckedChange={(checked) =>
+              updateFormData({
+                allowLateRegistration: checked,
+                lateCheckInMaxRound: checked
+                  ? formData.lateCheckInMaxRound || 3
+                  : undefined,
+              })
+            }
+            disabled={disabled}
+          />
         </div>
-        <Switch
-          id="lateRegistration"
-          checked={formData.allowLateRegistration}
-          onCheckedChange={(checked) =>
-            updateFormData({ allowLateRegistration: checked })
-          }
-          disabled={disabled}
-        />
+
+        {formData.allowLateRegistration && (
+          <Field>
+            <FieldLabel htmlFor="lateCheckInMaxRound">
+              Close After Round
+            </FieldLabel>
+            <FieldDescription>
+              Registration and check-in close when this round begins
+            </FieldDescription>
+            <Input
+              id="lateCheckInMaxRound"
+              type="number"
+              value={formData.lateCheckInMaxRound || ""}
+              onChange={(e) =>
+                updateFormData({
+                  lateCheckInMaxRound: parseInt(e.target.value) || undefined,
+                })
+              }
+              placeholder="3"
+              min="1"
+              max="10"
+              disabled={disabled}
+              className="mt-2 w-32"
+            />
+          </Field>
+        )}
       </div>
     </div>
   );

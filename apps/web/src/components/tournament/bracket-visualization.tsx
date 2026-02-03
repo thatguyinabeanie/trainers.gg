@@ -329,7 +329,7 @@ function SwissMatchRow({
   return (
     <div
       className={cn(
-        "group/match flex cursor-pointer items-center rounded-lg border px-3 py-2.5 transition-all",
+        "group/match flex cursor-pointer items-center rounded-lg border px-4 py-3 transition-all",
         "hover:border-border hover:bg-muted/40",
         isActive && "border-primary/20 bg-primary/[0.03]",
         !isActive && "border-transparent"
@@ -337,7 +337,7 @@ function SwissMatchRow({
       onClick={onClick}
     >
       {/* Table number */}
-      <div className="text-muted-foreground/50 w-8 shrink-0 text-center text-[11px] font-medium">
+      <div className="text-muted-foreground/50 w-10 shrink-0 text-center text-xs font-medium">
         {isBye ? (
           <span className="text-[10px] tracking-wider uppercase">bye</span>
         ) : (
@@ -359,10 +359,18 @@ function SwissMatchRow({
         >
           {match.participant1?.name || "TBD"}
         </span>
+        {match.participant1?.record &&
+          match.participant1.record.wins + match.participant1.record.losses >
+            0 && (
+            <span className="text-muted-foreground shrink-0 text-xs">
+              ({match.participant1.record.wins}-
+              {match.participant1.record.losses})
+            </span>
+          )}
       </div>
 
       {/* Center score / vs */}
-      <div className="mx-3 flex shrink-0 items-center justify-center">
+      <div className="mx-4 flex shrink-0 items-center justify-center">
         {isCompleted || isActive ? (
           <div className="flex items-center gap-0.5 font-mono text-sm tabular-nums">
             <span
@@ -384,6 +392,14 @@ function SwissMatchRow({
 
       {/* Player 2 name — left-aligned */}
       <div className="flex min-w-0 flex-1 items-center gap-1.5">
+        {match.participant2?.record &&
+          match.participant2.record.wins + match.participant2.record.losses >
+            0 && (
+            <span className="text-muted-foreground shrink-0 text-xs">
+              ({match.participant2.record.wins}-
+              {match.participant2.record.losses})
+            </span>
+          )}
         <span
           className={cn(
             "truncate text-sm",
@@ -558,7 +574,7 @@ function PlayerSlot({
   return (
     <div
       className={cn(
-        "relative flex items-center gap-2 px-3 py-2.5",
+        "relative flex items-center gap-2 px-4 py-3",
         isWinner && "bg-emerald-500/[0.06]",
         isCompleted && !isWinner && "opacity-50",
         position === "top" && !isBye && "rounded-t-xl",
@@ -588,6 +604,14 @@ function PlayerSlot({
       >
         {isBye ? "BYE" : participant?.name || "TBD"}
       </span>
+
+      {/* Record (hidden when 0-0) */}
+      {participant?.record &&
+        participant.record.wins + participant.record.losses > 0 && (
+          <span className="text-muted-foreground shrink-0 text-xs">
+            ({participant.record.wins}-{participant.record.losses})
+          </span>
+        )}
 
       {/* Score */}
       {(isCompleted || isActive) && (

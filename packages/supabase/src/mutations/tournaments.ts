@@ -115,6 +115,7 @@ export async function createTournament(
     registrationType?: string;
     checkInRequired?: boolean;
     allowLateRegistration?: boolean;
+    lateCheckInMaxRound?: number;
     // New phases array for flexible phase configuration
     phases?: PhaseConfig[];
   }
@@ -176,6 +177,7 @@ export async function createTournament(
       registration_type: data.registrationType ?? "open",
       check_in_required: data.checkInRequired ?? false,
       allow_late_registration: data.allowLateRegistration ?? false,
+      late_check_in_max_round: data.lateCheckInMaxRound ?? null,
     })
     .select()
     .single();
@@ -323,6 +325,7 @@ export async function updateTournament(
     registrationType?: string;
     checkInRequired?: boolean;
     allowLateRegistration?: boolean;
+    lateCheckInMaxRound?: number | null;
   }
 ) {
   const user = await getCurrentUser(supabase);
@@ -373,6 +376,8 @@ export async function updateTournament(
     updateData.check_in_required = updates.checkInRequired;
   if (updates.allowLateRegistration !== undefined)
     updateData.allow_late_registration = updates.allowLateRegistration;
+  if (updates.lateCheckInMaxRound !== undefined)
+    updateData.late_check_in_max_round = updates.lateCheckInMaxRound;
 
   const { error } = await supabase
     .from("tournaments")
@@ -676,21 +681,21 @@ export async function checkIn(supabase: TypedClient, tournamentId: number) {
   const { data: tournament } = await supabase
     .from("tournaments")
     .select(
-      "status, start_date, check_in_window_minutes, current_round, late_check_in_max_round"
+      "status, allow_late_registration, current_round, late_check_in_max_round"
     )
     .eq("id", tournamentId)
     .single();
 
   if (!tournament) throw new Error("Tournament not found");
-  const { isOpen: checkInOpen, isLateCheckIn } = checkCheckInOpen(tournament);
+  const { isOpen: checkInOpen } = checkCheckInOpen(tournament);
   if (!checkInOpen) {
     throw new Error("Tournament is not open for check-in");
   }
 
-  const updateData: Record<string, unknown> = { status: "checked_in" };
-  if (isLateCheckIn) {
-    updateData.checked_in_at = new Date().toISOString();
-  }
+  const updateData: Record<string, unknown> = {
+    status: "checked_in",
+    checked_in_at: new Date().toISOString(),
+  };
 
   const { error } = await supabase
     .from("tournament_registrations")

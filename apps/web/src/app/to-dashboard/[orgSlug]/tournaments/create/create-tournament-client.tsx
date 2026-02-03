@@ -103,6 +103,7 @@ const tournamentFormSchema = z.object({
   playerCapEnabled: z.boolean(),
   checkInRequired: z.boolean(),
   allowLateRegistration: z.boolean(),
+  lateCheckInMaxRound: z.number().min(1).max(10).optional(),
 });
 
 export type TournamentFormValues = z.infer<typeof tournamentFormSchema>;
@@ -223,6 +224,7 @@ export function CreateTournamentClient({
         registrationType?: string;
         checkInRequired?: boolean;
         allowLateRegistration?: boolean;
+        lateCheckInMaxRound?: number;
         phases?: {
           name: string;
           phaseType: "swiss" | "single_elimination" | "double_elimination";
@@ -337,6 +339,9 @@ export function CreateTournamentClient({
         registrationType: data.registrationType,
         checkInRequired: data.checkInRequired,
         allowLateRegistration: data.allowLateRegistration,
+        lateCheckInMaxRound: data.allowLateRegistration
+          ? data.lateCheckInMaxRound
+          : undefined,
         phases: data.phases.map((p) => ({
           name: p.name,
           phaseType: p.phaseType,

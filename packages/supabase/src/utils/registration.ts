@@ -4,6 +4,10 @@
  * These pure functions encapsulate the business rules for determining whether
  * registration or check-in is open for a tournament. They are used by both
  * queries (to surface status to the UI) and mutations (to enforce access).
+ *
+ * Unified model: check-in is open whenever registration is open. There is no
+ * separate time-based check-in window. Both are controlled by tournament status
+ * and the `allow_late_registration` + `late_check_in_max_round` settings.
  */
 
 // ---------------------------------------------------------------------------
@@ -59,75 +63,62 @@ export function checkRegistrationOpen(
 
 export interface CheckInOpenInput {
   status: string | null;
-  start_date: string | null;
-  check_in_window_minutes: number | null;
+  allow_late_registration: boolean | null;
   current_round: number | null;
   late_check_in_max_round: number | null;
+  // Deprecated fields kept for backwards compatibility (mobile app passes full
+  // tournament objects). These are ignored by the function.
+  start_date?: string | null;
+  check_in_window_minutes?: number | null;
 }
 
 export interface CheckInOpenResult {
   isOpen: boolean;
   isLateCheckIn: boolean;
-  checkInStartTime: number | null;
-  checkInEndTime: number | null;
+  /** The round number after which late registration/check-in closes. */
+  lateMaxRound: number | null;
 }
 
 /**
  * Determine whether check-in is currently open for a tournament.
  *
- * Normal window: `start_date - check_in_window_minutes` to `start_date`.
- * Late check-in: tournament is active, `late_check_in_max_round` is set,
- *   and `current_round` is less than `late_check_in_max_round`.
+ * Unified model: check-in is open whenever registration is open.
+ * - Upcoming tournaments: always open.
+ * - Active tournaments: open if `allow_late_registration` is true and
+ *   `current_round < late_check_in_max_round`.
  */
 export function checkCheckInOpen(
   tournament: CheckInOpenInput,
-  now?: number
+  _now?: number
 ): CheckInOpenResult {
-  const currentTime = now ?? Date.now();
+  const lateMaxRound = tournament.late_check_in_max_round ?? null;
 
-  const checkInWindowMinutes = tournament.check_in_window_minutes ?? 60;
-  const startDate = tournament.start_date
-    ? new Date(tournament.start_date).getTime()
-    : null;
-  const checkInStartTime = startDate
-    ? startDate - checkInWindowMinutes * 60 * 1000
-    : null;
-  const checkInEndTime = startDate;
-
-  // Normal check-in window
-  const normalWindowOpen =
-    checkInStartTime !== null &&
-    checkInEndTime !== null &&
-    currentTime >= checkInStartTime &&
-    currentTime <= checkInEndTime;
-
-  if (normalWindowOpen) {
+  // Upcoming: check-in is always open (same as registration)
+  if (tournament.status === "upcoming") {
     return {
       isOpen: true,
       isLateCheckIn: false,
-      checkInStartTime,
-      checkInEndTime,
+      lateMaxRound,
     };
   }
 
-  // Late check-in: tournament is active, max round is set, current round < max
+  // Active: check-in open if late registration is allowed and round limit not reached
   if (
     tournament.status === "active" &&
-    tournament.late_check_in_max_round != null &&
-    (tournament.current_round ?? 0) < tournament.late_check_in_max_round
+    tournament.allow_late_registration === true &&
+    lateMaxRound != null &&
+    (tournament.current_round ?? 0) < lateMaxRound
   ) {
     return {
       isOpen: true,
       isLateCheckIn: true,
-      checkInStartTime,
-      checkInEndTime,
+      lateMaxRound,
     };
   }
 
   return {
     isOpen: false,
     isLateCheckIn: false,
-    checkInStartTime,
-    checkInEndTime,
+    lateMaxRound,
   };
 }

@@ -216,6 +216,11 @@ export function TournamentManageClient({
     round_time_minutes: tournament.round_time_minutes,
     rental_team_photos_enabled: tournament.rental_team_photos_enabled,
     rental_team_photos_required: tournament.rental_team_photos_required,
+    // Registration settings
+    registration_type: tournament.registration_type,
+    check_in_required: tournament.check_in_required,
+    allow_late_registration: tournament.allow_late_registration,
+    late_check_in_max_round: tournament.late_check_in_max_round,
   };
 
   return (

@@ -244,6 +244,7 @@ interface TournamentSettingsProps {
     registration_type?: string | null;
     check_in_required?: boolean | null;
     allow_late_registration?: boolean | null;
+    late_check_in_max_round?: number | null;
   };
   phases?: Phase[];
 }
@@ -273,6 +274,7 @@ export function TournamentSettings({
       (tournament.registration_type as "open" | "invite_only") || "open",
     checkInRequired: tournament.check_in_required ?? false,
     allowLateRegistration: tournament.allow_late_registration ?? false,
+    lateCheckInMaxRound: tournament.late_check_in_max_round ?? undefined,
   });
 
   // Phase state - local until Save is clicked
@@ -302,6 +304,7 @@ export function TournamentSettings({
           registrationType?: string;
           checkInRequired?: boolean;
           allowLateRegistration?: boolean;
+          lateCheckInMaxRound?: number | null;
         };
       }
     ) => updateTournament(supabase, args.tournamentId, args.updates)
@@ -351,6 +354,9 @@ export function TournamentSettings({
           registrationType: formData.registrationType,
           checkInRequired: formData.checkInRequired,
           allowLateRegistration: formData.allowLateRegistration,
+          lateCheckInMaxRound: formData.allowLateRegistration
+            ? (formData.lateCheckInMaxRound ?? null)
+            : null,
         },
       });
 
@@ -403,6 +409,7 @@ export function TournamentSettings({
         (tournament.registration_type as "open" | "invite_only") || "open",
       checkInRequired: tournament.check_in_required ?? false,
       allowLateRegistration: tournament.allow_late_registration ?? false,
+      lateCheckInMaxRound: tournament.late_check_in_max_round ?? undefined,
     });
     // Reset phases to original
     setPhaseConfigs(dbPhasesToPhaseConfigs(originalPhases));
@@ -710,26 +717,58 @@ export function TournamentSettings({
           </div>
 
           {/* Late Registration */}
-          <div className="flex items-center justify-between">
-            <div className="space-y-0.5">
-              <Label htmlFor="lateRegistration" className="text-base">
-                Late Registration
-              </Label>
-              <p className="text-muted-foreground text-sm">
-                Allow players to register after the tournament has started
-              </p>
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <Label htmlFor="lateRegistration" className="text-base">
+                  Late Registration
+                </Label>
+                <p className="text-muted-foreground text-sm">
+                  Allow players to register and check in after the tournament
+                  starts
+                </p>
+              </div>
+              <Switch
+                id="lateRegistration"
+                checked={formData.allowLateRegistration}
+                onCheckedChange={(checked) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    allowLateRegistration: checked,
+                    lateCheckInMaxRound: checked
+                      ? prev.lateCheckInMaxRound || 3
+                      : undefined,
+                  }))
+                }
+                disabled={!isEditing}
+              />
             </div>
-            <Switch
-              id="lateRegistration"
-              checked={formData.allowLateRegistration}
-              onCheckedChange={(checked) =>
-                setFormData((prev) => ({
-                  ...prev,
-                  allowLateRegistration: checked,
-                }))
-              }
-              disabled={!isEditing}
-            />
+
+            {formData.allowLateRegistration && (
+              <div className="space-y-2">
+                <Label htmlFor="lateCheckInMaxRound">Close After Round</Label>
+                <p className="text-muted-foreground text-sm">
+                  Registration and check-in close when this round begins
+                </p>
+                <Input
+                  id="lateCheckInMaxRound"
+                  type="number"
+                  value={formData.lateCheckInMaxRound || ""}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      lateCheckInMaxRound:
+                        parseInt(e.target.value) || undefined,
+                    }))
+                  }
+                  placeholder="3"
+                  min="1"
+                  max="10"
+                  disabled={!isEditing}
+                  className="w-32"
+                />
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>

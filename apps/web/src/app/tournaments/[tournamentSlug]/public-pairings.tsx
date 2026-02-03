@@ -12,7 +12,6 @@ import {
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue,
 } from "@/components/ui/select";
 import { Loader2, Trophy } from "lucide-react";
 import { BracketVisualization } from "@/components/tournament/bracket-visualization";
@@ -51,7 +50,7 @@ export function PublicPairings({
     supabase: Parameters<typeof getPhaseRoundsWithMatches>[0]
   ) =>
     selectedPhaseId
-      ? getPhaseRoundsWithMatches(supabase, selectedPhaseId)
+      ? getPhaseRoundsWithMatches(supabase, selectedPhaseId, tournamentId)
       : Promise.resolve([]);
 
   const { data: bracketRounds, isLoading: bracketLoading } = useSupabaseQuery(
@@ -113,6 +112,16 @@ export function PublicPairings({
                   display_name?: string;
                   username?: string;
                 } | null;
+                const p1Stats = (
+                  match as {
+                    player1Stats?: { wins: number; losses: number } | null;
+                  }
+                ).player1Stats;
+                const p2Stats = (
+                  match as {
+                    player2Stats?: { wins: number; losses: number } | null;
+                  }
+                ).player2Stats;
                 return {
                   id: String(match.id),
                   matchNumber: match.table_number ?? 0,
@@ -127,12 +136,14 @@ export function PublicPairings({
                     ? {
                         id: String(p1.id),
                         name: p1.display_name ?? p1.username ?? "Player 1",
+                        record: p1Stats ?? undefined,
                       }
                     : null,
                   participant2: p2
                     ? {
                         id: String(p2.id),
                         name: p2.display_name ?? p2.username ?? "Player 2",
+                        record: p2Stats ?? undefined,
                       }
                     : null,
                 };
@@ -156,7 +167,9 @@ export function PublicPairings({
             }}
           >
             <SelectTrigger className="w-48">
-              <SelectValue placeholder="Select phase" />
+              {currentPhase
+                ? (currentPhase.name ?? `Phase ${currentPhase.phase_order}`)
+                : "Select phase"}
             </SelectTrigger>
             <SelectContent>
               {phases.map((phase) => (

@@ -164,7 +164,7 @@ export function TournamentSidebarCard({
   const [isChecking, setIsChecking] = useState(false);
   const [isDropping, setIsDropping] = useState(false);
   const [showRegistrationDialog, setShowRegistrationDialog] = useState(false);
-  const [timeRemaining, setTimeRemaining] = useState<string>("");
+  // timeRemaining state removed — unified model has no time-based window
 
   // ---- Team submission state ----
   const [submittedTeam, setSubmittedTeam] = useState(initialTeam);
@@ -220,38 +220,7 @@ export function TournamentSidebarCard({
       undoCheckIn(supabase, tournamentId)
   );
 
-  // ---- Check-in countdown timer ----
-
-  useEffect(() => {
-    const endTime = checkInStatus?.checkInEndTime;
-    if (!endTime) return;
-
-    const updateTimer = () => {
-      const now = Date.now();
-      const remaining = endTime - now;
-
-      if (remaining <= 0) {
-        setTimeRemaining("Closed");
-        return;
-      }
-
-      const hours = Math.floor(remaining / (1000 * 60 * 60));
-      const minutes = Math.floor((remaining % (1000 * 60 * 60)) / (1000 * 60));
-      const seconds = Math.floor((remaining % (1000 * 60)) / 1000);
-
-      if (hours > 0) {
-        setTimeRemaining(`${hours}h ${minutes}m`);
-      } else if (minutes > 0) {
-        setTimeRemaining(`${minutes}:${seconds.toString().padStart(2, "0")}`);
-      } else {
-        setTimeRemaining(`${seconds}s`);
-      }
-    };
-
-    updateTimer();
-    const interval = setInterval(updateTimer, 1000);
-    return () => clearInterval(interval);
-  }, [checkInStatus?.checkInEndTime]);
+  // Check-in countdown timer removed — unified model has no time-based window
 
   // ---- Live team validation ----
 
@@ -604,13 +573,8 @@ export function TournamentSidebarCard({
   const isOnWaitlist = userStatus?.status === "waitlist";
   const userIsCheckedIn = userStatus?.status === "checked_in" || isCheckedIn;
 
-  const checkInStartTime = checkInStatus?.checkInStartTime;
-  const checkInEndTime = checkInStatus?.checkInEndTime;
-  const isCheckInSoon =
-    checkInStartTime && checkInStartTime > Date.now() && !isCheckInOpen;
-  const isCheckInTimeLow = checkInEndTime
-    ? checkInEndTime - Date.now() < 5 * 60 * 1000 && !isCheckedIn
-    : false;
+  const lateMaxRound =
+    checkInStatus?.lateMaxRound ?? tournament.lateCheckInMaxRound ?? null;
 
   const isDropped = userStatus?.status === "dropped";
   const hasTeam = registrationStatus?.userStatus?.hasTeam ?? !!submittedTeam;
@@ -1076,21 +1040,14 @@ export function TournamentSidebarCard({
 
             {/* Check-in section */}
             <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <p className="text-sm font-medium">Check-In</p>
-                {timeRemaining && (
-                  <span
-                    className={cn(
-                      "text-xs font-medium",
-                      isCheckInTimeLow
-                        ? "text-orange-600"
-                        : "text-muted-foreground"
-                    )}
-                  >
-                    {timeRemaining}
-                  </span>
-                )}
-              </div>
+              <p className="text-sm font-medium">Check-In</p>
+
+              {/* Late check-in info */}
+              {lateMaxRound && (
+                <p className="text-muted-foreground text-xs">
+                  Open until Round {lateMaxRound}
+                </p>
+              )}
 
               {/* Check-in progress */}
               {checkInStats && (
@@ -1212,17 +1169,10 @@ export function TournamentSidebarCard({
   }
 
   // =========================================================================
-  // PHASE 2: Registered — Waiting for Check-In
+  // PHASE 2: Registered — Check-In Available
   // =========================================================================
 
   if (isRegistered) {
-    const checkInStartDate = checkInStartTime
-      ? new Date(checkInStartTime).toLocaleTimeString(undefined, {
-          hour: "numeric",
-          minute: "2-digit",
-        })
-      : null;
-
     return (
       <>
         <Card>
@@ -1270,58 +1220,74 @@ export function TournamentSidebarCard({
             {/* Team section */}
             {renderTeamSection()}
 
-            {/* Check-in teaser */}
-            <div className="bg-muted space-y-2 rounded-lg p-3">
-              <p className="text-sm font-medium">Check-In</p>
-              {isCheckInSoon && checkInStartDate ? (
-                <>
-                  <p className="text-muted-foreground flex items-center gap-1.5 text-xs">
-                    <Clock className="h-3.5 w-3.5" />
-                    Opens at {checkInStartDate}
-                  </p>
-                  {checkInEndTime && (
-                    <p className="text-muted-foreground flex items-center gap-1.5 text-xs">
-                      <Clock className="h-3.5 w-3.5" />
-                      Closes at{" "}
-                      {new Date(checkInEndTime).toLocaleTimeString(undefined, {
-                        hour: "numeric",
-                        minute: "2-digit",
-                      })}
-                    </p>
-                  )}
-                </>
-              ) : checkInStartTime && !isCheckInSoon ? (
-                <p className="text-muted-foreground text-xs">
-                  Scheduled for tournament day
-                </p>
-              ) : (
-                <p className="text-muted-foreground text-xs">
-                  Not yet scheduled
-                </p>
-              )}
+            {/* Check-in section */}
+            {isCheckInOpen ? (
+              <div className="space-y-3">
+                <Separator />
+                <p className="text-sm font-medium">Check-In</p>
 
-              {/* Readiness checklist */}
-              <div className="space-y-1 pt-1">
-                <div className="flex items-center gap-1.5 text-xs">
-                  <CheckCircle2
-                    className={`h-3.5 w-3.5 ${hasTeam ? "text-primary" : "text-muted-foreground/40"}`}
-                  />
-                  <span
-                    className={
-                      hasTeam ? "text-foreground" : "text-muted-foreground"
-                    }
-                  >
-                    Team submitted
-                  </span>
-                </div>
-                <div className="flex items-center gap-1.5 text-xs">
-                  <CheckCircle2 className="text-muted-foreground/40 h-3.5 w-3.5" />
-                  <span className="text-muted-foreground">
-                    Check in when window opens
-                  </span>
+                {lateMaxRound && (
+                  <p className="text-muted-foreground text-xs">
+                    Open until Round {lateMaxRound}
+                  </p>
+                )}
+
+                {/* Check-in progress */}
+                {checkInStats && (
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-muted-foreground">
+                        {checkInStats.checkedIn} / {checkInStats.total} checked
+                        in
+                      </span>
+                    </div>
+                    <Progress value={checkInStats.checkedInPercentage} />
+                  </div>
+                )}
+
+                {/* Team warning */}
+                {!hasTeam && (
+                  <p className="text-xs font-medium text-amber-600">
+                    Submit your team before checking in
+                  </p>
+                )}
+
+                <Button
+                  onClick={handleCheckIn}
+                  disabled={!hasTeam || isChecking}
+                  className="w-full"
+                >
+                  {isChecking ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : null}
+                  Check In
+                </Button>
+              </div>
+            ) : (
+              <div className="bg-muted space-y-2 rounded-lg p-3">
+                <p className="text-sm font-medium">Check-In</p>
+                <div className="space-y-1 pt-1">
+                  <div className="flex items-center gap-1.5 text-xs">
+                    <CheckCircle2
+                      className={`h-3.5 w-3.5 ${hasTeam ? "text-primary" : "text-muted-foreground/40"}`}
+                    />
+                    <span
+                      className={
+                        hasTeam ? "text-foreground" : "text-muted-foreground"
+                      }
+                    >
+                      Team submitted
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1.5 text-xs">
+                    <CheckCircle2 className="text-muted-foreground/40 h-3.5 w-3.5" />
+                    <span className="text-muted-foreground">
+                      Check-in opens when tournament starts
+                    </span>
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
           </CardContent>
         </Card>
 
@@ -1387,9 +1353,16 @@ export function TournamentSidebarCard({
               Registration is closed
             </p>
           ) : isLateRegistration ? (
-            <p className="text-sm font-medium text-amber-600">
-              Tournament in progress
-            </p>
+            <div>
+              <p className="text-sm font-medium text-amber-600">
+                Tournament in progress
+              </p>
+              {lateMaxRound && (
+                <p className="text-muted-foreground text-xs">
+                  Registration &amp; check-in open until Round {lateMaxRound}
+                </p>
+              )}
+            </div>
           ) : null}
 
           {/* Register / Join Waitlist button */}
