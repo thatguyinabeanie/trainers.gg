@@ -1,8 +1,7 @@
-import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "../types";
+import type { TypedClient } from "../client";
 import { checkRegistrationOpen, checkCheckInOpen } from "../utils/registration";
 
-type TypedClient = SupabaseClient<Database>;
 type TournamentStatus = Database["public"]["Enums"]["tournament_status"];
 
 // Base tournament type from query

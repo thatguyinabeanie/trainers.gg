@@ -1,7 +1,5 @@
-import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "../types";
-
-type TypedClient = SupabaseClient<Database>;
+import type { TypedClient } from "../client";
 
 /**
  * Submit a blind game winner selection via the SECURITY DEFINER RPC.

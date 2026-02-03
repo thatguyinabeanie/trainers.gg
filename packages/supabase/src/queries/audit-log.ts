@@ -1,7 +1,6 @@
-import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "../types";
+import type { TypedClient } from "../client";
 
-type TypedClient = SupabaseClient<Database>;
 type AuditAction = Database["public"]["Enums"]["audit_action"];
 
 /**

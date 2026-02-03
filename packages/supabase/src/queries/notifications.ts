@@ -1,7 +1,4 @@
-import type { SupabaseClient } from "@supabase/supabase-js";
-import type { Database } from "../types";
-
-type TypedClient = SupabaseClient<Database>;
+import type { TypedClient } from "../client";
 
 /**
  * Get notifications for the current user, ordered by newest first.

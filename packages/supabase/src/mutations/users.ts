@@ -1,7 +1,5 @@
-import type { SupabaseClient } from "@supabase/supabase-js";
+import type { TypedClient } from "../client";
 import type { Database } from "../types";
-
-type TypedClient = SupabaseClient<Database>;
 
 /**
  * Update user alt

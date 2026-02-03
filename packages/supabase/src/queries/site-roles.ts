@@ -1,7 +1,4 @@
-import type { SupabaseClient } from "@supabase/supabase-js";
-import type { Database } from "../types";
-
-type TypedClient = SupabaseClient<Database>;
+import type { TypedClient } from "../client";
 
 /**
  * Check if a user has the site admin role

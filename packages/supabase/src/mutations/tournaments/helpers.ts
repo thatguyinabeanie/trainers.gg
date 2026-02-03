@@ -1,7 +1,5 @@
-import type { SupabaseClient } from "@supabase/supabase-js";
-import type { Database } from "../../types";
-
-export type TypedClient = SupabaseClient<Database>;
+import type { TypedClient } from "../../client";
+export type { TypedClient };
 
 /**
  * Helper to get current user (for organization ownership checks)
