@@ -87,12 +87,14 @@ function PlayerCard({
   stats,
   showIGN,
   align = "left",
+  isMatchWinner = false,
   className,
 }: {
   player: PlayerInfo | null;
   stats: PlayerStats | null;
   showIGN: boolean;
   align?: "left" | "right";
+  isMatchWinner?: boolean;
   className?: string;
 }) {
   if (!player) return null;
@@ -108,12 +110,24 @@ function PlayerCard({
         className
       )}
     >
-      <Avatar className="h-8 w-8 shrink-0 sm:h-12 sm:w-12">
-        <AvatarImage src={player.avatar_url ?? undefined} />
-        <AvatarFallback>
-          <User className="h-4 w-4" />
-        </AvatarFallback>
-      </Avatar>
+      <div className="relative shrink-0">
+        <Avatar
+          className={cn(
+            "h-8 w-8 sm:h-12 sm:w-12",
+            isMatchWinner && "ring-primary/50 ring-2"
+          )}
+        >
+          <AvatarImage src={player.avatar_url ?? undefined} />
+          <AvatarFallback>
+            <User className="h-4 w-4" />
+          </AvatarFallback>
+        </Avatar>
+        {isMatchWinner && (
+          <div className="bg-primary absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full text-white sm:h-5 sm:w-5">
+            <Trophy className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
+          </div>
+        )}
+      </div>
       <div className={cn("min-w-0", isRight && "text-right")}>
         <div
           className={cn(
@@ -124,12 +138,20 @@ function PlayerCard({
           {player.handle ? (
             <Link
               href={`/profile/${player.handle}`}
-              className="text-foreground/80 truncate text-sm font-medium hover:underline sm:text-base"
+              className={cn(
+                "truncate text-sm font-medium hover:underline sm:text-base",
+                isMatchWinner ? "text-primary" : "text-foreground/80"
+              )}
             >
               {displayName}
             </Link>
           ) : (
-            <span className="text-foreground/80 truncate text-sm font-medium sm:text-base">
+            <span
+              className={cn(
+                "truncate text-sm font-medium sm:text-base",
+                isMatchWinner ? "text-primary" : "text-foreground/80"
+              )}
+            >
               {displayName}
             </span>
           )}
@@ -213,6 +235,7 @@ function GameNode({
   game,
   state,
   isLast,
+  locked,
   myAltId,
   opponentAltId,
   tournamentId,
@@ -226,6 +249,7 @@ function GameNode({
   game: GameData;
   state: GameNodeState;
   isLast: boolean;
+  locked: boolean;
   myAltId: number | null;
   opponentAltId: number | null;
   tournamentId: number;
@@ -310,6 +334,7 @@ function GameNode({
   }
   if (state === "won" || state === "lost") {
     const isSelfCorrectable =
+      !locked &&
       game.status === "agreed" &&
       isParticipant &&
       game.my_selection != null &&
@@ -327,7 +352,7 @@ function GameNode({
             className={cn(
               "relative flex h-7 w-7 items-center justify-center rounded-full transition-all duration-300",
               state === "won"
-                ? "bg-emerald-500/20 text-emerald-600 dark:text-emerald-400"
+                ? "text-primary bg-emerald-500/20"
                 : "bg-muted text-muted-foreground",
               isSelfCorrectable &&
                 "hover:ring-foreground/10 cursor-pointer hover:ring-2",
@@ -425,7 +450,7 @@ function GameNode({
             className={cn(
               "hover:ring-foreground/10 relative flex h-7 w-7 cursor-pointer items-center justify-center rounded-full transition-all duration-300 hover:ring-2",
               iWon
-                ? "bg-emerald-500/20 text-emerald-600 dark:text-emerald-400"
+                ? "text-primary bg-emerald-500/20"
                 : "bg-muted text-muted-foreground"
             )}
             title="Click to change"
@@ -620,6 +645,15 @@ function GameStrip({
     (g) => !["agreed", "resolved", "cancelled"].includes(g.status)
   )?.id;
 
+  // Determine the highest game_number that has been reported (non-pending).
+  // Any agreed game before this is locked — its result is final.
+  const highestReportedGameNumber = visibleGames.reduce((max, g) => {
+    if (g.status !== "pending" && g.status !== "cancelled") {
+      return Math.max(max, g.game_number);
+    }
+    return max;
+  }, 0);
+
   return (
     <div className="flex items-center gap-2 overflow-x-auto pt-4 sm:gap-3 sm:pt-6">
       <span className="text-muted-foreground/60 hidden shrink-0 text-[11px] sm:inline">
@@ -627,15 +661,20 @@ function GameStrip({
       </span>
       <div className="flex flex-1 items-center justify-center gap-2 sm:gap-3">
         {visibleGames.map((game, i) => {
+          // A game is locked if a later game has already been reported
+          const locked = game.game_number < highestReportedGameNumber;
+
           let state: GameNodeState = "future";
 
           if (game.status === "disputed") {
             state = "disputed";
           } else if (
+            !locked &&
             game.status === "agreed" &&
             isParticipant &&
             game.my_selection != null
           ) {
+            // Self-correct only on the latest reported game
             state = "self-correct";
           } else if (resolvedStatuses.includes(game.status)) {
             state = game.winner_alt_id === myAltId ? "won" : "lost";
@@ -654,6 +693,7 @@ function GameStrip({
               game={game}
               state={state}
               isLast={i === visibleGames.length - 1}
+              locked={locked}
               myAltId={myAltId}
               opponentAltId={opponentAltId}
               tournamentId={tournamentId}
@@ -960,6 +1000,9 @@ export function MatchHeader({
   userAltId,
   onGameUpdated,
 }: MatchHeaderProps) {
+  const winsNeeded = Math.ceil(bestOf / 2);
+  const matchDecided = myWins >= winsNeeded || opponentWins >= winsNeeded;
+
   return (
     <div className="space-y-2">
       <Card>
@@ -1012,6 +1055,7 @@ export function MatchHeader({
               stats={opponentStats}
               showIGN={true}
               align="left"
+              isMatchWinner={matchDecided && opponentWins > myWins}
               className="min-w-0 flex-1"
             />
 
@@ -1027,6 +1071,7 @@ export function MatchHeader({
               stats={myStats}
               showIGN={false}
               align="right"
+              isMatchWinner={matchDecided && myWins > opponentWins}
               className="min-w-0 flex-1"
             />
           </div>

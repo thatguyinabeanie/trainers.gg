@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useMemo } from "react";
+import { type ReactNode, useState, useCallback, useMemo } from "react";
 import { useSupabaseQuery } from "@/lib/supabase";
 import { getTournamentAuditLog } from "@trainers/supabase";
 import type { TypedSupabaseClient, Database } from "@trainers/supabase";
@@ -256,8 +256,16 @@ export function TournamentAuditLog({ tournament }: TournamentAuditLogProps) {
                         )}
                       </div>
                       {metadata?.description != null && (
-                        <p className="text-foreground mt-0.5 text-sm">
-                          {String(metadata.description)}
+                        <p className="text-muted-foreground mt-0.5 text-sm">
+                          {renderDescription(
+                            String(metadata.description),
+                            metadata.actor_name
+                              ? String(metadata.actor_name)
+                              : undefined,
+                            metadata.winner_name
+                              ? String(metadata.winner_name)
+                              : undefined
+                          )}
                         </p>
                       )}
                       <p className="text-muted-foreground mt-1 text-xs">
@@ -273,6 +281,48 @@ export function TournamentAuditLog({ tournament }: TournamentAuditLogProps) {
       </Card>
     </div>
   );
+}
+
+/**
+ * Splits a description string into styled segments, bolding the actor name
+ * and highlighting the winner name with a trophy-colored accent.
+ */
+function renderDescription(
+  description: string,
+  actorName?: string,
+  winnerName?: string
+): ReactNode {
+  // Build a list of names to highlight: [name, className]
+  const highlights: [string, string][] = [];
+  if (winnerName) {
+    highlights.push([winnerName, "text-foreground font-semibold"]);
+  }
+  if (actorName && actorName !== winnerName) {
+    highlights.push([actorName, "text-foreground font-medium"]);
+  }
+
+  if (highlights.length === 0) return description;
+
+  // Escape names for regex and match any of them
+  const pattern = new RegExp(
+    `(${highlights.map(([n]) => n.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|")})`,
+    "g"
+  );
+
+  const parts = description.split(pattern);
+  const highlightMap = new Map(highlights);
+
+  return parts.map((part, i) => {
+    const cls = highlightMap.get(part);
+    if (cls) {
+      return (
+        <span key={i} className={cls}>
+          {part}
+        </span>
+      );
+    }
+    return part;
+  });
 }
 
 function formatTimeAgo(dateStr: string): string {

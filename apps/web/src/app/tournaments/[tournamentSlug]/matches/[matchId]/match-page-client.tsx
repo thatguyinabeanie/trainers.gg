@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useSupabase, useSupabaseQuery } from "@/lib/supabase";
 import { getMatchGames, getMatchGamesForPlayer } from "@trainers/supabase";
 import type { TypedSupabaseClient } from "@trainers/supabase";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Users, MessageSquare, GripHorizontal } from "lucide-react";
+import { Users, MessageSquare } from "lucide-react";
 import type { RealtimeChannel } from "@supabase/supabase-js";
 
 import {
@@ -79,39 +79,6 @@ export function MatchPageClient({
   const [gamesRefreshKey, setGamesRefreshKey] = useState(0);
   const [messagesRefreshKey, setMessagesRefreshKey] = useState(0);
 
-  // ==========================================================================
-  // Chat resize (desktop)
-  // ==========================================================================
-  const [chatHeight, setChatHeight] = useState<number | null>(null);
-  const chatContainerRef = useRef<HTMLDivElement>(null);
-  const dragRef = useRef<{ startY: number; startHeight: number } | null>(null);
-
-  const onResizePointerDown = useCallback((e: React.PointerEvent) => {
-    e.preventDefault();
-    const el = chatContainerRef.current;
-    if (!el) return;
-
-    dragRef.current = {
-      startY: e.clientY,
-      startHeight: el.offsetHeight,
-    };
-
-    const target = e.currentTarget as HTMLElement;
-    target.setPointerCapture(e.pointerId);
-  }, []);
-
-  const onResizePointerMove = useCallback((e: React.PointerEvent) => {
-    if (!dragRef.current) return;
-    // Dragging up = larger chat (negative delta on Y)
-    const delta = dragRef.current.startY - e.clientY;
-    const newHeight = Math.max(200, dragRef.current.startHeight + delta);
-    setChatHeight(newHeight);
-  }, []);
-
-  const onResizePointerUp = useCallback(() => {
-    dragRef.current = null;
-  }, []);
-
   // Perspective-based names and IDs
   const myAltId = isPlayer1 ? alt1Id : isParticipant ? alt2Id : null;
   const opponentAltId = isPlayer1 ? alt2Id : isParticipant ? alt1Id : null;
@@ -156,13 +123,15 @@ export function MatchPageClient({
   const username = myPlayer?.username ?? null;
   const displayName = myPlayer?.display_name ?? null;
 
-  const { viewers, typingUsers, setTyping } = useMatchPresence({
-    matchId,
-    username,
-    displayName,
-    isStaff,
-    isParticipant,
-  });
+  const { viewers, typingUsers, setTyping, broadcastJudgeRequest } =
+    useMatchPresence({
+      matchId,
+      username,
+      displayName,
+      isStaff,
+      isParticipant,
+      onJudgeRequest: setStaffRequested,
+    });
 
   const handleTypingStart = useCallback(() => {
     setTyping(true);
@@ -309,7 +278,10 @@ export function MatchPageClient({
     staffRequested,
     tournamentId,
     messagesRefreshKey,
-    onStaffRequestChange: setStaffRequested,
+    onStaffRequestChange: (requested: boolean) => {
+      setStaffRequested(requested);
+      broadcastJudgeRequest(requested);
+    },
     viewers,
     typingUsers,
     onTypingStart: handleTypingStart,
@@ -423,22 +395,8 @@ export function MatchPageClient({
 
       {/* Desktop layout: Chat fills height, Teams at bottom */}
       <div className="hidden min-h-0 flex-1 lg:flex lg:flex-col lg:gap-4">
-        <div
-          ref={chatContainerRef}
-          className="min-h-[300px] flex-1"
-          style={chatHeight ? { height: chatHeight, flex: "none" } : undefined}
-        >
+        <div className="min-h-[300px] flex-1">
           <MatchChat {...chatProps} />
-        </div>
-
-        {/* Resize handle */}
-        <div
-          className="group flex h-4 shrink-0 cursor-ns-resize touch-none items-center justify-center"
-          onPointerDown={onResizePointerDown}
-          onPointerMove={onResizePointerMove}
-          onPointerUp={onResizePointerUp}
-        >
-          <GripHorizontal className="text-muted-foreground/30 group-hover:text-muted-foreground/60 h-4 w-4 transition-colors" />
         </div>
 
         {/* Teams — snapped to bottom */}

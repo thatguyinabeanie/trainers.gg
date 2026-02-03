@@ -38,7 +38,7 @@ export function TopNav() {
             href="/teams"
             className="text-muted-foreground hover:text-foreground text-sm transition-colors"
           >
-            Team Builder
+            Builder
           </Link>
           <Link
             href="/articles"

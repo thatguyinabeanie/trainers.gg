@@ -38,7 +38,10 @@ export function useMatchPresence({
   displayName,
   isStaff,
   isParticipant,
-}: Omit<PresenceIndicatorProps, "onTypingUsersChange">) {
+  onJudgeRequest,
+}: Omit<PresenceIndicatorProps, "onTypingUsersChange"> & {
+  onJudgeRequest?: (requested: boolean) => void;
+}) {
   const supabase = useSupabase();
   const [viewers, setViewers] = useState<PresenceUser[]>([]);
   const [typingUsers, setTypingUsers] = useState<string[]>([]);
@@ -49,6 +52,8 @@ export function useMatchPresence({
     isStaff,
     isParticipant,
   });
+  const onJudgeRequestRef = useRef(onJudgeRequest);
+  onJudgeRequestRef.current = onJudgeRequest;
 
   useEffect(() => {
     if (!username) return;
@@ -76,6 +81,17 @@ export function useMatchPresence({
       setViewers(allUsers);
       setTypingUsers(typing);
     });
+
+    // Listen for judge-request broadcast events from other clients
+    channel.on(
+      "broadcast",
+      { event: "judge-request" },
+      ({ payload }: { payload: { requested: boolean } }) => {
+        if (typeof payload?.requested === "boolean") {
+          onJudgeRequestRef.current?.(payload.requested);
+        }
+      }
+    );
 
     channel.subscribe(async (status) => {
       if (status === "SUBSCRIBED") {
@@ -106,7 +122,17 @@ export function useMatchPresence({
     [username]
   );
 
-  return { viewers, typingUsers, setTyping };
+  // Broadcast judge request state to all other clients on this channel
+  const broadcastJudgeRequest = useCallback(async (requested: boolean) => {
+    if (!channelRef.current) return;
+    await channelRef.current.send({
+      type: "broadcast",
+      event: "judge-request",
+      payload: { requested },
+    });
+  }, []);
+
+  return { viewers, typingUsers, setTyping, broadcastJudgeRequest };
 }
 
 // ============================================================================
