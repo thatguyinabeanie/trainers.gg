@@ -751,24 +751,27 @@ function DisputeAlert({
   onGameUpdated: () => void;
 }) {
   const [isPending, setIsPending] = useState(false);
-  const [overrideWinner, setOverrideWinner] = useState<number | null>(null);
+  const [overrideWinners, setOverrideWinners] = useState<
+    Record<number, number | null>
+  >({});
 
   const disputedGames = games.filter((g) => g.status === "disputed");
   if (disputedGames.length === 0) return null;
 
   const handleOverride = async (gameId: number) => {
-    if (!overrideWinner) return;
+    const winner = overrideWinners[gameId];
+    if (!winner) return;
     setIsPending(true);
-    const result = await judgeOverrideGameAction(
-      gameId,
-      overrideWinner,
-      tournamentId
-    );
+    const result = await judgeOverrideGameAction(gameId, winner, tournamentId);
     setIsPending(false);
 
     if (result.success) {
       toast.success("Game resolved");
-      setOverrideWinner(null);
+      setOverrideWinners((prev) => {
+        const next = { ...prev };
+        delete next[gameId];
+        return next;
+      });
       onGameUpdated();
     } else {
       toast.error(result.error);
@@ -823,11 +826,14 @@ function DisputeAlert({
               <div className="flex items-center gap-1.5">
                 <select
                   className="border-input bg-background h-6 rounded-md border px-1.5 text-xs"
-                  value={overrideWinner ?? ""}
+                  value={overrideWinners[game.id] ?? ""}
                   onChange={(e) =>
-                    setOverrideWinner(
-                      e.target.value ? parseInt(e.target.value) : null
-                    )
+                    setOverrideWinners((prev) => ({
+                      ...prev,
+                      [game.id]: e.target.value
+                        ? parseInt(e.target.value)
+                        : null,
+                    }))
                   }
                 >
                   <option value="">Winner...</option>
@@ -839,7 +845,7 @@ function DisputeAlert({
                 <Button
                   size="sm"
                   className="h-6 gap-0.5 px-2 text-[11px]"
-                  disabled={isPending || !overrideWinner}
+                  disabled={isPending || !overrideWinners[game.id]}
                   onClick={() => handleOverride(game.id)}
                 >
                   {isPending ? (
