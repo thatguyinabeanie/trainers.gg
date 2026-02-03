@@ -96,6 +96,5 @@
       "WebFetch(domain:www.npmjs.com)"
     ]
   },
-  "enableAllProjectMcpServers": true,
-  "enabledMcpjsonServers": ["playwright"]
+  "enableAllProjectMcpServers": true
 }
