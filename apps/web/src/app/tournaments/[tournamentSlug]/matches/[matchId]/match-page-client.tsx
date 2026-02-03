@@ -44,6 +44,8 @@ export interface MatchPageClientProps {
   myTeam: TeamData | null;
   opponentTeam: TeamData | null;
   openTeamSheets: boolean;
+  currentUserUsername: string | null;
+  currentUserDisplayName: string | null;
 }
 
 // =============================================================================
@@ -72,6 +74,8 @@ export function MatchPageClient({
   myTeam,
   opponentTeam,
   openTeamSheets: _openTeamSheets,
+  currentUserUsername,
+  currentUserDisplayName,
 }: MatchPageClientProps) {
   const supabase = useSupabase();
   const [matchStatus, setMatchStatus] = useState(initialStatus);
@@ -108,26 +112,24 @@ export function MatchPageClient({
   const headerMyStats = isParticipant ? myStats : player2Stats;
 
   // Header uses perspective-adjusted names and IDs
-  const headerMyAltId = isParticipant ? myAltId : alt1Id;
-  const headerOpponentAltId = isParticipant ? opponentAltId : alt2Id;
+  // For staff: left=player1 (opponent), right=player2 (my) — match alt IDs accordingly
+  const headerMyAltId = isParticipant ? myAltId : alt2Id;
+  const headerOpponentAltId = isParticipant ? opponentAltId : alt1Id;
   const headerMyName = isParticipant
     ? myName
-    : (player1?.display_name ?? player1?.username ?? "Player 1");
+    : (player2?.display_name ?? player2?.username ?? "Player 2");
   const headerOpponentName = isParticipant
     ? opponentName
-    : (player2?.display_name ?? player2?.username ?? "Player 2");
+    : (player1?.display_name ?? player1?.username ?? "Player 1");
 
   // ==========================================================================
-  // Presence
+  // Presence — use currentUser props so staff/judges also join the channel
   // ==========================================================================
-  const username = myPlayer?.username ?? null;
-  const displayName = myPlayer?.display_name ?? null;
-
   const { viewers, typingUsers, setTyping, broadcastJudgeRequest } =
     useMatchPresence({
       matchId,
-      username,
-      displayName,
+      username: currentUserUsername,
+      displayName: currentUserDisplayName,
       isStaff,
       isParticipant,
       onJudgeRequest: setStaffRequested,
@@ -284,6 +286,7 @@ export function MatchPageClient({
     },
     viewers,
     typingUsers,
+    currentUsername: currentUserUsername,
     onTypingStart: handleTypingStart,
     onTypingStop: handleTypingStop,
   };

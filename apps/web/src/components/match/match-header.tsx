@@ -114,7 +114,7 @@ function PlayerCard({
         <Avatar
           className={cn(
             "h-8 w-8 sm:h-12 sm:w-12",
-            isMatchWinner && "ring-primary/50 ring-2"
+            isMatchWinner && "ring-primary ring-2 after:mix-blend-normal"
           )}
         >
           <AvatarImage src={player.avatar_url ?? undefined} />
@@ -123,7 +123,7 @@ function PlayerCard({
           </AvatarFallback>
         </Avatar>
         {isMatchWinner && (
-          <div className="bg-primary absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full text-white sm:h-5 sm:w-5">
+          <div className="bg-primary absolute -top-1 -right-1 z-10 flex h-4 w-4 items-center justify-center rounded-full text-white sm:h-5 sm:w-5">
             <Trophy className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
           </div>
         )}
@@ -340,39 +340,57 @@ function GameNode({
       game.my_selection != null &&
       !isEditing;
 
+    // For staff/judges: show winner's initial in a neutral teal circle
+    const winnerName = game.winner_alt_id === myAltId ? myName : opponentName;
+    const winnerInitial = winnerName.charAt(0).toUpperCase();
+
     return (
       <>
         <div className="flex items-center gap-1.5">
           <span className="text-muted-foreground text-[10px] tabular-nums">
             {game.game_number}
           </span>
-          <button
-            type="button"
-            onClick={isSelfCorrectable ? () => setIsEditing(true) : undefined}
-            className={cn(
-              "relative flex h-7 w-7 items-center justify-center rounded-full transition-all duration-300",
-              state === "won"
-                ? "text-primary bg-emerald-500/20"
-                : "bg-muted text-muted-foreground",
-              isSelfCorrectable &&
-                "hover:ring-foreground/10 cursor-pointer hover:ring-2",
-              !isSelfCorrectable && "cursor-default",
-              game.status === "resolved" && "ring-1 ring-amber-500/30"
-            )}
-            title={
-              isSelfCorrectable
-                ? "Click to change"
-                : game.status === "resolved"
-                  ? "Resolved by judge"
-                  : undefined
-            }
-          >
-            {state === "won" ? (
-              <Trophy className="h-3.5 w-3.5" />
-            ) : (
-              <X className="h-3.5 w-3.5" />
-            )}
-          </button>
+          {!isParticipant ? (
+            // Staff view: neutral circle with winner's initial
+            <div
+              className={cn(
+                "bg-primary/15 text-primary relative flex h-7 w-7 cursor-default items-center justify-center rounded-full text-xs font-semibold transition-all duration-300",
+                game.status === "resolved" && "ring-1 ring-amber-500/30"
+              )}
+              title={`${winnerName} won`}
+            >
+              {winnerInitial}
+            </div>
+          ) : (
+            // Player view: trophy / X from their perspective
+            <button
+              type="button"
+              onClick={isSelfCorrectable ? () => setIsEditing(true) : undefined}
+              className={cn(
+                "relative flex h-7 w-7 items-center justify-center rounded-full transition-all duration-300",
+                state === "won"
+                  ? "bg-primary/15 text-primary"
+                  : "bg-muted text-muted-foreground",
+                isSelfCorrectable &&
+                  "hover:ring-foreground/10 cursor-pointer hover:ring-2",
+                !isSelfCorrectable && "cursor-default",
+                game.status === "resolved" && "ring-1 ring-amber-500/30"
+              )}
+              title={
+                isSelfCorrectable
+                  ? "Click to change"
+                  : game.status === "resolved"
+                    ? "Resolved by judge"
+                    : undefined
+              }
+            >
+              {state === "won" ? (
+                <Trophy className="h-3.5 w-3.5" />
+              ) : (
+                <X className="h-3.5 w-3.5" />
+              )}
+            </button>
+          )}
           {isStaff && (
             <button
               type="button"
@@ -450,7 +468,7 @@ function GameNode({
             className={cn(
               "hover:ring-foreground/10 relative flex h-7 w-7 cursor-pointer items-center justify-center rounded-full transition-all duration-300 hover:ring-2",
               iWon
-                ? "text-primary bg-emerald-500/20"
+                ? "text-primary bg-primary/15"
                 : "bg-muted text-muted-foreground"
             )}
             title="Click to change"
@@ -655,11 +673,8 @@ function GameStrip({
   }, 0);
 
   return (
-    <div className="flex items-center gap-2 overflow-x-auto pt-4 sm:gap-3 sm:pt-6">
-      <span className="text-muted-foreground/60 hidden shrink-0 text-[11px] sm:inline">
-        Score reporting
-      </span>
-      <div className="flex flex-1 items-center justify-center gap-2 sm:gap-3">
+    <div className="flex items-center justify-center overflow-x-auto pt-4 sm:pt-6">
+      <div className="flex items-center gap-2 sm:gap-3">
         {visibleGames.map((game, i) => {
           // A game is locked if a later game has already been reported
           const locked = game.game_number < highestReportedGameNumber;

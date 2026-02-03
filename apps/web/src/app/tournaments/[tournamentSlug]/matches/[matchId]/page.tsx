@@ -50,13 +50,22 @@ export default async function MatchPage({ params }: PageProps) {
   let userAltId: number | null = null;
   let isStaff = false;
 
+  let currentUserUsername: string | null = null;
+  let currentUserDisplayName: string | null = null;
+
   if (user) {
     const { data: userAlts } = await supabase
       .from("alts")
-      .select("id")
+      .select("id, username, display_name")
       .eq("user_id", user.id);
 
     const userAltIds = new Set((userAlts ?? []).map((a) => a.id));
+
+    // Use the first alt's info for presence (works for both participants and staff)
+    if (userAlts && userAlts.length > 0) {
+      currentUserUsername = userAlts[0]!.username;
+      currentUserDisplayName = userAlts[0]!.display_name;
+    }
 
     isPlayer1 =
       matchData.match.alt1_id !== null &&
@@ -301,6 +310,8 @@ export default async function MatchPage({ params }: PageProps) {
         myTeam={myTeam}
         opponentTeam={opponentTeam}
         openTeamSheets={openTeamSheets}
+        currentUserUsername={currentUserUsername}
+        currentUserDisplayName={currentUserDisplayName}
       />
     </PageContainer>
   );

@@ -68,12 +68,10 @@ export function useMatchPresence({
 
       for (const presences of Object.values(state)) {
         for (const presence of presences) {
-          // Don't include self
-          if (presence.username !== username) {
-            allUsers.push(presence);
-            if (presence.isTyping) {
-              typing.push(presence.displayName ?? presence.username);
-            }
+          allUsers.push(presence);
+          // Only track typing for other users
+          if (presence.isTyping && presence.username !== username) {
+            typing.push(presence.displayName ?? presence.username);
           }
         }
       }
@@ -141,38 +139,67 @@ export function useMatchPresence({
 
 export function ViewerAvatars({
   viewers,
+  currentUsername,
   className,
 }: {
   viewers: PresenceUser[];
+  currentUsername: string | null;
   className?: string;
 }) {
   if (viewers.length === 0) return null;
 
+  // Sort: self first, then staff, then participants
+  const sorted = [...viewers].sort((a, b) => {
+    if (a.username === currentUsername) return -1;
+    if (b.username === currentUsername) return 1;
+    if (a.isStaff && !b.isStaff) return -1;
+    if (!a.isStaff && b.isStaff) return 1;
+    return 0;
+  });
+
+  const otherCount = viewers.filter(
+    (v) => v.username !== currentUsername
+  ).length;
+
   return (
     <div className={cn("flex items-center gap-1.5", className)}>
       <div className="flex -space-x-1.5">
-        {viewers.slice(0, 5).map((viewer) => (
-          <Avatar
-            key={viewer.username}
-            className={cn(
-              "ring-background h-5 w-5 ring-2",
-              viewer.isStaff && "ring-amber-500/50"
-            )}
-          >
-            <AvatarFallback className="text-[8px]">
-              {viewer.isStaff ? (
-                <Gavel className="h-2.5 w-2.5" />
-              ) : (
-                <User className="h-2.5 w-2.5" />
+        {sorted.slice(0, 5).map((viewer) => {
+          const isSelf = viewer.username === currentUsername;
+          return (
+            <Avatar
+              key={viewer.username}
+              className={cn(
+                "h-5 w-5 ring-2",
+                isSelf
+                  ? "ring-primary/50"
+                  : viewer.isStaff
+                    ? "ring-amber-500/50"
+                    : "ring-background"
               )}
-            </AvatarFallback>
-          </Avatar>
-        ))}
+              title={
+                isSelf
+                  ? "You"
+                  : `${viewer.displayName ?? viewer.username}${viewer.isStaff ? " (Staff)" : ""}`
+              }
+            >
+              <AvatarFallback className="text-[8px]">
+                {viewer.isStaff ? (
+                  <Gavel className="h-2.5 w-2.5" />
+                ) : (
+                  <User className="h-2.5 w-2.5" />
+                )}
+              </AvatarFallback>
+            </Avatar>
+          );
+        })}
       </div>
       <span className="text-muted-foreground text-[10px]">
-        {viewers.length === 1
-          ? `${viewers[0]!.displayName ?? viewers[0]!.username} is viewing`
-          : `${viewers.length} viewing`}
+        {otherCount === 0
+          ? "Only you"
+          : otherCount === 1
+            ? `${sorted.find((v) => v.username !== currentUsername)?.displayName ?? sorted.find((v) => v.username !== currentUsername)?.username} + you`
+            : `${otherCount} others + you`}
       </span>
     </div>
   );

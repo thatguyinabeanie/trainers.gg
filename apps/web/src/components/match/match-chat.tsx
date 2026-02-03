@@ -60,6 +60,7 @@ interface MatchChatProps {
   // Presence
   viewers: ReturnType<typeof useMatchPresence>["viewers"];
   typingUsers: string[];
+  currentUsername: string | null;
   onTypingStart: () => void;
   onTypingStop: () => void;
 }
@@ -80,6 +81,7 @@ export function MatchChat({
   onStaffRequestChange,
   viewers,
   typingUsers,
+  currentUsername,
   onTypingStart,
   onTypingStop,
 }: MatchChatProps) {
@@ -215,7 +217,12 @@ export function MatchChat({
             <MessageSquare className="h-4 w-4" />
             Match Chat
           </CardTitle>
-          {viewers.length > 0 && <ViewerAvatars viewers={viewers} />}
+          {viewers.length > 0 && (
+            <ViewerAvatars
+              viewers={viewers}
+              currentUsername={currentUsername}
+            />
+          )}
         </div>
       </CardHeader>
       <CardContent className="flex min-h-0 flex-1 flex-col p-0">
