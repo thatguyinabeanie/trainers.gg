@@ -295,13 +295,14 @@ export async function generateRoundPairings(
 }
 
 /**
- * Start a round (set status to active)
+ * Start a round (set status to active).
+ * Also activates all non-bye matches and creates their games.
  */
 export async function startRound(supabase: TypedClient, roundId: number) {
   const user = await getCurrentUser(supabase);
   if (!user) throw new Error("Not authenticated");
 
-  // Get round with tournament info
+  // Get round with tournament and phase info (including best_of for game creation)
   const { data: round } = await supabase
     .from("tournament_rounds")
     .select(
@@ -313,6 +314,7 @@ export async function startRound(supabase: TypedClient, roundId: number) {
       tournament_phases!inner (
         id,
         tournament_id,
+        best_of,
         tournaments!tournament_phases_tournament_id_fkey!inner (
           organization_id,
           status,
@@ -331,6 +333,7 @@ export async function startRound(supabase: TypedClient, roundId: number) {
   const phase = round.tournament_phases as unknown as {
     id: number;
     tournament_id: number;
+    best_of: number | null;
     tournaments: {
       organization_id: number;
       status: string;
@@ -366,28 +369,61 @@ export async function startRound(supabase: TypedClient, roundId: number) {
     }
   }
 
-  // Check that pairings exist
-  const { count } = await supabase
+  // Get all matches in this round (needed for activation and game creation)
+  const { data: matches } = await supabase
     .from("tournament_matches")
-    .select("*", { count: "exact", head: true })
+    .select("id, is_bye")
     .eq("round_id", roundId);
 
-  if (!count || count === 0) {
+  if (!matches || matches.length === 0) {
     throw new Error(
       "Cannot start round without pairings. Generate pairings first."
     );
   }
 
+  const now = new Date().toISOString();
+
   // Update round status
-  const { error } = await supabase
+  const { error: roundError } = await supabase
     .from("tournament_rounds")
     .update({
       status: "active",
-      start_time: new Date().toISOString(),
+      start_time: now,
     })
     .eq("id", roundId);
 
-  if (error) throw error;
+  if (roundError) throw roundError;
+
+  // Activate all non-bye matches
+  const nonByeMatches = matches.filter((m) => !m.is_bye);
+  if (nonByeMatches.length > 0) {
+    const nonByeIds = nonByeMatches.map((m) => m.id);
+
+    const { error: matchError } = await supabase
+      .from("tournament_matches")
+      .update({
+        status: "active",
+        start_time: now,
+      })
+      .in("id", nonByeIds);
+
+    if (matchError) throw matchError;
+
+    // Create games for each non-bye match
+    const bestOf = phase.best_of ?? 3;
+    const gameInserts = nonByeMatches.flatMap((match) =>
+      Array.from({ length: bestOf }, (_, i) => ({
+        match_id: match.id,
+        game_number: i + 1,
+      }))
+    );
+
+    const { error: gamesError } = await supabase
+      .from("match_games")
+      .insert(gameInserts);
+
+    if (gamesError) throw gamesError;
+  }
 
   return { success: true };
 }

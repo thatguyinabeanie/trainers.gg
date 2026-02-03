@@ -247,8 +247,7 @@ export function MatchPageClient({
             <Card>
               <CardContent className="py-8 text-center">
                 <p className="text-muted-foreground">
-                  No games created yet. The match needs to be started by a
-                  tournament organizer.
+                  No games yet. Games will appear once the round starts.
                 </p>
               </CardContent>
             </Card>

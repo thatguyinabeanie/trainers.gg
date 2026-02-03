@@ -148,11 +148,11 @@ export async function reportMatchResult(
     throw new Error("You don't have permission to report this match result");
   }
 
-  // Validate match is in progress (must be started first)
+  // Validate match is in progress
   if (match.status !== "active") {
     throw new Error(
       match.status === "pending"
-        ? "Match must be started before reporting results"
+        ? "Match is not active yet. The round must be started first."
         : `Cannot report result for match with status "${match.status}"`
     );
   }
