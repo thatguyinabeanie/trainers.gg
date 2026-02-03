@@ -158,7 +158,9 @@ export function NotificationBell({ userId }: NotificationBellProps) {
           }
         }
       )
-      .subscribe();
+      .subscribe((status, err) => {
+        if (err) console.error("[notifications] subscribe error:", err);
+      });
 
     // Request notification permission on first load
     if ("Notification" in window && Notification.permission === "default") {

@@ -187,7 +187,9 @@ export function MatchPageClient({
           setMessagesRefreshKey((k) => k + 1);
         }
       )
-      .subscribe();
+      .subscribe((status, err) => {
+        if (err) console.error("[match-messages] subscribe error:", err);
+      });
     channels.push(msgChannel);
 
     // Match status changes
@@ -213,7 +215,9 @@ export function MatchPageClient({
           setGamesRefreshKey((k) => k + 1);
         }
       )
-      .subscribe();
+      .subscribe((status, err) => {
+        if (err) console.error("[match-status] subscribe error:", err);
+      });
     channels.push(matchChannel);
 
     // Game updates for live score changes
@@ -231,7 +235,9 @@ export function MatchPageClient({
           setGamesRefreshKey((k) => k + 1);
         }
       )
-      .subscribe();
+      .subscribe((status, err) => {
+        if (err) console.error("[match-games] subscribe error:", err);
+      });
     channels.push(gamesChannel);
 
     return () => {
