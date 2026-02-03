@@ -7,7 +7,6 @@
 
 "use server";
 
-import { checkBotId } from "botid/server";
 import { updateTag } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { getErrorMessage } from "@/lib/utils";
@@ -21,15 +20,7 @@ import {
 } from "@trainers/supabase";
 import type { Database } from "@trainers/supabase";
 import { CacheTags } from "@/lib/cache";
-
-type ActionResult<T = void> =
-  | { success: true; data: T }
-  | { success: false; error: string };
-
-async function rejectBots(): Promise<void> {
-  const { isBot } = await checkBotId();
-  if (isBot) throw new Error("Access denied");
-}
+import { type ActionResult, rejectBots } from "./utils";
 
 // =============================================================================
 // Blind Scoring

@@ -11,10 +11,7 @@ import {
   markAllNotificationsRead,
   deleteNotification,
 } from "@trainers/supabase";
-
-type ActionResult<T = void> =
-  | { success: true; data: T }
-  | { success: false; error: string };
+import type { ActionResult } from "./utils";
 
 /**
  * Mark a single notification as read.

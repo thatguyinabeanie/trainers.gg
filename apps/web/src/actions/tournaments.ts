@@ -7,7 +7,6 @@
 
 "use server";
 
-import { checkBotId } from "botid/server";
 import { updateTag } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { getErrorMessage } from "@/lib/utils";
@@ -49,21 +48,12 @@ import {
 import type { Database } from "@trainers/supabase";
 import { CacheTags } from "@/lib/cache";
 
+import { type ActionResult, rejectBots } from "./utils";
+
 type TournamentFormat = Database["public"]["Enums"]["tournament_format"];
 type TournamentStatus = Database["public"]["Enums"]["tournament_status"];
 
-/**
- * Action result type for consistent error handling
- */
-export type ActionResult<T = void> =
-  | { success: true; data: T }
-  | { success: false; error: string };
-
-/** Reject requests classified as bots by Vercel BotID */
-async function rejectBots(): Promise<void> {
-  const { isBot } = await checkBotId();
-  if (isBot) throw new Error("Access denied");
-}
+export type { ActionResult };
 
 // =============================================================================
 // Tournament CRUD
