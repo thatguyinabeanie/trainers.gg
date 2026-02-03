@@ -42,12 +42,14 @@ interface NotificationBellProps {
 
 function isSafeRelativeUrl(url: string | null | undefined): url is string {
   if (!url) return false;
-  const trimmed = url.trim();
-  return (
-    trimmed.startsWith("/") &&
-    !trimmed.startsWith("//") &&
-    !trimmed.startsWith("/\\")
-  );
+  let decoded: string;
+  try {
+    decoded = decodeURIComponent(url.trim());
+  } catch {
+    return false;
+  }
+  // Must start with / and the second char must not be / or \
+  return /^\/[^/\\]/.test(decoded);
 }
 
 const notificationIcons: Record<string, typeof Swords> = {
