@@ -84,13 +84,13 @@ export default async function MatchPage({ params }: PageProps) {
     }
   }
 
-  // Type cast players to include battle_tag
+  // Type cast players to include in_game_name (IGN)
   const player1 = matchData.player1 as {
     id: number;
     username: string;
     display_name: string | null;
     avatar_url: string | null;
-    battle_tag: string | null;
+    in_game_name: string | null;
   } | null;
 
   const player2 = matchData.player2 as {
@@ -98,7 +98,7 @@ export default async function MatchPage({ params }: PageProps) {
     username: string;
     display_name: string | null;
     avatar_url: string | null;
-    battle_tag: string | null;
+    in_game_name: string | null;
   } | null;
 
   const round = matchData.round as {

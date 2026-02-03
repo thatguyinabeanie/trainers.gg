@@ -17,7 +17,7 @@ export interface PlayerInfo {
   username: string;
   display_name: string | null;
   avatar_url: string | null;
-  battle_tag: string | null;
+  in_game_name: string | null;
 }
 
 export interface PlayerStats {
@@ -75,14 +75,14 @@ function PlayerCard({
             </Badge>
           )}
         </div>
-        {isOpponent && player.battle_tag && (
+        {isOpponent && player.in_game_name && (
           <div className="mt-0.5 flex items-center gap-1">
             <Gamepad2 className="text-muted-foreground h-3 w-3 shrink-0" />
             <span className="text-muted-foreground font-mono text-xs">
-              {player.battle_tag}
+              {player.in_game_name}
             </span>
             <CopyButton
-              text={player.battle_tag}
+              text={player.in_game_name}
               label="Copy IGN to clipboard"
               toastMessage="IGN copied!"
               size="xs"

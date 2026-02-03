@@ -83,10 +83,10 @@ export default function ProfilesPage() {
                   {alt.bio && (
                     <p className="text-muted-foreground">{alt.bio}</p>
                   )}
-                  {alt.battle_tag && (
+                  {alt.in_game_name && (
                     <div className="flex items-center gap-2">
-                      <span className="text-muted-foreground">Battle Tag:</span>
-                      <span className="font-medium">{alt.battle_tag}</span>
+                      <span className="text-muted-foreground">IGN:</span>
+                      <span className="font-medium">{alt.in_game_name}</span>
                     </div>
                   )}
                 </div>

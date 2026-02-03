@@ -36,9 +36,9 @@ const createAltSchema = z.object({
     .string()
     .min(1, "Display name is required")
     .max(64, "Display name must be 64 characters or fewer"),
-  battleTag: z
+  inGameName: z
     .string()
-    .max(50, "Battle tag must be 50 characters or fewer")
+    .max(50, "IGN must be 50 characters or fewer")
     .optional(),
 });
 
@@ -49,9 +49,9 @@ const updateAltSchema = z.object({
     .max(64, "Display name must be 64 characters or fewer")
     .optional(),
   bio: z.string().max(256, "Bio must be 256 characters or fewer").optional(),
-  battleTag: z
+  inGameName: z
     .string()
-    .max(50, "Battle tag must be 50 characters or fewer")
+    .max(50, "IGN must be 50 characters or fewer")
     .nullable()
     .optional(),
 });
@@ -73,7 +73,7 @@ const idSchema = z.number().int().positive();
 export async function createAltAction(data: {
   username: string;
   displayName: string;
-  battleTag?: string;
+  inGameName?: string;
 }): Promise<ActionResult<{ id: number }>> {
   try {
     const validated = createAltSchema.parse(data);
@@ -81,7 +81,7 @@ export async function createAltAction(data: {
     const alt = await createAlt(supabase, {
       username: validated.username,
       displayName: validated.displayName,
-      battleTag: validated.battleTag,
+      inGameName: validated.inGameName,
     });
     return { success: true, data: { id: alt.id } };
   } catch (error) {
@@ -106,7 +106,7 @@ export async function updateAltAction(
   updates: {
     displayName?: string;
     bio?: string;
-    battleTag?: string | null;
+    inGameName?: string | null;
   }
 ): Promise<ActionResult<{ success: true }>> {
   try {

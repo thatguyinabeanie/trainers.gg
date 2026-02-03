@@ -13,7 +13,7 @@ export async function updateAlt(
     displayName?: string;
     bio?: string;
     avatarUrl?: string;
-    battleTag?: string | null;
+    inGameName?: string | null;
   }
 ) {
   // Verify the user owns this alt
@@ -40,8 +40,8 @@ export async function updateAlt(
   if (updates.bio !== undefined) updateData.bio = updates.bio;
   if (updates.avatarUrl !== undefined)
     updateData.avatar_url = updates.avatarUrl;
-  if (updates.battleTag !== undefined)
-    updateData.battle_tag = updates.battleTag;
+  if (updates.inGameName !== undefined)
+    updateData.in_game_name = updates.inGameName;
 
   const { error } = await supabase
     .from("alts")
@@ -174,7 +174,7 @@ export async function createAlt(
     displayName: string;
     bio?: string;
     avatarUrl?: string;
-    battleTag?: string;
+    inGameName?: string;
   }
 ) {
   const {
@@ -201,7 +201,7 @@ export async function createAlt(
       display_name: data.displayName,
       bio: data.bio ?? null,
       avatar_url: data.avatarUrl ?? null,
-      battle_tag: data.battleTag ?? null,
+      in_game_name: data.inGameName ?? null,
     })
     .select()
     .single();

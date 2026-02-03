@@ -373,9 +373,9 @@ function AltsSettings() {
                       <p className="text-muted-foreground text-sm">
                         @{alt.username}
                       </p>
-                      {alt.battle_tag && (
+                      {alt.in_game_name && (
                         <p className="text-muted-foreground text-xs">
-                          Battle Tag: {alt.battle_tag}
+                          IGN: {alt.in_game_name}
                         </p>
                       )}
                     </div>
@@ -435,7 +435,7 @@ function CreateAltForm({
   const [isPending, startTransition] = useTransition();
   const [username, setUsername] = useState("");
   const [displayName, setDisplayName] = useState("");
-  const [battleTag, setBattleTag] = useState("");
+  const [inGameName, setBattleTag] = useState("");
 
   const handleSubmit = () => {
     if (!username.trim() || !displayName.trim()) {
@@ -447,7 +447,7 @@ function CreateAltForm({
       const result = await createAltAction({
         username: username.trim().toLowerCase(),
         displayName: displayName.trim(),
-        battleTag: battleTag.trim() || undefined,
+        inGameName: inGameName.trim() || undefined,
       });
 
       if (result.success) {
@@ -493,11 +493,11 @@ function CreateAltForm({
       </div>
       <div className="space-y-1">
         <Label htmlFor="newBattleTag" className="text-xs">
-          Battle Tag (optional)
+          IGN (optional)
         </Label>
         <Input
           id="newBattleTag"
-          value={battleTag}
+          value={inGameName}
           onChange={(e) => setBattleTag(e.target.value)}
           placeholder="Player#1234"
         />
@@ -523,7 +523,7 @@ function EditAltForm({
     id: number;
     username: string;
     display_name: string;
-    battle_tag: string | null;
+    in_game_name: string | null;
     bio: string | null;
   };
   onSaved: () => void;
@@ -531,7 +531,7 @@ function EditAltForm({
 }) {
   const [isPending, startTransition] = useTransition();
   const [displayName, setDisplayName] = useState(alt.display_name);
-  const [battleTag, setBattleTag] = useState(alt.battle_tag ?? "");
+  const [inGameName, setBattleTag] = useState(alt.in_game_name ?? "");
   const [bio, setBio] = useState(alt.bio ?? "");
 
   const handleSubmit = () => {
@@ -543,7 +543,7 @@ function EditAltForm({
     startTransition(async () => {
       const result = await updateAltAction(alt.id, {
         displayName: displayName.trim(),
-        battleTag: battleTag.trim() || null,
+        inGameName: inGameName.trim() || null,
         bio: bio.trim() || undefined,
       });
 
@@ -578,11 +578,11 @@ function EditAltForm({
         </div>
         <div className="space-y-1">
           <Label htmlFor={`editBattleTag-${alt.id}`} className="text-xs">
-            Battle Tag
+            IGN
           </Label>
           <Input
             id={`editBattleTag-${alt.id}`}
-            value={battleTag}
+            value={inGameName}
             onChange={(e) => setBattleTag(e.target.value)}
             placeholder="Player#1234"
           />
