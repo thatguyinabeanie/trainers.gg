@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -15,7 +15,6 @@ import {
   X,
 } from "lucide-react";
 import { toast } from "sonner";
-import { cn } from "@/lib/utils";
 import {
   submitGameSelectionAction,
   judgeOverrideGameAction,
@@ -32,7 +31,7 @@ export interface GameData {
   game_number: number;
   status: string;
   winner_alt_id: number | null;
-  // Player view (redacted)
+  // Player view (from get_match_games_for_player RPC)
   my_selection?: number | null;
   opponent_submitted?: boolean;
   // Staff view (raw) — also revealed after agreed/disputed/resolved
@@ -76,98 +75,40 @@ interface GamesListProps {
 }
 
 // ============================================================================
-// Reporting Status (subtle)
-// ============================================================================
-
-function ReportingStatus({
-  game,
-  isParticipant,
-  isStaff,
-  myName,
-  opponentName,
-  myAltId,
-  isPlayer1,
-}: {
-  game: GameData;
-  isParticipant: boolean;
-  isStaff: boolean;
-  myName: string;
-  opponentName: string;
-  myAltId: number | null;
-  isPlayer1: boolean;
-}) {
-  const mySubmitted =
-    game.my_selection !== null && game.my_selection !== undefined;
-  const oppSubmitted = game.opponent_submitted === true;
-
-  // Staff view: show explicit detail
-  if (isStaff) {
-    const p1Submitted =
-      game.alt1_selection !== null && game.alt1_selection !== undefined;
-    const p2Submitted =
-      game.alt2_selection !== null && game.alt2_selection !== undefined;
-    const count = (p1Submitted ? 1 : 0) + (p2Submitted ? 1 : 0);
-
-    if (count === 0) return null;
-
-    return (
-      <div className="text-muted-foreground flex items-center gap-2 text-xs">
-        <span>{count} of 2 reported</span>
-        <span className="text-muted-foreground/50">&middot;</span>
-        <span>
-          {myName}:{" "}
-          {p1Submitted
-            ? game.alt1_selection ===
-              (isPlayer1 ? myAltId : game.alt1_selection)
-              ? "submitted"
-              : "submitted"
-            : "waiting"}
-        </span>
-        <span>
-          {opponentName}: {p2Submitted ? "submitted" : "waiting"}
-        </span>
-      </div>
-    );
-  }
-
-  // Player view: subtle count
-  if (!isParticipant) return null;
-
-  if (mySubmitted && !oppSubmitted) {
-    return (
-      <div className="text-muted-foreground flex items-center gap-1.5 text-xs">
-        <span className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-amber-500" />
-        <span>1 of 2 reported</span>
-      </div>
-    );
-  }
-
-  if (!mySubmitted && oppSubmitted) {
-    return (
-      <div className="text-muted-foreground flex items-center gap-1.5 text-xs">
-        <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-500" />
-        <span>1 of 2 reported</span>
-      </div>
-    );
-  }
-
-  return null;
-}
-
-// ============================================================================
-// Resolved Game Row (compact)
+// Resolved Game Row (compact single line, with staff reset)
 // ============================================================================
 
 function ResolvedGameRow({
   game,
   myAltId,
+  isStaff,
+  tournamentId,
+  onReset,
 }: {
   game: GameData;
   myAltId: number | null;
+  isStaff?: boolean;
+  tournamentId?: number;
+  onReset?: () => void;
 }) {
+  const [isPending, setIsPending] = useState(false);
   const iWon =
     game.winner_alt_id !== null ? game.winner_alt_id === myAltId : null;
   const isJudgeResolved = game.status === "resolved";
+
+  const handleReset = async () => {
+    if (!tournamentId) return;
+    setIsPending(true);
+    const result = await judgeResetGameAction(game.id, tournamentId);
+    setIsPending(false);
+
+    if (result.success) {
+      toast.success(`Game ${game.game_number} reset`);
+      onReset?.();
+    } else {
+      toast.error(result.error);
+    }
+  };
 
   return (
     <div className="flex items-center justify-between py-2">
@@ -198,14 +139,31 @@ function ResolvedGameRow({
             Judge
           </Badge>
         )}
-        <Check className="h-3.5 w-3.5 text-emerald-500" />
+        {isStaff && onReset ? (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-6 gap-1 px-1.5 text-[10px]"
+            disabled={isPending}
+            onClick={handleReset}
+          >
+            {isPending ? (
+              <Loader2 className="h-3 w-3 animate-spin" />
+            ) : (
+              <RotateCcw className="h-3 w-3" />
+            )}
+            Reset
+          </Button>
+        ) : (
+          <Check className="h-3.5 w-3.5 text-emerald-500" />
+        )}
       </div>
     </div>
   );
 }
 
 // ============================================================================
-// Active Game Row (expanded with scoring buttons)
+// Active Game Row — compact inline "I Won / I Lost" buttons
 // ============================================================================
 
 function ActiveGameRow({
@@ -216,34 +174,12 @@ function ActiveGameRow({
   opponentName,
   isParticipant,
   isStaff,
-  isPlayer1,
   tournamentId,
   userAltId,
   onGameUpdated,
 }: GameRowProps) {
   const [isPending, setIsPending] = useState(false);
   const [overrideWinner, setOverrideWinner] = useState<number | null>(null);
-  const [showJudgeTools, setShowJudgeTools] = useState(isStaff);
-  const [highlighted, setHighlighted] = useState(false);
-  const prevStatusRef = useRef(game.status);
-
-  // Animate highlight when game status changes via realtime
-  useEffect(() => {
-    if (prevStatusRef.current !== game.status) {
-      prevStatusRef.current = game.status;
-      setHighlighted(true);
-      const timer = setTimeout(() => setHighlighted(false), 1000);
-      return () => clearTimeout(timer);
-    }
-  }, [game.status]);
-
-  const mySelection = game.my_selection ?? null;
-  const hasSubmitted = mySelection !== null;
-
-  const canSubmit =
-    isParticipant &&
-    !hasSubmitted &&
-    ["pending", "awaiting_both", "awaiting_one"].includes(game.status);
 
   const handleReport = async (iWon: boolean) => {
     if (!myAltId || !opponentAltId) return;
@@ -263,7 +199,125 @@ function ActiveGameRow({
     }
   };
 
+  const handleStaffOverride = async () => {
+    if (!overrideWinner) return;
+    const judgeAltId = userAltId ?? myAltId;
+    if (!judgeAltId) return;
+    setIsPending(true);
+    const result = await judgeOverrideGameAction(
+      game.id,
+      overrideWinner,
+      judgeAltId,
+      tournamentId
+    );
+    setIsPending(false);
+
+    if (result.success) {
+      toast.success(`Game ${game.game_number} resolved`);
+      setOverrideWinner(null);
+      onGameUpdated();
+    } else {
+      toast.error(result.error);
+    }
+  };
+
+  // Staff (non-participant): show override controls
+  if (isStaff && !isParticipant) {
+    return (
+      <div className="flex items-center justify-between py-2">
+        <span className="text-sm font-medium">Game {game.game_number}</span>
+        <div className="flex items-center gap-1.5">
+          <select
+            className="border-input bg-background h-7 rounded-md border px-2 text-xs"
+            value={overrideWinner ?? ""}
+            onChange={(e) =>
+              setOverrideWinner(
+                e.target.value ? parseInt(e.target.value) : null
+              )
+            }
+          >
+            <option value="">Winner...</option>
+            {myAltId && <option value={myAltId}>{myName}</option>}
+            {opponentAltId && (
+              <option value={opponentAltId}>{opponentName}</option>
+            )}
+          </select>
+          <Button
+            size="sm"
+            className="h-7 gap-1 text-xs"
+            disabled={isPending || !overrideWinner}
+            onClick={handleStaffOverride}
+          >
+            {isPending ? (
+              <Loader2 className="h-3 w-3 animate-spin" />
+            ) : (
+              <Gavel className="h-3 w-3" />
+            )}
+            Set
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex items-center justify-between py-2">
+      <span className="text-sm font-medium">Game {game.game_number}</span>
+      {isParticipant ? (
+        <div className="flex items-center gap-1.5">
+          <Button
+            size="sm"
+            className="h-7 gap-1 px-3 text-xs"
+            onClick={() => handleReport(true)}
+            disabled={isPending}
+          >
+            {isPending ? (
+              <Loader2 className="h-3 w-3 animate-spin" />
+            ) : (
+              <Trophy className="h-3 w-3" />
+            )}
+            I Won
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-7 gap-1 px-3 text-xs"
+            onClick={() => handleReport(false)}
+            disabled={isPending}
+          >
+            I Lost
+          </Button>
+        </div>
+      ) : (
+        <span className="text-muted-foreground text-xs">
+          Awaiting player reports
+        </span>
+      )}
+    </div>
+  );
+}
+
+// ============================================================================
+// Disputed Game Row — alert + judge tools
+// ============================================================================
+
+function DisputedGameRow({
+  game,
+  myAltId,
+  opponentAltId,
+  myName,
+  opponentName,
+  isStaff,
+  isPlayer1,
+  tournamentId,
+  userAltId,
+  onGameUpdated,
+}: GameRowProps) {
+  const [isPending, setIsPending] = useState(false);
+  const [overrideWinner, setOverrideWinner] = useState<number | null>(null);
+
   const judgeAltId = userAltId ?? myAltId;
+
   const handleJudgeOverride = async () => {
     if (!overrideWinner || !judgeAltId) return;
     setIsPending(true);
@@ -278,7 +332,6 @@ function ActiveGameRow({
     if (result.success) {
       toast.success(`Game ${game.game_number} resolved`);
       setOverrideWinner(null);
-      setShowJudgeTools(false);
       onGameUpdated();
     } else {
       toast.error(result.error);
@@ -292,208 +345,209 @@ function ActiveGameRow({
 
     if (result.success) {
       toast.success(`Game ${game.game_number} reset`);
-      setShowJudgeTools(false);
       onGameUpdated();
     } else {
       toast.error(result.error);
     }
   };
 
-  const isDisputed = game.status === "disputed";
+  // Determine what each player reported
+  const p1Pick = game.alt1_selection;
+  const p2Pick = game.alt2_selection;
+  const p1Label = isPlayer1 ? myName : opponentName;
+  const p2Label = isPlayer1 ? opponentName : myName;
 
   return (
-    <div
-      className={cn(
-        "space-y-3 py-3 transition-colors duration-500",
-        highlighted && "bg-primary/5"
-      )}
-    >
-      {/* Game header row */}
+    <div className="space-y-2 py-2">
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <span className="text-sm font-medium">Game {game.game_number}</span>
-          <ReportingStatus
-            game={game}
-            isParticipant={isParticipant}
-            isStaff={isStaff}
-            myName={myName}
-            opponentName={opponentName}
-            myAltId={myAltId}
-            isPlayer1={isPlayer1}
-          />
-        </div>
         <div className="flex items-center gap-2">
-          {isStaff && !isDisputed && (
-            <button
-              onClick={() => setShowJudgeTools(!showJudgeTools)}
-              className="text-muted-foreground hover:text-foreground rounded p-1 transition-colors"
-            >
-              <Gavel className="h-3.5 w-3.5" />
-            </button>
-          )}
-          <GameStatusBadge status={game.status} />
+          <span className="text-muted-foreground w-16 text-xs font-medium">
+            Game {game.game_number}
+          </span>
+          <span className="flex items-center gap-1 text-xs text-red-600 dark:text-red-400">
+            <AlertCircle className="h-3 w-3" />
+            Disputed
+          </span>
         </div>
+        <Badge variant="destructive" className="text-[10px]">
+          Needs Judge
+        </Badge>
       </div>
 
-      {/* Disputed state */}
-      {isDisputed && (
-        <div className="space-y-2">
-          <div className="flex items-center gap-2 rounded-md bg-red-500/10 p-3 text-sm text-red-600 dark:text-red-400">
-            <AlertCircle className="h-4 w-4 shrink-0" />
-            Results don&apos;t match — a judge will resolve this.
-          </div>
-          {(isStaff || isParticipant) && (
-            <div className="text-muted-foreground space-y-0.5 text-xs">
-              <p>
-                {myName}:{" "}
-                {game.alt1_selection
-                  ? isPlayer1
-                    ? game.alt1_selection === myAltId
-                      ? "Won"
-                      : "Lost"
-                    : game.alt2_selection === myAltId
-                      ? "Won"
-                      : "Lost"
-                  : "..."}
-              </p>
-              <p>
-                {opponentName}:{" "}
-                {game.alt1_selection
-                  ? isPlayer1
-                    ? game.alt2_selection === opponentAltId
-                      ? "Won"
-                      : "Lost"
-                    : game.alt1_selection === opponentAltId
-                      ? "Won"
-                      : "Lost"
-                  : "..."}
-              </p>
-            </div>
-          )}
-        </div>
-      )}
+      {/* Both players' reports */}
+      <div className="text-muted-foreground space-y-0.5 text-xs">
+        <p>
+          {p1Label}:{" "}
+          {p1Pick === myAltId || p1Pick === opponentAltId
+            ? p1Pick === (isPlayer1 ? myAltId : opponentAltId)
+              ? "Won"
+              : "Lost"
+            : "..."}
+        </p>
+        <p>
+          {p2Label}:{" "}
+          {p2Pick === myAltId || p2Pick === opponentAltId
+            ? p2Pick === (isPlayer1 ? opponentAltId : myAltId)
+              ? "Won"
+              : "Lost"
+            : "..."}
+        </p>
+      </div>
 
-      {/* Scoring buttons */}
-      {canSubmit && (
-        <div className="flex gap-2">
-          <Button
-            className="flex-1"
-            onClick={() => handleReport(true)}
-            disabled={isPending}
+      {/* Judge tools */}
+      {isStaff && (
+        <div className="flex flex-wrap items-center gap-2 pt-1">
+          <select
+            className="border-input bg-background rounded-md border px-2 py-1 text-xs"
+            value={overrideWinner ?? ""}
+            onChange={(e) =>
+              setOverrideWinner(
+                e.target.value ? parseInt(e.target.value) : null
+              )
+            }
           >
-            {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}I
-            Won
+            <option value="">Select winner...</option>
+            {myAltId && <option value={myAltId}>{myName}</option>}
+            {opponentAltId && (
+              <option value={opponentAltId}>{opponentName}</option>
+            )}
+          </select>
+          <Button
+            size="sm"
+            className="h-7 gap-1 text-xs"
+            disabled={isPending || !overrideWinner}
+            onClick={handleJudgeOverride}
+          >
+            {isPending ? (
+              <Loader2 className="h-3 w-3 animate-spin" />
+            ) : (
+              <Gavel className="h-3 w-3" />
+            )}
+            Override
           </Button>
           <Button
             variant="outline"
-            className="flex-1"
-            onClick={() => handleReport(false)}
+            size="sm"
+            className="h-7 gap-1 text-xs"
             disabled={isPending}
+            onClick={handleJudgeReset}
           >
-            {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}I
-            Lost
+            {isPending ? (
+              <Loader2 className="h-3 w-3 animate-spin" />
+            ) : (
+              <RotateCcw className="h-3 w-3" />
+            )}
+            Reset
           </Button>
         </div>
       )}
+    </div>
+  );
+}
 
-      {/* Submitted — waiting for opponent (subtle) */}
-      {hasSubmitted &&
-        !["agreed", "disputed", "resolved"].includes(game.status) && (
-          <div className="text-muted-foreground flex items-center gap-2 text-xs">
-            <Check className="h-3 w-3 text-emerald-500" />
-            <span>Reported</span>
-            <span>&middot;</span>
-            <span className="flex items-center gap-1">
-              <span className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-amber-500" />
-              Waiting for opponent
-            </span>
-          </div>
-        )}
+// ============================================================================
+// Self-Correctable Game Row — reporter can change their submission
+// ============================================================================
 
-      {/* Non-participant view — awaiting reports */}
-      {!isParticipant && ["pending", "awaiting_both"].includes(game.status) && (
-        <p className="text-muted-foreground text-xs">Awaiting player reports</p>
-      )}
+function SelfCorrectableGameRow({
+  game,
+  myAltId,
+  opponentAltId,
+  tournamentId,
+  onGameUpdated,
+}: GameRowProps) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [isPending, setIsPending] = useState(false);
+  const iWon = game.winner_alt_id === myAltId;
 
-      {/* Judge tools (collapsible) */}
-      {isStaff &&
-        (showJudgeTools || isDisputed) &&
-        ["disputed", "awaiting_one", "awaiting_both", "pending"].includes(
-          game.status
-        ) && (
-          <div className="border-foreground/5 animate-in fade-in slide-in-from-top-1 flex flex-wrap items-center gap-2 border-t pt-3 duration-200">
-            {["disputed", "awaiting_one", "awaiting_both"].includes(
-              game.status
-            ) && (
-              <>
-                <select
-                  className="border-input bg-background rounded-md border px-2 py-1 text-sm"
-                  value={overrideWinner ?? ""}
-                  onChange={(e) =>
-                    setOverrideWinner(
-                      e.target.value ? parseInt(e.target.value) : null
-                    )
-                  }
-                >
-                  <option value="">Select winner...</option>
-                  {myAltId && <option value={myAltId}>{myName}</option>}
-                  {opponentAltId && (
-                    <option value={opponentAltId}>{opponentName}</option>
-                  )}
-                </select>
-                <Button
-                  size="sm"
-                  disabled={isPending || !overrideWinner}
-                  onClick={handleJudgeOverride}
-                >
-                  {isPending ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  ) : (
-                    <Gavel className="mr-2 h-4 w-4" />
-                  )}
-                  Override
-                </Button>
-              </>
+  const handleChange = async (newIWon: boolean) => {
+    if (!myAltId || !opponentAltId) return;
+    setIsPending(true);
+    const winnerId = newIWon ? myAltId : opponentAltId;
+    const result = await submitGameSelectionAction(
+      game.id,
+      winnerId,
+      tournamentId
+    );
+    setIsPending(false);
+
+    if (result.success) {
+      setIsEditing(false);
+      onGameUpdated();
+    } else {
+      toast.error(result.error);
+    }
+  };
+
+  if (isEditing) {
+    return (
+      <div className="flex items-center justify-between py-2">
+        <span className="text-sm font-medium">Game {game.game_number}</span>
+        <div className="flex items-center gap-1.5">
+          <Button
+            size="sm"
+            className="h-7 gap-1 px-3 text-xs"
+            onClick={() => handleChange(true)}
+            disabled={isPending}
+          >
+            {isPending ? (
+              <Loader2 className="h-3 w-3 animate-spin" />
+            ) : (
+              <Trophy className="h-3 w-3" />
             )}
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={isPending}
-              onClick={handleJudgeReset}
-            >
-              {isPending ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <RotateCcw className="mr-2 h-4 w-4" />
-              )}
-              Reset
-            </Button>
-          </div>
-        )}
+            I Won
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-7 gap-1 px-3 text-xs"
+            onClick={() => handleChange(false)}
+            disabled={isPending}
+          >
+            I Lost
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 px-2 text-xs"
+            onClick={() => setIsEditing(false)}
+          >
+            Cancel
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
-      {/* Staff selections visibility */}
-      {isStaff &&
-        ["awaiting_one", "awaiting_both"].includes(game.status) &&
-        !showJudgeTools && (
-          <div className="text-muted-foreground space-y-0.5 text-xs">
-            <p>
-              P1:{" "}
-              {game.alt1_selection
-                ? game.alt1_selection === myAltId
-                  ? myName
-                  : opponentName
-                : "Not submitted"}
-            </p>
-            <p>
-              P2:{" "}
-              {game.alt2_selection
-                ? game.alt2_selection === myAltId
-                  ? myName
-                  : opponentName
-                : "Not submitted"}
-            </p>
-          </div>
+  return (
+    <div className="flex items-center justify-between py-2">
+      <div className="flex items-center gap-2">
+        <span className="text-muted-foreground w-16 text-xs font-medium">
+          Game {game.game_number}
+        </span>
+        {iWon ? (
+          <span className="flex items-center gap-1 text-xs font-medium text-emerald-600 dark:text-emerald-400">
+            <Trophy className="h-3 w-3" />
+            Won
+          </span>
+        ) : (
+          <span className="text-muted-foreground flex items-center gap-1 text-xs">
+            <X className="h-3 w-3" />
+            Lost
+          </span>
         )}
+      </div>
+      <div className="flex items-center gap-1.5">
+        <Button
+          variant="ghost"
+          size="sm"
+          className="text-muted-foreground h-6 px-2 text-[10px]"
+          onClick={() => setIsEditing(true)}
+        >
+          Change
+        </Button>
+        <Check className="h-3.5 w-3.5 text-emerald-500" />
+      </div>
     </div>
   );
 }
@@ -511,55 +565,55 @@ function FutureGameRow({ gameNumber }: { gameNumber: number }) {
 }
 
 // ============================================================================
-// Game Status Badge
-// ============================================================================
-
-function GameStatusBadge({ status }: { status: string }) {
-  const labels: Record<string, string> = {
-    pending: "Pending",
-    awaiting_both: "Awaiting Reports",
-    awaiting_one: "1 Report In",
-    agreed: "Agreed",
-    disputed: "Disputed",
-    resolved: "Resolved",
-    cancelled: "Cancelled",
-  };
-
-  const variants: Record<string, "default" | "secondary" | "destructive"> = {
-    pending: "secondary",
-    awaiting_both: "secondary",
-    awaiting_one: "secondary",
-    agreed: "default",
-    disputed: "destructive",
-    resolved: "default",
-    cancelled: "secondary",
-  };
-
-  return (
-    <Badge variant={variants[status] ?? "secondary"} className="text-[10px]">
-      {labels[status] ?? status}
-    </Badge>
-  );
-}
-
-// ============================================================================
-// GameRow — dispatches between resolved, active, and future views
+// GameRow — dispatches between states
 // ============================================================================
 
 function GameRow(props: GameRowProps) {
-  const { game, myAltId, matchStatus, isCurrentGame } = props;
+  const {
+    game,
+    myAltId,
+    matchStatus,
+    isCurrentGame,
+    isParticipant,
+    isStaff,
+    tournamentId,
+    onGameUpdated,
+  } = props;
 
-  const isResolved = ["agreed", "resolved"].includes(game.status);
-
-  if (isResolved) {
-    return <ResolvedGameRow game={game} myAltId={myAltId} />;
+  // Disputed games always get special treatment
+  if (game.status === "disputed") {
+    return <DisputedGameRow {...props} />;
   }
 
+  // Agreed game where I'm the reporter — self-correction window
+  if (game.status === "agreed" && isParticipant && game.my_selection != null) {
+    return <SelfCorrectableGameRow {...props} />;
+  }
+
+  // Agreed or resolved — compact resolved line (staff gets reset button)
+  if (["agreed", "resolved"].includes(game.status)) {
+    return (
+      <ResolvedGameRow
+        game={game}
+        myAltId={myAltId}
+        isStaff={isStaff}
+        tournamentId={tournamentId}
+        onReset={isStaff ? onGameUpdated : undefined}
+      />
+    );
+  }
+
+  // Match not started yet
   if (matchStatus === "pending") {
     return <FutureGameRow gameNumber={game.game_number} />;
   }
 
-  // Only the current game (first unresolved) gets the active treatment
+  // Staff can interact with any pending game, not just the current one
+  if (isStaff && !isParticipant && matchStatus === "active") {
+    return <ActiveGameRow {...props} />;
+  }
+
+  // Current active game — show I Won / I Lost buttons
   if (isCurrentGame) {
     return <ActiveGameRow {...props} />;
   }
@@ -650,17 +704,17 @@ export function GamesList({
       </CardHeader>
       <CardContent>
         {gamesLoading ? (
-          <div className="flex items-center justify-center py-6">
+          <div className="flex items-center justify-center py-4">
             <Loader2 className="text-muted-foreground h-5 w-5 animate-spin" />
           </div>
         ) : !games || games.length === 0 ? (
-          <div className="text-muted-foreground py-6 text-center text-sm">
+          <div className="text-muted-foreground py-4 text-center text-sm">
             Games will appear once the round starts.
           </div>
         ) : (
           <div className="divide-foreground/5 divide-y">
             {(() => {
-              // Find the first unresolved game — that's the "current" game
+              // Current game = first unresolved game
               const currentGameId = games.find(
                 (g) => !["agreed", "resolved", "cancelled"].includes(g.status)
               )?.id;
@@ -700,5 +754,4 @@ export function GamesList({
   );
 }
 
-// Keep individual GameCard export for backwards compatibility during migration
 export { type GameData as GameDataType };
