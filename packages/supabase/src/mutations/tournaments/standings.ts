@@ -9,7 +9,7 @@ export async function recalculateStandings(
   tournamentId: number
 ) {
   // Get all completed matches for this tournament
-  const { data: matches } = await supabase
+  const { data: tournamentMatches, error: matchesError } = await supabase
     .from("tournament_matches")
     .select(
       `
@@ -28,16 +28,10 @@ export async function recalculateStandings(
       )
     `
     )
-    .eq("status", "completed");
+    .eq("status", "completed")
+    .eq("tournament_rounds.tournament_phases.tournament_id", tournamentId);
 
-  // Filter to only this tournament's matches
-  const tournamentMatches =
-    matches?.filter((m) => {
-      const rounds = m.tournament_rounds as unknown as {
-        tournament_phases: { tournament_id: number };
-      };
-      return rounds.tournament_phases.tournament_id === tournamentId;
-    }) ?? [];
+  if (matchesError) throw matchesError;
 
   // Get all registered players
   const { data: registrations } = await supabase
@@ -81,7 +75,7 @@ export async function recalculateStandings(
   }
 
   // Process matches
-  for (const match of tournamentMatches) {
+  for (const match of tournamentMatches ?? []) {
     if (match.is_bye) {
       // Bye counts as a win with 2-0 game score
       const player = playerData.get(match.alt1_id!);
