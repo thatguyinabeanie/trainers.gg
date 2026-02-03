@@ -1,41 +1,60 @@
 /**
  * Pokemon sprite URL utilities.
  *
- * Uses Pokemon Showdown's sprite CDN which accepts species names directly.
+ * Uses @pkmn/img for Pokemon and item sprites (handles all forms/variants
+ * correctly), and Showdown's CDN directly for type icons.
  */
 
-/**
- * Convert a species name to a Showdown-compatible sprite slug.
- * Handles forms like "Urshifu-Rapid-Strike" -> "urshifu-rapidstrike"
- */
-function toShowdownSlug(species: string): string {
-  return species
-    .toLowerCase()
-    .replace(/[^a-z0-9-]/g, "")
-    .replace(/-+/g, "");
+import { Sprites, Icons } from "@pkmn/img";
+
+export interface SpriteData {
+  url: string;
+  w: number;
+  h: number;
+  pixelated: boolean;
 }
 
 /**
- * Get the Pokemon Showdown sprite URL for a given species.
- * Uses gen5ani (animated) sprites with a static gen5 fallback.
+ * Get sprite data for a Pokemon species.
+ * Handles all forms and variants (Ogerpon-Hearthflame, Urshifu-Rapid-Strike, etc.).
  */
-export function getShowdownSpriteUrl(species: string): string {
-  const slug = toShowdownSlug(species);
-  return `https://play.pokemonshowdown.com/sprites/gen5/${slug}.png`;
+export function getPokemonSprite(
+  species: string,
+  options?: { shiny?: boolean; gender?: "M" | "F" }
+): SpriteData {
+  const sprite = Sprites.getPokemon(species, {
+    gen: "gen5",
+    shiny: options?.shiny,
+    gender: options?.gender,
+  });
+  return {
+    url: sprite.url,
+    w: sprite.w,
+    h: sprite.h,
+    pixelated: sprite.pixelated ?? false,
+  };
 }
 
 /**
- * Convert an item name to a Showdown-compatible item sprite slug.
- * Handles items like "Choice Scarf" -> "choicescarf"
+ * Get inline style string for rendering an item icon from the spritesheet.
  */
-function toItemSlug(item: string): string {
-  return item.toLowerCase().replace(/[^a-z0-9]/g, "");
+export function getItemSpriteStyle(item: string): string {
+  return Icons.getItem(item).style;
 }
 
 /**
- * Get the Pokemon Showdown item sprite URL for a given held item.
+ * Get the Pokemon Showdown type icon URL for a given type name.
+ * Type names are capitalized (e.g., "Fire", "Water", "Stellar").
  */
-export function getShowdownItemSpriteUrl(item: string): string {
-  const slug = toItemSlug(item);
-  return `https://play.pokemonshowdown.com/sprites/itemicons/${slug}.png`;
+export function getShowdownTypeIconUrl(type: string): string {
+  return `https://play.pokemonshowdown.com/sprites/types/${type}.png`;
+}
+
+/**
+ * Get the Pokemon Showdown Tera type icon URL for a given type name.
+ * These are the crystallized gem-shaped icons specific to Terastallization.
+ * Type names are capitalized (e.g., "Fire" → "TeraFire").
+ */
+export function getShowdownTeraTypeIconUrl(type: string): string {
+  return `https://play.pokemonshowdown.com/sprites/types/Tera${type}.png`;
 }

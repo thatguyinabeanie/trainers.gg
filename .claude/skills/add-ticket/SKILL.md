@@ -22,7 +22,16 @@ Override either by specifying in the description (e.g., "add to the Infrastructu
 
 ## Steps
 
-1. **Determine the issue type** from the user's description:
+1. **Check for duplicates** — use `mcp__plugin_linear_linear__list_issues` to search the team for existing issues with similar titles or descriptions. If a match exists, show it to the user and ask whether to proceed or update the existing one instead.
+
+2. **Ask the user to confirm details** before creating — use `AskUserQuestion` to present:
+   - **Project**: Default to `Private Beta MVP`, but offer the most relevant alternatives based on the ticket's subject (e.g., a replay-related ticket might suggest `Replay Analysis`). Show 2-3 project options.
+   - **Priority**: Suggest a default based on the issue type (see table below), let the user override.
+   - **Label/type**: Suggest the best-fit label, let the user override.
+
+   Combine these into a single `AskUserQuestion` call with up to 3 questions. Skip questions where the user's description already made the choice explicit (e.g., "high priority bug" doesn't need priority or label confirmation).
+
+3. **Determine the issue type** from the user's description (or confirmed answer):
 
    | Type          | Label              | Default Priority |
    | ------------- | ------------------ | ---------------- |
@@ -34,25 +43,23 @@ Override either by specifying in the description (e.g., "add to the Infrastructu
    | Documentation | `type:docs`        | 4 (Low)          |
    | Research      | `type:research`    | 3 (Medium)       |
 
-   If the user specifies a priority, use that instead.
+4. **Write a concise title** — under 70 characters, imperative voice (e.g., "Add winner column to completed tournaments table").
 
-2. **Write a concise title** — under 70 characters, imperative voice (e.g., "Add winner column to completed tournaments table").
-
-3. **Write the description** in markdown:
+5. **Write the description** in markdown:
    - Start with a `## Overview`, `## Bug`, or `## Feature` heading that summarizes the issue in 1-3 sentences
    - Add a `## Expected Behavior` or `## Details` section with specifics
    - Use bullet lists, tables, or code blocks where they help clarity
    - Keep it scannable — no walls of text
 
-4. **Create the issue** using `mcp__plugin_linear_linear__create_issue` with:
+6. **Create the issue** using `mcp__plugin_linear_linear__create_issue` with:
    - `title`
    - `team`: `Beanie-gg`
-   - `project`: `Private Beta MVP` (or user-specified project)
+   - `project`: the confirmed project from step 2
    - `description`: the markdown body
-   - `labels`: array with the label from step 1
-   - `priority`: number from step 1
+   - `labels`: array with the confirmed label
+   - `priority`: the confirmed priority number
 
-5. **Report back** with the issue identifier and a link.
+7. **Report back** with the issue identifier and a link.
 
 ## Available Labels
 

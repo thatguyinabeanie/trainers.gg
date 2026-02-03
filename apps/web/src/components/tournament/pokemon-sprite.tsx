@@ -2,18 +2,22 @@
 
 import Image from "next/image";
 import { useState } from "react";
-import { getShowdownSpriteUrl } from "@/lib/pokemon/sprites";
+import { getPokemonSprite } from "@/lib/pokemon/sprites";
 import { cn } from "@/lib/utils";
 
 interface PokemonSpriteProps {
   species: string;
   size?: number;
+  shiny?: boolean;
+  gender?: "M" | "F";
   className?: string;
 }
 
 export function PokemonSprite({
   species,
-  size = 32,
+  size = 68,
+  shiny,
+  gender,
   className,
 }: PokemonSpriteProps) {
   const [error, setError] = useState(false);
@@ -33,13 +37,18 @@ export function PokemonSprite({
     );
   }
 
+  const sprite = getPokemonSprite(species, { shiny, gender });
+
   return (
     <Image
-      src={getShowdownSpriteUrl(species)}
+      src={sprite.url}
       alt={species}
       width={size}
       height={size}
-      className={cn("[image-rendering:pixelated]", className)}
+      className={cn(
+        sprite.pixelated && "[image-rendering:pixelated]",
+        className
+      )}
       onError={() => setError(true)}
       unoptimized
     />

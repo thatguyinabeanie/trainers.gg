@@ -5,7 +5,7 @@ import { useSupabase, useSupabaseQuery } from "@/lib/supabase";
 import { getMatchGames, getMatchGamesForPlayer } from "@trainers/supabase";
 import type { TypedSupabaseClient } from "@trainers/supabase";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Swords, Users, MessageSquare } from "lucide-react";
+import { Users, MessageSquare } from "lucide-react";
 import type { RealtimeChannel } from "@supabase/supabase-js";
 
 import {
@@ -13,7 +13,7 @@ import {
   type PlayerInfo,
   type PlayerStats,
 } from "@/components/match/match-header";
-import { GamesList, type GameData } from "@/components/match/game-card";
+import type { GameData } from "@/components/match/game-card";
 import { MatchChat } from "@/components/match/match-chat";
 import { useMatchPresence } from "@/components/match/presence-indicator";
 import { TeamSheet, type TeamData } from "@/components/match/team-sheet";
@@ -106,6 +106,16 @@ export function MatchPageClient({
   const headerMyPlayer = isParticipant ? myPlayer : player2;
   const headerOpponentStats = isParticipant ? opponentStats : player1Stats;
   const headerMyStats = isParticipant ? myStats : player2Stats;
+
+  // Header uses perspective-adjusted names and IDs
+  const headerMyAltId = isParticipant ? myAltId : alt1Id;
+  const headerOpponentAltId = isParticipant ? opponentAltId : alt2Id;
+  const headerMyName = isParticipant
+    ? myName
+    : (player1?.display_name ?? player1?.username ?? "Player 1");
+  const headerOpponentName = isParticipant
+    ? opponentName
+    : (player2?.display_name ?? player2?.username ?? "Player 2");
 
   // ==========================================================================
   // Presence
@@ -255,30 +265,8 @@ export function MatchPageClient({
   const hasTeams = myTeam !== null || opponentTeam !== null;
 
   // ==========================================================================
-  // Shared props for GamesList
+  // Shared props
   // ==========================================================================
-  const gamesListProps = {
-    games,
-    gamesLoading,
-    matchId,
-    myAltId: isParticipant ? myAltId : alt1Id,
-    opponentAltId: isParticipant ? opponentAltId : alt2Id,
-    myName: isParticipant
-      ? myName
-      : (player1?.display_name ?? player1?.username ?? "Player 1"),
-    opponentName: isParticipant
-      ? opponentName
-      : (player2?.display_name ?? player2?.username ?? "Player 2"),
-    isParticipant,
-    isStaff,
-    isPlayer1,
-    matchStatus,
-    tournamentId,
-    userAltId,
-    staffRequested,
-    onGameUpdated: () => refetchGames(),
-  };
-
   const chatProps = {
     matchId,
     userAltId,
@@ -297,39 +285,39 @@ export function MatchPageClient({
   // ==========================================================================
   // Team toggle content (shared between mobile & desktop)
   // ==========================================================================
+  // Use actual player names for non-participants instead of "You"/"Opponent"
+  const opponentTeamLabel = isParticipant
+    ? opponentName
+    : (player1?.display_name ?? player1?.username ?? "Player 1");
+  const myTeamLabel = isParticipant
+    ? "Your Team"
+    : (player2?.display_name ?? player2?.username ?? "Player 2");
+
   const teamToggle = hasTeams ? (
     <Tabs defaultValue={opponentTeam ? "opponent" : "mine"}>
       <TabsList className="w-full">
         {opponentTeam && (
           <TabsTrigger value="opponent" className="flex-1 gap-1.5">
             <Users className="h-3.5 w-3.5" />
-            {`${opponentName}'s Team`}
+            {opponentTeamLabel}
           </TabsTrigger>
         )}
         {myTeam && (
           <TabsTrigger value="mine" className="flex-1 gap-1.5">
             <Users className="h-3.5 w-3.5" />
-            {isParticipant ? "Your Team" : `${myName}'s Team`}
+            {myTeamLabel}
           </TabsTrigger>
         )}
       </TabsList>
 
       {opponentTeam && (
         <TabsContent value="opponent" className="mt-3">
-          <TeamSheet
-            team={opponentTeam}
-            playerName={opponentName}
-            isOwnTeam={false}
-          />
+          <TeamSheet team={opponentTeam} />
         </TabsContent>
       )}
       {myTeam && (
         <TabsContent value="mine" className="mt-3">
-          <TeamSheet
-            team={myTeam}
-            playerName={myName}
-            isOwnTeam={isParticipant}
-          />
+          <TeamSheet team={myTeam} />
         </TabsContent>
       )}
     </Tabs>
@@ -340,8 +328,8 @@ export function MatchPageClient({
   // ==========================================================================
 
   return (
-    <div className="space-y-4">
-      {/* Match Header — always visible */}
+    <div className="flex h-[calc(100dvh-10rem)] flex-col gap-4">
+      {/* Match Header with game reporting strip */}
       <MatchHeader
         opponent={headerOpponent}
         myPlayer={headerMyPlayer}
@@ -355,60 +343,56 @@ export function MatchPageClient({
         roundNumber={roundNumber}
         tableNumber={tableNumber}
         isStaff={isStaff}
+        games={games}
+        gamesLoading={gamesLoading}
+        matchId={matchId}
+        myAltId={headerMyAltId}
+        opponentAltId={headerOpponentAltId}
+        myName={headerMyName}
+        opponentName={headerOpponentName}
+        isParticipant={isParticipant}
+        isPlayer1={isPlayer1}
+        tournamentId={tournamentId}
+        userAltId={userAltId}
+        onGameUpdated={() => refetchGames()}
       />
 
-      {/* Mobile layout: Tabs */}
-      <div className="lg:hidden">
-        <Tabs defaultValue="games">
-          <TabsList className="w-full">
-            <TabsTrigger value="games" className="flex-1 gap-1.5">
-              <Swords className="h-3.5 w-3.5" />
-              Games
-            </TabsTrigger>
-            {hasTeams && (
+      {/* Mobile layout */}
+      <div className="flex-1 lg:hidden">
+        {hasTeams ? (
+          <Tabs defaultValue="chat">
+            <TabsList className="w-full">
+              <TabsTrigger value="chat" className="flex-1 gap-1.5">
+                <MessageSquare className="h-3.5 w-3.5" />
+                Chat
+              </TabsTrigger>
               <TabsTrigger value="teams" className="flex-1 gap-1.5">
                 <Users className="h-3.5 w-3.5" />
                 Teams
               </TabsTrigger>
-            )}
-            <TabsTrigger value="chat" className="flex-1 gap-1.5">
-              <MessageSquare className="h-3.5 w-3.5" />
-              Chat
-            </TabsTrigger>
-          </TabsList>
+            </TabsList>
 
-          <TabsContent value="games" className="mt-4">
-            <GamesList {...gamesListProps} />
-          </TabsContent>
+            <TabsContent value="chat" className="mt-4">
+              <MatchChat {...chatProps} />
+            </TabsContent>
 
-          {hasTeams && (
             <TabsContent value="teams" className="mt-4">
               {teamToggle}
             </TabsContent>
-          )}
-
-          <TabsContent value="chat" className="mt-4">
-            <MatchChat {...chatProps} />
-          </TabsContent>
-        </Tabs>
+          </Tabs>
+        ) : (
+          <MatchChat {...chatProps} />
+        )}
       </div>
 
-      {/* Desktop layout: Games + Chat, then Teams below */}
-      <div className="hidden lg:block">
-        <div className="grid grid-cols-5 gap-6">
-          {/* Left: Games */}
-          <div className="col-span-2">
-            <GamesList {...gamesListProps} />
-          </div>
-
-          {/* Right: Chat */}
-          <div className="col-span-3">
-            <MatchChat {...chatProps} />
-          </div>
+      {/* Desktop layout: Chat fills height, Teams at bottom */}
+      <div className="hidden min-h-0 flex-1 lg:flex lg:flex-col lg:gap-4">
+        <div className="min-h-0 flex-1">
+          <MatchChat {...chatProps} />
         </div>
 
-        {/* Teams — full width below */}
-        {teamToggle && <div className="mt-4">{teamToggle}</div>}
+        {/* Teams — snapped to bottom */}
+        {teamToggle && <div className="shrink-0">{teamToggle}</div>}
       </div>
     </div>
   );

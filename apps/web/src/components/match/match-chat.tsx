@@ -19,6 +19,11 @@ import { Gavel, Loader2, MessageSquare, Send, ShieldAlert } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
   ViewerAvatars,
   TypingIndicator,
   type useMatchPresence,
@@ -159,7 +164,7 @@ export function MatchChat({
   const hasMessages = messages && messages.length > 0;
 
   return (
-    <Card className="flex h-[500px] flex-col lg:h-full lg:min-h-[400px]">
+    <Card className="flex h-[calc(100dvh-16rem)] flex-col lg:h-full">
       <CardHeader className="shrink-0 pb-2">
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2 text-base">
@@ -281,31 +286,39 @@ export function MatchChat({
                   <Send className="h-4 w-4" />
                 )}
               </Button>
+              {/* Call Judge — icon button next to send */}
+              {isParticipant && matchStatus === "active" && (
+                <Tooltip>
+                  <TooltipTrigger
+                    render={
+                      <Button
+                        size="icon"
+                        variant={staffRequested ? "secondary" : "outline"}
+                        aria-label={
+                          staffRequested ? "Judge requested" : "Call judge"
+                        }
+                        onClick={handleRequestJudge}
+                        disabled={isRequestingJudge || staffRequested}
+                        className={cn(
+                          staffRequested
+                            ? "text-amber-600 dark:text-amber-400"
+                            : "text-amber-600 hover:bg-amber-500/10 hover:text-amber-700 dark:text-amber-400 dark:hover:text-amber-300"
+                        )}
+                      >
+                        {isRequestingJudge ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <ShieldAlert className="h-4 w-4" />
+                        )}
+                      </Button>
+                    }
+                  />
+                  <TooltipContent>
+                    {staffRequested ? "Judge requested" : "Call a judge"}
+                  </TooltipContent>
+                </Tooltip>
+              )}
             </div>
-
-            {/* Call Judge button — prominent for participants */}
-            {isParticipant && !staffRequested && matchStatus === "active" && (
-              <Button
-                variant="outline"
-                size="sm"
-                className="w-full gap-1.5 text-amber-600 hover:bg-amber-500/10 hover:text-amber-700 dark:text-amber-400 dark:hover:text-amber-300"
-                onClick={handleRequestJudge}
-                disabled={isRequestingJudge}
-              >
-                {isRequestingJudge ? (
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                ) : (
-                  <ShieldAlert className="h-3.5 w-3.5" />
-                )}
-                Call Judge
-              </Button>
-            )}
-            {isParticipant && staffRequested && (
-              <div className="flex items-center justify-center gap-1.5 text-xs text-amber-600 dark:text-amber-400">
-                <ShieldAlert className="h-3 w-3" />
-                Judge has been requested
-              </div>
-            )}
           </div>
         )}
         {canChat && !userAltId && (
