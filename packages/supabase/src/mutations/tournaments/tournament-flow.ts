@@ -51,36 +51,46 @@ export async function startTournamentEnhanced(
   if (lockError) throw lockError;
 
   // 2. Activate the first phase
-  const { data: phases } = await supabase
+  const { data: phases, error: phasesError } = await supabase
     .from("tournament_phases")
     .select("id, phase_order, status")
     .eq("tournament_id", tournamentId)
     .order("phase_order", { ascending: true });
 
+  if (phasesError) throw phasesError;
+
   const firstPhase = phases?.[0];
   if (firstPhase) {
-    await supabase
+    const { error: activateError } = await supabase
       .from("tournament_phases")
       .update({ status: "active" })
       .eq("id", firstPhase.id);
 
+    if (activateError) throw activateError;
+
     // 3. Create Round 1 for the first phase if no rounds exist
-    const { data: existingRounds } = await supabase
+    const { data: existingRounds, error: roundsQueryError } = await supabase
       .from("tournament_rounds")
       .select("id")
       .eq("phase_id", firstPhase.id)
       .limit(1);
 
+    if (roundsQueryError) throw roundsQueryError;
+
     if (!existingRounds || existingRounds.length === 0) {
-      await supabase.from("tournament_rounds").insert({
-        phase_id: firstPhase.id,
-        round_number: 1,
-        status: "pending",
-      });
+      const { error: roundInsertError } = await supabase
+        .from("tournament_rounds")
+        .insert({
+          phase_id: firstPhase.id,
+          round_number: 1,
+          status: "pending",
+        });
+
+      if (roundInsertError) throw roundInsertError;
     }
 
     // Update tournament current_phase_id
-    await supabase
+    const { error: tournamentUpdateError } = await supabase
       .from("tournaments")
       .update({
         status: "active",
@@ -88,20 +98,26 @@ export async function startTournamentEnhanced(
         current_round: 1,
       })
       .eq("id", tournamentId);
+
+    if (tournamentUpdateError) throw tournamentUpdateError;
   } else {
     // No phases — just activate the tournament
-    await supabase
+    const { error: tournamentUpdateError } = await supabase
       .from("tournaments")
       .update({ status: "active" })
       .eq("id", tournamentId);
+
+    if (tournamentUpdateError) throw tournamentUpdateError;
   }
 
   // 4. Initialize player stats for all checked-in players
-  const { data: checkedInRegs } = await supabase
+  const { data: checkedInRegs, error: regsError } = await supabase
     .from("tournament_registrations")
     .select("alt_id")
     .eq("tournament_id", tournamentId)
     .eq("status", "checked_in");
+
+  if (regsError) throw regsError;
 
   if (checkedInRegs && checkedInRegs.length > 0) {
     const statsInserts = checkedInRegs.map((reg) => ({
@@ -121,9 +137,11 @@ export async function startTournamentEnhanced(
     }));
 
     // Upsert so we don't fail if some stats already exist
-    await supabase
+    const { error: statsError } = await supabase
       .from("tournament_player_stats")
       .upsert(statsInserts, { onConflict: "tournament_id,alt_id" });
+
+    if (statsError) throw statsError;
   }
 
   return {
@@ -233,16 +251,20 @@ export async function advanceToTopCut(
   }
 
   // Complete Swiss phase
-  await supabase
+  const { error: completeSwissError } = await supabase
     .from("tournament_phases")
     .update({ status: "completed" })
     .eq("id", currentPhase.id);
 
+  if (completeSwissError) throw completeSwissError;
+
   // Activate elimination phase
-  await supabase
+  const { error: activateElimError } = await supabase
     .from("tournament_phases")
     .update({ status: "active" })
     .eq("id", nextPhase.id);
+
+  if (activateElimError) throw activateElimError;
 
   // Create Round 1 for the elimination phase
   const { data: elimRound } = await supabase
@@ -338,16 +360,22 @@ export async function advanceToTopCut(
     match_id: matchMap.get(`${p.alt1_id}:${p.alt2_id}`),
   }));
 
-  await supabase.from("tournament_pairings").insert(pairingsWithMatchId);
+  const { error: pairingsError } = await supabase
+    .from("tournament_pairings")
+    .insert(pairingsWithMatchId);
+
+  if (pairingsError) throw pairingsError;
 
   // Update tournament current phase
-  await supabase
+  const { error: updatePhaseError } = await supabase
     .from("tournaments")
     .update({
       current_phase_id: nextPhase.id,
       current_round: 1,
     })
     .eq("id", tournamentId);
+
+  if (updatePhaseError) throw updatePhaseError;
 
   return {
     qualifiers: qualifiers.length,
@@ -603,10 +631,12 @@ export async function completeTournament(
     }
 
     // Complete all phases
-    await supabase
+    const { error: completePhasesError } = await supabase
       .from("tournament_phases")
       .update({ status: "completed" })
       .in("id", phaseIds);
+
+    if (completePhasesError) throw completePhasesError;
   }
 
   // Final standings recalculation
