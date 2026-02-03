@@ -9,14 +9,13 @@
 
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
-import { getErrorMessage } from "@/lib/utils";
 import {
   createAlt,
   updateAlt,
   deleteAlt,
   setMainAlt,
 } from "@trainers/supabase";
-import type { ActionResult } from "./utils";
+import { type ActionResult, withAction } from "./utils";
 
 // --- Input Schemas ---
 
@@ -72,7 +71,7 @@ export async function createAltAction(data: {
   displayName: string;
   inGameName?: string;
 }): Promise<ActionResult<{ id: number }>> {
-  try {
+  return withAction(async () => {
     const validated = createAltSchema.parse(data);
     const supabase = await createClient();
     const alt = await createAlt(supabase, {
@@ -80,19 +79,8 @@ export async function createAltAction(data: {
       displayName: validated.displayName,
       inGameName: validated.inGameName,
     });
-    return { success: true, data: { id: alt.id } };
-  } catch (error) {
-    if (error instanceof z.ZodError) {
-      return {
-        success: false,
-        error: error.errors[0]?.message ?? "Invalid input",
-      };
-    }
-    return {
-      success: false,
-      error: getErrorMessage(error, "Failed to create alt"),
-    };
-  }
+    return { id: alt.id };
+  }, "Failed to create alt");
 }
 
 /**
@@ -106,24 +94,13 @@ export async function updateAltAction(
     inGameName?: string | null;
   }
 ): Promise<ActionResult<{ success: true }>> {
-  try {
+  return withAction(async () => {
     const validatedId = idSchema.parse(altId);
     const validated = updateAltSchema.parse(updates);
     const supabase = await createClient();
     await updateAlt(supabase, validatedId, validated);
-    return { success: true, data: { success: true } };
-  } catch (error) {
-    if (error instanceof z.ZodError) {
-      return {
-        success: false,
-        error: error.errors[0]?.message ?? "Invalid input",
-      };
-    }
-    return {
-      success: false,
-      error: getErrorMessage(error, "Failed to update alt"),
-    };
-  }
+    return { success: true as const };
+  }, "Failed to update alt");
 }
 
 /**
@@ -132,23 +109,12 @@ export async function updateAltAction(
 export async function deleteAltAction(
   altId: number
 ): Promise<ActionResult<{ success: true }>> {
-  try {
+  return withAction(async () => {
     const validatedId = idSchema.parse(altId);
     const supabase = await createClient();
     await deleteAlt(supabase, validatedId);
-    return { success: true, data: { success: true } };
-  } catch (error) {
-    if (error instanceof z.ZodError) {
-      return {
-        success: false,
-        error: error.errors[0]?.message ?? "Invalid input",
-      };
-    }
-    return {
-      success: false,
-      error: getErrorMessage(error, "Failed to delete alt"),
-    };
-  }
+    return { success: true as const };
+  }, "Failed to delete alt");
 }
 
 /**
@@ -157,23 +123,12 @@ export async function deleteAltAction(
 export async function setMainAltAction(
   altId: number
 ): Promise<ActionResult<{ success: true }>> {
-  try {
+  return withAction(async () => {
     const validatedId = idSchema.parse(altId);
     const supabase = await createClient();
     await setMainAlt(supabase, validatedId);
-    return { success: true, data: { success: true } };
-  } catch (error) {
-    if (error instanceof z.ZodError) {
-      return {
-        success: false,
-        error: error.errors[0]?.message ?? "Invalid input",
-      };
-    }
-    return {
-      success: false,
-      error: getErrorMessage(error, "Failed to set main alt"),
-    };
-  }
+    return { success: true as const };
+  }, "Failed to set main alt");
 }
 
 /**
@@ -183,22 +138,11 @@ export async function updateProfileAction(
   altId: number,
   updates: { displayName?: string; bio?: string }
 ): Promise<ActionResult<{ success: true }>> {
-  try {
+  return withAction(async () => {
     const validatedId = idSchema.parse(altId);
     const validated = updateProfileSchema.parse(updates);
     const supabase = await createClient();
     await updateAlt(supabase, validatedId, validated);
-    return { success: true, data: { success: true } };
-  } catch (error) {
-    if (error instanceof z.ZodError) {
-      return {
-        success: false,
-        error: error.errors[0]?.message ?? "Invalid input",
-      };
-    }
-    return {
-      success: false,
-      error: getErrorMessage(error, "Failed to update profile"),
-    };
-  }
+    return { success: true as const };
+  }, "Failed to update profile");
 }

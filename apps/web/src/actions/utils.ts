@@ -1,6 +1,8 @@
 "use server";
 
+import { z } from "zod";
 import { checkBotId } from "botid/server";
+import { getErrorMessage } from "@/lib/utils";
 
 /**
  * Consistent action result type for server actions.
@@ -15,4 +17,29 @@ export type ActionResult<T = void> =
 export async function rejectBots(): Promise<void> {
   const { isBot } = await checkBotId();
   if (isBot) throw new Error("Access denied");
+}
+
+/**
+ * Wraps an async action with consistent error handling.
+ * Catches Zod validation errors and generic errors, returning ActionResult.
+ */
+export async function withAction<T>(
+  fn: () => Promise<T>,
+  fallbackMessage: string
+): Promise<ActionResult<T>> {
+  try {
+    const data = await fn();
+    return { success: true, data };
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return {
+        success: false,
+        error: error.errors[0]?.message ?? "Invalid input",
+      };
+    }
+    return {
+      success: false,
+      error: getErrorMessage(error, fallbackMessage),
+    };
+  }
 }
