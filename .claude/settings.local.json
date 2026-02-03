@@ -96,7 +96,12 @@
       "WebFetch(domain:www.npmjs.com)",
       "mcp__playwright-bridge__browser_navigate",
       "mcp__playwright-bridge__browser_take_screenshot",
-      "mcp__playwright-bridge__browser_snapshot"
+      "mcp__playwright-bridge__browser_snapshot",
+      "Bash(sort:*)",
+      "Bash(while read file)",
+      "Bash(do echo \"$file:\")",
+      "Bash(done)",
+      "Bash(awk:*)"
     ]
   },
   "enableAllProjectMcpServers": true
