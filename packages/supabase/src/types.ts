@@ -2630,7 +2630,17 @@ export type Database = {
         Returns: boolean
       }
       is_site_admin: { Args: never; Returns: boolean }
+      report_match_result: {
+        Args: {
+          p_match_id: number
+          p_score1: number
+          p_score2: number
+          p_winner_id: number
+        }
+        Returns: undefined
+      }
       request_judge: { Args: { p_match_id: number }; Returns: undefined }
+      start_match: { Args: { p_match_id: number }; Returns: undefined }
       submit_game_selection: {
         Args: { p_game_id: number; p_selected_winner_alt_id: number }
         Returns: Json
