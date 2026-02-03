@@ -326,9 +326,6 @@ function GameNode({
   );
 
   // --- Resolved node (won / lost) ---
-  if (isResolved && state !== "lost" && state !== "won") {
-    return null; // type guard
-  }
   if (state === "won" || state === "lost") {
     const isSelfCorrectable =
       !locked &&
