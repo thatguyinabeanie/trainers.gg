@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { useSupabaseQuery } from "@/lib/supabase";
 import {
   getTournamentPhases,
@@ -57,6 +58,7 @@ import { transformPhaseData } from "@/lib/tournament-utils";
 interface TournamentPairingsProps {
   tournament: {
     id: number;
+    slug: string;
     status: string;
     currentPhaseId?: number | null;
   };
@@ -69,6 +71,7 @@ interface MatchForReport {
 }
 
 export function TournamentPairings({ tournament }: TournamentPairingsProps) {
+  const router = useRouter();
   const [selectedPhaseId, setSelectedPhaseId] = useState<number | null>(
     tournament.currentPhaseId ?? null
   );
@@ -444,7 +447,15 @@ export function TournamentPairings({ tournament }: TournamentPairingsProps) {
                       const isBye = !match.alt2_id;
 
                       return (
-                        <TableRow key={match.id}>
+                        <TableRow
+                          key={match.id}
+                          className="cursor-pointer"
+                          onClick={() =>
+                            router.push(
+                              `/tournaments/${tournament.slug}/matches/${match.id}`
+                            )
+                          }
+                        >
                           <TableCell className="font-medium">
                             {isBye
                               ? "BYE"
@@ -513,7 +524,10 @@ export function TournamentPairings({ tournament }: TournamentPairingsProps) {
                               <Button
                                 variant="outline"
                                 size="sm"
-                                onClick={() => openReportDialog(match)}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  openReportDialog(match);
+                                }}
                               >
                                 <Clock className="mr-2 h-4 w-4" />
                                 Report

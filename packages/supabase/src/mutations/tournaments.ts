@@ -776,7 +776,7 @@ export async function startMatch(supabase: TypedClient, matchId: number) {
         phase_id,
         tournament_phases!inner (
           tournament_id,
-          tournaments!inner (
+          tournaments!tournament_phases_tournament_id_fkey!inner (
             organization_id,
             organizations!inner (
               owner_user_id
@@ -861,7 +861,7 @@ export async function reportMatchResult(
         phase_id,
         tournament_phases!inner (
           tournament_id,
-          tournaments!inner (
+          tournaments!tournament_phases_tournament_id_fkey!inner (
             organization_id,
             organizations!inner (
               owner_user_id
@@ -1207,7 +1207,7 @@ export async function generateRoundPairings(
         id,
         tournament_id,
         phase_type,
-        tournaments!inner (
+        tournaments!tournament_phases_tournament_id_fkey!inner (
           id,
           organization_id,
           status,
@@ -1491,7 +1491,7 @@ export async function startRound(supabase: TypedClient, roundId: number) {
       tournament_phases!inner (
         id,
         tournament_id,
-        tournaments!inner (
+        tournaments!tournament_phases_tournament_id_fkey!inner (
           organization_id,
           status,
           organizations!inner (
@@ -1561,7 +1561,7 @@ export async function startRound(supabase: TypedClient, roundId: number) {
     .from("tournament_rounds")
     .update({
       status: "active",
-      started_at: new Date().toISOString(),
+      start_time: new Date().toISOString(),
     })
     .eq("id", roundId);
 
@@ -1587,7 +1587,7 @@ export async function completeRound(supabase: TypedClient, roundId: number) {
       phase_id,
       tournament_phases!inner (
         tournament_id,
-        tournaments!inner (
+        tournaments!tournament_phases_tournament_id_fkey!inner (
           organization_id,
           organizations!inner (
             owner_user_id
@@ -1639,7 +1639,7 @@ export async function completeRound(supabase: TypedClient, roundId: number) {
     .from("tournament_rounds")
     .update({
       status: "completed",
-      completed_at: new Date().toISOString(),
+      end_time: new Date().toISOString(),
     })
     .eq("id", roundId);
 
@@ -2011,7 +2011,7 @@ export async function createRound(
       `
       id,
       tournament_id,
-      tournaments!inner (
+      tournaments!tournament_phases_tournament_id_fkey!inner (
         organization_id,
         organizations!inner (
           owner_user_id
@@ -2107,7 +2107,7 @@ export async function deleteRoundAndMatches(
       tournament_phases!inner (
         id,
         tournament_id,
-        tournaments!inner (
+        tournaments!tournament_phases_tournament_id_fkey!inner (
           organization_id,
           organizations!inner (
             owner_user_id
@@ -2195,7 +2195,7 @@ export async function updatePhase(
       id,
       status,
       tournament_id,
-      tournaments!inner (
+      tournaments!tournament_phases_tournament_id_fkey!inner (
         organization_id,
         status,
         organizations!inner (
@@ -2355,7 +2355,7 @@ export async function deletePhase(supabase: TypedClient, phaseId: number) {
       id,
       phase_order,
       tournament_id,
-      tournaments!inner (
+      tournaments!tournament_phases_tournament_id_fkey!inner (
         status,
         organization_id,
         organizations!inner (
@@ -3262,7 +3262,7 @@ export async function generateEliminationPairings(
         id,
         tournament_id,
         phase_type,
-        tournaments!inner(
+        tournaments!tournament_phases_tournament_id_fkey!inner(
           id,
           organization_id,
           organizations!inner(owner_user_id)

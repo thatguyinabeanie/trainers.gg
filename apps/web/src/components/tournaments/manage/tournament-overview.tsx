@@ -16,17 +16,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import {
-  Trophy,
-  Calendar,
-  Play,
-  AlertCircle,
-  TrendingUp,
-  ChevronRight,
-  Loader2,
-  CheckCircle,
-  X,
-} from "lucide-react";
+import { Play, AlertCircle, Loader2, CheckCircle, X } from "lucide-react";
 import { toast } from "sonner";
 
 // -- Types --
@@ -47,7 +37,6 @@ interface TournamentOverviewProps {
     roundTimeMinutes?: number;
     swissRounds?: number;
     topCutSize?: number;
-    _creationTime?: number;
   };
 }
 
@@ -55,6 +44,7 @@ type RoundState =
   | "idle" // No rounds yet, or last round completed — ready to start next
   | "generating" // Generating pairings (spinner)
   | "preview" // Pairings generated, TO reviews before confirming
+  | "pending_resume" // Round was prepared but start failed — offer to resume or cancel
   | "starting" // Confirming & starting round (spinner)
   | "active" // Round in progress
   | "completing" // Completing round (spinner)
@@ -80,7 +70,6 @@ export function TournamentOverview({ tournament }: TournamentOverviewProps) {
   const [isPending, startTransition] = useTransition();
 
   const registrationCount = tournament.registrations?.length || 0;
-  const maxParticipants = tournament.maxParticipants || 0;
   const isActive = tournament.status === "active";
 
   // -- Data Fetching --
@@ -139,6 +128,12 @@ export function TournamentOverview({ tournament }: TournamentOverviewProps) {
     activeRound.matchCount > 0 &&
     activeRound.completedCount === activeRound.matchCount;
 
+  // Detect a pending round with matches (stale from a failed start attempt)
+  const pendingRound =
+    lastRound?.status === "pending" && lastRound.matchCount > 0
+      ? lastRound
+      : null;
+
   // Sync roundState from fetched data
   useEffect(() => {
     // Don't override user-initiated states (generating, preview, starting, completing)
@@ -153,10 +148,13 @@ export function TournamentOverview({ tournament }: TournamentOverviewProps) {
 
     if (hasActiveRound) {
       setRoundState("active");
+    } else if (pendingRound) {
+      // A round was prepared but never started — show resume UI
+      setRoundState("pending_resume");
     } else if (lastRoundCompleted || !lastRound) {
       setRoundState("idle");
     }
-  }, [hasActiveRound, lastRoundCompleted, lastRound, roundState]);
+  }, [hasActiveRound, lastRoundCompleted, lastRound, pendingRound, roundState]);
 
   // -- Handlers --
 
@@ -217,6 +215,40 @@ export function TournamentOverview({ tournament }: TournamentOverviewProps) {
     });
   };
 
+  const handleResumePendingRound = () => {
+    if (!pendingRound) return;
+    setRoundState("starting");
+
+    startTransition(async () => {
+      const result = await confirmAndStartRound(pendingRound.id, tournament.id);
+      if (result.success) {
+        toast.success(`Round ${pendingRound.round_number} started`);
+        setRoundState("active");
+        await refetchRounds();
+      } else {
+        toast.error(result.error);
+        setRoundState("pending_resume");
+      }
+    });
+  };
+
+  const handleCancelPendingRound = () => {
+    if (!pendingRound) return;
+    setRoundState("generating");
+
+    startTransition(async () => {
+      const result = await cancelPreparedRound(pendingRound.id, tournament.id);
+      if (result.success) {
+        toast.success("Round cancelled");
+        setRoundState("idle");
+        await refetchRounds();
+      } else {
+        toast.error(result.error);
+        setRoundState("pending_resume");
+      }
+    });
+  };
+
   const handleCompleteRound = () => {
     if (!activeRound) return;
     setRoundState("completing");
@@ -237,7 +269,7 @@ export function TournamentOverview({ tournament }: TournamentOverviewProps) {
   // -- Formatting helpers --
 
   const formatDate = (timestamp?: number) => {
-    if (!timestamp) return "Not set";
+    if (!timestamp) return "—";
     return new Date(timestamp).toLocaleDateString("en-US", {
       month: "short",
       day: "numeric",
@@ -246,40 +278,22 @@ export function TournamentOverview({ tournament }: TournamentOverviewProps) {
     });
   };
 
-  // -- Attention items --
+  const formatType = (fmt?: string) =>
+    fmt?.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()) ?? "Swiss";
 
-  const attentionItems: Array<{
-    id: string;
-    message: string;
-    action: string;
-  }> = [];
-
-  if (tournament.status === "draft") {
-    attentionItems.push({
-      id: "publish",
-      message: "Tournament is still in draft mode",
-      action: "Publish",
-    });
-  }
-
-  if (tournament.status === "upcoming" && !tournament.startDate) {
-    attentionItems.push({
-      id: "start-date",
-      message: "No start date set",
-      action: "Set Date",
-    });
-  }
+  const maxParticipants = tournament.maxParticipants ?? 0;
 
   // -- Render --
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Round Command Center — only for active tournaments */}
       {isActive && (
         <RoundCommandCenter
           roundState={roundState}
           previewData={previewData}
           activeRound={activeRound}
+          pendingRound={pendingRound}
           nextRoundNumber={nextRoundNumber}
           plannedRounds={plannedRounds ?? null}
           allMatchesDone={!!allMatchesDone}
@@ -290,193 +304,75 @@ export function TournamentOverview({ tournament }: TournamentOverviewProps) {
           onConfirmStart={handleConfirmStart}
           onCancelPreview={handleCancelPreview}
           onCompleteRound={handleCompleteRound}
+          onResumePendingRound={handleResumePendingRound}
+          onCancelPendingRound={handleCancelPendingRound}
         />
       )}
 
-      {/* Attention Needed */}
-      {attentionItems.length > 0 && (
-        <Card className="border-amber-500/50 bg-amber-500/5">
-          <CardHeader className="pb-3">
-            <CardTitle className="flex items-center gap-2 text-base">
-              <AlertCircle className="h-4 w-4 text-amber-500" />
-              Needs Attention
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-1">
-            {attentionItems.map((item) => (
-              <div
-                key={item.id}
-                className="flex items-center justify-between py-2"
-              >
-                <span className="text-sm">{item.message}</span>
-                <Button size="sm" variant="ghost" className="gap-1">
-                  {item.action}
-                  <ChevronRight className="h-3 w-3" />
-                </Button>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-      )}
-
-      {/* At a Glance - Compact metrics */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <div className="bg-muted/50 rounded-lg p-4 text-center">
-          <div className="text-2xl font-bold">{registrationCount}</div>
-          <div className="text-muted-foreground text-xs">
-            {maxParticipants ? `of ${maxParticipants}` : "Registered"}
-          </div>
-        </div>
-        <div className="bg-muted/50 rounded-lg p-4 text-center">
-          <div className="text-2xl font-bold">
-            {currentDisplayRound?.round_number ?? 0}
-          </div>
-          <div className="text-muted-foreground text-xs">
-            {plannedRounds ? `of ${plannedRounds} rounds` : "Current Round"}
-          </div>
-        </div>
-        <div className="bg-muted/50 rounded-lg p-4 text-center">
-          <div className="text-2xl font-bold">
-            {tournament.roundTimeMinutes || 50}m
-          </div>
-          <div className="text-muted-foreground text-xs">Round Time</div>
-        </div>
-        <div className="bg-muted/50 rounded-lg p-4 text-center">
-          <div className="text-lg font-bold">
-            <Badge variant="secondary" className="text-xs">
-              {tournament.format || "Custom"}
-            </Badge>
-          </div>
-          <div className="text-muted-foreground mt-1 text-xs">Format</div>
-        </div>
-      </div>
-
-      {/* Registration Progress - Only if cap set */}
-      {maxParticipants > 0 && (
-        <Card>
-          <CardHeader className="pb-2">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-sm font-medium">
-                Registration
-              </CardTitle>
-              <span className="text-muted-foreground text-sm">
-                {registrationCount} / {maxParticipants}
-              </span>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <Progress
-              value={
-                maxParticipants > 0
-                  ? (registrationCount / maxParticipants) * 100
-                  : 0
-              }
-              className="h-2"
-            />
-            <p className="text-muted-foreground mt-2 text-xs">
-              {maxParticipants - registrationCount} spots remaining
-            </p>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Schedule & Details - Condensed */}
-      <div className="grid gap-4 sm:grid-cols-2">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="flex items-center gap-2 text-sm font-medium">
-              <Calendar className="h-4 w-4" />
-              Schedule
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2 text-sm">
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Start</span>
-              <span>{formatDate(tournament.startDate)}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">End</span>
-              <span>{formatDate(tournament.endDate)}</span>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="flex items-center gap-2 text-sm font-medium">
-              <Trophy className="h-4 w-4" />
-              Format
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2 text-sm">
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Type</span>
-              <span>
-                {tournament.tournamentFormat?.replace(/_/g, " ") || "Swiss"}
-              </span>
-            </div>
-            {tournament.swissRounds && (
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Swiss Rounds</span>
-                <span>{tournament.swissRounds}</span>
-              </div>
-            )}
-            {tournament.topCutSize && (
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Top Cut</span>
-                <span>Top {tournament.topCutSize}</span>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Recent Activity - Compact */}
+      {/* Tournament Details — single compact card */}
       <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="flex items-center gap-2 text-sm font-medium">
-            <TrendingUp className="h-4 w-4" />
-            Activity
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-2">
-            <div className="flex items-center gap-3 text-sm">
-              <div className="h-2 w-2 shrink-0 rounded-full bg-green-500" />
-              <span className="flex-1">Tournament created</span>
-              <span className="text-muted-foreground text-xs">
-                {tournament._creationTime
-                  ? new Date(tournament._creationTime).toLocaleDateString()
-                  : "—"}
+        <CardContent className="py-4">
+          <div className="grid grid-cols-2 gap-x-8 gap-y-2 text-sm sm:grid-cols-3">
+            <div className="flex justify-between gap-2">
+              <span className="text-muted-foreground">Players</span>
+              <span className="font-medium">
+                {registrationCount}
+                {maxParticipants > 0 && (
+                  <span className="text-muted-foreground font-normal">
+                    {" "}
+                    / {maxParticipants}
+                  </span>
+                )}
               </span>
             </div>
-            {tournament.status !== "draft" && (
-              <div className="flex items-center gap-3 text-sm">
-                <div className="h-2 w-2 shrink-0 rounded-full bg-blue-500" />
-                <span className="flex-1">Registration opened</span>
-                <span className="text-muted-foreground text-xs">Recently</span>
+            <div className="flex justify-between gap-2">
+              <span className="text-muted-foreground">Round</span>
+              <span className="font-medium">
+                {currentDisplayRound?.round_number ?? 0}
+                {plannedRounds ? (
+                  <span className="text-muted-foreground font-normal">
+                    {" "}
+                    of {plannedRounds}
+                  </span>
+                ) : null}
+              </span>
+            </div>
+            <div className="flex justify-between gap-2">
+              <span className="text-muted-foreground">Format</span>
+              <Badge variant="secondary" className="text-xs">
+                {tournament.format || "Custom"}
+              </Badge>
+            </div>
+            <div className="flex justify-between gap-2">
+              <span className="text-muted-foreground">Type</span>
+              <span className="font-medium">
+                {formatType(tournament.tournamentFormat)}
+              </span>
+            </div>
+            <div className="flex justify-between gap-2">
+              <span className="text-muted-foreground">Round Time</span>
+              <span className="font-medium">
+                {tournament.roundTimeMinutes || 50}m
+              </span>
+            </div>
+            {tournament.topCutSize ? (
+              <div className="flex justify-between gap-2">
+                <span className="text-muted-foreground">Top Cut</span>
+                <span className="font-medium">Top {tournament.topCutSize}</span>
               </div>
-            )}
-            {registrationCount > 0 && (
-              <div className="flex items-center gap-3 text-sm">
-                <div className="h-2 w-2 shrink-0 rounded-full bg-purple-500" />
-                <span className="flex-1">
-                  {registrationCount} players registered
-                </span>
-                <span className="text-muted-foreground text-xs">Ongoing</span>
-              </div>
-            )}
-            {activeRound && (
-              <div className="flex items-center gap-3 text-sm">
-                <div className="h-2 w-2 shrink-0 rounded-full bg-teal-500" />
-                <span className="flex-1">
-                  Round {activeRound.round_number} in progress
-                </span>
-                <span className="text-muted-foreground text-xs">
-                  {activeRound.completedCount}/{activeRound.matchCount} matches
-                </span>
-              </div>
-            )}
+            ) : null}
+            <div className="flex justify-between gap-2">
+              <span className="text-muted-foreground">Start</span>
+              <span className="font-medium">
+                {formatDate(tournament.startDate)}
+              </span>
+            </div>
+            <div className="flex justify-between gap-2">
+              <span className="text-muted-foreground">End</span>
+              <span className="font-medium">
+                {formatDate(tournament.endDate)}
+              </span>
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -497,6 +393,11 @@ interface RoundCommandCenterProps {
     inProgressCount: number;
     pendingCount: number;
   } | null;
+  pendingRound: {
+    id: number;
+    round_number: number;
+    matchCount: number;
+  } | null;
   nextRoundNumber: number;
   plannedRounds: number | null;
   allMatchesDone: boolean;
@@ -507,12 +408,15 @@ interface RoundCommandCenterProps {
   onConfirmStart: () => void;
   onCancelPreview: () => void;
   onCompleteRound: () => void;
+  onResumePendingRound: () => void;
+  onCancelPendingRound: () => void;
 }
 
 function RoundCommandCenter({
   roundState,
   previewData,
   activeRound,
+  pendingRound,
   nextRoundNumber,
   plannedRounds,
   allMatchesDone,
@@ -523,6 +427,8 @@ function RoundCommandCenter({
   onConfirmStart,
   onCancelPreview,
   onCompleteRound,
+  onResumePendingRound,
+  onCancelPendingRound,
 }: RoundCommandCenterProps) {
   if (roundsLoading) {
     return (
@@ -575,6 +481,54 @@ function RoundCommandCenter({
                 Start Round {nextRoundNumber}
               </Button>
             )}
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // -- Pending Resume: round was prepared but start failed --
+  if (roundState === "pending_resume" && pendingRound) {
+    return (
+      <Card className="border-amber-500/50">
+        <CardContent className="py-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="font-semibold">
+                Round {pendingRound.round_number} Ready
+              </h3>
+              <p className="text-muted-foreground text-sm">
+                {pendingRound.matchCount} matches generated — start or cancel
+                this round
+              </p>
+            </div>
+            <div className="flex gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={onCancelPendingRound}
+                disabled={isPending}
+              >
+                {isPending ? (
+                  <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <X className="mr-1 h-3.5 w-3.5" />
+                )}
+                Cancel
+              </Button>
+              <Button
+                size="sm"
+                onClick={onResumePendingRound}
+                disabled={isPending}
+              >
+                {isPending ? (
+                  <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <Play className="mr-1 h-3.5 w-3.5" />
+                )}
+                Start Round {pendingRound.round_number}
+              </Button>
+            </div>
           </div>
         </CardContent>
       </Card>

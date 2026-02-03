@@ -187,9 +187,6 @@ export function TournamentManageClient({
     roundTimeMinutes: tournament.round_time_minutes ?? 50,
     swissRounds: tournament.swiss_rounds ?? undefined,
     topCutSize: tournament.top_cut_size ?? undefined,
-    _creationTime: tournament.created_at
-      ? new Date(tournament.created_at).getTime()
-      : undefined,
   };
 
   // Props for child components
@@ -201,6 +198,7 @@ export function TournamentManageClient({
 
   const tournamentForPairings = {
     id: tournament.id,
+    slug: tournament.slug,
     status: tournament.status ?? "draft",
     currentPhaseId: tournament.current_phase_id ?? null,
   };
