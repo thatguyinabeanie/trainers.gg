@@ -1,3 +1,14 @@
+/** Player reference from a joined Supabase query. */
+export type PlayerRef = {
+  display_name?: string;
+  username?: string;
+} | null;
+
+/** Resolve a player's display name, falling back to username then a default. */
+export function getPlayerName(player: PlayerRef, fallback = "TBD"): string {
+  return player?.display_name ?? player?.username ?? fallback;
+}
+
 /**
  * Format a date string as a human-readable "time ago" label.
  * Returns "Just now", "Xm ago", "Xh ago", "Xd ago", or a formatted date.

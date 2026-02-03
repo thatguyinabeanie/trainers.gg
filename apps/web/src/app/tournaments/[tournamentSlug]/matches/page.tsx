@@ -8,6 +8,7 @@ import {
   getPhaseRoundsWithMatches,
 } from "@trainers/supabase";
 import { CacheTags } from "@/lib/cache";
+import { getPlayerName, type PlayerRef } from "@/lib/format";
 import { PageContainer } from "@/components/layout/page-container";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -171,22 +172,13 @@ export default async function MatchesPage({ params }: PageProps) {
                     ) : (
                       <div className="space-y-2">
                         {round.matches.map((match) => {
-                          const p1 = match.player1 as {
-                            id: number;
-                            display_name?: string;
-                            username?: string;
-                          } | null;
-                          const p2 = match.player2 as {
-                            id: number;
-                            display_name?: string;
-                            username?: string;
-                          } | null;
                           const isBye = !match.alt2_id;
-                          const p1Name =
-                            p1?.display_name ?? p1?.username ?? "TBD";
+                          const p1Name = getPlayerName(
+                            match.player1 as PlayerRef
+                          );
                           const p2Name = isBye
                             ? "BYE"
-                            : (p2?.display_name ?? p2?.username ?? "TBD");
+                            : getPlayerName(match.player2 as PlayerRef);
 
                           return (
                             <Link

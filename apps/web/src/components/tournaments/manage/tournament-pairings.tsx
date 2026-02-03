@@ -2,6 +2,7 @@
 
 import { useState, useTransition, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { getPlayerName, type PlayerRef } from "@/lib/format";
 import { useSupabaseQuery } from "@/lib/supabase";
 import {
   getTournamentPhases,
@@ -178,24 +179,12 @@ export function TournamentPairings({ tournament }: TournamentPairingsProps) {
     alt1_id: number | null;
     alt2_id: number | null;
   }) => {
-    const p1 = match.player1 as {
-      id: number;
-      display_name?: string;
-      username?: string;
-    } | null;
-    const p2 = match.player2 as {
-      id: number;
-      display_name?: string;
-      username?: string;
-    } | null;
+    const p1 = match.player1 as (PlayerRef & { id: number }) | null;
+    const p2 = match.player2 as (PlayerRef & { id: number }) | null;
     setMatchToReport({
       id: match.id,
-      player1: p1
-        ? { id: p1.id, name: p1.display_name ?? p1.username ?? "Player 1" }
-        : null,
-      player2: p2
-        ? { id: p2.id, name: p2.display_name ?? p2.username ?? "Player 2" }
-        : null,
+      player1: p1 ? { id: p1.id, name: getPlayerName(p1, "Player 1") } : null,
+      player2: p2 ? { id: p2.id, name: getPlayerName(p2, "Player 2") } : null,
     });
     setPlayer1Score("0");
     setPlayer2Score("0");
@@ -433,18 +422,6 @@ export function TournamentPairings({ tournament }: TournamentPairingsProps) {
                   </TableHeader>
                   <TableBody>
                     {matches.map((match) => {
-                      const p1 = match.player1 as {
-                        display_name?: string;
-                        username?: string;
-                      } | null;
-                      const p2 = match.player2 as {
-                        display_name?: string;
-                        username?: string;
-                      } | null;
-                      const winner = match.winner as {
-                        display_name?: string;
-                        username?: string;
-                      } | null;
                       const isBye = !match.alt2_id;
 
                       return (
@@ -465,7 +442,7 @@ export function TournamentPairings({ tournament }: TournamentPairingsProps) {
                           <TableCell>
                             <div>
                               <div className="font-medium">
-                                {p1?.display_name ?? p1?.username ?? "TBD"}
+                                {getPlayerName(match.player1 as PlayerRef)}
                               </div>
                               {match.player1Stats && (
                                 <div className="text-muted-foreground text-sm">
@@ -483,7 +460,7 @@ export function TournamentPairings({ tournament }: TournamentPairingsProps) {
                             ) : (
                               <div>
                                 <div className="font-medium">
-                                  {p2?.display_name ?? p2?.username ?? "TBD"}
+                                  {getPlayerName(match.player2 as PlayerRef)}
                                 </div>
                                 {match.player2Stats && (
                                   <div className="text-muted-foreground text-sm">
@@ -503,9 +480,10 @@ export function TournamentPairings({ tournament }: TournamentPairingsProps) {
                             {match.status === "completed" ? (
                               <div>
                                 <div className="font-medium">
-                                  {winner?.display_name ??
-                                    winner?.username ??
-                                    "Unknown"}
+                                  {getPlayerName(
+                                    match.winner as PlayerRef,
+                                    "Unknown"
+                                  )}
                                 </div>
                                 <div className="text-muted-foreground text-sm">
                                   {match.game_wins1 ?? 0}-

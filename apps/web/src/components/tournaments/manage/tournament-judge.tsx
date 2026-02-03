@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { formatTimeAgo } from "@/lib/format";
+import { formatTimeAgo, getPlayerName, type PlayerRef } from "@/lib/format";
 import { useSupabaseQuery } from "@/lib/supabase";
 import { getTournamentMatchesForStaff } from "@trainers/supabase";
 import type { TypedSupabaseClient } from "@trainers/supabase";
@@ -171,15 +171,6 @@ export function TournamentJudge({
               {matches
                 ?.filter((m) => m.staff_requested)
                 .map((match) => {
-                  const p1 = match.player1 as {
-                    display_name?: string;
-                    username?: string;
-                  } | null;
-                  const p2 = match.player2 as {
-                    display_name?: string;
-                    username?: string;
-                  } | null;
-
                   return (
                     <div
                       key={match.id}
@@ -189,8 +180,8 @@ export function TournamentJudge({
                         <ShieldAlert className="h-4 w-4 text-red-500" />
                         <div>
                           <div className="text-sm font-medium">
-                            {p1?.display_name ?? p1?.username ?? "TBD"} vs{" "}
-                            {p2?.display_name ?? p2?.username ?? "TBD"}
+                            {getPlayerName(match.player1 as PlayerRef)} vs{" "}
+                            {getPlayerName(match.player2 as PlayerRef)}
                           </div>
                           <div className="text-muted-foreground text-xs">
                             Round {match.roundInfo?.round_number ?? "?"} · Table{" "}
@@ -270,18 +261,6 @@ export function TournamentJudge({
                 </TableHeader>
                 <TableBody>
                   {matches.map((match) => {
-                    const p1 = match.player1 as {
-                      display_name?: string;
-                      username?: string;
-                    } | null;
-                    const p2 = match.player2 as {
-                      display_name?: string;
-                      username?: string;
-                    } | null;
-                    const _winner = match.winner as {
-                      display_name?: string;
-                      username?: string;
-                    } | null;
                     const isBye = !match.alt2_id;
 
                     return (
@@ -300,7 +279,7 @@ export function TournamentJudge({
                         </TableCell>
                         <TableCell>
                           <span className="font-medium">
-                            {p1?.display_name ?? p1?.username ?? "TBD"}
+                            {getPlayerName(match.player1 as PlayerRef)}
                           </span>
                         </TableCell>
                         <TableCell>
@@ -310,7 +289,7 @@ export function TournamentJudge({
                             </span>
                           ) : (
                             <span className="font-medium">
-                              {p2?.display_name ?? p2?.username ?? "TBD"}
+                              {getPlayerName(match.player2 as PlayerRef)}
                             </span>
                           )}
                         </TableCell>
