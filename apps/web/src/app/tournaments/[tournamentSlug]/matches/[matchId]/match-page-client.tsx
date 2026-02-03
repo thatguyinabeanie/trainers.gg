@@ -1,78 +1,56 @@
 "use client";
 
-import {
-  type KeyboardEvent,
-  useState,
-  useEffect,
-  useRef,
-  useCallback,
-} from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useSupabase, useSupabaseQuery } from "@/lib/supabase";
-import {
-  getMatchGames,
-  getMatchGamesForPlayer,
-  getMatchMessages,
-} from "@trainers/supabase";
+import { getMatchGames, getMatchGamesForPlayer } from "@trainers/supabase";
 import type { TypedSupabaseClient } from "@trainers/supabase";
+import { Card, CardContent } from "@/components/ui/card";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
-  submitGameSelectionAction,
-  sendMatchMessageAction,
-  requestJudgeAction,
-  judgeOverrideGameAction,
-  judgeResetGameAction,
-} from "@/actions/matches";
-import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { StatusBadge, type Status } from "@/components/ui/status-badge";
-import {
-  AlertCircle,
-  CheckCircle,
-  Gavel,
   Loader2,
+  Swords,
+  Users,
   MessageSquare,
-  RotateCcw,
-  Send,
   ShieldAlert,
 } from "lucide-react";
-import { toast } from "sonner";
-import { cn } from "@/lib/utils";
 import type { RealtimeChannel } from "@supabase/supabase-js";
+
+import {
+  MatchHeader,
+  type PlayerInfo,
+  type PlayerStats,
+} from "@/components/match/match-header";
+import { GameCard, type GameData } from "@/components/match/game-card";
+import { MatchChat } from "@/components/match/match-chat";
+import { useMatchPresence } from "@/components/match/presence-indicator";
+import { TeamSheet, type TeamData } from "@/components/match/team-sheet";
 
 // =============================================================================
 // Types
 // =============================================================================
 
-interface Player {
-  id: number;
-  username: string;
-  display_name: string | null;
-  avatar_url: string | null;
-}
-
-interface MatchPageClientProps {
+export interface MatchPageClientProps {
   matchId: number;
   tournamentId: number;
   tournamentSlug: string;
   matchStatus: string;
   staffRequested: boolean;
-  player1: Player | null;
-  player2: Player | null;
+  player1: PlayerInfo | null;
+  player2: PlayerInfo | null;
   alt1Id: number | null;
   alt2Id: number | null;
   roundNumber: number | null;
+  tableNumber: number | null;
   bestOf: number;
   userAltId: number | null;
   isParticipant: boolean;
   isStaff: boolean;
   isPlayer1: boolean;
+  player1Stats: PlayerStats | null;
+  player2Stats: PlayerStats | null;
+  myTeam: TeamData | null;
+  opponentTeam: TeamData | null;
+  openTeamSheets: boolean;
 }
 
 // =============================================================================
@@ -90,11 +68,17 @@ export function MatchPageClient({
   alt1Id,
   alt2Id,
   roundNumber,
+  tableNumber,
   bestOf,
   userAltId,
   isParticipant,
   isStaff,
   isPlayer1,
+  player1Stats,
+  player2Stats,
+  myTeam,
+  opponentTeam,
+  openTeamSheets,
 }: MatchPageClientProps) {
   const supabase = useSupabase();
   const [matchStatus, setMatchStatus] = useState(initialStatus);
@@ -102,9 +86,59 @@ export function MatchPageClient({
   const [gamesRefreshKey, setGamesRefreshKey] = useState(0);
   const [messagesRefreshKey, setMessagesRefreshKey] = useState(0);
 
-  // Fetch games — staff see raw data, players see redacted opponent selections
-  // Both return shapes share id, game_number, status, winner_alt_id, etc.
-  // We normalize to Record<string, unknown> to handle the union.
+  // Determine perspective-based names and IDs
+  const myAltId = isPlayer1 ? alt1Id : isParticipant ? alt2Id : null;
+  const opponentAltId = isPlayer1 ? alt2Id : isParticipant ? alt1Id : null;
+
+  const myPlayer = isPlayer1 ? player1 : isParticipant ? player2 : null;
+  const opponent = isPlayer1 ? player2 : isParticipant ? player1 : null;
+
+  const myStats = isPlayer1
+    ? player1Stats
+    : isParticipant
+      ? player2Stats
+      : null;
+  const opponentStats = isPlayer1
+    ? player2Stats
+    : isParticipant
+      ? player1Stats
+      : null;
+
+  const myName = myPlayer?.display_name ?? myPlayer?.username ?? "You";
+  const opponentName =
+    opponent?.display_name ?? opponent?.username ?? "Opponent";
+
+  // For non-participants, show player1 as "opponent" (left) and player2 as "my" (right)
+  const headerOpponent = isParticipant ? opponent : player1;
+  const headerMyPlayer = isParticipant ? myPlayer : player2;
+  const headerOpponentStats = isParticipant ? opponentStats : player1Stats;
+  const headerMyStats = isParticipant ? myStats : player2Stats;
+
+  // ==========================================================================
+  // Presence
+  // ==========================================================================
+  const username = myPlayer?.username ?? null;
+  const displayName = myPlayer?.display_name ?? null;
+
+  const { viewers, typingUsers, setTyping } = useMatchPresence({
+    matchId,
+    username,
+    displayName,
+    isStaff,
+    isParticipant,
+  });
+
+  const handleTypingStart = useCallback(() => {
+    setTyping(true);
+  }, [setTyping]);
+
+  const handleTypingStop = useCallback(() => {
+    setTyping(false);
+  }, [setTyping]);
+
+  // ==========================================================================
+  // Fetch games
+  // ==========================================================================
   const gamesQueryFn = useCallback(
     async (client: TypedSupabaseClient): Promise<Record<string, unknown>[]> => {
       if (isStaff) {
@@ -116,10 +150,25 @@ export function MatchPageClient({
   );
 
   const {
-    data: games,
+    data: gamesRaw,
     isLoading: gamesLoading,
     refetch: refetchGames,
   } = useSupabaseQuery(gamesQueryFn, [matchId, gamesRefreshKey, isStaff]);
+
+  // Normalize raw game data to GameData shape
+  const games: GameData[] | null = gamesRaw
+    ? gamesRaw.map((g) => ({
+        id: g.id as number,
+        game_number: g.game_number as number,
+        status: (g.status as string) ?? "pending",
+        winner_alt_id: (g.winner_alt_id as number | null) ?? null,
+        my_selection: (g.my_selection as number | null) ?? undefined,
+        opponent_submitted: (g.opponent_submitted as boolean) ?? undefined,
+        alt1_selection: (g.alt1_selection as number | null) ?? undefined,
+        alt2_selection: (g.alt2_selection as number | null) ?? undefined,
+        resolved_by: (g.resolved_by as number | null) ?? undefined,
+      }))
+    : null;
 
   // ==========================================================================
   // Realtime subscriptions
@@ -171,642 +220,217 @@ export function MatchPageClient({
       .subscribe();
     channels.push(matchChannel);
 
+    // Subscribe to game updates for live score changes
+    const gamesChannel = supabase
+      .channel(`match-games-${matchId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "match_games",
+          filter: `match_id=eq.${matchId}`,
+        },
+        () => {
+          setGamesRefreshKey((k) => k + 1);
+        }
+      )
+      .subscribe();
+    channels.push(gamesChannel);
+
     return () => {
       channels.forEach((ch) => supabase.removeChannel(ch));
     };
   }, [supabase, matchId]);
 
   // ==========================================================================
-  // Game status helpers
+  // Game score calculation
   // ==========================================================================
   const gamesWon = (altId: number | null) => {
     if (!games || !altId) return 0;
-    return games.filter(
-      (g) => (g as { winner_alt_id?: number | null }).winner_alt_id === altId
-    ).length;
+    return games.filter((g) => g.winner_alt_id === altId).length;
   };
 
-  const p1Wins = gamesWon(alt1Id);
-  const p2Wins = gamesWon(alt2Id);
+  const myWins = isParticipant ? gamesWon(myAltId) : gamesWon(alt2Id);
+  const opponentWins = isParticipant
+    ? gamesWon(opponentAltId)
+    : gamesWon(alt1Id);
 
-  const p1Name = player1?.display_name ?? player1?.username ?? "Player 1";
-  const p2Name = player2?.display_name ?? player2?.username ?? "Player 2";
+  // ==========================================================================
+  // Has teams to show?
+  // ==========================================================================
+  const hasTeams = myTeam !== null || opponentTeam !== null;
 
-  return (
-    <div className="space-y-6">
-      {/* Match Header */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="text-2xl">
-                {p1Name} vs {p2Name}
-              </CardTitle>
-              <CardDescription>
-                Round {roundNumber ?? "?"} &middot; Best of {bestOf}
-              </CardDescription>
-            </div>
-            <div className="flex items-center gap-2">
-              {staffRequested && (
-                <Badge variant="destructive" className="gap-1">
-                  <ShieldAlert className="h-3 w-3" />
-                  Judge Requested
-                </Badge>
-              )}
-              <StatusBadge status={matchStatus as Status} />
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center justify-center gap-8">
-            <div className="text-center">
-              <div className="text-muted-foreground mb-1 text-sm">{p1Name}</div>
-              <div className="text-4xl font-bold">{p1Wins}</div>
-            </div>
-            <div className="text-muted-foreground text-2xl">&ndash;</div>
-            <div className="text-center">
-              <div className="text-muted-foreground mb-1 text-sm">{p2Name}</div>
-              <div className="text-4xl font-bold">{p2Wins}</div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+  // ==========================================================================
+  // Shared sections
+  // ==========================================================================
 
-      <div className="grid gap-6 lg:grid-cols-3">
-        {/* Games Column */}
-        <div className="space-y-4 lg:col-span-2">
-          <h2 className="text-lg font-semibold">Games</h2>
-
-          {gamesLoading ? (
-            <Card>
-              <CardContent className="flex items-center justify-center py-8">
-                <Loader2 className="h-6 w-6 animate-spin" />
-              </CardContent>
-            </Card>
-          ) : !games || games.length === 0 ? (
-            <Card>
-              <CardContent className="py-8 text-center">
-                <p className="text-muted-foreground">
-                  No games yet. Games will appear once the round starts.
-                </p>
-              </CardContent>
-            </Card>
-          ) : (
-            games.map((game) => (
-              <GameCard
-                key={game.id as number}
-                game={game}
-                player1={player1}
-                player2={player2}
-                alt1Id={alt1Id}
-                alt2Id={alt2Id}
-                userAltId={userAltId}
-                isParticipant={isParticipant}
-                isStaff={isStaff}
-                isPlayer1={isPlayer1}
-                tournamentId={tournamentId}
-                onGameUpdated={() => refetchGames()}
-              />
-            ))
-          )}
-
-          {isStaff && matchStatus === "active" && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-base">
-                  <Gavel className="h-4 w-4" />
-                  Judge Actions
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground mb-2 text-sm">
-                  Use the override/reset buttons on individual games above.
-                </p>
-                {staffRequested && (
-                  <div className="flex items-center gap-2 rounded-md bg-amber-50 p-3 text-sm text-amber-800 dark:bg-amber-950 dark:text-amber-200">
-                    <ShieldAlert className="h-4 w-4 shrink-0" />A judge has been
-                    requested for this match.
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          )}
-        </div>
-
-        {/* Chat Column */}
-        <div className="flex flex-col">
-          <MatchChat
-            matchId={matchId}
-            userAltId={userAltId}
-            isStaff={isStaff}
+  const gamesSection = (
+    <div className="space-y-2">
+      {gamesLoading ? (
+        <Card>
+          <CardContent className="flex items-center justify-center py-8">
+            <Loader2 className="text-muted-foreground h-6 w-6 animate-spin" />
+          </CardContent>
+        </Card>
+      ) : !games || games.length === 0 ? (
+        <Card>
+          <CardContent className="py-8 text-center">
+            <p className="text-muted-foreground text-sm">
+              Games will appear once the round starts.
+            </p>
+          </CardContent>
+        </Card>
+      ) : (
+        games.map((game) => (
+          <GameCard
+            key={game.id}
+            game={game}
+            myAltId={isParticipant ? myAltId : alt1Id}
+            opponentAltId={isParticipant ? opponentAltId : alt2Id}
+            myName={
+              isParticipant
+                ? myName
+                : (player1?.display_name ?? player1?.username ?? "Player 1")
+            }
+            opponentName={
+              isParticipant
+                ? opponentName
+                : (player2?.display_name ?? player2?.username ?? "Player 2")
+            }
             isParticipant={isParticipant}
+            isStaff={isStaff}
+            isPlayer1={isPlayer1}
             matchStatus={matchStatus}
-            staffRequested={staffRequested}
             tournamentId={tournamentId}
-            messagesRefreshKey={messagesRefreshKey}
+            userAltId={userAltId}
+            onGameUpdated={() => refetchGames()}
           />
+        ))
+      )}
+
+      {/* Staff judge info */}
+      {isStaff && matchStatus === "active" && staffRequested && (
+        <div className="flex items-center gap-2 rounded-lg bg-amber-500/10 p-3 text-sm text-amber-700 dark:text-amber-300">
+          <ShieldAlert className="h-4 w-4 shrink-0" />A judge has been requested
+          for this match.
         </div>
-      </div>
+      )}
     </div>
   );
-}
 
-// =============================================================================
-// Game Card Component
-// =============================================================================
-
-interface GameCardProps {
-  game: Record<string, unknown>;
-  player1: Player | null;
-  player2: Player | null;
-  alt1Id: number | null;
-  alt2Id: number | null;
-  userAltId: number | null;
-  isParticipant: boolean;
-  isStaff: boolean;
-  isPlayer1: boolean;
-  tournamentId: number;
-  onGameUpdated: () => void;
-}
-
-function GameCard({
-  game,
-  player1,
-  player2,
-  alt1Id,
-  alt2Id,
-  userAltId,
-  isParticipant,
-  isStaff,
-  isPlayer1,
-  tournamentId,
-  onGameUpdated,
-}: GameCardProps) {
-  const [isPending, setIsPending] = useState(false);
-  const [overrideWinner, setOverrideWinner] = useState<number | null>(null);
-
-  const gameId = game.id as number;
-  const gameNumber = game.game_number as number;
-  const status = (game.status as string) ?? "pending";
-  const winnerAltId = game.winner_alt_id as number | null;
-  const alt1Selection = game.alt1_selection as number | null;
-  const alt2Selection = game.alt2_selection as number | null;
-
-  const p1Name = player1?.display_name ?? player1?.username ?? "Player 1";
-  const p2Name = player2?.display_name ?? player2?.username ?? "Player 2";
-
-  const mySelection = isPlayer1 ? alt1Selection : alt2Selection;
-  const hasSubmitted = mySelection !== null;
-
-  const canSubmit =
-    isParticipant &&
-    !hasSubmitted &&
-    ["pending", "awaiting_both", "awaiting_one"].includes(status);
-
-  const handleSubmitSelection = async (selectedWinnerAltId: number) => {
-    setIsPending(true);
-    const result = await submitGameSelectionAction(
-      gameId,
-      selectedWinnerAltId,
-      tournamentId
-    );
-    setIsPending(false);
-
-    if (result.success) {
-      toast.success(`Game ${gameNumber} selection submitted`);
-      onGameUpdated();
-    } else {
-      toast.error(result.error);
-    }
-  };
-
-  const handleJudgeOverride = async () => {
-    if (!overrideWinner || !userAltId) return;
-    setIsPending(true);
-    const result = await judgeOverrideGameAction(
-      gameId,
-      overrideWinner,
-      userAltId,
-      tournamentId
-    );
-    setIsPending(false);
-
-    if (result.success) {
-      toast.success(`Game ${gameNumber} resolved by judge`);
-      setOverrideWinner(null);
-      onGameUpdated();
-    } else {
-      toast.error(result.error);
-    }
-  };
-
-  const handleJudgeReset = async () => {
-    setIsPending(true);
-    const result = await judgeResetGameAction(gameId, tournamentId);
-    setIsPending(false);
-
-    if (result.success) {
-      toast.success(`Game ${gameNumber} reset`);
-      onGameUpdated();
-    } else {
-      toast.error(result.error);
-    }
-  };
-
-  const statusLabel: Record<string, string> = {
-    pending: "Pending",
-    awaiting_both: "Awaiting Submissions",
-    awaiting_one: "Awaiting 1 Submission",
-    agreed: "Agreed",
-    disputed: "Disputed",
-    resolved: "Resolved",
-    cancelled: "Cancelled",
-  };
-
-  const statusVariant: Record<string, "default" | "secondary" | "destructive"> =
-    {
-      pending: "default",
-      awaiting_both: "secondary",
-      awaiting_one: "secondary",
-      agreed: "default",
-      disputed: "destructive",
-      resolved: "default",
-      cancelled: "secondary",
-    };
-
-  return (
-    <Card>
-      <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-base">Game {gameNumber}</CardTitle>
-          <Badge variant={statusVariant[status] ?? "default"}>
-            {statusLabel[status] ?? status}
-          </Badge>
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-3">
-        {(status === "agreed" || status === "resolved") && winnerAltId && (
-          <div className="flex items-center gap-2 rounded-md bg-green-50 p-3 text-sm text-green-800 dark:bg-green-950 dark:text-green-200">
-            <CheckCircle className="h-4 w-4 shrink-0" />
-            Winner: {winnerAltId === alt1Id ? p1Name : p2Name}
-            {status === "resolved" && " (Judge decision)"}
-          </div>
-        )}
-
-        {status === "disputed" && (
-          <div className="flex items-center gap-2 rounded-md bg-red-50 p-3 text-sm text-red-800 dark:bg-red-950 dark:text-red-200">
-            <AlertCircle className="h-4 w-4 shrink-0" />
-            Players disagreed on the result. A judge will resolve this.
-          </div>
-        )}
-
-        {isParticipant &&
-          hasSubmitted &&
-          status !== "agreed" &&
-          status !== "resolved" && (
-            <div className="text-muted-foreground text-sm">
-              You selected:{" "}
-              <span className="font-medium">
-                {mySelection === alt1Id ? p1Name : p2Name}
-              </span>
-            </div>
-          )}
-
-        {canSubmit && (
-          <div className="space-y-2">
-            <p className="text-sm font-medium">Who won this game?</p>
-            <div className="flex gap-2">
-              {alt1Id && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={isPending}
-                  onClick={() => handleSubmitSelection(alt1Id)}
-                  className="flex-1"
-                >
-                  {isPending && (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  )}
-                  {p1Name}
-                </Button>
-              )}
-              {alt2Id && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={isPending}
-                  onClick={() => handleSubmitSelection(alt2Id)}
-                  className="flex-1"
-                >
-                  {isPending && (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  )}
-                  {p2Name}
-                </Button>
-              )}
-            </div>
-          </div>
-        )}
-
-        {isStaff &&
-          (status === "awaiting_one" ||
-            status === "awaiting_both" ||
-            status === "disputed") && (
-            <div className="text-muted-foreground space-y-1 text-sm">
-              <p>
-                {p1Name}:{" "}
-                {alt1Selection
-                  ? alt1Selection === alt1Id
-                    ? p1Name
-                    : p2Name
-                  : "Not submitted"}
-              </p>
-              <p>
-                {p2Name}:{" "}
-                {alt2Selection
-                  ? alt2Selection === alt1Id
-                    ? p1Name
-                    : p2Name
-                  : "Not submitted"}
-              </p>
-            </div>
-          )}
-
-        {isStaff &&
-          (status === "disputed" ||
-            status === "awaiting_one" ||
-            status === "awaiting_both" ||
-            status === "pending") && (
-            <div className="flex flex-wrap items-center gap-2 border-t pt-3">
-              {(status === "disputed" ||
-                status === "awaiting_one" ||
-                status === "awaiting_both") && (
-                <>
-                  <select
-                    className="border-input bg-background rounded-md border px-2 py-1 text-sm"
-                    value={overrideWinner ?? ""}
-                    onChange={(e) =>
-                      setOverrideWinner(
-                        e.target.value ? parseInt(e.target.value) : null
-                      )
-                    }
-                  >
-                    <option value="">Select winner...</option>
-                    {alt1Id && <option value={alt1Id}>{p1Name}</option>}
-                    {alt2Id && <option value={alt2Id}>{p2Name}</option>}
-                  </select>
-                  <Button
-                    variant="default"
-                    size="sm"
-                    disabled={isPending || !overrideWinner}
-                    onClick={handleJudgeOverride}
-                  >
-                    {isPending ? (
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    ) : (
-                      <Gavel className="mr-2 h-4 w-4" />
-                    )}
-                    Override
-                  </Button>
-                </>
-              )}
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={isPending}
-                onClick={handleJudgeReset}
-              >
-                {isPending ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                ) : (
-                  <RotateCcw className="mr-2 h-4 w-4" />
-                )}
-                Reset
-              </Button>
-            </div>
-          )}
-      </CardContent>
-    </Card>
-  );
-}
-
-// =============================================================================
-// Match Chat Component
-// =============================================================================
-
-interface MatchChatProps {
-  matchId: number;
-  userAltId: number | null;
-  isStaff: boolean;
-  isParticipant: boolean;
-  matchStatus: string;
-  staffRequested: boolean;
-  tournamentId: number;
-  messagesRefreshKey: number;
-}
-
-function MatchChat({
-  matchId,
-  userAltId,
-  isStaff,
-  isParticipant,
-  matchStatus,
-  staffRequested,
-  tournamentId,
-  messagesRefreshKey,
-}: MatchChatProps) {
-  const [message, setMessage] = useState("");
-  const [isSending, setIsSending] = useState(false);
-  const [isRequestingJudge, setIsRequestingJudge] = useState(false);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-
-  const messagesQueryFn = useCallback(
-    (client: TypedSupabaseClient) => getMatchMessages(client, matchId),
-    [matchId]
+  const teamsSection = hasTeams ? (
+    <div className="grid gap-6 lg:grid-cols-2">
+      {myTeam && (
+        <TeamSheet
+          team={myTeam}
+          playerName={myName}
+          isOwnTeam={isParticipant}
+        />
+      )}
+      {opponentTeam && (
+        <TeamSheet
+          team={opponentTeam}
+          playerName={opponentName}
+          isOwnTeam={false}
+        />
+      )}
+    </div>
+  ) : (
+    <div className="text-muted-foreground py-8 text-center text-sm">
+      {openTeamSheets
+        ? "No team sheets submitted yet."
+        : "Team sheets are not visible for this tournament."}
+    </div>
   );
 
-  const {
-    data: messages,
-    isLoading: messagesLoading,
-    refetch: refetchMessages,
-  } = useSupabaseQuery(messagesQueryFn, [matchId, messagesRefreshKey]);
+  const chatSection = (
+    <MatchChat
+      matchId={matchId}
+      userAltId={userAltId}
+      isStaff={isStaff}
+      isParticipant={isParticipant}
+      matchStatus={matchStatus}
+      staffRequested={staffRequested}
+      tournamentId={tournamentId}
+      messagesRefreshKey={messagesRefreshKey}
+      viewers={viewers}
+      typingUsers={typingUsers}
+      onTypingStart={handleTypingStart}
+      onTypingStop={handleTypingStop}
+    />
+  );
 
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
-
-  const handleSend = async () => {
-    if (!message.trim() || !userAltId) return;
-    setIsSending(true);
-
-    const messageType = isStaff && !isParticipant ? "judge" : "player";
-    const result = await sendMatchMessageAction(
-      matchId,
-      userAltId,
-      message.trim(),
-      messageType
-    );
-
-    setIsSending(false);
-
-    if (result.success) {
-      setMessage("");
-      refetchMessages();
-    } else {
-      toast.error(result.error);
-    }
-  };
-
-  const handleRequestJudge = async () => {
-    setIsRequestingJudge(true);
-    const result = await requestJudgeAction(matchId, tournamentId);
-    setIsRequestingJudge(false);
-
-    if (result.success) {
-      toast.success("Judge has been requested");
-    } else {
-      toast.error(result.error);
-    }
-  };
-
-  const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      handleSend();
-    }
-  };
-
-  const canChat =
-    (isParticipant || isStaff) &&
-    matchStatus !== "completed" &&
-    matchStatus !== "cancelled";
+  // ==========================================================================
+  // Render
+  // ==========================================================================
 
   return (
-    <Card className="flex h-[600px] flex-col">
-      <CardHeader className="shrink-0 pb-3">
-        <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-2 text-base">
-            <MessageSquare className="h-4 w-4" />
-            Match Chat
-          </CardTitle>
-          {isParticipant && !staffRequested && matchStatus === "active" && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleRequestJudge}
-              disabled={isRequestingJudge}
-            >
-              {isRequestingJudge ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <ShieldAlert className="mr-2 h-4 w-4" />
-              )}
-              Call Judge
-            </Button>
-          )}
-        </div>
-      </CardHeader>
-      <CardContent className="flex min-h-0 flex-1 flex-col p-0">
-        <div className="flex-1 overflow-y-auto px-4">
-          {messagesLoading ? (
-            <div className="flex items-center justify-center py-8">
-              <Loader2 className="text-muted-foreground h-5 w-5 animate-spin" />
-            </div>
-          ) : !messages || messages.length === 0 ? (
-            <div className="text-muted-foreground py-8 text-center text-sm">
-              No messages yet. Say hello!
-            </div>
-          ) : (
-            <div className="space-y-3 py-3">
-              {messages.map((msg) => {
-                const msgAlt = msg.alt as {
-                  id: number;
-                  display_name: string | null;
-                  username: string;
-                  avatar_url: string | null;
-                } | null;
-                const isSystem = msg.message_type === "system";
-                const isJudge = msg.message_type === "judge";
-                const isOwnMessage = msgAlt?.id === userAltId;
+    <div className="space-y-4">
+      {/* Match Header — always visible */}
+      <MatchHeader
+        opponent={headerOpponent}
+        myPlayer={headerMyPlayer}
+        opponentStats={headerOpponentStats}
+        myStats={headerMyStats}
+        myWins={myWins}
+        opponentWins={opponentWins}
+        bestOf={bestOf}
+        matchStatus={matchStatus}
+        staffRequested={staffRequested}
+        roundNumber={roundNumber}
+        tableNumber={tableNumber}
+      />
 
-                if (isSystem) {
-                  return (
-                    <div
-                      key={msg.id}
-                      className="text-muted-foreground text-center text-xs italic"
-                    >
-                      {msg.content}
-                    </div>
-                  );
-                }
+      {/* Mobile layout: Tabs */}
+      <div className="lg:hidden">
+        <Tabs defaultValue="games">
+          <TabsList className="w-full">
+            <TabsTrigger value="games" className="flex-1 gap-1.5">
+              <Swords className="h-3.5 w-3.5" />
+              Games
+            </TabsTrigger>
+            {hasTeams && (
+              <TabsTrigger value="teams" className="flex-1 gap-1.5">
+                <Users className="h-3.5 w-3.5" />
+                Teams
+              </TabsTrigger>
+            )}
+            <TabsTrigger value="chat" className="flex-1 gap-1.5">
+              <MessageSquare className="h-3.5 w-3.5" />
+              Chat
+            </TabsTrigger>
+          </TabsList>
 
-                return (
-                  <div
-                    key={msg.id}
-                    className={cn(
-                      "flex flex-col",
-                      isOwnMessage ? "items-end" : "items-start"
-                    )}
-                  >
-                    <div className="mb-0.5 flex items-center gap-1">
-                      <span className="text-muted-foreground text-xs font-medium">
-                        {msgAlt?.display_name ?? msgAlt?.username ?? "Unknown"}
-                      </span>
-                      {isJudge && (
-                        <Badge
-                          variant="secondary"
-                          className="h-4 px-1 text-[10px]"
-                        >
-                          Judge
-                        </Badge>
-                      )}
-                    </div>
-                    <div
-                      className={cn(
-                        "max-w-[85%] rounded-lg px-3 py-2 text-sm",
-                        isOwnMessage
-                          ? "bg-primary text-primary-foreground"
-                          : isJudge
-                            ? "bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-100"
-                            : "bg-muted"
-                      )}
-                    >
-                      {msg.content}
-                    </div>
-                  </div>
-                );
-              })}
-              <div ref={messagesEndRef} />
-            </div>
+          <TabsContent value="games" className="mt-4">
+            {gamesSection}
+          </TabsContent>
+
+          {hasTeams && (
+            <TabsContent value="teams" className="mt-4">
+              {teamsSection}
+            </TabsContent>
           )}
+
+          <TabsContent value="chat" className="mt-4">
+            {chatSection}
+          </TabsContent>
+        </Tabs>
+      </div>
+
+      {/* Desktop layout: Two columns + teams below */}
+      <div className="hidden lg:block">
+        <div className="grid gap-6 lg:grid-cols-3">
+          {/* Main column: Games */}
+          <div className="lg:col-span-2">{gamesSection}</div>
+
+          {/* Sidebar: Chat */}
+          <div>{chatSection}</div>
         </div>
 
-        {canChat && userAltId && (
-          <div className="shrink-0 border-t p-3">
-            <div className="flex gap-2">
-              <Input
-                placeholder="Type a message..."
-                value={message}
-                onChange={(e) => setMessage(e.target.value)}
-                onKeyDown={handleKeyDown}
-                maxLength={500}
-                disabled={isSending}
-              />
-              <Button
-                size="icon"
-                onClick={handleSend}
-                disabled={isSending || !message.trim()}
-              >
-                {isSending ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Send className="h-4 w-4" />
-                )}
-              </Button>
-            </div>
-          </div>
-        )}
-      </CardContent>
-    </Card>
+        {/* Team sheets — full width below */}
+        {hasTeams && <div className="mt-6">{teamsSection}</div>}
+      </div>
+    </div>
   );
 }

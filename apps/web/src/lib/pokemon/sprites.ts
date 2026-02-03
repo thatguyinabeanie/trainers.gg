@@ -23,3 +23,19 @@ export function getShowdownSpriteUrl(species: string): string {
   const slug = toShowdownSlug(species);
   return `https://play.pokemonshowdown.com/sprites/gen5/${slug}.png`;
 }
+
+/**
+ * Convert an item name to a Showdown-compatible item sprite slug.
+ * Handles items like "Choice Scarf" -> "choicescarf"
+ */
+function toItemSlug(item: string): string {
+  return item.toLowerCase().replace(/[^a-z0-9]/g, "");
+}
+
+/**
+ * Get the Pokemon Showdown item sprite URL for a given held item.
+ */
+export function getShowdownItemSpriteUrl(item: string): string {
+  const slug = toItemSlug(item);
+  return `https://play.pokemonshowdown.com/sprites/itemicons/${slug}.png`;
+}
