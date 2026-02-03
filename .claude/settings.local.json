@@ -93,7 +93,10 @@
       "WebFetch(domain:play.pokemonshowdown.com)",
       "WebFetch(domain:msikma.github.io)",
       "WebFetch(domain:cdn.jsdelivr.net)",
-      "WebFetch(domain:www.npmjs.com)"
+      "WebFetch(domain:www.npmjs.com)",
+      "mcp__playwright-bridge__browser_navigate",
+      "mcp__playwright-bridge__browser_take_screenshot",
+      "mcp__playwright-bridge__browser_snapshot"
     ]
   },
   "enableAllProjectMcpServers": true
