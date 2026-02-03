@@ -125,7 +125,7 @@ export function PokemonCard({ pokemon, className }: PokemonCardProps) {
       <div className="flex min-w-0 flex-1 flex-col justify-center space-y-0.5 p-3">
         {/* Species + Gender */}
         <div
-          className="flex items-center gap-0.5 text-sm font-semibold"
+          className="text-foreground/80 flex items-center gap-0.5 text-sm font-medium"
           title={pokemon.species}
         >
           <span className="truncate">{pokemon.species}</span>

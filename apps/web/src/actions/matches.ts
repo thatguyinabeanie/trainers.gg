@@ -17,6 +17,7 @@ import {
   createMatchGames,
   judgeOverrideGame,
   judgeResetGame,
+  resetMatch,
 } from "@trainers/supabase";
 import type { Database } from "@trainers/supabase";
 import { CacheTags } from "@/lib/cache";
@@ -207,6 +208,56 @@ export async function requestJudgeAction(
     return {
       success: false,
       error: getErrorMessage(error, "Failed to request judge"),
+    };
+  }
+}
+
+/**
+ * Judge: Reset all games in a match back to pending and clear the match score.
+ */
+export async function resetMatchAction(
+  matchId: number,
+  tournamentId: number
+): Promise<ActionResult<{ matchId: number }>> {
+  try {
+    await rejectBots();
+    const supabase = await createClient();
+    const data = await resetMatch(supabase, matchId);
+    updateTag(CacheTags.tournament(tournamentId));
+    return { success: true, data: { matchId: data.id } };
+  } catch (error) {
+    return {
+      success: false,
+      error: getErrorMessage(error, "Failed to reset match"),
+    };
+  }
+}
+
+/**
+ * Cancel a judge request (player action — sets staff_requested = false).
+ * Only match participants can cancel requests they initiated.
+ */
+export async function cancelJudgeRequestAction(
+  matchId: number,
+  tournamentId: number
+): Promise<ActionResult<{ success: true }>> {
+  try {
+    await rejectBots();
+    const supabase = await createClient();
+
+    // RPC defined in migration 20260203030600 — cast needed until types are regenerated
+    const { error } = await supabase.rpc(
+      "cancel_judge_request" as "clear_judge_request",
+      { p_match_id: matchId }
+    );
+
+    if (error) throw error;
+    updateTag(CacheTags.tournament(tournamentId));
+    return { success: true, data: { success: true } };
+  } catch (error) {
+    return {
+      success: false,
+      error: getErrorMessage(error, "Failed to cancel judge request"),
     };
   }
 }

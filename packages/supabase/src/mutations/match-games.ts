@@ -148,3 +148,41 @@ export async function judgeResetGame(supabase: TypedClient, gameId: number) {
   if (error) throw error;
   return data;
 }
+
+/**
+ * Judge: Reset all games in a match back to pending and clear the match score.
+ * Only callable by org staff with tournament.manage permission (enforced by RLS).
+ */
+export async function resetMatch(supabase: TypedClient, matchId: number) {
+  // Reset all match_games rows to pending
+  const { error: gamesError } = await supabase
+    .from("match_games")
+    .update({
+      alt1_selection: null,
+      alt2_selection: null,
+      alt1_submitted_at: null,
+      alt2_submitted_at: null,
+      winner_alt_id: null,
+      status: "pending",
+      resolved_by: null,
+      resolved_at: null,
+      resolution_notes: null,
+    })
+    .eq("match_id", matchId);
+
+  if (gamesError) throw gamesError;
+
+  // Reset match score to 0-0
+  const { data, error: matchError } = await supabase
+    .from("tournament_matches")
+    .update({
+      game_wins1: 0,
+      game_wins2: 0,
+    })
+    .eq("id", matchId)
+    .select()
+    .single();
+
+  if (matchError) throw matchError;
+  return data;
+}

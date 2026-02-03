@@ -1,4 +1,4 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { createClientReadOnly } from "@/lib/supabase/server";
 import {
   getMatchDetails,
@@ -71,35 +71,76 @@ export default async function MatchPage({ params }: PageProps) {
         ? matchData.match.alt2_id!
         : (userAlts?.[0]?.id ?? null);
 
-    // Check if user is org staff (can act as judge)
+    // Check if user is org staff or org owner (can act as judge)
     const orgId = matchData.tournament.organization_id;
     if (orgId) {
-      const { data: staffRecord } = await supabase
-        .from("organization_staff")
-        .select("id")
-        .eq("organization_id", orgId)
-        .eq("user_id", user.id)
-        .maybeSingle();
-      isStaff = !!staffRecord;
+      const [{ data: staffRecord }, { data: org }] = await Promise.all([
+        supabase
+          .from("organization_staff")
+          .select("id")
+          .eq("organization_id", orgId)
+          .eq("user_id", user.id)
+          .maybeSingle(),
+        supabase
+          .from("organizations")
+          .select("owner_user_id")
+          .eq("id", orgId)
+          .maybeSingle(),
+      ]);
+      isStaff = !!staffRecord || org?.owner_user_id === user.id;
     }
   }
 
-  // Type cast players to include in_game_name (IGN)
-  const player1 = matchData.player1 as {
+  // Access control: only match players, org staff, and org owners can view
+  if (!user) {
+    redirect(
+      `/sign-in?redirect=/tournaments/${tournamentSlug}/matches/${matchId}`
+    );
+  }
+  if (!isParticipant && !isStaff) {
+    notFound();
+  }
+
+  // Type cast players to include in_game_name (IGN) and user_id (for handle lookup)
+  const player1Raw = matchData.player1 as {
     id: number;
     username: string;
     display_name: string | null;
     avatar_url: string | null;
     in_game_name: string | null;
+    user_id: string;
   } | null;
 
-  const player2 = matchData.player2 as {
+  const player2Raw = matchData.player2 as {
     id: number;
     username: string;
     display_name: string | null;
     avatar_url: string | null;
     in_game_name: string | null;
+    user_id: string;
   } | null;
+
+  // Fetch user handles for profile links
+  const userIds = [player1Raw?.user_id, player2Raw?.user_id].filter(
+    (id): id is string => !!id
+  );
+  const handleMap: Record<string, string> = {};
+  if (userIds.length > 0) {
+    const { data: users } = await supabase
+      .from("users")
+      .select("id, pds_handle")
+      .in("id", userIds);
+    for (const u of users ?? []) {
+      if (u.pds_handle) handleMap[u.id] = u.pds_handle;
+    }
+  }
+
+  const player1 = player1Raw
+    ? { ...player1Raw, handle: handleMap[player1Raw.user_id] ?? null }
+    : null;
+  const player2 = player2Raw
+    ? { ...player2Raw, handle: handleMap[player2Raw.user_id] ?? null }
+    : null;
 
   const round = matchData.round as {
     id: number;
@@ -218,20 +259,23 @@ export default async function MatchPage({ params }: PageProps) {
 
   return (
     <PageContainer>
-      <div className="text-muted-foreground mb-4 flex items-center gap-2 text-sm">
-        <Link href="/tournaments" className="hover:underline">
+      <div className="text-muted-foreground mb-2 flex items-center gap-1.5 text-xs sm:mb-4 sm:gap-2 sm:text-sm">
+        <Link
+          href="/tournaments"
+          className="hidden shrink-0 hover:underline sm:inline"
+        >
           Tournaments
         </Link>
-        <span>/</span>
+        <span className="hidden sm:inline">/</span>
         <Link
           href={`/tournaments/${tournamentSlug}`}
-          className="hover:underline"
+          className="truncate hover:underline"
         >
           {matchData.tournament.name}
         </Link>
         <span>/</span>
-        <span className="text-foreground">
-          Round {round?.round_number ?? "?"} - Match
+        <span className="text-foreground shrink-0">
+          Round {round?.round_number ?? "?"}
         </span>
       </div>
 

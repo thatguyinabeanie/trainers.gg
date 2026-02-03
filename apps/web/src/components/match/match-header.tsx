@@ -20,6 +20,7 @@ import {
   User,
   X,
 } from "lucide-react";
+import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import {
@@ -27,6 +28,7 @@ import {
   judgeOverrideGameAction,
   judgeResetGameAction,
   clearJudgeRequestAction,
+  resetMatchAction,
 } from "@/actions/matches";
 import type { GameData } from "./game-card";
 
@@ -40,6 +42,7 @@ export interface PlayerInfo {
   display_name: string | null;
   avatar_url: string | null;
   in_game_name: string | null;
+  handle: string | null;
 }
 
 export interface PlayerStats {
@@ -105,7 +108,7 @@ function PlayerCard({
         className
       )}
     >
-      <Avatar className="h-10 w-10 shrink-0 sm:h-12 sm:w-12">
+      <Avatar className="h-8 w-8 shrink-0 sm:h-12 sm:w-12">
         <AvatarImage src={player.avatar_url ?? undefined} />
         <AvatarFallback>
           <User className="h-4 w-4" />
@@ -118,9 +121,18 @@ function PlayerCard({
             isRight && "flex-row-reverse"
           )}
         >
-          <span className="truncate text-sm font-medium sm:text-base">
-            {displayName}
-          </span>
+          {player.handle ? (
+            <Link
+              href={`/profile/${player.handle}`}
+              className="text-foreground/80 truncate text-sm font-medium hover:underline sm:text-base"
+            >
+              {displayName}
+            </Link>
+          ) : (
+            <span className="text-foreground/80 truncate text-sm font-medium sm:text-base">
+              {displayName}
+            </span>
+          )}
           {stats && (
             <Badge variant="secondary" className="shrink-0 text-[10px]">
               {stats.wins}W-{stats.losses}L
@@ -163,20 +175,20 @@ function ScoreDisplay({
   opponentWins: number;
 }) {
   return (
-    <div className="flex items-center gap-3 sm:gap-5">
+    <div className="flex items-center gap-2 sm:gap-5">
       <span
         className={cn(
-          "text-4xl font-bold tabular-nums transition-colors duration-300 sm:text-5xl",
-          opponentWins > myWins ? "text-primary" : "text-foreground"
+          "text-3xl font-bold tabular-nums transition-colors duration-300 sm:text-5xl",
+          opponentWins > myWins ? "text-primary" : "text-foreground/70"
         )}
       >
         {opponentWins}
       </span>
-      <span className="text-muted-foreground text-xl sm:text-2xl">&ndash;</span>
+      <span className="text-muted-foreground text-lg sm:text-2xl">&ndash;</span>
       <span
         className={cn(
-          "text-4xl font-bold tabular-nums transition-colors duration-300 sm:text-5xl",
-          myWins > opponentWins ? "text-primary" : "text-foreground"
+          "text-3xl font-bold tabular-nums transition-colors duration-300 sm:text-5xl",
+          myWins > opponentWins ? "text-primary" : "text-foreground/70"
         )}
       >
         {myWins}
@@ -206,6 +218,9 @@ function GameNode({
   tournamentId,
   isParticipant,
   isStaff,
+  userAltId,
+  myName,
+  opponentName,
   onGameUpdated,
 }: {
   game: GameData;
@@ -216,6 +231,9 @@ function GameNode({
   tournamentId: number;
   isParticipant: boolean;
   isStaff: boolean;
+  userAltId: number | null;
+  myName: string;
+  opponentName: string;
   onGameUpdated: () => void;
 }) {
   const [isPending, setIsPending] = useState(false);
@@ -251,10 +269,30 @@ function GameNode({
     }
   };
 
+  // Staff direct winner override (pick winner by name)
+  const handleStaffOverride = async (winnerAltId: number) => {
+    const judgeAltId = userAltId ?? myAltId;
+    if (!judgeAltId) return;
+    setIsPending(true);
+    const result = await judgeOverrideGameAction(
+      game.id,
+      winnerAltId,
+      judgeAltId,
+      tournamentId
+    );
+    setIsPending(false);
+    if (result.success) {
+      onGameUpdated();
+    } else {
+      toast.error(result.error);
+    }
+  };
+
   const isResolved = state === "won" || state === "lost";
   const showEditButtons =
     (state === "active" || (state === "self-correct" && isEditing)) &&
     isParticipant;
+  const showStaffPicker = state === "active" && isStaff && !isParticipant;
 
   // Track segment after this node (connects to next node)
   const trackSegment = !isLast && (
@@ -437,6 +475,41 @@ function GameNode({
                 Lost
               </Button>
             </div>
+          ) : showStaffPicker ? (
+            <div className="flex items-center gap-1">
+              {myAltId && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="text-muted-foreground h-7 gap-0.5 px-2.5 text-xs"
+                  onClick={() => handleStaffOverride(myAltId)}
+                  disabled={isPending}
+                >
+                  {isPending ? (
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                  ) : (
+                    <Gavel className="h-3 w-3" />
+                  )}
+                  {myName}
+                </Button>
+              )}
+              {opponentAltId && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="text-muted-foreground h-7 gap-0.5 px-2.5 text-xs"
+                  onClick={() => handleStaffOverride(opponentAltId)}
+                  disabled={isPending}
+                >
+                  {isPending ? (
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                  ) : (
+                    <Gavel className="h-3 w-3" />
+                  )}
+                  {opponentName}
+                </Button>
+              )}
+            </div>
           ) : (
             <div className="relative flex h-7 w-7 items-center justify-center">
               <div className="bg-primary/20 absolute inset-0 animate-ping rounded-full opacity-40" />
@@ -494,6 +567,9 @@ function GameStrip({
   tournamentId,
   isParticipant,
   isStaff,
+  userAltId,
+  myName,
+  opponentName,
   onGameUpdated,
 }: {
   games: GameData[] | null;
@@ -505,6 +581,9 @@ function GameStrip({
   tournamentId: number;
   isParticipant: boolean;
   isStaff: boolean;
+  userAltId: number | null;
+  myName: string;
+  opponentName: string;
   onGameUpdated: () => void;
 }) {
   if (gamesLoading) {
@@ -542,44 +621,52 @@ function GameStrip({
   )?.id;
 
   return (
-    <div className="flex items-center justify-center py-2">
-      {visibleGames.map((game, i) => {
-        let state: GameNodeState = "future";
+    <div className="flex items-center gap-2 overflow-x-auto pt-4 sm:gap-3 sm:pt-6">
+      <span className="text-muted-foreground/60 hidden shrink-0 text-[11px] sm:inline">
+        Score reporting
+      </span>
+      <div className="flex flex-1 items-center justify-center gap-2 sm:gap-3">
+        {visibleGames.map((game, i) => {
+          let state: GameNodeState = "future";
 
-        if (game.status === "disputed") {
-          state = "disputed";
-        } else if (
-          game.status === "agreed" &&
-          isParticipant &&
-          game.my_selection != null
-        ) {
-          state = "self-correct";
-        } else if (resolvedStatuses.includes(game.status)) {
-          state = game.winner_alt_id === myAltId ? "won" : "lost";
-        } else if (matchStatus !== "pending") {
-          if (
-            game.id === currentGameId ||
-            (isStaff && !isParticipant && matchStatus === "active")
+          if (game.status === "disputed") {
+            state = "disputed";
+          } else if (
+            game.status === "agreed" &&
+            isParticipant &&
+            game.my_selection != null
           ) {
-            state = "active";
+            state = "self-correct";
+          } else if (resolvedStatuses.includes(game.status)) {
+            state = game.winner_alt_id === myAltId ? "won" : "lost";
+          } else if (matchStatus !== "pending") {
+            if (
+              game.id === currentGameId ||
+              (isStaff && !isParticipant && matchStatus === "active")
+            ) {
+              state = "active";
+            }
           }
-        }
 
-        return (
-          <GameNode
-            key={game.id}
-            game={game}
-            state={state}
-            isLast={i === visibleGames.length - 1}
-            myAltId={myAltId}
-            opponentAltId={opponentAltId}
-            tournamentId={tournamentId}
-            isParticipant={isParticipant}
-            isStaff={isStaff}
-            onGameUpdated={onGameUpdated}
-          />
-        );
-      })}
+          return (
+            <GameNode
+              key={game.id}
+              game={game}
+              state={state}
+              isLast={i === visibleGames.length - 1}
+              myAltId={myAltId}
+              opponentAltId={opponentAltId}
+              tournamentId={tournamentId}
+              isParticipant={isParticipant}
+              isStaff={isStaff}
+              userAltId={userAltId}
+              myName={myName}
+              opponentName={opponentName}
+              onGameUpdated={onGameUpdated}
+            />
+          );
+        })}
+      </div>
     </div>
   );
 }
@@ -785,6 +872,65 @@ function StaffJudgeAlert({
 }
 
 // ============================================================================
+// Reset Match Button (staff only, two-click confirmation)
+// ============================================================================
+
+function ResetMatchButton({
+  matchId,
+  tournamentId,
+  onReset,
+}: {
+  matchId: number;
+  tournamentId: number;
+  onReset: () => void;
+}) {
+  const [isPending, setIsPending] = useState(false);
+  const [confirming, setConfirming] = useState(false);
+
+  const handleClick = async () => {
+    if (!confirming) {
+      setConfirming(true);
+      // Auto-cancel after 3s
+      setTimeout(() => setConfirming(false), 3000);
+      return;
+    }
+
+    setIsPending(true);
+    const result = await resetMatchAction(matchId, tournamentId);
+    setIsPending(false);
+    setConfirming(false);
+
+    if (result.success) {
+      toast.success("Match reset");
+      onReset();
+    } else {
+      toast.error(result.error);
+    }
+  };
+
+  return (
+    <Button
+      variant={confirming ? "destructive" : "outline"}
+      size="sm"
+      className={cn(
+        "h-6 gap-1 px-2 text-[11px]",
+        !confirming &&
+          "text-muted-foreground hover:text-destructive border-transparent"
+      )}
+      onClick={handleClick}
+      disabled={isPending}
+    >
+      {isPending ? (
+        <Loader2 className="h-2.5 w-2.5 animate-spin" />
+      ) : (
+        <RotateCcw className="h-2.5 w-2.5" />
+      )}
+      {confirming ? "Confirm Reset" : "Reset Match"}
+    </Button>
+  );
+}
+
+// ============================================================================
 // Match Header
 // ============================================================================
 
@@ -817,9 +963,9 @@ export function MatchHeader({
   return (
     <div className="space-y-2">
       <Card>
-        <CardContent className="p-4 sm:px-6 sm:py-4">
+        <CardContent className="p-3 pb-2 sm:px-6 sm:pt-4 sm:pb-2">
           {/* Metadata row */}
-          <div className="mb-2 flex items-center justify-between">
+          <div className="mb-1 flex items-center justify-between sm:mb-2">
             <div className="flex items-center gap-2">
               {roundNumber !== null && (
                 <span className="text-muted-foreground text-xs font-medium">
@@ -848,20 +994,28 @@ export function MatchHeader({
                   Judge
                 </Badge>
               )}
+              {isStaff && matchStatus === "active" && (
+                <ResetMatchButton
+                  matchId={matchId}
+                  tournamentId={tournamentId}
+                  onReset={onGameUpdated}
+                />
+              )}
               <StatusBadge status={matchStatus as Status} />
             </div>
           </div>
 
-          {/* Desktop: Players + Score horizontal */}
-          <div className="mx-auto hidden max-w-2xl items-center justify-between gap-6 sm:flex">
+          {/* Players + Score horizontal (all breakpoints) */}
+          <div className="mx-auto flex max-w-2xl items-center justify-between gap-3 sm:gap-6">
             <PlayerCard
               player={opponent}
               stats={opponentStats}
               showIGN={true}
               align="left"
+              className="min-w-0 flex-1"
             />
 
-            <div className="flex flex-col items-center gap-1">
+            <div className="flex shrink-0 flex-col items-center gap-1">
               <ScoreDisplay myWins={myWins} opponentWins={opponentWins} />
               <div className="text-muted-foreground text-[10px]">
                 Bo{bestOf}
@@ -873,39 +1027,14 @@ export function MatchHeader({
               stats={myStats}
               showIGN={false}
               align="right"
-            />
-          </div>
-
-          {/* Mobile: Stacked layout */}
-          <div className="flex flex-col items-center gap-3 sm:hidden">
-            <PlayerCard
-              player={opponent}
-              stats={opponentStats}
-              showIGN={true}
-              align="left"
-              className="w-full"
-            />
-
-            <div className="flex flex-col items-center gap-1">
-              <ScoreDisplay myWins={myWins} opponentWins={opponentWins} />
-              <div className="text-muted-foreground text-[10px]">
-                Bo{bestOf}
-              </div>
-            </div>
-
-            <PlayerCard
-              player={myPlayer}
-              stats={myStats}
-              showIGN={false}
-              align="right"
-              className="w-full"
+              className="min-w-0 flex-1"
             />
           </div>
 
           {/* Separator + Game reporting timeline */}
           {games && games.length > 0 && (
             <>
-              <Separator className="mt-3" />
+              <Separator className="mt-2 sm:mt-3" />
               <GameStrip
                 games={games}
                 gamesLoading={gamesLoading}
@@ -916,13 +1045,16 @@ export function MatchHeader({
                 tournamentId={tournamentId}
                 isParticipant={isParticipant}
                 isStaff={isStaff}
+                userAltId={userAltId}
+                myName={myName}
+                opponentName={opponentName}
                 onGameUpdated={onGameUpdated}
               />
             </>
           )}
           {gamesLoading && (
             <>
-              <Separator className="mt-3" />
+              <Separator className="mt-2 sm:mt-3" />
               <GameStrip
                 games={null}
                 gamesLoading={true}
@@ -933,6 +1065,9 @@ export function MatchHeader({
                 tournamentId={tournamentId}
                 isParticipant={isParticipant}
                 isStaff={isStaff}
+                userAltId={userAltId}
+                myName={myName}
+                opponentName={opponentName}
                 onGameUpdated={onGameUpdated}
               />
             </>
@@ -941,14 +1076,6 @@ export function MatchHeader({
       </Card>
 
       {/* Alerts below header card */}
-      {isStaff && matchStatus === "active" && staffRequested && (
-        <StaffJudgeAlert
-          matchId={matchId}
-          tournamentId={tournamentId}
-          onCleared={onGameUpdated}
-        />
-      )}
-
       {games && games.some((g) => g.status === "disputed") && (
         <DisputeAlert
           games={games}

@@ -10,12 +10,26 @@ import {
 import { useSupabaseQuery } from "@/lib/supabase";
 import { getMatchMessages } from "@trainers/supabase";
 import type { TypedSupabaseClient } from "@trainers/supabase";
-import { sendMatchMessageAction, requestJudgeAction } from "@/actions/matches";
+import {
+  sendMatchMessageAction,
+  requestJudgeAction,
+  cancelJudgeRequestAction,
+  clearJudgeRequestAction,
+} from "@/actions/matches";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Gavel, Loader2, MessageSquare, Send, ShieldAlert } from "lucide-react";
+import {
+  Check,
+  Gavel,
+  Loader2,
+  MessageSquare,
+  Send,
+  ShieldAlert,
+  User,
+} from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import {
@@ -42,6 +56,7 @@ interface MatchChatProps {
   staffRequested: boolean;
   tournamentId: number;
   messagesRefreshKey: number;
+  onStaffRequestChange?: (requested: boolean) => void;
   // Presence
   viewers: ReturnType<typeof useMatchPresence>["viewers"];
   typingUsers: string[];
@@ -62,6 +77,7 @@ export function MatchChat({
   staffRequested,
   tournamentId,
   messagesRefreshKey,
+  onStaffRequestChange,
   viewers,
   typingUsers,
   onTypingStart,
@@ -70,6 +86,7 @@ export function MatchChat({
   const [message, setMessage] = useState("");
   const [isSending, setIsSending] = useState(false);
   const [isRequestingJudge, setIsRequestingJudge] = useState(false);
+  const [isClearingJudge, setIsClearingJudge] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -143,7 +160,34 @@ export function MatchChat({
     setIsRequestingJudge(false);
 
     if (result.success) {
+      onStaffRequestChange?.(true);
       toast.success("Judge has been requested");
+    } else {
+      toast.error(result.error);
+    }
+  };
+
+  const handleCancelJudgeRequest = async () => {
+    setIsRequestingJudge(true);
+    const result = await cancelJudgeRequestAction(matchId, tournamentId);
+    setIsRequestingJudge(false);
+
+    if (result.success) {
+      onStaffRequestChange?.(false);
+      toast.success("Judge request cancelled");
+    } else {
+      toast.error(result.error);
+    }
+  };
+
+  const handleClearJudgeRequest = async () => {
+    setIsClearingJudge(true);
+    const result = await clearJudgeRequestAction(matchId, tournamentId);
+    setIsClearingJudge(false);
+
+    if (result.success) {
+      onStaffRequestChange?.(false);
+      toast.success("Judge request resolved");
     } else {
       toast.error(result.error);
     }
@@ -164,7 +208,7 @@ export function MatchChat({
   const hasMessages = messages && messages.length > 0;
 
   return (
-    <Card className="flex h-[calc(100dvh-16rem)] flex-col lg:h-full">
+    <Card className="flex h-full min-h-[300px] flex-col">
       <CardHeader className="shrink-0 pb-2">
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2 text-base">
@@ -175,6 +219,31 @@ export function MatchChat({
         </div>
       </CardHeader>
       <CardContent className="flex min-h-0 flex-1 flex-col p-0">
+        {/* Judge requested banner */}
+        {staffRequested && (
+          <div className="mx-3 mt-1 flex items-center justify-between gap-2 rounded-lg bg-amber-500/10 px-3 py-2 text-xs text-amber-700 dark:text-amber-300">
+            <div className="flex items-center gap-1.5">
+              <ShieldAlert className="h-3.5 w-3.5 shrink-0" />
+              <span className="font-medium">A judge has been requested</span>
+            </div>
+            {isStaff && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-6 shrink-0 gap-1 border-amber-500/25 px-2 text-[11px] text-amber-700 hover:bg-amber-500/10 dark:text-amber-300"
+                onClick={handleClearJudgeRequest}
+                disabled={isClearingJudge}
+              >
+                {isClearingJudge ? (
+                  <Loader2 className="h-2.5 w-2.5 animate-spin" />
+                ) : (
+                  <Check className="h-2.5 w-2.5" />
+                )}
+                Resolve
+              </Button>
+            )}
+          </div>
+        )}
         {/* Messages */}
         <div className="flex-1 overflow-y-auto px-4">
           {messagesLoading ? (
@@ -197,10 +266,17 @@ export function MatchChat({
                   id: number;
                   display_name: string | null;
                   username: string;
+                  avatar_url: string | null;
                 } | null;
                 const isSystem = msg.message_type === "system";
                 const isJudge = msg.message_type === "judge";
                 const isOwnMessage = msgAlt?.id === userAltId;
+                const time = msg.created_at
+                  ? new Date(msg.created_at as string).toLocaleTimeString([], {
+                      hour: "numeric",
+                      minute: "2-digit",
+                    })
+                  : null;
 
                 if (isSystem) {
                   return (
@@ -209,6 +285,11 @@ export function MatchChat({
                       className="text-muted-foreground text-center text-xs italic"
                     >
                       {msg.content}
+                      {time && (
+                        <span className="text-muted-foreground/50 ml-1.5 text-[10px] not-italic">
+                          {time}
+                        </span>
+                      )}
                     </div>
                   );
                 }
@@ -221,7 +302,13 @@ export function MatchChat({
                       isOwnMessage ? "items-end" : "items-start"
                     )}
                   >
-                    <div className="mb-0.5 flex items-center gap-1">
+                    {/* Name row */}
+                    <div
+                      className={cn(
+                        "mb-0.5 flex items-center gap-1",
+                        isOwnMessage && "flex-row-reverse"
+                      )}
+                    >
                       <span className="text-muted-foreground text-xs font-medium">
                         {msgAlt?.display_name ?? msgAlt?.username ?? "Unknown"}
                       </span>
@@ -235,17 +322,36 @@ export function MatchChat({
                         </Badge>
                       )}
                     </div>
+                    {/* Avatar + bubble + timestamp row */}
                     <div
                       className={cn(
-                        "max-w-[85%] rounded-lg px-3 py-2 text-sm",
-                        isOwnMessage
-                          ? "bg-primary text-primary-foreground"
-                          : isJudge
-                            ? "bg-amber-50 text-amber-900 ring-1 ring-amber-500/20 dark:bg-amber-950 dark:text-amber-100"
-                            : "bg-muted"
+                        "flex items-end gap-2",
+                        isOwnMessage && "flex-row-reverse"
                       )}
                     >
-                      {msg.content}
+                      <Avatar className="h-7 w-7 shrink-0">
+                        <AvatarImage src={msgAlt?.avatar_url ?? undefined} />
+                        <AvatarFallback className="text-[10px]">
+                          <User className="h-3 w-3" />
+                        </AvatarFallback>
+                      </Avatar>
+                      <div
+                        className={cn(
+                          "max-w-[75%] rounded-lg px-3 py-2 text-sm",
+                          isOwnMessage
+                            ? "bg-primary text-primary-foreground"
+                            : isJudge
+                              ? "bg-amber-50 text-amber-900 ring-1 ring-amber-500/20 dark:bg-amber-950 dark:text-amber-100"
+                              : "bg-muted"
+                        )}
+                      >
+                        {msg.content}
+                      </div>
+                      {time && (
+                        <span className="text-muted-foreground/50 self-end text-[10px]">
+                          {time}
+                        </span>
+                      )}
                     </div>
                   </div>
                 );
@@ -286,7 +392,7 @@ export function MatchChat({
                   <Send className="h-4 w-4" />
                 )}
               </Button>
-              {/* Call Judge — icon button next to send */}
+              {/* Call / Cancel Judge — icon button next to send */}
               {isParticipant && matchStatus === "active" && (
                 <Tooltip>
                   <TooltipTrigger
@@ -295,13 +401,17 @@ export function MatchChat({
                         size="icon"
                         variant={staffRequested ? "secondary" : "outline"}
                         aria-label={
-                          staffRequested ? "Judge requested" : "Call judge"
+                          staffRequested ? "Cancel judge request" : "Call judge"
                         }
-                        onClick={handleRequestJudge}
-                        disabled={isRequestingJudge || staffRequested}
+                        onClick={
+                          staffRequested
+                            ? handleCancelJudgeRequest
+                            : handleRequestJudge
+                        }
+                        disabled={isRequestingJudge}
                         className={cn(
                           staffRequested
-                            ? "text-amber-600 dark:text-amber-400"
+                            ? "text-amber-600 hover:bg-amber-500/10 dark:text-amber-400"
                             : "text-amber-600 hover:bg-amber-500/10 hover:text-amber-700 dark:text-amber-400 dark:hover:text-amber-300"
                         )}
                       >
@@ -314,7 +424,7 @@ export function MatchChat({
                     }
                   />
                   <TooltipContent>
-                    {staffRequested ? "Judge requested" : "Call a judge"}
+                    {staffRequested ? "Cancel judge request" : "Call a judge"}
                   </TooltipContent>
                 </Tooltip>
               )}
