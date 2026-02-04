@@ -107,7 +107,9 @@
       "Bash(for trigger in '\"\"trigger_update_post_likes_count\"\"' '\"\"trigger_update_post_replies_count\"\"' '\"\"update_posts_updated_at\"\"' 'trg_generate_pds_handle')",
       "Bash(for idx in '\"\"idx_follows_follower\"\"' '\"\"idx_follows_following\"\"' '\"\"idx_post_likes_post\"\"' '\"\"idx_posts_created_at\"\"' '\"\"idx_posts_reply_to\"\"' '\"\"idx_posts_repost_of\"\"')",
       "Bash(for f in supabase/seeds/02_roles.sql supabase/seeds/03_users.sql supabase/seeds/04_organizations.sql supabase/seeds/05_invitations.sql supabase/seeds/09_social.sql supabase/seeds/09_teams.sql supabase/seeds/10_tournaments.sql supabase/seeds/11_matches.sql supabase/seeds/12_standings.sql)",
-      "Bash(do echo \"=== Seeding $f ===\")"
+      "Bash(do echo \"=== Seeding $f ===\")",
+      "mcp__plugin_supabase_supabase__list_branches",
+      "mcp__plugin_supabase_supabase__reset_branch"
     ]
   },
   "enableAllProjectMcpServers": true
