@@ -1,13 +1,21 @@
 import type { Config } from "jest";
+import { createConfig } from "@trainers/jest-config";
 
-const config: Config = {
+const config: Config = createConfig({
   displayName: "web",
   testEnvironment: "jsdom",
-  transform: { "^.+\\.tsx?$": ["ts-jest", { useESM: true }] },
   extensionsToTreatAsEsm: [".ts", ".tsx"],
   moduleNameMapper: { "^@/(.*)$": "<rootDir>/src/$1" },
   setupFilesAfterEnv: ["<rootDir>/src/test-setup.ts"],
   testMatch: ["<rootDir>/src/**/__tests__/**/*.test.{ts,tsx}"],
-};
+  collectCoverageFrom: [
+    "src/**/*.{ts,tsx}",
+    "!src/**/__tests__/**",
+    "!src/**/*.test.{ts,tsx}",
+    "!src/**/test-setup.ts",
+    "!src/components/ui/**",
+    "!src/generated/**",
+  ],
+});
 
 export default config;

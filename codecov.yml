@@ -1,0 +1,50 @@
+codecov:
+  require_ci_to_pass: false
+
+coverage:
+  status:
+    project:
+      default:
+        target: auto
+        threshold: 1%
+    patch:
+      default:
+        target: 60%
+
+flags:
+  web:
+    paths:
+      - apps/web/src/
+    carryforward: true
+  mobile:
+    paths:
+      - apps/mobile/src/
+    carryforward: true
+  validators:
+    paths:
+      - packages/validators/src/
+    carryforward: true
+  supabase:
+    paths:
+      - packages/supabase/src/
+      - packages/supabase/supabase/functions/_shared/
+    carryforward: true
+  atproto:
+    paths:
+      - packages/atproto/src/
+    carryforward: true
+
+comment:
+  layout: condensed_header, condensed_files, condensed_footer
+  behavior: default
+  require_changes: true
+
+ignore:
+  - "**/__tests__/**"
+  - "**/*.test.{ts,tsx}"
+  - "**/test-setup.ts"
+  - "apps/web/src/generated/**"
+  - "apps/web/src/components/ui/**"
+  - "tooling/**"
+  - "infra/**"
+  - "*.config.*"

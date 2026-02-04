@@ -1,0 +1,23 @@
+{
+  "name": "@trainers/jest-config",
+  "version": "0.0.0",
+  "private": true,
+  "exports": {
+    ".": {
+      "types": "./index.d.ts",
+      "default": "./index.js"
+    }
+  },
+  "files": [
+    "index.js",
+    "index.d.ts"
+  ],
+  "scripts": {
+    "format": "prettier --write \"**/*.{js,json}\"",
+    "format:check": "prettier --check \"**/*.{js,json}\""
+  },
+  "devDependencies": {
+    "@trainers/prettier-config": "workspace:*"
+  },
+  "prettier": "@trainers/prettier-config"
+}

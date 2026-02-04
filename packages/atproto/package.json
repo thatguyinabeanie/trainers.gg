@@ -17,6 +17,7 @@
     "@atproto/api": "^0.18.17"
   },
   "devDependencies": {
+    "@trainers/jest-config": "workspace:*",
     "@trainers/prettier-config": "workspace:*",
     "@trainers/typescript-config": "workspace:*",
     "@types/node": "catalog:",

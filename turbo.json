@@ -131,7 +131,7 @@
     },
     "test": {
       "dependsOn": ["^build"],
-      "outputs": [],
+      "outputs": ["coverage/**"],
       "env": ["CI", "NODE_ENV"]
     },
     "test:e2e": {

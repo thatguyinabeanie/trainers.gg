@@ -14,6 +14,7 @@ permissions:
   contents: read
   deployments: read
   pull-requests: write
+  checks: write
 
 jobs:
   # ── Quality checks (lint + typecheck) ──────────────────────
@@ -30,6 +31,13 @@ jobs:
         with:
           node-version: 22
           cache: pnpm
+
+      - name: Turbo cache
+        uses: actions/cache@v4
+        with:
+          path: .turbo
+          key: turbo-${{ runner.os }}-${{ github.sha }}
+          restore-keys: turbo-${{ runner.os }}-
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -58,14 +66,117 @@ jobs:
           node-version: 22
           cache: pnpm
 
+      - name: Turbo cache
+        uses: actions/cache@v4
+        with:
+          path: .turbo
+          key: turbo-${{ runner.os }}-${{ github.sha }}
+          restore-keys: turbo-${{ runner.os }}-
+
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
         env:
           CI: true
           GITHUB_ACTIONS: true
 
-      - name: Run unit tests
-        run: pnpm test
+      - name: Run unit tests with coverage
+        run: pnpm test:ci
+        env:
+          CI: true
+          JEST_JUNIT_OUTPUT_DIR: test-results
+          JEST_JUNIT_OUTPUT_NAME: junit.xml
+
+      - name: Upload JUnit results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: junit-results
+          path: test-results/junit.xml
+          retention-days: 7
+
+      - name: Upload coverage artifacts
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-reports
+          path: coverage/
+          retention-days: 7
+
+  # ── Test reporting (annotations + coverage) ────────────────
+  report:
+    name: Test Reports
+    runs-on: ubuntu-latest
+    needs: [unit-tests]
+    if: always()
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download JUnit results
+        uses: actions/download-artifact@v4
+        with:
+          name: junit-results
+          path: test-results
+
+      - name: Download coverage reports
+        uses: actions/download-artifact@v4
+        with:
+          name: coverage-reports
+          path: coverage
+
+      - name: Jest test annotations
+        uses: mikepenz/action-junit-report@v6
+        if: always()
+        with:
+          report_paths: test-results/junit.xml
+          check_name: Jest Test Results
+          fail_on_failure: true
+
+      - name: Publish unit test results
+        uses: EnricoMi/publish-unit-test-result-action@v2
+        if: always()
+        with:
+          files: test-results/junit.xml
+          check_name: Unit Test Results
+
+      - name: Upload coverage — web
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          flags: web
+          files: coverage/lcov.info
+          fail_ci_if_error: false
+
+      - name: Upload coverage — mobile
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          flags: mobile
+          files: coverage/lcov.info
+          fail_ci_if_error: false
+
+      - name: Upload coverage — validators
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          flags: validators
+          files: coverage/lcov.info
+          fail_ci_if_error: false
+
+      - name: Upload coverage — supabase
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          flags: supabase
+          files: coverage/lcov.info
+          fail_ci_if_error: false
+
+      - name: Upload coverage — atproto
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          flags: atproto
+          files: coverage/lcov.info
+          fail_ci_if_error: false
 
   # ── E2E tests (Playwright vs Vercel preview) ───────────────
   e2e-tests:
@@ -89,8 +200,21 @@ jobs:
           CI: true
           GITHUB_ACTIONS: true
 
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        id: playwright-cache
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('apps/web/package.json') }}
+          restore-keys: playwright-${{ runner.os }}-
+
       - name: Install Playwright browsers
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
         run: pnpm --filter=@trainers/web exec playwright install --with-deps chromium
+
+      - name: Install Playwright system deps
+        if: steps.playwright-cache.outputs.cache-hit == 'true'
+        run: pnpm --filter=@trainers/web exec playwright install-deps chromium
 
       - name: Wait for Vercel preview deployment
         uses: patrickedqvist/wait-for-vercel-preview@v1.3.2
@@ -102,10 +226,10 @@ jobs:
           environment: Preview
 
       - name: Run E2E tests
-        run: pnpm test:e2e
         env:
           CI: true
           PLAYWRIGHT_BASE_URL: ${{ steps.vercel-preview.outputs.url }}
+        run: pnpm test:e2e
 
       - name: Upload Playwright report
         uses: actions/upload-artifact@v4

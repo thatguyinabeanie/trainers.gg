@@ -41,6 +41,7 @@
   },
   "devDependencies": {
     "@faker-js/faker": "^10.2.0",
+    "@trainers/jest-config": "workspace:*",
     "@trainers/prettier-config": "workspace:*",
     "@trainers/typescript-config": "workspace:*",
     "@types/node": "catalog:",
