@@ -19,20 +19,6 @@ permissions:
   checks: write
 
 jobs:
-  # ── Dependency vulnerability scan (PRs only) ─────────────────
-  # Note: Requires GitHub Advanced Security for private repos
-  dependency-review:
-    name: Dependency Review
-    if: github.event_name == 'pull_request'
-    runs-on: ubuntu-latest
-    continue-on-error: true # Don't fail CI if GHAS not available
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/dependency-review-action@v4
-        with:
-          fail-on-severity: high
-          comment-summary-in-pr: always
-
   # ── Quality checks (lint + typecheck) ──────────────────────
   quality:
     name: Lint & Typecheck
