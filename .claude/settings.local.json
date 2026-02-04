@@ -113,7 +113,8 @@
       "mcp__plugin_supabase_supabase__list_migrations",
       "Bash(local migrations directory\" on the preview branch. Rename back to match\nproduction: auto_update_match_scores→000001, waitlist_auto_promotion→\n000002, start_round_rpc→000003. Bump tighten_notification_url_constraint\nto 000004 and advance_to_top_cut_rpc to 000005 to avoid version conflict.\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
       "Bash(brew upgrade:*)",
-      "mcp__plugin_supabase_supabase__get_advisors"
+      "mcp__plugin_supabase_supabase__get_advisors",
+      "Bash(JEST_JUNIT_OUTPUT_DIR=test-results JEST_JUNIT_OUTPUT_NAME=junit.xml pnpm test:ci:*)"
     ]
   },
   "enableAllProjectMcpServers": true

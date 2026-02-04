@@ -8,6 +8,7 @@
     "scheme": ["trainers", "gg.trainers"],
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
+    "jsEngine": "hermes",
     "splash": {
       "image": "./assets/splash.png",
       "resizeMode": "contain",
