@@ -19,12 +19,8 @@ test.describe("Sign in", () => {
       .getByRole("main")
       .getByRole("button", { name: /sign in/i })
       .click();
-    // Should show an error and remain on sign-in
-    await expect(
-      page.locator('[role="alert"], .text-destructive, [data-error]')
-    ).toBeVisible({
-      timeout: 10000,
-    });
+    // Should show an error alert and remain on sign-in
+    await expect(page.getByRole("alert")).toBeVisible({ timeout: 10000 });
   });
 
   test("shows error for non-existent user", async ({ page }) => {
@@ -38,10 +34,7 @@ test.describe("Sign in", () => {
       .getByRole("main")
       .getByRole("button", { name: /sign in/i })
       .click();
-    await expect(
-      page.locator('[role="alert"], .text-destructive, [data-error]')
-    ).toBeVisible({
-      timeout: 10000,
-    });
+    // Should show an error alert and remain on sign-in
+    await expect(page.getByRole("alert")).toBeVisible({ timeout: 10000 });
   });
 });

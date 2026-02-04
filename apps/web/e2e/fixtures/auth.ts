@@ -26,8 +26,9 @@ export const TEST_USERS = {
 
 /**
  * Log in through the UI with the given credentials.
- * Navigates to /sign-in, fills the form, and submits.
- * Throws with an actionable error message if login fails.
+ * Navigates to /sign-in, clicks "Continue with Email",
+ * fills the form, and submits. Waits for navigation away
+ * from the sign-in page as the success signal.
  */
 export async function loginViaUI(
   page: Page,
@@ -39,36 +40,39 @@ export async function loginViaUI(
   // Click "Continue with Email" to reveal the email/password form.
   await page.getByRole("button", { name: /continue with email/i }).click();
 
+  // Wait for the email form to be ready
+  await page.getByLabel("Email or Username").waitFor({ state: "visible" });
+
   await page.getByLabel("Email or Username").fill(user.email);
   await page.getByLabel("Password").fill(user.password);
+
   // Scope to main to avoid matching the nav "Sign In" link/button
   await page
     .getByRole("main")
     .getByRole("button", { name: /sign in/i })
     .click();
 
-  // Detect login errors instead of silently timing out
-  const errorLocator = page.locator(
-    '[role="alert"], .text-destructive, [data-error]'
-  );
-  const navigationPromise = page.waitForURL(
-    (url) => !url.pathname.includes("/sign-in"),
-    { timeout: 15000 }
-  );
+  // Wait for navigation away from sign-in page
+  try {
+    await page.waitForURL((url) => !url.pathname.includes("/sign-in"), {
+      timeout: 15000,
+    });
+  } catch {
+    // Navigation didn't happen — gather diagnostics
+    const url = page.url();
+    const alertLocator = page.getByRole("alert");
+    const alertText = await alertLocator
+      .textContent({ timeout: 2000 })
+      .catch(() => null);
 
-  // Race: either we navigate away (success) or an error appears
-  const result = await Promise.race([
-    navigationPromise.then(() => "navigated" as const),
-    errorLocator
-      .waitFor({ state: "visible", timeout: 15000 })
-      .then(() => "error" as const)
-      .catch(() => null),
-  ]);
-
-  if (result === "error") {
-    const errorText = await errorLocator.textContent();
     throw new Error(
-      `Login failed for ${user.email}: ${errorText ?? "Unknown error displayed on page"}`
+      [
+        `Login failed for ${user.email}`,
+        `Current URL: ${url}`,
+        alertText
+          ? `Error on page: ${alertText.trim()}`
+          : "No error message visible on page (seeded test users may not exist in this environment)",
+      ].join(". ")
     );
   }
 
