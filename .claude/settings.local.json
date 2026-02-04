@@ -116,7 +116,18 @@
       "mcp__plugin_supabase_supabase__get_advisors",
       "Bash(JEST_JUNIT_OUTPUT_DIR=test-results JEST_JUNIT_OUTPUT_NAME=junit.xml pnpm test:ci:*)",
       "Bash(vercel ls:*)",
-      "Skill(commit-commands:commit-push-pr)"
+      "Skill(commit-commands:commit-push-pr)",
+      "Bash(fly status:*)",
+      "Bash(fly logs --app trainers-pds -n 50)",
+      "Bash(fly logs:*)",
+      "Bash(fly deploy:*)",
+      "Bash(fly releases:*)",
+      "Bash(fly machine list:*)",
+      "Bash(fly api:*)",
+      "Bash(fly machines list:*)",
+      "WebFetch(domain:community.fly.io)",
+      "WebFetch(domain:fly.io)",
+      "Bash(fly tokens create:*)"
     ]
   },
   "enableAllProjectMcpServers": true
