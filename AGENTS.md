@@ -10,6 +10,9 @@ apps/
   mobile/              # Expo 54 (React 19) - @trainers/mobile
 
 packages/
+  pokemon/             # Pokemon data, validation, parsing - @trainers/pokemon
+  tournaments/         # Tournament logic (pairings, standings, brackets) - @trainers/tournaments
+  utils/               # Shared utilities (formatting, countries, tiers) - @trainers/utils
   supabase/            # Supabase client, queries, edge functions - @trainers/supabase
   atproto/             # AT Protocol / Bluesky utilities - @trainers/atproto
   ui/                  # Shared UI components - @trainers/ui
@@ -191,7 +194,7 @@ Tests run in GitHub Actions (`.github/workflows/ci.yml`):
 - **Reporters**: text, lcov, json-summary, cobertura
 - **Patch target**: 60% on new code
 - **Excluded from coverage**: `__tests__/`, `test-setup.ts`, `src/generated/`, `src/components/ui/` (shadcn), `tooling/`, `infra/`
-- **Per-package flags**: web, mobile, validators, supabase, atproto (reported separately in Codecov)
+- **Per-package flags**: web, mobile, validators, supabase, atproto, pokemon, tournaments, utils (reported separately in Codecov)
 
 ---
 
@@ -298,6 +301,26 @@ import { cn } from "@/lib/utils";
 ---
 
 ## Architecture Patterns
+
+### Shared Packages vs App Code
+
+When adding new library code, consider whether it belongs in a shared package or in an app directory:
+
+- **Shared package** (`packages/`): Pure business logic, type definitions, algorithms, utilities, and validators that could be used by multiple apps (web, mobile) or edge functions. No React, Next.js, Expo, or framework-specific imports.
+- **App directory** (`apps/web/src/lib/`, `apps/mobile/src/lib/`): Framework-specific adapters, UI utilities (Tailwind classes, React hooks), and code that depends on app-specific infrastructure (Supabase server client, Next.js cache, etc.).
+
+**Rule of thumb:** If a module has zero framework imports and could be useful in another app, it belongs in a shared package. Create a new package or add to an existing one:
+
+| Package                 | Contents                                                                  |
+| ----------------------- | ------------------------------------------------------------------------- |
+| `@trainers/pokemon`     | Pokemon types, validation, Showdown parsing, stats, type effectiveness    |
+| `@trainers/tournaments` | Swiss pairing, standings, brackets, drop/bye logic, tournament validation |
+| `@trainers/validators`  | Zod schemas for auth, users, posts, teams                                 |
+| `@trainers/utils`       | Formatting, countries, tiers, permissions                                 |
+| `@trainers/atproto`     | AT Protocol / Bluesky utilities                                           |
+| `@trainers/supabase`    | Supabase client, queries, mutations, edge functions                       |
+| `@trainers/ui`          | Shared React UI components                                                |
+| `@trainers/theme`       | OKLCH color tokens, light/dark mode                                       |
 
 ### React Server Components
 

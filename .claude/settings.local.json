@@ -115,7 +115,8 @@
       "Bash(brew upgrade:*)",
       "mcp__plugin_supabase_supabase__get_advisors",
       "Bash(JEST_JUNIT_OUTPUT_DIR=test-results JEST_JUNIT_OUTPUT_NAME=junit.xml pnpm test:ci:*)",
-      "Bash(vercel ls:*)"
+      "Bash(vercel ls:*)",
+      "Skill(commit-commands:commit-push-pr)"
     ]
   },
   "enableAllProjectMcpServers": true
