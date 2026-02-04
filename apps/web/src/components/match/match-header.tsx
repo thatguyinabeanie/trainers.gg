@@ -10,7 +10,6 @@ import { Separator } from "@/components/ui/separator";
 import { StatusBadge, type Status } from "@/components/ui/status-badge";
 import {
   AlertCircle,
-  Check,
   Gavel,
   Loader2,
   Gamepad2,
@@ -27,7 +26,6 @@ import {
   submitGameSelectionAction,
   judgeOverrideGameAction,
   judgeResetGameAction,
-  clearJudgeRequestAction,
   resetMatchAction,
 } from "@/actions/matches";
 import type { GameData } from "./game-card";
@@ -123,7 +121,7 @@ function PlayerCard({
           </AvatarFallback>
         </Avatar>
         {isMatchWinner && (
-          <div className="bg-primary absolute -right-1 -top-1 z-10 flex h-4 w-4 items-center justify-center rounded-full text-white sm:h-5 sm:w-5">
+          <div className="bg-primary absolute -top-1 -right-1 z-10 flex h-4 w-4 items-center justify-center rounded-full text-white sm:h-5 sm:w-5">
             <Trophy className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
           </div>
         )}
@@ -566,7 +564,7 @@ function GameNode({
     return (
       <>
         <div className="flex items-center gap-1.5">
-          <span className="text-[10px] tabular-nums text-red-600 dark:text-red-400">
+          <span className="text-[10px] text-red-600 tabular-nums dark:text-red-400">
             {game.game_number}
           </span>
           <div className="flex h-7 w-7 items-center justify-center rounded-full bg-red-500/20 text-red-600 ring-2 ring-red-500/30 dark:text-red-400">
@@ -873,59 +871,6 @@ function DisputeAlert({
 }
 
 // ============================================================================
-// Staff Judge Alert
-// ============================================================================
-
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-function StaffJudgeAlert({
-  matchId,
-  tournamentId,
-  onCleared,
-}: {
-  matchId: number;
-  tournamentId: number;
-  onCleared: () => void;
-}) {
-  const [isClearing, setIsClearing] = useState(false);
-
-  const handleClear = async () => {
-    setIsClearing(true);
-    const result = await clearJudgeRequestAction(matchId, tournamentId);
-    setIsClearing(false);
-
-    if (result.success) {
-      toast.success("Judge request cleared");
-      onCleared();
-    } else {
-      toast.error(result.error);
-    }
-  };
-
-  return (
-    <div className="flex items-center justify-between gap-2 rounded-lg bg-amber-500/10 px-3 py-2 text-xs text-amber-700 dark:text-amber-300">
-      <div className="flex items-center gap-1.5">
-        <AlertCircle className="h-3.5 w-3.5 shrink-0" />A judge has been
-        requested.
-      </div>
-      <Button
-        variant="outline"
-        size="sm"
-        className="h-6 shrink-0 gap-1 border-amber-500/25 px-2 text-[11px] text-amber-700 hover:bg-amber-500/10 dark:text-amber-300"
-        onClick={handleClear}
-        disabled={isClearing}
-      >
-        {isClearing ? (
-          <Loader2 className="h-2.5 w-2.5 animate-spin" />
-        ) : (
-          <Check className="h-2.5 w-2.5" />
-        )}
-        Resolve
-      </Button>
-    </div>
-  );
-}
-
-// ============================================================================
 // Reset Match Button (staff only, two-click confirmation)
 // ============================================================================
 
@@ -1020,7 +965,7 @@ export function MatchHeader({
   return (
     <div className="space-y-2">
       <Card>
-        <CardContent className="p-3 pb-2 sm:px-6 sm:pb-2 sm:pt-4">
+        <CardContent className="p-3 pb-2 sm:px-6 sm:pt-4 sm:pb-2">
           {/* Metadata row */}
           <div className="mb-1 flex items-center justify-between sm:mb-2">
             <div className="flex items-center gap-2">
