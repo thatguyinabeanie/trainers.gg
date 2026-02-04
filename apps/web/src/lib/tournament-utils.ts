@@ -1,4 +1,4 @@
-import type { TournamentPhase } from "@/lib/types/tournament";
+import type { TournamentPhase } from "@trainers/tournaments/types";
 import type { getPhaseRoundsWithMatches } from "@trainers/supabase";
 
 // Row shape from tournament_phases table

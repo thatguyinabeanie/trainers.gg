@@ -1,6 +1,9 @@
 "use client";
 
-import type { TournamentFormData, PhaseConfig } from "@/lib/types/tournament";
+import type {
+  TournamentFormData,
+  PhaseConfig,
+} from "@trainers/tournaments/types";
 import {
   TournamentPhasesEditor,
   TournamentPresetSelector,

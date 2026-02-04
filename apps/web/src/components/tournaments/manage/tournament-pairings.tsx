@@ -2,7 +2,7 @@
 
 import { useState, useTransition, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { getPlayerName, type PlayerRef } from "@/lib/format";
+import { getPlayerName, type PlayerRef } from "@trainers/utils";
 import { useSupabaseQuery } from "@/lib/supabase";
 import {
   getTournamentPhases,

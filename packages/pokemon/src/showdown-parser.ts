@@ -1,4 +1,4 @@
-import type { PokemonSet } from "@/lib/types/pokemon";
+import type { PokemonSet } from "./types";
 
 // Types for Showdown text parsing
 export interface ShowdownParseResult {

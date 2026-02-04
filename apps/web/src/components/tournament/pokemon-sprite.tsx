@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { useState } from "react";
-import { getPokemonSprite } from "@/lib/pokemon/sprites";
+import { getPokemonSprite } from "@trainers/pokemon/sprites";
 import { cn } from "@/lib/utils";
 
 interface PokemonSpriteProps {

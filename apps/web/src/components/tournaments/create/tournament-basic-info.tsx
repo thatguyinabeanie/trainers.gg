@@ -12,7 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import type { TournamentFormData } from "@/lib/types/tournament";
+import type { TournamentFormData } from "@trainers/tournaments/types";
 
 interface TournamentBasicInfoProps {
   formData: TournamentFormData;

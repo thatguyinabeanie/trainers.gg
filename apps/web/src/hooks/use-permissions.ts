@@ -1,6 +1,6 @@
 "use client";
 
-import { type PermissionKey } from "@/lib/constants/permissions";
+import { type PermissionKey } from "@trainers/utils";
 import { getUserPermissions, hasPermission } from "@trainers/supabase";
 import { useSupabaseQuery } from "@/lib/supabase";
 import { useCurrentUser } from "./use-current-user";

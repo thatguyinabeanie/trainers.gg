@@ -1,6 +1,6 @@
 "use client";
 
-import { getItemSpriteStyle } from "@/lib/pokemon/sprites";
+import { getItemSpriteStyle } from "@trainers/pokemon/sprites";
 import { cn } from "@/lib/utils";
 
 interface ItemSpriteProps {

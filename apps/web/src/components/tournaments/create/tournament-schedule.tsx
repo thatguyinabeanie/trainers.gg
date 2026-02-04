@@ -19,7 +19,7 @@ import { Field, FieldLabel, FieldDescription } from "@/components/ui/field";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { cn } from "@/lib/utils";
 import { CalendarIcon, Clock, Lightbulb } from "lucide-react";
-import type { TournamentFormData } from "@/lib/types/tournament";
+import type { TournamentFormData } from "@trainers/tournaments/types";
 
 interface TournamentScheduleProps {
   formData: TournamentFormData;

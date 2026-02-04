@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { formatTimeAgo, getPlayerName, type PlayerRef } from "@/lib/format";
+import { formatTimeAgo, getPlayerName, type PlayerRef } from "@trainers/utils";
 import { useSupabaseQuery } from "@/lib/supabase";
 import { getTournamentMatchesForStaff } from "@trainers/supabase";
 import type { TypedSupabaseClient } from "@trainers/supabase";
