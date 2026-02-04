@@ -1,13 +1,15 @@
 name: CI
 
 on:
+  push:
+    branches: [main]
   pull_request:
     branches: [main]
     types: [opened, synchronize, reopened]
 
-# Cancel in-progress runs for the same PR
+# Cancel in-progress runs for the same PR/branch
 concurrency:
-  group: ci-${{ github.event.pull_request.number }}
+  group: ci-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 permissions:
@@ -145,15 +147,15 @@ jobs:
       # flag config in codecov.yml to split coverage per package.
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v5
-        continue-on-error: true
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: coverage/lcov.info
-          fail_ci_if_error: true
+          fail_ci_if_error: false
 
   # ── E2E tests (Playwright against Vercel preview) ──────────
   e2e-tests:
     name: E2E Tests
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     needs: [unit-tests]
