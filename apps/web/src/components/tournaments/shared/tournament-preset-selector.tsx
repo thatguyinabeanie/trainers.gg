@@ -2,7 +2,10 @@
 
 import { Button } from "@/components/ui/button";
 import { Zap } from "lucide-react";
-import type { PhaseConfig, TournamentPreset } from "@/lib/types/tournament";
+import type {
+  PhaseConfig,
+  TournamentPreset,
+} from "@trainers/tournaments/types";
 import {
   TOURNAMENT_PRESETS,
   type PresetConfig,

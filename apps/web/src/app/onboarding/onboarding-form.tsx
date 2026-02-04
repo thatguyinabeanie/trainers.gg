@@ -17,7 +17,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useAuth } from "@/hooks/use-auth";
-import { COUNTRIES } from "@/lib/countries";
+import { COUNTRIES } from "@trainers/utils";
 import {
   completeProfile,
   checkUsernameAvailability,

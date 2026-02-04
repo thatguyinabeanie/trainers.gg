@@ -3,7 +3,7 @@
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
 import { usePermissions } from "@/hooks/use-permissions";
-import { PERMISSIONS, type PermissionKey } from "@/lib/constants/permissions";
+import { PERMISSIONS, type PermissionKey } from "@trainers/utils";
 import { ShieldOff } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { type ReactNode, useEffect } from "react";

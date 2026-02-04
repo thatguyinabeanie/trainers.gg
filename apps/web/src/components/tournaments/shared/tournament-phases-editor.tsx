@@ -17,11 +17,15 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import type { PhaseConfig, PhaseType, CutRule } from "@/lib/types/tournament";
+import type {
+  PhaseConfig,
+  PhaseType,
+  CutRule,
+} from "@trainers/tournaments/types";
 import {
   getDefaultPhaseName,
   getDefaultRoundTime,
-} from "@/lib/tournament/adapters";
+} from "@trainers/tournaments/adapters";
 import { Plus, Trash2, HelpCircle } from "lucide-react";
 
 export interface TournamentPhasesEditorProps {

@@ -3,8 +3,8 @@
  * Handles conversion between Showdown text format and our database structure
  */
 
-import type { PokemonSet, PokemonSetFlat } from "@/lib/types/pokemon";
-import { toFlat } from "@/lib/types/pokemon";
+import type { PokemonSet, PokemonSetFlat } from "./types";
+import { toFlat } from "./types";
 
 export interface ShowdownPokemon {
   species: string;

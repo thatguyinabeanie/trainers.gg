@@ -14,7 +14,7 @@ import { Loader2, Trophy, AlertCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { BracketVisualization } from "@/components/tournament/bracket-visualization";
 import { transformPhaseData } from "@/lib/tournament-utils";
-import type { TournamentMatch } from "@/lib/types/tournament";
+import type { TournamentMatch } from "@trainers/tournaments/types";
 
 interface PublicPairingsProps {
   tournamentId: number;

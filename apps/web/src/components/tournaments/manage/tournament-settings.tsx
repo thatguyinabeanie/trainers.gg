@@ -47,8 +47,8 @@ import { ButtonGroup } from "@/components/ui/button-group";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { saveTournamentPhasesAction } from "@/actions/tournaments";
-import type { PhaseConfig, CutRule } from "@/lib/types/tournament";
-import { dbPhasesToPhaseConfigs } from "@/lib/tournament/adapters";
+import type { PhaseConfig, CutRule } from "@trainers/tournaments/types";
+import { dbPhasesToPhaseConfigs } from "@trainers/tournaments/adapters";
 import {
   TournamentPhasesEditor,
   TournamentGameSettings,

@@ -8,7 +8,7 @@ import type {
   TournamentMatch,
   TournamentPhase,
   TournamentRound,
-} from "@/lib/types/tournament";
+} from "@trainers/tournaments/types";
 
 interface BracketVisualizationProps {
   phases: TournamentPhase[];

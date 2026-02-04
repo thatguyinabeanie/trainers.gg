@@ -1,0 +1,286 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+
+# Cancel in-progress runs for the same PR/branch
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  deployments: read
+  pull-requests: write
+  checks: write
+
+jobs:
+  # ── Quality checks (lint + typecheck) ──────────────────────
+  quality:
+    name: Lint & Typecheck
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Turbo cache
+        uses: actions/cache@v4
+        with:
+          path: .turbo
+          key: turbo-${{ runner.os }}-${{ github.sha }}
+          restore-keys: turbo-${{ runner.os }}-
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+        env:
+          CI: true
+          GITHUB_ACTIONS: true
+
+      # Register problem matchers so ESLint and tsc errors become
+      # inline annotations on the PR Files tab.
+      - name: Register problem matchers
+        run: |
+          echo "::add-matcher::.github/matchers/eslint-stylish.json"
+          echo "::add-matcher::.github/matchers/tsc.json"
+
+      - name: Lint
+        run: pnpm turbo run lint --log-prefix=none
+
+      - name: Typecheck
+        run: pnpm turbo run typecheck --log-prefix=none
+
+  # ── Unit tests (Jest across all packages) ──────────────────
+  unit-tests:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Turbo cache
+        uses: actions/cache@v4
+        with:
+          path: .turbo
+          key: turbo-${{ runner.os }}-${{ github.sha }}
+          restore-keys: turbo-${{ runner.os }}-
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+        env:
+          CI: true
+          GITHUB_ACTIONS: true
+
+      - name: Run unit tests with coverage
+        run: pnpm test:ci
+        env:
+          CI: true
+          JEST_JUNIT_OUTPUT_DIR: test-results
+          JEST_JUNIT_CLASSNAME: "{classname}"
+          JEST_JUNIT_TITLE: "{title}"
+          JEST_JUNIT_ANCESTOR_SEPARATOR: " › "
+          JEST_JUNIT_ADD_FILE_ATTRIBUTE: "true"
+
+      - name: Upload JUnit results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: junit-results
+          path: test-results/
+          retention-days: 7
+
+      - name: Upload coverage artifacts
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-reports
+          path: coverage/
+          retention-days: 7
+
+  # ── Test reporting (annotations + coverage) ────────────────
+  report:
+    name: Test Reports
+    runs-on: ubuntu-latest
+    needs: [unit-tests]
+    if: always() && needs.unit-tests.result != 'cancelled'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download JUnit results
+        uses: actions/download-artifact@v4
+        with:
+          name: junit-results
+          path: test-results
+
+      - name: Download coverage reports
+        uses: actions/download-artifact@v4
+        with:
+          name: coverage-reports
+          path: coverage
+
+      - name: Publish unit test results
+        uses: EnricoMi/publish-unit-test-result-action@v2
+        if: always()
+        with:
+          files: test-results/**/*.xml
+          check_name: Unit Test Results
+          comment_mode: ${{ github.event_name == 'pull_request' && 'always' || 'off' }}
+
+      # Upload combined coverage — Codecov uses the paths-based
+      # flag config in codecov.yml to split coverage per package
+      # and posts a PR comment with the coverage diff.
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: coverage/lcov.info
+          fail_ci_if_error: false
+
+  # ── Wait for Vercel preview (shared by E2E + Lighthouse) ───
+  wait-for-preview:
+    name: Wait for Preview
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    outputs:
+      url: ${{ steps.vercel-preview.outputs.url }}
+    steps:
+      - name: Wait for Vercel preview deployment
+        id: vercel-preview
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
+          PR_SHA: ${{ github.event.pull_request.head.sha }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          echo "Waiting for Vercel preview deployment for $PR_SHA..."
+
+          for i in $(seq 1 40); do
+            DEPLOY_ID=$(gh api "repos/$GH_REPO/deployments?sha=$PR_SHA&environment=Preview" \
+              --jq '.[0].id // empty' 2>/dev/null || true)
+
+            if [ -n "$DEPLOY_ID" ]; then
+              URL=$(gh api "repos/$GH_REPO/deployments/$DEPLOY_ID/statuses" \
+                --jq '[.[] | select(.state == "success")][0].environment_url // empty' 2>/dev/null || true)
+
+              if [ -n "$URL" ]; then
+                STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+                  -H "x-vercel-protection-bypass: $BYPASS_SECRET" "$URL")
+
+                if [ "$STATUS" -ge 200 ] && [ "$STATUS" -lt 400 ]; then
+                  echo "url=$URL" >> "$GITHUB_OUTPUT"
+                  echo "Preview ready at $URL (HTTP $STATUS)"
+                  exit 0
+                fi
+                echo "Deployment returned HTTP $STATUS (attempt $i/40)"
+              else
+                echo "Deployment $DEPLOY_ID not ready yet (attempt $i/40)"
+              fi
+            else
+              echo "No deployment found yet (attempt $i/40)"
+            fi
+
+            sleep 15
+          done
+
+          echo "::error::Timeout waiting for Vercel preview deployment"
+          exit 1
+
+  # ── E2E tests (Playwright against Vercel preview) ──────────
+  e2e-tests:
+    name: E2E Tests
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: [unit-tests, wait-for-preview]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+        env:
+          CI: true
+          GITHUB_ACTIONS: true
+
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        id: playwright-cache
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('apps/web/package.json') }}
+          restore-keys: playwright-${{ runner.os }}-
+
+      - name: Install Playwright browsers
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        run: pnpm --filter=@trainers/web exec playwright install --with-deps chromium
+
+      - name: Install Playwright system deps
+        if: steps.playwright-cache.outputs.cache-hit == 'true'
+        run: pnpm --filter=@trainers/web exec playwright install-deps chromium
+
+      - name: Run E2E tests
+        env:
+          CI: true
+          PLAYWRIGHT_BASE_URL: ${{ needs.wait-for-preview.outputs.url }}
+          VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
+        run: pnpm test:e2e
+
+      - name: Upload Playwright report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-report
+          path: apps/web/playwright-report/
+          retention-days: 7
+
+      - name: Upload test traces (on failure)
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-traces
+          path: apps/web/test-results/
+          retention-days: 7
+
+  # ── Lighthouse CI (performance audit against preview) ──────
+  lighthouse:
+    name: Lighthouse
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: [wait-for-preview]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run Lighthouse
+        uses: treosh/lighthouse-ci-action@v12
+        env:
+          VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
+        with:
+          urls: ${{ needs.wait-for-preview.outputs.url }}
+          uploadArtifacts: true
+          temporaryPublicStorage: true
+          configPath: ./lighthouserc.cjs

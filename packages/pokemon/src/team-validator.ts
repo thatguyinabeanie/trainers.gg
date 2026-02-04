@@ -1,5 +1,5 @@
 import { TeamValidator, Dex as SimDex } from "@pkmn/sim";
-import type { PokemonSet } from "@/lib/types/pokemon";
+import type { PokemonSet } from "./types";
 
 // Type for Showdown's PokemonSet format
 interface ShowdownPokemonSet {

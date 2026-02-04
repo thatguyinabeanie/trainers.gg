@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useSupabaseQuery } from "@/lib/supabase";
 import { searchAlts } from "@trainers/supabase";
-import type { SelectedPlayer } from "@/lib/types/tournament";
+import type { SelectedPlayer } from "@trainers/tournaments/types";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";

@@ -1,7 +1,7 @@
 "use client";
 
 import { type ReactNode, useState, useCallback, useMemo } from "react";
-import { formatTimeAgo } from "@/lib/format";
+import { formatTimeAgo } from "@trainers/utils";
 import { useSupabaseQuery } from "@/lib/supabase";
 import { getTournamentAuditLog } from "@trainers/supabase";
 import type { TypedSupabaseClient, Database } from "@trainers/supabase";

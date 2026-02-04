@@ -1,0 +1,70 @@
+codecov:
+  # Require CI to pass before reporting coverage status on PRs.
+  # Prevents misleading green checks when tests are failing.
+  require_ci_to_pass: true
+
+coverage:
+  status:
+    project:
+      default:
+        # Auto-adjusts target based on recent coverage trends
+        target: auto
+        threshold: 1%
+    patch:
+      default:
+        # New code should have at least 60% coverage
+        target: 60%
+
+# Per-package flags — Codecov filters the combined coverage report
+# using these paths to produce per-package breakdowns.
+flags:
+  web:
+    paths:
+      - apps/web/src/
+    # Carry forward previous coverage when this flag has no new data
+    # (e.g., PR only touches other packages)
+    carryforward: true
+  mobile:
+    paths:
+      - apps/mobile/src/
+    carryforward: true
+  validators:
+    paths:
+      - packages/validators/src/
+    carryforward: true
+  supabase:
+    paths:
+      - packages/supabase/src/
+      - packages/supabase/supabase/functions/_shared/
+    carryforward: true
+  atproto:
+    paths:
+      - packages/atproto/src/
+    carryforward: true
+  pokemon:
+    paths:
+      - packages/pokemon/src/
+    carryforward: true
+  tournaments:
+    paths:
+      - packages/tournaments/src/
+    carryforward: true
+  utils:
+    paths:
+      - packages/utils/src/
+    carryforward: true
+
+comment:
+  layout: header, diff, flags, components, footer
+  behavior: default
+  require_changes: false
+
+ignore:
+  - "**/__tests__/**"
+  - "**/*.test.{ts,tsx}"
+  - "**/test-setup.ts"
+  - "apps/web/src/generated/**"
+  - "apps/web/src/components/ui/**"
+  - "tooling/**"
+  - "infra/**"
+  - "*.config.*"

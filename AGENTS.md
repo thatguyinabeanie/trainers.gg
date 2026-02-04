@@ -10,6 +10,9 @@ apps/
   mobile/              # Expo 54 (React 19) - @trainers/mobile
 
 packages/
+  pokemon/             # Pokemon data, validation, parsing - @trainers/pokemon
+  tournaments/         # Tournament logic (pairings, standings, brackets) - @trainers/tournaments
+  utils/               # Shared utilities (formatting, countries, tiers) - @trainers/utils
   supabase/            # Supabase client, queries, edge functions - @trainers/supabase
   atproto/             # AT Protocol / Bluesky utilities - @trainers/atproto
   ui/                  # Shared UI components - @trainers/ui
@@ -91,13 +94,124 @@ pnpm turbo run <task> --filter=@trainers/mobile
 pnpm turbo run <task> --filter=@trainers/supabase
 ```
 
+### Testing
+
+```bash
+pnpm test                 # Run all unit tests across monorepo (turbo)
+pnpm test:ci              # Run with coverage + JUnit XML (CI mode)
+pnpm test:unit            # Alias for pnpm test
+pnpm test:watch           # Jest watch mode for active development
+pnpm test:e2e             # Run Playwright E2E tests (web only)
+```
+
 ### Pre-commit Hooks
 
 Husky runs lint-staged (Prettier auto-fix) on all staged files. If hooks fail, fix errors, re-stage, and retry.
 
 ---
 
+## Testing
+
+### Requirements
+
+**Every new feature, bug fix, or behavioral change must include adequate tests.** This is not optional:
+
+- **New features**: Unit tests for business logic + integration tests for data flow. E2E tests for user-facing workflows.
+- **Bug fixes**: A regression test that fails without the fix and passes with it.
+- **Utility functions / validators**: Unit tests covering valid input, invalid input, and edge cases.
+- **Edge functions**: Unit tests for shared logic (`_shared/` modules).
+- **Database changes**: If adding RLS policies or complex queries, test the access patterns.
+
+CI enforces a **60% patch coverage target** on new code via Codecov. Tests must pass before merging.
+
+### Frameworks
+
+| Framework               | Version  | Purpose                                 |
+| ----------------------- | -------- | --------------------------------------- |
+| Jest                    | ^29.7.0  | Unit & integration tests (all packages) |
+| Playwright              | ^1.58.1  | E2E browser tests (web app)             |
+| Testing Library (React) | ^16.3.2  | React component testing                 |
+| Testing Library (RN)    | ^13.3.3  | React Native component testing          |
+| jest-expo               | ^54.0.17 | Expo/React Native Jest preset           |
+
+### Configuration
+
+- **Root config**: `jest.config.ts` — multi-project config running 8 workspace packages in parallel
+- **Shared base**: `tooling/jest/index.js` — `createConfig()` with ts-jest ESM defaults
+- **Per-package configs**: Each package has its own `jest.config.ts` extending the shared base
+- **Playwright config**: `apps/web/playwright.config.ts`
+- **Coverage**: `codecov.yml` — per-package flags, 60% patch target, carryforward enabled
+
+### Test File Conventions
+
+| Item          | Convention                                   | Example                           |
+| ------------- | -------------------------------------------- | --------------------------------- |
+| Location      | `__tests__/` directory colocated with source | `src/lib/__tests__/utils.test.ts` |
+| Unit tests    | `<module>.test.ts`                           | `swiss-pairings.test.ts`          |
+| E2E tests     | `<feature>.spec.ts`                          | `sign-in.spec.ts`                 |
+| E2E directory | `apps/web/e2e/tests/`                        | `e2e/tests/auth/sign-in.spec.ts`  |
+| Test match    | `src/**/__tests__/**/*.test.{ts,tsx}`        | —                                 |
+
+### Test Structure
+
+Tests are organized in 8 workspace projects:
+
+```
+apps/web/src/**/__tests__/           # Web unit tests (jsdom environment)
+apps/web/e2e/tests/                  # E2E tests (Playwright, Chromium)
+apps/mobile/src/**/__tests__/        # Mobile unit tests
+packages/supabase/src/**/__tests__/  # Supabase client + query tests
+packages/supabase/supabase/functions/_shared/__tests__/  # Edge function tests
+packages/validators/src/__tests__/   # Zod schema tests
+packages/atproto/src/__tests__/      # AT Protocol tests
+packages/pokemon/src/__tests__/      # Pokemon data + validation tests
+packages/tournaments/src/__tests__/  # Tournament logic tests
+packages/utils/src/__tests__/        # Shared utility tests
+```
+
+### E2E Test Setup
+
+Playwright uses a two-project auth pattern:
+
+1. **setup project** (`auth.setup.ts`): Logs in via UI, saves storage state to `e2e/playwright/.auth/player.json`
+2. **chromium project**: Depends on setup, reuses saved auth state for all tests
+
+Test users are seeded from Supabase (defined in `apps/web/e2e/fixtures/auth.ts`):
+
+- `admin` — `admin@trainers.local` (site admin)
+- `player` — `player@trainers.local` (regular user)
+- `champion` — `champion@trainers.local`
+- `gymLeader` — `gymleader@trainers.local`
+
+### CI Pipeline
+
+Tests run in GitHub Actions (`.github/workflows/ci.yml`):
+
+1. **Quality** — lint + typecheck
+2. **Unit Tests** — `pnpm test:ci` with coverage + JUnit XML artifacts
+3. **Test Reports** — GitHub annotations, Codecov upload
+4. **E2E Tests** — waits for Vercel preview deployment, runs Playwright against it
+
+### Coverage
+
+- **Reporters**: text, lcov, json-summary, cobertura
+- **Patch target**: 60% on new code
+- **Excluded from coverage**: `__tests__/`, `test-setup.ts`, `src/generated/`, `src/components/ui/` (shadcn), `tooling/`, `infra/`
+- **Per-package flags**: web, mobile, validators, supabase, atproto, pokemon, tournaments, utils (reported separately in Codecov)
+
+---
+
 ## Critical Rules
+
+### Testing Requirements
+
+**Every new feature, bug fix, or behavioral change must include tests.** Do not merge code without adequate test coverage.
+
+- Unit tests for all business logic, utilities, and validators
+- E2E tests for new user-facing pages or workflows
+- Regression tests for bug fixes (must fail without the fix)
+- Run `pnpm test` locally before committing to catch failures early
+- CI enforces 60% patch coverage — new code below this threshold blocks the PR
 
 ### Database Schema Changes
 
@@ -190,6 +304,26 @@ import { cn } from "@/lib/utils";
 ---
 
 ## Architecture Patterns
+
+### Shared Packages vs App Code
+
+When adding new library code, consider whether it belongs in a shared package or in an app directory:
+
+- **Shared package** (`packages/`): Pure business logic, type definitions, algorithms, utilities, and validators that could be used by multiple apps (web, mobile) or edge functions. No React, Next.js, Expo, or framework-specific imports.
+- **App directory** (`apps/web/src/lib/`, `apps/mobile/src/lib/`): Framework-specific adapters, UI utilities (Tailwind classes, React hooks), and code that depends on app-specific infrastructure (Supabase server client, Next.js cache, etc.).
+
+**Rule of thumb:** If a module has zero framework imports and could be useful in another app, it belongs in a shared package. Create a new package or add to an existing one:
+
+| Package                 | Contents                                                                  |
+| ----------------------- | ------------------------------------------------------------------------- |
+| `@trainers/pokemon`     | Pokemon types, validation, Showdown parsing, stats, type effectiveness    |
+| `@trainers/tournaments` | Swiss pairing, standings, brackets, drop/bye logic, tournament validation |
+| `@trainers/validators`  | Zod schemas for auth, users, posts, teams                                 |
+| `@trainers/utils`       | Formatting, countries, tiers, permissions                                 |
+| `@trainers/atproto`     | AT Protocol / Bluesky utilities                                           |
+| `@trainers/supabase`    | Supabase client, queries, mutations, edge functions                       |
+| `@trainers/ui`          | Shared React UI components                                                |
+| `@trainers/theme`       | OKLCH color tokens, light/dark mode                                       |
 
 ### React Server Components
 

@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import type {
   TournamentFormData,
   RegistrationType,
-} from "@/lib/types/tournament";
+} from "@trainers/tournaments/types";
 import { Globe, Lock, Users } from "lucide-react";
 
 interface TournamentRegistrationProps {

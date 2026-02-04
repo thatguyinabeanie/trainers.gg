@@ -6,7 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useSupabaseMutation } from "@/lib/supabase";
 import { sendTournamentInvitations } from "@trainers/supabase";
-import type { SelectedPlayer } from "@/lib/types/tournament";
+import type { SelectedPlayer } from "@trainers/tournaments/types";
 import {
   Card,
   CardContent,

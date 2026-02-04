@@ -1,7 +1,7 @@
 import { Dex } from "@pkmn/dex";
 import { Generations } from "@pkmn/data";
-import type { PokemonSet, PokemonSetFlat } from "@/lib/types/pokemon";
-import { fromFlat } from "@/lib/types/pokemon";
+import type { PokemonSet, PokemonSetFlat } from "./types";
+import { fromFlat } from "./types";
 
 // Initialize Pokemon data for the current generation (9 = Scarlet/Violet)
 const gens = new Generations(Dex);
@@ -24,7 +24,7 @@ export type {
   PokemonCore,
   PokemonStats,
   PokemonMoves,
-} from "@/lib/types/pokemon";
+} from "./types";
 
 /**
  * Validates a Pokemon's data against the current generation's rules

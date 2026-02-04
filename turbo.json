@@ -128,6 +128,15 @@
     },
     "generate-types": {
       "cache": false
+    },
+    "test": {
+      "dependsOn": ["^build"],
+      "outputs": ["coverage/**"],
+      "env": ["CI", "NODE_ENV"]
+    },
+    "test:e2e": {
+      "cache": false,
+      "env": ["CI", "PLAYWRIGHT_BASE_URL"]
     }
   }
 }

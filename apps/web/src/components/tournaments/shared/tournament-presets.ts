@@ -8,7 +8,7 @@ import type {
   PhaseConfig,
   TournamentPreset,
   CutRule,
-} from "@/lib/types/tournament";
+} from "@trainers/tournaments/types";
 
 /**
  * Preset configuration for quick tournament setup

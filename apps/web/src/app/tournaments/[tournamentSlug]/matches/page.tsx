@@ -8,7 +8,7 @@ import {
   getPhaseRoundsWithMatches,
 } from "@trainers/supabase";
 import { CacheTags } from "@/lib/cache";
-import { getPlayerName, type PlayerRef } from "@/lib/format";
+import { getPlayerName, type PlayerRef } from "@trainers/utils";
 import { PageContainer } from "@/components/layout/page-container";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";

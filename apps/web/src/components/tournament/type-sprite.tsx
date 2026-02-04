@@ -5,7 +5,7 @@ import { useState } from "react";
 import {
   getShowdownTypeIconUrl,
   getShowdownTeraTypeIconUrl,
-} from "@/lib/pokemon/sprites";
+} from "@trainers/pokemon/sprites";
 import { cn } from "@/lib/utils";
 
 interface TypeSpriteProps {

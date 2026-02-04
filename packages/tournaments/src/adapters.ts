@@ -5,7 +5,7 @@
  * frontend form format (camelCase, PhaseConfig[]).
  */
 
-import type { PhaseConfig, PhaseType, CutRule } from "@/lib/types/tournament";
+import type { PhaseConfig, PhaseType, CutRule } from "./types";
 
 /**
  * Database phase row type (from Supabase)
