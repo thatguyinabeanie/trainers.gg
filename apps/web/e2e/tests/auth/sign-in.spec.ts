@@ -15,7 +15,10 @@ test.describe("Sign in", () => {
     await page.getByRole("button", { name: /continue with email/i }).click();
     await page.getByLabel("Email or Username").fill(TEST_USERS.player.email);
     await page.getByLabel("Password").fill("WrongPassword123!");
-    await page.getByRole("button", { name: /sign in/i }).click();
+    await page
+      .getByRole("main")
+      .getByRole("button", { name: /sign in/i })
+      .click();
     // Should show an error and remain on sign-in
     await expect(
       page.locator('[role="alert"], .text-destructive, [data-error]')
@@ -31,7 +34,10 @@ test.describe("Sign in", () => {
       .getByLabel("Email or Username")
       .fill("nonexistent@trainers.local");
     await page.getByLabel("Password").fill("Password123!");
-    await page.getByRole("button", { name: /sign in/i }).click();
+    await page
+      .getByRole("main")
+      .getByRole("button", { name: /sign in/i })
+      .click();
     await expect(
       page.locator('[role="alert"], .text-destructive, [data-error]')
     ).toBeVisible({

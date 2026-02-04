@@ -41,7 +41,11 @@ export async function loginViaUI(
 
   await page.getByLabel("Email or Username").fill(user.email);
   await page.getByLabel("Password").fill(user.password);
-  await page.getByRole("button", { name: /sign in/i }).click();
+  // Scope to main to avoid matching the nav "Sign In" link/button
+  await page
+    .getByRole("main")
+    .getByRole("button", { name: /sign in/i })
+    .click();
 
   // Detect login errors instead of silently timing out
   const errorLocator = page.locator(
