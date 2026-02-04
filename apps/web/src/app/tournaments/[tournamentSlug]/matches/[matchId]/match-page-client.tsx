@@ -251,15 +251,16 @@ export function MatchPageClient({
   // ==========================================================================
   // Game score calculation
   // ==========================================================================
+  // Scores must match the header layout positions (left/right), not the
+  // user perspective. opponentWins displays on the LEFT (headerOpponent),
+  // myWins displays on the RIGHT (headerMyPlayer).
   const gamesWon = (altId: number | null) => {
     if (!games || !altId) return 0;
     return games.filter((g) => g.winner_alt_id === altId).length;
   };
 
-  const myWins = isParticipant ? gamesWon(myAltId) : gamesWon(alt2Id);
-  const opponentWins = isParticipant
-    ? gamesWon(opponentAltId)
-    : gamesWon(alt1Id);
+  const opponentWins = gamesWon(headerOpponentAltId);
+  const myWins = gamesWon(headerMyAltId);
 
   // ==========================================================================
   // Has teams to show?
