@@ -9,6 +9,7 @@
 DROP POLICY IF EXISTS "Authenticated users can view match games" ON public.match_games;
 
 -- Replace with a restrictive policy: only match participants and org staff
+DROP POLICY IF EXISTS "Match participants and staff can view match games" ON public.match_games;
 CREATE POLICY "Match participants and staff can view match games"
   ON public.match_games
   FOR SELECT

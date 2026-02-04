@@ -30,7 +30,7 @@ COMMENT ON TYPE public.notification_type IS 'Types of notifications sent to user
 -- TABLE: notifications
 -- =============================================================================
 
-CREATE TABLE public.notifications (
+CREATE TABLE IF NOT EXISTS public.notifications (
   id bigint PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
   user_id uuid NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
   type public.notification_type NOT NULL,
@@ -67,11 +67,11 @@ COMMENT ON COLUMN public.notifications.action_url IS 'Relative URL to navigate t
 COMMENT ON COLUMN public.notifications.read_at IS 'When the notification was read (null if unread)';
 
 -- Indexes
-CREATE INDEX notifications_user_id_idx ON public.notifications (user_id);
-CREATE INDEX notifications_user_id_unread_idx ON public.notifications (user_id, created_at DESC) WHERE read_at IS NULL;
-CREATE INDEX notifications_user_id_created_at_idx ON public.notifications (user_id, created_at DESC);
-CREATE INDEX notifications_tournament_id_idx ON public.notifications (tournament_id) WHERE tournament_id IS NOT NULL;
-CREATE INDEX notifications_match_id_idx ON public.notifications (match_id) WHERE match_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS notifications_user_id_idx ON public.notifications (user_id);
+CREATE INDEX IF NOT EXISTS notifications_user_id_unread_idx ON public.notifications (user_id, created_at DESC) WHERE read_at IS NULL;
+CREATE INDEX IF NOT EXISTS notifications_user_id_created_at_idx ON public.notifications (user_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS notifications_tournament_id_idx ON public.notifications (tournament_id) WHERE tournament_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS notifications_match_id_idx ON public.notifications (match_id) WHERE match_id IS NOT NULL;
 
 -- =============================================================================
 -- RLS: notifications
@@ -79,6 +79,7 @@ CREATE INDEX notifications_match_id_idx ON public.notifications (match_id) WHERE
 ALTER TABLE public.notifications ENABLE ROW LEVEL SECURITY;
 
 -- Users can only see their own notifications
+DROP POLICY IF EXISTS "Users can view own notifications" ON public.notifications;
 CREATE POLICY "Users can view own notifications"
   ON public.notifications
   FOR SELECT
@@ -86,6 +87,7 @@ CREATE POLICY "Users can view own notifications"
   USING (user_id = (SELECT auth.uid()));
 
 -- Users can mark their own notifications as read (UPDATE read_at only)
+DROP POLICY IF EXISTS "Users can update own notifications" ON public.notifications;
 CREATE POLICY "Users can update own notifications"
   ON public.notifications
   FOR UPDATE
@@ -100,6 +102,7 @@ CREATE POLICY "Users can update own notifications"
 -- This prevents users from creating fake/spoofed notifications.
 
 -- Users can delete their own notifications
+DROP POLICY IF EXISTS "Users can delete own notifications" ON public.notifications;
 CREATE POLICY "Users can delete own notifications"
   ON public.notifications
   FOR DELETE
@@ -182,6 +185,7 @@ BEGIN
 END;
 $$;
 
+DROP TRIGGER IF EXISTS notify_judge_call_trigger ON public.tournament_matches;
 CREATE TRIGGER notify_judge_call_trigger
   AFTER UPDATE ON public.tournament_matches
   FOR EACH ROW
@@ -193,4 +197,7 @@ CREATE TRIGGER notify_judge_call_trigger
 -- NOTE: Realtime RLS must be enabled in Supabase dashboard (Realtime > Settings)
 -- for per-user filtering to work. Clients should subscribe with a filter:
 -- .on('postgres_changes', { filter: 'user_id=eq.{userId}' })
-ALTER PUBLICATION supabase_realtime ADD TABLE public.notifications;
+DO $$ BEGIN
+  ALTER PUBLICATION supabase_realtime ADD TABLE public.notifications;
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;

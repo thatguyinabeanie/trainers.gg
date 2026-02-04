@@ -19,6 +19,7 @@
 -- Joins: tournament_rounds → tournament_phases → tournaments
 -- =============================================================================
 
+DROP POLICY IF EXISTS "Staff can insert tournament rounds" ON "public"."tournament_rounds";
 CREATE POLICY "Staff can insert tournament rounds"
     ON "public"."tournament_rounds" FOR INSERT WITH CHECK (
         EXISTS (
@@ -30,6 +31,7 @@ CREATE POLICY "Staff can insert tournament rounds"
         )
     );
 
+DROP POLICY IF EXISTS "Staff can update tournament rounds" ON "public"."tournament_rounds";
 CREATE POLICY "Staff can update tournament rounds"
     ON "public"."tournament_rounds" FOR UPDATE USING (
         EXISTS (
@@ -41,6 +43,7 @@ CREATE POLICY "Staff can update tournament rounds"
         )
     );
 
+DROP POLICY IF EXISTS "Staff can delete tournament rounds" ON "public"."tournament_rounds";
 CREATE POLICY "Staff can delete tournament rounds"
     ON "public"."tournament_rounds" FOR DELETE USING (
         EXISTS (
@@ -57,6 +60,7 @@ CREATE POLICY "Staff can delete tournament rounds"
 -- Joins: tournament_matches → tournament_rounds → tournament_phases → tournaments
 -- =============================================================================
 
+DROP POLICY IF EXISTS "Staff can insert tournament matches" ON "public"."tournament_matches";
 CREATE POLICY "Staff can insert tournament matches"
     ON "public"."tournament_matches" FOR INSERT WITH CHECK (
         EXISTS (
@@ -69,6 +73,7 @@ CREATE POLICY "Staff can insert tournament matches"
         )
     );
 
+DROP POLICY IF EXISTS "Staff can update tournament matches" ON "public"."tournament_matches";
 CREATE POLICY "Staff can update tournament matches"
     ON "public"."tournament_matches" FOR UPDATE USING (
         EXISTS (
@@ -82,6 +87,7 @@ CREATE POLICY "Staff can update tournament matches"
     );
 
 -- Also allow match participants to update their own matches (for result reporting)
+DROP POLICY IF EXISTS "Participants can update their matches" ON "public"."tournament_matches";
 CREATE POLICY "Participants can update their matches"
     ON "public"."tournament_matches" FOR UPDATE USING (
         EXISTS (
@@ -92,6 +98,7 @@ CREATE POLICY "Participants can update their matches"
         )
     );
 
+DROP POLICY IF EXISTS "Staff can delete tournament matches" ON "public"."tournament_matches";
 CREATE POLICY "Staff can delete tournament matches"
     ON "public"."tournament_matches" FOR DELETE USING (
         EXISTS (
@@ -109,6 +116,7 @@ CREATE POLICY "Staff can delete tournament matches"
 -- Joins: tournament_pairings → tournament_rounds → tournament_phases → tournaments
 -- =============================================================================
 
+DROP POLICY IF EXISTS "Staff can insert tournament pairings" ON "public"."tournament_pairings";
 CREATE POLICY "Staff can insert tournament pairings"
     ON "public"."tournament_pairings" FOR INSERT WITH CHECK (
         EXISTS (
@@ -121,6 +129,7 @@ CREATE POLICY "Staff can insert tournament pairings"
         )
     );
 
+DROP POLICY IF EXISTS "Staff can update tournament pairings" ON "public"."tournament_pairings";
 CREATE POLICY "Staff can update tournament pairings"
     ON "public"."tournament_pairings" FOR UPDATE USING (
         EXISTS (
@@ -133,6 +142,7 @@ CREATE POLICY "Staff can update tournament pairings"
         )
     );
 
+DROP POLICY IF EXISTS "Staff can delete tournament pairings" ON "public"."tournament_pairings";
 CREATE POLICY "Staff can delete tournament pairings"
     ON "public"."tournament_pairings" FOR DELETE USING (
         EXISTS (
@@ -150,6 +160,7 @@ CREATE POLICY "Staff can delete tournament pairings"
 -- Joins: tournament_standings → tournaments (direct FK)
 -- =============================================================================
 
+DROP POLICY IF EXISTS "Staff can insert tournament standings" ON "public"."tournament_standings";
 CREATE POLICY "Staff can insert tournament standings"
     ON "public"."tournament_standings" FOR INSERT WITH CHECK (
         EXISTS (
@@ -160,6 +171,7 @@ CREATE POLICY "Staff can insert tournament standings"
         )
     );
 
+DROP POLICY IF EXISTS "Staff can update tournament standings" ON "public"."tournament_standings";
 CREATE POLICY "Staff can update tournament standings"
     ON "public"."tournament_standings" FOR UPDATE USING (
         EXISTS (
@@ -170,6 +182,7 @@ CREATE POLICY "Staff can update tournament standings"
         )
     );
 
+DROP POLICY IF EXISTS "Staff can delete tournament standings" ON "public"."tournament_standings";
 CREATE POLICY "Staff can delete tournament standings"
     ON "public"."tournament_standings" FOR DELETE USING (
         EXISTS (

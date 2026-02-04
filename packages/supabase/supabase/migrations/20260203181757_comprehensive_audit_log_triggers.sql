@@ -197,6 +197,7 @@ BEGIN
 END;
 $$;
 
+DROP TRIGGER IF EXISTS audit_match_game_events_trigger ON public.match_games;
 CREATE TRIGGER audit_match_game_events_trigger
   AFTER UPDATE ON public.match_games
   FOR EACH ROW
@@ -303,6 +304,7 @@ BEGIN
 END;
 $$;
 
+DROP TRIGGER IF EXISTS audit_match_events_trigger ON public.tournament_matches;
 CREATE TRIGGER audit_match_events_trigger
   AFTER UPDATE ON public.tournament_matches
   FOR EACH ROW

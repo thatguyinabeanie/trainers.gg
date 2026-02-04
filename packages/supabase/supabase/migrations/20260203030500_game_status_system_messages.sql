@@ -54,6 +54,7 @@ BEGIN
 END;
 $$;
 
+DROP TRIGGER IF EXISTS trg_game_status_message ON public.match_games;
 CREATE TRIGGER trg_game_status_message
   AFTER UPDATE ON public.match_games
   FOR EACH ROW

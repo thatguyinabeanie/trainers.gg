@@ -4,6 +4,7 @@
 -- SECURITY NOTE: Players submit blind scores via the submit_game_selection() RPC function,
 -- not via direct UPDATE. This prevents a player from modifying the opponent's selection.
 -- match_games is NOT published to Realtime to prevent leaking blind selections.
+-- (Note: match_games was later added to Realtime in 20260203030400 after scoring changed to single-report.)
 
 -- =============================================================================
 -- ENUM: match_game_status
@@ -48,7 +49,7 @@ COMMENT ON TYPE public.match_message_type IS 'Type of message in match chat';
 -- Both players independently select a winner (blind entry).
 -- System compares: if they agree -> lock result. If they disagree -> auto-dispute.
 
-CREATE TABLE public.match_games (
+CREATE TABLE IF NOT EXISTS public.match_games (
   id bigint PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
   match_id bigint NOT NULL REFERENCES public.tournament_matches(id) ON DELETE CASCADE,
   game_number smallint NOT NULL,
@@ -96,9 +97,9 @@ COMMENT ON COLUMN public.match_games.resolved_at IS 'When the dispute was resolv
 COMMENT ON COLUMN public.match_games.resolution_notes IS 'Judge notes explaining the resolution';
 
 -- Indexes on match_id and FK columns
-CREATE INDEX match_games_match_id_idx ON public.match_games (match_id);
-CREATE INDEX match_games_status_idx ON public.match_games (status) WHERE status NOT IN ('agreed', 'resolved', 'cancelled');
-CREATE INDEX match_games_winner_alt_id_idx ON public.match_games (winner_alt_id) WHERE winner_alt_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS match_games_match_id_idx ON public.match_games (match_id);
+CREATE INDEX IF NOT EXISTS match_games_status_idx ON public.match_games (status) WHERE status NOT IN ('agreed', 'resolved', 'cancelled');
+CREATE INDEX IF NOT EXISTS match_games_winner_alt_id_idx ON public.match_games (winner_alt_id) WHERE winner_alt_id IS NOT NULL;
 
 -- Updated_at trigger
 CREATE OR REPLACE FUNCTION public.update_match_games_updated_at()
@@ -113,6 +114,7 @@ BEGIN
 END;
 $$;
 
+DROP TRIGGER IF EXISTS update_match_games_updated_at ON public.match_games;
 CREATE TRIGGER update_match_games_updated_at
   BEFORE UPDATE ON public.match_games
   FOR EACH ROW
@@ -158,6 +160,7 @@ BEGIN
 END;
 $$;
 
+DROP TRIGGER IF EXISTS compare_game_selections_trigger ON public.match_games;
 CREATE TRIGGER compare_game_selections_trigger
   BEFORE UPDATE ON public.match_games
   FOR EACH ROW
@@ -186,6 +189,7 @@ BEGIN
 END;
 $$;
 
+DROP TRIGGER IF EXISTS auto_request_staff_on_dispute_trigger ON public.match_games;
 CREATE TRIGGER auto_request_staff_on_dispute_trigger
   AFTER UPDATE ON public.match_games
   FOR EACH ROW
@@ -201,6 +205,7 @@ ALTER TABLE public.match_games ENABLE ROW LEVEL SECURITY;
 -- get_match_game_for_player() function to get the correct view.
 -- The raw SELECT shows all data to keep RLS simple; application-layer
 -- functions handle redaction.
+DROP POLICY IF EXISTS "Authenticated users can view match games" ON public.match_games;
 CREATE POLICY "Authenticated users can view match games"
   ON public.match_games
   FOR SELECT
@@ -212,6 +217,7 @@ CREATE POLICY "Authenticated users can view match games"
 -- This prevents a player from modifying the opponent's selection.
 
 -- Org staff with tournament.manage can insert/update/delete (for judge actions)
+DROP POLICY IF EXISTS "Tournament staff can manage match games" ON public.match_games;
 CREATE POLICY "Tournament staff can manage match games"
   ON public.match_games
   FOR ALL
@@ -322,7 +328,7 @@ COMMENT ON FUNCTION public.submit_game_selection(bigint, bigint) IS
 GRANT EXECUTE ON FUNCTION public.submit_game_selection(bigint, bigint) TO authenticated;
 
 -- =============================================================================
--- FUNCTION: get_match_game_view (redacts opponent selections)
+-- FUNCTION: get_match_games_for_player (redacts opponent selections)
 -- =============================================================================
 -- Returns match game data with opponent's blind selection hidden
 -- until the game reaches agreed/disputed/resolved status.
@@ -409,7 +415,7 @@ GRANT EXECUTE ON FUNCTION public.get_match_games_for_player(bigint) TO authentic
 -- Persistent chat for each match. Includes player messages, system events,
 -- and judge messages. Loaded on match page open, new messages via Realtime.
 
-CREATE TABLE public.match_messages (
+CREATE TABLE IF NOT EXISTS public.match_messages (
   id bigint PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
   match_id bigint NOT NULL REFERENCES public.tournament_matches(id) ON DELETE CASCADE,
   alt_id bigint REFERENCES public.alts(id) ON DELETE SET NULL,
@@ -431,9 +437,9 @@ COMMENT ON COLUMN public.match_messages.message_type IS 'Type: player, system, o
 COMMENT ON COLUMN public.match_messages.content IS 'Message content (max 500 chars)';
 
 -- Indexes
-CREATE INDEX match_messages_match_id_idx ON public.match_messages (match_id);
-CREATE INDEX match_messages_match_id_created_at_idx ON public.match_messages (match_id, created_at);
-CREATE INDEX match_messages_alt_id_idx ON public.match_messages (alt_id) WHERE alt_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS match_messages_match_id_idx ON public.match_messages (match_id);
+CREATE INDEX IF NOT EXISTS match_messages_match_id_created_at_idx ON public.match_messages (match_id, created_at);
+CREATE INDEX IF NOT EXISTS match_messages_alt_id_idx ON public.match_messages (alt_id) WHERE alt_id IS NOT NULL;
 
 -- =============================================================================
 -- RLS: match_messages
@@ -441,6 +447,7 @@ CREATE INDEX match_messages_alt_id_idx ON public.match_messages (alt_id) WHERE a
 ALTER TABLE public.match_messages ENABLE ROW LEVEL SECURITY;
 
 -- Match participants and org staff can view messages
+DROP POLICY IF EXISTS "Match participants and staff can view messages" ON public.match_messages;
 CREATE POLICY "Match participants and staff can view messages"
   ON public.match_messages
   FOR SELECT
@@ -466,6 +473,7 @@ CREATE POLICY "Match participants and staff can view messages"
   );
 
 -- Match participants can send messages
+DROP POLICY IF EXISTS "Match participants can send messages" ON public.match_messages;
 CREATE POLICY "Match participants can send messages"
   ON public.match_messages
   FOR INSERT
@@ -483,6 +491,7 @@ CREATE POLICY "Match participants can send messages"
   );
 
 -- Org staff can send judge messages and system messages
+DROP POLICY IF EXISTS "Tournament staff can send judge/system messages" ON public.match_messages;
 CREATE POLICY "Tournament staff can send judge/system messages"
   ON public.match_messages
   FOR INSERT
@@ -505,4 +514,8 @@ CREATE POLICY "Tournament staff can send judge/system messages"
 -- NOTE: match_games is intentionally NOT published to Realtime.
 -- Publishing match_games would leak blind selections before both players submit.
 -- Game status updates are communicated via system messages in match_messages.
-ALTER PUBLICATION supabase_realtime ADD TABLE public.match_messages;
+-- (Superseded by 20260203030400_single_report_scoring.sql which adds match_games to Realtime.)
+DO $$ BEGIN
+  ALTER PUBLICATION supabase_realtime ADD TABLE public.match_messages;
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;

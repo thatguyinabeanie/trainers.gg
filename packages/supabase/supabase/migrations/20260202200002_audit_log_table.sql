@@ -52,7 +52,7 @@ COMMENT ON TYPE public.audit_action IS 'Enumerated audit log actions for type-sa
 -- Uses ON DELETE SET NULL for all FKs to preserve audit history when
 -- referenced entities are deleted.
 
-CREATE TABLE public.audit_log (
+CREATE TABLE IF NOT EXISTS public.audit_log (
   id bigint PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
   -- What happened
   action public.audit_action NOT NULL,
@@ -85,11 +85,11 @@ COMMENT ON COLUMN public.audit_log.organization_id IS 'Related organization';
 COMMENT ON COLUMN public.audit_log.metadata IS 'Action-specific details as JSON';
 
 -- Indexes for common query patterns
-CREATE INDEX audit_log_tournament_id_idx ON public.audit_log (tournament_id) WHERE tournament_id IS NOT NULL;
-CREATE INDEX audit_log_tournament_action_idx ON public.audit_log (tournament_id, action) WHERE tournament_id IS NOT NULL;
-CREATE INDEX audit_log_tournament_created_at_idx ON public.audit_log (tournament_id, created_at DESC) WHERE tournament_id IS NOT NULL;
-CREATE INDEX audit_log_match_id_idx ON public.audit_log (match_id) WHERE match_id IS NOT NULL;
-CREATE INDEX audit_log_organization_id_idx ON public.audit_log (organization_id) WHERE organization_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS audit_log_tournament_id_idx ON public.audit_log (tournament_id) WHERE tournament_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS audit_log_tournament_action_idx ON public.audit_log (tournament_id, action) WHERE tournament_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS audit_log_tournament_created_at_idx ON public.audit_log (tournament_id, created_at DESC) WHERE tournament_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS audit_log_match_id_idx ON public.audit_log (match_id) WHERE match_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS audit_log_organization_id_idx ON public.audit_log (organization_id) WHERE organization_id IS NOT NULL;
 
 -- =============================================================================
 -- IMMUTABILITY: Prevent UPDATE/DELETE on audit_log
@@ -105,6 +105,7 @@ BEGIN
 END;
 $$;
 
+DROP TRIGGER IF EXISTS prevent_audit_log_modification ON public.audit_log;
 CREATE TRIGGER prevent_audit_log_modification
   BEFORE UPDATE OR DELETE ON public.audit_log
   FOR EACH ROW
@@ -116,6 +117,7 @@ CREATE TRIGGER prevent_audit_log_modification
 ALTER TABLE public.audit_log ENABLE ROW LEVEL SECURITY;
 
 -- Org staff with tournament.manage can view audit logs for their tournaments
+DROP POLICY IF EXISTS "Tournament staff can view audit logs" ON public.audit_log;
 CREATE POLICY "Tournament staff can view audit logs"
   ON public.audit_log
   FOR SELECT
@@ -187,6 +189,7 @@ BEGIN
 END;
 $$;
 
+DROP TRIGGER IF EXISTS audit_staff_request_trigger ON public.tournament_matches;
 CREATE TRIGGER audit_staff_request_trigger
   AFTER UPDATE ON public.tournament_matches
   FOR EACH ROW
@@ -234,6 +237,7 @@ BEGIN
 END;
 $$;
 
+DROP TRIGGER IF EXISTS audit_game_dispute_trigger ON public.match_games;
 CREATE TRIGGER audit_game_dispute_trigger
   AFTER UPDATE ON public.match_games
   FOR EACH ROW

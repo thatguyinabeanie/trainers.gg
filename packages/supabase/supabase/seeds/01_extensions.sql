@@ -1,8 +1,8 @@
 -- =============================================================================
 -- 01_extensions.sql - Enable Required Extensions
 -- =============================================================================
--- IDEMPOTENT: Uses CREATE EXTENSION IF NOT EXISTS
+-- NOTE: pgcrypto is pre-installed in Supabase (extensions schema).
+-- Creating extensions during seeding fails because the seed role lacks
+-- pg_read_file permission needed by Supabase's extension hook scripts.
+-- Extensions that need enabling should go in migrations, not seeds.
 -- =============================================================================
-
--- Enable pgcrypto for password hashing
-CREATE EXTENSION IF NOT EXISTS pgcrypto WITH SCHEMA extensions;

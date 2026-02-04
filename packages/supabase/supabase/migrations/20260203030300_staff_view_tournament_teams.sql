@@ -9,6 +9,7 @@
 -- ---------------------------------------------------------------------------
 -- 1. Staff can view teams for tournaments in their org
 -- ---------------------------------------------------------------------------
+DROP POLICY IF EXISTS "staff_view_tournament_teams" ON teams;
 CREATE POLICY "staff_view_tournament_teams"
 ON teams FOR SELECT USING (
   id IN (
@@ -23,6 +24,7 @@ ON teams FOR SELECT USING (
 -- ---------------------------------------------------------------------------
 -- 2. Staff can view team_pokemon for tournaments in their org
 -- ---------------------------------------------------------------------------
+DROP POLICY IF EXISTS "staff_view_tournament_team_pokemon" ON team_pokemon;
 CREATE POLICY "staff_view_tournament_team_pokemon"
 ON team_pokemon FOR SELECT USING (
   team_id IN (
@@ -37,6 +39,7 @@ ON team_pokemon FOR SELECT USING (
 -- ---------------------------------------------------------------------------
 -- 3. Staff can view pokemon for tournaments in their org
 -- ---------------------------------------------------------------------------
+DROP POLICY IF EXISTS "staff_view_tournament_pokemon" ON pokemon;
 CREATE POLICY "staff_view_tournament_pokemon"
 ON pokemon FOR SELECT USING (
   id IN (

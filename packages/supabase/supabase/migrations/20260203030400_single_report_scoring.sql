@@ -144,4 +144,12 @@ $$;
 -- Previously excluded to prevent leaking blind selections. Now that games
 -- resolve on first report, there are no blind selections to protect.
 
-ALTER PUBLICATION supabase_realtime ADD TABLE public.match_games;
+-- SECURITY NOTE: Under single-report scoring, games resolve immediately on first
+-- submission, so there are no pending blind selections to protect. The RLS SELECT
+-- policy grants participants access to all columns including alt1_selection and
+-- alt2_selection. If reverting to blind dual-report scoring, remove match_games
+-- from Realtime and tighten the RLS SELECT policy to redact opponent selections.
+DO $$ BEGIN
+  ALTER PUBLICATION supabase_realtime ADD TABLE public.match_games;
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
