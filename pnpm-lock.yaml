@@ -468,6 +468,34 @@ importers:
         specifier: 'catalog:'
         version: 5.9.3
 
+  packages/pokemon:
+    dependencies:
+      '@pkmn/data':
+        specifier: ^0.10.5
+        version: 0.10.5
+      '@pkmn/dex':
+        specifier: ^0.10.5
+        version: 0.10.5
+      '@pkmn/img':
+        specifier: ^0.3.3
+        version: 0.3.3
+      '@pkmn/sim':
+        specifier: ^0.10.5
+        version: 0.10.5
+    devDependencies:
+      '@trainers/jest-config':
+        specifier: workspace:*
+        version: link:../../tooling/jest
+      '@trainers/prettier-config':
+        specifier: workspace:*
+        version: link:../../tooling/prettier
+      '@trainers/typescript-config':
+        specifier: workspace:*
+        version: link:../../tooling/typescript
+      typescript:
+        specifier: 'catalog:'
+        version: 5.9.3
+
   packages/supabase:
     dependencies:
       '@supabase/supabase-js':
@@ -519,6 +547,36 @@ importers:
       tsx:
         specifier: ^4.19.2
         version: 4.21.0
+      typescript:
+        specifier: 'catalog:'
+        version: 5.9.3
+
+  packages/tournaments:
+    devDependencies:
+      '@trainers/jest-config':
+        specifier: workspace:*
+        version: link:../../tooling/jest
+      '@trainers/prettier-config':
+        specifier: workspace:*
+        version: link:../../tooling/prettier
+      '@trainers/typescript-config':
+        specifier: workspace:*
+        version: link:../../tooling/typescript
+      typescript:
+        specifier: 'catalog:'
+        version: 5.9.3
+
+  packages/utils:
+    devDependencies:
+      '@trainers/jest-config':
+        specifier: workspace:*
+        version: link:../../tooling/jest
+      '@trainers/prettier-config':
+        specifier: workspace:*
+        version: link:../../tooling/prettier
+      '@trainers/typescript-config':
+        specifier: workspace:*
+        version: link:../../tooling/typescript
       typescript:
         specifier: 'catalog:'
         version: 5.9.3
@@ -8356,7 +8414,7 @@ snapshots:
   '@babel/helper-member-expression-to-functions@7.28.5':
     dependencies:
       '@babel/traverse': 7.28.6
-      '@babel/types': 7.28.6
+      '@babel/types': 7.29.0
     transitivePeerDependencies:
       - supports-color
 
@@ -8378,7 +8436,7 @@ snapshots:
 
   '@babel/helper-optimise-call-expression@7.27.1':
     dependencies:
-      '@babel/types': 7.28.6
+      '@babel/types': 7.29.0
 
   '@babel/helper-plugin-utils@7.28.6': {}
 
@@ -11736,16 +11794,16 @@ snapshots:
 
   '@types/babel__generator@7.27.0':
     dependencies:
-      '@babel/types': 7.28.6
+      '@babel/types': 7.29.0
 
   '@types/babel__template@7.4.4':
     dependencies:
-      '@babel/parser': 7.28.6
-      '@babel/types': 7.28.6
+      '@babel/parser': 7.29.0
+      '@babel/types': 7.29.0
 
   '@types/babel__traverse@7.28.0':
     dependencies:
-      '@babel/types': 7.28.6
+      '@babel/types': 7.29.0
 
   '@types/d3-array@3.2.2': {}
 
@@ -12194,7 +12252,7 @@ snapshots:
   babel-plugin-jest-hoist@29.6.3:
     dependencies:
       '@babel/template': 7.28.6
-      '@babel/types': 7.28.6
+      '@babel/types': 7.29.0
       '@types/babel__core': 7.20.5
       '@types/babel__traverse': 7.28.0
 
@@ -14111,7 +14169,7 @@ snapshots:
   istanbul-lib-instrument@5.2.1:
     dependencies:
       '@babel/core': 7.28.6
-      '@babel/parser': 7.28.6
+      '@babel/parser': 7.29.0
       '@istanbuljs/schema': 0.1.3
       istanbul-lib-coverage: 3.2.2
       semver: 6.3.1
