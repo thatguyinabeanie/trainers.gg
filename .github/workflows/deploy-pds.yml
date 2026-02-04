@@ -1,0 +1,29 @@
+name: Deploy PDS
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "infra/pds/**"
+
+concurrency:
+  group: deploy-pds
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    name: Deploy PDS to Fly.io
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: superfly/flyctl-actions/setup-flyctl@master
+
+      - name: Deploy to Fly.io
+        run: flyctl deploy --config infra/pds/fly.toml --app trainers-pds --strategy immediate
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
