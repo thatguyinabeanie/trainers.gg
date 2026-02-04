@@ -190,28 +190,53 @@ jobs:
         run: pnpm --filter=@trainers/web exec playwright install-deps chromium
 
       - name: Wait for Vercel preview deployment
-        uses: patrickedqvist/wait-for-vercel-preview@v1.3.2
         id: vercel-preview
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          max_timeout: 600
-          check_interval: 15
-          environment: Preview
-
-      - name: Verify preview deployment is healthy
         env:
-          PREVIEW_URL: ${{ steps.vercel-preview.outputs.url }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
         run: |
-          STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$PREVIEW_URL")
-          if [ "$STATUS" -lt 200 ] || [ "$STATUS" -ge 400 ]; then
-            echo "::error::Preview deployment returned HTTP $STATUS"
-            exit 1
-          fi
+          SHA="${{ github.event.pull_request.head.sha }}"
+          echo "Waiting for Vercel preview deployment for $SHA..."
+
+          for i in $(seq 1 40); do
+            # Find deployment ID for this commit
+            DEPLOY_ID=$(gh api "repos/${{ github.repository }}/deployments?sha=$SHA&environment=Preview" \
+              --jq '.[0].id // empty' 2>/dev/null || true)
+
+            if [ -n "$DEPLOY_ID" ]; then
+              # Check for a successful deployment status with a URL
+              URL=$(gh api "repos/${{ github.repository }}/deployments/$DEPLOY_ID/statuses" \
+                --jq '[.[] | select(.state == "success")][0].environment_url // empty' 2>/dev/null || true)
+
+              if [ -n "$URL" ]; then
+                # Verify the deployment actually responds
+                STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+                  -H "x-vercel-protection-bypass: $BYPASS_SECRET" "$URL")
+
+                if [ "$STATUS" -ge 200 ] && [ "$STATUS" -lt 400 ]; then
+                  echo "url=$URL" >> "$GITHUB_OUTPUT"
+                  echo "Preview ready at $URL (HTTP $STATUS)"
+                  exit 0
+                fi
+                echo "Deployment returned HTTP $STATUS (attempt $i/40)"
+              else
+                echo "Deployment $DEPLOY_ID not ready yet (attempt $i/40)"
+              fi
+            else
+              echo "No deployment found yet (attempt $i/40)"
+            fi
+
+            sleep 15
+          done
+
+          echo "::error::Timeout waiting for Vercel preview deployment"
+          exit 1
 
       - name: Run E2E tests
         env:
           CI: true
           PLAYWRIGHT_BASE_URL: ${{ steps.vercel-preview.outputs.url }}
+          VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
         run: pnpm test:e2e
 
       - name: Upload Playwright report
