@@ -11,8 +11,18 @@
 function createConfig(overrides = {}) {
   return {
     testEnvironment: "node",
-    transform: { "^.+\\.tsx?$": ["ts-jest", { useESM: true }] },
-    extensionsToTreatAsEsm: [".ts"],
+    transform: {
+      "^.+\\.tsx?$": [
+        "ts-jest",
+        {
+          useESM: true,
+          tsconfig: {
+            jsx: "react-jsx",
+          },
+        },
+      ],
+    },
+    extensionsToTreatAsEsm: [".ts", ".tsx"],
     coverageDirectory: "<rootDir>/coverage",
     ...overrides,
   };
