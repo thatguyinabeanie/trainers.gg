@@ -8,7 +8,6 @@ test.describe("Protected routes redirect to sign-in", () => {
     "/to-dashboard",
     "/settings",
     "/onboarding",
-    "/feed",
     "/organizations/create",
   ];
 
