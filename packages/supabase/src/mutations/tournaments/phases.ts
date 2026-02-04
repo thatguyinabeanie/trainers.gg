@@ -1,4 +1,9 @@
-import { type TypedClient, type CutRule, getCurrentUser } from "./helpers";
+import {
+  type TypedClient,
+  type CutRule,
+  getCurrentUser,
+  checkOrgPermission,
+} from "./helpers";
 
 /**
  * Update a tournament phase
@@ -47,7 +52,12 @@ export async function updatePhase(
   };
 
   // Verify permission
-  if (tournament.organizations.owner_user_id !== user.id) {
+  const hasPermission = await checkOrgPermission(
+    supabase,
+    tournament.organization_id,
+    "tournament.manage"
+  );
+  if (!hasPermission) {
     throw new Error("You don't have permission to update this phase");
   }
 
@@ -123,10 +133,13 @@ export async function createPhase(
 
   if (!tournament) throw new Error("Tournament not found");
 
-  const org = tournament.organizations as unknown as { owner_user_id: string };
-
   // Verify permission
-  if (org.owner_user_id !== user.id) {
+  const hasPermission = await checkOrgPermission(
+    supabase,
+    tournament.organization_id,
+    "tournament.manage"
+  );
+  if (!hasPermission) {
     throw new Error(
       "You don't have permission to add phases to this tournament"
     );
@@ -207,7 +220,12 @@ export async function deletePhase(supabase: TypedClient, phaseId: number) {
   };
 
   // Verify permission
-  if (tournament.organizations.owner_user_id !== user.id) {
+  const hasPermission = await checkOrgPermission(
+    supabase,
+    tournament.organization_id,
+    "tournament.manage"
+  );
+  if (!hasPermission) {
     throw new Error("You don't have permission to delete this phase");
   }
 
@@ -217,10 +235,11 @@ export async function deletePhase(supabase: TypedClient, phaseId: number) {
   }
 
   // Check if this is the last phase - don't allow deleting if it's the only one
-  const { count } = await supabase
+  const { count, error: countError } = await supabase
     .from("tournament_phases")
     .select("*", { count: "exact", head: true })
     .eq("tournament_id", phase.tournament_id);
+  if (countError) throw countError;
 
   if (count === 1) {
     throw new Error(
@@ -302,10 +321,13 @@ export async function saveTournamentPhases(
 
   if (!tournament) throw new Error("Tournament not found");
 
-  const org = tournament.organizations as unknown as { owner_user_id: string };
-
   // Verify permission
-  if (org.owner_user_id !== user.id) {
+  const hasPermission = await checkOrgPermission(
+    supabase,
+    tournament.organization_id,
+    "tournament.manage"
+  );
+  if (!hasPermission) {
     throw new Error(
       "You don't have permission to modify phases for this tournament"
     );

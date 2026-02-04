@@ -161,6 +161,7 @@ export function NotificationBell({ userId }: NotificationBellProps) {
         }
       )
       .subscribe((status, err) => {
+        // MVP: console.error is sufficient; a future iteration could show a toast or retry
         if (err) console.error("[notifications] subscribe error:", err);
       });
 

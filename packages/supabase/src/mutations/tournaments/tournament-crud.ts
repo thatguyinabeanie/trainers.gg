@@ -1,5 +1,10 @@
 import type { Database } from "../../types";
-import { type TypedClient, getCurrentUser, type PhaseConfig } from "./helpers";
+import {
+  type TypedClient,
+  getCurrentUser,
+  checkOrgPermission,
+  type PhaseConfig,
+} from "./helpers";
 
 type TournamentFormat = Database["public"]["Enums"]["tournament_format"];
 type TournamentStatus = Database["public"]["Enums"]["tournament_status"];
@@ -42,15 +47,19 @@ export async function createTournament(
   // Verify organization exists and user has permission
   const { data: org } = await supabase
     .from("organizations")
-    .select("owner_user_id")
+    .select("id")
     .eq("id", data.organizationId)
     .single();
 
   if (!org) throw new Error("Organization not found");
 
-  // TODO: Check TOURNAMENT_CREATE permission through RBAC
-  // For now, only org owner can create tournaments
-  if (org.owner_user_id !== user.id) {
+  // Check permission via has_org_permission (covers org owner + staff roles)
+  const hasPermission = await checkOrgPermission(
+    supabase,
+    data.organizationId,
+    "tournament.manage"
+  );
+  if (!hasPermission) {
     throw new Error("You don't have permission to create tournaments");
   }
 
@@ -150,7 +159,7 @@ export async function createTournament(
         });
 
       if (swissError) {
-        console.error("Failed to create Swiss phase:", swissError);
+        throw new Error(`Failed to create Swiss phase: ${swissError.message}`);
       }
 
       if (data.tournamentFormat === "swiss_with_cut") {
@@ -170,7 +179,9 @@ export async function createTournament(
           });
 
         if (cutError) {
-          console.error("Failed to create Top Cut phase:", cutError);
+          throw new Error(
+            `Failed to create Top Cut phase: ${cutError.message}`
+          );
         }
       }
     } else if (data.tournamentFormat === "single_elimination") {
@@ -189,7 +200,9 @@ export async function createTournament(
         });
 
       if (elimError) {
-        console.error("Failed to create Single Elimination phase:", elimError);
+        throw new Error(
+          `Failed to create Single Elimination phase: ${elimError.message}`
+        );
       }
     } else if (data.tournamentFormat === "double_elimination") {
       const { error: doubleError } = await supabase
@@ -207,9 +220,8 @@ export async function createTournament(
         });
 
       if (doubleError) {
-        console.error(
-          "Failed to create Double Elimination phase:",
-          doubleError
+        throw new Error(
+          `Failed to create Double Elimination phase: ${doubleError.message}`
         );
       }
     }
@@ -256,14 +268,13 @@ export async function updateTournament(
 
   if (!tournament) throw new Error("Tournament not found");
 
-  // Verify permission
-  const { data: org } = await supabase
-    .from("organizations")
-    .select("owner_user_id")
-    .eq("id", tournament.organization_id)
-    .single();
-
-  if (org?.owner_user_id !== user.id) {
+  // Verify permission via has_org_permission (covers org owner + staff roles)
+  const hasPermission = await checkOrgPermission(
+    supabase,
+    tournament.organization_id,
+    "tournament.manage"
+  );
+  if (!hasPermission) {
     throw new Error("You don't have permission to update this tournament");
   }
 
@@ -323,14 +334,13 @@ export async function archiveTournament(
 
   if (!tournament) throw new Error("Tournament not found");
 
-  // Verify permission
-  const { data: org } = await supabase
-    .from("organizations")
-    .select("owner_user_id")
-    .eq("id", tournament.organization_id)
-    .single();
-
-  if (org?.owner_user_id !== user.id) {
+  // Verify permission via has_org_permission (covers org owner + staff roles)
+  const hasPermission = await checkOrgPermission(
+    supabase,
+    tournament.organization_id,
+    "tournament.manage"
+  );
+  if (!hasPermission) {
     throw new Error("You don't have permission to archive this tournament");
   }
 
@@ -362,14 +372,13 @@ export async function deleteTournament(
 
   if (!tournament) throw new Error("Tournament not found");
 
-  // Verify permission
-  const { data: org } = await supabase
-    .from("organizations")
-    .select("owner_user_id")
-    .eq("id", tournament.organization_id)
-    .single();
-
-  if (org?.owner_user_id !== user.id) {
+  // Verify permission via has_org_permission (covers org owner + staff roles)
+  const hasPermission = await checkOrgPermission(
+    supabase,
+    tournament.organization_id,
+    "tournament.manage"
+  );
+  if (!hasPermission) {
     throw new Error("You don't have permission to delete this tournament");
   }
 

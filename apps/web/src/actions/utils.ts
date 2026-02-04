@@ -37,6 +37,7 @@ export async function withAction<T>(
         error: error.errors[0]?.message ?? "Invalid input",
       };
     }
+    console.error("[server-action]", error);
     return {
       success: false,
       error: getErrorMessage(error, fallbackMessage),

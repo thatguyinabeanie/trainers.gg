@@ -188,6 +188,7 @@ export function MatchPageClient({
         }
       )
       .subscribe((status, err) => {
+        // MVP: console.error is sufficient; a future iteration could show a toast or retry
         if (err) console.error("[match-messages] subscribe error:", err);
       });
     channels.push(msgChannel);
@@ -216,6 +217,7 @@ export function MatchPageClient({
         }
       )
       .subscribe((status, err) => {
+        // MVP: console.error is sufficient; a future iteration could show a toast or retry
         if (err) console.error("[match-status] subscribe error:", err);
       });
     channels.push(matchChannel);
@@ -236,6 +238,7 @@ export function MatchPageClient({
         }
       )
       .subscribe((status, err) => {
+        // MVP: console.error is sufficient; a future iteration could show a toast or retry
         if (err) console.error("[match-games] subscribe error:", err);
       });
     channels.push(gamesChannel);

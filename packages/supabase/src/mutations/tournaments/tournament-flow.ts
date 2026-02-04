@@ -1,4 +1,8 @@
-import { type TypedClient, getCurrentUser } from "./helpers";
+import {
+  type TypedClient,
+  getCurrentUser,
+  checkOrgPermission,
+} from "./helpers";
 import { recalculateStandings } from "./standings";
 
 /**
@@ -28,10 +32,13 @@ export async function startTournamentEnhanced(
 
   if (!tournament) throw new Error("Tournament not found");
 
-  const org = tournament.organizations as unknown as {
-    owner_user_id: string;
-  };
-  if (org.owner_user_id !== user.id) {
+  // Verify permission via has_org_permission (covers org owner + staff roles)
+  const hasPermission = await checkOrgPermission(
+    supabase,
+    tournament.organization_id,
+    "tournament.manage"
+  );
+  if (!hasPermission) {
     throw new Error("You don't have permission to start this tournament");
   }
 
@@ -177,57 +184,6 @@ export async function advanceToTopCut(
 }
 
 /**
- * Generate bracket seeding order for single elimination.
- * Returns array of [highSeedIndex, lowSeedIndex] pairs.
- * Uses standard tournament seeding (1v8, 4v5, 2v7, 3v6 for 8 players).
- */
-function generateBracketSeeding(
-  playerCount: number
-): Array<[number, number | null]> {
-  // Round up to nearest power of 2
-  const bracketSize = Math.pow(2, Math.ceil(Math.log2(playerCount)));
-  const pairs: Array<[number, number | null]> = [];
-
-  // Standard bracket seeding: seed 1 plays seed N, seed 2 plays seed N-1, etc.
-  // But in proper bracket order so 1 and 2 can meet in finals
-  const seeds = generateBracketOrder(bracketSize);
-
-  for (let i = 0; i < seeds.length; i += 2) {
-    const highSeedIdx = (seeds[i] ?? 1) - 1;
-    const lowSeedIdx = (seeds[i + 1] ?? bracketSize) - 1;
-
-    // If the low seed index exceeds our actual player count, it's a bye
-    if (lowSeedIdx >= playerCount) {
-      pairs.push([highSeedIdx, null]);
-    } else {
-      pairs.push([highSeedIdx, lowSeedIdx]);
-    }
-  }
-
-  return pairs;
-}
-
-/**
- * Generate standard bracket seed ordering.
- * For a bracket of size N, produces the order of seeds
- * such that seed 1 and seed 2 meet in the final.
- */
-function generateBracketOrder(bracketSize: number): number[] {
-  if (bracketSize === 1) return [1];
-  if (bracketSize === 2) return [1, 2];
-
-  const smaller = generateBracketOrder(bracketSize / 2);
-  const result: number[] = [];
-
-  for (const seed of smaller) {
-    result.push(seed);
-    result.push(bracketSize + 1 - seed);
-  }
-
-  return result;
-}
-
-/**
  * Generate single elimination pairings for a new round.
  * Winners from the previous round advance to create next round's matches.
  */
@@ -275,7 +231,13 @@ export async function generateEliminationPairings(
     };
   };
 
-  if (phase.tournaments.organizations.owner_user_id !== user.id) {
+  // Verify permission via has_org_permission (covers org owner + staff roles)
+  const hasPermission = await checkOrgPermission(
+    supabase,
+    phase.tournaments.organization_id,
+    "tournament.manage"
+  );
+  if (!hasPermission) {
     throw new Error("You don't have permission to generate pairings");
   }
 
@@ -390,10 +352,13 @@ export async function completeTournament(
 
   if (!tournament) throw new Error("Tournament not found");
 
-  const org = tournament.organizations as unknown as {
-    owner_user_id: string;
-  };
-  if (org.owner_user_id !== user.id) {
+  // Verify permission via has_org_permission (covers org owner + staff roles)
+  const hasPermission = await checkOrgPermission(
+    supabase,
+    tournament.organization_id,
+    "tournament.manage"
+  );
+  if (!hasPermission) {
     throw new Error("You don't have permission to complete this tournament");
   }
 

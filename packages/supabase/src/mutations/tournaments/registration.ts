@@ -3,7 +3,12 @@ import {
   checkRegistrationOpen,
   checkCheckInOpen,
 } from "../../utils/registration";
-import { type TypedClient, getCurrentUser, getCurrentAlt } from "./helpers";
+import {
+  type TypedClient,
+  getCurrentUser,
+  getCurrentAlt,
+  checkOrgPermission,
+} from "./helpers";
 
 /**
  * Register for a tournament
@@ -52,13 +57,17 @@ export async function registerForTournament(
   }
 
   // Check max participants and determine registration status
+  // NOTE: TOCTOU race condition — count and insert are not atomic.
+  // Two concurrent registrations at max_participants-1 could both get "registered".
+  // TODO: Move to a SECURITY DEFINER RPC for atomic count+insert.
   let registrationStatus: "registered" | "waitlist" = "registered";
   if (tournament.max_participants) {
-    const { count } = await supabase
+    const { count, error: countError } = await supabase
       .from("tournament_registrations")
       .select("*", { count: "exact", head: true })
       .eq("tournament_id", tournamentId)
       .eq("status", "registered");
+    if (countError) throw countError;
 
     if ((count ?? 0) >= tournament.max_participants) {
       // Tournament is full, add to waitlist instead of rejecting
@@ -199,13 +208,12 @@ export async function updateRegistrationStatus(
   if (!tournament) throw new Error("Tournament not found");
 
   // Verify permission
-  const { data: org } = await supabase
-    .from("organizations")
-    .select("owner_user_id")
-    .eq("id", tournament.organization_id)
-    .single();
-
-  if (org?.owner_user_id !== user.id) {
+  const hasPermission = await checkOrgPermission(
+    supabase,
+    tournament.organization_id,
+    "tournament.manage"
+  );
+  if (!hasPermission) {
     throw new Error("You don't have permission to update registrations");
   }
 
@@ -399,13 +407,12 @@ export async function sendTournamentInvitations(
 
   if (!tournament) throw new Error("Tournament not found");
 
-  const { data: org } = await supabase
-    .from("organizations")
-    .select("owner_user_id")
-    .eq("id", tournament.organization_id)
-    .single();
-
-  if (org?.owner_user_id !== user.id) {
+  const hasPermission = await checkOrgPermission(
+    supabase,
+    tournament.organization_id,
+    "tournament.manage"
+  );
+  if (!hasPermission) {
     throw new Error("You don't have permission to send invitations");
   }
 

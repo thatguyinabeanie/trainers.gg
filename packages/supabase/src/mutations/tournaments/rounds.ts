@@ -3,7 +3,11 @@ import {
   type PlayerForPairing,
   type Pairing,
 } from "../../lib/swiss-pairings";
-import { type TypedClient, getCurrentUser } from "./helpers";
+import {
+  type TypedClient,
+  getCurrentUser,
+  checkOrgPermission,
+} from "./helpers";
 import { recalculateStandings } from "./standings";
 
 /**
@@ -60,7 +64,12 @@ export async function generateRoundPairings(
   };
 
   // Verify permission
-  if (phase.tournaments.organizations.owner_user_id !== user.id) {
+  const hasPermission = await checkOrgPermission(
+    supabase,
+    phase.tournaments.organization_id,
+    "tournament.manage"
+  );
+  if (!hasPermission) {
     throw new Error("You don't have permission to generate pairings");
   }
 
@@ -244,9 +253,10 @@ export async function generateRoundPairings(
   }
 
   if (opponentHistoryInserts.length > 0) {
-    await supabase
+    const { error: historyError } = await supabase
       .from("tournament_opponent_history")
       .insert(opponentHistoryInserts);
+    if (historyError) throw historyError;
   }
 
   // Mark players with byes - ensure stats record exists first
@@ -266,22 +276,25 @@ export async function generateRoundPairings(
 
       // If no record was updated, insert a new one
       if (!updated || updated.length === 0) {
-        await supabase.from("tournament_player_stats").insert({
-          tournament_id: tournamentId,
-          alt_id: altId,
-          has_received_bye: true,
-          match_wins: 0,
-          match_losses: 0,
-          matches_played: 0,
-          game_wins: 0,
-          game_losses: 0,
-          match_points: 0,
-          match_win_percentage: 0,
-          game_win_percentage: 0,
-          opponent_match_win_percentage: 0,
-          opponent_history: [],
-          standings_need_recalc: true,
-        });
+        const { error: statsInsertError } = await supabase
+          .from("tournament_player_stats")
+          .insert({
+            tournament_id: tournamentId,
+            alt_id: altId,
+            has_received_bye: true,
+            match_wins: 0,
+            match_losses: 0,
+            matches_played: 0,
+            game_wins: 0,
+            game_losses: 0,
+            match_points: 0,
+            match_win_percentage: 0,
+            game_win_percentage: 0,
+            opponent_match_win_percentage: 0,
+            opponent_history: [],
+            standings_need_recalc: true,
+          });
+        if (statsInsertError) throw statsInsertError;
       }
     }
   }
@@ -361,7 +374,12 @@ export async function completeRound(supabase: TypedClient, roundId: number) {
   };
 
   // Verify permission
-  if (phase.tournaments.organizations.owner_user_id !== user.id) {
+  const hasPermission = await checkOrgPermission(
+    supabase,
+    phase.tournaments.organization_id,
+    "tournament.manage"
+  );
+  if (!hasPermission) {
     throw new Error("You don't have permission to complete this round");
   }
 
@@ -370,11 +388,13 @@ export async function completeRound(supabase: TypedClient, roundId: number) {
     throw new Error(`Cannot complete round with status "${round.status}"`);
   }
 
-  // Check that all matches are completed
+  // Check that all non-bye matches are completed
+  // Bye matches are never activated by start_round and stay in "pending" status
   const { data: incompleteMatches } = await supabase
     .from("tournament_matches")
     .select("id")
     .eq("round_id", roundId)
+    .eq("is_bye", false)
     .neq("status", "completed");
 
   if (incompleteMatches && incompleteMatches.length > 0) {
@@ -437,7 +457,12 @@ export async function createRound(
   };
 
   // Verify permission
-  if (tournament.organizations.owner_user_id !== user.id) {
+  const hasPermission = await checkOrgPermission(
+    supabase,
+    tournament.organization_id,
+    "tournament.manage"
+  );
+  if (!hasPermission) {
     throw new Error("You don't have permission to create rounds");
   }
 
@@ -538,7 +563,12 @@ export async function deleteRoundAndMatches(
   };
 
   // Verify permission
-  if (phase.tournaments.organizations.owner_user_id !== user.id) {
+  const hasPermission = await checkOrgPermission(
+    supabase,
+    phase.tournaments.organization_id,
+    "tournament.manage"
+  );
+  if (!hasPermission) {
     throw new Error("You don't have permission to delete this round");
   }
 
@@ -556,13 +586,19 @@ export async function deleteRoundAndMatches(
     .eq("round_id", roundId);
 
   if (matchIds && matchIds.length > 0) {
-    const ids = matchIds.map((m) => m.id);
-
     // Delete pairings that reference these matches
-    await supabase.from("tournament_pairings").delete().eq("round_id", roundId);
+    const { error: pairingDeleteError } = await supabase
+      .from("tournament_pairings")
+      .delete()
+      .eq("round_id", roundId);
+    if (pairingDeleteError) throw pairingDeleteError;
 
     // Delete the matches
-    await supabase.from("tournament_matches").delete().eq("round_id", roundId);
+    const { error: matchDeleteError } = await supabase
+      .from("tournament_matches")
+      .delete()
+      .eq("round_id", roundId);
+    if (matchDeleteError) throw matchDeleteError;
   }
 
   // Delete the round

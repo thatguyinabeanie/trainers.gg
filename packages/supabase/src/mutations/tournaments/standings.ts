@@ -1,4 +1,9 @@
-import { type TypedClient, getCurrentUser, getCurrentAlt } from "./helpers";
+import {
+  type TypedClient,
+  getCurrentUser,
+  getCurrentAlt,
+  checkOrgPermission,
+} from "./helpers";
 
 /**
  * Recalculate standings for a tournament
@@ -199,6 +204,7 @@ export async function recalculateStandings(
   }
 
   // Upsert stats (update if exists, insert if not)
+  const upsertErrors: Array<{ altId: number; message: string }> = [];
   for (const stats of statsToUpsert) {
     const { error } = await supabase
       .from("tournament_player_stats")
@@ -207,8 +213,15 @@ export async function recalculateStandings(
       });
 
     if (error) {
-      console.error(`Error upserting stats for alt ${stats.alt_id}:`, error);
+      upsertErrors.push({ altId: stats.alt_id, message: error.message });
     }
+  }
+
+  if (upsertErrors.length > 0) {
+    const altIds = upsertErrors.map((e) => e.altId).join(", ");
+    throw new Error(
+      `Failed to upsert stats for ${upsertErrors.length} player(s) (alt IDs: ${altIds}): ${upsertErrors[0]?.message}`
+    );
   }
 
   // Calculate standings (rank by match points, then tiebreakers)
@@ -229,11 +242,17 @@ export async function recalculateStandings(
   for (let i = 0; i < sortedPlayers.length; i++) {
     const player = sortedPlayers[i];
     if (player) {
-      await supabase
+      const { error: standingError } = await supabase
         .from("tournament_player_stats")
         .update({ current_standing: i + 1 })
         .eq("tournament_id", tournamentId)
         .eq("alt_id", player.alt_id);
+
+      if (standingError) {
+        throw new Error(
+          `Failed to update standing for alt ${player.alt_id}: ${standingError.message}`
+        );
+      }
     }
   }
 
@@ -272,12 +291,14 @@ export async function dropPlayer(
 
   if (!tournament) throw new Error("Tournament not found");
 
-  const org = tournament.organizations as unknown as { owner_user_id: string };
-
-  // Check permission - either the player themselves or the organizer
+  // Check permission - either the player themselves or the organizer/staff
   const currentAlt = await getCurrentAlt(supabase);
   const isPlayer = currentAlt?.id === altId;
-  const isOrganizer = org.owner_user_id === user.id;
+  const isOrganizer = await checkOrgPermission(
+    supabase,
+    tournament.organization_id,
+    "tournament.manage"
+  );
 
   if (!isPlayer && !isOrganizer) {
     throw new Error("You don't have permission to drop this player");

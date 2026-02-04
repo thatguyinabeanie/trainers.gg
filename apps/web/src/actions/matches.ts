@@ -1,7 +1,7 @@
 /**
  * Match Server Actions
  *
- * Server actions for match mutations (blind scoring, chat, judge actions).
+ * Server actions for match mutations (game scoring, chat, judge actions).
  * Wraps @trainers/supabase mutations with cache revalidation.
  */
 
@@ -28,16 +28,16 @@ const idSchema = z.number().int().positive();
 const messageContentSchema = z
   .string()
   .min(1, "Message cannot be empty")
-  .max(2000, "Message must be 2000 characters or fewer");
+  .max(500, "Message must be 500 characters or fewer");
 const messageTypeSchema = z.enum(["player", "judge"]);
 const numberOfGamesSchema = z.number().int().min(1).max(9);
 
 // =============================================================================
-// Blind Scoring
+// Game Scoring
 // =============================================================================
 
 /**
- * Submit a blind game selection (player selects who won this game).
+ * Submit a game result selection (player selects who won this game).
  * Uses the SECURITY DEFINER RPC — enforces caller can only set own column.
  */
 export async function submitGameSelectionAction(

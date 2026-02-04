@@ -2,7 +2,7 @@ import type { Database } from "../types";
 import type { TypedClient } from "../client";
 
 /**
- * Submit a blind game winner selection via the SECURITY DEFINER RPC.
+ * Submit a game winner selection. The first report resolves the game immediately.
  * The function enforces that the caller can only modify their own selection column.
  */
 export async function submitGameSelection(
@@ -16,7 +16,11 @@ export async function submitGameSelection(
   });
 
   if (error) throw error;
-  return data as { success: boolean; error?: string };
+  const result = data as { success: boolean; error?: string };
+  if (!result.success) {
+    throw new Error(result.error ?? "Failed to submit game selection");
+  }
+  return result;
 }
 
 /**

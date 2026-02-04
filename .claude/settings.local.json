@@ -101,7 +101,13 @@
       "Bash(while read file)",
       "Bash(do echo \"$file:\")",
       "Bash(done)",
-      "Bash(awk:*)"
+      "Bash(awk:*)",
+      "Bash(for policy in '\"\"Org members can create tournaments\"\"' '\"\"Org members can update tournaments\"\"' '\"\"Org owners can update\"\"' '\"\"Org owners can add members\"\"' '\"\"Org owners can remove members\"\"' '\"\"Posts are viewable by everyone\"\"' '\"\"Users can create posts\"\"' '\"\"Users can update own posts\"\"' '\"\"Users can delete own posts\"\"' '\"\"Post likes are viewable by everyone\"\"' '\"\"Users can like posts\"\"' '\"\"Users can unlike posts\"\"' '\"\"Follows are viewable by everyone\"\"' '\"\"Users can follow\"\"' '\"\"Users can unfollow\"\"')",
+      "Bash(do)",
+      "Bash(for trigger in '\"\"trigger_update_post_likes_count\"\"' '\"\"trigger_update_post_replies_count\"\"' '\"\"update_posts_updated_at\"\"' 'trg_generate_pds_handle')",
+      "Bash(for idx in '\"\"idx_follows_follower\"\"' '\"\"idx_follows_following\"\"' '\"\"idx_post_likes_post\"\"' '\"\"idx_posts_created_at\"\"' '\"\"idx_posts_reply_to\"\"' '\"\"idx_posts_repost_of\"\"')",
+      "Bash(for f in supabase/seeds/02_roles.sql supabase/seeds/03_users.sql supabase/seeds/04_organizations.sql supabase/seeds/05_invitations.sql supabase/seeds/09_social.sql supabase/seeds/09_teams.sql supabase/seeds/10_tournaments.sql supabase/seeds/11_matches.sql supabase/seeds/12_standings.sql)",
+      "Bash(do echo \"=== Seeding $f ===\")"
     ]
   },
   "enableAllProjectMcpServers": true

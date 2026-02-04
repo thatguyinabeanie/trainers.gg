@@ -243,11 +243,12 @@ export async function deleteAlt(supabase: TypedClient, altId: number) {
   }
 
   // Check this alt isn't registered in any active tournaments
-  const { count } = await supabase
+  const { count, error: countError } = await supabase
     .from("tournament_registrations")
     .select("*", { count: "exact", head: true })
     .eq("alt_id", altId)
     .in("status", ["registered", "checked_in"]);
+  if (countError) throw countError;
 
   if (count && count > 0) {
     throw new Error(
