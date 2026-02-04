@@ -39,6 +39,7 @@
     "@trainers/supabase": "workspace:*",
     "@trainers/theme": "workspace:*",
     "@trainers/validators": "workspace:*",
+    "@vercel/analytics": "^1.6.1",
     "botid": "^1.5.10",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",

@@ -278,7 +278,6 @@ function GameNode({
   tournamentId,
   isParticipant,
   isStaff,
-  userAltId,
   myName,
   opponentName,
   onGameUpdated,
@@ -736,7 +735,6 @@ function DisputeAlert({
   isPlayer1,
   isStaff,
   tournamentId,
-  userAltId,
   onGameUpdated,
 }: {
   games: GameData[];

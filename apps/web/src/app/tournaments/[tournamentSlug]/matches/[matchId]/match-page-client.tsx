@@ -87,9 +87,6 @@ export function MatchPageClient({
   // "swapped" means the current user is player2 (so we flip left/right).
   const swapped = isParticipant && !isPlayer1;
 
-  const myAltId = isParticipant ? (isPlayer1 ? alt1Id : alt2Id) : null;
-  const opponentAltId = isParticipant ? (isPlayer1 ? alt2Id : alt1Id) : null;
-
   const myPlayer = isParticipant ? (swapped ? player2 : player1) : null;
   const opponent = isParticipant ? (swapped ? player1 : player2) : null;
 
