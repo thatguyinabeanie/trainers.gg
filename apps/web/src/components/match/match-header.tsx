@@ -123,7 +123,7 @@ function PlayerCard({
           </AvatarFallback>
         </Avatar>
         {isMatchWinner && (
-          <div className="bg-primary absolute -top-1 -right-1 z-10 flex h-4 w-4 items-center justify-center rounded-full text-white sm:h-5 sm:w-5">
+          <div className="bg-primary absolute -right-1 -top-1 z-10 flex h-4 w-4 items-center justify-center rounded-full text-white sm:h-5 sm:w-5">
             <Trophy className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
           </div>
         )}
@@ -566,7 +566,7 @@ function GameNode({
     return (
       <>
         <div className="flex items-center gap-1.5">
-          <span className="text-[10px] text-red-600 tabular-nums dark:text-red-400">
+          <span className="text-[10px] tabular-nums text-red-600 dark:text-red-400">
             {game.game_number}
           </span>
           <div className="flex h-7 w-7 items-center justify-center rounded-full bg-red-500/20 text-red-600 ring-2 ring-red-500/30 dark:text-red-400">
@@ -876,6 +876,7 @@ function DisputeAlert({
 // Staff Judge Alert
 // ============================================================================
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function StaffJudgeAlert({
   matchId,
   tournamentId,
@@ -1019,7 +1020,7 @@ export function MatchHeader({
   return (
     <div className="space-y-2">
       <Card>
-        <CardContent className="p-3 pb-2 sm:px-6 sm:pt-4 sm:pb-2">
+        <CardContent className="p-3 pb-2 sm:px-6 sm:pb-2 sm:pt-4">
           {/* Metadata row */}
           <div className="mb-1 flex items-center justify-between sm:mb-2">
             <div className="flex items-center gap-2">
