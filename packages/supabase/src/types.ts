@@ -2575,9 +2575,17 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      advance_to_top_cut: {
+        Args: { p_top_cut_size?: number; p_tournament_id: number }
+        Returns: Json
+      }
       cancel_judge_request: { Args: { p_match_id: number }; Returns: undefined }
       clear_judge_request: { Args: { p_match_id: number }; Returns: undefined }
       custom_access_token_hook: { Args: { event: Json }; Returns: Json }
+      generate_bracket_order: {
+        Args: { p_bracket_size: number }
+        Returns: number[]
+      }
       get_current_alt_id: { Args: never; Returns: number }
       get_current_user_id: { Args: never; Returns: string }
       get_match_games_for_player: {
@@ -2642,6 +2650,10 @@ export type Database = {
       request_judge: { Args: { p_match_id: number }; Returns: undefined }
       reset_match: { Args: { p_match_id: number }; Returns: undefined }
       start_match: { Args: { p_match_id: number }; Returns: undefined }
+      start_round: {
+        Args: { p_best_of_override?: number; p_round_id: number }
+        Returns: Json
+      }
       submit_game_selection: {
         Args: { p_game_id: number; p_selected_winner_alt_id: number }
         Returns: Json

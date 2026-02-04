@@ -53,8 +53,6 @@ import { type ActionResult, rejectBots } from "./utils";
 type TournamentFormat = Database["public"]["Enums"]["tournament_format"];
 type TournamentStatus = Database["public"]["Enums"]["tournament_status"];
 
-export type { ActionResult };
-
 // =============================================================================
 // Tournament CRUD
 // =============================================================================
@@ -228,7 +226,15 @@ export async function advanceToTopCut(tournamentId: number): Promise<
 
     updateTag(CacheTags.tournament(tournamentId));
 
-    return { success: true, data: result };
+    return {
+      success: true,
+      data: {
+        qualifiers: result.qualifiers,
+        matchesCreated: result.matches_created,
+        phaseId: result.phase_id,
+        roundId: result.round_id,
+      },
+    };
   } catch (error) {
     return {
       success: false,

@@ -295,137 +295,28 @@ export async function generateRoundPairings(
 }
 
 /**
- * Start a round (set status to active).
- * Also activates all non-bye matches and creates their games.
+ * Start a round (set status to active) via atomic SECURITY DEFINER RPC.
+ * Activates all non-bye matches and creates their games in a single transaction.
+ * The RPC checks that the caller is org owner or staff with `tournament.manage`.
  */
-export async function startRound(supabase: TypedClient, roundId: number) {
-  const user = await getCurrentUser(supabase);
-  if (!user) throw new Error("Not authenticated");
+export async function startRound(
+  supabase: TypedClient,
+  roundId: number,
+  bestOfOverride?: number
+) {
+  const { data, error } = await supabase.rpc("start_round", {
+    p_round_id: roundId,
+    p_best_of_override: bestOfOverride,
+  });
 
-  // Get round with tournament and phase info (including best_of for game creation)
-  const { data: round } = await supabase
-    .from("tournament_rounds")
-    .select(
-      `
-      id,
-      status,
-      round_number,
-      phase_id,
-      tournament_phases!inner (
-        id,
-        tournament_id,
-        best_of,
-        tournaments!tournament_phases_tournament_id_fkey!inner (
-          organization_id,
-          status,
-          organizations!inner (
-            owner_user_id
-          )
-        )
-      )
-    `
-    )
-    .eq("id", roundId)
-    .single();
+  if (error) throw error;
 
-  if (!round) throw new Error("Round not found");
-
-  const phase = round.tournament_phases as unknown as {
-    id: number;
-    tournament_id: number;
-    best_of: number | null;
-    tournaments: {
-      organization_id: number;
-      status: string;
-      organizations: {
-        owner_user_id: string;
-      };
-    };
+  return data as {
+    success: boolean;
+    matches_activated: number;
+    games_created: number;
+    best_of: number;
   };
-
-  // Verify permission
-  if (phase.tournaments.organizations.owner_user_id !== user.id) {
-    throw new Error("You don't have permission to start this round");
-  }
-
-  // Validate round status
-  if (round.status !== "pending") {
-    throw new Error(`Cannot start round with status "${round.status}"`);
-  }
-
-  // If not round 1, ensure previous round is completed
-  if (round.round_number > 1) {
-    const { data: previousRound } = await supabase
-      .from("tournament_rounds")
-      .select("id, status, round_number")
-      .eq("phase_id", phase.id)
-      .eq("round_number", round.round_number - 1)
-      .maybeSingle();
-
-    if (previousRound && previousRound.status !== "completed") {
-      throw new Error(
-        `Round ${previousRound.round_number} must be completed before starting round ${round.round_number}.`
-      );
-    }
-  }
-
-  // Get all matches in this round (needed for activation and game creation)
-  const { data: matches } = await supabase
-    .from("tournament_matches")
-    .select("id, is_bye")
-    .eq("round_id", roundId);
-
-  if (!matches || matches.length === 0) {
-    throw new Error(
-      "Cannot start round without pairings. Generate pairings first."
-    );
-  }
-
-  const now = new Date().toISOString();
-
-  // Update round status
-  const { error: roundError } = await supabase
-    .from("tournament_rounds")
-    .update({
-      status: "active",
-      start_time: now,
-    })
-    .eq("id", roundId);
-
-  if (roundError) throw roundError;
-
-  // Activate all non-bye matches
-  const nonByeMatches = matches.filter((m) => !m.is_bye);
-  if (nonByeMatches.length > 0) {
-    const nonByeIds = nonByeMatches.map((m) => m.id);
-
-    const { error: matchError } = await supabase
-      .from("tournament_matches")
-      .update({
-        status: "active",
-        start_time: now,
-      })
-      .in("id", nonByeIds);
-
-    if (matchError) throw matchError;
-
-    // Create games for each non-bye match
-    const bestOf = phase.best_of ?? 3;
-    const gameInserts = nonByeMatches.flatMap((match) =>
-      Array.from({ length: bestOf }, (_, i) => ({
-        match_id: match.id,
-        game_number: i + 1,
-      }))
-    );
-
-    const { error: gamesError } = await supabase
-      .from("match_games")
-      .insert(gameInserts);
-
-    if (gamesError) throw gamesError;
-  }
-
-  return { success: true };
 }
 
 /**

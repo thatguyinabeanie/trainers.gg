@@ -151,237 +151,28 @@ export async function startTournamentEnhanced(
 }
 
 /**
- * Advance from Swiss phase to Top Cut (elimination phase).
+ * Advance from Swiss phase to Top Cut (elimination phase) via atomic RPC.
  * Seeds top N players from Swiss standings into the elimination bracket.
+ * The RPC checks that the caller is org owner or staff with `tournament.manage`.
  */
 export async function advanceToTopCut(
   supabase: TypedClient,
-  tournamentId: number
+  tournamentId: number,
+  topCutSize?: number
 ) {
-  const user = await getCurrentUser(supabase);
-  if (!user) throw new Error("Not authenticated");
+  const { data, error } = await supabase.rpc("advance_to_top_cut", {
+    p_tournament_id: tournamentId,
+    p_top_cut_size: topCutSize,
+  });
 
-  // Get tournament with org info
-  const { data: tournament } = await supabase
-    .from("tournaments")
-    .select(
-      `
-      id,
-      status,
-      top_cut_size,
-      organization_id,
-      current_phase_id,
-      organizations!inner(owner_user_id)
-    `
-    )
-    .eq("id", tournamentId)
-    .single();
+  if (error) throw error;
 
-  if (!tournament) throw new Error("Tournament not found");
-
-  const org = tournament.organizations as unknown as {
-    owner_user_id: string;
-  };
-  if (org.owner_user_id !== user.id) {
-    throw new Error("You don't have permission to advance this tournament");
-  }
-
-  if (tournament.status !== "active") {
-    throw new Error("Tournament must be active to advance phases");
-  }
-
-  // Get all phases ordered
-  const { data: phases } = await supabase
-    .from("tournament_phases")
-    .select("*")
-    .eq("tournament_id", tournamentId)
-    .order("phase_order", { ascending: true });
-
-  if (!phases || phases.length < 2) {
-    throw new Error("Tournament needs at least 2 phases to advance");
-  }
-
-  // Find current Swiss phase and next elimination phase
-  const currentPhase = phases.find((p) => p.id === tournament.current_phase_id);
-  if (!currentPhase || currentPhase.phase_type !== "swiss") {
-    throw new Error("Current phase must be Swiss to advance to Top Cut");
-  }
-
-  // Verify all Swiss rounds are completed
-  const { data: activeRounds } = await supabase
-    .from("tournament_rounds")
-    .select("id, status")
-    .eq("phase_id", currentPhase.id)
-    .neq("status", "completed");
-
-  if (activeRounds && activeRounds.length > 0) {
-    throw new Error(
-      "All Swiss rounds must be completed before advancing to Top Cut"
-    );
-  }
-
-  const nextPhase = phases.find(
-    (p) => p.phase_order === currentPhase.phase_order + 1
-  );
-  if (
-    !nextPhase ||
-    (nextPhase.phase_type !== "single_elimination" &&
-      nextPhase.phase_type !== "double_elimination")
-  ) {
-    throw new Error("Next phase must be an elimination phase");
-  }
-
-  // Get top N players from standings
-  const cutSize = tournament.top_cut_size ?? 8;
-
-  const { data: standings } = await supabase
-    .from("tournament_player_stats")
-    .select(
-      "alt_id, match_points, match_win_percentage, game_win_percentage, opponent_match_win_percentage, current_standing, is_dropped"
-    )
-    .eq("tournament_id", tournamentId)
-    .eq("is_dropped", false)
-    .order("match_points", { ascending: false })
-    .order("opponent_match_win_percentage", { ascending: false })
-    .order("game_win_percentage", { ascending: false })
-    .limit(cutSize);
-
-  if (!standings || standings.length === 0) {
-    throw new Error("No players available for top cut");
-  }
-
-  // Complete Swiss phase
-  const { error: completeSwissError } = await supabase
-    .from("tournament_phases")
-    .update({ status: "completed" })
-    .eq("id", currentPhase.id);
-
-  if (completeSwissError) throw completeSwissError;
-
-  // Activate elimination phase
-  const { error: activateElimError } = await supabase
-    .from("tournament_phases")
-    .update({ status: "active" })
-    .eq("id", nextPhase.id);
-
-  if (activateElimError) throw activateElimError;
-
-  // Create Round 1 for the elimination phase
-  const { data: elimRound } = await supabase
-    .from("tournament_rounds")
-    .insert({
-      phase_id: nextPhase.id,
-      round_number: 1,
-      status: "pending",
-    })
-    .select("id")
-    .single();
-
-  if (!elimRound) throw new Error("Failed to create elimination round");
-
-  // Generate seeded pairings (1v8, 2v7, etc.)
-  const qualifiers = standings.map((s, i) => ({
-    altId: s.alt_id,
-    seed: i + 1,
-  }));
-
-  const matchInserts: Array<{
+  return data as {
+    success: boolean;
+    qualifiers: number;
+    matches_created: number;
+    phase_id: number;
     round_id: number;
-    alt1_id: number;
-    alt2_id: number | null;
-    is_bye: boolean;
-    table_number: number;
-    status: "pending";
-  }> = [];
-
-  const pairingInserts: Array<{
-    tournament_id: number;
-    round_id: number;
-    alt1_id: number;
-    alt2_id: number | null;
-    alt1_seed: number;
-    alt2_seed: number | null;
-    is_bye: boolean;
-    pairing_reason: string;
-    pairing_type: string;
-    table_number: number;
-  }> = [];
-
-  // Standard seeded bracket: 1vs8, 4vs5, 2vs7, 3vs6 (for 8)
-  const bracketOrder = generateBracketSeeding(qualifiers.length);
-
-  let tableNumber = 1;
-  for (const [highSeedIdx, lowSeedIdx] of bracketOrder) {
-    const highSeed = qualifiers[highSeedIdx];
-    const lowSeed =
-      lowSeedIdx !== null ? (qualifiers[lowSeedIdx] ?? null) : null;
-
-    matchInserts.push({
-      round_id: elimRound.id,
-      alt1_id: highSeed!.altId,
-      alt2_id: lowSeed?.altId ?? null,
-      is_bye: !lowSeed,
-      table_number: tableNumber,
-      status: "pending",
-    });
-
-    pairingInserts.push({
-      tournament_id: tournamentId,
-      round_id: elimRound.id,
-      alt1_id: highSeed!.altId,
-      alt2_id: lowSeed?.altId ?? null,
-      alt1_seed: highSeed!.seed,
-      alt2_seed: lowSeed?.seed ?? null,
-      is_bye: !lowSeed,
-      pairing_reason: `Seed ${highSeed!.seed} vs Seed ${lowSeed?.seed ?? "BYE"}`,
-      pairing_type: "elimination_seeded",
-      table_number: tableNumber,
-    });
-
-    tableNumber++;
-  }
-
-  // Insert matches
-  const { data: matches, error: matchError } = await supabase
-    .from("tournament_matches")
-    .insert(matchInserts)
-    .select("id, alt1_id, alt2_id");
-
-  if (matchError) throw matchError;
-
-  // Link pairings to matches
-  const matchMap = new Map<string, number>();
-  for (const m of matches) {
-    matchMap.set(`${m.alt1_id}:${m.alt2_id}`, m.id);
-  }
-
-  const pairingsWithMatchId = pairingInserts.map((p) => ({
-    ...p,
-    match_id: matchMap.get(`${p.alt1_id}:${p.alt2_id}`),
-  }));
-
-  const { error: pairingsError } = await supabase
-    .from("tournament_pairings")
-    .insert(pairingsWithMatchId);
-
-  if (pairingsError) throw pairingsError;
-
-  // Update tournament current phase
-  const { error: updatePhaseError } = await supabase
-    .from("tournaments")
-    .update({
-      current_phase_id: nextPhase.id,
-      current_round: 1,
-    })
-    .eq("id", tournamentId);
-
-  if (updatePhaseError) throw updatePhaseError;
-
-  return {
-    qualifiers: qualifiers.length,
-    matchesCreated: matches.length,
-    phaseId: nextPhase.id,
-    roundId: elimRound.id,
   };
 }
 

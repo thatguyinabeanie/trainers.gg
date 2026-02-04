@@ -2,6 +2,8 @@ import { type TypedClient } from "./helpers";
 
 /**
  * Start a match (set status to active) via SECURITY DEFINER RPC.
+ * The RPC checks that the caller is either a match participant
+ * or org staff with `tournament.manage` permission.
  */
 export async function startMatch(supabase: TypedClient, matchId: number) {
   const { error } = await supabase.rpc("start_match", {
@@ -14,6 +16,8 @@ export async function startMatch(supabase: TypedClient, matchId: number) {
 
 /**
  * Report match result via SECURITY DEFINER RPC.
+ * The RPC checks that the caller is either a match participant
+ * or org staff with `tournament.manage` permission.
  */
 export async function reportMatchResult(
   supabase: TypedClient,
