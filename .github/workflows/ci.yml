@@ -19,6 +19,18 @@ permissions:
   checks: write
 
 jobs:
+  # ── Dependency vulnerability scan (PRs only) ─────────────────
+  dependency-review:
+    name: Dependency Review
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/dependency-review-action@v4
+        with:
+          fail-on-severity: high
+          comment-summary-in-pr: always
+
   # ── Quality checks (lint + typecheck) ──────────────────────
   quality:
     name: Lint & Typecheck
@@ -153,13 +165,63 @@ jobs:
           files: coverage/lcov.info
           fail_ci_if_error: false
 
+  # ── Wait for Vercel preview (shared by E2E + Lighthouse) ───
+  wait-for-preview:
+    name: Wait for Preview
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    outputs:
+      url: ${{ steps.vercel-preview.outputs.url }}
+    steps:
+      - name: Wait for Vercel preview deployment
+        id: vercel-preview
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
+          PR_SHA: ${{ github.event.pull_request.head.sha }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          echo "Waiting for Vercel preview deployment for $PR_SHA..."
+
+          for i in $(seq 1 40); do
+            DEPLOY_ID=$(gh api "repos/$GH_REPO/deployments?sha=$PR_SHA&environment=Preview" \
+              --jq '.[0].id // empty' 2>/dev/null || true)
+
+            if [ -n "$DEPLOY_ID" ]; then
+              URL=$(gh api "repos/$GH_REPO/deployments/$DEPLOY_ID/statuses" \
+                --jq '[.[] | select(.state == "success")][0].environment_url // empty' 2>/dev/null || true)
+
+              if [ -n "$URL" ]; then
+                STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+                  -H "x-vercel-protection-bypass: $BYPASS_SECRET" "$URL")
+
+                if [ "$STATUS" -ge 200 ] && [ "$STATUS" -lt 400 ]; then
+                  echo "url=$URL" >> "$GITHUB_OUTPUT"
+                  echo "Preview ready at $URL (HTTP $STATUS)"
+                  exit 0
+                fi
+                echo "Deployment returned HTTP $STATUS (attempt $i/40)"
+              else
+                echo "Deployment $DEPLOY_ID not ready yet (attempt $i/40)"
+              fi
+            else
+              echo "No deployment found yet (attempt $i/40)"
+            fi
+
+            sleep 15
+          done
+
+          echo "::error::Timeout waiting for Vercel preview deployment"
+          exit 1
+
   # ── E2E tests (Playwright against Vercel preview) ──────────
   e2e-tests:
     name: E2E Tests
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
-    timeout-minutes: 20
-    needs: [unit-tests]
+    timeout-minutes: 15
+    needs: [unit-tests, wait-for-preview]
     steps:
       - uses: actions/checkout@v4
 
@@ -192,53 +254,10 @@ jobs:
         if: steps.playwright-cache.outputs.cache-hit == 'true'
         run: pnpm --filter=@trainers/web exec playwright install-deps chromium
 
-      - name: Wait for Vercel preview deployment
-        id: vercel-preview
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
-        run: |
-          SHA="${{ github.event.pull_request.head.sha }}"
-          echo "Waiting for Vercel preview deployment for $SHA..."
-
-          for i in $(seq 1 40); do
-            # Find deployment ID for this commit
-            DEPLOY_ID=$(gh api "repos/${{ github.repository }}/deployments?sha=$SHA&environment=Preview" \
-              --jq '.[0].id // empty' 2>/dev/null || true)
-
-            if [ -n "$DEPLOY_ID" ]; then
-              # Check for a successful deployment status with a URL
-              URL=$(gh api "repos/${{ github.repository }}/deployments/$DEPLOY_ID/statuses" \
-                --jq '[.[] | select(.state == "success")][0].environment_url // empty' 2>/dev/null || true)
-
-              if [ -n "$URL" ]; then
-                # Verify the deployment actually responds
-                STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
-                  -H "x-vercel-protection-bypass: $BYPASS_SECRET" "$URL")
-
-                if [ "$STATUS" -ge 200 ] && [ "$STATUS" -lt 400 ]; then
-                  echo "url=$URL" >> "$GITHUB_OUTPUT"
-                  echo "Preview ready at $URL (HTTP $STATUS)"
-                  exit 0
-                fi
-                echo "Deployment returned HTTP $STATUS (attempt $i/40)"
-              else
-                echo "Deployment $DEPLOY_ID not ready yet (attempt $i/40)"
-              fi
-            else
-              echo "No deployment found yet (attempt $i/40)"
-            fi
-
-            sleep 15
-          done
-
-          echo "::error::Timeout waiting for Vercel preview deployment"
-          exit 1
-
       - name: Run E2E tests
         env:
           CI: true
-          PLAYWRIGHT_BASE_URL: ${{ steps.vercel-preview.outputs.url }}
+          PLAYWRIGHT_BASE_URL: ${{ needs.wait-for-preview.outputs.url }}
           VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
         run: pnpm test:e2e
 
@@ -257,3 +276,23 @@ jobs:
           name: playwright-traces
           path: apps/web/test-results/
           retention-days: 7
+
+  # ── Lighthouse CI (performance audit against preview) ──────
+  lighthouse:
+    name: Lighthouse
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: [wait-for-preview]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run Lighthouse
+        uses: treosh/lighthouse-ci-action@v12
+        env:
+          VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
+        with:
+          urls: ${{ needs.wait-for-preview.outputs.url }}
+          uploadArtifacts: true
+          temporaryPublicStorage: true
+          configPath: ./lighthouserc.cjs

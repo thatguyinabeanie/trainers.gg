@@ -1,0 +1,50 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended",
+    "group:monorepos",
+    "group:recommended",
+    ":semanticCommits",
+    "schedule:weekly"
+  ],
+  "labels": ["dependencies"],
+  "rangeStrategy": "bump",
+  "packageRules": [
+    {
+      "description": "Auto-merge patch updates that pass CI",
+      "matchUpdateTypes": ["patch"],
+      "automerge": true,
+      "automergeType": "pr"
+    },
+    {
+      "description": "Group Supabase packages",
+      "matchPackagePatterns": ["^@supabase/"],
+      "groupName": "supabase"
+    },
+    {
+      "description": "Group AT Protocol packages",
+      "matchPackagePatterns": ["^@atproto/"],
+      "groupName": "atproto"
+    },
+    {
+      "description": "Group TanStack packages",
+      "matchPackagePatterns": ["^@tanstack/"],
+      "groupName": "tanstack"
+    },
+    {
+      "description": "Group testing packages",
+      "matchPackagePatterns": ["jest", "playwright", "@testing-library/"],
+      "groupName": "testing"
+    },
+    {
+      "description": "Group Tailwind ecosystem",
+      "matchPackagePatterns": ["tailwind"],
+      "groupName": "tailwind"
+    },
+    {
+      "description": "Don't touch pinned @types/react (Expo compat)",
+      "matchPackageNames": ["@types/react"],
+      "enabled": false
+    }
+  ]
+}
