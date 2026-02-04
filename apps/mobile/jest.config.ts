@@ -2,10 +2,11 @@ import type { Config } from "jest";
 
 const config: Config = {
   displayName: "mobile",
-  preset: "jest-expo",
-  transformIgnorePatterns: [
-    "node_modules/(?!((jest-)?react-native|@react-native(-community)?)|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|@react-navigation/.*|@sentry/react-native|native-base|react-native-svg|tamagui|@tamagui/.*)",
-  ],
+  // Use node environment for pure logic tests.
+  // Switch to jest-expo preset when testing React Native components.
+  testEnvironment: "node",
+  transform: { "^.+\\.tsx?$": ["ts-jest", { useESM: true }] },
+  extensionsToTreatAsEsm: [".ts", ".tsx"],
   testMatch: ["<rootDir>/src/**/__tests__/**/*.test.{ts,tsx}"],
 };
 
