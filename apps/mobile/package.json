@@ -4,9 +4,9 @@
   "private": true,
   "main": "expo-router/entry",
   "scripts": {
-    "dev": "expo start --clear",
-    "android": "expo run:android --clear",
-    "ios": "expo run:ios --clear",
+    "dev": "expo start",
+    "android": "expo run:android",
+    "ios": "expo run:ios",
     "build": "expo export",
     "build:dev": "eas build --platform ios --profile development",
     "build:dev-device": "eas build --platform ios --profile development-device",
