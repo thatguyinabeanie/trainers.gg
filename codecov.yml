@@ -41,6 +41,18 @@ flags:
     paths:
       - packages/atproto/src/
     carryforward: true
+  pokemon:
+    paths:
+      - packages/pokemon/src/
+    carryforward: true
+  tournaments:
+    paths:
+      - packages/tournaments/src/
+    carryforward: true
+  utils:
+    paths:
+      - packages/utils/src/
+    carryforward: true
 
 comment:
   layout: header, diff, flags, components, footer
