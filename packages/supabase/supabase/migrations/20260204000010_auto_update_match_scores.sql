@@ -98,6 +98,7 @@ END;
 $$;
 
 -- Fire AFTER UPDATE so we read the final row state (after compare_game_selections)
+DROP TRIGGER IF EXISTS update_match_scores_trigger ON public.match_games;
 CREATE TRIGGER update_match_scores_trigger
   AFTER UPDATE ON public.match_games
   FOR EACH ROW

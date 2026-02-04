@@ -99,11 +99,13 @@ BEGIN
 END;
 $$;
 
+DROP TRIGGER IF EXISTS promote_waitlist_on_update ON public.tournament_registrations;
 CREATE TRIGGER promote_waitlist_on_update
   AFTER UPDATE ON public.tournament_registrations
   FOR EACH ROW
   EXECUTE FUNCTION public.promote_from_waitlist();
 
+DROP TRIGGER IF EXISTS promote_waitlist_on_delete ON public.tournament_registrations;
 CREATE TRIGGER promote_waitlist_on_delete
   AFTER DELETE ON public.tournament_registrations
   FOR EACH ROW
