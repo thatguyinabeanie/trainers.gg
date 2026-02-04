@@ -43,9 +43,9 @@ flags:
     carryforward: true
 
 comment:
-  layout: condensed_header, condensed_files, condensed_footer
+  layout: header, diff, flags, components, footer
   behavior: default
-  require_changes: true
+  require_changes: false
 
 ignore:
   - "**/__tests__/**"

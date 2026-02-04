@@ -47,11 +47,18 @@ jobs:
           CI: true
           GITHUB_ACTIONS: true
 
+      # Register problem matchers so ESLint and tsc errors become
+      # inline annotations on the PR Files tab.
+      - name: Register problem matchers
+        run: |
+          echo "::add-matcher::.github/matchers/eslint-stylish.json"
+          echo "::add-matcher::.github/matchers/tsc.json"
+
       - name: Lint
-        run: pnpm lint
+        run: pnpm turbo run lint --log-prefix=none
 
       - name: Typecheck
-        run: pnpm typecheck
+        run: pnpm turbo run typecheck --log-prefix=none
 
   # ── Unit tests (Jest across all packages) ──────────────────
   unit-tests:
@@ -128,23 +135,17 @@ jobs:
           name: coverage-reports
           path: coverage
 
-      - name: Jest test annotations
-        uses: mikepenz/action-junit-report@v6
-        if: always()
-        with:
-          report_paths: test-results/**/*.xml
-          check_name: Jest Test Results
-          fail_on_failure: true
-
       - name: Publish unit test results
         uses: EnricoMi/publish-unit-test-result-action@v2
         if: always()
         with:
           files: test-results/**/*.xml
           check_name: Unit Test Results
+          comment_mode: ${{ github.event_name == 'pull_request' && 'always' || 'off' }}
 
-      # Upload combined coverage once — Codecov uses the paths-based
-      # flag config in codecov.yml to split coverage per package.
+      # Upload combined coverage — Codecov uses the paths-based
+      # flag config in codecov.yml to split coverage per package
+      # and posts a PR comment with the coverage diff.
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v5
         with:
