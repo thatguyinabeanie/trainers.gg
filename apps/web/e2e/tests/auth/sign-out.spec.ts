@@ -5,11 +5,7 @@ test.describe("Sign out", () => {
   test("signs out and redirects", async ({ page }) => {
     await page.goto("/dashboard");
 
-    // The user menu button may have varying accessible names across design
-    // iterations. If this test becomes flaky, add a data-testid to the component.
-    const userMenu = page.getByRole("button", {
-      name: /user|account|menu|avatar/i,
-    });
+    const userMenu = page.getByRole("button", { name: /user menu/i });
     await expect(userMenu).toBeVisible({ timeout: 10000 });
     await userMenu.click();
 
@@ -18,6 +14,7 @@ test.describe("Sign out", () => {
       .or(page.getByRole("menuitem", { name: /sign out|log out/i }));
     await signOutButton.click();
 
-    await expect(page).toHaveURL(/^\/($|sign-in)/);
+    // After sign-out, should redirect to home or sign-in page
+    await expect(page).toHaveURL(/\/(sign-in)?(\?.*)?$/);
   });
 });
