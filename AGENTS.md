@@ -136,7 +136,7 @@ CI enforces a **60% patch coverage target** on new code via Codecov. Tests must 
 
 ### Configuration
 
-- **Root config**: `jest.config.ts` — multi-project config running 5 workspace packages in parallel
+- **Root config**: `jest.config.ts` — multi-project config running 8 workspace packages in parallel
 - **Shared base**: `tooling/jest/index.js` — `createConfig()` with ts-jest ESM defaults
 - **Per-package configs**: Each package has its own `jest.config.ts` extending the shared base
 - **Playwright config**: `apps/web/playwright.config.ts`
@@ -154,7 +154,7 @@ CI enforces a **60% patch coverage target** on new code via Codecov. Tests must 
 
 ### Test Structure
 
-Tests are organized in 5 workspace projects:
+Tests are organized in 8 workspace projects:
 
 ```
 apps/web/src/**/__tests__/           # Web unit tests (jsdom environment)
@@ -164,6 +164,9 @@ packages/supabase/src/**/__tests__/  # Supabase client + query tests
 packages/supabase/supabase/functions/_shared/__tests__/  # Edge function tests
 packages/validators/src/__tests__/   # Zod schema tests
 packages/atproto/src/__tests__/      # AT Protocol tests
+packages/pokemon/src/__tests__/      # Pokemon data + validation tests
+packages/tournaments/src/__tests__/  # Tournament logic tests
+packages/utils/src/__tests__/        # Shared utility tests
 ```
 
 ### E2E Test Setup
