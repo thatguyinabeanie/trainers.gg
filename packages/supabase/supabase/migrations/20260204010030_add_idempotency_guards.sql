@@ -190,7 +190,7 @@ CREATE TRIGGER trg_game_status_message
   FOR EACH ROW
   EXECUTE FUNCTION public.send_game_status_message();
 
--- 4e. match_games: update_match_scores_trigger (from 20260204000010)
+-- 4e. match_games: update_match_scores_trigger (from 20260204000001)
 --     Original migration already had DROP IF EXISTS; included here for completeness.
 DROP TRIGGER IF EXISTS update_match_scores_trigger ON public.match_games;
 CREATE TRIGGER update_match_scores_trigger
@@ -226,7 +226,7 @@ CREATE TRIGGER prevent_audit_log_modification
   FOR EACH ROW
   EXECUTE FUNCTION public.prevent_audit_log_modification();
 
--- 4j. tournament_registrations: promote_waitlist_on_update (from 20260204000020)
+-- 4j. tournament_registrations: promote_waitlist_on_update (from 20260204000002)
 --     Original migration already had DROP IF EXISTS; included here for completeness.
 DROP TRIGGER IF EXISTS promote_waitlist_on_update ON public.tournament_registrations;
 CREATE TRIGGER promote_waitlist_on_update
@@ -234,7 +234,7 @@ CREATE TRIGGER promote_waitlist_on_update
   FOR EACH ROW
   EXECUTE FUNCTION public.promote_from_waitlist();
 
--- 4k. tournament_registrations: promote_waitlist_on_delete (from 20260204000020)
+-- 4k. tournament_registrations: promote_waitlist_on_delete (from 20260204000002)
 --     Original migration already had DROP IF EXISTS; included here for completeness.
 DROP TRIGGER IF EXISTS promote_waitlist_on_delete ON public.tournament_registrations;
 CREATE TRIGGER promote_waitlist_on_delete
