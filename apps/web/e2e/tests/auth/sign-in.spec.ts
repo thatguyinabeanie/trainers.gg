@@ -12,7 +12,8 @@ test.describe("Sign in", () => {
 
   test("shows error for wrong password", async ({ page }) => {
     await page.goto("/sign-in");
-    await page.getByLabel("Email").fill(TEST_USERS.player.email);
+    await page.getByRole("button", { name: /continue with email/i }).click();
+    await page.getByLabel("Email or Username").fill(TEST_USERS.player.email);
     await page.getByLabel("Password").fill("WrongPassword123!");
     await page.getByRole("button", { name: /sign in/i }).click();
     // Should show an error and remain on sign-in
@@ -25,7 +26,10 @@ test.describe("Sign in", () => {
 
   test("shows error for non-existent user", async ({ page }) => {
     await page.goto("/sign-in");
-    await page.getByLabel("Email").fill("nonexistent@trainers.local");
+    await page.getByRole("button", { name: /continue with email/i }).click();
+    await page
+      .getByLabel("Email or Username")
+      .fill("nonexistent@trainers.local");
     await page.getByLabel("Password").fill("Password123!");
     await page.getByRole("button", { name: /sign in/i }).click();
     await expect(

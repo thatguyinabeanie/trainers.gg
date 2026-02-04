@@ -34,7 +34,12 @@ export async function loginViaUI(
   user: { email: string; password: string }
 ): Promise<void> {
   await page.goto("/sign-in");
-  await page.getByLabel("Email").fill(user.email);
+
+  // The default sign-in page shows a username field + social buttons.
+  // Click "Continue with Email" to reveal the email/password form.
+  await page.getByRole("button", { name: /continue with email/i }).click();
+
+  await page.getByLabel("Email or Username").fill(user.email);
   await page.getByLabel("Password").fill(user.password);
   await page.getByRole("button", { name: /sign in/i }).click();
 
