@@ -109,6 +109,8 @@ Husky runs lint-staged (Prettier auto-fix) on all staged files. If hooks fail, f
 
 **Never edit a migration file that has already been committed.** Always create a new migration file, even if fixing a previous one.
 
+**Never rename a migration file.** The version timestamp in the filename is recorded in the production database's migration history. Renaming a file creates a mismatch between the recorded version and the local filename, which breaks Supabase preview branches ("Remote migration versions not found in local migrations directory"). If you need a different ordering, create a new migration file with the correct timestamp instead.
+
 ### Edge Function Deployments
 
 **Never deploy edge functions manually via `supabase functions deploy`.** Edge functions deploy through the git workflow:
