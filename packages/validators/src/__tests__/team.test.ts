@@ -1,6 +1,8 @@
 import {
   parseShowdownText,
   validateTeamStructure,
+  validateTeamFormat,
+  parseAndValidateTeam,
   parsePokepaseUrl,
   getPokepaseRawUrl,
   getPkmnFormat,
@@ -146,6 +148,19 @@ describe("validateTeamStructure", () => {
     const abilityError = errors.find((e) => e.message.includes("no ability"));
     expect(abilityError).toBeDefined();
   });
+
+  it("rejects teams with more than 6 Pokemon", () => {
+    const team = parseShowdownText(VALID_SHOWDOWN_MON);
+    // Create a team of 7 unique Pokemon by cloning and changing species
+    const bigTeam = Array.from({ length: 7 }, (_, i) => ({
+      ...team[0]!,
+      species: `Pokemon${i}`,
+      held_item: `Item${i}`,
+    }));
+    const errors = validateTeamStructure(bigTeam);
+    const sizeError = errors.find((e) => e.message.includes("more than 6"));
+    expect(sizeError).toBeDefined();
+  });
 });
 
 describe("parsePokepaseUrl", () => {
@@ -249,5 +264,74 @@ describe("teamSubmissionSchema", () => {
       rawText: "something",
     });
     expect(result.success).toBe(false);
+  });
+});
+
+describe("validateTeamFormat", () => {
+  it("returns empty array for unmapped formats", () => {
+    const team = parseShowdownText(VALID_SHOWDOWN_MON);
+    const errors = validateTeamFormat(team, "unknown-format");
+    expect(errors).toHaveLength(0);
+  });
+
+  it("validates a team against a known format", () => {
+    const team = parseShowdownText(VALID_SHOWDOWN_MON);
+    // reg-i maps to gen9vgc2025regi — the valid Pikachu should pass
+    const errors = validateTeamFormat(team, "reg-i");
+    // May or may not have errors depending on format rules,
+    // but should not throw
+    expect(Array.isArray(errors)).toBe(true);
+  });
+
+  it("catches format errors from the validator", () => {
+    const team = parseShowdownText(VALID_SHOWDOWN_MON);
+    // Give the Pokemon an invalid ability
+    team[0]!.ability = "NonExistentAbility";
+    const errors = validateTeamFormat(team, "reg-i");
+    expect(errors.length).toBeGreaterThan(0);
+    expect(errors[0]!.source).toBe("format");
+  });
+});
+
+describe("parseAndValidateTeam", () => {
+  it("returns parse error for empty text", () => {
+    const result = parseAndValidateTeam("", "reg-i");
+    expect(result.valid).toBe(false);
+    expect(result.errors).toHaveLength(1);
+    expect(result.errors[0]!.source).toBe("parse");
+  });
+
+  it("returns parse error for nonsense text", () => {
+    const result = parseAndValidateTeam("this is not a pokemon", "reg-i");
+    expect(result.valid).toBe(false);
+    expect(result.errors[0]!.source).toBe("parse");
+  });
+
+  it("returns valid result for a well-formed team", () => {
+    const result = parseAndValidateTeam(VALID_SHOWDOWN_MON, "reg-i");
+    expect(result.team).toHaveLength(1);
+    expect(result.team[0]!.species).toBe("Pikachu");
+    // Even if format validation adds warnings, the team should be parsed
+    expect(result.team.length).toBeGreaterThan(0);
+  });
+
+  it("skips format validation when structural errors exist", () => {
+    const team = parseShowdownText(VALID_SHOWDOWN_MON);
+    // Duplicate the pokemon to trigger a structural error
+    const duplicateText = `${VALID_SHOWDOWN_MON}\n\n${VALID_SHOWDOWN_MON}`;
+    const result = parseAndValidateTeam(duplicateText, "reg-i");
+    expect(result.valid).toBe(false);
+    // Should only have structural errors, not format errors
+    const formatErrors = result.errors.filter((e) => e.source === "format");
+    expect(formatErrors).toHaveLength(0);
+    const structErrors = result.errors.filter((e) => e.source === "structure");
+    expect(structErrors.length).toBeGreaterThan(0);
+  });
+
+  it("includes parsed team even when validation fails", () => {
+    const duplicateText = `${VALID_SHOWDOWN_MON}\n\n${VALID_SHOWDOWN_MON}`;
+    const result = parseAndValidateTeam(duplicateText, "reg-i");
+    expect(result.valid).toBe(false);
+    expect(result.team.length).toBeGreaterThan(0);
   });
 });

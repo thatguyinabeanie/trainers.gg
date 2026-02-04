@@ -1,23 +1,23 @@
-import { test } from "@playwright/test";
+import { test, expect } from "@playwright/test";
 
 test.describe("Sign out", () => {
   // Uses stored auth state from setup
   test("signs out and redirects", async ({ page }) => {
     await page.goto("/dashboard");
-    // Look for a sign-out button or user menu
+
+    // The user menu button may have varying accessible names across design
+    // iterations. If this test becomes flaky, add a data-testid to the component.
     const userMenu = page.getByRole("button", {
       name: /user|account|menu|avatar/i,
     });
-    if (await userMenu.isVisible()) {
-      await userMenu.click();
-    }
+    await expect(userMenu).toBeVisible({ timeout: 10000 });
+    await userMenu.click();
+
     const signOutButton = page
       .getByRole("button", { name: /sign out|log out/i })
       .or(page.getByRole("menuitem", { name: /sign out|log out/i }));
     await signOutButton.click();
-    // Should redirect to home or sign-in
-    await page.waitForURL(
-      (url) => url.pathname === "/" || url.pathname.includes("/sign-in")
-    );
+
+    await expect(page).toHaveURL(/^\/($|sign-in)/);
   });
 });

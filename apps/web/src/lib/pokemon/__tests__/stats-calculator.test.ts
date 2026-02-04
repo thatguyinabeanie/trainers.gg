@@ -14,7 +14,7 @@ import {
 describe("calculateHP", () => {
   it("calculates HP at level 50 with max IVs and no EVs", () => {
     // Pikachu: base 35, IV 31, EV 0, level 50
-    // floor(((2*35 + 31 + 0) * 50) / 100) + 50 + 10 = floor(5050/100) + 60 = 50 + 60 = 110
+    // floor(((2*35 + 31 + 0) * 50) / 100) + level + 10 = floor(5050/100) + 50 + 10 = 50 + 50 + 10 = 110
     expect(calculateHP(35, 31, 0, 50)).toBe(110);
   });
 
@@ -153,9 +153,13 @@ describe("calculateStats", () => {
         speed: 31,
       }
     );
-    // Should return 100 for all stats
+    // Should return 100 for all stats (placeholder base stats)
     expect(stats.hp).toBe(100);
     expect(stats.attack).toBe(100);
+    expect(stats.defense).toBe(100);
+    expect(stats.specialAttack).toBe(100);
+    expect(stats.specialDefense).toBe(100);
+    expect(stats.speed).toBe(100);
   });
 });
 

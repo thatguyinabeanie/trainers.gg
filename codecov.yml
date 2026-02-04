@@ -1,20 +1,28 @@
 codecov:
-  require_ci_to_pass: false
+  # Require CI to pass before reporting coverage status on PRs.
+  # Prevents misleading green checks when tests are failing.
+  require_ci_to_pass: true
 
 coverage:
   status:
     project:
       default:
+        # Auto-adjusts target based on recent coverage trends
         target: auto
         threshold: 1%
     patch:
       default:
+        # New code should have at least 60% coverage
         target: 60%
 
+# Per-package flags — Codecov filters the combined coverage report
+# using these paths to produce per-package breakdowns.
 flags:
   web:
     paths:
       - apps/web/src/
+    # Carry forward previous coverage when this flag has no new data
+    # (e.g., PR only touches other packages)
     carryforward: true
   mobile:
     paths:

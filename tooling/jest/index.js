@@ -3,7 +3,9 @@
 /**
  * Shared Jest defaults for the trainers.gg monorepo.
  *
- * @param {import("jest").Config} overrides - package-specific config
+ * @param {import("jest").Config} overrides - Package-specific config values
+ *   that override or extend the shared defaults. Spread on top of the base
+ *   config, so any matching keys replace the defaults.
  * @returns {import("jest").Config}
  */
 function createConfig(overrides = {}) {
@@ -12,7 +14,6 @@ function createConfig(overrides = {}) {
     transform: { "^.+\\.tsx?$": ["ts-jest", { useESM: true }] },
     extensionsToTreatAsEsm: [".ts"],
     coverageDirectory: "<rootDir>/coverage",
-    coverageReporters: ["text", "lcov", "json-summary", "cobertura"],
     ...overrides,
   };
 }

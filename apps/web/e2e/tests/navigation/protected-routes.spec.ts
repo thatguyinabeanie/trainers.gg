@@ -5,7 +5,9 @@ test.describe("Protected routes redirect to sign-in", () => {
 
   const protectedRoutes = [
     "/dashboard",
+    "/to-dashboard",
     "/settings",
+    "/onboarding",
     "/feed",
     "/organizations/create",
   ];
@@ -13,7 +15,6 @@ test.describe("Protected routes redirect to sign-in", () => {
   for (const route of protectedRoutes) {
     test(`${route} redirects unauthenticated users`, async ({ page }) => {
       await page.goto(route);
-      // Should be redirected to sign-in
       await expect(page).toHaveURL(/sign-in/);
     });
   }

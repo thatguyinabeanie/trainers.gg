@@ -84,14 +84,17 @@ jobs:
         env:
           CI: true
           JEST_JUNIT_OUTPUT_DIR: test-results
-          JEST_JUNIT_OUTPUT_NAME: junit.xml
+          JEST_JUNIT_CLASSNAME: "{classname}"
+          JEST_JUNIT_TITLE: "{title}"
+          JEST_JUNIT_ANCESTOR_SEPARATOR: " › "
+          JEST_JUNIT_ADD_FILE_ATTRIBUTE: "true"
 
       - name: Upload JUnit results
         uses: actions/upload-artifact@v4
         if: always()
         with:
           name: junit-results
-          path: test-results/junit.xml
+          path: test-results/
           retention-days: 7
 
       - name: Upload coverage artifacts
@@ -107,7 +110,7 @@ jobs:
     name: Test Reports
     runs-on: ubuntu-latest
     needs: [unit-tests]
-    if: always()
+    if: always() && needs.unit-tests.result != 'cancelled'
     steps:
       - uses: actions/checkout@v4
 
@@ -127,7 +130,7 @@ jobs:
         uses: mikepenz/action-junit-report@v6
         if: always()
         with:
-          report_paths: test-results/junit.xml
+          report_paths: test-results/**/*.xml
           check_name: Jest Test Results
           fail_on_failure: true
 
@@ -135,50 +138,20 @@ jobs:
         uses: EnricoMi/publish-unit-test-result-action@v2
         if: always()
         with:
-          files: test-results/junit.xml
+          files: test-results/**/*.xml
           check_name: Unit Test Results
 
-      - name: Upload coverage — web
+      # Upload combined coverage once — Codecov uses the paths-based
+      # flag config in codecov.yml to split coverage per package.
+      - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v5
+        continue-on-error: true
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          flags: web
           files: coverage/lcov.info
-          fail_ci_if_error: false
+          fail_ci_if_error: true
 
-      - name: Upload coverage — mobile
-        uses: codecov/codecov-action@v5
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          flags: mobile
-          files: coverage/lcov.info
-          fail_ci_if_error: false
-
-      - name: Upload coverage — validators
-        uses: codecov/codecov-action@v5
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          flags: validators
-          files: coverage/lcov.info
-          fail_ci_if_error: false
-
-      - name: Upload coverage — supabase
-        uses: codecov/codecov-action@v5
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          flags: supabase
-          files: coverage/lcov.info
-          fail_ci_if_error: false
-
-      - name: Upload coverage — atproto
-        uses: codecov/codecov-action@v5
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          flags: atproto
-          files: coverage/lcov.info
-          fail_ci_if_error: false
-
-  # ── E2E tests (Playwright vs Vercel preview) ───────────────
+  # ── E2E tests (Playwright against Vercel preview) ──────────
   e2e-tests:
     name: E2E Tests
     runs-on: ubuntu-latest
@@ -224,6 +197,16 @@ jobs:
           max_timeout: 600
           check_interval: 15
           environment: Preview
+
+      - name: Verify preview deployment is healthy
+        env:
+          PREVIEW_URL: ${{ steps.vercel-preview.outputs.url }}
+        run: |
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$PREVIEW_URL")
+          if [ "$STATUS" -lt 200 ] || [ "$STATUS" -ge 400 ]; then
+            echo "::error::Preview deployment returned HTTP $STATUS"
+            exit 1
+          fi
 
       - name: Run E2E tests
         env:

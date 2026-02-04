@@ -47,4 +47,36 @@ describe("getErrorMessage", () => {
     expect(getErrorMessage(42, fallback)).toBe(fallback);
     expect(getErrorMessage(null, fallback)).toBe(fallback);
   });
+
+  describe("production behavior", () => {
+    const originalEnv = process.env.NODE_ENV;
+
+    beforeEach(() => {
+      (process.env as Record<string, string | undefined>).NODE_ENV =
+        "production";
+    });
+
+    afterEach(() => {
+      (process.env as Record<string, string | undefined>).NODE_ENV =
+        originalEnv;
+    });
+
+    it("returns fallback for Error objects in production", () => {
+      const result = getErrorMessage(
+        new Error("Secret internal error"),
+        fallback
+      );
+      expect(result).toBe(fallback);
+    });
+
+    it("returns fallback for objects with message in production", () => {
+      const result = getErrorMessage({ message: "Internal detail" }, fallback);
+      expect(result).toBe(fallback);
+    });
+
+    it("returns fallback for unknown types in production", () => {
+      expect(getErrorMessage("string error", fallback)).toBe(fallback);
+      expect(getErrorMessage(null, fallback)).toBe(fallback);
+    });
+  });
 });
