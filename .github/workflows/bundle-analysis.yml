@@ -1,9 +1,10 @@
 name: Bundle Analysis
 
-# Temporarily disabled - reusable workflow pattern not working as expected
-# TODO: Investigate and re-enable or use alternative approach
 on:
-  workflow_dispatch:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
 
 concurrency:
   group: bundle-${{ github.event.pull_request.number || github.ref }}
@@ -14,16 +15,90 @@ permissions:
   actions: read
   pull-requests: write
 
+defaults:
+  run:
+    working-directory: apps/web
+
 jobs:
   analyze:
     name: Analyze Bundle
-    permissions:
-      contents: read
-      actions: read
-      pull-requests: write
-    uses: hashicorp/nextjs-bundle-analysis/.github/workflows/analyze.yml@v0.5.0
-    with:
-      working-directory: apps/web
-      build-output-directory: .next
-      package-manager: pnpm
-      node-version: "22"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Restore Next.js build cache
+        uses: actions/cache@v4
+        with:
+          path: apps/web/.next/cache
+          key: ${{ runner.os }}-nextjs-${{ hashFiles('**/pnpm-lock.yaml') }}-${{ hashFiles('apps/web/**/*.ts', 'apps/web/**/*.tsx', '!apps/web/.next') }}
+          restore-keys: |
+            ${{ runner.os }}-nextjs-${{ hashFiles('**/pnpm-lock.yaml') }}-
+
+      - name: Build Next.js app
+        run: pnpm build
+        env:
+          # Required env vars for build to succeed
+          NEXT_PUBLIC_SUPABASE_URL: http://localhost:54321
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: placeholder
+          NEXT_PUBLIC_SITE_URL: http://localhost:3000
+
+      - name: Analyze bundle
+        run: npx -p nextjs-bundle-analysis report
+
+      - name: Upload bundle analysis
+        uses: actions/upload-artifact@v4
+        with:
+          name: bundle-analysis
+          path: apps/web/.next/analyze/__bundle_analysis.json
+
+      - name: Download base branch bundle
+        uses: dawidd6/action-download-artifact@v3
+        if: success() && github.event_name == 'pull_request'
+        with:
+          workflow: bundle-analysis.yml
+          branch: ${{ github.event.pull_request.base.ref }}
+          path: apps/web/.next/analyze/base
+        continue-on-error: true
+
+      - name: Compare with base branch
+        if: success() && github.event_name == 'pull_request'
+        run: ls -laR .next/analyze && npx -p nextjs-bundle-analysis compare
+        continue-on-error: true
+
+      - name: Get comment body
+        id: get-comment-body
+        if: success() && github.event_name == 'pull_request'
+        run: |
+          BODY=$(cat .next/analyze/__bundle_analysis_comment.txt)
+          echo "body<<EOF" >> $GITHUB_OUTPUT
+          echo "$BODY" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+        continue-on-error: true
+
+      - name: Find existing comment
+        uses: peter-evans/find-comment@v3
+        if: success() && github.event_name == 'pull_request'
+        id: find-comment
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          comment-author: "github-actions[bot]"
+          body-includes: Next.js Bundle Analysis
+
+      - name: Create or update comment
+        uses: peter-evans/create-or-update-comment@v4
+        if: success() && github.event_name == 'pull_request' && steps.get-comment-body.outputs.body
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          comment-id: ${{ steps.find-comment.outputs.comment-id }}
+          edit-mode: replace
+          body: ${{ steps.get-comment-body.outputs.body }}
