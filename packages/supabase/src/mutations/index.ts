@@ -6,10 +6,12 @@
 
 // User mutations
 export {
-  updateProfile,
+  updateAlt,
   updateUsername,
-  createProfile,
-  ensureProfile,
+  createAlt,
+  ensureAlt,
+  deleteAlt,
+  setMainAlt,
 } from "./users";
 
 // Organization mutations
@@ -51,6 +53,7 @@ export {
   generateRoundPairings,
   startRound,
   completeRound,
+  deleteRoundAndMatches,
   recalculateStandings,
   dropPlayer,
   // Phase management
@@ -61,4 +64,27 @@ export {
   // Team submission
   submitTeam,
   selectTeamForTournament,
+  // Tournament flow
+  startTournamentEnhanced,
+  advanceToTopCut,
+  generateEliminationPairings,
+  completeTournament,
 } from "./tournaments";
+
+// Match game mutations
+export {
+  submitGameSelection,
+  sendMatchMessage,
+  sendSystemMessage,
+  createMatchGames,
+  judgeOverrideGame,
+  judgeResetGame,
+  resetMatch,
+} from "./match-games";
+
+// Notification mutations
+export {
+  markNotificationRead,
+  markAllNotificationsRead,
+  deleteNotification,
+} from "./notifications";

@@ -7,7 +7,6 @@
 
 "use server";
 
-import { checkBotId } from "botid/server";
 import { updateTag } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { getErrorMessage } from "@/lib/utils";
@@ -30,31 +29,29 @@ import {
   generateRoundPairings as generateRoundPairingsMutation,
   startRound as startRoundMutation,
   completeRound as completeRoundMutation,
+  deleteRoundAndMatches as deleteRoundAndMatchesMutation,
   recalculateStandings as recalculateStandingsMutation,
   dropPlayer as dropPlayerMutation,
   reportMatchResult as reportMatchResultMutation,
+  // Tournament flow
+  startTournamentEnhanced as startTournamentEnhancedMutation,
+  advanceToTopCut as advanceToTopCutMutation,
+  generateEliminationPairings as generateEliminationPairingsMutation,
+  completeTournament as completeTournamentMutation,
   getCurrentUserAlts,
   getUserTeams,
   getUserRegistrationDetails,
+  // Queries (for prepareRound preview)
+  getPhaseRoundsWithStats,
+  getRoundMatchesWithStats,
 } from "@trainers/supabase";
 import type { Database } from "@trainers/supabase";
 import { CacheTags } from "@/lib/cache";
 
+import { type ActionResult, rejectBots } from "./utils";
+
 type TournamentFormat = Database["public"]["Enums"]["tournament_format"];
 type TournamentStatus = Database["public"]["Enums"]["tournament_status"];
-
-/**
- * Action result type for consistent error handling
- */
-export type ActionResult<T = void> =
-  | { success: true; data: T }
-  | { success: false; error: string };
-
-/** Reject requests classified as bots by Vercel BotID */
-async function rejectBots(): Promise<void> {
-  const { isBot } = await checkBotId();
-  if (isBot) throw new Error("Access denied");
-}
 
 // =============================================================================
 // Tournament CRUD
@@ -158,24 +155,26 @@ export async function publishTournament(
 }
 
 /**
- * Start a tournament (change status to active)
+ * Start a tournament: lock teams, activate first phase, create Round 1.
  * Revalidates: tournaments list
  */
 export async function startTournament(
   tournamentId: number
-): Promise<ActionResult<{ success: true }>> {
+): Promise<
+  ActionResult<{ teamsLocked: number; phaseActivated: number | null }>
+> {
   try {
     await rejectBots();
     const supabase = await createClient();
-    await updateTournamentMutation(supabase, tournamentId, {
-      status: "active",
-    });
+    const result = await startTournamentEnhancedMutation(
+      supabase,
+      tournamentId
+    );
 
-    // Update the list to show in "Active" section
     updateTag(CacheTags.TOURNAMENTS_LIST);
     updateTag(CacheTags.tournament(tournamentId));
 
-    return { success: true, data: { success: true } };
+    return { success: true, data: result };
   } catch (error) {
     return {
       success: false,
@@ -185,7 +184,7 @@ export async function startTournament(
 }
 
 /**
- * Complete a tournament
+ * Complete a tournament: finalize standings, mark completed.
  * Revalidates: tournaments list
  */
 export async function completeTournament(
@@ -194,11 +193,8 @@ export async function completeTournament(
   try {
     await rejectBots();
     const supabase = await createClient();
-    await updateTournamentMutation(supabase, tournamentId, {
-      status: "completed",
-    });
+    await completeTournamentMutation(supabase, tournamentId);
 
-    // Update the list to show in "Completed" section
     updateTag(CacheTags.TOURNAMENTS_LIST);
     updateTag(CacheTags.tournament(tournamentId));
 
@@ -207,6 +203,66 @@ export async function completeTournament(
     return {
       success: false,
       error: getErrorMessage(error, "Failed to complete tournament"),
+    };
+  }
+}
+
+/**
+ * Advance tournament from Swiss to Top Cut elimination phase.
+ * Revalidates: tournament
+ */
+export async function advanceToTopCut(tournamentId: number): Promise<
+  ActionResult<{
+    qualifiers: number;
+    matchesCreated: number;
+    phaseId: number;
+    roundId: number;
+  }>
+> {
+  try {
+    await rejectBots();
+    const supabase = await createClient();
+    const result = await advanceToTopCutMutation(supabase, tournamentId);
+
+    updateTag(CacheTags.tournament(tournamentId));
+
+    return {
+      success: true,
+      data: {
+        qualifiers: result.qualifiers,
+        matchesCreated: result.matches_created,
+        phaseId: result.phase_id,
+        roundId: result.round_id,
+      },
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: getErrorMessage(error, "Failed to advance to top cut"),
+    };
+  }
+}
+
+/**
+ * Generate elimination pairings for subsequent rounds (winners advance).
+ * Revalidates: tournament
+ */
+export async function generateEliminationPairings(
+  roundId: number,
+  tournamentId: number
+): Promise<ActionResult<{ matchesCreated: number; winnersAdvanced: number }>> {
+  try {
+    await rejectBots();
+    const supabase = await createClient();
+    const result = await generateEliminationPairingsMutation(supabase, roundId);
+
+    updateTag(CacheTags.tournament(tournamentId));
+
+    return { success: true, data: result };
+  } catch (error) {
+    return {
+      success: false,
+      error: getErrorMessage(error, "Failed to generate elimination pairings"),
     };
   }
 }
@@ -799,6 +855,149 @@ export async function reportMatchResult(
     return {
       success: false,
       error: getErrorMessage(error, "Failed to report match result"),
+    };
+  }
+}
+
+// =============================================================================
+// Round Lifecycle Actions (Overview Command Center)
+// =============================================================================
+
+/**
+ * Prepare a round: create it, generate pairings, and return preview data.
+ * Does NOT start the round — the TO reviews the preview first.
+ */
+export async function prepareRound(
+  tournamentId: number,
+  phaseId: number
+): Promise<
+  ActionResult<{
+    roundId: number;
+    roundNumber: number;
+    matchesCreated: number;
+    byePlayer: string | null;
+    matches: Array<{
+      tableNumber: number | null;
+      player1Name: string;
+      player2Name: string | null;
+    }>;
+  }>
+> {
+  try {
+    await rejectBots();
+    const supabase = await createClient();
+
+    // Determine next round number from existing rounds in phase
+    const existingRounds = await getPhaseRoundsWithStats(supabase, phaseId);
+    const nextRoundNumber = existingRounds.length + 1;
+
+    // Create the round
+    const createResult = await createRoundMutation(
+      supabase,
+      phaseId,
+      nextRoundNumber
+    );
+    const roundId = createResult.round.id;
+
+    // Generate pairings
+    const pairingsResult = await generateRoundPairingsMutation(
+      supabase,
+      roundId
+    );
+
+    // Fetch the generated matches with player names for preview
+    const matchesWithStats = await getRoundMatchesWithStats(
+      supabase,
+      roundId,
+      tournamentId
+    );
+
+    // Build preview data
+    let byePlayer: string | null = null;
+    const matches = matchesWithStats.map((match) => {
+      const p1 = match.player1 as {
+        display_name?: string;
+        username?: string;
+      } | null;
+      const p2 = match.player2 as {
+        display_name?: string;
+        username?: string;
+      } | null;
+
+      const isBye = !match.alt2_id;
+      if (isBye && p1) {
+        byePlayer = p1.display_name ?? p1.username ?? "Unknown";
+      }
+
+      return {
+        tableNumber: match.table_number,
+        player1Name: p1?.display_name ?? p1?.username ?? "Unknown",
+        player2Name: isBye
+          ? null
+          : (p2?.display_name ?? p2?.username ?? "Unknown"),
+      };
+    });
+
+    updateTag(CacheTags.tournament(tournamentId));
+
+    return {
+      success: true,
+      data: {
+        roundId,
+        roundNumber: nextRoundNumber,
+        matchesCreated: pairingsResult.matchesCreated,
+        byePlayer,
+        matches,
+      },
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: getErrorMessage(error, "Failed to prepare round"),
+    };
+  }
+}
+
+/**
+ * Confirm and start a prepared round.
+ * Called after the TO reviews the pairings preview.
+ */
+export async function confirmAndStartRound(
+  roundId: number,
+  tournamentId: number
+): Promise<ActionResult<{ success: true }>> {
+  try {
+    await rejectBots();
+    const supabase = await createClient();
+    await startRoundMutation(supabase, roundId);
+    updateTag(CacheTags.tournament(tournamentId));
+    return { success: true, data: { success: true } };
+  } catch (error) {
+    return {
+      success: false,
+      error: getErrorMessage(error, "Failed to start round"),
+    };
+  }
+}
+
+/**
+ * Cancel a prepared round: delete the pending round and its matches.
+ * Called when the TO rejects the pairings preview.
+ */
+export async function cancelPreparedRound(
+  roundId: number,
+  tournamentId: number
+): Promise<ActionResult<{ success: true }>> {
+  try {
+    await rejectBots();
+    const supabase = await createClient();
+    await deleteRoundAndMatchesMutation(supabase, roundId);
+    updateTag(CacheTags.tournament(tournamentId));
+    return { success: true, data: { success: true } };
+  } catch (error) {
+    return {
+      success: false,
+      error: getErrorMessage(error, "Failed to cancel round"),
     };
   }
 }

@@ -10,7 +10,7 @@
     "postinstall": "./scripts/postinstall.sh",
     "prepare": "husky",
     "// dev": "",
-    "dev": "turbo run dev",
+    "dev": "rm -rf apps/web/.next/dev && turbo run dev",
     "dev:web": "turbo run dev --filter=@trainers/web",
     "dev:mobile": "turbo run dev --filter=@trainers/mobile",
     "dev:backend": "turbo run dev --filter=@trainers/supabase",
@@ -65,8 +65,8 @@
     "lint-staged": "^16.2.7",
     "prettier": "catalog:",
     "prettier-plugin-tailwindcss": "^0.6.14",
-    "supabase": "^2.74.5",
-    "turbo": "^2.8.1",
+    "supabase": "^2.75.0",
+    "turbo": "^2.8.3",
     "typescript": "catalog:"
   },
   "lint-staged": {

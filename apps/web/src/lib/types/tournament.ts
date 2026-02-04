@@ -91,6 +91,7 @@ export interface TournamentFormData {
   playerCapEnabled: boolean; // When false, maxParticipants is unlimited (null in DB)
   checkInRequired: boolean;
   allowLateRegistration: boolean;
+  lateCheckInMaxRound?: number;
 }
 
 /**
@@ -109,11 +110,13 @@ export interface TournamentMatch {
     name: string;
     seed?: number;
     isBye?: boolean;
+    record?: { wins: number; losses: number };
   } | null;
   participant2?: {
     id?: string;
     name: string;
     seed?: number;
+    record?: { wins: number; losses: number };
   } | null;
 }
 

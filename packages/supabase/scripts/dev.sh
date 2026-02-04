@@ -49,6 +49,25 @@ if ! $SUPABASE_CMD status >/dev/null 2>&1; then
 fi
 
 # =============================================================================
+# Print connection info
+# =============================================================================
+STATUS_JSON=$($SUPABASE_CMD status --output json 2>/dev/null || echo "{}")
+
+API_URL=$(echo "$STATUS_JSON" | grep '"API_URL"' | sed 's/.*"API_URL": *"\([^"]*\)".*/\1/')
+STUDIO_URL=$(echo "$STATUS_JSON" | grep '"STUDIO_URL"' | sed 's/.*"STUDIO_URL": *"\([^"]*\)".*/\1/')
+DB_URL=$(echo "$STATUS_JSON" | grep '"DB_URL"' | sed 's/.*"DB_URL": *"\([^"]*\)".*/\1/')
+INBUCKET_URL=$(echo "$STATUS_JSON" | grep '"INBUCKET_URL"' | sed 's/.*"INBUCKET_URL": *"\([^"]*\)".*/\1/')
+
+echo ""
+log_success "Local Supabase is running"
+echo ""
+echo -e "  ${BLUE}Studio:${NC}    ${STUDIO_URL:-http://127.0.0.1:54323}"
+echo -e "  ${BLUE}API:${NC}       ${API_URL:-http://127.0.0.1:54321}"
+echo -e "  ${BLUE}Database:${NC}  ${DB_URL:-postgresql://postgres:postgres@127.0.0.1:54322/postgres}"
+echo -e "  ${BLUE}Inbucket:${NC}  ${INBUCKET_URL:-http://127.0.0.1:54324}"
+echo ""
+
+# =============================================================================
 # Find and tail the API gateway container
 # =============================================================================
 KONG_CONTAINER=$(docker ps --filter "name=supabase_kong" --format "{{.Names}}" 2>/dev/null | head -1)
@@ -56,14 +75,14 @@ KONG_CONTAINER=$(docker ps --filter "name=supabase_kong" --format "{{.Names}}" 2
 if [ -n "$KONG_CONTAINER" ]; then
   log_success "Supabase is running — tailing API gateway logs ($KONG_CONTAINER)"
   echo ""
-  exec docker logs -f "$KONG_CONTAINER" 2>&1
+  exec docker logs -f --since 0s "$KONG_CONTAINER" 2>&1
 else
   # Fallback: try to find any supabase container
   ANY_CONTAINER=$(docker ps --filter "name=supabase_" --format "{{.Names}}" 2>/dev/null | head -1)
   if [ -n "$ANY_CONTAINER" ]; then
     log_warn "Kong container not found, tailing $ANY_CONTAINER instead"
     echo ""
-    exec docker logs -f "$ANY_CONTAINER" 2>&1
+    exec docker logs -f --since 0s "$ANY_CONTAINER" 2>&1
   else
     log_error "No Supabase containers found."
     exit 1

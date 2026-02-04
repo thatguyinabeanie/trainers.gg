@@ -386,6 +386,12 @@ function generateTournamentsSql(
       const startDateExpr = dateToSqlExpr(t.startDate, refDate, refName);
       const endDateExpr = dateToSqlExpr(t.endDate, refDate, refName);
 
+      // Active flagship tournaments get additional registration settings
+      const isActiveFlagship = t.isFlagship && t.status === "active";
+      const maxParticipantsSql = isActiveFlagship
+        ? "NULL"
+        : String(t.maxParticipants);
+
       lines.push(`  INSERT INTO public.tournaments (`);
       lines.push(
         `    organization_id, name, slug, description, format, status,`
@@ -394,16 +400,26 @@ function generateTournamentsSql(
       lines.push(
         `    tournament_format, swiss_rounds, round_time_minutes, featured, top_cut_size`
       );
+      if (isActiveFlagship) {
+        lines.push(
+          `    , allow_late_registration, check_in_window_minutes, late_check_in_max_round`
+        );
+      }
       lines.push(`  ) VALUES (`);
       lines.push(
         `    ${org.slug.replace(/-/g, "_")}_id, '${escapeString(t.name)}', '${escapeString(t.slug)}',`
       );
       lines.push(`    '${escapeString(t.description)}',`);
       lines.push(`    '${t.format}', 'upcoming',`);
-      lines.push(`    ${startDateExpr}, ${endDateExpr}, ${t.maxParticipants},`);
+      lines.push(
+        `    ${startDateExpr}, ${endDateExpr}, ${maxParticipantsSql},`
+      );
       lines.push(
         `    '${t.tournamentFormat}', ${t.swissRounds ?? "NULL"}, ${t.roundTimeMinutes}, ${t.featured}, ${t.topCutSize ?? "NULL"}`
       );
+      if (isActiveFlagship) {
+        lines.push(`    , true, 60, 3`);
+      }
 
       if (i + batch.indexOf(t) < 50) {
         lines.push(`  ) RETURNING id INTO tournament_${t.id}_id;\n`);

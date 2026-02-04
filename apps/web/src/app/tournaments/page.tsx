@@ -22,13 +22,14 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Card, CardContent } from "@/components/ui/card";
-import { Trophy, Users, Calendar } from "lucide-react";
+import { Trophy, Users, Calendar, Swords } from "lucide-react";
 import { TournamentSearch } from "./tournament-search";
 import { DateChip } from "./date-chip";
 import { QuickRegisterButton } from "./quick-register-button";
 import { CacheTags } from "@/lib/cache";
 import { PageContainer } from "@/components/layout/page-container";
 import { ResponsiveTable } from "@/components/ui/responsive-table";
+import { getGameById, getFormatById } from "@/components/tournaments/shared";
 
 // On-demand revalidation via cache tags (no time-based revalidation)
 export const revalidate = false;
@@ -84,8 +85,111 @@ function EmptyState({ isSearching }: { isSearching: boolean }) {
 }
 
 // ============================================================================
-// Active Tournaments Table (Server Component)
+// Active Tournaments Cards (Server Component)
 // ============================================================================
+
+const TOURNAMENT_FORMAT_LABELS: Record<string, string> = {
+  swiss_only: "Swiss",
+  swiss_with_cut: "Swiss + Top Cut",
+  single_elimination: "Single Elim",
+  double_elimination: "Double Elim",
+};
+
+function ActiveTournamentCard({
+  tournament,
+}: {
+  tournament: TournamentWithOrg;
+}) {
+  const currentRound = tournament.current_round ?? 0;
+  const totalRounds = tournament.swiss_rounds ?? 0;
+  const progressPercent =
+    totalRounds > 0 ? Math.round((currentRound / totalRounds) * 100) : 0;
+
+  const roundLabel = currentRound
+    ? `Round ${currentRound}${totalRounds ? ` of ${totalRounds}` : ""}`
+    : "Starting";
+
+  const formatLabel = tournament.tournament_format
+    ? (TOURNAMENT_FORMAT_LABELS[tournament.tournament_format] ??
+      tournament.tournament_format)
+    : null;
+
+  const gameLabel = tournament.game
+    ? (getGameById(tournament.game)?.name ?? tournament.game.toUpperCase())
+    : null;
+
+  const gameFormatLabel = tournament.game_format
+    ? (getFormatById(tournament.game ?? "", tournament.game_format)?.name ??
+      null)
+    : null;
+
+  return (
+    <Link
+      href={`/tournaments/${tournament.slug}`}
+      className="hover:bg-muted/30 group block rounded-lg border p-4 transition-colors"
+    >
+      {/* Top row: pulse + name + round badge */}
+      <div className="mb-3 flex items-start justify-between gap-3">
+        <div className="flex min-w-0 items-center gap-2.5">
+          <span className="relative mt-1 flex h-2.5 w-2.5 shrink-0">
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-75"></span>
+            <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-green-500"></span>
+          </span>
+          <div className="min-w-0">
+            <p className="group-hover:text-primary truncate text-base font-semibold transition-colors">
+              {tournament.name}
+            </p>
+            {tournament.organization && (
+              <p className="text-muted-foreground truncate text-sm">
+                {tournament.organization.name}
+              </p>
+            )}
+          </div>
+        </div>
+        <Badge
+          variant="secondary"
+          className="shrink-0 font-mono text-xs tracking-tight"
+        >
+          {roundLabel}
+        </Badge>
+      </div>
+
+      {/* Progress bar (only if we know total rounds) */}
+      {totalRounds > 0 && (
+        <div className="mb-3">
+          <div className="bg-muted h-1.5 w-full overflow-hidden rounded-full">
+            <div
+              className="bg-primary h-full rounded-full transition-all"
+              style={{ width: `${progressPercent}%` }}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Detail chips */}
+      <div className="text-muted-foreground flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
+        <span className="flex items-center gap-1">
+          <Users className="h-3.5 w-3.5" />
+          {tournament._count.registrations} players
+        </span>
+        {formatLabel && (
+          <span className="flex items-center gap-1">
+            <Swords className="h-3.5 w-3.5" />
+            {formatLabel}
+          </span>
+        )}
+        {gameFormatLabel && (
+          <span>
+            {gameLabel} {gameFormatLabel}
+          </span>
+        )}
+        {tournament.battle_format && (
+          <span className="capitalize">{tournament.battle_format}</span>
+        )}
+      </div>
+    </Link>
+  );
+}
 
 function ActiveTournaments({
   tournaments,
@@ -95,96 +199,11 @@ function ActiveTournaments({
   if (tournaments.length === 0) return null;
 
   return (
-    <>
-      {/* Mobile: Card list */}
-      <div className="divide-y rounded-lg border md:hidden">
-        {tournaments.map((tournament) => {
-          const progressText = tournament.current_round
-            ? `Round ${tournament.current_round}${tournament.swiss_rounds ? `/${tournament.swiss_rounds}` : ""}`
-            : "In Progress";
-
-          return (
-            <Link
-              key={tournament.id}
-              href={`/tournaments/${tournament.slug}`}
-              className="hover:bg-muted/50 flex items-center gap-3 p-3 transition-colors"
-            >
-              <span className="relative flex h-2.5 w-2.5 shrink-0">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-75"></span>
-                <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-green-500"></span>
-              </span>
-              <div className="min-w-0 flex-1">
-                <p className="truncate font-semibold">{tournament.name}</p>
-                <p className="text-muted-foreground truncate text-xs">
-                  {tournament.organization?.name}
-                  {tournament.organization && " · "}
-                  <Users className="inline h-3 w-3" />{" "}
-                  {tournament._count.registrations}
-                  {" · "}
-                  {progressText}
-                </p>
-              </div>
-            </Link>
-          );
-        })}
-      </div>
-
-      {/* Desktop: Table */}
-      <div className="hidden rounded-lg border md:block">
-        <ResponsiveTable>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Organization</TableHead>
-                <TableHead className="text-right">Players</TableHead>
-                <TableHead>Progress</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {tournaments.map((tournament) => (
-                <TableRow key={tournament.id} className="hover:bg-muted/50">
-                  <TableCell className="text-muted-foreground">
-                    <div className="flex items-center gap-2">
-                      <span className="relative flex h-2 w-2 shrink-0">
-                        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-75"></span>
-                        <span className="relative inline-flex h-2 w-2 rounded-full bg-green-500"></span>
-                      </span>
-                      <Link
-                        href={`/tournaments/${tournament.slug}`}
-                        className="hover:text-primary hover:underline"
-                      >
-                        {tournament.name}
-                      </Link>
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {tournament.organization ? (
-                      <Link
-                        href={`/organizations/${tournament.organization.slug}`}
-                        className="hover:text-primary hover:underline"
-                      >
-                        {tournament.organization.name}
-                      </Link>
-                    ) : (
-                      "—"
-                    )}
-                  </TableCell>
-                  <TableCell className="text-muted-foreground text-right">
-                    {tournament._count.registrations}
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {tournament.current_round
-                      ? `Round ${tournament.current_round}${tournament.swiss_rounds ? ` of ${tournament.swiss_rounds}` : ""}`
-                      : "In Progress"}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </ResponsiveTable>
-      </div>
-    </>
+    <div className="grid gap-3 sm:grid-cols-2">
+      {tournaments.map((tournament) => (
+        <ActiveTournamentCard key={tournament.id} tournament={tournament} />
+      ))}
+    </div>
   );
 }
 

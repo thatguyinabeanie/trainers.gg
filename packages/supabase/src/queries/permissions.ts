@@ -1,7 +1,4 @@
-import type { SupabaseClient } from "@supabase/supabase-js";
-import type { Database } from "../types";
-
-type TypedClient = SupabaseClient<Database>;
+import type { TypedClient } from "../client";
 
 /**
  * Get all permission keys for a user through RBAC
@@ -12,10 +9,9 @@ export async function getUserPermissions(
   supabase: TypedClient,
   userId: string
 ): Promise<string[]> {
-  // TODO: Fix permission checking once schema is clarified
-  // The JOIN chain should be: user_group_roles → group_roles → groups (for organization scoping)
-  // But we need to understand how permissions are assigned
-  console.warn("getUserPermissions not fully implemented yet");
+  // STUB: Returns empty array until full RBAC is implemented.
+  // Permission checks currently rely on org owner_user_id checks in TypeScript
+  // and has_org_permission() in SQL RPCs.
   return [];
 }
 

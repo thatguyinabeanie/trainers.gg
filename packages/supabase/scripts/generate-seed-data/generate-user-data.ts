@@ -246,15 +246,7 @@ function generateUniqueUsername(): string {
 }
 
 function generateUniqueEmail(username: string): string {
-  const domains = [
-    "gmail.com",
-    "yahoo.com",
-    "outlook.com",
-    "hotmail.com",
-    "proton.me",
-    "icloud.com",
-  ];
-  const domain = domains[faker.number.int({ min: 0, max: domains.length - 1 })];
+  const domain = "trainers.local";
 
   let email = `${username}@${domain}`;
   let suffix = 1;

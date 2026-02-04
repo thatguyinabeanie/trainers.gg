@@ -19,6 +19,8 @@ import {
   TournamentPairings,
   TournamentRegistrations,
   TournamentStandings,
+  TournamentJudge,
+  TournamentAuditLog,
 } from "@/components/tournaments";
 import {
   ArrowLeft,
@@ -31,6 +33,8 @@ import {
   Settings,
   LayoutList,
   Medal,
+  Gavel,
+  ScrollText,
 } from "lucide-react";
 
 interface TournamentManageClientProps {
@@ -158,9 +162,17 @@ export function TournamentManageClient({
   }
 
   // Transform tournament data for the overview component
+  // Find the active phase ID from fetched phases
+  const activePhaseId =
+    tournament.current_phase_id ??
+    (phases && phases.length > 0 ? phases[0]?.id : null) ??
+    null;
+
   const tournamentForOverview = {
+    id: tournament.id,
     name: tournament.name,
     status: tournament.status ?? "draft",
+    currentPhaseId: activePhaseId,
     registrations: tournament.registrations ?? [],
     maxParticipants: tournament.max_participants ?? undefined,
     startDate: tournament.start_date
@@ -175,10 +187,6 @@ export function TournamentManageClient({
     roundTimeMinutes: tournament.round_time_minutes ?? 50,
     swissRounds: tournament.swiss_rounds ?? undefined,
     topCutSize: tournament.top_cut_size ?? undefined,
-    rentalTeamPhotosEnabled: tournament.rental_team_photos_enabled ?? false,
-    _creationTime: tournament.created_at
-      ? new Date(tournament.created_at).getTime()
-      : undefined,
   };
 
   // Props for child components
@@ -190,6 +198,7 @@ export function TournamentManageClient({
 
   const tournamentForPairings = {
     id: tournament.id,
+    slug: tournament.slug,
     status: tournament.status ?? "draft",
     currentPhaseId: tournament.current_phase_id ?? null,
   };
@@ -212,6 +221,11 @@ export function TournamentManageClient({
     round_time_minutes: tournament.round_time_minutes,
     rental_team_photos_enabled: tournament.rental_team_photos_enabled,
     rental_team_photos_required: tournament.rental_team_photos_required,
+    // Registration settings
+    registration_type: tournament.registration_type,
+    check_in_required: tournament.check_in_required,
+    allow_late_registration: tournament.allow_late_registration,
+    late_check_in_max_round: tournament.late_check_in_max_round,
   };
 
   return (
@@ -266,6 +280,14 @@ export function TournamentManageClient({
                 <Medal className="h-4 w-4" />
                 <span className="hidden sm:inline">Standings</span>
               </TabsTrigger>
+              <TabsTrigger value="judge" className="gap-2">
+                <Gavel className="h-4 w-4" />
+                <span className="hidden sm:inline">Judge</span>
+              </TabsTrigger>
+              <TabsTrigger value="audit" className="gap-2">
+                <ScrollText className="h-4 w-4" />
+                <span className="hidden sm:inline">Audit Log</span>
+              </TabsTrigger>
               <TabsTrigger value="settings" className="gap-2">
                 <Settings className="h-4 w-4" />
                 <span className="hidden sm:inline">Settings</span>
@@ -290,6 +312,21 @@ export function TournamentManageClient({
 
         <TabsContent value="standings">
           <TournamentStandings tournament={tournamentForStandings} />
+        </TabsContent>
+
+        <TabsContent value="judge">
+          <TournamentJudge
+            tournament={{
+              id: tournament.id,
+              slug: tournament.slug,
+              status: tournament.status ?? "draft",
+            }}
+            tournamentSlug={tournamentSlug}
+          />
+        </TabsContent>
+
+        <TabsContent value="audit">
+          <TournamentAuditLog tournament={{ id: tournament.id }} />
         </TabsContent>
 
         <TabsContent value="settings">

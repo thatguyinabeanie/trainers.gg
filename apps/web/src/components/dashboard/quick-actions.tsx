@@ -41,16 +41,16 @@ export function QuickActions() {
         </Card>
       </Link>
 
-      <Link href="/teams">
+      <Link href="/settings">
         <Card className="cursor-pointer transition-shadow hover:shadow-lg">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Team Builder</CardTitle>
+            <CardTitle className="text-sm font-medium">Settings</CardTitle>
             <Users className="text-muted-foreground h-4 w-4" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">Teams</div>
+            <div className="text-2xl font-bold">Profile</div>
             <p className="text-muted-foreground text-xs">
-              Create and manage your teams
+              Manage your profile and alts
             </p>
           </CardContent>
         </Card>

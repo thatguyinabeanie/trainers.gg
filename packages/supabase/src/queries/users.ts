@@ -1,7 +1,4 @@
-import type { SupabaseClient } from "@supabase/supabase-js";
-import type { Database } from "../types";
-
-type TypedClient = SupabaseClient<Database>;
+import type { TypedClient } from "../client";
 
 /**
  * Get count of all users (for seeding check)
@@ -201,19 +198,3 @@ export async function getEmailByUsername(
   const altUser = alt?.user as { email: string | null } | null;
   return altUser?.email ?? null;
 }
-
-// =============================================================================
-// Legacy aliases for backward compatibility (deprecated - use new names)
-// =============================================================================
-
-/** @deprecated Use getUserWithAlt instead */
-export const getUserWithProfile = getUserWithAlt;
-
-/** @deprecated Use getAltByUsername instead */
-export const getProfileByUsername = getAltByUsername;
-
-/** @deprecated Use getAltByUserId instead */
-export const getProfileByUserId = getAltByUserId;
-
-/** @deprecated Use searchAlts instead */
-export const searchProfiles = searchAlts;

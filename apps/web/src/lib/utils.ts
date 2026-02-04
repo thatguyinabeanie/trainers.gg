@@ -10,10 +10,11 @@ export function cn(...inputs: ClassValue[]) {
  */
 export function getErrorMessage(error: unknown, fallback: string): string {
   if (error instanceof Error) {
-    return error.message;
+    return process.env.NODE_ENV === "production" ? fallback : error.message;
   }
   if (typeof error === "object" && error !== null && "message" in error) {
-    return String(error.message);
+    const msg = (error as { message: string }).message;
+    return process.env.NODE_ENV === "production" ? fallback : msg;
   }
   return fallback;
 }

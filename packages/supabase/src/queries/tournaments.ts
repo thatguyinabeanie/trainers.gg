@@ -1,8 +1,7 @@
-import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "../types";
+import type { TypedClient } from "../client";
 import { checkRegistrationOpen, checkCheckInOpen } from "../utils/registration";
 
-type TypedClient = SupabaseClient<Database>;
 type TournamentStatus = Database["public"]["Enums"]["tournament_status"];
 
 // Base tournament type from query
@@ -652,33 +651,49 @@ export async function getPhaseRoundsWithStats(
     .order("round_number", { ascending: true });
 
   if (error) throw error;
+  if (!rounds || rounds.length === 0) return [];
 
-  // Get match counts for each round
-  const roundsWithStats = await Promise.all(
-    (rounds ?? []).map(async (round) => {
-      const { data: matches } = await supabase
-        .from("tournament_matches")
-        .select("id, status")
-        .eq("round_id", round.id);
+  // Single query for all match statuses across all rounds
+  const roundIds = rounds.map((r) => r.id);
+  const { data: matches } = await supabase
+    .from("tournament_matches")
+    .select("round_id, status")
+    .in("round_id", roundIds);
 
-      const matchList = matches ?? [];
-      const completed = matchList.filter(
-        (m) => m.status === "completed"
-      ).length;
-      const inProgress = matchList.filter((m) => m.status === "active").length;
-      const pending = matchList.filter((m) => m.status === "pending").length;
+  // Group and count by round
+  const countsByRound = new Map<
+    number,
+    { total: number; completed: number; active: number; pending: number }
+  >();
+  for (const m of matches ?? []) {
+    const counts = countsByRound.get(m.round_id) ?? {
+      total: 0,
+      completed: 0,
+      active: 0,
+      pending: 0,
+    };
+    counts.total++;
+    if (m.status === "completed") counts.completed++;
+    else if (m.status === "active") counts.active++;
+    else counts.pending++;
+    countsByRound.set(m.round_id, counts);
+  }
 
-      return {
-        ...round,
-        matchCount: matchList.length,
-        completedCount: completed,
-        inProgressCount: inProgress,
-        pendingCount: pending,
-      };
-    })
-  );
-
-  return roundsWithStats;
+  return rounds.map((round) => {
+    const counts = countsByRound.get(round.id) ?? {
+      total: 0,
+      completed: 0,
+      active: 0,
+      pending: 0,
+    };
+    return {
+      ...round,
+      matchCount: counts.total,
+      completedCount: counts.completed,
+      inProgressCount: counts.active,
+      pendingCount: counts.pending,
+    };
+  });
 }
 
 /**
@@ -741,6 +756,91 @@ export async function getRoundMatchesWithStats(
 }
 
 /**
+ * Get all rounds with their matches for a phase (bracket visualization).
+ * Fetches matches for every round in a single pass.
+ */
+export async function getPhaseRoundsWithMatches(
+  supabase: TypedClient,
+  phaseId: number,
+  tournamentId: number
+) {
+  const { data: rounds, error } = await supabase
+    .from("tournament_rounds")
+    .select("*")
+    .eq("phase_id", phaseId)
+    .order("round_number", { ascending: true });
+
+  if (error) throw error;
+
+  const roundIds = (rounds ?? []).map((r) => r.id);
+  if (roundIds.length === 0) return [];
+
+  const { data: allMatches, error: mErr } = await supabase
+    .from("tournament_matches")
+    .select(
+      `
+      *,
+      player1:alts!tournament_matches_alt1_id_fkey(id, username, display_name),
+      player2:alts!tournament_matches_alt2_id_fkey(id, username, display_name)
+    `
+    )
+    .in("round_id", roundIds)
+    .order("table_number", { ascending: true });
+
+  if (mErr) throw mErr;
+
+  // Enrich with player stats
+  const statsMap = new Map<number, { wins: number; losses: number }>();
+
+  if (allMatches && allMatches.length > 0) {
+    const altIds = new Set<number>();
+    for (const m of allMatches) {
+      if (m.alt1_id) altIds.add(m.alt1_id);
+      if (m.alt2_id) altIds.add(m.alt2_id);
+    }
+
+    if (altIds.size > 0) {
+      const { data: stats } = await supabase
+        .from("tournament_player_stats")
+        .select("alt_id, match_wins, match_losses")
+        .eq("tournament_id", tournamentId)
+        .in("alt_id", Array.from(altIds));
+
+      for (const s of stats ?? []) {
+        statsMap.set(s.alt_id, {
+          wins: s.match_wins ?? 0,
+          losses: s.match_losses ?? 0,
+        });
+      }
+    }
+  }
+
+  // Group matches by round_id
+  const matchesByRound = new Map<
+    number,
+    (typeof allMatches extends (infer T)[] | null ? T : never)[]
+  >();
+  for (const match of allMatches ?? []) {
+    const list = matchesByRound.get(match.round_id) ?? [];
+    list.push(match);
+    matchesByRound.set(match.round_id, list);
+  }
+
+  return (rounds ?? []).map((round) => ({
+    ...round,
+    matches: (matchesByRound.get(round.id) ?? []).map((match) => ({
+      ...match,
+      player1Stats: match.alt1_id
+        ? (statsMap.get(match.alt1_id) ?? null)
+        : null,
+      player2Stats: match.alt2_id
+        ? (statsMap.get(match.alt2_id) ?? null)
+        : null,
+    })),
+  }));
+}
+
+/**
  * Get check-in status for current user
  * If no altId is provided, returns status for the current authenticated user
  */
@@ -760,8 +860,7 @@ export async function getCheckInStatus(
         isRegistered: false,
         isCheckedIn: false,
         checkInOpen: false,
-        checkInStartTime: null,
-        checkInEndTime: null,
+        lateMaxRound: null,
         registrationStatus: null,
       };
     }
@@ -779,8 +878,7 @@ export async function getCheckInStatus(
         isRegistered: false,
         isCheckedIn: false,
         checkInOpen: false,
-        checkInStartTime: null,
-        checkInEndTime: null,
+        lateMaxRound: null,
         registrationStatus: null,
       };
     }
@@ -790,7 +888,7 @@ export async function getCheckInStatus(
   const { data: tournament } = await supabase
     .from("tournaments")
     .select(
-      "status, start_date, check_in_window_minutes, current_round, late_check_in_max_round"
+      "status, allow_late_registration, current_round, late_check_in_max_round"
     )
     .eq("id", tournamentId)
     .single();
@@ -809,8 +907,7 @@ export async function getCheckInStatus(
   const {
     isOpen: checkInOpen,
     isLateCheckIn,
-    checkInStartTime,
-    checkInEndTime,
+    lateMaxRound,
   } = checkCheckInOpen(tournament);
 
   return {
@@ -818,8 +915,7 @@ export async function getCheckInStatus(
     isCheckedIn: registration?.status === "checked_in",
     checkInOpen,
     isLateCheckIn,
-    checkInStartTime,
-    checkInEndTime,
+    lateMaxRound,
     registrationStatus: registration?.status ?? null,
   };
 }
@@ -952,7 +1048,7 @@ export async function getMatchDetails(supabase: TypedClient, matchId: number) {
 
   const { data: phase } = await supabase
     .from("tournament_phases")
-    .select("*, tournament:tournaments(*)")
+    .select("*, tournament:tournaments!tournament_phases_tournament_id_fkey(*)")
     .eq("id", match.round?.phase_id)
     .single();
 
@@ -1008,6 +1104,84 @@ export async function getPlayerMatches(
 
   if (error) throw error;
   return data ?? [];
+}
+
+/**
+ * Get all matches for a tournament across all rounds.
+ * Used by the judge/staff views to see all active and pending matches.
+ * Supports filtering by status and staff_requested flag.
+ */
+type PhaseStatus = Database["public"]["Enums"]["phase_status"];
+
+export async function getTournamentMatchesForStaff(
+  supabase: TypedClient,
+  tournamentId: number,
+  options: {
+    status?: PhaseStatus;
+    staffRequested?: boolean;
+    limit?: number;
+  } = {}
+) {
+  const { status, staffRequested, limit = 200 } = options;
+
+  // Get all phase IDs for this tournament
+  const { data: phases } = await supabase
+    .from("tournament_phases")
+    .select("id")
+    .eq("tournament_id", tournamentId);
+
+  if (!phases?.length) return [];
+
+  const phaseIds = phases.map((p) => p.id);
+
+  // Get all round IDs for those phases
+  const { data: rounds } = await supabase
+    .from("tournament_rounds")
+    .select("id, round_number, phase_id, status")
+    .in("phase_id", phaseIds)
+    .order("round_number", { ascending: true });
+
+  if (!rounds?.length) return [];
+
+  const roundIds = rounds.map((r) => r.id);
+
+  let query = supabase
+    .from("tournament_matches")
+    .select(
+      `
+      *,
+      player1:alts!tournament_matches_alt1_id_fkey(id, username, display_name, avatar_url),
+      player2:alts!tournament_matches_alt2_id_fkey(id, username, display_name, avatar_url),
+      winner:alts!tournament_matches_winner_alt_id_fkey(id, username, display_name)
+    `
+    )
+    .in("round_id", roundIds)
+    .limit(limit);
+
+  if (status) {
+    query = query.eq("status", status);
+  }
+
+  if (staffRequested !== undefined) {
+    query = query.eq("staff_requested", staffRequested);
+  }
+
+  // Order: staff_requested first, then by staff_requested_at (oldest first), then table_number
+  query = query
+    .order("staff_requested", { ascending: false })
+    .order("staff_requested_at", { ascending: true, nullsFirst: false })
+    .order("table_number", { ascending: true });
+
+  const { data, error } = await query;
+
+  if (error) throw error;
+
+  // Attach round info to each match
+  const roundMap = new Map(rounds.map((r) => [r.id, r]));
+  return (data ?? []).map((match) => ({
+    ...match,
+    roundInfo: roundMap.get(match.round_id) ?? null,
+  }));
 }
 
 /**
@@ -1317,6 +1491,9 @@ export async function getRegistrationStatus(
       name: tournament.name,
       status: tournament.status,
       maxParticipants: tournament.max_participants,
+      lateCheckInMaxRound: tournament.late_check_in_max_round,
+      currentRound: tournament.current_round,
+      allowLateRegistration: tournament.allow_late_registration,
     },
     registrationStats: {
       registered: registeredCount,
@@ -1507,4 +1684,69 @@ export async function getTeamForRegistration(
         ...tp.pokemon,
       })) ?? [],
   };
+}
+
+/**
+ * Get checked-in players who are NOT paired in a given round.
+ * Used to surface late arrivals who registered/checked-in after pairings
+ * were generated, so TOs know to include them in the next round.
+ */
+export async function getUnpairedCheckedInPlayers(
+  supabase: TypedClient,
+  tournamentId: number,
+  roundId: number
+) {
+  // Get all checked-in registrations
+  const { data: registrations, error: regErr } = await supabase
+    .from("tournament_registrations")
+    .select("alt_id, registered_at, checked_in_at")
+    .eq("tournament_id", tournamentId)
+    .eq("status", "checked_in");
+
+  if (regErr) throw regErr;
+  if (!registrations || registrations.length === 0) return [];
+
+  // Get all alt IDs that are paired in this round
+  const { data: matches, error: matchErr } = await supabase
+    .from("tournament_matches")
+    .select("alt1_id, alt2_id")
+    .eq("round_id", roundId);
+
+  if (matchErr) throw matchErr;
+
+  const pairedAltIds = new Set<number>();
+  for (const match of matches ?? []) {
+    if (match.alt1_id) pairedAltIds.add(match.alt1_id);
+    if (match.alt2_id) pairedAltIds.add(match.alt2_id);
+  }
+
+  // Filter to unpaired players
+  const unpairedAltIds = registrations
+    .filter((r) => r.alt_id !== null && !pairedAltIds.has(r.alt_id))
+    .map((r) => r.alt_id as number);
+
+  if (unpairedAltIds.length === 0) return [];
+
+  // Fetch alt details for display
+  const { data: alts, error: altErr } = await supabase
+    .from("alts")
+    .select("id, username, display_name")
+    .in("id", unpairedAltIds);
+
+  if (altErr) throw altErr;
+
+  // Merge registration info with alt details
+  const altMap = new Map(alts?.map((a) => [a.id, a]) ?? []);
+
+  return registrations
+    .filter((r) => r.alt_id !== null && !pairedAltIds.has(r.alt_id))
+    .map((r) => {
+      const alt = altMap.get(r.alt_id!);
+      return {
+        altId: r.alt_id!,
+        username: alt?.username ?? "Unknown",
+        displayName: alt?.display_name ?? null,
+        checkedInAt: r.checked_in_at,
+      };
+    });
 }

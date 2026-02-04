@@ -11,6 +11,7 @@ export {
   createPublicSupabaseClient,
   createAdminSupabaseClient,
   type TypedSupabaseClient,
+  type TypedClient,
 } from "./client";
 
 // Query exports

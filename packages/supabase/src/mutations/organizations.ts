@@ -1,8 +1,6 @@
-import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "../types";
+import type { TypedClient } from "../client";
 import { getInvitationExpiryDate } from "../constants";
-
-type TypedClient = SupabaseClient<Database>;
 
 /**
  * Helper to get current user

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useSupabaseQuery } from "@/lib/supabase";
-import { searchProfiles } from "@trainers/supabase";
+import { searchAlts } from "@trainers/supabase";
 import type { SelectedPlayer } from "@/lib/types/tournament";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -41,7 +41,7 @@ export function PlayerSearch({
   const { data: searchResults, isLoading } = useSupabaseQuery(
     (supabase) =>
       searchQuery.length >= 2
-        ? searchProfiles(supabase, searchQuery, 20)
+        ? searchAlts(supabase, searchQuery, 20)
         : Promise.resolve([]),
     [searchQuery]
   );

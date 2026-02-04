@@ -233,12 +233,13 @@ export function generateMatches(
   let gameId = 1;
 
   for (const tournament of tournaments) {
-    // Skip upcoming tournaments - no matches yet
-    if (tournament.status === "upcoming") {
+    // Skip upcoming and active tournaments — no matches yet
+    // Active tournaments start as clean slates (round management tested via UI)
+    if (tournament.status === "upcoming" || tournament.status === "active") {
       continue;
     }
 
-    const isActive = tournament.status === "active";
+    const isActive = false; // Only completed tournaments reach here
     const tournamentPhases = phases.filter(
       (p) => p.tournamentId === tournament.id
     );

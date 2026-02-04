@@ -5,11 +5,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useSupabaseQuery, useSupabaseMutation } from "@/lib/supabase";
-import {
-  getMatchDetails,
-  reportMatchResult,
-  startMatch,
-} from "@trainers/supabase";
+import { getMatchDetails, reportMatchResult } from "@trainers/supabase";
 import {
   Dialog,
   DialogContent,
@@ -109,10 +105,6 @@ export function MatchReportDialog({
       )
   );
 
-  const { mutateAsync: startMatchMutation } = useSupabaseMutation(
-    (supabase, args: { matchId: number }) => startMatch(supabase, args.matchId)
-  );
-
   // Extract player data
   const player1 = matchDetails?.player1;
   const player2 = matchDetails?.player2;
@@ -138,21 +130,6 @@ export function MatchReportDialog({
       });
     }
   }, [open, form]);
-
-  const handleStartMatch = async () => {
-    if (!matchId) return;
-
-    try {
-      await startMatchMutation({ matchId });
-      toast.success("Match started", {
-        description: "The match timer has begun",
-      });
-    } catch (error) {
-      toast.error("Failed to start match", {
-        description: error instanceof Error ? error.message : "Unknown error",
-      });
-    }
-  };
 
   const onSubmit = async (data: MatchReportFormData) => {
     if (!matchId) return;
@@ -225,7 +202,7 @@ export function MatchReportDialog({
           <Alert>
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>
-              This match needs to be started before reporting results
+              This match will become active once the round starts
             </AlertDescription>
           </Alert>
         )}
@@ -435,19 +412,6 @@ export function MatchReportDialog({
               >
                 {isMatchCompleted ? "Close" : "Cancel"}
               </Button>
-
-              {isMatchPending && (
-                <Button
-                  type="button"
-                  onClick={handleStartMatch}
-                  disabled={isSubmitting}
-                >
-                  {isSubmitting ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  ) : null}
-                  Start Match
-                </Button>
-              )}
 
               {isMatchActive && (
                 <Button type="submit" disabled={!winnerId || isSubmitting}>

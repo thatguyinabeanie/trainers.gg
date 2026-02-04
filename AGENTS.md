@@ -109,6 +109,8 @@ Husky runs lint-staged (Prettier auto-fix) on all staged files. If hooks fail, f
 
 **Never edit a migration file that has already been committed.** Always create a new migration file, even if fixing a previous one.
 
+**Never rename a migration file.** The version timestamp in the filename is recorded in the production database's migration history. Renaming a file creates a mismatch between the recorded version and the local filename, which breaks Supabase preview branches ("Remote migration versions not found in local migrations directory"). If you need a different ordering, create a new migration file with the correct timestamp instead.
+
 ### Edge Function Deployments
 
 **Never deploy edge functions manually via `supabase functions deploy`.** Edge functions deploy through the git workflow:
@@ -143,6 +145,7 @@ The proxy handles:
 - Do NOT use `asChild` prop — Base UI doesn't support it
 - Always check `apps/web/src/components/ui/` for existing components before building custom ones
 - Add new components: `npx shadcn@latest add <component-name>`
+- **Dropdowns, selects, badges, and status displays must show human-readable labels, not raw enum/database values.** Map values to labels (e.g., `checked_in` → "Checked In", `in_progress` → "In Progress"). Never render snake_case or lowercase enum values directly in the UI.
 
 ---
 

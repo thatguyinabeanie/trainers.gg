@@ -13,6 +13,7 @@ import { createClient } from "@/lib/supabase/middleware";
  *
  * 2. Protected routes (auth required, always enforced):
  *    - /dashboard, /to-dashboard, /settings, /onboarding, /organizations/create, /feed
+ *    - /tournaments/[slug]/matches/* (match pages contain chat, teams, game data)
  *    - Unauthenticated users are redirected to /sign-in?redirect=<path>
  *
  * 3. Private beta / maintenance mode (when NEXT_PUBLIC_MAINTENANCE_MODE=true):
@@ -35,6 +36,11 @@ const PROTECTED_ROUTES = [
   "/onboarding",
   "/organizations/create",
   "/feed",
+];
+
+// Dynamic route patterns that require authentication (checked via regex)
+const PROTECTED_PATTERNS = [
+  /^\/tournaments\/[^/]+\/matches(\/|$)/, // Match pages contain chat, teams, game data
 ];
 
 // Routes that are always accessible (even in maintenance mode)
@@ -81,8 +87,10 @@ function isPublicRoute(pathname: string): boolean {
 }
 
 function isProtectedRoute(pathname: string): boolean {
-  return PROTECTED_ROUTES.some(
-    (route) => pathname === route || pathname.startsWith(`${route}/`)
+  return (
+    PROTECTED_ROUTES.some(
+      (route) => pathname === route || pathname.startsWith(`${route}/`)
+    ) || PROTECTED_PATTERNS.some((pattern) => pattern.test(pathname))
   );
 }
 

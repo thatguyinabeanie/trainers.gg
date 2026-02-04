@@ -1,3 +1,6 @@
+# Disable Turbo interactive TUI in git hooks
+export TURBO_UI=false
+
 # Run lint-staged for formatting and linting
 pnpm exec lint-staged
 

@@ -1,7 +1,5 @@
-import type { SupabaseClient } from "@supabase/supabase-js";
+import type { TypedClient } from "../client";
 import type { Database } from "../types";
-
-type TypedClient = SupabaseClient<Database>;
 
 /**
  * Update user alt
@@ -13,6 +11,7 @@ export async function updateAlt(
     displayName?: string;
     bio?: string;
     avatarUrl?: string;
+    inGameName?: string | null;
   }
 ) {
   // Verify the user owns this alt
@@ -39,6 +38,8 @@ export async function updateAlt(
   if (updates.bio !== undefined) updateData.bio = updates.bio;
   if (updates.avatarUrl !== undefined)
     updateData.avatar_url = updates.avatarUrl;
+  if (updates.inGameName !== undefined)
+    updateData.in_game_name = updates.inGameName;
 
   const { error } = await supabase
     .from("alts")
@@ -171,6 +172,7 @@ export async function createAlt(
     displayName: string;
     bio?: string;
     avatarUrl?: string;
+    inGameName?: string;
   }
 ) {
   const {
@@ -178,24 +180,12 @@ export async function createAlt(
   } = await supabase.auth.getUser();
   if (!user) throw new Error("Not authenticated");
 
-  // Check if alt already exists
-  const { data: existing } = await supabase
-    .from("alts")
-    .select("id")
-    .eq("user_id", user.id)
-    .limit(1)
-    .maybeSingle();
-
-  if (existing) {
-    throw new Error("Alt already exists for this user");
-  }
-
   // Check username uniqueness
   const { data: usernameExists } = await supabase
     .from("alts")
     .select("id")
     .eq("username", data.username.toLowerCase())
-    .single();
+    .maybeSingle();
 
   if (usernameExists) {
     throw new Error("Username is already taken");
@@ -209,6 +199,7 @@ export async function createAlt(
       display_name: data.displayName,
       bio: data.bio ?? null,
       avatar_url: data.avatarUrl ?? null,
+      in_game_name: data.inGameName ?? null,
     })
     .select()
     .single();
@@ -217,15 +208,86 @@ export async function createAlt(
   return alt;
 }
 
-// =============================================================================
-// Legacy aliases for backward compatibility (deprecated - use new names)
-// =============================================================================
+/**
+ * Delete an alt (cannot delete main alt)
+ */
+export async function deleteAlt(supabase: TypedClient, altId: number) {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error("Not authenticated");
 
-/** @deprecated Use updateAlt instead */
-export const updateProfile = updateAlt;
+  // Verify user owns this alt
+  const { data: alt } = await supabase
+    .from("alts")
+    .select("user_id")
+    .eq("id", altId)
+    .single();
 
-/** @deprecated Use ensureAlt instead */
-export const ensureProfile = ensureAlt;
+  if (!alt) throw new Error("Alt not found");
+  if (alt.user_id !== user.id) {
+    throw new Error("You can only delete your own alt");
+  }
 
-/** @deprecated Use createAlt instead */
-export const createProfile = createAlt;
+  // Check if this is the main alt
+  const { data: userData } = await supabase
+    .from("users")
+    .select("main_alt_id")
+    .eq("id", user.id)
+    .single();
+
+  if (userData?.main_alt_id === altId) {
+    throw new Error(
+      "Cannot delete your main alt. Set a different main alt first."
+    );
+  }
+
+  // Check this alt isn't registered in any active tournaments
+  const { count, error: countError } = await supabase
+    .from("tournament_registrations")
+    .select("*", { count: "exact", head: true })
+    .eq("alt_id", altId)
+    .in("status", ["registered", "checked_in"]);
+  if (countError) throw countError;
+
+  if (count && count > 0) {
+    throw new Error(
+      "Cannot delete an alt that is registered in active tournaments"
+    );
+  }
+
+  const { error } = await supabase.from("alts").delete().eq("id", altId);
+
+  if (error) throw error;
+  return { success: true };
+}
+
+/**
+ * Set a user's main alt
+ */
+export async function setMainAlt(supabase: TypedClient, altId: number) {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error("Not authenticated");
+
+  // Verify user owns this alt
+  const { data: alt } = await supabase
+    .from("alts")
+    .select("user_id")
+    .eq("id", altId)
+    .single();
+
+  if (!alt) throw new Error("Alt not found");
+  if (alt.user_id !== user.id) {
+    throw new Error("You can only set your own alt as main");
+  }
+
+  const { error } = await supabase
+    .from("users")
+    .update({ main_alt_id: altId })
+    .eq("id", user.id);
+
+  if (error) throw error;
+  return { success: true };
+}
