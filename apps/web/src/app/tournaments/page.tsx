@@ -105,10 +105,6 @@ function ActiveTournamentCard({
   const progressPercent =
     totalRounds > 0 ? Math.round((currentRound / totalRounds) * 100) : 0;
 
-  const roundLabel = currentRound
-    ? `Round ${currentRound}${totalRounds ? ` of ${totalRounds}` : ""}`
-    : "Starting";
-
   const formatLabel = tournament.tournament_format
     ? (TOURNAMENT_FORMAT_LABELS[tournament.tournament_format] ??
       tournament.tournament_format)
@@ -128,30 +124,22 @@ function ActiveTournamentCard({
       href={`/tournaments/${tournament.slug}`}
       className="hover:bg-muted/30 group block rounded-lg border p-4 transition-colors"
     >
-      {/* Top row: pulse + name + round badge */}
-      <div className="mb-3 flex items-start justify-between gap-3">
-        <div className="flex min-w-0 items-center gap-2.5">
-          <span className="relative mt-1 flex h-2.5 w-2.5 shrink-0">
-            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-75"></span>
-            <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-green-500"></span>
-          </span>
-          <div className="min-w-0">
-            <p className="group-hover:text-primary truncate text-base font-semibold transition-colors">
-              {tournament.name}
+      {/* Top row: pulse + name */}
+      <div className="mb-3 flex items-start gap-2.5">
+        <span className="relative mt-1 flex h-2.5 w-2.5 shrink-0">
+          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-75"></span>
+          <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-green-500"></span>
+        </span>
+        <div className="min-w-0">
+          <p className="group-hover:text-primary truncate text-base font-semibold transition-colors">
+            {tournament.name}
+          </p>
+          {tournament.organization && (
+            <p className="text-muted-foreground truncate text-sm">
+              {tournament.organization.name}
             </p>
-            {tournament.organization && (
-              <p className="text-muted-foreground truncate text-sm">
-                {tournament.organization.name}
-              </p>
-            )}
-          </div>
+          )}
         </div>
-        <Badge
-          variant="secondary"
-          className="shrink-0 font-mono text-xs tracking-tight"
-        >
-          {roundLabel}
-        </Badge>
       </div>
 
       {/* Progress bar (only if we know total rounds) */}
@@ -566,7 +554,7 @@ export default async function TournamentsPage({
         <div className="space-y-2">
           {data.active.length > 0 && (
             <>
-              <SectionHeader title="Active Now" count={data.active.length} />
+              <SectionHeader title="In Progress" count={data.active.length} />
               <ActiveTournaments tournaments={data.active} />
             </>
           )}
