@@ -590,8 +590,8 @@ function RoundCommandCenter({
         <CardContent>
           <div className="max-h-64 overflow-y-auto rounded-md border">
             <table className="w-full text-sm">
-              <thead className="bg-muted sticky top-0">
-                <tr>
+              <thead className="sticky top-0 z-10">
+                <tr className="bg-muted">
                   <th className="px-3 py-2 text-left font-medium">Table</th>
                   <th className="px-3 py-2 text-left font-medium">Player 1</th>
                   <th className="px-3 py-2 text-left font-medium">Player 2</th>
