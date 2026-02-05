@@ -119,7 +119,12 @@
       "WebFetch(domain:fly.io)",
       "Bash(fly tokens create:*)",
       "Bash(NODE_OPTIONS=--experimental-vm-modules pnpm jest:*)",
-      "Bash(pkill:*)"
+      "Bash(pkill:*)",
+      "Bash(for pkg in atproto pokemon supabase tournaments utils validators)",
+      "Bash(if [ ! -f \"packages/$pkg/eslint.config.js\" ])",
+      "Bash(then)",
+      "Bash(fi)",
+      "Bash(.husky/pre-commit)"
     ]
   },
   "enableAllProjectMcpServers": true
