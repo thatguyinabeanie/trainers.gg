@@ -42,33 +42,35 @@ export default defineConfig({
   },
 
   projects: [
-    // Auth setup — runs first, saves storage state
-    {
-      name: "setup",
-      testMatch: /auth\.setup\.ts/,
-      use: {
-        baseURL,
-        // Bypass headers for CI and E2E auth
-        extraHTTPHeaders: {
-          ...(process.env.VERCEL_AUTOMATION_BYPASS_SECRET
-            ? {
-                "x-vercel-protection-bypass":
-                  process.env.VERCEL_AUTOMATION_BYPASS_SECRET,
-              }
-            : {}),
-          ...(process.env.E2E_AUTH_BYPASS_SECRET
-            ? { "x-e2e-auth-bypass": process.env.E2E_AUTH_BYPASS_SECRET }
-            : {}),
-        },
-      },
-    },
+    // Auth setup — runs first, saves storage state (skip if E2E bypass enabled)
+    ...(process.env.E2E_AUTH_BYPASS_SECRET
+      ? []
+      : [
+          {
+            name: "setup",
+            testMatch: /auth\.setup\.ts/,
+            use: {
+              baseURL,
+              extraHTTPHeaders: {
+                ...(process.env.VERCEL_AUTOMATION_BYPASS_SECRET
+                  ? {
+                      "x-vercel-protection-bypass":
+                        process.env.VERCEL_AUTOMATION_BYPASS_SECRET,
+                    }
+                  : {}),
+              },
+            },
+          },
+        ]),
 
-    // Main tests — depend on setup for auth state
+    // Main tests — depend on setup for auth state (unless bypass enabled)
     {
       name: "chromium",
       use: {
         ...devices["Desktop Chrome"],
-        storageState: storageStatePath,
+        ...(!process.env.E2E_AUTH_BYPASS_SECRET && {
+          storageState: storageStatePath,
+        }),
         // Bypass headers for CI and E2E auth
         extraHTTPHeaders: {
           ...(process.env.VERCEL_AUTOMATION_BYPASS_SECRET
@@ -82,7 +84,7 @@ export default defineConfig({
             : {}),
         },
       },
-      dependencies: ["setup"],
+      ...(!process.env.E2E_AUTH_BYPASS_SECRET && { dependencies: ["setup"] }),
     },
   ],
 });
