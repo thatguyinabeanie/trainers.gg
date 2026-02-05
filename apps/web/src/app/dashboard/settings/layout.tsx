@@ -4,11 +4,12 @@ import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { User, Shield } from "lucide-react";
+import { User, Shield, Palette } from "lucide-react";
 
 const tabs = [
   { href: "/dashboard/settings/profile", label: "Profile", icon: User },
   { href: "/dashboard/settings/account", label: "Account", icon: Shield },
+  { href: "/dashboard/settings/display", label: "Display", icon: Palette },
 ];
 
 export default function SettingsLayout({

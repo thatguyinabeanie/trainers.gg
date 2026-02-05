@@ -3,6 +3,8 @@
  *
  * Uses @pkmn/img for Pokemon and item sprites (handles all forms/variants
  * correctly), and Showdown's CDN directly for type icons.
+ *
+ * @module @trainers/pokemon/sprites
  */
 
 import { Sprites, Icons } from "@pkmn/img";
@@ -15,15 +17,27 @@ export interface SpriteData {
 }
 
 /**
+ * Pokemon sprite style preference.
+ * - gen5: Static pixel art (Gen 5 style)
+ * - gen5ani: Animated pixel art (Gen 5 animated)
+ * - ani: Modern animated sprites
+ */
+export type SpritePreference = "gen5" | "gen5ani" | "ani";
+
+/**
  * Get sprite data for a Pokemon species.
  * Handles all forms and variants (Ogerpon-Hearthflame, Urshifu-Rapid-Strike, etc.).
  */
 export function getPokemonSprite(
   species: string,
-  options?: { shiny?: boolean; gender?: "M" | "F" }
+  options?: {
+    shiny?: boolean;
+    gender?: "M" | "F";
+    spriteStyle?: SpritePreference;
+  }
 ): SpriteData {
   const sprite = Sprites.getPokemon(species, {
-    gen: "gen5",
+    gen: options?.spriteStyle ?? "gen5",
     shiny: options?.shiny,
     gender: options?.gender,
   });
