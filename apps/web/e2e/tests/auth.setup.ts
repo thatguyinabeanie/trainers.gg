@@ -11,13 +11,7 @@ const authFile = path.resolve(
 );
 const authDir = path.dirname(authFile);
 
-setup("authenticate as player", async ({ page, baseURL }) => {
-  console.log(
-    `[AUTH SETUP] Starting authentication for ${TEST_USERS.player.email}`
-  );
-  console.log(`[AUTH SETUP] Base URL: ${baseURL}`);
-  console.log(`[AUTH SETUP] Storage state path: ${authFile}`);
-
+setup("authenticate as player", async ({ page }) => {
   // Ensure auth directory exists
   mkdirSync(authDir, { recursive: true });
 
@@ -25,11 +19,7 @@ setup("authenticate as player", async ({ page, baseURL }) => {
 
   // Verify we're actually authenticated before saving storage state
   await expect(page).not.toHaveURL(/sign-in/);
-  console.log(
-    `[AUTH SETUP] Successfully authenticated, current URL: ${page.url()}`
-  );
 
   // Save authenticated session cookies/tokens to disk for reuse by test projects
   await page.context().storageState({ path: authFile });
-  console.log(`[AUTH SETUP] Storage state saved to ${authFile}`);
 });

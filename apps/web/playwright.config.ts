@@ -27,15 +27,18 @@ export default defineConfig({
     trace: "on-first-retry",
     screenshot: "only-on-failure",
     video: "on-first-retry",
-    // Bypass Vercel Deployment Protection in CI
-    ...(process.env.VERCEL_AUTOMATION_BYPASS_SECRET
-      ? {
-          extraHTTPHeaders: {
+    // Bypass headers for CI and E2E auth
+    extraHTTPHeaders: {
+      ...(process.env.VERCEL_AUTOMATION_BYPASS_SECRET
+        ? {
             "x-vercel-protection-bypass":
               process.env.VERCEL_AUTOMATION_BYPASS_SECRET,
-          },
-        }
-      : {}),
+          }
+        : {}),
+      ...(process.env.E2E_AUTH_BYPASS_SECRET
+        ? { "x-e2e-auth-bypass": process.env.E2E_AUTH_BYPASS_SECRET }
+        : {}),
+    },
   },
 
   projects: [
@@ -45,15 +48,18 @@ export default defineConfig({
       testMatch: /auth\.setup\.ts/,
       use: {
         baseURL,
-        // Bypass Vercel Deployment Protection in setup as well
-        ...(process.env.VERCEL_AUTOMATION_BYPASS_SECRET
-          ? {
-              extraHTTPHeaders: {
+        // Bypass headers for CI and E2E auth
+        extraHTTPHeaders: {
+          ...(process.env.VERCEL_AUTOMATION_BYPASS_SECRET
+            ? {
                 "x-vercel-protection-bypass":
                   process.env.VERCEL_AUTOMATION_BYPASS_SECRET,
-              },
-            }
-          : {}),
+              }
+            : {}),
+          ...(process.env.E2E_AUTH_BYPASS_SECRET
+            ? { "x-e2e-auth-bypass": process.env.E2E_AUTH_BYPASS_SECRET }
+            : {}),
+        },
       },
     },
 
@@ -63,6 +69,18 @@ export default defineConfig({
       use: {
         ...devices["Desktop Chrome"],
         storageState: storageStatePath,
+        // Bypass headers for CI and E2E auth
+        extraHTTPHeaders: {
+          ...(process.env.VERCEL_AUTOMATION_BYPASS_SECRET
+            ? {
+                "x-vercel-protection-bypass":
+                  process.env.VERCEL_AUTOMATION_BYPASS_SECRET,
+              }
+            : {}),
+          ...(process.env.E2E_AUTH_BYPASS_SECRET
+            ? { "x-e2e-auth-bypass": process.env.E2E_AUTH_BYPASS_SECRET }
+            : {}),
+        },
       },
       dependencies: ["setup"],
     },

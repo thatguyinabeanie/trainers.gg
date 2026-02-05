@@ -119,25 +119,53 @@ export async function proxy(request: NextRequest) {
   // Read maintenance mode at runtime
   const maintenanceMode = process.env.NEXT_PUBLIC_MAINTENANCE_MODE === "true";
 
+  // E2E test bypass: if the request has the correct bypass header, mock the authenticated user
+  // This allows Playwright E2E tests to bypass server-side auth checks
+  const e2eBypassSecret = process.env.E2E_AUTH_BYPASS_SECRET;
+  const e2eBypassHeader = request.headers.get("x-e2e-auth-bypass");
+  const isE2ETest = e2eBypassSecret && e2eBypassHeader === e2eBypassSecret;
+
   // Create Supabase client and refresh session
   const { supabase, response } = createClient(request);
 
-  // Get current user (this also refreshes the session)
   let user = null;
-  try {
-    const {
-      data: { user: authUser },
-      error,
-    } = await supabase.auth.getUser();
 
-    // AuthSessionMissingError is expected when user is not logged in — don't log it
-    if (error && error.name !== "AuthSessionMissingError") {
-      console.error("Failed to get user in proxy:", error);
-    } else {
-      user = authUser;
+  if (isE2ETest) {
+    // Mock authenticated user for E2E tests
+    // The test user details must match the seeded user from apps/web/e2e/fixtures/auth.ts
+    user = {
+      id: "b2c3d4e5-f6a7-5b6c-9d0e-1f2a3b4c5d6e", // Matches player@trainers.local from seed
+      email: "player@trainers.local",
+      app_metadata: {},
+      user_metadata: {},
+      aud: "authenticated",
+      created_at: new Date().toISOString(),
+    } as any;
+
+    // Set a cookie so Server Components know we're in E2E test mode
+    response.cookies.set("e2e-test-mode", "true", {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      path: "/",
+    });
+  } else {
+    // Get current user (this also refreshes the session)
+    try {
+      const {
+        data: { user: authUser },
+        error,
+      } = await supabase.auth.getUser();
+
+      // AuthSessionMissingError is expected when user is not logged in — don't log it
+      if (error && error.name !== "AuthSessionMissingError") {
+        console.error("Failed to get user in proxy:", error);
+      } else {
+        user = authUser;
+      }
+    } catch (err) {
+      console.error("Exception in proxy getUser():", err);
     }
-  } catch (err) {
-    console.error("Exception in proxy getUser():", err);
   }
 
   // Admin routes require site_admin role in JWT AND active sudo mode
