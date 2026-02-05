@@ -12,9 +12,17 @@ const authFile = path.resolve(
 const authDir = path.dirname(authFile);
 
 setup("authenticate as player", async ({ page }) => {
-  // Ensure auth directory exists
-  mkdirSync(authDir, { recursive: true });
+  // When E2E auth bypass is configured, we don't need to do a real UI login
+  // The proxy.ts will mock the authenticated user based on the bypass header
+  if (process.env.E2E_AUTH_BYPASS_SECRET) {
+    // Create an empty storage state file (tests will use bypass header instead)
+    mkdirSync(authDir, { recursive: true });
+    await page.context().storageState({ path: authFile });
+    return;
+  }
 
+  // Normal flow: perform UI login and save session
+  mkdirSync(authDir, { recursive: true });
   await loginViaUI(page, TEST_USERS.player);
 
   // Verify we're actually authenticated before saving storage state
