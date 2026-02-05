@@ -1,8 +1,11 @@
 import { test, expect } from "@playwright/test";
+import { injectE2EMockAuth } from "../../fixtures/auth-bypass";
 
 test.describe("Settings navigation", () => {
-  // E2E auth bypass via x-e2e-auth-bypass header (set in playwright.config.ts)
-  // proxy.ts sets e2e-test-mode cookie, AuthProvider uses mock user
+  test.beforeEach(async ({ page }) => {
+    // Inject mock auth BEFORE navigating
+    await injectE2EMockAuth(page);
+  });
 
   test("shows settings tabs and allows navigation", async ({ page }) => {
     await page.goto("/dashboard/settings/profile");

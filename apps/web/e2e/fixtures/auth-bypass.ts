@@ -24,6 +24,7 @@ export const E2E_MOCK_USERS = {
 
 /**
  * Injects mock authentication data into browser storage for E2E tests.
+ * Sets BOTH localStorage (for Supabase client) AND cookie (for AuthProvider detection).
  * Must be called BEFORE navigating to the page that needs auth.
  */
 export async function injectE2EMockAuth(
@@ -32,7 +33,7 @@ export async function injectE2EMockAuth(
 ) {
   await page.addInitScript(
     ({ mockUser }) => {
-      // Construct a minimal Supabase auth token structure
+      // 1. Inject Supabase auth token into localStorage
       const mockAuthToken = {
         access_token: `mock-jwt-token-${mockUser.id}`,
         token_type: "bearer",
@@ -56,13 +57,23 @@ export async function injectE2EMockAuth(
         },
       };
 
-      // Get Supabase project ref from env or use default
       const projectRef = "shsijtmbiibknwygcdtc"; // From NEXT_PUBLIC_SUPABASE_URL
       const storageKey = `sb-${projectRef}-auth-token`;
-
-      // Inject into localStorage
       // eslint-disable-next-line no-undef -- window is available in browser context (addInitScript)
       window.localStorage.setItem(storageKey, JSON.stringify(mockAuthToken));
+
+      // 2. Set e2e-test-mode cookie (for AuthProvider detection)
+      // This bypasses the need for proxy.ts to set it
+      document.cookie = "e2e-test-mode=true; path=/; SameSite=Lax";
+
+      // eslint-disable-next-line no-console -- Intentional debug output for E2E traces
+      console.log("[E2E] Mock auth injected:", {
+        userId: mockUser.id,
+        email: mockUser.email,
+        // eslint-disable-next-line no-undef -- window is available in browser context (addInitScript)
+        hasToken: !!window.localStorage.getItem(storageKey),
+        hasCookie: document.cookie.includes("e2e-test-mode=true"),
+      });
     },
     { mockUser: user }
   );
