@@ -12,6 +12,9 @@ import {
   Gavel,
   CirclePlay,
   Flag,
+  Building2,
+  Check,
+  X,
 } from "lucide-react";
 import {
   Popover,
@@ -26,7 +29,6 @@ import {
   getMyOrganizationInvitations,
 } from "@trainers/supabase";
 import type { TypedSupabaseClient } from "@trainers/supabase";
-import { NotificationPopup } from "@/components/notifications/notification-popup";
 import {
   markNotificationReadAction,
   markAllNotificationsReadAction,
@@ -35,6 +37,10 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useRouter } from "next/navigation";
 import type { RealtimeChannel } from "@supabase/supabase-js";
+import {
+  acceptOrganizationInvitation,
+  declineOrganizationInvitation,
+} from "@trainers/supabase";
 
 interface NotificationBellProps {
   userId?: string;
@@ -68,8 +74,8 @@ export function NotificationBell({ userId }: NotificationBellProps) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
-  const [tab, setTab] = useState<"notifications" | "invitations">(
-    "notifications"
+  const [loadingInvitationId, setLoadingInvitationId] = useState<number | null>(
+    null
   );
 
   // Fetch notifications
@@ -99,6 +105,20 @@ export function NotificationBell({ userId }: NotificationBellProps) {
 
   const { data: unreadCount, refetch: refetchUnread } = useSupabaseQuery(
     unreadCountQueryFn,
+    [userId, refreshKey]
+  );
+
+  // Fetch active match notifications
+  const activeMatchQueryFn = useCallback(
+    (client: TypedSupabaseClient) => {
+      if (!userId) return Promise.resolve([]);
+      return getActiveMatchNotifications(client);
+    },
+    [userId]
+  );
+
+  const { data: activeMatchNotifications } = useSupabaseQuery(
+    activeMatchQueryFn,
     [userId, refreshKey]
   );
 
@@ -203,9 +223,42 @@ export function NotificationBell({ userId }: NotificationBellProps) {
     }
   };
 
-  const handleInvitationHandled = () => {
-    setRefreshKey((k) => k + 1);
-    refetchInvitations();
+  const handleAcceptInvitation = async (
+    invitationId: number,
+    orgName: string
+  ) => {
+    setLoadingInvitationId(invitationId);
+    try {
+      await acceptOrganizationInvitation(supabase, invitationId);
+      toast.success(`You are now staff of ${orgName}`);
+      setRefreshKey((k) => k + 1);
+      refetchInvitations();
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Failed to accept invitation"
+      );
+    } finally {
+      setLoadingInvitationId(null);
+    }
+  };
+
+  const handleDeclineInvitation = async (
+    invitationId: number,
+    orgName: string
+  ) => {
+    setLoadingInvitationId(invitationId);
+    try {
+      await declineOrganizationInvitation(supabase, invitationId);
+      toast.success(`Declined invitation from ${orgName}`);
+      setRefreshKey((k) => k + 1);
+      refetchInvitations();
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Failed to decline invitation"
+      );
+    } finally {
+      setLoadingInvitationId(null);
+    }
   };
 
   if (!userId) {
@@ -228,43 +281,10 @@ export function NotificationBell({ userId }: NotificationBellProps) {
         </span>
       </PopoverTrigger>
       <PopoverContent className="w-96 p-0" align="end">
-        {/* Tab Header */}
+        {/* Header */}
         <div className="flex items-center justify-between border-b px-4 py-3">
-          <div className="flex gap-4">
-            <button
-              onClick={() => setTab("notifications")}
-              className={cn(
-                "text-sm font-medium",
-                tab === "notifications"
-                  ? "text-foreground"
-                  : "text-muted-foreground hover:text-foreground"
-              )}
-            >
-              Notifications
-              {(unreadCount ?? 0) > 0 && (
-                <span className="ml-1 text-xs text-red-500">
-                  ({unreadCount})
-                </span>
-              )}
-            </button>
-            <button
-              onClick={() => setTab("invitations")}
-              className={cn(
-                "text-sm font-medium",
-                tab === "invitations"
-                  ? "text-foreground"
-                  : "text-muted-foreground hover:text-foreground"
-              )}
-            >
-              Invitations
-              {(invitations?.length ?? 0) > 0 && (
-                <span className="ml-1 text-xs text-red-500">
-                  ({invitations?.length})
-                </span>
-              )}
-            </button>
-          </div>
-          {tab === "notifications" && (unreadCount ?? 0) > 0 && (
+          <h3 className="text-sm font-medium">Notifications</h3>
+          {(unreadCount ?? 0) > 0 && (
             <Button
               variant="ghost"
               size="sm"
@@ -277,40 +297,107 @@ export function NotificationBell({ userId }: NotificationBellProps) {
           )}
         </div>
 
-        {/* Content */}
-        {tab === "notifications" ? (
-          <div className="max-h-[400px] overflow-y-auto">
-            {notificationsLoading ? (
-              <div className="flex items-center justify-center py-8">
-                <Loader2 className="text-muted-foreground h-6 w-6 animate-spin" />
-              </div>
-            ) : notificationsError ? (
-              <div className="flex flex-col items-center justify-center gap-2 py-8">
-                <AlertCircle className="h-6 w-6 text-red-500" />
-                <p className="text-muted-foreground text-sm">
-                  Failed to load notifications
-                </p>
-                <button
-                  onClick={() => refetchNotifications()}
-                  className="text-primary text-sm hover:underline"
-                >
-                  Retry
-                </button>
-              </div>
-            ) : !notifications || notifications.length === 0 ? (
-              <div className="p-4 text-center">
-                <p className="text-muted-foreground text-sm">
-                  No notifications yet
-                </p>
-              </div>
-            ) : (
-              notifications.map((n) => {
+        {/* Unified Content */}
+        <div className="max-h-[400px] overflow-y-auto">
+          {notificationsLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="text-muted-foreground h-6 w-6 animate-spin" />
+            </div>
+          ) : notificationsError ? (
+            <div className="flex flex-col items-center justify-center gap-2 py-8">
+              <AlertCircle className="h-6 w-6 text-red-500" />
+              <p className="text-muted-foreground text-sm">
+                Failed to load notifications
+              </p>
+              <button
+                onClick={() => refetchNotifications()}
+                className="text-primary text-sm hover:underline"
+              >
+                Retry
+              </button>
+            </div>
+          ) : (invitations?.length ?? 0) === 0 &&
+            (!notifications || notifications.length === 0) ? (
+            <div className="p-4 text-center">
+              <p className="text-muted-foreground text-sm">
+                No notifications yet
+              </p>
+            </div>
+          ) : (
+            <>
+              {/* Organization Invitations (shown first) */}
+              {invitations?.map((invitation) => {
+                const orgName =
+                  invitation.organization?.name ?? "Unknown Organization";
+                const isLoading = loadingInvitationId === invitation.id;
+
+                return (
+                  <div
+                    key={`invitation-${invitation.id}`}
+                    className="border-b px-4 py-3"
+                  >
+                    <div className="mb-3 flex items-start gap-3">
+                      <div className="bg-primary/10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full">
+                        <Building2 className="text-primary h-4 w-4" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-medium">{orgName}</p>
+                        <p className="text-muted-foreground text-xs">
+                          invited you to join their staff
+                        </p>
+                        {invitation.created_at && (
+                          <p className="text-muted-foreground mt-1 text-xs">
+                            {formatTimeAgo(invitation.created_at)}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        variant="default"
+                        className="flex-1"
+                        disabled={isLoading}
+                        onClick={() =>
+                          handleAcceptInvitation(invitation.id, orgName)
+                        }
+                      >
+                        {isLoading ? (
+                          <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                        ) : (
+                          <Check className="mr-1 h-3 w-3" />
+                        )}
+                        Accept
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="flex-1"
+                        disabled={isLoading}
+                        onClick={() =>
+                          handleDeclineInvitation(invitation.id, orgName)
+                        }
+                      >
+                        {isLoading ? (
+                          <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                        ) : (
+                          <X className="mr-1 h-3 w-3" />
+                        )}
+                        Decline
+                      </Button>
+                    </div>
+                  </div>
+                );
+              })}
+
+              {/* Regular Notifications */}
+              {notifications?.map((n) => {
                 const IconComponent = notificationIcons[n.type ?? ""] ?? Bell;
                 const isRead = n.read_at !== null;
 
                 return (
                   <button
-                    key={n.id}
+                    key={`notification-${n.id}`}
                     className={cn(
                       "flex w-full items-start gap-3 border-b px-4 py-3 text-left transition-colors last:border-b-0",
                       isRead
@@ -349,15 +436,10 @@ export function NotificationBell({ userId }: NotificationBellProps) {
                     )}
                   </button>
                 );
-              })
-            )}
-          </div>
-        ) : (
-          <NotificationPopup
-            invitations={invitations ?? []}
-            onInvitationHandled={handleInvitationHandled}
-          />
-        )}
+              })}
+            </>
+          )}
+        </div>
       </PopoverContent>
     </Popover>
   );

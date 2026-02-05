@@ -105,34 +105,40 @@ export function TournamentRegistrations({
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Confirmed</CardTitle>
+            <CardTitle className="text-sm font-medium">Checked In</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">
+            <div className="text-2xl font-bold text-emerald-600">
+              {registrations?.filter((r) => r.status === "checked_in").length ||
+                0}
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">Not Checked In</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-amber-600">
               {registrations?.filter(
-                (r) => r.status === "confirmed" || r.status === "registered"
+                (r) =>
+                  r.status === "registered" ||
+                  r.status === "confirmed" ||
+                  r.status === "pending" ||
+                  r.status === "waitlist"
               ).length || 0}
             </div>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Pending</CardTitle>
+            <CardTitle className="text-sm font-medium">Dropped</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-yellow-600">
-              {registrations?.filter((r) => r.status === "pending").length || 0}
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Waitlist</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-blue-600">
-              {registrations?.filter((r) => r.status === "waitlist").length ||
-                0}
+            <div className="text-2xl font-bold text-gray-600">
+              {registrations?.filter(
+                (r) => r.status === "dropped" || r.status === "disqualified"
+              ).length || 0}
             </div>
           </CardContent>
         </Card>
