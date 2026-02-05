@@ -230,9 +230,9 @@ describe("TournamentOverview", () => {
 
       // 3 checked in out of 4 registered = 75%
       // 4 registered out of 8 max = 50%
-      const registrationSection = screen.getByText("Registration Status").closest(
-        '[data-slot="card"]'
-      );
+      const registrationSection = screen
+        .getByText("Registration Status")
+        .closest('[data-slot="card"]');
       expect(registrationSection).toHaveTextContent("75%");
       expect(registrationSection).toHaveTextContent("50%");
     });
@@ -285,9 +285,9 @@ describe("TournamentOverview", () => {
       render(<TournamentOverview tournament={mockTournament} />);
 
       // Check for round number in the Round Progress card
-      const roundProgressSection = screen.getByText("Round Progress").closest(
-        '[data-slot="card"]'
-      );
+      const roundProgressSection = screen
+        .getByText("Round Progress")
+        .closest('[data-slot="card"]');
       expect(roundProgressSection).toHaveTextContent("3");
       expect(roundProgressSection).toHaveTextContent("of 5 rounds");
     });
@@ -345,9 +345,9 @@ describe("TournamentOverview", () => {
       render(<TournamentOverview tournament={mockTournament} />);
 
       // Should show match stats in the Round Progress card
-      const roundProgressSection = screen.getByText("Round Progress").closest(
-        '[data-slot="card"]'
-      );
+      const roundProgressSection = screen
+        .getByText("Round Progress")
+        .closest('[data-slot="card"]');
       expect(roundProgressSection).toHaveTextContent("3"); // in progress
       expect(roundProgressSection).toHaveTextContent("6"); // completed
       expect(roundProgressSection).toHaveTextContent("1"); // pending
@@ -402,9 +402,9 @@ describe("TournamentOverview", () => {
       render(<TournamentOverview tournament={mockTournament} />);
 
       // 2 out of 4 rounds = 50% - should appear in the Round Progress card
-      const roundProgressSection = screen.getByText("Round Progress").closest(
-        '[data-slot="card"]'
-      );
+      const roundProgressSection = screen
+        .getByText("Round Progress")
+        .closest('[data-slot="card"]');
       expect(roundProgressSection).toHaveTextContent("50%");
     });
   });

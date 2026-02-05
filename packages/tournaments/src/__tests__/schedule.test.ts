@@ -320,6 +320,8 @@ describe("formatStartDateTime", () => {
     const formatted = formatStartDateTime(date);
     // Format: "Weekday, Month Day at HH:MM AM/PM"
     expect(formatted).toContain("at");
-    expect(formatted).toMatch(/[A-Z][a-z]{2},\s[A-Z][a-z]{2}\s\d+\sat\s\d{1,2}:\d{2}\s[AP]M/);
+    expect(formatted).toMatch(
+      /[A-Z][a-z]{2},\s[A-Z][a-z]{2}\s\d+\sat\s\d{1,2}:\d{2}\s[AP]M/
+    );
   });
 });
