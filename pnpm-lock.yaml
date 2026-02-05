@@ -53,7 +53,7 @@ importers:
         specifier: ^29.5.14
         version: 29.5.14
       eslint:
-        specifier: ^9.39.2
+        specifier: 'catalog:'
         version: 9.39.2(jiti@2.6.1)
       husky:
         specifier: ^9.1.7
