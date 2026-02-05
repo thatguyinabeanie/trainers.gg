@@ -157,15 +157,7 @@ export default function SignInPage() {
 
         {showPassword && (
           <div className="flex flex-col gap-2">
-            <div className="flex items-center justify-between">
-              <Label htmlFor="password">Password</Label>
-              <Link
-                href="/forgot-password"
-                className="text-muted-foreground hover:text-foreground text-sm"
-              >
-                Forgot password?
-              </Link>
-            </div>
+            <Label htmlFor="password">Password</Label>
             <Input
               id="password"
               type="password"
@@ -178,6 +170,14 @@ export default function SignInPage() {
               }}
               autoFocus
             />
+            <div className="flex justify-end">
+              <Link
+                href="/forgot-password"
+                className="text-muted-foreground hover:text-primary text-sm"
+              >
+                Forgot password?
+              </Link>
+            </div>
           </div>
         )}
 
