@@ -1,15 +1,19 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/middleware";
+import { cookies } from "next/headers";
 
 /**
  * Proxy (Next.js 16 request interception)
  *
  * Three layers of route protection:
  *
- * 1. Admin routes (role-based):
- *    - /admin/* requires the `site_admin` role in the JWT `site_roles` claim
+ * 1. Admin routes (role-based + sudo mode):
+ *    - /admin/* requires BOTH:
+ *      a) The `site_admin` role in the JWT `site_roles` claim
+ *      b) Active sudo mode session (explicitly activated)
  *    - Unauthenticated users are redirected to /sign-in
  *    - Authenticated non-admins are rewritten to /forbidden (preserves URL)
+ *    - Site admins without sudo mode are redirected to /admin/sudo-required
  *
  * 2. Protected routes (auth required, always enforced):
  *    - /dashboard (includes /dashboard/settings, /dashboard/alts)
@@ -136,8 +140,13 @@ export async function proxy(request: NextRequest) {
     console.error("Exception in proxy getUser():", err);
   }
 
-  // Admin routes require site_admin role in JWT
+  // Admin routes require site_admin role in JWT AND active sudo mode
   if (isAdminRoute(pathname)) {
+    // Allow sudo-required page without sudo check (would cause infinite redirect)
+    if (pathname === "/admin/sudo-required") {
+      return response;
+    }
+
     if (!user) {
       const signInUrl = new URL("/sign-in", request.url);
       return NextResponse.redirect(signInUrl);
@@ -166,6 +175,22 @@ export async function proxy(request: NextRequest) {
       url.pathname = "/forbidden";
       return NextResponse.rewrite(url);
     }
+
+    // Check for active sudo mode (site_admin role alone is not sufficient)
+    const cookieStore = await cookies();
+    const sudoCookie = cookieStore.get("sudo_mode");
+    const hasSudoCookie = !!sudoCookie?.value;
+
+    if (!hasSudoCookie) {
+      // Site admin without sudo mode - redirect to sudo required page
+      const sudoUrl = new URL("/admin/sudo-required", request.url);
+      sudoUrl.searchParams.set("redirect", pathname);
+      return NextResponse.redirect(sudoUrl);
+    }
+
+    // Verify sudo session is still valid in database
+    // (This is checked via RPC in the sudo utilities, but we do a quick cookie check here)
+    // Full validation happens in server components that call requireSudoMode()
   }
 
   // Protected routes always require authentication (redirect to sign-in)

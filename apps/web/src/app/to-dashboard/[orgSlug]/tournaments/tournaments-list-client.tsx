@@ -1,34 +1,21 @@
 "use client";
 
-import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useSupabaseQuery } from "@/lib/supabase";
 import { listOrganizationTournaments } from "@trainers/supabase";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Plus, Loader2, XCircle } from "lucide-react";
 import {
-  Trophy,
-  Plus,
-  Calendar,
-  Users,
-  Loader2,
-  FileEdit,
-  Clock,
-  CheckCircle,
-  XCircle,
-  LayoutGrid,
-  List,
-} from "lucide-react";
-import { cn } from "@/lib/utils";
+  SectionHeader,
+  ActiveTournaments,
+  UpcomingTournaments,
+  CompletedTournaments,
+  TournamentListEmpty,
+  TournamentCardGrid,
+} from "@/components/tournaments/tournament-list";
 
 interface TournamentsListClientProps {
   organizationId: number;
@@ -43,33 +30,6 @@ type TournamentStatus =
   | "active"
   | "completed"
   | "cancelled";
-
-const statusConfig: Record<
-  Exclude<TournamentStatus, "all">,
-  { color: string; icon: typeof Trophy; label: string }
-> = {
-  draft: { color: "bg-gray-100 text-gray-800", icon: FileEdit, label: "Draft" },
-  upcoming: {
-    color: "bg-blue-100 text-blue-800",
-    icon: Clock,
-    label: "Upcoming",
-  },
-  active: {
-    color: "bg-green-100 text-green-800",
-    icon: Trophy,
-    label: "Active",
-  },
-  completed: {
-    color: "bg-purple-100 text-purple-800",
-    icon: CheckCircle,
-    label: "Completed",
-  },
-  cancelled: {
-    color: "bg-red-100 text-red-800",
-    icon: XCircle,
-    label: "Cancelled",
-  },
-};
 
 const statusTabs: { value: TournamentStatus; label: string }[] = [
   { value: "all", label: "All" },
@@ -87,7 +47,6 @@ export function TournamentsListClient({
 }: TournamentsListClientProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
 
   const currentStatus = (searchParams.get("status") ||
     initialStatus ||
@@ -120,6 +79,15 @@ export function TournamentsListClient({
     router.push(`${basePath}/tournaments?${params.toString()}`);
   };
 
+  // Group tournaments by status for sectioned view
+  const groupedTournaments = {
+    active: tournaments.filter((t) => t.status === "active"),
+    upcoming: tournaments.filter((t) => t.status === "upcoming"),
+    draft: tournaments.filter((t) => t.status === "draft"),
+    completed: tournaments.filter((t) => t.status === "completed"),
+    cancelled: tournaments.filter((t) => t.status === "cancelled"),
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -138,37 +106,16 @@ export function TournamentsListClient({
         </Link>
       </div>
 
-      {/* Status Tabs and View Toggle */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <Tabs value={currentStatus} onValueChange={handleStatusChange}>
-          <TabsList>
-            {statusTabs.map((tab) => (
-              <TabsTrigger key={tab.value} value={tab.value}>
-                {tab.label}
-              </TabsTrigger>
-            ))}
-          </TabsList>
-        </Tabs>
-
-        <div className="flex gap-1 rounded-md border p-1">
-          <Button
-            variant={viewMode === "grid" ? "secondary" : "ghost"}
-            size="sm"
-            className="h-8 w-8 p-0"
-            onClick={() => setViewMode("grid")}
-          >
-            <LayoutGrid className="h-4 w-4" />
-          </Button>
-          <Button
-            variant={viewMode === "list" ? "secondary" : "ghost"}
-            size="sm"
-            className="h-8 w-8 p-0"
-            onClick={() => setViewMode("list")}
-          >
-            <List className="h-4 w-4" />
-          </Button>
-        </div>
-      </div>
+      {/* Status Tabs */}
+      <Tabs value={currentStatus} onValueChange={handleStatusChange}>
+        <TabsList>
+          {statusTabs.map((tab) => (
+            <TabsTrigger key={tab.value} value={tab.value}>
+              {tab.label}
+            </TabsTrigger>
+          ))}
+        </TabsList>
+      </Tabs>
 
       {/* Content */}
       {isLoading ? (
@@ -189,126 +136,97 @@ export function TournamentsListClient({
           </CardContent>
         </Card>
       ) : tournaments.length === 0 ? (
-        <Card>
-          <CardContent className="flex flex-col items-center justify-center py-12">
-            <Trophy className="text-muted-foreground mb-4 h-12 w-12" />
-            <h3 className="mb-2 text-lg font-semibold">No tournaments found</h3>
-            <p className="text-muted-foreground mb-4 text-center">
-              {currentStatus === "all"
-                ? "Create your first tournament to get started"
-                : `No ${currentStatus} tournaments`}
-            </p>
-            <Link href={`${basePath}/tournaments/create`}>
-              <Button>
-                <Plus className="mr-2 h-4 w-4" />
-                Create Tournament
-              </Button>
-            </Link>
-          </CardContent>
-        </Card>
-      ) : viewMode === "grid" ? (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {tournaments.map((tournament) => {
-            const status = (tournament.status ?? "draft") as Exclude<
-              TournamentStatus,
-              "all"
-            >;
-            const config = statusConfig[status] ?? statusConfig.draft;
+        <TournamentListEmpty
+          title="No tournaments found"
+          description={
+            currentStatus === "all"
+              ? "Create your first tournament to get started"
+              : `No ${currentStatus} tournaments`
+          }
+        />
+      ) : currentStatus === "all" ? (
+        // Show grouped view when "all" is selected
+        <div className="space-y-2">
+          {groupedTournaments.active.length > 0 && (
+            <>
+              <SectionHeader
+                title="In Progress"
+                count={groupedTournaments.active.length}
+              />
+              <ActiveTournaments
+                tournaments={groupedTournaments.active}
+                linkPath={(t) => `${basePath}/tournaments/${t.slug}/manage`}
+                showOrganization={false}
+              />
+            </>
+          )}
 
-            return (
-              <Link
-                key={tournament.id}
-                href={`${basePath}/tournaments/${tournament.slug}/manage`}
-              >
-                <Card className="h-full transition-shadow hover:shadow-md">
-                  <CardHeader className="pb-3">
-                    <div className="flex items-start justify-between">
-                      <CardTitle className="line-clamp-1 text-lg">
-                        {tournament.name}
-                      </CardTitle>
-                      <Badge className={config.color}>{config.label}</Badge>
-                    </div>
-                    {tournament.description && (
-                      <CardDescription className="line-clamp-2">
-                        {tournament.description}
-                      </CardDescription>
-                    )}
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-muted-foreground space-y-2 text-sm">
-                      {tournament.start_date && (
-                        <div className="flex items-center gap-2">
-                          <Calendar className="h-4 w-4" />
-                          <span>
-                            {new Date(
-                              tournament.start_date
-                            ).toLocaleDateString()}
-                          </span>
-                        </div>
-                      )}
-                      <div className="flex items-center gap-2">
-                        <Users className="h-4 w-4" />
-                        <span>
-                          {tournament.registrationCount}
-                          {tournament.max_participants
-                            ? ` / ${tournament.max_participants}`
-                            : ""}{" "}
-                          players
-                        </span>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </Link>
-            );
-          })}
+          {groupedTournaments.upcoming.length > 0 && (
+            <>
+              <SectionHeader
+                title="Upcoming"
+                count={groupedTournaments.upcoming.length}
+              />
+              <UpcomingTournaments
+                tournaments={groupedTournaments.upcoming}
+                linkPath={(t) => `${basePath}/tournaments/${t.slug}/manage`}
+                showOrganization={false}
+              />
+            </>
+          )}
+
+          {groupedTournaments.draft.length > 0 && (
+            <>
+              <SectionHeader
+                title="Draft"
+                count={groupedTournaments.draft.length}
+              />
+              <TournamentCardGrid
+                tournaments={groupedTournaments.draft}
+                linkPath={(t) => `${basePath}/tournaments/${t.slug}/manage`}
+                showStatus
+                showOrganization={false}
+              />
+            </>
+          )}
+
+          {groupedTournaments.completed.length > 0 && (
+            <>
+              <SectionHeader
+                title="Completed"
+                count={groupedTournaments.completed.length}
+              />
+              <CompletedTournaments
+                tournaments={groupedTournaments.completed}
+                linkPath={(t) => `${basePath}/tournaments/${t.slug}/manage`}
+                showOrganization={false}
+              />
+            </>
+          )}
+
+          {groupedTournaments.cancelled.length > 0 && (
+            <>
+              <SectionHeader
+                title="Cancelled"
+                count={groupedTournaments.cancelled.length}
+              />
+              <TournamentCardGrid
+                tournaments={groupedTournaments.cancelled}
+                linkPath={(t) => `${basePath}/tournaments/${t.slug}/manage`}
+                showStatus
+                showOrganization={false}
+              />
+            </>
+          )}
         </div>
       ) : (
-        <Card>
-          <CardContent className="divide-y p-0">
-            {tournaments.map((tournament) => {
-              const status = (tournament.status ?? "draft") as Exclude<
-                TournamentStatus,
-                "all"
-              >;
-              const config = statusConfig[status] ?? statusConfig.draft;
-
-              return (
-                <Link
-                  key={tournament.id}
-                  href={`${basePath}/tournaments/${tournament.slug}/manage`}
-                  className={cn(
-                    "hover:bg-muted flex items-center justify-between p-4 transition-colors"
-                  )}
-                >
-                  <div className="flex items-center gap-4">
-                    <div>
-                      <p className="font-medium">{tournament.name}</p>
-                      <div className="text-muted-foreground flex items-center gap-4 text-sm">
-                        {tournament.start_date && (
-                          <span className="flex items-center gap-1">
-                            <Calendar className="h-3 w-3" />
-                            {new Date(
-                              tournament.start_date
-                            ).toLocaleDateString()}
-                          </span>
-                        )}
-                        <span className="flex items-center gap-1">
-                          <Users className="h-3 w-3" />
-                          {tournament.registrationCount}
-                          {tournament.max_participants
-                            ? ` / ${tournament.max_participants}`
-                            : ""}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                  <Badge className={config.color}>{config.label}</Badge>
-                </Link>
-              );
-            })}
-          </CardContent>
-        </Card>
+        // Show filtered view for specific status
+        <TournamentCardGrid
+          tournaments={tournaments}
+          linkPath={(t) => `${basePath}/tournaments/${t.slug}/manage`}
+          showStatus
+          showOrganization={false}
+        />
       )}
     </div>
   );

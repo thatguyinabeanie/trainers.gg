@@ -20,6 +20,8 @@ import {
   LayoutDashboard,
   Building2,
   ChevronRight,
+  Shield,
+  ShieldAlert,
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -27,10 +29,14 @@ import { NotificationBell } from "@/components/notification-bell";
 import { useSupabaseQuery } from "@/lib/supabase";
 import { listMyOrganizations } from "@trainers/supabase";
 import type { TypedSupabaseClient } from "@trainers/supabase";
+import { toggleSudoMode, checkSudoStatus } from "@/lib/sudo/actions";
+import { useEffect, useState } from "react";
+import { useToast } from "@/hooks/use-toast";
 
 export function TopNavAuthSection() {
   const router = useRouter();
   const { user, signOut, loading } = useAuth();
+  const { toast } = useToast();
 
   const userId = user?.id;
 
@@ -41,9 +47,60 @@ export function TopNavAuthSection() {
     userId,
   ]);
 
+  // Sudo mode state
+  const [sudoStatus, setSudoStatus] = useState<{
+    isActive: boolean;
+    isSiteAdmin: boolean;
+  }>({ isActive: false, isSiteAdmin: false });
+  const [sudoLoading, setSudoLoading] = useState(false);
+
+  // Check sudo status on mount and when user changes
+  useEffect(() => {
+    if (user) {
+      checkSudoStatus().then(setSudoStatus);
+    }
+  }, [user]);
+
   const handleSignOut = async () => {
     await signOut();
     router.push("/");
+  };
+
+  const handleToggleSudo = async () => {
+    setSudoLoading(true);
+    try {
+      const result = await toggleSudoMode();
+      if (result.success) {
+        setSudoStatus({
+          isActive: result.isActive,
+          isSiteAdmin: sudoStatus.isSiteAdmin,
+        });
+        toast({
+          title: result.isActive
+            ? "Sudo mode activated"
+            : "Sudo mode deactivated",
+          description: result.isActive
+            ? "You now have elevated admin permissions."
+            : "Admin permissions have been revoked.",
+        });
+        // Refresh the page to update admin route access
+        router.refresh();
+      } else {
+        toast({
+          title: "Error",
+          description: result.error,
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to toggle sudo mode",
+        variant: "destructive",
+      });
+    } finally {
+      setSudoLoading(false);
+    }
   };
 
   // Show loading state
@@ -144,6 +201,27 @@ export function TopNavAuthSection() {
                   </DropdownMenuItem>
                 ))}
               </DropdownMenuGroup>
+            </>
+          )}
+
+          {/* Sudo Mode Toggle - Only for site admins */}
+          {sudoStatus.isSiteAdmin && (
+            <>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onClick={handleToggleSudo}
+                disabled={sudoLoading}
+                className={sudoStatus.isActive ? "bg-primary/10" : ""}
+              >
+                {sudoStatus.isActive ? (
+                  <ShieldAlert className="text-primary mr-2 h-4 w-4" />
+                ) : (
+                  <Shield className="mr-2 h-4 w-4" />
+                )}
+                <span className="flex-1">
+                  Sudo Mode {sudoStatus.isActive ? "(Active)" : "(Inactive)"}
+                </span>
+              </DropdownMenuItem>
             </>
           )}
 
