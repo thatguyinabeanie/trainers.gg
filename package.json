@@ -82,7 +82,7 @@
   },
   "lint-staged": {
     "*.{js,jsx,ts,tsx}": [
-      "eslint --fix --cache",
+      "eslint --fix --cache --ignore-pattern '*.config.{js,ts}'",
       "prettier --write"
     ],
     "*.{json,md,css,html,yml,yaml}": [
