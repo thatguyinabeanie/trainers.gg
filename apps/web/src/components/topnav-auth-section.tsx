@@ -31,12 +31,11 @@ import { listMyOrganizations } from "@trainers/supabase";
 import type { TypedSupabaseClient } from "@trainers/supabase";
 import { toggleSudoMode, checkSudoStatus } from "@/lib/sudo/actions";
 import { useEffect, useState } from "react";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 
 export function TopNavAuthSection() {
   const router = useRouter();
   const { user, signOut, loading } = useAuth();
-  const { toast } = useToast();
 
   const userId = user?.id;
 
@@ -75,28 +74,25 @@ export function TopNavAuthSection() {
           isActive: result.isActive,
           isSiteAdmin: sudoStatus.isSiteAdmin,
         });
-        toast({
-          title: result.isActive
-            ? "Sudo mode activated"
-            : "Sudo mode deactivated",
-          description: result.isActive
-            ? "You now have elevated admin permissions."
-            : "Admin permissions have been revoked.",
-        });
+        if (result.isActive) {
+          toast.success("Sudo mode activated", {
+            description: "You now have elevated admin permissions.",
+          });
+        } else {
+          toast.success("Sudo mode deactivated", {
+            description: "Admin permissions have been revoked.",
+          });
+        }
         // Refresh the page to update admin route access
         router.refresh();
       } else {
-        toast({
-          title: "Error",
+        toast.error("Error", {
           description: result.error,
-          variant: "destructive",
         });
       }
     } catch (error) {
-      toast({
-        title: "Error",
+      toast.error("Error", {
         description: "Failed to toggle sudo mode",
-        variant: "destructive",
       });
     } finally {
       setSudoLoading(false);

@@ -7,37 +7,37 @@ import {
 
 describe("passwordSchema", () => {
   it("accepts a valid password", () => {
-    const _result = passwordSchema.safeParse("Password1!");
+    const result = passwordSchema.safeParse("Password1!");
     expect(result.success).toBe(true);
   });
 
   it("rejects passwords shorter than 8 characters", () => {
-    const _result = passwordSchema.safeParse("Pa1!");
+    const result = passwordSchema.safeParse("Pa1!");
     expect(result.success).toBe(false);
   });
 
   it("rejects passwords without a lowercase letter", () => {
-    const _result = passwordSchema.safeParse("PASSWORD1!");
+    const result = passwordSchema.safeParse("PASSWORD1!");
     expect(result.success).toBe(false);
   });
 
   it("rejects passwords without an uppercase letter", () => {
-    const _result = passwordSchema.safeParse("password1!");
+    const result = passwordSchema.safeParse("password1!");
     expect(result.success).toBe(false);
   });
 
   it("rejects passwords without a digit", () => {
-    const _result = passwordSchema.safeParse("Password!!");
+    const result = passwordSchema.safeParse("Password!!");
     expect(result.success).toBe(false);
   });
 
   it("rejects passwords without a symbol", () => {
-    const _result = passwordSchema.safeParse("Password12");
+    const result = passwordSchema.safeParse("Password12");
     expect(result.success).toBe(false);
   });
 
   it("rejects empty strings", () => {
-    const _result = passwordSchema.safeParse("");
+    const result = passwordSchema.safeParse("");
     expect(result.success).toBe(false);
   });
 });
@@ -88,7 +88,7 @@ describe("usernameSchema", () => {
 
   it("rejects usernames with profanity", () => {
     // Using censored test case
-    const _result = usernameSchema.safeParse("badword123");
+    const result = usernameSchema.safeParse("badword123");
     // The result depends on whether "badword" is in the profanity list
     // We just test the mechanism works without asserting specific outcomes
   });
@@ -118,13 +118,13 @@ describe("emailSchema", () => {
 
 describe("validatePassword", () => {
   it("returns isValid: true for a strong password", () => {
-    const _result = validatePassword("Password123!");
+    const result = validatePassword("Password123!");
     expect(result.isValid).toBe(true);
     expect(result.errors).toHaveLength(0);
   });
 
   it("returns all applicable errors for a weak password", () => {
-    const _result = validatePassword("");
+    const result = validatePassword("");
     expect(result.isValid).toBe(false);
     expect(result.errors).toContain("At least 8 characters");
     expect(result.errors).toContain("One lowercase letter");
@@ -135,7 +135,7 @@ describe("validatePassword", () => {
 
   it("returns specific missing requirements", () => {
     // Only missing a symbol
-    const _result = validatePassword("Password1");
+    const result = validatePassword("Password1");
     expect(result.isValid).toBe(false);
     expect(result.errors).toEqual(["One symbol (!@#$%^&*...)"]);
   });

@@ -101,7 +101,7 @@ describe("tournamentSlugSchema", () => {
 
 describe("createTournamentSchema", () => {
   it("accepts valid tournament data", () => {
-    const _result = createTournamentSchema.safeParse({
+    const result = createTournamentSchema.safeParse({
       name: "VGC Regional 2024",
       slug: "vgc-regional-2024",
       description: "A competitive Pokemon tournament",
@@ -110,7 +110,7 @@ describe("createTournamentSchema", () => {
   });
 
   it("accepts tournament without description", () => {
-    const _result = createTournamentSchema.safeParse({
+    const result = createTournamentSchema.safeParse({
       name: "VGC Regional 2024",
       slug: "vgc-regional-2024",
     });
@@ -118,7 +118,7 @@ describe("createTournamentSchema", () => {
   });
 
   it("rejects invalid name", () => {
-    const _result = createTournamentSchema.safeParse({
+    const result = createTournamentSchema.safeParse({
       name: "AB",
       slug: "vgc-regional-2024",
     });
@@ -126,7 +126,7 @@ describe("createTournamentSchema", () => {
   });
 
   it("rejects invalid slug", () => {
-    const _result = createTournamentSchema.safeParse({
+    const result = createTournamentSchema.safeParse({
       name: "VGC Regional 2024",
       slug: "VGC_Regional",
     });
@@ -134,7 +134,7 @@ describe("createTournamentSchema", () => {
   });
 
   it("rejects name with profanity", () => {
-    const _result = createTournamentSchema.safeParse({
+    const result = createTournamentSchema.safeParse({
       name: "Bad Tournament",
       slug: "test-tournament",
     });
@@ -142,7 +142,7 @@ describe("createTournamentSchema", () => {
   });
 
   it("rejects slug with profanity", () => {
-    const _result = createTournamentSchema.safeParse({
+    const result = createTournamentSchema.safeParse({
       name: "Test Tournament",
       slug: "badslug",
     });
@@ -150,7 +150,7 @@ describe("createTournamentSchema", () => {
   });
 
   it("rejects description with profanity", () => {
-    const _result = createTournamentSchema.safeParse({
+    const result = createTournamentSchema.safeParse({
       name: "Test Tournament",
       slug: "test-tournament",
       description: "Bad description text",
@@ -159,7 +159,7 @@ describe("createTournamentSchema", () => {
   });
 
   it("accepts clean tournament data", () => {
-    const _result = createTournamentSchema.safeParse({
+    const result = createTournamentSchema.safeParse({
       name: "Pokemon Masters Championship",
       slug: "pokemon-masters-2024",
       description: "Join us for the ultimate Pokemon battle!",
@@ -170,33 +170,33 @@ describe("createTournamentSchema", () => {
 
 describe("updateTournamentSchema", () => {
   it("accepts partial update with name only", () => {
-    const _result = updateTournamentSchema.safeParse({
+    const result = updateTournamentSchema.safeParse({
       name: "Updated Tournament Name",
     });
     expect(result.success).toBe(true);
   });
 
   it("accepts partial update with description only", () => {
-    const _result = updateTournamentSchema.safeParse({
+    const result = updateTournamentSchema.safeParse({
       description: "Updated description",
     });
     expect(result.success).toBe(true);
   });
 
   it("accepts empty object", () => {
-    const _result = updateTournamentSchema.safeParse({});
+    const result = updateTournamentSchema.safeParse({});
     expect(result.success).toBe(true);
   });
 
   it("rejects invalid name if provided", () => {
-    const _result = updateTournamentSchema.safeParse({
+    const result = updateTournamentSchema.safeParse({
       name: "AB",
     });
     expect(result.success).toBe(false);
   });
 
   it("rejects invalid description if provided", () => {
-    const _result = updateTournamentSchema.safeParse({
+    const result = updateTournamentSchema.safeParse({
       description: "a".repeat(1001),
     });
     expect(result.success).toBe(false);
