@@ -126,6 +126,17 @@ export async function proxy(request: NextRequest) {
   const e2eBypassHeader = request.headers.get("x-e2e-auth-bypass");
   const isE2ETest = e2eBypassSecret && e2eBypassHeader === e2eBypassSecret;
 
+  // Debug logging for E2E bypass (remove after fixing)
+  if (request.nextUrl.pathname === "/dashboard") {
+    console.log("[proxy.ts] Dashboard request:", {
+      hasSecret: !!e2eBypassSecret,
+      hasHeader: !!e2eBypassHeader,
+      headerValue: e2eBypassHeader,
+      secretValue: e2eBypassSecret?.slice(0, 10) + "...",
+      isE2ETest,
+    });
+  }
+
   // Create Supabase client and refresh session
   const { supabase, response } = createClient(request);
 
@@ -143,9 +154,10 @@ export async function proxy(request: NextRequest) {
       created_at: new Date().toISOString(),
     } as User;
 
-    // Set a cookie so Server Components know we're in E2E test mode
+    // Set a cookie so both Server Components and Client Components know we're in E2E test mode
+    // Note: httpOnly is false so AuthProvider can read it via document.cookie
     response.cookies.set("e2e-test-mode", "true", {
-      httpOnly: true,
+      httpOnly: false,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
       path: "/",

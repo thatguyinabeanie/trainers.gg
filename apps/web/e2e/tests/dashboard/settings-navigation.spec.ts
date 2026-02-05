@@ -1,7 +1,8 @@
 import { test, expect } from "@playwright/test";
 
 test.describe("Settings navigation", () => {
-  // Uses stored auth state from setup project
+  // E2E auth bypass via x-e2e-auth-bypass header (set in playwright.config.ts)
+  // proxy.ts sets e2e-test-mode cookie, AuthProvider uses mock user
 
   test("shows settings tabs and allows navigation", async ({ page }) => {
     await page.goto("/dashboard/settings/profile");
