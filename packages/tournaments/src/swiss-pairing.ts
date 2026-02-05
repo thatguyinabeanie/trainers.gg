@@ -91,12 +91,25 @@ function comparePlayersByStandings(a: PlayerRecord, b: PlayerRecord): number {
 }
 
 /**
+ * Fisher-Yates shuffle algorithm for randomizing array order
+ * Creates a new array with elements in random order
+ */
+function shuffleArray<T>(array: T[]): T[] {
+  const result = [...array];
+  for (let i = result.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [result[i], result[j]] = [result[j]!, result[i]!];
+  }
+  return result;
+}
+
+/**
  * Generate random pairings for round 1
  */
 function generateFirstRoundPairings(
   players: PlayerRecord[]
 ): SwissPairingResult {
-  const shuffled = [...players].sort(() => Math.random() - 0.5);
+  const shuffled = shuffleArray(players);
   const pairings: SwissPairing[] = [];
 
   for (let i = 0; i < shuffled.length; i += 2) {

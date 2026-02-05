@@ -109,6 +109,53 @@ describe("generateSwissPairings", () => {
       expect(byes).toHaveLength(1);
       expect(matches).toHaveLength(1);
     });
+
+    it("randomizes Round 1 pairings (generates different patterns)", () => {
+      // Create 8 players for Round 1
+      const players = createPlayers(8);
+
+      // Generate pairings multiple times and track unique pairing patterns
+      const pairingPatterns = new Set<string>();
+      const iterations = 50;
+
+      for (let i = 0; i < iterations; i++) {
+        const result = generateSwissPairings(players, 1);
+        // Create a string representation of the pairings (sorted to normalize order)
+        const pattern = result.pairings
+          .filter((p) => !p.isBye)
+          .map((p) => {
+            const pair = [p.profile1Id, p.profile2Id].sort();
+            return `${pair[0]}-${pair[1]}`;
+          })
+          .sort()
+          .join(",");
+        pairingPatterns.add(pattern);
+      }
+
+      // With 8 players, there should be many possible pairing combinations
+      // If we run 50 iterations, we should see at least 5 different patterns
+      // (In practice, we'd expect many more, but this is a reasonable threshold)
+      expect(pairingPatterns.size).toBeGreaterThan(5);
+    });
+
+    it("randomizes bye assignment when odd number of players", () => {
+      const players = createPlayers(5);
+
+      // Run multiple iterations to see if different players get the bye
+      const byeRecipients = new Set<string>();
+      const iterations = 30;
+
+      for (let i = 0; i < iterations; i++) {
+        const result = generateSwissPairings(players, 1);
+        const byePairing = result.pairings.find((p) => p.isBye);
+        expect(byePairing).toBeDefined();
+        byeRecipients.add(byePairing!.profile1Id);
+      }
+
+      // With random shuffling, we should see at least 3 different players
+      // receive the bye over 30 iterations (statistically very likely)
+      expect(byeRecipients.size).toBeGreaterThanOrEqual(3);
+    });
   });
 
   describe("subsequent rounds (Swiss pairing)", () => {
