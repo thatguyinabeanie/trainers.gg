@@ -6,7 +6,6 @@ test.describe("Protected routes redirect to sign-in", () => {
   const protectedRoutes = [
     "/dashboard",
     "/to-dashboard",
-    "/settings",
     "/onboarding",
     "/organizations/create",
   ];

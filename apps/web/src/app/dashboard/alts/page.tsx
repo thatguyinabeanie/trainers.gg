@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition, useCallback } from "react";
-import { useAuth, getUserDisplayName } from "@/components/auth/auth-provider";
+import { useAuth } from "@/components/auth/auth-provider";
 import { useSupabaseQuery } from "@/lib/supabase";
 import { getCurrentUserAlts } from "@trainers/supabase";
 import type { TypedSupabaseClient } from "@trainers/supabase";
@@ -17,164 +17,26 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import {
-  User,
-  Shield,
-  Swords,
   Loader2,
   Save,
-  Mail,
-  Lock,
   Plus,
   Pencil,
   Trash2,
   Star,
   X,
+  Swords,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
   createAltAction,
   updateAltAction,
-  updateProfileAction,
   deleteAltAction,
   setMainAltAction,
 } from "@/actions/alts";
 
-export function SettingsContent() {
-  return (
-    <main className="container mx-auto max-w-screen-lg px-4 py-8 md:px-6">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold">Settings</h1>
-        <p className="text-muted-foreground">
-          Manage your account and preferences
-        </p>
-      </div>
-
-      <Tabs defaultValue="profile" className="space-y-6">
-        <TabsList>
-          <TabsTrigger value="profile" className="gap-2">
-            <User className="h-4 w-4" />
-            Profile
-          </TabsTrigger>
-          <TabsTrigger value="alts" className="gap-2">
-            <Swords className="h-4 w-4" />
-            Alts
-          </TabsTrigger>
-          <TabsTrigger value="account" className="gap-2">
-            <Shield className="h-4 w-4" />
-            Account
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="profile">
-          <ProfileSettings />
-        </TabsContent>
-
-        <TabsContent value="alts">
-          <AltsSettings />
-        </TabsContent>
-
-        <TabsContent value="account">
-          <AccountSettings />
-        </TabsContent>
-      </Tabs>
-    </main>
-  );
-}
-
-function ProfileSettings() {
-  const { user } = useAuth();
-  const [isPending, startTransition] = useTransition();
-
-  const displayName = user ? getUserDisplayName(user) : "";
-  const avatarUrl =
-    user?.profile?.avatarUrl ??
-    (user?.user_metadata?.avatar_url as string | undefined);
-
-  const [name, setName] = useState(displayName);
-  const [bio, setBio] = useState(user?.profile?.bio ?? "");
-
-  const handleSave = () => {
-    if (!user?.profile?.id) {
-      toast.error("No profile found");
-      return;
-    }
-
-    startTransition(async () => {
-      const result = await updateProfileAction(user.profile!.id, {
-        displayName: name,
-        bio: bio || undefined,
-      });
-
-      if (result.success) {
-        toast.success("Profile updated");
-      } else {
-        toast.error(result.error);
-      }
-    });
-  };
-
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Profile</CardTitle>
-        <CardDescription>
-          Your public profile information visible to other players
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        <div className="flex items-center gap-4">
-          <Avatar className="h-16 w-16">
-            {avatarUrl && <AvatarImage src={avatarUrl} alt={displayName} />}
-            <AvatarFallback className="bg-primary/10 text-primary text-lg font-semibold">
-              {displayName.charAt(0).toUpperCase()}
-            </AvatarFallback>
-          </Avatar>
-          <div>
-            <p className="font-medium">{displayName}</p>
-            <p className="text-muted-foreground text-sm">
-              @{user?.profile?.username ?? user?.user_metadata?.username}
-            </p>
-          </div>
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="displayName">Display Name</Label>
-          <Input
-            id="displayName"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="Your display name"
-          />
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="bio">Bio</Label>
-          <Textarea
-            id="bio"
-            value={bio}
-            onChange={(e) => setBio(e.target.value)}
-            placeholder="Tell others about yourself..."
-            rows={3}
-          />
-        </div>
-
-        <Button onClick={handleSave} disabled={isPending}>
-          {isPending ? (
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-          ) : (
-            <Save className="mr-2 h-4 w-4" />
-          )}
-          Save Changes
-        </Button>
-      </CardContent>
-    </Card>
-  );
-}
-
-function AltsSettings() {
+export default function AltsPage() {
   const { user } = useAuth();
   const [isPending, startTransition] = useTransition();
   const [editingAlt, setEditingAlt] = useState<number | null>(null);
@@ -245,24 +107,30 @@ function AltsSettings() {
 
   if (isLoading) {
     return (
-      <Card>
-        <CardContent className="flex items-center justify-center py-12">
-          <Loader2 className="text-muted-foreground h-8 w-8 animate-spin" />
-        </CardContent>
-      </Card>
+      <div className="flex min-h-[200px] items-center justify-center">
+        <Loader2 className="text-muted-foreground h-8 w-8 animate-spin" />
+      </div>
     );
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-2xl font-bold">My Alts</h2>
+        <p className="text-muted-foreground text-sm">
+          Manage your player identities. Alts are used for tournament
+          registration.
+        </p>
+      </div>
+
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
               <CardTitle>Your Alts</CardTitle>
               <CardDescription>
-                Manage your player identities. Alts are used for tournament
-                registration.
+                Create and manage your player identities for tournament
+                registration
               </CardDescription>
             </div>
             <Button
@@ -288,9 +156,13 @@ function AltsSettings() {
           )}
 
           {!alts || alts.length === 0 ? (
-            <p className="text-muted-foreground text-sm">
-              No alts found. Create one to get started.
-            </p>
+            <div className="flex flex-col items-center justify-center py-12">
+              <Swords className="text-muted-foreground mb-4 h-12 w-12 opacity-50" />
+              <h3 className="mb-2 text-lg font-semibold">No alts found</h3>
+              <p className="text-muted-foreground text-sm">
+                Create an alt to get started with tournament registration
+              </p>
+            </div>
           ) : (
             alts.map((alt) => {
               const isMain = mainAltId === alt.id;
@@ -587,51 +459,6 @@ function EditAltForm({
           Cancel
         </Button>
       </div>
-    </div>
-  );
-}
-
-function AccountSettings() {
-  const { user } = useAuth();
-  const email = user?.email ?? "";
-
-  return (
-    <div className="space-y-4">
-      <Card>
-        <CardHeader>
-          <CardTitle>Email</CardTitle>
-          <CardDescription>Your account email address</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-center gap-3">
-            <Mail className="text-muted-foreground h-5 w-5" />
-            <span className="text-sm">{email}</span>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Security</CardTitle>
-          <CardDescription>Manage your account security</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Lock className="text-muted-foreground h-5 w-5" />
-              <div>
-                <p className="text-sm font-medium">Password</p>
-                <p className="text-muted-foreground text-xs">
-                  Change your account password
-                </p>
-              </div>
-            </div>
-            <Button variant="outline" size="sm" disabled>
-              Change Password
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
     </div>
   );
 }

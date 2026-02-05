@@ -117,9 +117,9 @@ export function TopNavAuthSection() {
             <LayoutDashboard className="mr-2 h-4 w-4" />
             <span>Dashboard</span>
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => router.push("/dashboard/profiles")}>
+          <DropdownMenuItem onClick={() => router.push("/dashboard/alts")}>
             <UserCircle className="mr-2 h-4 w-4" />
-            <span>My Profile</span>
+            <span>My Alts</span>
           </DropdownMenuItem>
 
           {/* My Organizations Section - Only show if user has orgs */}
@@ -148,7 +148,7 @@ export function TopNavAuthSection() {
           )}
 
           <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={() => router.push("/settings")}>
+          <DropdownMenuItem onClick={() => router.push("/dashboard/settings")}>
             <Settings className="mr-2 h-4 w-4" />
             <span>Settings</span>
           </DropdownMenuItem>

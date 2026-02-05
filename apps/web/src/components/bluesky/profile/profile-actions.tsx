@@ -47,7 +47,7 @@ export function ProfileActions({
   if (isOwnProfile) {
     return (
       <div className={cn("flex gap-2", className)}>
-        <Link href="/settings">
+        <Link href="/dashboard/settings/profile">
           <Button variant="outline" size="sm">
             <Settings className="mr-2 size-4" />
             Edit Profile
