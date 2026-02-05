@@ -66,7 +66,11 @@ describe("TournamentRegistrations", () => {
         },
       ];
 
-      mockGetTournamentRegistrations.mockReturnValue(mockRegistrations as any);
+      mockGetTournamentRegistrations.mockReturnValue(
+        mockRegistrations as unknown as Awaited<
+          ReturnType<typeof getTournamentRegistrations>
+        >
+      );
 
       render(<TournamentRegistrations tournament={mockTournament} />);
 
@@ -117,7 +121,11 @@ describe("TournamentRegistrations", () => {
         },
       ];
 
-      mockGetTournamentRegistrations.mockReturnValue(mockRegistrations as any);
+      mockGetTournamentRegistrations.mockReturnValue(
+        mockRegistrations as unknown as Awaited<
+          ReturnType<typeof getTournamentRegistrations>
+        >
+      );
 
       const { container } = render(
         <TournamentRegistrations tournament={mockTournament} />
@@ -204,7 +212,11 @@ describe("TournamentRegistrations", () => {
         },
       ];
 
-      mockGetTournamentRegistrations.mockReturnValue(mockRegistrations as any);
+      mockGetTournamentRegistrations.mockReturnValue(
+        mockRegistrations as unknown as Awaited<
+          ReturnType<typeof getTournamentRegistrations>
+        >
+      );
 
       render(<TournamentRegistrations tournament={mockTournament} />);
 
@@ -257,7 +269,11 @@ describe("TournamentRegistrations", () => {
         },
       ];
 
-      mockGetTournamentRegistrations.mockReturnValue(mockRegistrations as any);
+      mockGetTournamentRegistrations.mockReturnValue(
+        mockRegistrations as unknown as Awaited<
+          ReturnType<typeof getTournamentRegistrations>
+        >
+      );
 
       const { container } = render(
         <TournamentRegistrations tournament={mockTournament} />
@@ -276,7 +292,9 @@ describe("TournamentRegistrations", () => {
     });
 
     it("should handle empty registrations correctly", () => {
-      mockGetTournamentRegistrations.mockReturnValue([] as any);
+      mockGetTournamentRegistrations.mockReturnValue(
+        [] as unknown as Awaited<ReturnType<typeof getTournamentRegistrations>>
+      );
 
       render(<TournamentRegistrations tournament={mockTournament} />);
 
@@ -306,7 +324,11 @@ describe("TournamentRegistrations", () => {
         },
       }));
 
-      mockGetTournamentRegistrations.mockReturnValue(mockRegistrations as any);
+      mockGetTournamentRegistrations.mockReturnValue(
+        mockRegistrations as unknown as Awaited<
+          ReturnType<typeof getTournamentRegistrations>
+        >
+      );
 
       const { container } = render(
         <TournamentRegistrations tournament={mockTournament} />
