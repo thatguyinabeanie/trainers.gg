@@ -108,20 +108,6 @@ export function NotificationBell({ userId }: NotificationBellProps) {
     [userId, refreshKey]
   );
 
-  // Fetch active match notifications
-  const activeMatchQueryFn = useCallback(
-    (client: TypedSupabaseClient) => {
-      if (!userId) return Promise.resolve([]);
-      return getActiveMatchNotifications(client);
-    },
-    [userId]
-  );
-
-  const { data: activeMatchNotifications } = useSupabaseQuery(
-    activeMatchQueryFn,
-    [userId, refreshKey]
-  );
-
   // Fetch org invitations
   const invitationsQueryFn = useCallback(
     (client: TypedSupabaseClient) => {
