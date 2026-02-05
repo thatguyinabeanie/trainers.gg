@@ -10,6 +10,7 @@
  */
 function createConfig(overrides = {}) {
   const isCI = process.env.CI === "true";
+  const displayName = overrides.displayName || "tests";
 
   return {
     testEnvironment: "node",
@@ -26,10 +27,19 @@ function createConfig(overrides = {}) {
     },
     extensionsToTreatAsEsm: [".ts", ".tsx"],
     coverageDirectory: "<rootDir>/coverage",
-    // In CI: enable coverage and add junit reporter
+    // In CI: enable coverage and add junit reporter with monorepo-aware config
     ...(isCI && {
       collectCoverage: true,
-      reporters: ["default", "jest-junit"],
+      reporters: [
+        "default",
+        [
+          "jest-junit",
+          {
+            outputDirectory: "<rootDir>/../../test-results",
+            outputName: `junit-${displayName}.xml`,
+          },
+        ],
+      ],
     }),
     ...overrides,
   };
