@@ -132,7 +132,7 @@ async function getCurrentUserId(): Promise<string | null> {
 // Helper Functions
 // ============================================================================
 
-function formatDate(dateStr?: string | null): string {
+function _formatDate(dateStr?: string | null): string {
   if (!dateStr) return "TBD";
   return new Date(dateStr).toLocaleDateString("en-US", {
     weekday: "long",

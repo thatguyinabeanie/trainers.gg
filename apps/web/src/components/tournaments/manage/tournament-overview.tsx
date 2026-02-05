@@ -69,7 +69,6 @@ export function TournamentOverview({ tournament }: TournamentOverviewProps) {
   const [previewData, setPreviewData] = useState<PreviewData | null>(null);
   const [isPending, startTransition] = useTransition();
 
-  const registrationCount = tournament.registrations?.length || 0;
   const isActive = tournament.status === "active";
 
   // -- Data Fetching --

@@ -4,7 +4,6 @@ import {
   getTournamentPhases,
   getPhaseRoundsWithStats,
 } from "@trainers/supabase";
-import { type TypedClient } from "@trainers/supabase";
 
 // Mock useSupabaseQuery hook - we'll control return values per test
 jest.mock("@/lib/supabase", () => ({
@@ -51,23 +50,25 @@ describe("TournamentOverview", () => {
     jest.clearAllMocks();
     mockGetTournamentPhases.mockReturnValue([]);
     mockGetPhaseRoundsWithStats.mockReturnValue([]);
-
-    // Default mock for useSupabaseQuery - returns empty arrays
-    mockUseSupabaseQuery
-      .mockReturnValueOnce({
-        data: [],
-        isLoading: false,
-        refetch: jest.fn(),
-      }) // phases query
-      .mockReturnValueOnce({
-        data: [],
-        isLoading: false,
-        refetch: jest.fn(),
-      }); // rounds query
   });
 
   describe("Registration Progress", () => {
     it("should display correct registration counts for draft tournament", () => {
+      // Setup default mocks for non-active tournament
+      mockUseSupabaseQuery
+        .mockReturnValueOnce({
+          data: [],
+          error: null,
+          isLoading: false,
+          refetch: jest.fn(),
+        }) // phases query
+        .mockReturnValueOnce({
+          data: [],
+          error: null,
+          isLoading: false,
+          refetch: jest.fn(),
+        }); // rounds query
+
       const mockTournament = {
         id: 1,
         name: "Test Tournament",
@@ -90,6 +91,21 @@ describe("TournamentOverview", () => {
     });
 
     it("should display checked-in count for active tournament", () => {
+      // Setup default mocks
+      mockUseSupabaseQuery
+        .mockReturnValueOnce({
+          data: [],
+          error: null,
+          isLoading: false,
+          refetch: jest.fn(),
+        }) // phases query
+        .mockReturnValueOnce({
+          data: [],
+          error: null,
+          isLoading: false,
+          refetch: jest.fn(),
+        }); // rounds query
+
       const mockTournament = {
         id: 1,
         name: "Test Tournament",
@@ -112,6 +128,21 @@ describe("TournamentOverview", () => {
     });
 
     it("should show dropped count for active tournament", () => {
+      // Setup default mocks
+      mockUseSupabaseQuery
+        .mockReturnValueOnce({
+          data: [],
+          error: null,
+          isLoading: false,
+          refetch: jest.fn(),
+        }) // phases query
+        .mockReturnValueOnce({
+          data: [],
+          error: null,
+          isLoading: false,
+          refetch: jest.fn(),
+        }); // rounds query
+
       const mockTournament = {
         id: 1,
         name: "Test Tournament",
@@ -132,6 +163,21 @@ describe("TournamentOverview", () => {
     });
 
     it("should handle tournament without max participants", () => {
+      // Setup default mocks
+      mockUseSupabaseQuery
+        .mockReturnValueOnce({
+          data: [],
+          error: null,
+          isLoading: false,
+          refetch: jest.fn(),
+        }) // phases query
+        .mockReturnValueOnce({
+          data: [],
+          error: null,
+          isLoading: false,
+          refetch: jest.fn(),
+        }); // rounds query
+
       const mockTournament = {
         id: 1,
         name: "Test Tournament",
@@ -150,6 +196,21 @@ describe("TournamentOverview", () => {
     });
 
     it("should calculate registration progress correctly", () => {
+      // Setup default mocks
+      mockUseSupabaseQuery
+        .mockReturnValueOnce({
+          data: [],
+          error: null,
+          isLoading: false,
+          refetch: jest.fn(),
+        }) // phases query
+        .mockReturnValueOnce({
+          data: [],
+          error: null,
+          isLoading: false,
+          refetch: jest.fn(),
+        }); // rounds query
+
       const mockTournament = {
         id: 1,
         name: "Test Tournament",
@@ -168,9 +229,12 @@ describe("TournamentOverview", () => {
       render(<TournamentOverview tournament={mockTournament} />);
 
       // 3 checked in out of 4 registered = 75%
-      expect(screen.getByText("75%")).toBeInTheDocument();
       // 4 registered out of 8 max = 50%
-      expect(screen.getByText("50%")).toBeInTheDocument();
+      const registrationSection = screen.getByText("Registration Status").closest(
+        '[data-slot="card"]'
+      );
+      expect(registrationSection).toHaveTextContent("75%");
+      expect(registrationSection).toHaveTextContent("50%");
     });
   });
 
@@ -207,19 +271,25 @@ describe("TournamentOverview", () => {
       mockUseSupabaseQuery
         .mockReturnValueOnce({
           data: mockPhases,
+          error: null,
           isLoading: false,
           refetch: jest.fn(),
         }) // phases query
         .mockReturnValueOnce({
           data: mockRounds,
+          error: null,
           isLoading: false,
           refetch: jest.fn(),
         }); // rounds query
 
       render(<TournamentOverview tournament={mockTournament} />);
 
-      expect(screen.getByText("3")).toBeInTheDocument();
-      expect(screen.getByText("of 5 rounds")).toBeInTheDocument();
+      // Check for round number in the Round Progress card
+      const roundProgressSection = screen.getByText("Round Progress").closest(
+        '[data-slot="card"]'
+      );
+      expect(roundProgressSection).toHaveTextContent("3");
+      expect(roundProgressSection).toHaveTextContent("of 5 rounds");
     });
 
     it("should show active round match progress", () => {
@@ -249,25 +319,41 @@ describe("TournamentOverview", () => {
         },
       ];
 
-      // Setup mocks for this test
-      mockUseSupabaseQuery
-        .mockReturnValueOnce({
-          data: mockPhases,
-          isLoading: false,
-          refetch: jest.fn(),
-        }) // phases query
-        .mockReturnValueOnce({
-          data: mockRounds,
-          isLoading: false,
-          refetch: jest.fn(),
-        }); // rounds query
+      // Setup mocks for this test (use mockImplementation for potential re-renders)
+      let callCount = 0;
+      mockUseSupabaseQuery.mockImplementation(() => {
+        callCount++;
+        if (callCount % 2 === 1) {
+          // Odd calls are for phases
+          return {
+            data: mockPhases,
+            error: null,
+            isLoading: false,
+            refetch: jest.fn(),
+          };
+        } else {
+          // Even calls are for rounds
+          return {
+            data: mockRounds,
+            error: null,
+            isLoading: false,
+            refetch: jest.fn(),
+          };
+        }
+      });
 
       render(<TournamentOverview tournament={mockTournament} />);
 
-      // Should show match stats
-      expect(screen.getByText("3")).toBeInTheDocument(); // in progress
-      expect(screen.getByText("6")).toBeInTheDocument(); // completed
-      expect(screen.getByText("1")).toBeInTheDocument(); // pending
+      // Should show match stats in the Round Progress card
+      const roundProgressSection = screen.getByText("Round Progress").closest(
+        '[data-slot="card"]'
+      );
+      expect(roundProgressSection).toHaveTextContent("3"); // in progress
+      expect(roundProgressSection).toHaveTextContent("6"); // completed
+      expect(roundProgressSection).toHaveTextContent("1"); // pending
+      expect(roundProgressSection).toHaveTextContent("active");
+      expect(roundProgressSection).toHaveTextContent("done");
+      expect(roundProgressSection).toHaveTextContent("pending");
     });
 
     it("should calculate round progress percentage correctly", () => {
@@ -279,6 +365,7 @@ describe("TournamentOverview", () => {
         currentPhaseId: 1,
         tournamentFormat: "swiss_with_cut",
         format: "VGC 2025",
+        swissRounds: 4,
       };
 
       const mockPhases = [
@@ -301,24 +388,44 @@ describe("TournamentOverview", () => {
       mockUseSupabaseQuery
         .mockReturnValueOnce({
           data: mockPhases,
+          error: null,
           isLoading: false,
           refetch: jest.fn(),
         }) // phases query
         .mockReturnValueOnce({
           data: mockRounds,
+          error: null,
           isLoading: false,
           refetch: jest.fn(),
         }); // rounds query
 
       render(<TournamentOverview tournament={mockTournament} />);
 
-      // 2 out of 4 rounds = 50%
-      expect(screen.getByText("50%")).toBeInTheDocument();
+      // 2 out of 4 rounds = 50% - should appear in the Round Progress card
+      const roundProgressSection = screen.getByText("Round Progress").closest(
+        '[data-slot="card"]'
+      );
+      expect(roundProgressSection).toHaveTextContent("50%");
     });
   });
 
   describe("Tournament Details Cards", () => {
     it("should display tournament format information", () => {
+      // Setup default mocks
+      mockUseSupabaseQuery
+        .mockReturnValueOnce({
+          data: [],
+          error: null,
+          isLoading: false,
+          refetch: jest.fn(),
+        }) // phases query
+        .mockReturnValueOnce({
+          data: [],
+          error: null,
+          isLoading: false,
+          refetch: jest.fn(),
+        }); // rounds query
+
       const mockTournament = {
         id: 1,
         name: "Test Tournament",
@@ -339,6 +446,21 @@ describe("TournamentOverview", () => {
     });
 
     it("should display schedule information", () => {
+      // Setup default mocks
+      mockUseSupabaseQuery
+        .mockReturnValueOnce({
+          data: [],
+          error: null,
+          isLoading: false,
+          refetch: jest.fn(),
+        }) // phases query
+        .mockReturnValueOnce({
+          data: [],
+          error: null,
+          isLoading: false,
+          refetch: jest.fn(),
+        }); // rounds query
+
       const startDate = new Date("2025-03-15T10:00:00Z").getTime();
       const endDate = new Date("2025-03-15T18:00:00Z").getTime();
 
@@ -361,6 +483,21 @@ describe("TournamentOverview", () => {
     });
 
     it("should handle missing optional tournament data", () => {
+      // Setup default mocks
+      mockUseSupabaseQuery
+        .mockReturnValueOnce({
+          data: [],
+          error: null,
+          isLoading: false,
+          refetch: jest.fn(),
+        }) // phases query
+        .mockReturnValueOnce({
+          data: [],
+          error: null,
+          isLoading: false,
+          refetch: jest.fn(),
+        }); // rounds query
+
       const mockTournament = {
         id: 1,
         name: "Test Tournament",
@@ -399,11 +536,13 @@ describe("TournamentOverview", () => {
       mockUseSupabaseQuery
         .mockReturnValueOnce({
           data: mockPhases,
+          error: null,
           isLoading: false,
           refetch: jest.fn(),
         }) // phases query
         .mockReturnValueOnce({
           data: [],
+          error: null,
           isLoading: false,
           refetch: jest.fn(),
         }); // rounds query
@@ -415,6 +554,21 @@ describe("TournamentOverview", () => {
     });
 
     it("should not show round command center for draft tournaments", () => {
+      // Setup default mocks
+      mockUseSupabaseQuery
+        .mockReturnValueOnce({
+          data: [],
+          error: null,
+          isLoading: false,
+          refetch: jest.fn(),
+        }) // phases query
+        .mockReturnValueOnce({
+          data: [],
+          error: null,
+          isLoading: false,
+          refetch: jest.fn(),
+        }); // rounds query
+
       const mockTournament = {
         id: 1,
         name: "Test Tournament",
