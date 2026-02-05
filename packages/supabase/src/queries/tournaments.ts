@@ -657,7 +657,7 @@ export async function getPhaseRoundsWithStats(
   const roundIds = rounds.map((r) => r.id);
   const { data: matches } = await supabase
     .from("tournament_matches")
-    .select("round_id, status")
+    .select("round_id, status, is_bye")
     .in("round_id", roundIds);
 
   // Group and count by round
@@ -673,7 +673,8 @@ export async function getPhaseRoundsWithStats(
       pending: 0,
     };
     counts.total++;
-    if (m.status === "completed") counts.completed++;
+    // Bye matches count as completed regardless of status (they never activate)
+    if (m.status === "completed" || m.is_bye) counts.completed++;
     else if (m.status === "active") counts.active++;
     else counts.pending++;
     countsByRound.set(m.round_id, counts);
