@@ -1,7 +1,6 @@
 import {
   AdvancedTeamValidator,
   SUPPORTED_FORMATS,
-  type FormatId,
 } from "../team-validator";
 import type { PokemonSet } from "../types";
 

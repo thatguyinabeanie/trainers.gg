@@ -1875,17 +1875,17 @@ export async function getUserTournamentHistory(supabase: TypedClient) {
     const { data: standings } = await supabase
       .from("tournament_standings")
       .select(
-        "tournament_id, alt_id, rank, match_wins, match_losses, match_ties"
+        "tournament_id, alt_id, rank, game_wins, game_losses"
       )
       .in("tournament_id", completedTournamentIds)
       .in("alt_id", altIds);
 
     for (const standing of standings ?? []) {
       standingsMap.set(Number(`${standing.tournament_id}_${standing.alt_id}`), {
-        rank: standing.rank,
-        wins: standing.match_wins ?? 0,
-        losses: standing.match_losses ?? 0,
-        ties: standing.match_ties ?? 0,
+        rank: standing.rank ?? 0,
+        wins: standing.game_wins ?? 0,
+        losses: standing.game_losses ?? 0,
+        ties: 0, // tournament_standings doesn't track ties separately
       });
     }
   }

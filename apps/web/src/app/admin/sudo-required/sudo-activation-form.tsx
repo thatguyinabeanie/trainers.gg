@@ -25,9 +25,13 @@ export function SudoActivationForm({ redirectPath }: SudoActivationFormProps) {
         });
         // Redirect to the originally requested admin page
         router.push(redirectPath);
+      } else if (!result.success) {
+        toast.error("Error", {
+          description: result.error,
+        });
       } else {
         toast.error("Error", {
-          description: result.error || "Failed to activate sudo mode",
+          description: "Failed to activate sudo mode",
         });
       }
     } catch (error) {

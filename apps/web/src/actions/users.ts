@@ -55,5 +55,5 @@ export async function updateSpritePreferenceAction(
         `Failed to update sprite preference: ${updateError.message}`
       );
     }
-  });
+  }, "Failed to update sprite preference");
 }

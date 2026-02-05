@@ -16,11 +16,8 @@ import {
 } from "../config.js";
 import {
   deterministicPick,
-  deterministicShuffle,
-  deterministicUUID,
   hash,
   weightedSelect,
-  deterministicInt,
 } from "../utils/deterministic.js";
 import { type GeneratedOrganization } from "./organizations.js";
 import { type GeneratedAlt } from "./users.js";
