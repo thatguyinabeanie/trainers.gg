@@ -121,7 +121,7 @@ export function ActiveTournamentCard({
       <div className="text-muted-foreground flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
         <span className="flex items-center gap-1">
           <Users className="h-3.5 w-3.5" />
-          {tournament._count.registrations} players
+          {tournament.registrationCount} players
         </span>
         {formatLabel && (
           <span className="flex items-center gap-1">
@@ -198,8 +198,8 @@ export function UpcomingTournaments({
       <div className="divide-y rounded-lg border md:hidden">
         {tournaments.map((tournament) => {
           const spotsText = tournament.max_participants
-            ? `${tournament._count.registrations}/${tournament.max_participants}`
-            : `${tournament._count.registrations}`;
+            ? `${tournament.registrationCount}/${tournament.max_participants}`
+            : `${tournament.registrationCount}`;
 
           const date = tournament.start_date
             ? new Date(tournament.start_date)
@@ -274,8 +274,8 @@ export function UpcomingTournaments({
             <TableBody>
               {tournaments.map((tournament) => {
                 const spotsText = tournament.max_participants
-                  ? `${tournament._count.registrations} / ${tournament.max_participants}`
-                  : `${tournament._count.registrations}`;
+                  ? `${tournament.registrationCount} / ${tournament.max_participants}`
+                  : `${tournament.registrationCount}`;
 
                 const href =
                   linkPath?.(tournament) ?? `/tournaments/${tournament.slug}`;
@@ -379,7 +379,7 @@ export function CompletedTournaments({
                   {showOrganization && tournament.organization?.name}
                   {showOrganization && tournament.organization && " · "}
                   <Users className="inline h-3 w-3" />{" "}
-                  {tournament._count.registrations}
+                  {tournament.registrationCount}
                 </p>
                 {tournament.winner && (
                   <p className="text-primary mt-1 flex items-center gap-1 text-xs font-medium">
@@ -459,7 +459,7 @@ export function CompletedTournaments({
                       )}
                     </TableCell>
                     <TableCell className="text-muted-foreground text-right">
-                      {tournament._count.registrations}
+                      {tournament.registrationCount}
                     </TableCell>
                   </TableRow>
                 );
@@ -532,7 +532,7 @@ export function TournamentCardGrid({
                   <div className="flex items-center gap-2">
                     <Users className="h-4 w-4" />
                     <span>
-                      {tournament._count.registrations}
+                      {tournament.registrationCount}
                       {tournament.max_participants
                         ? ` / ${tournament.max_participants}`
                         : ""}{" "}

@@ -591,7 +591,6 @@ export async function listOrganizationTournaments(
       return {
         ...tournament,
         registrationCount: registrationCount ?? 0,
-        _count: { registrations: registrationCount ?? 0 },
       };
     })
   );

@@ -100,7 +100,7 @@ export default function TournamentDetailScreen() {
         minute: "2-digit",
       })
     : null;
-  const registrationCount = tournament._count.registrations;
+  const registrationCount = tournament.registrationCount;
   const isRegistered =
     isAuthenticated &&
     tournament.registrations.some(

@@ -382,7 +382,7 @@ describe("listTournamentsGrouped", () => {
         username: "champion_player",
         display_name: "Champion Player",
       },
-      _count: { registrations: 32 },
+      registrationCount: 32,
     });
 
     expect(result.active).toHaveLength(1);
@@ -391,7 +391,7 @@ describe("listTournamentsGrouped", () => {
       name: "Active Tournament",
       status: "active",
       winner: null, // Active tournaments should have no winner
-      _count: { registrations: 16 },
+      registrationCount: 16,
     });
   });
 
@@ -443,7 +443,7 @@ describe("listTournamentsGrouped", () => {
       name: "Completed Tournament No Winner",
       status: "completed",
       winner: null, // No winner in standings
-      _count: { registrations: 8 },
+      registrationCount: 8,
     });
   });
 
@@ -503,7 +503,7 @@ describe("listTournamentsGrouped", () => {
       name: "Completed Tournament Error",
       status: "completed",
       winner: null, // Should gracefully handle error
-      _count: { registrations: 12 },
+      registrationCount: 12,
     });
 
     expect(consoleErrorSpy).toHaveBeenCalledWith(

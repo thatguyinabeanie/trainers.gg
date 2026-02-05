@@ -10,7 +10,7 @@ type OrganizationRow = Database["public"]["Tables"]["organizations"]["Row"];
 
 export type TournamentWithOrg = TournamentRow & {
   organization: Pick<OrganizationRow, "id" | "name" | "slug"> | null;
-  _count: { registrations: number };
+  registrationCount: number;
   winner: { id: number; username: string; display_name: string | null } | null;
 };
 
@@ -111,7 +111,7 @@ export async function listTournamentsGrouped(
   // Add counts and winners to tournaments
   const tournamentsWithCounts: TournamentWithOrg[] = tournaments.map((t) => ({
     ...t,
-    _count: { registrations: countMap[String(t.id)] ?? 0 },
+    registrationCount: countMap[String(t.id)] ?? 0,
     winner: t.status === "completed" ? (winnerMap[String(t.id)] ?? null) : null,
   }));
 
@@ -199,7 +199,7 @@ export async function listPublicTournaments(
   const tournamentsWithCounts = (data ?? []).map((tournament) => ({
     ...tournament,
     participants: Array(countMap[String(tournament.id)] ?? 0).fill(null), // Mimic Convex structure
-    _count: { registrations: countMap[String(tournament.id)] ?? 0 },
+    registrationCount: countMap[String(tournament.id)] ?? 0,
   }));
 
   const totalCount = count ?? 0;
@@ -271,7 +271,7 @@ export async function listTournaments(
 
   const tournamentsWithCounts = (data ?? []).map((tournament) => ({
     ...tournament,
-    _count: { registrations: countMap[String(tournament.id)] ?? 0 },
+    registrationCount: countMap[String(tournament.id)] ?? 0,
   }));
 
   return {
