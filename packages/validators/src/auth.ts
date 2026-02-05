@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { containsProfanity, PROFANITY_ERROR_MESSAGE } from "./profanity";
 
 /**
  * Password requirements matching Supabase Auth settings:
@@ -24,6 +25,7 @@ export const passwordSchema = z
  * - 3-20 characters
  * - Only letters, numbers, underscores, and hyphens
  * - Cannot start with temp_ or user_ (reserved for system-generated placeholders)
+ * - Cannot contain profanity, slurs, or offensive language
  */
 export const usernameSchema = z
   .string()
@@ -35,6 +37,9 @@ export const usernameSchema = z
   )
   .refine((val) => !val.startsWith("temp_") && !val.startsWith("user_"), {
     message: "Please choose a custom username",
+  })
+  .refine((val) => !containsProfanity(val), {
+    message: PROFANITY_ERROR_MESSAGE,
   });
 
 /**

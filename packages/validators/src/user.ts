@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { containsProfanity, PROFANITY_ERROR_MESSAGE } from "./profanity";
 
 // Social links schema
 export const socialLinksSchema = z.object({
@@ -21,8 +22,21 @@ export const gamePreferencesSchema = z.array(
 
 // User profile update schema
 export const updateProfileSchema = z.object({
-  displayName: z.string().min(1).max(64).optional(),
-  bio: z.string().max(256).optional(),
+  displayName: z
+    .string()
+    .min(1)
+    .max(64)
+    .refine((val) => !containsProfanity(val), {
+      message: PROFANITY_ERROR_MESSAGE,
+    })
+    .optional(),
+  bio: z
+    .string()
+    .max(256)
+    .refine((val) => !containsProfanity(val), {
+      message: PROFANITY_ERROR_MESSAGE,
+    })
+    .optional(),
   location: z.string().max(64).optional(),
   gamePreferences: gamePreferencesSchema.optional(),
   socialLinks: socialLinksSchema.optional(),
