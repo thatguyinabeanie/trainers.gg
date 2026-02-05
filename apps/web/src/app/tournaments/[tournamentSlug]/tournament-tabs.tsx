@@ -1,6 +1,7 @@
 "use client";
 
 import { type ReactNode } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Card,
@@ -23,6 +24,14 @@ interface TournamentTabsProps {
   canManage?: boolean;
 }
 
+const VALID_TABS = ["overview", "pairings", "standings"] as const;
+
+type ValidTab = (typeof VALID_TABS)[number];
+
+function isValidTab(tab: string | null): tab is ValidTab {
+  return VALID_TABS.includes(tab as ValidTab);
+}
+
 export function TournamentTabs({
   description,
   scheduleCard,
@@ -33,11 +42,24 @@ export function TournamentTabs({
   tournamentStatus,
   canManage = false,
 }: TournamentTabsProps) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const isPreTournament =
     tournamentStatus === "draft" || tournamentStatus === "upcoming";
 
+  // Get active tab from URL or default to overview
+  const tabParam = searchParams.get("tab");
+  const activeTab: ValidTab = isValidTab(tabParam) ? tabParam : "overview";
+
+  // Handle tab change - update URL without page reload
+  const handleTabChange = (value: string) => {
+    const newParams = new URLSearchParams(searchParams.toString());
+    newParams.set("tab", value);
+    router.replace(`?${newParams.toString()}`, { scroll: false });
+  };
+
   return (
-    <Tabs defaultValue="overview" className="w-full">
+    <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
       <TabsList className="mb-4">
         <TabsTrigger value="overview" id="tournament-tab-overview">
           Overview
