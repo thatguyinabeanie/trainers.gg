@@ -117,16 +117,17 @@ describe("generateSwissPairings", () => {
   });
 
   it("prefers giving bye to player who hasn't had one", () => {
+    // Use non-zero match points to avoid Round 1 randomization
     const players = [
-      makePlayer(1, 0, { hasReceivedBye: true }),
-      makePlayer(2, 0, { hasReceivedBye: false }),
+      makePlayer(1, 3, { hasReceivedBye: true }),
+      makePlayer(2, 3, { hasReceivedBye: false }),
       makePlayer(3, 0, { hasReceivedBye: false }),
     ];
     const result = generateSwissPairings(players, 2);
     const byePairing = result.pairings.find((p) => p.isBye);
     expect(byePairing).toBeDefined();
-    // Player 1 already had a bye, so 2 or 3 should get it
-    expect(byePairing!.alt1Id).not.toBe(1);
+    // Player 1 already had a bye, so player 3 (lowest points, no bye) should get it
+    expect(byePairing!.alt1Id).toBe(3);
   });
 
   it("sets table numbers starting at 1 for non-bye pairings", () => {
@@ -149,6 +150,180 @@ describe("generateSwissPairings", () => {
     const result = generateSwissPairings(players, 1);
     const byePairing = result.pairings.find((p) => p.isBye);
     expect(byePairing!.tableNumber).toBe(0);
+  });
+
+  describe("Round 1 randomization", () => {
+    it("randomizes Round 1 pairings (all players at 0 match points)", () => {
+      // Create 8 players, all at 0 points (Round 1 condition)
+      const players = [
+        makePlayer(1),
+        makePlayer(2),
+        makePlayer(3),
+        makePlayer(4),
+        makePlayer(5),
+        makePlayer(6),
+        makePlayer(7),
+        makePlayer(8),
+      ];
+
+      // Generate pairings multiple times and track unique pairing patterns
+      const pairingPatterns = new Set<string>();
+      const iterations = 50;
+
+      for (let i = 0; i < iterations; i++) {
+        const result = generateSwissPairings(players, 1);
+        // Create a string representation of the pairings (sorted to normalize order)
+        const pattern = result.pairings
+          .filter((p) => !p.isBye)
+          .map((p) => {
+            const pair = [p.alt1Id, p.alt2Id].sort();
+            return `${pair[0]}-${pair[1]}`;
+          })
+          .sort()
+          .join(",");
+        pairingPatterns.add(pattern);
+      }
+
+      // With 8 players, there should be many possible pairing combinations
+      // If we run 50 iterations, we should see at least 5 different patterns
+      // (In practice, we'd expect many more, but this is a reasonable threshold)
+      expect(pairingPatterns.size).toBeGreaterThan(5);
+    });
+
+    it("includes all players in Round 1 pairings", () => {
+      const players = [
+        makePlayer(1),
+        makePlayer(2),
+        makePlayer(3),
+        makePlayer(4),
+        makePlayer(5),
+        makePlayer(6),
+      ];
+
+      const result = generateSwissPairings(players, 1);
+
+      // Extract all player IDs from pairings
+      const pairedPlayerIds = new Set<number>();
+      for (const pairing of result.pairings) {
+        pairedPlayerIds.add(pairing.alt1Id);
+        if (pairing.alt2Id !== null) {
+          pairedPlayerIds.add(pairing.alt2Id);
+        }
+      }
+
+      // All 6 players should be included
+      expect(pairedPlayerIds.size).toBe(6);
+      expect(pairedPlayerIds).toEqual(new Set([1, 2, 3, 4, 5, 6]));
+    });
+
+    it("has no duplicate pairings in Round 1", () => {
+      const players = [
+        makePlayer(1),
+        makePlayer(2),
+        makePlayer(3),
+        makePlayer(4),
+        makePlayer(5),
+        makePlayer(6),
+      ];
+
+      const result = generateSwissPairings(players, 1);
+
+      // Check that no player appears twice
+      const seenPlayers = new Set<number>();
+      for (const pairing of result.pairings) {
+        expect(seenPlayers.has(pairing.alt1Id)).toBe(false);
+        seenPlayers.add(pairing.alt1Id);
+
+        if (pairing.alt2Id !== null) {
+          expect(seenPlayers.has(pairing.alt2Id)).toBe(false);
+          seenPlayers.add(pairing.alt2Id);
+        }
+      }
+    });
+
+    it("handles odd number of players in Round 1 with random bye", () => {
+      const players = [
+        makePlayer(1),
+        makePlayer(2),
+        makePlayer(3),
+        makePlayer(4),
+        makePlayer(5),
+      ];
+
+      // Run multiple iterations to see if different players get the bye
+      const byeRecipients = new Set<number>();
+      const iterations = 30;
+
+      for (let i = 0; i < iterations; i++) {
+        const result = generateSwissPairings(players, 1);
+        const byePairing = result.pairings.find((p) => p.isBye);
+        expect(byePairing).toBeDefined();
+        byeRecipients.add(byePairing!.alt1Id);
+      }
+
+      // With random shuffling, we should see at least 3 different players
+      // receive the bye over 30 iterations (statistically very likely)
+      expect(byeRecipients.size).toBeGreaterThanOrEqual(3);
+    });
+
+    it("does not randomize Round 2+ pairings (preserves Swiss logic)", () => {
+      // Create players with different match points (not Round 1)
+      const players = [
+        makePlayer(1, 3, { currentSeed: 1 }),
+        makePlayer(2, 3, { currentSeed: 2 }),
+        makePlayer(3, 0, { currentSeed: 3 }),
+        makePlayer(4, 0, { currentSeed: 4 }),
+      ];
+
+      // Generate pairings multiple times
+      const pairingPatterns = new Set<string>();
+      const iterations = 20;
+
+      for (let i = 0; i < iterations; i++) {
+        const result = generateSwissPairings(players, 2);
+        const pattern = result.pairings
+          .filter((p) => !p.isBye)
+          .map((p) => `${p.alt1Id}-${p.alt2Id}`)
+          .sort()
+          .join(",");
+        pairingPatterns.add(pattern);
+      }
+
+      // Since it's not Round 1, pairings should be deterministic (only 1 pattern)
+      // Players 1 and 2 (both at 3 points) should always be paired
+      // Players 3 and 4 (both at 0 points) should always be paired
+      expect(pairingPatterns.size).toBe(1);
+    });
+
+    it("randomizes Round 1 even when round number is not 1", () => {
+      // All players at 0 points should trigger randomization regardless of round number
+      const players = [
+        makePlayer(1),
+        makePlayer(2),
+        makePlayer(3),
+        makePlayer(4),
+      ];
+
+      // Run with round number 5, but all players at 0 points (simulates a fresh tournament)
+      const pairingPatterns = new Set<string>();
+      const iterations = 30;
+
+      for (let i = 0; i < iterations; i++) {
+        const result = generateSwissPairings(players, 5);
+        const pattern = result.pairings
+          .filter((p) => !p.isBye)
+          .map((p) => {
+            const pair = [p.alt1Id, p.alt2Id].sort();
+            return `${pair[0]}-${pair[1]}`;
+          })
+          .sort()
+          .join(",");
+        pairingPatterns.add(pattern);
+      }
+
+      // Should see randomization (more than 1 pattern)
+      expect(pairingPatterns.size).toBeGreaterThan(1);
+    });
   });
 });
 

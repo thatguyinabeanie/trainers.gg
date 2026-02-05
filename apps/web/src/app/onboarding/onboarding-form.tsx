@@ -62,6 +62,8 @@ export function OnboardingForm() {
   const [pdsStatus, setPdsStatus] = useState<PdsStatus | null>(null);
   const [blueskyHandle, setBlueskyHandle] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [usernameSuggestions, setUsernameSuggestions] = useState<string[]>([]);
+  const [authProvider, setAuthProvider] = useState<string | null>(null);
 
   const {
     register,
@@ -77,6 +79,37 @@ export function OnboardingForm() {
 
   // Fetch user data including pds_status on mount
   useEffect(() => {
+    // Helper function to sanitize username suggestions
+    const sanitizeUsername = (username: string): string => {
+      return username.toLowerCase().replace(/[^a-z0-9_-]/g, "");
+    };
+
+    // Helper function to extract username suggestions from OAuth metadata
+    const extractSuggestions = (
+      metadata: Record<string, unknown>
+    ): string[] => {
+      const suggestions: string[] = [];
+      if (typeof metadata.preferred_username === "string") {
+        const sanitized = sanitizeUsername(metadata.preferred_username);
+        if (sanitized.length >= 3) {
+          suggestions.push(sanitized);
+        }
+      }
+      if (typeof metadata.user_name === "string") {
+        const sanitized = sanitizeUsername(metadata.user_name);
+        if (sanitized.length >= 3 && !suggestions.includes(sanitized)) {
+          suggestions.push(sanitized);
+        }
+      }
+      if (typeof metadata.username === "string") {
+        const sanitized = sanitizeUsername(metadata.username);
+        if (sanitized.length >= 3 && !suggestions.includes(sanitized)) {
+          suggestions.push(sanitized);
+        }
+      }
+      return suggestions;
+    };
+
     const fetchUserData = async () => {
       try {
         const userData = await getCurrentUserData();
@@ -85,9 +118,14 @@ export function OnboardingForm() {
           setBlueskyHandle(
             userData.blueskyHandle || userData.pdsHandle || null
           );
+          setAuthProvider(userData.authProvider || null);
 
-          // Pre-fill form fields from user data
-          if (userData.username) {
+          // Pre-fill form fields from user data (but NOT username for non-external users)
+          if (
+            userData.username &&
+            !userData.username.startsWith("temp_") &&
+            !userData.username.startsWith("user_")
+          ) {
             setValue("username", userData.username);
           }
           if (userData.birthDate) {
@@ -95,6 +133,12 @@ export function OnboardingForm() {
           }
           if (userData.country) {
             setValue("country", userData.country);
+          }
+
+          // Extract username suggestions from OAuth metadata
+          if (user?.user_metadata && userData.pdsStatus !== "external") {
+            const suggestions = extractSuggestions(user.user_metadata);
+            setUsernameSuggestions(suggestions);
           }
         }
       } catch (err) {
@@ -104,7 +148,7 @@ export function OnboardingForm() {
       }
     };
     fetchUserData();
-  }, [setValue]);
+  }, [setValue, user]);
 
   // Auto-detect country on mount
   useEffect(() => {
@@ -127,21 +171,8 @@ export function OnboardingForm() {
     detectCountry();
   }, [setValue, selectedCountry]);
 
-  // Pre-fill username from OAuth metadata if available (only for non-external users)
-  useEffect(() => {
-    if (user?.user_metadata && pdsStatus !== "external") {
-      const suggestedUsername =
-        user.user_metadata.preferred_username ||
-        user.user_metadata.user_name ||
-        user.email?.split("@")[0];
-      if (suggestedUsername) {
-        setValue(
-          "username",
-          suggestedUsername.toLowerCase().replace(/[^a-z0-9_-]/g, "")
-        );
-      }
-    }
-  }, [user, setValue, pdsStatus]);
+  // REMOVED: No longer auto-fill username from OAuth metadata or email
+  // Users will see suggestion chips instead and must explicitly choose
 
   // For Bluesky OAuth users, pre-fill with their handle
   useEffect(() => {
@@ -258,6 +289,29 @@ export function OnboardingForm() {
               <p className="text-destructive text-sm">
                 {errors.username.message}
               </p>
+            )}
+            {!isBlueskyUser && usernameSuggestions.length > 0 && (
+              <div className="flex flex-col gap-2">
+                <p className="text-muted-foreground text-xs">
+                  Suggestions from your {authProvider || "account"}:
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {usernameSuggestions.map((suggestion) => (
+                    <button
+                      key={suggestion}
+                      type="button"
+                      onClick={() =>
+                        setValue("username", suggestion, {
+                          shouldValidate: true,
+                        })
+                      }
+                      className="border-border bg-background hover:bg-accent hover:text-accent-foreground rounded-md border px-3 py-1 text-sm transition-colors"
+                    >
+                      {suggestion}
+                    </button>
+                  ))}
+                </div>
+              </div>
             )}
             {isBlueskyUser ? (
               <p className="text-muted-foreground text-xs">

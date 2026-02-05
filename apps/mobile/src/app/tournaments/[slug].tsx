@@ -100,7 +100,7 @@ export default function TournamentDetailScreen() {
         minute: "2-digit",
       })
     : null;
-  const registrationCount = tournament._count.registrations;
+  const registrationCount = tournament.registrations.length;
   const isRegistered =
     isAuthenticated &&
     tournament.registrations.some(
@@ -205,10 +205,10 @@ export default function TournamentDetailScreen() {
                 </Text>
               </YStack>
             )}
-            {tournament._count.phases > 0 && (
+            {tournament.phases.length > 0 && (
               <YStack alignItems="center">
                 <Text fontSize="$6" fontWeight="700" color="$color">
-                  {tournament._count.phases}
+                  {tournament.phases.length}
                 </Text>
                 <Text fontSize="$2" color="$mutedForeground">
                   Phases

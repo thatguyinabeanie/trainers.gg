@@ -36,3 +36,12 @@ export {
 
 // permissions.ts — permission keys and constants
 export { type PermissionKey, PERMISSIONS } from "./permissions";
+
+// labels.ts — enum value to human-readable label mappings
+export {
+  registrationStatusLabels,
+  tournamentStatusLabels,
+  matchStatusLabels,
+  roundStatusLabels,
+  getLabel,
+} from "./labels";

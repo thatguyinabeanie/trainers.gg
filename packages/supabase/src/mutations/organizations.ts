@@ -55,7 +55,7 @@ async function isOrgOwner(
 /**
  * Helper to get current alt
  */
-async function getCurrentAlt(supabase: TypedClient) {
+async function _getCurrentAlt(supabase: TypedClient) {
   const user = await getCurrentUser(supabase);
   if (!user) return null;
 

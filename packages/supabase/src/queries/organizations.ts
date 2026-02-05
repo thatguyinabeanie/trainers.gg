@@ -96,10 +96,8 @@ export async function listOrganizations(
 
       return {
         ...org,
-        _count: {
-          staff: staffCount ?? 0,
-          tournaments: tournamentCount ?? 0,
-        },
+        staffCount: staffCount ?? 0,
+        tournamentCount: tournamentCount ?? 0,
       };
     })
   );
@@ -260,7 +258,7 @@ export async function listMyOrganizations(
     .limit(1)
     .maybeSingle();
 
-  const altId = alt?.id as number | undefined;
+  const _altId = alt?.id as number | undefined;
 
   // Get organizations where user is owner
   const { data: ownedOrgs } = await supabase
@@ -556,7 +554,14 @@ export async function listOrganizationTournaments(
 
   let query = supabase
     .from("tournaments")
-    .select("*", { count: "exact" })
+    .select(
+      `
+      *,
+      organization:organizations!inner(id, name, slug),
+      winner:alts(id, username, display_name)
+    `,
+      { count: "exact" }
+    )
     .eq("organization_id", organizationId)
     .is("archived_at", null)
     .order("created_at", { ascending: false });

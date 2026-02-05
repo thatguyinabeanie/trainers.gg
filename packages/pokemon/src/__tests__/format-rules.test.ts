@@ -2,7 +2,6 @@ import {
   FORMAT_RULES,
   validateTeamForFormat,
   getFormatDescription,
-  type FormatRule,
 } from "../format-rules";
 
 // -- Helper: builds a valid VGC 2024 team --

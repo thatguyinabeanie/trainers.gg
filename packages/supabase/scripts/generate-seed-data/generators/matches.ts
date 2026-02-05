@@ -146,7 +146,7 @@ function generateSwissPairings(
 /**
  * Generate single elimination bracket pairings
  */
-function generateBracketPairings(
+function _generateBracketPairings(
   altIds: number[],
   seed: string
 ): [number, number][][] {
@@ -283,7 +283,7 @@ export function generateMatches(
         const completedRounds = isActive ? activeRound - 1 : numRounds;
 
         for (let round = 1; round <= activeRound; round++) {
-          const isCompletedRound = round <= completedRounds;
+          const _isCompletedRound = round <= completedRounds;
           const isActiveRound = isActive && round === activeRound;
 
           const roundSeed = `swiss-${phase.id}-round-${round}`;
@@ -375,7 +375,7 @@ export function generateMatches(
               player2.opponents.add(alt1Id);
 
               // Generate individual games
-              const totalGames = matchAlt1Score + matchAlt2Score;
+              const _totalGames = matchAlt1Score + matchAlt2Score;
               let alt1Wins = 0;
               let alt2Wins = 0;
               const gameResults: number[] = [];
@@ -512,7 +512,7 @@ export function generateMatches(
             });
 
             // Generate games
-            const totalGames = outcome.alt1Score + outcome.alt2Score;
+            const _totalGames = outcome.alt1Score + outcome.alt2Score;
             let alt1Wins = 0;
             let alt2Wins = 0;
             const gameResults: number[] = [];

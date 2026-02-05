@@ -1,8 +1,15 @@
 import { z } from "zod";
+import { containsProfanity, PROFANITY_ERROR_MESSAGE } from "./profanity";
 
 // Post creation schema
 export const createPostSchema = z.object({
-  text: z.string().min(1).max(300), // Bluesky limit is 300 chars
+  text: z
+    .string()
+    .min(1)
+    .max(300) // Bluesky limit is 300 chars
+    .refine((val) => !containsProfanity(val), {
+      message: PROFANITY_ERROR_MESSAGE,
+    }),
   crossPostToBluesky: z.boolean().default(true),
 });
 

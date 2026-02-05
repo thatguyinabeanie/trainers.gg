@@ -2,7 +2,10 @@
 
 import Image from "next/image";
 import { useState } from "react";
-import { getPokemonSprite } from "@trainers/pokemon/sprites";
+import {
+  getPokemonSprite,
+  type SpritePreference,
+} from "@trainers/pokemon/sprites";
 import { cn } from "@/lib/utils";
 
 interface PokemonSpriteProps {
@@ -10,6 +13,7 @@ interface PokemonSpriteProps {
   size?: number;
   shiny?: boolean;
   gender?: "M" | "F";
+  spriteStyle?: SpritePreference;
   className?: string;
 }
 
@@ -18,6 +22,7 @@ export function PokemonSprite({
   size = 68,
   shiny,
   gender,
+  spriteStyle,
   className,
 }: PokemonSpriteProps) {
   const [error, setError] = useState(false);
@@ -37,7 +42,7 @@ export function PokemonSprite({
     );
   }
 
-  const sprite = getPokemonSprite(species, { shiny, gender });
+  const sprite = getPokemonSprite(species, { shiny, gender, spriteStyle });
 
   return (
     <Image

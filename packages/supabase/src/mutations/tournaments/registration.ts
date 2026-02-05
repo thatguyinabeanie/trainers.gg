@@ -3,6 +3,7 @@ import {
   checkRegistrationOpen,
   checkCheckInOpen,
 } from "../../utils/registration";
+import type { Database } from "../../types";
 import {
   type TypedClient,
   getCurrentUser,
@@ -185,7 +186,7 @@ export async function cancelRegistration(
 export async function updateRegistrationStatus(
   supabase: TypedClient,
   registrationId: number,
-  status: import("../../types").Database["public"]["Enums"]["registration_status"]
+  status: Database["public"]["Enums"]["registration_status"]
 ) {
   const user = await getCurrentUser(supabase);
   if (!user) throw new Error("Not authenticated");

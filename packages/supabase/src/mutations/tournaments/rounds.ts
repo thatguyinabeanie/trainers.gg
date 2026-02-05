@@ -1,7 +1,6 @@
 import {
   generateSwissPairings,
   type PlayerForPairing,
-  type Pairing,
 } from "../../lib/swiss-pairings";
 import {
   type TypedClient,

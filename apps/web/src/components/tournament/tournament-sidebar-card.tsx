@@ -797,11 +797,11 @@ export function TournamentSidebarCard({
         <>
           <Collapsible className="space-y-3">
             <CollapsibleTrigger className="w-full text-left">
-              <div className="bg-muted flex items-center justify-between rounded-lg p-3">
+              <div className="flex items-center justify-between rounded-lg border border-emerald-500/25 bg-emerald-500/10 p-3">
                 <div className="flex items-center gap-2">
-                  <Lock className="text-muted-foreground h-5 w-5" />
+                  <Lock className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
                   <div>
-                    <p className="text-muted-foreground text-sm font-medium">
+                    <p className="text-sm font-medium text-emerald-600 dark:text-emerald-400">
                       Team Locked
                     </p>
                     <p className="text-muted-foreground text-xs">
@@ -844,19 +844,19 @@ export function TournamentSidebarCard({
               </div>
             </CollapsibleTrigger>
             {pokemonCount > 0 && (
-              <CollapsibleContent>
+              <CollapsibleContent className="space-y-3">
                 <TeamPreview pokemon={submittedTeam.pokemon} compact />
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => startTeamEditing("paste")}
+                  className="text-muted-foreground hover:text-foreground h-auto p-0 text-xs"
+                >
+                  <RotateCcw className="mr-1.5 h-3 w-3" />
+                  Replace Team
+                </Button>
               </CollapsibleContent>
             )}
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => startTeamEditing("paste")}
-              className="text-muted-foreground hover:text-foreground h-auto p-0 text-xs"
-            >
-              <RotateCcw className="mr-1.5 h-3 w-3" />
-              Replace Team
-            </Button>
           </Collapsible>
         </>
       );

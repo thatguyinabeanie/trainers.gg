@@ -93,6 +93,26 @@ function havePlayedBefore(
 }
 
 /**
+ * Fisher-Yates shuffle algorithm for randomizing array order
+ * Creates a new array with elements in random order
+ */
+function shuffleArray<T>(array: T[]): T[] {
+  const result = [...array];
+  for (let i = result.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [result[i], result[j]] = [result[j]!, result[i]!];
+  }
+  return result;
+}
+
+/**
+ * Check if this is effectively Round 1 (all players at 0 match points)
+ */
+function isRound1(players: PlayerForPairing[]): boolean {
+  return players.every((p) => p.matchPoints === 0);
+}
+
+/**
  * Find the best opponent for a player from available players
  * Returns null if no valid opponent found
  */
@@ -193,20 +213,35 @@ export function generateSwissPairings(
   const pairedPlayers = new Set<number>();
   let tableNumber = 1;
 
+  // Check if this is Round 1 (all players at 0 points) before bye selection
+  const isRound1Condition = isRound1(activePlayers);
+
+  // For Round 1, shuffle all players before any pairing logic
+  let playersForPairing = isRound1Condition
+    ? shuffleArray(activePlayers)
+    : activePlayers;
+
   // Handle odd number of players - assign bye first
   let byePlayer: PlayerForPairing | null = null;
-  if (activePlayers.length % 2 === 1) {
-    byePlayer = selectByePlayer(activePlayers);
+  if (playersForPairing.length % 2 === 1) {
+    // For Round 1, take the last player after shuffle as bye
+    // For subsequent rounds, use the standard bye selection algorithm
+    byePlayer = isRound1Condition
+      ? (playersForPairing[playersForPairing.length - 1] ?? null)
+      : selectByePlayer(playersForPairing);
+
     if (byePlayer) {
       pairings.push({
         alt1Id: byePlayer.altId,
         alt2Id: null,
-        alt1Seed: byePlayer.currentSeed ?? activePlayers.length,
+        alt1Seed: byePlayer.currentSeed ?? playersForPairing.length,
         alt2Seed: null,
         isBye: true,
-        pairingReason: byePlayer.hasReceivedBye
-          ? "Lowest ranked player (all players have received bye)"
-          : "Lowest ranked player without previous bye",
+        pairingReason: isRound1Condition
+          ? "Random bye (Round 1)"
+          : byePlayer.hasReceivedBye
+            ? "Lowest ranked player (all players have received bye)"
+            : "Lowest ranked player without previous bye",
         tableNumber: 0, // Byes don't need a table
       });
       pairedPlayers.add(byePlayer.altId);
@@ -214,9 +249,10 @@ export function generateSwissPairings(
   }
 
   // Group remaining players by match points
-  const remainingPlayers = activePlayers.filter(
+  const remainingPlayers = playersForPairing.filter(
     (p) => !pairedPlayers.has(p.altId)
   );
+
   const pointGroups = groupByMatchPoints(remainingPlayers);
 
   // Sort point values in descending order (highest points first)
@@ -227,7 +263,11 @@ export function generateSwissPairings(
 
   for (const points of sortedPoints) {
     const group = pointGroups.get(points) ?? [];
-    const playersToMatch = [...carryOver, ...sortByTiebreakers(group)];
+    // For Round 1, players are already shuffled, so maintain that order
+    // For subsequent rounds, sort by tiebreakers
+    const playersToMatch = isRound1Condition
+      ? [...carryOver, ...group]
+      : [...carryOver, ...sortByTiebreakers(group)];
     carryOver = [];
 
     while (playersToMatch.length >= 2) {

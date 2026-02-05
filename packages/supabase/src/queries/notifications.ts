@@ -38,3 +38,19 @@ export async function getUnreadNotificationCount(supabase: TypedClient) {
   if (error) throw error;
   return count ?? 0;
 }
+
+/**
+ * Get active match notifications for the current user (unread match_ready or tournament_round).
+ * Used for quick-nav to active matches.
+ */
+export async function getActiveMatchNotifications(supabase: TypedClient) {
+  const { data, error } = await supabase
+    .from("notifications")
+    .select("*")
+    .is("read_at", null)
+    .in("type", ["match_ready", "tournament_round"])
+    .order("created_at", { ascending: false });
+
+  if (error) throw error;
+  return data;
+}

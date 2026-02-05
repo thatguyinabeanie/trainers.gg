@@ -37,6 +37,14 @@ function generateHandle(username: string): string {
 
 export async function checkUsernameAvailability(username: string) {
   try {
+    // Reject placeholder usernames (temp_*, user_*)
+    if (username.startsWith("temp_") || username.startsWith("user_")) {
+      return {
+        available: false,
+        error: "Please choose a custom username",
+      };
+    }
+
     const supabase = await createClient();
 
     // Check if username exists in users table
@@ -128,6 +136,11 @@ export async function completeProfile(data: {
 }) {
   const { isBot } = await checkBotId();
   if (isBot) return { success: false, error: "Access denied" };
+
+  // Reject placeholder usernames as a safety check
+  if (data.username.startsWith("temp_") || data.username.startsWith("user_")) {
+    return { success: false, error: "Please choose a custom username" };
+  }
 
   try {
     const supabase = await createClient();

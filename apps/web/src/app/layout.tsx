@@ -1,6 +1,7 @@
 import { Providers } from "@/components/providers";
 import { TopNav } from "@/components/topnav";
 import { Toaster } from "@/components/ui/sonner";
+import { SudoModeIndicator } from "@/components/sudo-mode-indicator";
 import type { Metadata, Viewport } from "next";
 import { Geist_Mono, Inter } from "next/font/google";
 import type { ReactNode } from "react";
@@ -85,6 +86,7 @@ export default function RootLayout({
           </footer>
 
           <Toaster />
+          <SudoModeIndicator />
         </Providers>
         <Analytics />
       </body>

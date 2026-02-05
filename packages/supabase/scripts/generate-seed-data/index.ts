@@ -18,12 +18,10 @@ import { writeFileSync } from "fs";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
 
-import { SEED_CONFIG } from "./config.js";
 import {
   generateHeader,
   generateSection,
   escapeString,
-  formatValue,
   dateToSqlExpr,
 } from "./utils/sql-builder.js";
 import {
@@ -545,7 +543,6 @@ function generateTournamentsSql(
 
   // Insert in batches per tournament
   const regBatchSize = 100;
-  let totalInserted = 0;
 
   for (const tournament of tournaments) {
     const tournamentRegs = regsByTournament.get(tournament.id) || [];
@@ -606,7 +603,7 @@ function generateTournamentsSql(
       lines.push(values.join("\n  UNION ALL\n"));
       lines.push(`  ON CONFLICT DO NOTHING;\n`);
 
-      totalInserted += batch.length;
+      const _totalInserted = batch.length;
     }
   }
 

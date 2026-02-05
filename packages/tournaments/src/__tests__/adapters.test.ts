@@ -7,7 +7,6 @@ import {
   getDefaultPhaseName,
   getDefaultRoundTime,
   type DBPhase,
-  type DBPhaseUpdate,
 } from "../adapters";
 
 import type { PhaseConfig } from "../types";

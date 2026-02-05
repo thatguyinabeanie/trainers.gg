@@ -56,6 +56,7 @@ web-build/
 
 # TypeScript
 *.tsbuildinfo
+next-env.d.ts
 
 # Misc
 .cache/
@@ -78,3 +79,8 @@ next-app
 # AT Protocol OAuth - auto-generated locally
 apps/web/public/oauth/jwks.json
 .fly
+
+# ESLint cache
+.eslintcache
+**/.eslintcache
+**/settings.local.json

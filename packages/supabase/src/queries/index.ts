@@ -16,6 +16,7 @@ export {
   getEmailByUsername,
   getAltsByUserId,
   getCurrentUserAlts,
+  getUserSpritePreference,
 } from "./users";
 
 // Organization queries
@@ -76,6 +77,7 @@ export {
   getTeamForRegistration,
   getTournamentMatchesForStaff,
   getUnpairedCheckedInPlayers,
+  getUserTournamentHistory,
 } from "./tournaments";
 
 export type { TournamentWithOrg, GroupedTournaments } from "./tournaments";
@@ -107,3 +109,12 @@ export { getNotifications, getUnreadNotificationCount } from "./notifications";
 
 // Audit log queries
 export { getTournamentAuditLog, getMatchAuditLog } from "./audit-log";
+
+// Sudo mode queries
+export {
+  getActiveSudoSession,
+  isSudoModeActive,
+  getSudoSessions,
+  startSudoSession,
+  endSudoSession,
+} from "./sudo-mode";

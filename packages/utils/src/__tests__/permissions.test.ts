@@ -1,5 +1,4 @@
 import { PERMISSIONS } from "../permissions";
-import type { PermissionKey } from "../permissions";
 
 describe("PERMISSIONS", () => {
   it("is a non-empty object", () => {
@@ -176,7 +175,7 @@ describe("PERMISSIONS", () => {
 
   describe("value integrity", () => {
     it("all permission values are non-empty strings", () => {
-      for (const [key, value] of Object.entries(PERMISSIONS)) {
+      for (const [_key, value] of Object.entries(PERMISSIONS)) {
         expect(typeof value).toBe("string");
         expect(value.length).toBeGreaterThan(0);
       }
@@ -190,7 +189,7 @@ describe("PERMISSIONS", () => {
     });
 
     it("has no duplicate permission values (excluding intentional aliases)", () => {
-      const values = Object.values(PERMISSIONS);
+      const _values = Object.values(PERMISSIONS);
       const entries = Object.entries(PERMISSIONS);
 
       // Find actual duplicates

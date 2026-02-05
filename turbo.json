@@ -134,6 +134,10 @@
       "outputs": ["coverage/**"],
       "env": ["CI", "NODE_ENV"]
     },
+    "test:watch": {
+      "cache": false,
+      "persistent": true
+    },
     "test:e2e": {
       "cache": false,
       "env": ["CI", "PLAYWRIGHT_BASE_URL"]

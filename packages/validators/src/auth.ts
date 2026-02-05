@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { containsProfanity, PROFANITY_ERROR_MESSAGE } from "./profanity";
 
 /**
  * Password requirements matching Supabase Auth settings:
@@ -15,7 +16,7 @@ export const passwordSchema = z
   .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
   .regex(/[0-9]/, "Password must contain at least one number")
   .regex(
-    /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/,
+    /[!@#$%^&*()_+=[\]{};':"\\|,.<>/?-]/,
     "Password must contain at least one symbol"
   );
 
@@ -23,6 +24,8 @@ export const passwordSchema = z
  * Username requirements:
  * - 3-20 characters
  * - Only letters, numbers, underscores, and hyphens
+ * - Cannot start with temp_ or user_ (reserved for system-generated placeholders)
+ * - Cannot contain profanity, slurs, or offensive language
  */
 export const usernameSchema = z
   .string()
@@ -31,7 +34,13 @@ export const usernameSchema = z
   .regex(
     /^[a-zA-Z0-9_-]+$/,
     "Username can only contain letters, numbers, underscores, and hyphens"
-  );
+  )
+  .refine((val) => !val.startsWith("temp_") && !val.startsWith("user_"), {
+    message: "Please choose a custom username",
+  })
+  .refine((val) => !containsProfanity(val), {
+    message: PROFANITY_ERROR_MESSAGE,
+  });
 
 /**
  * Email schema with standard validation
@@ -63,7 +72,7 @@ export function validatePassword(password: string): {
   if (!/[0-9]/.test(password)) {
     errors.push("One number");
   }
-  if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) {
+  if (!/[!@#$%^&*()_+=[\]{};':"\\|,.<>/?-]/.test(password)) {
     errors.push("One symbol (!@#$%^&*...)");
   }
 

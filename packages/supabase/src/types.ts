@@ -1264,6 +1264,41 @@ export type Database = {
         }
         Relationships: []
       }
+      sudo_sessions: {
+        Row: {
+          ended_at: string | null
+          id: number
+          ip_address: unknown
+          started_at: string
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          ended_at?: string | null
+          id?: never
+          ip_address?: unknown
+          started_at?: string
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          ended_at?: string | null
+          id?: never
+          ip_address?: unknown
+          started_at?: string
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sudo_sessions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       team_pokemon: {
         Row: {
           created_at: string | null
@@ -2471,6 +2506,9 @@ export type Database = {
           pds_status: Database["public"]["Enums"]["pds_account_status"] | null
           phone_number: string | null
           public_metadata: Json | null
+          sprite_preference:
+            | Database["public"]["Enums"]["sprite_preference"]
+            | null
           updated_at: string | null
           username: string | null
         }
@@ -2495,6 +2533,9 @@ export type Database = {
           pds_status?: Database["public"]["Enums"]["pds_account_status"] | null
           phone_number?: string | null
           public_metadata?: Json | null
+          sprite_preference?:
+            | Database["public"]["Enums"]["sprite_preference"]
+            | null
           updated_at?: string | null
           username?: string | null
         }
@@ -2519,6 +2560,9 @@ export type Database = {
           pds_status?: Database["public"]["Enums"]["pds_account_status"] | null
           phone_number?: string | null
           public_metadata?: Json | null
+          sprite_preference?:
+            | Database["public"]["Enums"]["sprite_preference"]
+            | null
           updated_at?: string | null
           username?: string | null
         }
@@ -2586,6 +2630,17 @@ export type Database = {
         Args: { p_bracket_size: number }
         Returns: number[]
       }
+      get_active_sudo_session: {
+        Args: { timeout_minutes?: number }
+        Returns: {
+          ended_at: string
+          id: number
+          ip_address: unknown
+          started_at: string
+          user_agent: string
+          user_id: string
+        }[]
+      }
       get_current_alt_id: { Args: never; Returns: number }
       get_current_user_id: { Args: never; Returns: string }
       get_match_games_for_player: {
@@ -2638,6 +2693,7 @@ export type Database = {
         Returns: boolean
       }
       is_site_admin: { Args: never; Returns: boolean }
+      is_sudo_active: { Args: never; Returns: boolean }
       report_match_result: {
         Args: {
           p_match_id: number
@@ -2695,6 +2751,8 @@ export type Database = {
         | "registration.checked_in"
         | "registration.dropped"
         | "registration.late_checkin"
+        | "admin.sudo_activated"
+        | "admin.sudo_deactivated"
       billing_interval: "monthly" | "annual"
       entity_type: "profile" | "organization" | "alt"
       invitation_status: "pending" | "accepted" | "declined" | "expired"
@@ -2740,6 +2798,7 @@ export type Database = {
         | "dropped"
         | "withdrawn"
       role_scope: "site" | "organization"
+      sprite_preference: "gen5" | "gen5ani" | "ani"
       subscription_status: "active" | "cancelled" | "expired" | "past_due"
       tournament_format:
         | "swiss_only"
@@ -2907,6 +2966,8 @@ export const Constants = {
         "registration.checked_in",
         "registration.dropped",
         "registration.late_checkin",
+        "admin.sudo_activated",
+        "admin.sudo_deactivated",
       ],
       billing_interval: ["monthly", "annual"],
       entity_type: ["profile", "organization", "alt"],
@@ -2958,6 +3019,7 @@ export const Constants = {
         "withdrawn",
       ],
       role_scope: ["site", "organization"],
+      sprite_preference: ["gen5", "gen5ani", "ani"],
       subscription_status: ["active", "cancelled", "expired", "past_due"],
       tournament_format: [
         "swiss_only",

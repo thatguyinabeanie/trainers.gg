@@ -41,7 +41,7 @@ export function QuickActions() {
         </Card>
       </Link>
 
-      <Link href="/settings">
+      <Link href="/dashboard/settings">
         <Card className="cursor-pointer transition-shadow hover:shadow-lg">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Settings</CardTitle>

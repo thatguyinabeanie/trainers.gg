@@ -19,9 +19,9 @@ jobs:
       (github.event_name == 'issues' && (contains(github.event.issue.body, '@claude') || contains(github.event.issue.title, '@claude')))
     runs-on: ubuntu-latest
     permissions:
-      contents: read
-      pull-requests: read
-      issues: read
+      contents: write # Allows creating branches & commits
+      pull-requests: write # Allows creating PRs
+      issues: write # Allows commenting on issues
       id-token: write
       actions: read # Required for Claude to read CI results on PRs
     steps:
@@ -34,6 +34,7 @@ jobs:
         id: claude
         uses: anthropics/claude-code-action@v1
         with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
 
           # This is an optional setting that allows Claude to read CI results on PRs
@@ -41,10 +42,17 @@ jobs:
             actions: read
 
           # Optional: Give a custom prompt to Claude. If this is not specified, Claude will perform the instructions specified in the comment that tagged it.
-          # prompt: 'Update the pull request description to include a summary of changes.'
+          prompt: |
+            Implement the feature/fix described in this issue.
+            Follow all conventions in CLAUDE.md.
+            Create a PR with:
+            - Descriptive title matching the issue
+            - Implementation details in PR description
+            - Tests for new functionality (required per CLAUDE.md testing requirements)
+            - Link back to this issue
+            When creating the PR, use the format: "Closes #<issue-number>" in the description.
 
           # Optional: Add claude_args to customize behavior and configuration
           # See https://github.com/anthropics/claude-code-action/blob/main/docs/usage.md
           # or https://code.claude.com/docs/en/cli-reference for available options
           # claude_args: '--allowed-tools Bash(gh pr:*)'
-

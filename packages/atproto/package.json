@@ -9,6 +9,8 @@
   },
   "scripts": {
     "test": "jest --passWithNoTests",
+    "test:watch": "jest --watch --passWithNoTests",
+    "lint": "eslint . --max-warnings 0 --cache",
     "typecheck": "tsc --noEmit",
     "format": "prettier --write \"src/**/*.{ts,tsx,js,jsx,json,md}\"",
     "format:check": "prettier --check \"src/**/*.{ts,tsx,js,jsx,json,md}\""
@@ -17,10 +19,12 @@
     "@atproto/api": "^0.18.17"
   },
   "devDependencies": {
+    "@trainers/eslint-config": "workspace:*",
     "@trainers/jest-config": "workspace:*",
     "@trainers/prettier-config": "workspace:*",
     "@trainers/typescript-config": "workspace:*",
     "@types/node": "catalog:",
+    "eslint": "catalog:",
     "typescript": "catalog:"
   },
   "prettier": "@trainers/prettier-config"

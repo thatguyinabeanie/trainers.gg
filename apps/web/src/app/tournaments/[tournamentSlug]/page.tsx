@@ -19,12 +19,20 @@ import {
   Clock,
   Building2,
   Settings,
+  CheckCircle2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { TournamentTabs } from "./tournament-tabs";
 import { PageContainer } from "@/components/layout/page-container";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { TournamentSidebarCard } from "@/components/tournament";
+import {
+  getTournamentSchedule,
+  formatStartDateTime,
+  formatRoundTime,
+  type TournamentScheduleData,
+} from "@trainers/tournaments";
+import { cn } from "@/lib/utils";
 // import { TeamSubmissionsList } from "@/components/tournament/team-submissions-list";
 
 // On-demand revalidation only (no time-based)
@@ -124,7 +132,7 @@ async function getCurrentUserId(): Promise<string | null> {
 // Helper Functions
 // ============================================================================
 
-function formatDate(dateStr?: string | null): string {
+function _formatDate(dateStr?: string | null): string {
   if (!dateStr) return "TBD";
   return new Date(dateStr).toLocaleDateString("en-US", {
     weekday: "long",
@@ -229,6 +237,55 @@ function ScheduleCard({
 }: {
   tournament: NonNullable<Awaited<ReturnType<typeof getTournamentBySlug>>>;
 }) {
+  const registrationCount = tournament.registrations?.length || 0;
+
+  // Build schedule data
+  const scheduleData: TournamentScheduleData = {
+    startDate: tournament.start_date,
+    roundTimeMinutes: tournament.round_time_minutes ?? 50,
+    tournamentFormat: tournament.tournament_format ?? "swiss_only",
+    swissRounds: tournament.swiss_rounds,
+    topCutSize: tournament.top_cut_size,
+    registrationCount,
+    currentRound: tournament.current_round ?? 0,
+    tournamentPhases: tournament.phases?.map((phase) => ({
+      id: phase.id,
+      name: phase.name,
+      phase_type: phase.phase_type,
+      status: phase.status ?? "pending",
+      current_round: phase.current_round ?? 0,
+      planned_rounds: phase.planned_rounds,
+      tournament_rounds: phase.tournament_rounds?.map((round) => ({
+        id: round.id,
+        round_number: round.round_number,
+        status: round.status ?? "pending",
+        start_time: round.start_time,
+        end_time: round.end_time,
+      })),
+    })),
+  };
+
+  const schedule = getTournamentSchedule(scheduleData);
+
+  if (!schedule.tournamentStartTime) {
+    // No start date set
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Calendar className="h-5 w-5" />
+            Schedule
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-muted-foreground text-sm">
+            Tournament start time not yet scheduled
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Card>
       <CardHeader>
@@ -237,17 +294,49 @@ function ScheduleCard({
           Schedule
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div>
-            <p className="text-muted-foreground text-sm">Start Date</p>
-            <p className="font-medium">{formatDate(tournament.start_date)}</p>
-          </div>
-          <div>
-            <p className="text-muted-foreground text-sm">End Date</p>
-            <p className="font-medium">{formatDate(tournament.end_date)}</p>
-          </div>
+      <CardContent className="space-y-6">
+        {/* Start time */}
+        <div>
+          <p className="text-muted-foreground mb-1 text-sm">Start</p>
+          <p className="font-medium">
+            {formatStartDateTime(schedule.tournamentStartTime)}
+          </p>
         </div>
+
+        {/* Phases and rounds */}
+        {schedule.phases.map((phase, phaseIndex) => (
+          <div key={phaseIndex}>
+            <h4 className="mb-3 font-semibold">{phase.phaseName}</h4>
+            <div className="space-y-2">
+              {phase.rounds.map((round) => {
+                const timeToDisplay = round.actualStartTime
+                  ? formatRoundTime(round.actualStartTime)
+                  : round.estimatedStartTime
+                    ? `~${formatRoundTime(round.estimatedStartTime)}`
+                    : "TBD";
+
+                return (
+                  <div
+                    key={round.roundNumber}
+                    className={cn(
+                      "flex items-center justify-between rounded-md px-3 py-2",
+                      round.isActive && "bg-primary/10",
+                      round.isCompleted && "text-muted-foreground"
+                    )}
+                  >
+                    <div className="flex items-center gap-2">
+                      {round.isCompleted && (
+                        <CheckCircle2 className="text-primary h-4 w-4" />
+                      )}
+                      <span className="text-sm">{round.name}</span>
+                    </div>
+                    <span className="text-sm font-medium">{timeToDisplay}</span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        ))}
       </CardContent>
     </Card>
   );

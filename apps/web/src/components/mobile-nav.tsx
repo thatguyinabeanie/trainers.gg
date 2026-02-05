@@ -10,7 +10,14 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import { Menu, Trophy, Home, Building2 } from "lucide-react";
+import {
+  Menu,
+  Trophy,
+  Home,
+  Building2,
+  BarChart3,
+  GraduationCap,
+} from "lucide-react";
 import { useAuth } from "@/components/auth/auth-provider";
 
 interface NavItem {
@@ -23,11 +30,15 @@ const authenticatedNavItems: NavItem[] = [
   { href: "/dashboard", label: "Dashboard", icon: Home },
   { href: "/tournaments", label: "Tournaments", icon: Trophy },
   { href: "/organizations", label: "Organizations", icon: Building2 },
+  { href: "/analytics", label: "Analytics", icon: BarChart3 },
+  { href: "/coaching", label: "Coaching", icon: GraduationCap },
 ];
 
 const publicNavItems: NavItem[] = [
   { href: "/tournaments", label: "Tournaments", icon: Trophy },
   { href: "/organizations", label: "Organizations", icon: Building2 },
+  { href: "/analytics", label: "Analytics", icon: BarChart3 },
+  { href: "/coaching", label: "Coaching", icon: GraduationCap },
 ];
 
 export function MobileNav() {

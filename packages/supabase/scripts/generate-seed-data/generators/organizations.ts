@@ -15,7 +15,6 @@ import { SEED_CONFIG, type OrganizationConfig } from "../config.js";
 import {
   deterministicPick,
   deterministicShuffle,
-  deterministicUUID,
   hash,
 } from "../utils/deterministic.js";
 import { type GeneratedUser, getUserByUsername } from "./users.js";
@@ -142,7 +141,7 @@ export function generateOrgStaff(
       if (currentOrgs.has(org.id)) return false; // Already assigned to this org
 
       // Determine max orgs for this user based on their index
-      const userIndex = shuffledStaff.indexOf(user);
+      const _userIndex = shuffledStaff.indexOf(user);
       const multiOrgRandom = hash(`multi-org-${user.id}`);
 
       let maxOrgs = 1;

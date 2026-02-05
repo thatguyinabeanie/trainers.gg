@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useSupabaseQuery } from "@/lib/supabase";
 import {
   getTournamentBySlug,
@@ -42,11 +42,28 @@ interface TournamentManageClientProps {
   tournamentSlug: string;
 }
 
+const VALID_TABS = [
+  "overview",
+  "registrations",
+  "pairings",
+  "standings",
+  "judge",
+  "audit",
+  "settings",
+] as const;
+
+type ValidTab = (typeof VALID_TABS)[number];
+
+function isValidTab(tab: string | null): tab is ValidTab {
+  return VALID_TABS.includes(tab as ValidTab);
+}
+
 export function TournamentManageClient({
   orgSlug,
   tournamentSlug,
 }: TournamentManageClientProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   const { user: currentUser, isLoading: userLoading } = useCurrentUser();
 
@@ -80,6 +97,17 @@ export function TournamentManageClient({
   const { data: phases = [] } = useSupabaseQuery(phasesQueryFn, [
     tournament?.id,
   ]);
+
+  // Get active tab from URL or default to overview
+  const tabParam = searchParams.get("tab");
+  const activeTab: ValidTab = isValidTab(tabParam) ? tabParam : "overview";
+
+  // Handle tab change - update URL without page reload
+  const handleTabChange = (value: string) => {
+    const newParams = new URLSearchParams(searchParams.toString());
+    newParams.set("tab", value);
+    router.replace(`?${newParams.toString()}`, { scroll: false });
+  };
 
   // Loading state
   if (userLoading || orgLoading || tournamentLoading) {
@@ -259,7 +287,11 @@ export function TournamentManageClient({
       </div>
 
       {/* Tabs */}
-      <Tabs defaultValue="overview" className="space-y-6">
+      <Tabs
+        value={activeTab}
+        onValueChange={handleTabChange}
+        className="space-y-6"
+      >
         {/* Scrollable tabs container */}
         <div className="relative">
           <div className="scrollbar-hide -mx-4 overflow-x-auto px-4 md:mx-0 md:px-0">

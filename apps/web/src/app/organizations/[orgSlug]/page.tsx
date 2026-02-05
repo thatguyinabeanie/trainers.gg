@@ -209,12 +209,23 @@ export default async function OrganizationPage({
     }
   }
 
-  // Combine all tournament types
+  // Combine all tournament types and transform to match TournamentWithOrg type
   const tournaments = [
     ...(organization.tournaments?.active || []),
     ...(organization.tournaments?.upcoming || []),
     ...(organization.tournaments?.completed || []),
-  ];
+  ].map((tournament) => ({
+    ...tournament,
+    _count: {
+      registrations: tournament.registrationCount ?? 0,
+    },
+    organization: {
+      id: organization.id,
+      name: organization.name,
+      slug: organization.slug,
+    },
+    winner: null, // Organization page doesn't fetch winner data
+  }));
 
   return (
     <div className="container mx-auto px-4 py-8">

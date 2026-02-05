@@ -11,6 +11,8 @@
   },
   "scripts": {
     "test": "jest",
+    "test:watch": "jest --watch",
+    "lint": "eslint . --max-warnings 0 --cache",
     "typecheck": "tsc --noEmit",
     "format": "prettier --write \"src/**/*.{ts,tsx,js,jsx,json,md}\"",
     "format:check": "prettier --check \"src/**/*.{ts,tsx,js,jsx,json,md}\""
@@ -20,12 +22,15 @@
     "@pkmn/dex": "^0.10.5",
     "@pkmn/sets": "^5.2.0",
     "@pkmn/sim": "^0.10.5",
+    "obscenity": "^0.4.6",
     "zod": "catalog:"
   },
   "devDependencies": {
+    "@trainers/eslint-config": "workspace:*",
     "@trainers/jest-config": "workspace:*",
     "@trainers/prettier-config": "workspace:*",
     "@trainers/typescript-config": "workspace:*",
+    "eslint": "catalog:",
     "typescript": "catalog:"
   },
   "prettier": "@trainers/prettier-config"

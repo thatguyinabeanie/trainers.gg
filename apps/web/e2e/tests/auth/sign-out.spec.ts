@@ -1,7 +1,12 @@
 import { test, expect } from "@playwright/test";
+import { injectE2EMockAuth } from "../../fixtures/auth-bypass";
 
 test.describe("Sign out", () => {
-  // Uses stored auth state from setup
+  test.beforeEach(async ({ page }) => {
+    // Inject mock auth BEFORE navigating
+    await injectE2EMockAuth(page);
+  });
+
   test("signs out and redirects", async ({ page }) => {
     await page.goto("/dashboard");
 

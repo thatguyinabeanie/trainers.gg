@@ -62,6 +62,22 @@ export async function createClientReadOnly() {
  * Use this in Server Components, Route Handlers, and Server Actions.
  */
 export async function getUser(): Promise<User | null> {
+  // Check for E2E test mode - if the proxy set this cookie, return mock user
+  const cookieStore = await cookies();
+  const e2eTestMode = cookieStore.get("e2e-test-mode");
+
+  if (e2eTestMode?.value === "true") {
+    // Return mock user matching player@trainers.local from seed
+    return {
+      id: "b2c3d4e5-f6a7-5b6c-9d0e-1f2a3b4c5d6e",
+      email: "player@trainers.local",
+      app_metadata: {},
+      user_metadata: {},
+      aud: "authenticated",
+      created_at: new Date().toISOString(),
+    } as User;
+  }
+
   const supabase = await createClient();
   const {
     data: { user },

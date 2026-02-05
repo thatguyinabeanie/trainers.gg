@@ -40,6 +40,7 @@ export async function getCurrentUser(supabase: TypedClient) {
     id: user.id,
     email: user.email,
     name: user.name,
+    spritePreference: user.sprite_preference ?? "gen5",
     alt: alt
       ? {
           id: alt.id,
@@ -50,6 +51,30 @@ export async function getCurrentUser(supabase: TypedClient) {
         }
       : null,
   };
+}
+
+/**
+ * Get user's sprite preference
+ */
+export async function getUserSpritePreference(
+  supabase: TypedClient,
+  userId?: string
+) {
+  const {
+    data: { user: authUser },
+  } = await supabase.auth.getUser();
+
+  const targetUserId = userId ?? authUser?.id;
+  if (!targetUserId) return "gen5";
+
+  const { data, error } = await supabase
+    .from("users")
+    .select("sprite_preference")
+    .eq("id", targetUserId)
+    .single();
+
+  if (error || !data) return "gen5";
+  return (data.sprite_preference ?? "gen5") as "gen5" | "gen5ani" | "ani";
 }
 
 /**

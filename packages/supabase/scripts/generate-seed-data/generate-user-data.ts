@@ -203,7 +203,7 @@ function generateUniqueUsername(): string {
         // cool_username
         username = faker.internet.username();
         break;
-      case 3:
+      case 3: {
         // Pokemon-themed
         const pokemonWords = [
           "trainer",
@@ -219,6 +219,7 @@ function generateUniqueUsername(): string {
         ];
         username = `${faker.word.adjective()}_${pokemonWords[faker.number.int({ min: 0, max: pokemonWords.length - 1 })]}`;
         break;
+      }
       default:
         username = faker.internet.username();
     }

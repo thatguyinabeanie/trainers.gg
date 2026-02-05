@@ -19,13 +19,17 @@ permissions:
   checks: write
 
 jobs:
-  # ── Quality checks (lint + typecheck) ──────────────────────
-  quality:
-    name: Lint & Typecheck
+  # ── Shared dependency installation ─────────────────────────
+  install:
+    name: Install Dependencies
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 5
+    outputs:
+      cache-key: ${{ steps.cache-key.outputs.key }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
 
       - uses: pnpm/action-setup@v4
 
@@ -34,18 +38,101 @@ jobs:
           node-version: 22
           cache: pnpm
 
+      - name: Generate cache key
+        id: cache-key
+        run: |
+          echo "key=node-modules-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml') }}" >> "$GITHUB_OUTPUT"
+
+      - name: Cache node_modules
+        uses: actions/cache@v4
+        id: node-modules-cache
+        with:
+          path: |
+            node_modules
+            apps/*/node_modules
+            packages/*/node_modules
+            tooling/*/node_modules
+          key: ${{ steps.cache-key.outputs.key }}
+          restore-keys: |
+            node-modules-${{ runner.os }}-
+
+      - name: Install dependencies
+        if: steps.node-modules-cache.outputs.cache-hit != 'true'
+        run: pnpm install --frozen-lockfile --prefer-offline
+        env:
+          CI: true
+          GITHUB_ACTIONS: true
+
+  # ── Quality checks (lint + typecheck) ──────────────────────
+  quality:
+    name: Lint & Typecheck
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: [install]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Restore node_modules
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            node_modules
+            apps/*/node_modules
+            packages/*/node_modules
+            tooling/*/node_modules
+          key: ${{ needs.install.outputs.cache-key }}
+          fail-on-cache-miss: true
+
+      - name: Restore workspace links
+        run: pnpm install --frozen-lockfile --offline --prefer-offline
+        env:
+          CI: true
+
       - name: Turbo cache
         uses: actions/cache@v4
         with:
           path: .turbo
-          key: turbo-${{ runner.os }}-${{ github.sha }}
-          restore-keys: turbo-${{ runner.os }}-
+          key: turbo-quality-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml', 'turbo.json', '**/tsconfig.json') }}
+          restore-keys: |
+            turbo-quality-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml') }}-
+            turbo-quality-${{ runner.os }}-
 
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-        env:
-          CI: true
-          GITHUB_ACTIONS: true
+      - name: ESLint cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            **/.eslintcache
+            node_modules/.cache/eslint
+          key: eslint-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml', '**/.eslintrc.*', '**/eslint.config.*') }}
+          restore-keys: |
+            eslint-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml') }}-
+            eslint-${{ runner.os }}-
+
+      - name: TypeScript cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            **/.tsbuildinfo
+            **/tsconfig.tsbuildinfo
+          key: tsc-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml', '**/tsconfig*.json') }}
+          restore-keys: |
+            tsc-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml') }}-
+            tsc-${{ runner.os }}-
+
+      - name: Configure Turbo Remote Cache
+        if: vars.TURBO_TOKEN != ''
+        run: |
+          echo "TURBO_TOKEN=${{ secrets.TURBO_TOKEN }}" >> "$GITHUB_ENV"
+          echo "TURBO_TEAM=${{ vars.TURBO_TEAM }}" >> "$GITHUB_ENV"
 
       # Register problem matchers so ESLint and tsc errors become
       # inline annotations on the PR Files tab.
@@ -60,13 +147,16 @@ jobs:
       - name: Typecheck
         run: pnpm turbo run typecheck --log-prefix=none
 
-  # ── Unit tests (Jest across all packages) ──────────────────
+  # ── Unit tests (Jest) ──────────────────────────────────────
   unit-tests:
     name: Unit Tests
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    needs: [install]
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
 
       - uses: pnpm/action-setup@v4
 
@@ -75,18 +165,47 @@ jobs:
           node-version: 22
           cache: pnpm
 
+      - name: Restore node_modules
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            node_modules
+            apps/*/node_modules
+            packages/*/node_modules
+            tooling/*/node_modules
+          key: ${{ needs.install.outputs.cache-key }}
+          fail-on-cache-miss: true
+
+      - name: Restore workspace links
+        run: pnpm install --frozen-lockfile --offline --prefer-offline
+        env:
+          CI: true
+
       - name: Turbo cache
         uses: actions/cache@v4
         with:
           path: .turbo
-          key: turbo-${{ runner.os }}-${{ github.sha }}
-          restore-keys: turbo-${{ runner.os }}-
+          key: turbo-test-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml', 'turbo.json', '**/jest.config.*') }}
+          restore-keys: |
+            turbo-test-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml') }}-
+            turbo-test-${{ runner.os }}-
 
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-        env:
-          CI: true
-          GITHUB_ACTIONS: true
+      - name: Jest cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            node_modules/.cache/jest
+            **/.jest-cache
+          key: jest-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml', '**/jest.config.*', 'tooling/jest/**') }}
+          restore-keys: |
+            jest-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml') }}-
+            jest-${{ runner.os }}-
+
+      - name: Configure Turbo Remote Cache
+        if: vars.TURBO_TOKEN != ''
+        run: |
+          echo "TURBO_TOKEN=${{ secrets.TURBO_TOKEN }}" >> "$GITHUB_ENV"
+          echo "TURBO_TEAM=${{ vars.TURBO_TEAM }}" >> "$GITHUB_ENV"
 
       - name: Run unit tests with coverage
         run: pnpm test:ci
@@ -98,43 +217,6 @@ jobs:
           JEST_JUNIT_ANCESTOR_SEPARATOR: " › "
           JEST_JUNIT_ADD_FILE_ATTRIBUTE: "true"
 
-      - name: Upload JUnit results
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: junit-results
-          path: test-results/
-          retention-days: 7
-
-      - name: Upload coverage artifacts
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: coverage-reports
-          path: coverage/
-          retention-days: 7
-
-  # ── Test reporting (annotations + coverage) ────────────────
-  report:
-    name: Test Reports
-    runs-on: ubuntu-latest
-    needs: [unit-tests]
-    if: always() && needs.unit-tests.result != 'cancelled'
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Download JUnit results
-        uses: actions/download-artifact@v4
-        with:
-          name: junit-results
-          path: test-results
-
-      - name: Download coverage reports
-        uses: actions/download-artifact@v4
-        with:
-          name: coverage-reports
-          path: coverage
-
       - name: Publish unit test results
         uses: EnricoMi/publish-unit-test-result-action@v2
         if: always()
@@ -143,11 +225,9 @@ jobs:
           check_name: Unit Test Results
           comment_mode: ${{ github.event_name == 'pull_request' && 'always' || 'off' }}
 
-      # Upload combined coverage — Codecov uses the paths-based
-      # flag config in codecov.yml to split coverage per package
-      # and posts a PR comment with the coverage diff.
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v5
+        if: always()
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: coverage/lcov.info
@@ -177,8 +257,9 @@ jobs:
               --jq '.[0].id // empty' 2>/dev/null || true)
 
             if [ -n "$DEPLOY_ID" ]; then
+              # Get environment_url from latest status (Vercel uses "inactive" state, not "success")
               URL=$(gh api "repos/$GH_REPO/deployments/$DEPLOY_ID/statuses" \
-                --jq '[.[] | select(.state == "success")][0].environment_url // empty' 2>/dev/null || true)
+                --jq '.[0].environment_url // empty' 2>/dev/null || true)
 
               if [ -n "$URL" ]; then
                 STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
@@ -203,15 +284,22 @@ jobs:
           echo "::error::Timeout waiting for Vercel preview deployment"
           exit 1
 
-  # ── E2E tests (Playwright against Vercel preview) ──────────
+  # ── E2E tests (Playwright with sharding) ───────────────────
   e2e-tests:
-    name: E2E Tests
+    name: E2E Tests (Shard ${{ matrix.shard }})
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    needs: [unit-tests, wait-for-preview]
+    needs: [install, wait-for-preview]
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2]
+        total-shards: [2]
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
 
       - uses: pnpm/action-setup@v4
 
@@ -220,19 +308,41 @@ jobs:
           node-version: 22
           cache: pnpm
 
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+      - name: Restore node_modules
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            node_modules
+            apps/*/node_modules
+            packages/*/node_modules
+            tooling/*/node_modules
+          key: ${{ needs.install.outputs.cache-key }}
+          fail-on-cache-miss: true
+
+      - name: Restore workspace links
+        run: pnpm install --frozen-lockfile --offline --prefer-offline
         env:
           CI: true
-          GITHUB_ACTIONS: true
+
+      - name: Turbo cache
+        uses: actions/cache@v4
+        with:
+          path: .turbo
+          key: turbo-e2e-${{ runner.os }}-${{ matrix.shard }}-${{ hashFiles('**/pnpm-lock.yaml', 'turbo.json') }}
+          restore-keys: |
+            turbo-e2e-${{ runner.os }}-${{ matrix.shard }}-${{ hashFiles('**/pnpm-lock.yaml') }}-
+            turbo-e2e-${{ runner.os }}-${{ matrix.shard }}-
+            turbo-e2e-${{ runner.os }}-
 
       - name: Cache Playwright browsers
         uses: actions/cache@v4
         id: playwright-cache
         with:
           path: ~/.cache/ms-playwright
-          key: playwright-${{ runner.os }}-${{ hashFiles('apps/web/package.json') }}
-          restore-keys: playwright-${{ runner.os }}-
+          key: playwright-${{ runner.os }}-${{ hashFiles('apps/web/package.json') }}-v1
+          restore-keys: |
+            playwright-${{ runner.os }}-${{ hashFiles('apps/web/package.json') }}-
+            playwright-${{ runner.os }}-
 
       - name: Install Playwright browsers
         if: steps.playwright-cache.outputs.cache-hit != 'true'
@@ -242,18 +352,25 @@ jobs:
         if: steps.playwright-cache.outputs.cache-hit == 'true'
         run: pnpm --filter=@trainers/web exec playwright install-deps chromium
 
-      - name: Run E2E tests
+      - name: Configure Turbo Remote Cache
+        if: vars.TURBO_TOKEN != ''
+        run: |
+          echo "TURBO_TOKEN=${{ secrets.TURBO_TOKEN }}" >> "$GITHUB_ENV"
+          echo "TURBO_TEAM=${{ vars.TURBO_TEAM }}" >> "$GITHUB_ENV"
+
+      - name: Run E2E tests (shard ${{ matrix.shard }}/${{ matrix.total-shards }})
         env:
           CI: true
           PLAYWRIGHT_BASE_URL: ${{ needs.wait-for-preview.outputs.url }}
           VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
-        run: pnpm test:e2e
+          E2E_AUTH_BYPASS_SECRET: ${{ secrets.E2E_AUTH_BYPASS_SECRET }}
+        run: pnpm --filter=@trainers/web exec playwright test --shard=${{ matrix.shard }}/${{ matrix.total-shards }}
 
       - name: Upload Playwright report
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: playwright-report
+          name: playwright-report-shard-${{ matrix.shard }}
           path: apps/web/playwright-report/
           retention-days: 7
 
@@ -261,9 +378,53 @@ jobs:
         uses: actions/upload-artifact@v4
         if: failure()
         with:
-          name: playwright-traces
+          name: playwright-traces-shard-${{ matrix.shard }}
           path: apps/web/test-results/
           retention-days: 7
+
+  # ── Merge E2E reports ───────────────────────────────────────
+  e2e-results:
+    name: E2E Test Results
+    runs-on: ubuntu-latest
+    if: always() && github.event_name == 'pull_request'
+    needs: [e2e-tests]
+    steps:
+      - name: Download all E2E reports
+        uses: actions/download-artifact@v4
+        with:
+          pattern: playwright-report-shard-*
+          path: playwright-reports
+          merge-multiple: false
+
+      - name: Merge Playwright HTML reports
+        run: |
+          mkdir -p merged-report
+          # Copy first shard as base
+          cp -r playwright-reports/playwright-report-shard-1/* merged-report/ || true
+          # Note: Playwright HTML reports don't merge easily
+          # For production use, consider uploading to a service like Argos or Percy
+          echo "Reports uploaded as separate artifacts"
+
+      - name: Comment PR with test results
+        uses: actions/github-script@v7
+        if: always()
+        with:
+          script: |
+            const fs = require('fs');
+            const shards = [1, 2];
+            let comment = '## 🎭 E2E Test Results\n\n';
+
+            for (const shard of shards) {
+              comment += `### Shard ${shard}\n`;
+              comment += `[View Report](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})\n\n`;
+            }
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
 
   # ── Lighthouse CI (performance audit against preview) ──────
   lighthouse:
@@ -274,6 +435,8 @@ jobs:
     needs: [wait-for-preview]
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
 
       - name: Run Lighthouse
         uses: treosh/lighthouse-ci-action@v12

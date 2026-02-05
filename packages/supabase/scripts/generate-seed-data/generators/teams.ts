@@ -15,7 +15,6 @@
 import {
   createSeededRandom,
   deterministicShuffle,
-  hash,
 } from "../utils/deterministic.js";
 import { type GeneratedAlt } from "./users.js";
 import { type GeneratedTournamentRegistration } from "./tournaments.js";

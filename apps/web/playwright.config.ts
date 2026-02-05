@@ -1,6 +1,13 @@
 import { defineConfig, devices } from "@playwright/test";
+import path from "path";
+import { fileURLToPath } from "url";
 
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? "http://localhost:3000";
+const storageStatePath = path.resolve(
+  __dirname,
+  "./e2e/playwright/.auth/player.json"
+);
 
 export default defineConfig({
   testDir: "./e2e/tests",
@@ -20,32 +27,64 @@ export default defineConfig({
     trace: "on-first-retry",
     screenshot: "only-on-failure",
     video: "on-first-retry",
-    // Bypass Vercel Deployment Protection in CI
-    ...(process.env.VERCEL_AUTOMATION_BYPASS_SECRET
-      ? {
-          extraHTTPHeaders: {
+    // Bypass headers for CI and E2E auth
+    extraHTTPHeaders: {
+      ...(process.env.VERCEL_AUTOMATION_BYPASS_SECRET
+        ? {
             "x-vercel-protection-bypass":
               process.env.VERCEL_AUTOMATION_BYPASS_SECRET,
-          },
-        }
-      : {}),
+          }
+        : {}),
+      ...(process.env.E2E_AUTH_BYPASS_SECRET
+        ? { "x-e2e-auth-bypass": process.env.E2E_AUTH_BYPASS_SECRET }
+        : {}),
+    },
   },
 
   projects: [
-    // Auth setup — runs first, saves storage state
-    {
-      name: "setup",
-      testMatch: /auth\.setup\.ts/,
-    },
+    // Auth setup — runs first, saves storage state (skip if E2E bypass enabled)
+    ...(process.env.E2E_AUTH_BYPASS_SECRET
+      ? []
+      : [
+          {
+            name: "setup",
+            testMatch: /auth\.setup\.ts/,
+            use: {
+              baseURL,
+              extraHTTPHeaders: {
+                ...(process.env.VERCEL_AUTOMATION_BYPASS_SECRET
+                  ? {
+                      "x-vercel-protection-bypass":
+                        process.env.VERCEL_AUTOMATION_BYPASS_SECRET,
+                    }
+                  : {}),
+              },
+            },
+          },
+        ]),
 
-    // Main tests — depend on setup for auth state
+    // Main tests — depend on setup for auth state (unless bypass enabled)
     {
       name: "chromium",
       use: {
         ...devices["Desktop Chrome"],
-        storageState: "./e2e/playwright/.auth/player.json",
+        ...(!process.env.E2E_AUTH_BYPASS_SECRET && {
+          storageState: storageStatePath,
+        }),
+        // Bypass headers for CI and E2E auth
+        extraHTTPHeaders: {
+          ...(process.env.VERCEL_AUTOMATION_BYPASS_SECRET
+            ? {
+                "x-vercel-protection-bypass":
+                  process.env.VERCEL_AUTOMATION_BYPASS_SECRET,
+              }
+            : {}),
+          ...(process.env.E2E_AUTH_BYPASS_SECRET
+            ? { "x-e2e-auth-bypass": process.env.E2E_AUTH_BYPASS_SECRET }
+            : {}),
+        },
       },
-      dependencies: ["setup"],
+      ...(!process.env.E2E_AUTH_BYPASS_SECRET && { dependencies: ["setup"] }),
     },
   ],
 });

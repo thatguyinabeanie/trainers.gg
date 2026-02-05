@@ -8,7 +8,12 @@ import {
   getPhaseRoundsWithMatches,
 } from "@trainers/supabase";
 import { CacheTags } from "@/lib/cache";
-import { getPlayerName, type PlayerRef } from "@trainers/utils";
+import {
+  getPlayerName,
+  type PlayerRef,
+  roundStatusLabels,
+  getLabel,
+} from "@trainers/utils";
 import { PageContainer } from "@/components/layout/page-container";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -73,16 +78,8 @@ function getStatusBadgeVariant(
 }
 
 function getStatusLabel(status: string | null): string {
-  switch (status) {
-    case "completed":
-      return "Completed";
-    case "active":
-      return "In Progress";
-    case "pending":
-      return "Upcoming";
-    default:
-      return status ?? "Unknown";
-  }
+  if (!status) return "Unknown";
+  return getLabel(status, roundStatusLabels);
 }
 
 export default async function MatchesPage({ params }: PageProps) {

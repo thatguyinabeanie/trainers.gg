@@ -119,7 +119,7 @@ Deno.serve(async (req) => {
     if (!/[0-9]/.test(password)) {
       passwordErrors.push("one number");
     }
-    if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) {
+    if (!/[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(password)) {
       passwordErrors.push("one symbol");
     }
 

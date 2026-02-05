@@ -9,11 +9,38 @@
  * @returns {import("jest").Config}
  */
 function createConfig(overrides = {}) {
+  const isCI = process.env.CI === "true";
+  const displayName = overrides.displayName || "tests";
+
   return {
     testEnvironment: "node",
-    transform: { "^.+\\.tsx?$": ["ts-jest", { useESM: true }] },
-    extensionsToTreatAsEsm: [".ts"],
+    transform: {
+      "^.+\\.tsx?$": [
+        "ts-jest",
+        {
+          useESM: true,
+          tsconfig: {
+            jsx: "react-jsx",
+          },
+        },
+      ],
+    },
+    extensionsToTreatAsEsm: [".ts", ".tsx"],
     coverageDirectory: "<rootDir>/coverage",
+    // In CI: enable coverage and add junit reporter with monorepo-aware config
+    ...(isCI && {
+      collectCoverage: true,
+      reporters: [
+        "default",
+        [
+          "jest-junit",
+          {
+            outputDirectory: "<rootDir>/../../test-results",
+            outputName: `junit-${displayName}.xml`,
+          },
+        ],
+      ],
+    }),
     ...overrides,
   };
 }

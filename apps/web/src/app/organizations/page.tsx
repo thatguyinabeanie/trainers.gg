@@ -2,22 +2,13 @@ import { unstable_cache } from "next/cache";
 import { createStaticClient } from "@/lib/supabase/server";
 import { listPublicOrganizations } from "@trainers/supabase";
 import { type OrganizationWithCounts } from "@trainers/supabase";
-import Link from "next/link";
 import { Suspense } from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Building2, Trophy } from "lucide-react";
+import { Building2 } from "lucide-react";
 import { OrganizationSearch } from "./organization-search";
 import { CacheTags } from "@/lib/cache";
 import { PageContainer } from "@/components/layout/page-container";
+import { OrganizationsDataTable } from "@/components/organizations/organizations-data-table";
 
 // On-demand revalidation via cache tags (no time-based revalidation)
 export const revalidate = false;
@@ -44,97 +35,7 @@ function OrganizationsList({
 }: {
   organizations: OrganizationWithCounts[];
 }) {
-  return (
-    <>
-      {/* Mobile: Card list */}
-      <div className="divide-y rounded-lg border md:hidden">
-        {organizations.map((org) => {
-          const activeCount = org.activeTournamentsCount || 0;
-          const totalCount = org.totalTournamentsCount || 0;
-
-          return (
-            <Link
-              key={org.id}
-              href={`/organizations/${org.slug}`}
-              className="hover:bg-muted/50 flex items-center gap-3 p-3 transition-colors"
-            >
-              <div className="min-w-0 flex-1">
-                <div className="mb-0.5 flex items-center gap-2">
-                  <p className="truncate font-semibold">{org.name}</p>
-                  {(org.tier === "verified" || org.tier === "partner") && (
-                    <Badge variant="secondary" className="shrink-0 text-xs">
-                      {org.tier === "partner" ? "Partner" : "Verified"}
-                    </Badge>
-                  )}
-                </div>
-                <p className="text-muted-foreground truncate text-xs">
-                  {org.description || `@${org.slug}`}
-                </p>
-                <p className="text-muted-foreground mt-0.5 text-xs">
-                  <Trophy className="inline h-3 w-3" /> {activeCount} active ·{" "}
-                  {totalCount} total
-                </p>
-              </div>
-            </Link>
-          );
-        })}
-      </div>
-
-      {/* Desktop: Table */}
-      <div className="hidden rounded-lg border md:block">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>Description</TableHead>
-              <TableHead className="text-right">
-                <div className="flex items-center justify-end gap-1">
-                  <Trophy className="h-3.5 w-3.5" />
-                  Active
-                </div>
-              </TableHead>
-              <TableHead className="text-right">
-                <div className="flex items-center justify-end gap-1">
-                  <Trophy className="h-3.5 w-3.5" />
-                  Total
-                </div>
-              </TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {organizations.map((org) => (
-              <TableRow key={org.id} className="hover:bg-muted/50">
-                <TableCell className="font-medium">
-                  <div className="flex items-center gap-2">
-                    <Link
-                      href={`/organizations/${org.slug}`}
-                      className="hover:text-primary hover:underline"
-                    >
-                      {org.name}
-                    </Link>
-                    {(org.tier === "verified" || org.tier === "partner") && (
-                      <Badge variant="secondary" className="text-xs">
-                        {org.tier === "partner" ? "Partner" : "Verified"}
-                      </Badge>
-                    )}
-                  </div>
-                </TableCell>
-                <TableCell className="text-muted-foreground max-w-xs truncate">
-                  {org.description || `@${org.slug}`}
-                </TableCell>
-                <TableCell className="text-muted-foreground text-right">
-                  {org.activeTournamentsCount || 0}
-                </TableCell>
-                <TableCell className="text-muted-foreground text-right">
-                  {org.totalTournamentsCount || 0}
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
-    </>
-  );
+  return <OrganizationsDataTable data={organizations} />;
 }
 
 // ============================================================================

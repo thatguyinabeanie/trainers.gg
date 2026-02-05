@@ -12,7 +12,6 @@ import {
   type ShowdownPokemon,
 } from "../showdown-format";
 import type { PokemonSet, PokemonSetFlat } from "../types";
-import { toFlat } from "../types";
 
 // -- Standard Showdown text for a single Pokemon --
 const PIKACHU_TEXT = `Pikachu @ Light Ball

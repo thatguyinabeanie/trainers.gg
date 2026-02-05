@@ -33,6 +33,15 @@ jobs:
           node-version: 22
           cache: pnpm
 
+      - name: Turbo cache
+        uses: actions/cache@v4
+        with:
+          path: .turbo
+          key: turbo-${{ runner.os }}-${{ github.ref_name }}-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            turbo-${{ runner.os }}-${{ github.ref_name }}-
+            turbo-${{ runner.os }}-
+
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
@@ -40,9 +49,10 @@ jobs:
         uses: actions/cache@v4
         with:
           path: apps/web/.next/cache
-          key: ${{ runner.os }}-nextjs-${{ hashFiles('**/pnpm-lock.yaml') }}-${{ hashFiles('apps/web/**/*.ts', 'apps/web/**/*.tsx', '!apps/web/.next') }}
+          key: ${{ runner.os }}-nextjs-${{ github.ref_name }}-${{ hashFiles('**/pnpm-lock.yaml') }}
           restore-keys: |
-            ${{ runner.os }}-nextjs-${{ hashFiles('**/pnpm-lock.yaml') }}-
+            ${{ runner.os }}-nextjs-${{ github.ref_name }}-
+            ${{ runner.os }}-nextjs-
 
       - name: Build Next.js app
         run: pnpm build

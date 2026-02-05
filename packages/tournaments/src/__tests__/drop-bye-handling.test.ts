@@ -13,7 +13,6 @@ import {
   validateDropTiming,
   type TournamentPlayerWithStatus,
   type DropRequest,
-  type TournamentPhase,
 } from "../drop-bye-handling";
 
 // -- Helper factories --

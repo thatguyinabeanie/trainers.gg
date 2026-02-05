@@ -1,7 +1,8 @@
 import { z } from "zod";
 import { Teams } from "@pkmn/sets";
 import { type PokemonSet } from "@pkmn/sets";
-import { Dex, TeamValidator } from "@pkmn/sim";
+import { TeamValidator } from "@pkmn/sim";
+import { containsProfanity } from "./profanity";
 
 // ---------------------------------------------------------------------------
 // Format mapping: trainers.gg game_format → @pkmn/sim format ID
@@ -189,6 +190,7 @@ export function parseShowdownText(text: string): ParsedTeam {
  * - No duplicate held items
  * - Every Pokemon has at least one move
  * - Every Pokemon has an ability
+ * - Pokemon nicknames do not contain profanity
  */
 export function validateTeamStructure(team: ParsedTeam): ValidationError[] {
   const errors: ValidationError[] = [];
@@ -238,6 +240,7 @@ export function validateTeamStructure(team: ParsedTeam): ValidationError[] {
   }
 
   // Each mon needs at least one move and an ability
+  // Also check nicknames for profanity
   for (const mon of team) {
     const moves = [mon.move1, mon.move2, mon.move3, mon.move4].filter(Boolean);
     if (moves.length === 0) {
@@ -250,6 +253,13 @@ export function validateTeamStructure(team: ParsedTeam): ValidationError[] {
       errors.push({
         source: "structure",
         message: `${mon.species} has no ability.`,
+      });
+    }
+    // Check nickname for profanity
+    if (mon.nickname && containsProfanity(mon.nickname)) {
+      errors.push({
+        source: "structure",
+        message: `Pokemon nickname "${mon.nickname}" contains inappropriate content.`,
       });
     }
   }

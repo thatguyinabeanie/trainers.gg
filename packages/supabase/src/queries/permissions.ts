@@ -6,8 +6,8 @@ import type { TypedClient } from "../client";
  * Currently returns empty array as the schema needs clarification
  */
 export async function getUserPermissions(
-  supabase: TypedClient,
-  userId: string
+  _supabase: TypedClient,
+  _userId: string
 ): Promise<string[]> {
   // STUB: Returns empty array until full RBAC is implemented.
   // Permission checks currently rely on org owner_user_id checks in TypeScript

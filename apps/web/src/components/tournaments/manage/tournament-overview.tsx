@@ -69,7 +69,6 @@ export function TournamentOverview({ tournament }: TournamentOverviewProps) {
   const [previewData, setPreviewData] = useState<PreviewData | null>(null);
   const [isPending, startTransition] = useTransition();
 
-  const registrationCount = tournament.registrations?.length || 0;
   const isActive = tournament.status === "active";
 
   // -- Data Fetching --
@@ -283,10 +282,37 @@ export function TournamentOverview({ tournament }: TournamentOverviewProps) {
 
   const maxParticipants = tournament.maxParticipants ?? 0;
 
+  // Calculate registration stats
+  const registrations = (tournament.registrations ?? []) as Array<{
+    status?: string;
+  }>;
+
+  const checkedInCount = registrations.filter(
+    (r) => r.status === "checked_in"
+  ).length;
+
+  const registeredCount = registrations.filter(
+    (r) =>
+      r.status === "registered" ||
+      r.status === "confirmed" ||
+      r.status === "checked_in"
+  ).length;
+
+  const droppedCount = registrations.filter(
+    (r) => r.status === "dropped"
+  ).length;
+
+  const registrationProgress =
+    registeredCount > 0 ? (checkedInCount / registeredCount) * 100 : 0;
+
+  const capacityProgress = maxParticipants
+    ? (registeredCount / maxParticipants) * 100
+    : 0;
+
   // -- Render --
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       {/* Round Command Center — only for active tournaments */}
       {isActive && (
         <RoundCommandCenter
@@ -309,69 +335,193 @@ export function TournamentOverview({ tournament }: TournamentOverviewProps) {
         />
       )}
 
-      {/* Tournament Details — single compact card */}
-      <Card>
-        <CardContent className="py-4">
-          <div className="grid grid-cols-2 gap-x-8 gap-y-2 text-sm sm:grid-cols-3">
-            <div className="flex justify-between gap-2">
-              <span className="text-muted-foreground">Players</span>
-              <span className="font-medium">
-                {registrationCount}
-                {maxParticipants > 0 && (
-                  <span className="text-muted-foreground font-normal">
-                    {" "}
-                    / {maxParticipants}
-                  </span>
+      {/* Key Metrics Grid */}
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {/* Registration Progress Card */}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium">
+              Registration Status
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="flex items-baseline justify-between">
+              <div>
+                <div className="text-3xl font-bold">{registeredCount}</div>
+                <p className="text-muted-foreground text-xs">
+                  {maxParticipants > 0
+                    ? `of ${maxParticipants} spots`
+                    : "registered"}
+                </p>
+              </div>
+              {maxParticipants > 0 && (
+                <div className="text-right">
+                  <div className="text-lg font-semibold">
+                    {Math.round(capacityProgress)}%
+                  </div>
+                  <p className="text-muted-foreground text-xs">capacity</p>
+                </div>
+              )}
+            </div>
+            {maxParticipants > 0 && (
+              <Progress value={capacityProgress} className="h-2" />
+            )}
+            {isActive && (
+              <>
+                <div className="border-muted-foreground/20 border-t pt-3">
+                  <div className="flex items-baseline justify-between">
+                    <div>
+                      <div className="text-xl font-semibold">
+                        {checkedInCount}
+                      </div>
+                      <p className="text-muted-foreground text-xs">
+                        checked in
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-sm font-medium">
+                        {Math.round(registrationProgress)}%
+                      </div>
+                      <p className="text-muted-foreground text-xs">ready</p>
+                    </div>
+                  </div>
+                  <Progress
+                    value={registrationProgress}
+                    className="mt-2 h-1.5"
+                  />
+                </div>
+                {droppedCount > 0 && (
+                  <p className="text-muted-foreground text-xs">
+                    {droppedCount} dropped
+                  </p>
                 )}
-              </span>
+              </>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Round Progress Card */}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium">
+              Round Progress
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="flex items-baseline justify-between">
+              <div>
+                <div className="text-3xl font-bold">
+                  {currentDisplayRound?.round_number ?? 0}
+                </div>
+                <p className="text-muted-foreground text-xs">
+                  {plannedRounds
+                    ? `of ${plannedRounds} rounds`
+                    : "current round"}
+                </p>
+              </div>
+              {plannedRounds && (
+                <div className="text-right">
+                  <div className="text-lg font-semibold">
+                    {Math.round(
+                      ((currentDisplayRound?.round_number ?? 0) /
+                        plannedRounds) *
+                        100
+                    )}
+                    %
+                  </div>
+                  <p className="text-muted-foreground text-xs">complete</p>
+                </div>
+              )}
             </div>
-            <div className="flex justify-between gap-2">
-              <span className="text-muted-foreground">Round</span>
-              <span className="font-medium">
-                {currentDisplayRound?.round_number ?? 0}
-                {plannedRounds ? (
-                  <span className="text-muted-foreground font-normal">
-                    {" "}
-                    of {plannedRounds}
-                  </span>
-                ) : null}
-              </span>
-            </div>
-            <div className="flex justify-between gap-2">
-              <span className="text-muted-foreground">Format</span>
-              <Badge variant="secondary" className="text-xs">
+            {plannedRounds && (
+              <Progress
+                value={
+                  ((currentDisplayRound?.round_number ?? 0) / plannedRounds) *
+                  100
+                }
+                className="h-2"
+              />
+            )}
+            {activeRound && (
+              <div className="border-muted-foreground/20 border-t pt-3">
+                <div className="grid grid-cols-3 gap-2 text-center">
+                  <div>
+                    <div className="text-lg font-semibold text-blue-600">
+                      {activeRound.inProgressCount}
+                    </div>
+                    <p className="text-muted-foreground text-xs">active</p>
+                  </div>
+                  <div>
+                    <div className="text-lg font-semibold text-emerald-600">
+                      {activeRound.completedCount}
+                    </div>
+                    <p className="text-muted-foreground text-xs">done</p>
+                  </div>
+                  <div>
+                    <div className="text-lg font-semibold">
+                      {activeRound.pendingCount}
+                    </div>
+                    <p className="text-muted-foreground text-xs">pending</p>
+                  </div>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Tournament Type Card */}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium">
+              Tournament Format
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div>
+              <Badge variant="secondary" className="text-sm">
                 {tournament.format || "Custom"}
               </Badge>
             </div>
-            <div className="flex justify-between gap-2">
-              <span className="text-muted-foreground">Type</span>
-              <span className="font-medium">
-                {formatType(tournament.tournamentFormat)}
-              </span>
-            </div>
-            <div className="flex justify-between gap-2">
-              <span className="text-muted-foreground">Round Time</span>
-              <span className="font-medium">
-                {tournament.roundTimeMinutes || 50}m
-              </span>
-            </div>
-            {tournament.topCutSize ? (
-              <div className="flex justify-between gap-2">
-                <span className="text-muted-foreground">Top Cut</span>
-                <span className="font-medium">Top {tournament.topCutSize}</span>
+            <div className="space-y-2 text-sm">
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Type</span>
+                <span className="font-medium">
+                  {formatType(tournament.tournamentFormat)}
+                </span>
               </div>
-            ) : null}
-            <div className="flex justify-between gap-2">
-              <span className="text-muted-foreground">Start</span>
-              <span className="font-medium">
-                {formatDate(tournament.startDate)}
-              </span>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Round Time</span>
+                <span className="font-medium">
+                  {tournament.roundTimeMinutes || 50}m
+                </span>
+              </div>
+              {tournament.topCutSize && (
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Top Cut</span>
+                  <span className="font-medium">
+                    Top {tournament.topCutSize}
+                  </span>
+                </div>
+              )}
             </div>
-            <div className="flex justify-between gap-2">
-              <span className="text-muted-foreground">End</span>
-              <span className="font-medium">
-                {formatDate(tournament.endDate)}
-              </span>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Tournament Timing Card */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-sm font-medium">Schedule</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div>
+              <p className="text-muted-foreground mb-1 text-xs">Start Time</p>
+              <p className="font-medium">{formatDate(tournament.startDate)}</p>
+            </div>
+            <div>
+              <p className="text-muted-foreground mb-1 text-xs">End Time</p>
+              <p className="font-medium">{formatDate(tournament.endDate)}</p>
             </div>
           </div>
         </CardContent>
@@ -590,8 +740,8 @@ function RoundCommandCenter({
         <CardContent>
           <div className="max-h-64 overflow-y-auto rounded-md border">
             <table className="w-full text-sm">
-              <thead className="bg-muted/50 sticky top-0">
-                <tr>
+              <thead className="sticky top-0 z-10">
+                <tr className="bg-muted">
                   <th className="px-3 py-2 text-left font-medium">Table</th>
                   <th className="px-3 py-2 text-left font-medium">Player 1</th>
                   <th className="px-3 py-2 text-left font-medium">Player 2</th>
