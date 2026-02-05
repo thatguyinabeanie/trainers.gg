@@ -47,7 +47,6 @@
     "@trainers/jest-config": "workspace:*",
     "@trainers/prettier-config": "workspace:*",
     "@trainers/typescript-config": "workspace:*",
-    "@types/jest": "^29.5.14",
     "@types/node": "catalog:",
     "eslint": "catalog:",
     "tsx": "^4.21.0",

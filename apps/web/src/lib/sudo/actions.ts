@@ -10,7 +10,6 @@ import {
   deactivateSudoMode,
   isSudoModeActive,
   isSiteAdmin,
-  getRequestMetadata,
 } from "./server";
 
 export type SudoActionResult =

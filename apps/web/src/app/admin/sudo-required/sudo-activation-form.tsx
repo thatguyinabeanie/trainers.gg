@@ -34,7 +34,7 @@ export function SudoActivationForm({ redirectPath }: SudoActivationFormProps) {
           description: "Failed to activate sudo mode",
         });
       }
-    } catch (error) {
+    } catch {
       toast.error("Error", {
         description: "Failed to activate sudo mode",
       });

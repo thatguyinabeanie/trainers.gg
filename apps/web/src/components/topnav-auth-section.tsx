@@ -90,7 +90,7 @@ export function TopNavAuthSection() {
           description: result.error,
         });
       }
-    } catch (error) {
+    } catch {
       toast.error("Error", {
         description: "Failed to toggle sudo mode",
       });

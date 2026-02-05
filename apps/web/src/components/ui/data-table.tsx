@@ -8,6 +8,7 @@ import {
   getPaginationRowModel,
   getSortedRowModel,
   useReactTable,
+  type Column,
   type ColumnDef,
   type ColumnFiltersState,
   type SortingState,
@@ -35,8 +36,8 @@ interface DataTableProps<TData, TValue> {
 export function DataTable<TData, TValue>({
   columns,
   data,
-  searchKey,
-  searchPlaceholder = "Search...",
+  searchKey: _searchKey,
+  searchPlaceholder: _searchPlaceholder = "Search...",
   onRowClick,
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = React.useState<SortingState>([]);
@@ -151,11 +152,11 @@ export function DataTable<TData, TValue>({
 }
 
 // Helper component for sortable column headers
-export function SortableHeader({
+export function SortableHeader<TData>({
   column,
   children,
 }: {
-  column: any;
+  column: Column<TData, unknown>;
   children: React.ReactNode;
 }) {
   return (

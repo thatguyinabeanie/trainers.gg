@@ -553,9 +553,6 @@ importers:
       '@trainers/typescript-config':
         specifier: workspace:*
         version: link:../../tooling/typescript
-      '@types/jest':
-        specifier: ^29.5.14
-        version: 29.5.14
       '@types/node':
         specifier: 'catalog:'
         version: 22.19.7
