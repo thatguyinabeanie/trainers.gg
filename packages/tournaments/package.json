@@ -16,9 +16,11 @@
     "format:check": "prettier --check \"src/**/*.{ts,tsx,js,jsx,json,md}\""
   },
   "devDependencies": {
+    "@trainers/eslint-config": "workspace:*",
     "@trainers/jest-config": "workspace:*",
     "@trainers/prettier-config": "workspace:*",
     "@trainers/typescript-config": "workspace:*",
+    "eslint": "catalog:",
     "typescript": "catalog:"
   },
   "prettier": "@trainers/prettier-config"

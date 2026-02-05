@@ -81,8 +81,12 @@
     "typescript": "catalog:"
   },
   "lint-staged": {
-    "*.{js,jsx,ts,tsx}": [
-      "eslint --fix --cache --ignore-pattern '*.config.{js,ts}'",
+    "*.{jsx,tsx}": [
+      "eslint --fix --cache",
+      "prettier --write"
+    ],
+    "*.{js,ts}": [
+      "bash -c 'files=\"$@\"; filtered=\"\"; for f in $files; do if [[ ! \"$f\" =~ \\.config\\.(js|ts)$ ]]; then filtered=\"$filtered $f\"; fi; done; if [ -n \"$filtered\" ]; then eslint --fix --cache $filtered; fi' --",
       "prettier --write"
     ],
     "*.{json,md,css,html,yml,yaml}": [
