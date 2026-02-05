@@ -9,13 +9,13 @@ Create or update a Linear issue based on the user's request.
 
 ## Arguments
 
-- `description` (required): What to create or update — can include a ticket number (e.g., "BEA-123"), keywords referencing an existing ticket, or a description of a new issue.
+- `description` (required): What to create or update — can include a ticket number (e.g., "TGG-123"), keywords referencing an existing ticket, or a description of a new issue.
 
 ## Defaults
 
 | Field   | Value              |
 | ------- | ------------------ |
-| Team    | `Beanie-gg`        |
+| Team    | `trainers-gg`      |
 | Project | `Private Beta MVP` |
 
 Override either by specifying in the description (e.g., "add to the Infrastructure project").
@@ -23,8 +23,8 @@ Override either by specifying in the description (e.g., "add to the Infrastructu
 ## Determine Action
 
 1. **Existing ticket reference** → Update flow
-   - Exact identifier like `BEA-123`
-   - Phrases like "the coaching ticket", "update the analytics issue", "change BEA-50 priority"
+   - Exact identifier like `TGG-123`
+   - Phrases like "the coaching ticket", "update the analytics issue", "change TGG-50 priority"
 2. **New issue** → Create flow
    - Describes a bug, feature, improvement, chore, or research task with no reference to an existing ticket
 3. **Ambiguous** → Ask the user whether they want to create a new ticket or update an existing one
@@ -54,7 +54,7 @@ Override either by specifying in the description (e.g., "add to the Infrastructu
 
 6. **Create the issue** using `mcp__plugin_linear_linear__create_issue` with:
    - `title`
-   - `team`: `Beanie-gg`
+   - `team`: `trainers-gg`
    - `project`: the confirmed project from step 2
    - `description`: the markdown body
    - `labels`: array with the confirmed label
@@ -67,7 +67,7 @@ Override either by specifying in the description (e.g., "add to the Infrastructu
 ## Update Flow
 
 1. **Find the ticket.**
-   - If the user provided an exact identifier (e.g., `BEA-123`), use `mcp__plugin_linear_linear__get_issue` to fetch it directly.
+   - If the user provided an exact identifier (e.g., `TGG-123`), use `mcp__plugin_linear_linear__get_issue` to fetch it directly.
    - If no identifier was provided, use `mcp__plugin_linear_linear__list_issues` to search the team by keyword. Filter by project, label, or recency if the user gave enough context. Present the top 1-3 matches and ask the user to confirm which ticket to update.
 
 2. **Read the current ticket** using `mcp__plugin_linear_linear__get_issue` (if not already fetched). Understand the existing title, description, status, priority, labels, and project before making changes.

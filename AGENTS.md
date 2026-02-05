@@ -444,6 +444,9 @@ Alternate player identities for tournaments. Users can have multiple alts.
 
 This project uses **Linear** for issue tracking. A Linear MCP server is available for creating/updating issues, managing projects, and tracking work.
 
+- **Team**: `trainers-gg`
+- **Default Project**: `Private Beta MVP`
+
 ---
 
 ## Glossary
