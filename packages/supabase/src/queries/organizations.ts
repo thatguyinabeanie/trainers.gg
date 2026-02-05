@@ -96,10 +96,8 @@ export async function listOrganizations(
 
       return {
         ...org,
-        _count: {
-          staff: staffCount ?? 0,
-          tournaments: tournamentCount ?? 0,
-        },
+        staffCount: staffCount ?? 0,
+        tournamentCount: tournamentCount ?? 0,
       };
     })
   );

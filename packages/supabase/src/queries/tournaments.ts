@@ -339,10 +339,6 @@ export async function getTournamentByOrgAndSlug(
     registrations: registrations.data ?? [],
     phases: phases.data ?? [],
     currentPhase: currentPhase?.data ?? null,
-    _count: {
-      registrations: registrations.data?.length ?? 0,
-      phases: phases.data?.length ?? 0,
-    },
   };
 }
 
@@ -417,10 +413,6 @@ export async function getTournamentBySlug(
     registrations: registrations.data ?? [],
     phases: phases.data ?? [],
     currentPhase: currentPhase?.data ?? null,
-    _count: {
-      registrations: registrations.data?.length ?? 0,
-      phases: phases.data?.length ?? 0,
-    },
   };
 }
 
