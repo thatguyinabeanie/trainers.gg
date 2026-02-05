@@ -1,5 +1,5 @@
-import { createSupabaseServerClient } from "@trainers/supabase/server";
-import { getUserTournamentHistory } from "@trainers/supabase/queries/tournaments";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { getUserTournamentHistory } from "@trainers/supabase";
 import { TournamentHistoryTable } from "@/components/dashboard/tournament-history-table";
 
 export const metadata = {

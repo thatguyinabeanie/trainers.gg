@@ -77,6 +77,7 @@ export {
   getTeamForRegistration,
   getTournamentMatchesForStaff,
   getUnpairedCheckedInPlayers,
+  getUserTournamentHistory,
 } from "./tournaments";
 
 export type { TournamentWithOrg, GroupedTournaments } from "./tournaments";
