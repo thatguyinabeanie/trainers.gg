@@ -83,3 +83,4 @@ apps/web/public/oauth/jwks.json
 # ESLint cache
 .eslintcache
 **/.eslintcache
+**/settings.local.json
