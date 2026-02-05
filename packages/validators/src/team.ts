@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { Teams } from "@pkmn/sets";
 import { type PokemonSet } from "@pkmn/sets";
-import { Dex, TeamValidator } from "@pkmn/sim";
+import { TeamValidator } from "@pkmn/sim";
 import { containsProfanity } from "./profanity";
 
 // ---------------------------------------------------------------------------

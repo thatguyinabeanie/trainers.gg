@@ -16,7 +16,7 @@ export const passwordSchema = z
   .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
   .regex(/[0-9]/, "Password must contain at least one number")
   .regex(
-    /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/,
+    /[!@#$%^&*()_+=[\]{};':"\\|,.<>/?-]/,
     "Password must contain at least one symbol"
   );
 
@@ -72,7 +72,7 @@ export function validatePassword(password: string): {
   if (!/[0-9]/.test(password)) {
     errors.push("One number");
   }
-  if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) {
+  if (!/[!@#$%^&*()_+=[\]{};':"\\|,.<>/?-]/.test(password)) {
     errors.push("One symbol (!@#$%^&*...)");
   }
 

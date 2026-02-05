@@ -2,7 +2,6 @@ import {
   RegExpMatcher,
   englishDataset,
   englishRecommendedTransformers,
-  pattern,
   type Matcher,
 } from "obscenity";
 

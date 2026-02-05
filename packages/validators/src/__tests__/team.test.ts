@@ -39,7 +39,7 @@ Timid Nature
 
 describe("parseShowdownText", () => {
   it("parses a single Pokemon from Showdown export", () => {
-    const team = parseShowdownText(VALID_SHOWDOWN_MON);
+    const _team = parseShowdownText(VALID_SHOWDOWN_MON);
     expect(team).toHaveLength(1);
     expect(team[0]!.species).toBe("Pikachu");
     expect(team[0]!.held_item).toBe("Light Ball");
@@ -56,7 +56,7 @@ describe("parseShowdownText", () => {
   });
 
   it("parses a multi-Pokemon team", () => {
-    const team = parseShowdownText(TWO_MON_TEAM);
+    const _team = parseShowdownText(TWO_MON_TEAM);
     expect(team).toHaveLength(2);
     expect(team[0]!.species).toBe("Pikachu");
     expect(team[1]!.species).toBe("Charizard");
@@ -74,12 +74,12 @@ describe("parseShowdownText", () => {
     const text = `Pikachu
 Ability: Static
 - Thunderbolt`;
-    const team = parseShowdownText(text);
+    const _team = parseShowdownText(text);
     expect(team[0]!.level).toBe(50);
   });
 
   it("defaults IVs to 31 when not specified", () => {
-    const team = parseShowdownText(VALID_SHOWDOWN_MON);
+    const _team = parseShowdownText(VALID_SHOWDOWN_MON);
     // The export explicitly sets atk IV to 0, rest should be 31
     expect(team[0]!.iv_hp).toBe(31);
     expect(team[0]!.iv_attack).toBe(0);
@@ -90,7 +90,7 @@ Ability: Static
     const text = `Pikachu
 Ability: Static
 - Thunderbolt`;
-    const team = parseShowdownText(text);
+    const _team = parseShowdownText(text);
     // No EVs specified, so they all default to 0
     expect(team[0]!.ev_hp).toBe(0);
     expect(team[0]!.ev_defense).toBe(0);
@@ -99,22 +99,22 @@ Ability: Static
 
 describe("validateTeamStructure", () => {
   it("passes for a valid single-Pokemon team", () => {
-    const team = parseShowdownText(VALID_SHOWDOWN_MON);
-    const errors = validateTeamStructure(team);
+    const _team = parseShowdownText(VALID_SHOWDOWN_MON);
+    const _errors = validateTeamStructure(team);
     expect(errors).toHaveLength(0);
   });
 
   it("fails for an empty team", () => {
-    const errors = validateTeamStructure([]);
+    const _errors = validateTeamStructure([]);
     expect(errors).toHaveLength(1);
     expect(errors[0]!.source).toBe("structure");
     expect(errors[0]!.message).toContain("at least 1");
   });
 
   it("detects duplicate species", () => {
-    const team = parseShowdownText(VALID_SHOWDOWN_MON);
+    const _team = parseShowdownText(VALID_SHOWDOWN_MON);
     // Duplicate the single mon
-    const errors = validateTeamStructure([...team, ...team]);
+    const _errors = validateTeamStructure([...team, ...team]);
     const dupError = errors.find((e) =>
       e.message.includes("Duplicate species")
     );
@@ -122,42 +122,42 @@ describe("validateTeamStructure", () => {
   });
 
   it("detects duplicate items", () => {
-    const team = parseShowdownText(TWO_MON_TEAM);
+    const _team = parseShowdownText(TWO_MON_TEAM);
     // Force same item on both
     team[1]!.held_item = "Light Ball";
-    const errors = validateTeamStructure(team);
+    const _errors = validateTeamStructure(team);
     const itemError = errors.find((e) => e.message.includes("Duplicate item"));
     expect(itemError).toBeDefined();
   });
 
   it("detects Pokemon with no moves", () => {
-    const team = parseShowdownText(VALID_SHOWDOWN_MON);
+    const _team = parseShowdownText(VALID_SHOWDOWN_MON);
     team[0]!.move1 = null;
     team[0]!.move2 = null;
     team[0]!.move3 = null;
     team[0]!.move4 = null;
-    const errors = validateTeamStructure(team);
+    const _errors = validateTeamStructure(team);
     const moveError = errors.find((e) => e.message.includes("no moves"));
     expect(moveError).toBeDefined();
   });
 
   it("detects Pokemon with no ability", () => {
-    const team = parseShowdownText(VALID_SHOWDOWN_MON);
+    const _team = parseShowdownText(VALID_SHOWDOWN_MON);
     team[0]!.ability = "";
-    const errors = validateTeamStructure(team);
+    const _errors = validateTeamStructure(team);
     const abilityError = errors.find((e) => e.message.includes("no ability"));
     expect(abilityError).toBeDefined();
   });
 
   it("rejects teams with more than 6 Pokemon", () => {
-    const team = parseShowdownText(VALID_SHOWDOWN_MON);
+    const _team = parseShowdownText(VALID_SHOWDOWN_MON);
     // Create a team of 7 unique Pokemon by cloning and changing species
     const bigTeam = Array.from({ length: 7 }, (_, i) => ({
       ...team[0]!,
       species: `Pokemon${i}`,
       held_item: `Item${i}`,
     }));
-    const errors = validateTeamStructure(bigTeam);
+    const _errors = validateTeamStructure(bigTeam);
     const sizeError = errors.find((e) => e.message.includes("more than 6"));
     expect(sizeError).toBeDefined();
   });
@@ -168,10 +168,10 @@ Ability: Static
 Level: 50
 - Thunderbolt
 - Surf`;
-    const team = parseShowdownText(text);
+    const _team = parseShowdownText(text);
     // Set a nickname that would be flagged
     team[0]!.nickname = "TestBad";
-    const errors = validateTeamStructure(team);
+    const _errors = validateTeamStructure(team);
     // We test the mechanism exists without asserting specific outcomes
     // The profanity filter should catch inappropriate nicknames
   });
@@ -182,8 +182,8 @@ Ability: Static
 Level: 50
 - Thunderbolt
 - Surf`;
-    const team = parseShowdownText(text);
-    const errors = validateTeamStructure(team);
+    const _team = parseShowdownText(text);
+    const _errors = validateTeamStructure(team);
     // Should not have profanity errors
     const profanityError = errors.find((e) =>
       e.message.includes("inappropriate content")
@@ -298,25 +298,25 @@ describe("teamSubmissionSchema", () => {
 
 describe("validateTeamFormat", () => {
   it("returns empty array for unmapped formats", () => {
-    const team = parseShowdownText(VALID_SHOWDOWN_MON);
-    const errors = validateTeamFormat(team, "unknown-format");
+    const _team = parseShowdownText(VALID_SHOWDOWN_MON);
+    const _errors = validateTeamFormat(team, "unknown-format");
     expect(errors).toHaveLength(0);
   });
 
   it("validates a team against a known format", () => {
-    const team = parseShowdownText(VALID_SHOWDOWN_MON);
+    const _team = parseShowdownText(VALID_SHOWDOWN_MON);
     // reg-i maps to gen9vgc2025regi — the valid Pikachu should pass
-    const errors = validateTeamFormat(team, "reg-i");
+    const _errors = validateTeamFormat(team, "reg-i");
     // May or may not have errors depending on format rules,
     // but should not throw
     expect(Array.isArray(errors)).toBe(true);
   });
 
   it("catches format errors from the validator", () => {
-    const team = parseShowdownText(VALID_SHOWDOWN_MON);
+    const _team = parseShowdownText(VALID_SHOWDOWN_MON);
     // Give the Pokemon an invalid ability
     team[0]!.ability = "NonExistentAbility";
-    const errors = validateTeamFormat(team, "reg-i");
+    const _errors = validateTeamFormat(team, "reg-i");
     expect(errors.length).toBeGreaterThan(0);
     expect(errors[0]!.source).toBe("format");
   });
@@ -345,7 +345,7 @@ describe("parseAndValidateTeam", () => {
   });
 
   it("skips format validation when structural errors exist", () => {
-    const team = parseShowdownText(VALID_SHOWDOWN_MON);
+    const _team = parseShowdownText(VALID_SHOWDOWN_MON);
     // Duplicate the pokemon to trigger a structural error
     const duplicateText = `${VALID_SHOWDOWN_MON}\n\n${VALID_SHOWDOWN_MON}`;
     const result = parseAndValidateTeam(duplicateText, "reg-i");

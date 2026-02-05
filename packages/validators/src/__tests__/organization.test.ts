@@ -5,7 +5,7 @@ import {
 
 describe("createOrganizationSchema", () => {
   it("accepts valid organization data", () => {
-    const result = createOrganizationSchema.safeParse({
+    const _result = createOrganizationSchema.safeParse({
       name: "Pokemon League",
       slug: "pokemon-league",
       description: "Official Pokemon League organization",
@@ -14,7 +14,7 @@ describe("createOrganizationSchema", () => {
   });
 
   it("accepts organization without description", () => {
-    const result = createOrganizationSchema.safeParse({
+    const _result = createOrganizationSchema.safeParse({
       name: "Pokemon League",
       slug: "pokemon-league",
     });
@@ -22,7 +22,7 @@ describe("createOrganizationSchema", () => {
   });
 
   it("rejects empty name", () => {
-    const result = createOrganizationSchema.safeParse({
+    const _result = createOrganizationSchema.safeParse({
       name: "",
       slug: "pokemon-league",
     });
@@ -30,7 +30,7 @@ describe("createOrganizationSchema", () => {
   });
 
   it("rejects name longer than 100 characters", () => {
-    const result = createOrganizationSchema.safeParse({
+    const _result = createOrganizationSchema.safeParse({
       name: "a".repeat(101),
       slug: "pokemon-league",
     });
@@ -38,7 +38,7 @@ describe("createOrganizationSchema", () => {
   });
 
   it("rejects empty slug", () => {
-    const result = createOrganizationSchema.safeParse({
+    const _result = createOrganizationSchema.safeParse({
       name: "Pokemon League",
       slug: "",
     });
@@ -46,7 +46,7 @@ describe("createOrganizationSchema", () => {
   });
 
   it("rejects slug with uppercase letters", () => {
-    const result = createOrganizationSchema.safeParse({
+    const _result = createOrganizationSchema.safeParse({
       name: "Pokemon League",
       slug: "Pokemon-League",
     });
@@ -54,7 +54,7 @@ describe("createOrganizationSchema", () => {
   });
 
   it("rejects slug with special characters", () => {
-    const result = createOrganizationSchema.safeParse({
+    const _result = createOrganizationSchema.safeParse({
       name: "Pokemon League",
       slug: "pokemon_league",
     });
@@ -62,7 +62,7 @@ describe("createOrganizationSchema", () => {
   });
 
   it("accepts slug with hyphens", () => {
-    const result = createOrganizationSchema.safeParse({
+    const _result = createOrganizationSchema.safeParse({
       name: "Pokemon League",
       slug: "pokemon-league-2024",
     });
@@ -70,7 +70,7 @@ describe("createOrganizationSchema", () => {
   });
 
   it("rejects description longer than 500 characters", () => {
-    const result = createOrganizationSchema.safeParse({
+    const _result = createOrganizationSchema.safeParse({
       name: "Pokemon League",
       slug: "pokemon-league",
       description: "a".repeat(501),
@@ -79,7 +79,7 @@ describe("createOrganizationSchema", () => {
   });
 
   it("rejects name with profanity", () => {
-    const result = createOrganizationSchema.safeParse({
+    const _result = createOrganizationSchema.safeParse({
       name: "Bad Organization Name",
       slug: "test-org",
     });
@@ -87,7 +87,7 @@ describe("createOrganizationSchema", () => {
   });
 
   it("rejects slug with profanity", () => {
-    const result = createOrganizationSchema.safeParse({
+    const _result = createOrganizationSchema.safeParse({
       name: "Test Organization",
       slug: "badslug",
     });
@@ -95,7 +95,7 @@ describe("createOrganizationSchema", () => {
   });
 
   it("rejects description with profanity", () => {
-    const result = createOrganizationSchema.safeParse({
+    const _result = createOrganizationSchema.safeParse({
       name: "Pokemon League",
       slug: "pokemon-league",
       description: "Bad description text",
@@ -106,33 +106,33 @@ describe("createOrganizationSchema", () => {
 
 describe("updateOrganizationSchema", () => {
   it("accepts partial update with name only", () => {
-    const result = updateOrganizationSchema.safeParse({
+    const _result = updateOrganizationSchema.safeParse({
       name: "Updated League",
     });
     expect(result.success).toBe(true);
   });
 
   it("accepts partial update with description only", () => {
-    const result = updateOrganizationSchema.safeParse({
+    const _result = updateOrganizationSchema.safeParse({
       description: "Updated description",
     });
     expect(result.success).toBe(true);
   });
 
   it("accepts empty object", () => {
-    const result = updateOrganizationSchema.safeParse({});
+    const _result = updateOrganizationSchema.safeParse({});
     expect(result.success).toBe(true);
   });
 
   it("rejects empty name if provided", () => {
-    const result = updateOrganizationSchema.safeParse({
+    const _result = updateOrganizationSchema.safeParse({
       name: "",
     });
     expect(result.success).toBe(false);
   });
 
   it("rejects description longer than 500 characters", () => {
-    const result = updateOrganizationSchema.safeParse({
+    const _result = updateOrganizationSchema.safeParse({
       description: "a".repeat(501),
     });
     expect(result.success).toBe(false);
