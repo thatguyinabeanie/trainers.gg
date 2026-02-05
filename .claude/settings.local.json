@@ -118,7 +118,8 @@
       "WebFetch(domain:community.fly.io)",
       "WebFetch(domain:fly.io)",
       "Bash(fly tokens create:*)",
-      "Bash(NODE_OPTIONS=--experimental-vm-modules pnpm jest:*)"
+      "Bash(NODE_OPTIONS=--experimental-vm-modules pnpm jest:*)",
+      "Bash(pkill:*)"
     ]
   },
   "enableAllProjectMcpServers": true

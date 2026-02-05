@@ -23,6 +23,7 @@ export const passwordSchema = z
  * Username requirements:
  * - 3-20 characters
  * - Only letters, numbers, underscores, and hyphens
+ * - Cannot start with temp_ or user_ (reserved for system-generated placeholders)
  */
 export const usernameSchema = z
   .string()
@@ -31,7 +32,10 @@ export const usernameSchema = z
   .regex(
     /^[a-zA-Z0-9_-]+$/,
     "Username can only contain letters, numbers, underscores, and hyphens"
-  );
+  )
+  .refine((val) => !val.startsWith("temp_") && !val.startsWith("user_"), {
+    message: "Please choose a custom username",
+  });
 
 /**
  * Email schema with standard validation
