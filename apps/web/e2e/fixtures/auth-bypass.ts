@@ -64,14 +64,15 @@ export async function injectE2EMockAuth(
 
       // 2. Set e2e-test-mode cookie (for AuthProvider detection)
       // This bypasses the need for proxy.ts to set it
+      // eslint-disable-next-line no-undef -- document is available in browser context (addInitScript)
       document.cookie = "e2e-test-mode=true; path=/; SameSite=Lax";
 
-      // eslint-disable-next-line no-console -- Intentional debug output for E2E traces
       console.log("[E2E] Mock auth injected:", {
         userId: mockUser.id,
         email: mockUser.email,
         // eslint-disable-next-line no-undef -- window is available in browser context (addInitScript)
         hasToken: !!window.localStorage.getItem(storageKey),
+        // eslint-disable-next-line no-undef -- document is available in browser context (addInitScript)
         hasCookie: document.cookie.includes("e2e-test-mode=true"),
       });
     },
