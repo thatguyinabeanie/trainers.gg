@@ -24,16 +24,34 @@ export const E2E_MOCK_USERS = {
 
 /**
  * Injects mock authentication data into browser storage for E2E tests.
- * Sets BOTH localStorage (for Supabase client) AND cookie (for AuthProvider detection).
+ * Sets BOTH localStorage (for Supabase client) AND cookie (for Server Component auth).
  * Must be called BEFORE navigating to the page that needs auth.
  */
 export async function injectE2EMockAuth(
   page: Page,
   user: E2ETestUser = E2E_MOCK_USERS.player
 ) {
+  // 1. Set e2e-test-mode cookie in the browser context BEFORE navigation
+  // This ensures the cookie is sent with the initial page request
+  const baseURL = process.env.PLAYWRIGHT_BASE_URL || "http://localhost:3000";
+  const domain = new URL(baseURL).hostname;
+
+  await page.context().addCookies([
+    {
+      name: "e2e-test-mode",
+      value: "true",
+      domain,
+      path: "/",
+      httpOnly: false,
+      secure: false,
+      sameSite: "Lax",
+    },
+  ]);
+
+  // 2. Inject Supabase auth token into localStorage via addInitScript
+  // This runs before any page scripts, so client components will see the user
   await page.addInitScript(
     ({ mockUser }) => {
-      // 1. Inject Supabase auth token into localStorage
       const mockAuthToken = {
         access_token: `mock-jwt-token-${mockUser.id}`,
         token_type: "bearer",
@@ -62,18 +80,11 @@ export async function injectE2EMockAuth(
       // eslint-disable-next-line no-undef -- window is available in browser context (addInitScript)
       window.localStorage.setItem(storageKey, JSON.stringify(mockAuthToken));
 
-      // 2. Set e2e-test-mode cookie (for AuthProvider detection)
-      // This bypasses the need for proxy.ts to set it
-      // eslint-disable-next-line no-undef -- document is available in browser context (addInitScript)
-      document.cookie = "e2e-test-mode=true; path=/; SameSite=Lax";
-
       console.log("[E2E] Mock auth injected:", {
         userId: mockUser.id,
         email: mockUser.email,
         // eslint-disable-next-line no-undef -- window is available in browser context (addInitScript)
         hasToken: !!window.localStorage.getItem(storageKey),
-        // eslint-disable-next-line no-undef -- document is available in browser context (addInitScript)
-        hasCookie: document.cookie.includes("e2e-test-mode=true"),
       });
     },
     { mockUser: user }
