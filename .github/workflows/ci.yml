@@ -177,8 +177,9 @@ jobs:
               --jq '.[0].id // empty' 2>/dev/null || true)
 
             if [ -n "$DEPLOY_ID" ]; then
+              # Get environment_url from latest status (Vercel uses "inactive" state, not "success")
               URL=$(gh api "repos/$GH_REPO/deployments/$DEPLOY_ID/statuses" \
-                --jq '[.[] | select(.state == "success")][0].environment_url // empty' 2>/dev/null || true)
+                --jq '.[0].environment_url // empty' 2>/dev/null || true)
 
               if [ -n "$URL" ]; then
                 STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
