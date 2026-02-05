@@ -34,19 +34,25 @@ export async function loginViaUI(
   page: Page,
   user: { email: string; password: string }
 ): Promise<void> {
+  console.log(`[LOGIN] Navigating to sign-in page`);
   await page.goto("/sign-in");
+  console.log(`[LOGIN] Current URL after goto: ${page.url()}`);
 
   // The default sign-in page shows a username field + social buttons.
   // Click "Continue with Email" to reveal the email/password form.
+  console.log(`[LOGIN] Clicking 'Continue with Email' button`);
   await page.getByRole("button", { name: /continue with email/i }).click();
 
   // Wait for the email form to be ready
+  console.log(`[LOGIN] Waiting for email form to be visible`);
   await page.getByLabel("Email or Username").waitFor({ state: "visible" });
 
+  console.log(`[LOGIN] Filling in credentials for ${user.email}`);
   await page.getByLabel("Email or Username").fill(user.email);
   await page.getByLabel("Password").fill(user.password);
 
   // Scope to main to avoid matching the nav "Sign In" link/button
+  console.log(`[LOGIN] Clicking sign in button`);
   await page
     .getByRole("main")
     .getByRole("button", { name: /sign in/i })
@@ -54,16 +60,22 @@ export async function loginViaUI(
 
   // Wait for navigation away from sign-in page
   try {
+    console.log(`[LOGIN] Waiting for navigation away from sign-in...`);
     await page.waitForURL((url) => !url.pathname.includes("/sign-in"), {
       timeout: 15000,
     });
-  } catch {
+    console.log(`[LOGIN] Successfully navigated to: ${page.url()}`);
+  } catch (error) {
     // Navigation didn't happen — gather diagnostics
     const url = page.url();
     const alertLocator = page.getByRole("alert");
     const alertText = await alertLocator
       .textContent({ timeout: 2000 })
       .catch(() => null);
+
+    console.error(`[LOGIN] Login failed for ${user.email}`);
+    console.error(`[LOGIN] Current URL: ${url}`);
+    console.error(`[LOGIN] Alert text: ${alertText || "none"}`);
 
     throw new Error(
       [

@@ -1,6 +1,13 @@
 import { defineConfig, devices } from "@playwright/test";
+import path from "path";
+import { fileURLToPath } from "url";
 
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? "http://localhost:3000";
+const storageStatePath = path.resolve(
+  __dirname,
+  "./e2e/playwright/.auth/player.json"
+);
 
 export default defineConfig({
   testDir: "./e2e/tests",
@@ -36,6 +43,18 @@ export default defineConfig({
     {
       name: "setup",
       testMatch: /auth\.setup\.ts/,
+      use: {
+        baseURL,
+        // Bypass Vercel Deployment Protection in setup as well
+        ...(process.env.VERCEL_AUTOMATION_BYPASS_SECRET
+          ? {
+              extraHTTPHeaders: {
+                "x-vercel-protection-bypass":
+                  process.env.VERCEL_AUTOMATION_BYPASS_SECRET,
+              },
+            }
+          : {}),
+      },
     },
 
     // Main tests — depend on setup for auth state
@@ -43,7 +62,7 @@ export default defineConfig({
       name: "chromium",
       use: {
         ...devices["Desktop Chrome"],
-        storageState: "./e2e/playwright/.auth/player.json",
+        storageState: storageStatePath,
       },
       dependencies: ["setup"],
     },
