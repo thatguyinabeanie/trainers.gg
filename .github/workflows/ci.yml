@@ -247,6 +247,7 @@ jobs:
           CI: true
           PLAYWRIGHT_BASE_URL: ${{ needs.wait-for-preview.outputs.url }}
           VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
+          E2E_AUTH_BYPASS_SECRET: ${{ secrets.E2E_AUTH_BYPASS_SECRET }}
         run: pnpm test:e2e
 
       - name: Upload Playwright report
