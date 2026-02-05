@@ -51,6 +51,7 @@ jobs:
             node_modules
             apps/*/node_modules
             packages/*/node_modules
+            tooling/*/node_modules
           key: ${{ steps.cache-key.outputs.key }}
           restore-keys: |
             node-modules-${{ runner.os }}-
@@ -87,8 +88,14 @@ jobs:
             node_modules
             apps/*/node_modules
             packages/*/node_modules
+            tooling/*/node_modules
           key: ${{ needs.install.outputs.cache-key }}
           fail-on-cache-miss: true
+
+      - name: Restore workspace links
+        run: pnpm install --frozen-lockfile --offline --prefer-offline
+        env:
+          CI: true
 
       - name: Turbo cache
         uses: actions/cache@v4
@@ -170,8 +177,14 @@ jobs:
             node_modules
             apps/*/node_modules
             packages/*/node_modules
+            tooling/*/node_modules
           key: ${{ needs.install.outputs.cache-key }}
           fail-on-cache-miss: true
+
+      - name: Restore workspace links
+        run: pnpm install --frozen-lockfile --offline --prefer-offline
+        env:
+          CI: true
 
       - name: Turbo cache
         uses: actions/cache@v4
@@ -202,7 +215,7 @@ jobs:
           echo "TURBO_TEAM=${{ vars.TURBO_TEAM }}" >> "$GITHUB_ENV"
 
       - name: Run unit tests (shard ${{ matrix.shard }}/${{ matrix.total-shards }})
-        run: pnpm test:ci -- --shard=${{ matrix.shard }}/${{ matrix.total-shards }}
+        run: pnpm turbo run test -- --shard=${{ matrix.shard }}/${{ matrix.total-shards }}
         env:
           CI: true
           JEST_JUNIT_OUTPUT_DIR: test-results
@@ -361,8 +374,14 @@ jobs:
             node_modules
             apps/*/node_modules
             packages/*/node_modules
+            tooling/*/node_modules
           key: ${{ needs.install.outputs.cache-key }}
           fail-on-cache-miss: true
+
+      - name: Restore workspace links
+        run: pnpm install --frozen-lockfile --offline --prefer-offline
+        env:
+          CI: true
 
       - name: Turbo cache
         uses: actions/cache@v4
