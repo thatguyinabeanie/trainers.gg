@@ -1,13 +1,13 @@
 import { test, expect } from "@playwright/test";
 
 test.describe("Alts page", () => {
-  test.use({ storageState: "e2e/playwright/.auth/player.json" });
+  // Uses stored auth state from setup project
 
   test("shows alts page from dashboard nav", async ({ page }) => {
     await page.goto("/dashboard");
 
-    // Click Alts tab in dashboard nav
-    await page.getByRole("link", { name: "Alts" }).click();
+    // Click Alts tab in dashboard nav (first() to avoid ambiguity with settings menu)
+    await page.getByRole("link", { name: "Alts" }).first().click();
     await expect(page).toHaveURL("/dashboard/alts");
     await expect(page.getByRole("heading", { name: "My Alts" })).toBeVisible();
   });
@@ -27,9 +27,7 @@ test.describe("Alts page", () => {
     await page.goto("/dashboard/alts");
 
     await expect(page.getByRole("button", { name: "New Alt" })).toBeVisible();
-    await expect(
-      page.getByRole("heading", { name: "Your Alts" })
-    ).toBeVisible();
+    await expect(page.getByRole("heading", { name: "My Alts" })).toBeVisible();
   });
 
   test("shows settings from topnav dropdown", async ({ page }) => {

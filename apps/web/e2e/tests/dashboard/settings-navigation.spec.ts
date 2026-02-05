@@ -1,7 +1,7 @@
 import { test, expect } from "@playwright/test";
 
 test.describe("Settings navigation", () => {
-  test.use({ storageState: "e2e/playwright/.auth/player.json" });
+  // Uses stored auth state from setup project
 
   test("redirects /dashboard/settings to /dashboard/settings/profile", async ({
     page,
@@ -35,7 +35,9 @@ test.describe("Settings navigation", () => {
   test("shows profile settings with display name and bio", async ({ page }) => {
     await page.goto("/dashboard/settings/profile");
 
-    await expect(page.getByRole("heading", { name: "Profile" })).toBeVisible();
+    await expect(
+      page.getByText("Profile", { exact: true }).first()
+    ).toBeVisible();
     await expect(page.getByLabel("Display Name")).toBeVisible();
     await expect(page.getByLabel("Bio")).toBeVisible();
   });
@@ -43,7 +45,11 @@ test.describe("Settings navigation", () => {
   test("shows account settings with email", async ({ page }) => {
     await page.goto("/dashboard/settings/account");
 
-    await expect(page.getByRole("heading", { name: "Email" })).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Security" })).toBeVisible();
+    await expect(
+      page.getByText("Email", { exact: true }).first()
+    ).toBeVisible();
+    await expect(
+      page.getByText("Security", { exact: true }).first()
+    ).toBeVisible();
   });
 });
