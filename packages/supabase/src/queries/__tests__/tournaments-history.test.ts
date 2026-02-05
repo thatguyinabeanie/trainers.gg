@@ -136,9 +136,8 @@ describe("getUserTournamentHistory", () => {
         tournament_id: 100,
         alt_id: 1,
         rank: 1,
-        match_wins: 5,
-        match_losses: 0,
-        match_ties: 0,
+        game_wins: 5,
+        game_losses: 0,
       },
     ];
 

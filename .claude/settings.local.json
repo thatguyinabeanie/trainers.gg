@@ -124,7 +124,8 @@
       "Bash(if [ ! -f \"packages/$pkg/eslint.config.js\" ])",
       "Bash(then)",
       "Bash(fi)",
-      "Bash(.husky/pre-commit)"
+      "Bash(.husky/pre-commit)",
+      "WebFetch(domain:turbo.build)"
     ]
   },
   "enableAllProjectMcpServers": true
