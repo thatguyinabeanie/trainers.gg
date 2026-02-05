@@ -42,10 +42,12 @@
   },
   "devDependencies": {
     "@faker-js/faker": "^10.2.0",
+    "@jest/globals": "^30.2.0",
     "@trainers/eslint-config": "workspace:*",
     "@trainers/jest-config": "workspace:*",
     "@trainers/prettier-config": "workspace:*",
     "@trainers/typescript-config": "workspace:*",
+    "@types/jest": "^29.5.14",
     "@types/node": "catalog:",
     "eslint": "catalog:",
     "tsx": "^4.21.0",

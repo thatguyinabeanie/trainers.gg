@@ -8,18 +8,20 @@ describe("getUserTournamentHistory", () => {
   beforeEach(() => {
     mockSupabase = {
       auth: {
-        getUser: jest.fn(),
+        getUser: jest.fn() as ReturnType<typeof jest.fn>,
       },
-      from: jest.fn(),
-      rpc: jest.fn(),
+      from: jest.fn() as ReturnType<typeof jest.fn>,
+      rpc: jest.fn() as ReturnType<typeof jest.fn>,
     } as unknown as TypedClient;
   });
 
   it("should return empty array if user is not authenticated", async () => {
-    (mockSupabase.auth.getUser as jest.Mock).mockResolvedValue({
-      data: { user: null },
-      error: null,
-    });
+    (mockSupabase.auth.getUser as ReturnType<typeof jest.fn>).mockResolvedValue(
+      {
+        data: { user: null },
+        error: null,
+      }
+    );
 
     const result = await getUserTournamentHistory(mockSupabase);
     expect(result).toEqual([]);
@@ -27,10 +29,12 @@ describe("getUserTournamentHistory", () => {
 
   it("should return empty array if user has no alts", async () => {
     const mockUserId = "user-123";
-    (mockSupabase.auth.getUser as jest.Mock).mockResolvedValue({
-      data: { user: { id: mockUserId } as never },
-      error: null,
-    });
+    (mockSupabase.auth.getUser as ReturnType<typeof jest.fn>).mockResolvedValue(
+      {
+        data: { user: { id: mockUserId } as never },
+        error: null,
+      }
+    );
 
     const mockFrom = jest.fn().mockReturnValue({
       select: jest.fn().mockReturnValue({
@@ -40,7 +44,9 @@ describe("getUserTournamentHistory", () => {
         }),
       }),
     });
-    (mockSupabase.from as jest.Mock).mockImplementation(mockFrom);
+    (mockSupabase.from as ReturnType<typeof jest.fn>).mockImplementation(
+      mockFrom
+    );
 
     const result = await getUserTournamentHistory(mockSupabase);
     expect(result).toEqual([]);
@@ -54,10 +60,12 @@ describe("getUserTournamentHistory", () => {
       { id: 2, username: "alt2", display_name: "Alt Two" },
     ];
 
-    (mockSupabase.auth.getUser as jest.Mock).mockResolvedValue({
-      data: { user: { id: mockUserId } as never },
-      error: null,
-    });
+    (mockSupabase.auth.getUser as ReturnType<typeof jest.fn>).mockResolvedValue(
+      {
+        data: { user: { id: mockUserId } as never },
+        error: null,
+      }
+    );
 
     let callCount = 0;
     const mockFrom = jest.fn().mockImplementation((table: string) => {
@@ -88,7 +96,9 @@ describe("getUserTournamentHistory", () => {
         select: jest.fn(),
       };
     });
-    (mockSupabase.from as jest.Mock).mockImplementation(mockFrom);
+    (mockSupabase.from as ReturnType<typeof jest.fn>).mockImplementation(
+      mockFrom
+    );
 
     const result = await getUserTournamentHistory(mockSupabase);
     expect(result).toEqual([]);

@@ -543,7 +543,6 @@ function generateTournamentsSql(
 
   // Insert in batches per tournament
   const regBatchSize = 100;
-  let totalInserted = 0;
 
   for (const tournament of tournaments) {
     const tournamentRegs = regsByTournament.get(tournament.id) || [];

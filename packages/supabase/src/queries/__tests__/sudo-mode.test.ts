@@ -11,7 +11,7 @@ import type { TypedClient } from "../../client";
 // Mock Supabase client
 const createMockClient = () => {
   return {
-    rpc: jest.fn(),
+    rpc: jest.fn() as ReturnType<typeof jest.fn>,
     from: jest.fn(() => ({
       select: jest.fn(() => ({
         order: jest.fn(() => ({
@@ -53,12 +53,12 @@ const createMockClient = () => {
           })),
         })),
       })),
-    })),
+    })) as ReturnType<typeof jest.fn>,
     auth: {
       getUser: jest.fn(() => ({
         data: { user: null },
         error: null,
-      })),
+      })) as ReturnType<typeof jest.fn>,
     },
   } as unknown as TypedClient;
 };
@@ -78,7 +78,7 @@ describe("sudo-mode queries", () => {
       };
 
       const mockClient = createMockClient();
-      (mockClient.rpc as jest.Mock).mockResolvedValue({
+      (mockClient.rpc as ReturnType<typeof jest.fn>).mockResolvedValue({
         data: [mockSession],
         error: null,
       });
@@ -93,7 +93,7 @@ describe("sudo-mode queries", () => {
 
     it("should return null when no active session exists", async () => {
       const mockClient = createMockClient();
-      (mockClient.rpc as jest.Mock).mockResolvedValue({
+      (mockClient.rpc as ReturnType<typeof jest.fn>).mockResolvedValue({
         data: [],
         error: null,
       });
@@ -105,7 +105,7 @@ describe("sudo-mode queries", () => {
 
     it("should return null on error", async () => {
       const mockClient = createMockClient();
-      (mockClient.rpc as jest.Mock).mockResolvedValue({
+      (mockClient.rpc as ReturnType<typeof jest.fn>).mockResolvedValue({
         data: null,
         error: new Error("DB error"),
       });
@@ -124,7 +124,7 @@ describe("sudo-mode queries", () => {
 
     it("should use custom timeout value", async () => {
       const mockClient = createMockClient();
-      (mockClient.rpc as jest.Mock).mockResolvedValue({
+      (mockClient.rpc as ReturnType<typeof jest.fn>).mockResolvedValue({
         data: [],
         error: null,
       });
@@ -140,7 +140,7 @@ describe("sudo-mode queries", () => {
   describe("isSudoModeActive", () => {
     it("should return true when sudo is active", async () => {
       const mockClient = createMockClient();
-      (mockClient.rpc as jest.Mock).mockResolvedValue({
+      (mockClient.rpc as ReturnType<typeof jest.fn>).mockResolvedValue({
         data: true,
         error: null,
       });
@@ -153,7 +153,7 @@ describe("sudo-mode queries", () => {
 
     it("should return false when sudo is not active", async () => {
       const mockClient = createMockClient();
-      (mockClient.rpc as jest.Mock).mockResolvedValue({
+      (mockClient.rpc as ReturnType<typeof jest.fn>).mockResolvedValue({
         data: false,
         error: null,
       });
@@ -165,7 +165,7 @@ describe("sudo-mode queries", () => {
 
     it("should return false on error", async () => {
       const mockClient = createMockClient();
-      (mockClient.rpc as jest.Mock).mockResolvedValue({
+      (mockClient.rpc as ReturnType<typeof jest.fn>).mockResolvedValue({
         data: null,
         error: new Error("DB error"),
       });
@@ -216,7 +216,7 @@ describe("sudo-mode queries", () => {
         select: jest.fn().mockReturnValue(mockChain),
       };
 
-      (mockClient.from as jest.Mock).mockReturnValue(mockFrom);
+      (mockClient.from as ReturnType<typeof jest.fn>).mockReturnValue(mockFrom);
 
       const result = await getSudoSessions(mockClient, "user-123");
 
@@ -241,7 +241,7 @@ describe("sudo-mode queries", () => {
         select: jest.fn().mockReturnValue(mockChain),
       };
 
-      (mockClient.from as jest.Mock).mockReturnValue(mockFrom);
+      (mockClient.from as ReturnType<typeof jest.fn>).mockReturnValue(mockFrom);
 
       await getSudoSessions(mockClient, "user-123", {
         includeEnded: false,
@@ -266,7 +266,7 @@ describe("sudo-mode queries", () => {
         select: jest.fn().mockReturnValue(mockChain),
       };
 
-      (mockClient.from as jest.Mock).mockReturnValue(mockFrom);
+      (mockClient.from as ReturnType<typeof jest.fn>).mockReturnValue(mockFrom);
 
       await getSudoSessions(mockClient, "user-123", {
         limit: 20,
@@ -292,16 +292,18 @@ describe("sudo-mode queries", () => {
       const mockClient = createMockClient();
 
       // Mock is_site_admin RPC
-      (mockClient.rpc as jest.Mock).mockResolvedValue({
+      (mockClient.rpc as ReturnType<typeof jest.fn>).mockResolvedValue({
         data: true,
         error: null,
       });
 
       // Mock getUser
-      (mockClient.auth.getUser as jest.Mock).mockResolvedValue({
-        data: { user: mockUser },
-        error: null,
-      });
+      (mockClient.auth.getUser as ReturnType<typeof jest.fn>).mockResolvedValue(
+        {
+          data: { user: mockUser },
+          error: null,
+        }
+      );
 
       // Mock insert chain
       const mockInsertChain = {
@@ -317,7 +319,9 @@ describe("sudo-mode queries", () => {
         insert: jest.fn().mockReturnValue(mockInsertChain),
       };
 
-      (mockClient.from as jest.Mock).mockReturnValue(mockFromChain);
+      (mockClient.from as ReturnType<typeof jest.fn>).mockReturnValue(
+        mockFromChain
+      );
 
       const result = await startSudoSession(
         mockClient,
@@ -332,7 +336,7 @@ describe("sudo-mode queries", () => {
     it("should throw error if user is not site admin", async () => {
       const mockClient = createMockClient();
 
-      (mockClient.rpc as jest.Mock).mockResolvedValue({
+      (mockClient.rpc as ReturnType<typeof jest.fn>).mockResolvedValue({
         data: false,
         error: null,
       });
@@ -353,7 +357,7 @@ describe("sudo-mode queries", () => {
       const mockClient = createMockClient();
 
       // Mock is_site_admin
-      (mockClient.rpc as jest.Mock)
+      (mockClient.rpc as ReturnType<typeof jest.fn>)
         .mockResolvedValueOnce({
           data: true,
           error: null,
@@ -385,16 +389,18 @@ describe("sudo-mode queries", () => {
       const mockClient = createMockClient();
 
       // Mock get_active_sudo_session
-      (mockClient.rpc as jest.Mock).mockResolvedValue({
+      (mockClient.rpc as ReturnType<typeof jest.fn>).mockResolvedValue({
         data: [{ ...mockSession, ended_at: null }],
         error: null,
       });
 
       // Mock getUser
-      (mockClient.auth.getUser as jest.Mock).mockResolvedValue({
-        data: { user: mockUser },
-        error: null,
-      });
+      (mockClient.auth.getUser as ReturnType<typeof jest.fn>).mockResolvedValue(
+        {
+          data: { user: mockUser },
+          error: null,
+        }
+      );
 
       // Mock update chain
       const mockUpdateChain = {
@@ -413,7 +419,9 @@ describe("sudo-mode queries", () => {
         insert: jest.fn(),
       };
 
-      (mockClient.from as jest.Mock).mockReturnValue(mockFromChain);
+      (mockClient.from as ReturnType<typeof jest.fn>).mockReturnValue(
+        mockFromChain
+      );
 
       const result = await endSudoSession(mockClient);
 
@@ -424,7 +432,7 @@ describe("sudo-mode queries", () => {
     it("should return null if no active session exists", async () => {
       const mockClient = createMockClient();
 
-      (mockClient.rpc as jest.Mock).mockResolvedValue({
+      (mockClient.rpc as ReturnType<typeof jest.fn>).mockResolvedValue({
         data: [],
         error: null,
       });
