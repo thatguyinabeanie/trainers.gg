@@ -116,7 +116,9 @@ export function TournamentRegistrations({
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Not Checked In</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Not Checked In
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-amber-600">
@@ -136,9 +138,7 @@ export function TournamentRegistrations({
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-gray-600">
-              {registrations?.filter(
-                (r) => r.status === "dropped" || r.status === "disqualified"
-              ).length || 0}
+              {registrations?.filter((r) => r.status === "dropped").length || 0}
             </div>
           </CardContent>
         </Card>

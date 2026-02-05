@@ -63,9 +63,7 @@ describe("TournamentRegistrations", () => {
         },
       ];
 
-      mockGetTournamentRegistrations.mockReturnValue(
-        mockRegistrations as any
-      );
+      mockGetTournamentRegistrations.mockReturnValue(mockRegistrations as any);
 
       render(<TournamentRegistrations tournament={mockTournament} />);
 
@@ -116,9 +114,7 @@ describe("TournamentRegistrations", () => {
         },
       ];
 
-      mockGetTournamentRegistrations.mockReturnValue(
-        mockRegistrations as any
-      );
+      mockGetTournamentRegistrations.mockReturnValue(mockRegistrations as any);
 
       const { container } = render(
         <TournamentRegistrations tournament={mockTournament} />
@@ -205,21 +201,17 @@ describe("TournamentRegistrations", () => {
         },
       ];
 
-      mockGetTournamentRegistrations.mockReturnValue(
-        mockRegistrations as any
-      );
+      mockGetTournamentRegistrations.mockReturnValue(mockRegistrations as any);
 
       render(<TournamentRegistrations tournament={mockTournament} />);
 
       expect(screen.getByText("Not Checked In")).toBeInTheDocument();
-      const notCheckedInCard = screen
-        .getByText("Not Checked In")
-        .closest("div")
+      const notCheckedInCard = screen.getByText("Not Checked In").closest("div")
         ?.parentElement?.parentElement;
       expect(notCheckedInCard).toHaveTextContent("4");
     });
 
-    it("should count dropped/disqualified registrations correctly", () => {
+    it("should count dropped registrations correctly", () => {
       const mockRegistrations = [
         {
           id: 1,
@@ -251,7 +243,7 @@ describe("TournamentRegistrations", () => {
           id: 3,
           tournament_id: 1,
           alt_id: 3,
-          status: "disqualified",
+          status: "dropped",
           registered_at: new Date().toISOString(),
           alt: {
             id: 3,
@@ -262,9 +254,7 @@ describe("TournamentRegistrations", () => {
         },
       ];
 
-      mockGetTournamentRegistrations.mockReturnValue(
-        mockRegistrations as any
-      );
+      mockGetTournamentRegistrations.mockReturnValue(mockRegistrations as any);
 
       const { container } = render(
         <TournamentRegistrations tournament={mockTournament} />
@@ -283,7 +273,7 @@ describe("TournamentRegistrations", () => {
     });
 
     it("should handle empty registrations correctly", () => {
-      mockGetTournamentRegistrations.mockReturnValue([]);
+      mockGetTournamentRegistrations.mockReturnValue([] as any);
 
       render(<TournamentRegistrations tournament={mockTournament} />);
 
@@ -313,9 +303,7 @@ describe("TournamentRegistrations", () => {
         },
       }));
 
-      mockGetTournamentRegistrations.mockReturnValue(
-        mockRegistrations as any
-      );
+      mockGetTournamentRegistrations.mockReturnValue(mockRegistrations as any);
 
       const { container } = render(
         <TournamentRegistrations tournament={mockTournament} />
