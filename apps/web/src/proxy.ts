@@ -126,12 +126,28 @@ export default async function proxy(request: NextRequest) {
   const e2eBypassHeader = request.headers.get("x-e2e-auth-bypass");
   const isE2ETest = e2eBypassSecret && e2eBypassHeader === e2eBypassSecret;
 
+  // Debug logging for E2E auth bypass (only log when header is present to reduce noise)
+  if (e2eBypassHeader) {
+    console.log("[E2E Debug] E2E bypass header received:", {
+      pathname,
+      hasSecret: !!e2eBypassSecret,
+      secretLength: e2eBypassSecret?.length,
+      hasHeader: !!e2eBypassHeader,
+      headerLength: e2eBypassHeader?.length,
+      isMatch: isE2ETest,
+    });
+  }
+
   // Create Supabase client and refresh session
   const { supabase, response } = createClient(request);
 
   let user = null;
 
   if (isE2ETest) {
+    console.log(
+      "[E2E Debug] E2E test mode activated - setting mock user and cookie"
+    );
+
     // Mock authenticated user for E2E tests
     // The test user details must match the seeded user from apps/web/e2e/fixtures/auth.ts
     user = {
