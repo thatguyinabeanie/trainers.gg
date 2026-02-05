@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/middleware";
 import { cookies } from "next/headers";
+import type { User } from "@supabase/supabase-js";
 
 /**
  * Proxy (Next.js 16 request interception)
@@ -140,7 +141,7 @@ export async function proxy(request: NextRequest) {
       user_metadata: {},
       aud: "authenticated",
       created_at: new Date().toISOString(),
-    } as any;
+    } as User;
 
     // Set a cookie so Server Components know we're in E2E test mode
     response.cookies.set("e2e-test-mode", "true", {

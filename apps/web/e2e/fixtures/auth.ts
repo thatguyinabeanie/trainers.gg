@@ -57,7 +57,7 @@ export async function loginViaUI(
     await page.waitForURL((url) => !url.pathname.includes("/sign-in"), {
       timeout: 15000,
     });
-  } catch (error) {
+  } catch {
     // Navigation didn't happen — gather diagnostics
     const url = page.url();
     const alertLocator = page.getByRole("alert");
