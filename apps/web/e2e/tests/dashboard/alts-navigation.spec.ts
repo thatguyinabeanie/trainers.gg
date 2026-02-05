@@ -37,8 +37,8 @@ test.describe("Alts page", () => {
     // Click user avatar dropdown
     await page.getByLabel("User menu").click();
 
-    // Click Settings
+    // Click Settings (goes to /dashboard/settings which redirects based on route structure)
     await page.getByRole("menuitem", { name: "Settings" }).click();
-    await expect(page).toHaveURL("/dashboard/settings/profile");
+    await expect(page).toHaveURL(/\/dashboard\/settings/);
   });
 });

@@ -237,7 +237,28 @@ This applies to both new functions and updates to existing ones.
 
 ### Request Interception: proxy.ts (NOT middleware.ts)
 
-**Next.js 16 uses `proxy.ts`** at `apps/web/proxy.ts` for request interception — NOT `middleware.ts`. Do NOT create a `middleware.ts` file; it will break all routes (404 on every page).
+**Next.js 16 uses `proxy.ts`** for request interception — `middleware.ts` is deprecated as of Next.js 16.
+
+**IMPORTANT: File Location**
+
+- In projects with a `src/` directory, `proxy.ts` **MUST** be at `src/proxy.ts`, NOT at the project root
+- Projects without `src/` can place it at the project root
+- This project uses `apps/web/src/proxy.ts`
+
+**Function Export**
+
+- Export a function named `proxy` (either default or named export):
+  ```typescript
+  export default async function proxy(request: NextRequest) {}
+  // OR
+  export async function proxy(request: NextRequest) {}
+  ```
+
+**How to Verify proxy.ts is Running**
+
+- Dev server output will show `proxy.ts: XXms` in compile times when proxy executes
+- Example: `GET /dashboard 200 in 1.2s (compile: 800ms, proxy.ts: 93ms, render: 300ms)`
+- If you don't see `proxy.ts:` in the output, the file is not being loaded (check file location)
 
 The proxy handles:
 

@@ -109,7 +109,7 @@ function isNextInternal(pathname: string): boolean {
   return pathname.startsWith("/_next") || pathname.startsWith("/__next");
 }
 
-export async function proxy(request: NextRequest) {
+export default async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Skip proxy for static files and Next.js internals
@@ -125,17 +125,6 @@ export async function proxy(request: NextRequest) {
   const e2eBypassSecret = process.env.E2E_AUTH_BYPASS_SECRET;
   const e2eBypassHeader = request.headers.get("x-e2e-auth-bypass");
   const isE2ETest = e2eBypassSecret && e2eBypassHeader === e2eBypassSecret;
-
-  // Debug logging for E2E bypass (remove after fixing)
-  if (request.nextUrl.pathname === "/dashboard") {
-    console.log("[proxy.ts] Dashboard request:", {
-      hasSecret: !!e2eBypassSecret,
-      hasHeader: !!e2eBypassHeader,
-      headerValue: e2eBypassHeader,
-      secretValue: e2eBypassSecret?.slice(0, 10) + "...",
-      isE2ETest,
-    });
-  }
 
   // Create Supabase client and refresh session
   const { supabase, response } = createClient(request);

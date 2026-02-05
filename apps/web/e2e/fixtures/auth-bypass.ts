@@ -1,4 +1,4 @@
-import { Page } from "@playwright/test";
+import { type Page } from "@playwright/test";
 
 export interface E2ETestUser {
   id: string;
@@ -61,6 +61,7 @@ export async function injectE2EMockAuth(
       const storageKey = `sb-${projectRef}-auth-token`;
 
       // Inject into localStorage
+      // eslint-disable-next-line no-undef -- window is available in browser context (addInitScript)
       window.localStorage.setItem(storageKey, JSON.stringify(mockAuthToken));
     },
     { mockUser: user }
