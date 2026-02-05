@@ -411,6 +411,12 @@ function CompletedTournaments({
                   <Users className="inline h-3 w-3" />{" "}
                   {tournament._count.registrations}
                 </p>
+                {tournament.winner && (
+                  <p className="text-primary mt-1 flex items-center gap-1 text-xs font-medium">
+                    <Trophy className="h-3 w-3" />
+                    {tournament.winner.display_name || tournament.winner.username}
+                  </p>
+                )}
               </div>
             </Link>
           );
@@ -426,6 +432,7 @@ function CompletedTournaments({
                 <TableHead>Date</TableHead>
                 <TableHead>Name</TableHead>
                 <TableHead>Organization</TableHead>
+                <TableHead>Winner</TableHead>
                 <TableHead className="text-right">Players</TableHead>
               </TableRow>
             </TableHeader>
@@ -457,6 +464,19 @@ function CompletedTournaments({
                       </Link>
                     ) : (
                       "—"
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    {tournament.winner ? (
+                      <div className="text-primary flex items-center gap-1.5 font-medium">
+                        <Trophy className="h-3.5 w-3.5" />
+                        <span>
+                          {tournament.winner.display_name ||
+                            tournament.winner.username}
+                        </span>
+                      </div>
+                    ) : (
+                      <span className="text-muted-foreground">—</span>
                     )}
                   </TableCell>
                   <TableCell className="text-muted-foreground text-right">

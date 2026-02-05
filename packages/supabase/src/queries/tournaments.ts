@@ -11,6 +11,7 @@ type OrganizationRow = Database["public"]["Tables"]["organizations"]["Row"];
 export type TournamentWithOrg = TournamentRow & {
   organization: Pick<OrganizationRow, "id" | "name" | "slug"> | null;
   _count: { registrations: number };
+  winner: { id: number; username: string; display_name: string | null } | null;
 };
 
 export type GroupedTournaments = {
@@ -70,10 +71,49 @@ export async function listTournamentsGrouped(
     }
   }
 
-  // Add counts to tournaments
+  // Get winners for completed tournaments
+  const completedTournamentIds = tournaments
+    .filter((t) => t.status === "completed")
+    .map((t) => t.id);
+
+  const winnerMap: Record<
+    string,
+    { id: number; username: string; display_name: string | null }
+  > = {};
+
+  if (completedTournamentIds.length > 0) {
+    const { data: standings, error: standingsError } = await supabase
+      .from("tournament_standings")
+      .select(
+        `
+        tournament_id,
+        alt:alts(id, username, display_name)
+      `
+      )
+      .in("tournament_id", completedTournamentIds)
+      .eq("rank", 1);
+
+    if (standingsError) {
+      console.error("Error fetching tournament winners:", standingsError);
+    }
+
+    for (const standing of standings ?? []) {
+      if (standing.alt) {
+        winnerMap[String(standing.tournament_id)] = {
+          id: standing.alt.id,
+          username: standing.alt.username,
+          display_name: standing.alt.display_name,
+        };
+      }
+    }
+  }
+
+  // Add counts and winners to tournaments
   const tournamentsWithCounts: TournamentWithOrg[] = tournaments.map((t) => ({
     ...t,
     _count: { registrations: countMap[String(t.id)] ?? 0 },
+    winner:
+      t.status === "completed" ? (winnerMap[String(t.id)] ?? null) : null,
   }));
 
   // Group by status
@@ -348,7 +388,7 @@ export async function getTournamentBySlug(
 
   if (error || !tournament) return null;
 
-  // Get additional details
+  // Get additional details including tournament rounds for schedule calculation
   const [registrations, phases, currentPhase] = await Promise.all([
     supabase
       .from("tournament_registrations")
@@ -356,7 +396,12 @@ export async function getTournamentBySlug(
       .eq("tournament_id", tournament.id),
     supabase
       .from("tournament_phases")
-      .select("*")
+      .select(
+        `
+        *,
+        tournament_rounds(id, round_number, status, start_time, end_time)
+      `
+      )
       .eq("tournament_id", tournament.id)
       .order("phase_order", { ascending: true }),
     tournament.current_phase_id

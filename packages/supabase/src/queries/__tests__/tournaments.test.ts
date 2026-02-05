@@ -1,4 +1,4 @@
-import { getPhaseRoundsWithStats } from "../tournaments";
+import { getPhaseRoundsWithStats, listTournamentsGrouped } from "../tournaments";
 import type { TypedClient } from "../../client";
 
 // Mock Supabase client
@@ -293,5 +293,216 @@ describe("getPhaseRoundsWithStats", () => {
       inProgressCount: 0,
       pendingCount: 0,
     });
+  });
+});
+
+describe("listTournamentsGrouped", () => {
+  let mockClient: TypedClient;
+
+  beforeEach(() => {
+    mockClient = createMockClient();
+    jest.clearAllMocks();
+  });
+
+  it("should fetch winners for completed tournaments", async () => {
+    // Mock tournaments response
+    (mockClient.from as jest.Mock).mockImplementation((table: string) => {
+      if (table === "tournaments") {
+        return {
+          select: jest.fn().mockReturnThis(),
+          is: jest.fn().mockReturnThis(),
+          in: jest.fn().mockReturnThis(),
+          order: jest.fn().mockResolvedValue({
+            data: [
+              {
+                id: 1,
+                name: "Completed Tournament",
+                slug: "completed-tournament",
+                status: "completed",
+                organization_id: 1,
+                start_date: "2024-01-01T10:00:00Z",
+                end_date: "2024-01-01T18:00:00Z",
+              },
+              {
+                id: 2,
+                name: "Active Tournament",
+                slug: "active-tournament",
+                status: "active",
+                organization_id: 1,
+                start_date: "2024-01-15T10:00:00Z",
+              },
+            ],
+            error: null,
+          }),
+        };
+      }
+      if (table === "tournament_standings") {
+        return {
+          select: jest.fn().mockReturnThis(),
+          in: jest.fn().mockReturnThis(),
+          eq: jest.fn().mockResolvedValue({
+            data: [
+              {
+                tournament_id: 1,
+                alt: {
+                  id: 100,
+                  username: "champion_player",
+                  display_name: "Champion Player",
+                },
+              },
+            ],
+            error: null,
+          }),
+        };
+      }
+      return mockClient;
+    });
+
+    // Mock RPC call for registration counts
+    (mockClient as any).rpc = jest.fn().mockResolvedValue({
+      data: [
+        { tournament_id: 1, registration_count: 32 },
+        { tournament_id: 2, registration_count: 16 },
+      ],
+      error: null,
+    });
+
+    const result = await listTournamentsGrouped(mockClient);
+
+    expect(result.completed).toHaveLength(1);
+    expect(result.completed[0]).toMatchObject({
+      id: 1,
+      name: "Completed Tournament",
+      status: "completed",
+      winner: {
+        id: 100,
+        username: "champion_player",
+        display_name: "Champion Player",
+      },
+      _count: { registrations: 32 },
+    });
+
+    expect(result.active).toHaveLength(1);
+    expect(result.active[0]).toMatchObject({
+      id: 2,
+      name: "Active Tournament",
+      status: "active",
+      winner: null, // Active tournaments should have no winner
+      _count: { registrations: 16 },
+    });
+  });
+
+  it("should handle completed tournaments without winners", async () => {
+    (mockClient.from as jest.Mock).mockImplementation((table: string) => {
+      if (table === "tournaments") {
+        return {
+          select: jest.fn().mockReturnThis(),
+          is: jest.fn().mockReturnThis(),
+          in: jest.fn().mockReturnThis(),
+          order: jest.fn().mockResolvedValue({
+            data: [
+              {
+                id: 3,
+                name: "Completed Tournament No Winner",
+                slug: "completed-no-winner",
+                status: "completed",
+                organization_id: 1,
+                start_date: "2024-01-01T10:00:00Z",
+              },
+            ],
+            error: null,
+          }),
+        };
+      }
+      if (table === "tournament_standings") {
+        return {
+          select: jest.fn().mockReturnThis(),
+          in: jest.fn().mockReturnThis(),
+          eq: jest.fn().mockResolvedValue({
+            data: [], // No standings data
+            error: null,
+          }),
+        };
+      }
+      return mockClient;
+    });
+
+    (mockClient as any).rpc = jest.fn().mockResolvedValue({
+      data: [{ tournament_id: 3, registration_count: 8 }],
+      error: null,
+    });
+
+    const result = await listTournamentsGrouped(mockClient);
+
+    expect(result.completed).toHaveLength(1);
+    expect(result.completed[0]).toMatchObject({
+      id: 3,
+      name: "Completed Tournament No Winner",
+      status: "completed",
+      winner: null, // No winner in standings
+      _count: { registrations: 8 },
+    });
+  });
+
+  it("should handle errors when fetching winners gracefully", async () => {
+    (mockClient.from as jest.Mock).mockImplementation((table: string) => {
+      if (table === "tournaments") {
+        return {
+          select: jest.fn().mockReturnThis(),
+          is: jest.fn().mockReturnThis(),
+          in: jest.fn().mockReturnThis(),
+          order: jest.fn().mockResolvedValue({
+            data: [
+              {
+                id: 4,
+                name: "Completed Tournament Error",
+                slug: "completed-error",
+                status: "completed",
+                organization_id: 1,
+                start_date: "2024-01-01T10:00:00Z",
+              },
+            ],
+            error: null,
+          }),
+        };
+      }
+      if (table === "tournament_standings") {
+        return {
+          select: jest.fn().mockReturnThis(),
+          in: jest.fn().mockReturnThis(),
+          eq: jest.fn().mockResolvedValue({
+            data: null,
+            error: { message: "Database error", details: null, hint: null, code: "500" },
+          }),
+        };
+      }
+      return mockClient;
+    });
+
+    (mockClient as any).rpc = jest.fn().mockResolvedValue({
+      data: [{ tournament_id: 4, registration_count: 12 }],
+      error: null,
+    });
+
+    // Mock console.error to avoid test output noise
+    const consoleErrorSpy = jest.spyOn(console, "error").mockImplementation();
+
+    const result = await listTournamentsGrouped(mockClient);
+
+    expect(result.completed).toHaveLength(1);
+    expect(result.completed[0]).toMatchObject({
+      id: 4,
+      name: "Completed Tournament Error",
+      status: "completed",
+      winner: null, // Should gracefully handle error
+      _count: { registrations: 12 },
+    });
+
+    expect(consoleErrorSpy).toHaveBeenCalledWith(
+      "Error fetching tournament winners:",
+      expect.any(Object)
+    );
+
+    consoleErrorSpy.mockRestore();
   });
 });
