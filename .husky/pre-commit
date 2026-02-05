@@ -1,8 +1,27 @@
+#!/bin/sh
+
 # Disable Turbo interactive TUI in git hooks
 export TURBO_UI=false
 
-# Run lint-staged for formatting and linting
+# Run lint-staged for Prettier + ESLint on staged files
 pnpm exec lint-staged
 
-# Run typecheck on the full codebase
-pnpm typecheck
+# Get affected packages from staged files
+AFFECTED_PACKAGES=$(node scripts/get-affected-packages.mjs)
+
+# Run typecheck only on affected packages
+if [ -n "$AFFECTED_PACKAGES" ]; then
+  echo "Running typecheck on affected packages: $AFFECTED_PACKAGES"
+
+  # Build filter flags for Turbo
+  FILTER_FLAGS=""
+  for pkg in $AFFECTED_PACKAGES; do
+    FILTER_FLAGS="$FILTER_FLAGS --filter=$pkg"
+  done
+
+  # Note: FILTER_FLAGS is constructed from package.json names (not user input)
+  # shellcheck disable=SC2086
+  pnpm turbo run typecheck $FILTER_FLAGS
+else
+  echo "No packages affected, skipping typecheck"
+fi

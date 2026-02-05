@@ -81,7 +81,11 @@
     "typescript": "catalog:"
   },
   "lint-staged": {
-    "*.{js,jsx,ts,tsx,json,md,css,html,yml,yaml}": [
+    "*.{js,jsx,ts,tsx}": [
+      "eslint --fix --cache",
+      "prettier --write"
+    ],
+    "*.{json,md,css,html,yml,yaml}": [
       "prettier --write"
     ]
   },

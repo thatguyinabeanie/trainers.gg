@@ -1,4 +1,7 @@
-import { getPhaseRoundsWithStats, listTournamentsGrouped } from "../tournaments";
+import {
+  getPhaseRoundsWithStats,
+  listTournamentsGrouped,
+} from "../tournaments";
 import type { TypedClient } from "../../client";
 
 // Mock Supabase client
@@ -472,7 +475,12 @@ describe("listTournamentsGrouped", () => {
           in: jest.fn().mockReturnThis(),
           eq: jest.fn().mockResolvedValue({
             data: null,
-            error: { message: "Database error", details: null, hint: null, code: "500" },
+            error: {
+              message: "Database error",
+              details: null,
+              hint: null,
+              code: "500",
+            },
           }),
         };
       }

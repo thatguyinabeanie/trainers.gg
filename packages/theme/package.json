@@ -18,7 +18,7 @@
   "scripts": {
     "build": "tsx scripts/generate.ts",
     "typecheck": "tsc --noEmit",
-    "lint": "eslint . --max-warnings 0",
+    "lint": "eslint . --max-warnings 0 --cache",
     "format": "prettier --write \"src/**/*.{ts,tsx,js,jsx,json,md}\" \"scripts/**/*.{ts,tsx,js,jsx,json,md}\"",
     "format:check": "prettier --check \"src/**/*.{ts,tsx,js,jsx,json,md}\" \"scripts/**/*.{ts,tsx,js,jsx,json,md}\""
   },

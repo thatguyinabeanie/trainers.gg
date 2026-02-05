@@ -414,7 +414,8 @@ function CompletedTournaments({
                 {tournament.winner && (
                   <p className="text-primary mt-1 flex items-center gap-1 text-xs font-medium">
                     <Trophy className="h-3 w-3" />
-                    {tournament.winner.display_name || tournament.winner.username}
+                    {tournament.winner.display_name ||
+                      tournament.winner.username}
                   </p>
                 )}
               </div>

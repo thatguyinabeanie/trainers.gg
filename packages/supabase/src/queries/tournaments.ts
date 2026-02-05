@@ -112,8 +112,7 @@ export async function listTournamentsGrouped(
   const tournamentsWithCounts: TournamentWithOrg[] = tournaments.map((t) => ({
     ...t,
     _count: { registrations: countMap[String(t.id)] ?? 0 },
-    winner:
-      t.status === "completed" ? (winnerMap[String(t.id)] ?? null) : null,
+    winner: t.status === "completed" ? (winnerMap[String(t.id)] ?? null) : null,
   }));
 
   // Group by status
