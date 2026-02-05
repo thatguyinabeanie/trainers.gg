@@ -1,12 +1,13 @@
 import { render, screen } from "@testing-library/react";
 import { TournamentRegistrations } from "../tournament-registrations";
 import { getTournamentRegistrations } from "@trainers/supabase";
+import { type TypedClient } from "@trainers/supabase";
 
 // Mock the Supabase query hook
 jest.mock("@/lib/supabase", () => ({
   useSupabaseQuery: jest.fn((queryFn) => {
     // Call the query function with a mock supabase client
-    const mockSupabase = {} as any;
+    const mockSupabase = {} as TypedClient;
     const result = queryFn(mockSupabase);
     return { data: result };
   }),
@@ -63,7 +64,11 @@ describe("TournamentRegistrations", () => {
         },
       ];
 
-      mockGetTournamentRegistrations.mockReturnValue(mockRegistrations as any);
+      mockGetTournamentRegistrations.mockResolvedValue(
+        mockRegistrations as unknown as Awaited<
+          ReturnType<typeof getTournamentRegistrations>
+        >
+      );
 
       render(<TournamentRegistrations tournament={mockTournament} />);
 
@@ -114,7 +119,11 @@ describe("TournamentRegistrations", () => {
         },
       ];
 
-      mockGetTournamentRegistrations.mockReturnValue(mockRegistrations as any);
+      mockGetTournamentRegistrations.mockResolvedValue(
+        mockRegistrations as unknown as Awaited<
+          ReturnType<typeof getTournamentRegistrations>
+        >
+      );
 
       const { container } = render(
         <TournamentRegistrations tournament={mockTournament} />
@@ -201,7 +210,11 @@ describe("TournamentRegistrations", () => {
         },
       ];
 
-      mockGetTournamentRegistrations.mockReturnValue(mockRegistrations as any);
+      mockGetTournamentRegistrations.mockResolvedValue(
+        mockRegistrations as unknown as Awaited<
+          ReturnType<typeof getTournamentRegistrations>
+        >
+      );
 
       render(<TournamentRegistrations tournament={mockTournament} />);
 
@@ -254,7 +267,11 @@ describe("TournamentRegistrations", () => {
         },
       ];
 
-      mockGetTournamentRegistrations.mockReturnValue(mockRegistrations as any);
+      mockGetTournamentRegistrations.mockResolvedValue(
+        mockRegistrations as unknown as Awaited<
+          ReturnType<typeof getTournamentRegistrations>
+        >
+      );
 
       const { container } = render(
         <TournamentRegistrations tournament={mockTournament} />
@@ -273,7 +290,9 @@ describe("TournamentRegistrations", () => {
     });
 
     it("should handle empty registrations correctly", () => {
-      mockGetTournamentRegistrations.mockReturnValue([] as any);
+      mockGetTournamentRegistrations.mockResolvedValue(
+        [] as unknown as Awaited<ReturnType<typeof getTournamentRegistrations>>
+      );
 
       render(<TournamentRegistrations tournament={mockTournament} />);
 
@@ -303,7 +322,11 @@ describe("TournamentRegistrations", () => {
         },
       }));
 
-      mockGetTournamentRegistrations.mockReturnValue(mockRegistrations as any);
+      mockGetTournamentRegistrations.mockResolvedValue(
+        mockRegistrations as unknown as Awaited<
+          ReturnType<typeof getTournamentRegistrations>
+        >
+      );
 
       const { container } = render(
         <TournamentRegistrations tournament={mockTournament} />

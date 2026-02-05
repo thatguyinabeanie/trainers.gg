@@ -1,3 +1,4 @@
+import React from "react";
 import { render, screen, waitFor } from "@testing-library/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { TournamentManageClient } from "../tournament-manage-client";
@@ -242,7 +243,7 @@ describe("TournamentManageClient - Deep Linkable Tabs", () => {
     it("should preserve tab state when navigating with browser back/forward", async () => {
       const user = userEvent.setup();
 
-      const { rerender, unmount } = render(
+      const { rerender: _rerender, unmount } = render(
         <TournamentManageClient
           orgSlug="test-org"
           tournamentSlug="test-tournament"
