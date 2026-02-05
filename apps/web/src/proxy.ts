@@ -120,23 +120,15 @@ export default async function proxy(request: NextRequest) {
   // Read maintenance mode at runtime
   const maintenanceMode = process.env.NEXT_PUBLIC_MAINTENANCE_MODE === "true";
 
-  // E2E test bypass: if the request has the correct bypass header, mock the authenticated user
-  // This allows Playwright E2E tests to bypass server-side auth checks
+  // E2E test bypass: Check BOTH the header (for initial setup) AND the cookie (for subsequent requests)
+  // Header: Set by Playwright config extraHTTPHeaders (initial request only)
+  // Cookie: Set by addInitScript or by this proxy (persists across requests)
   const e2eBypassSecret = process.env.E2E_AUTH_BYPASS_SECRET;
   const e2eBypassHeader = request.headers.get("x-e2e-auth-bypass");
-  const isE2ETest = e2eBypassSecret && e2eBypassHeader === e2eBypassSecret;
-
-  // Debug logging for E2E auth bypass (only log when header is present to reduce noise)
-  if (e2eBypassHeader) {
-    console.log("[E2E Debug] E2E bypass header received:", {
-      pathname,
-      hasSecret: !!e2eBypassSecret,
-      secretLength: e2eBypassSecret?.length,
-      hasHeader: !!e2eBypassHeader,
-      headerLength: e2eBypassHeader?.length,
-      isMatch: isE2ETest,
-    });
-  }
+  const e2eTestModeCookie = request.cookies.get("e2e-test-mode");
+  const isE2ETest =
+    (e2eBypassSecret && e2eBypassHeader === e2eBypassSecret) ||
+    e2eTestModeCookie?.value === "true";
 
   // Create Supabase client and refresh session
   const { supabase, response } = createClient(request);
@@ -144,10 +136,6 @@ export default async function proxy(request: NextRequest) {
   let user = null;
 
   if (isE2ETest) {
-    console.log(
-      "[E2E Debug] E2E test mode activated - setting mock user and cookie"
-    );
-
     // Mock authenticated user for E2E tests
     // The test user details must match the seeded user from apps/web/e2e/fixtures/auth.ts
     user = {
