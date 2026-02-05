@@ -57,7 +57,7 @@
     "// test": "",
     "test": "turbo run test",
     "test:ci": "turbo run test --ui stream",
-    "test:e2e": "turbo run test:e2e --filter=@trainers/web",
+    "test:e2e": "turbo run test:e2e --filter=@trainers/web --ui stream",
     "test:unit": "turbo run test",
     "test:watch": "turbo run test:watch",
     "// cleanup": "",

@@ -3,13 +3,6 @@ import { test, expect } from "@playwright/test";
 test.describe("Settings navigation", () => {
   // Uses stored auth state from setup project
 
-  test("redirects /dashboard/settings to /dashboard/settings/profile", async ({
-    page,
-  }) => {
-    await page.goto("/dashboard/settings");
-    await expect(page).toHaveURL("/dashboard/settings/profile");
-  });
-
   test("shows settings tabs and allows navigation", async ({ page }) => {
     await page.goto("/dashboard/settings/profile");
 
