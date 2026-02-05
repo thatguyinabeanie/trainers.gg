@@ -797,11 +797,11 @@ export function TournamentSidebarCard({
         <>
           <Collapsible className="space-y-3">
             <CollapsibleTrigger className="w-full text-left">
-              <div className="bg-muted flex items-center justify-between rounded-lg p-3">
+              <div className="flex items-center justify-between rounded-lg border border-emerald-500/25 bg-emerald-500/10 p-3">
                 <div className="flex items-center gap-2">
-                  <Lock className="text-muted-foreground h-5 w-5" />
+                  <Lock className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
                   <div>
-                    <p className="text-muted-foreground text-sm font-medium">
+                    <p className="text-sm font-medium text-emerald-600 dark:text-emerald-400">
                       Team Locked
                     </p>
                     <p className="text-muted-foreground text-xs">
