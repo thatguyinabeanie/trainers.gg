@@ -844,19 +844,19 @@ export function TournamentSidebarCard({
               </div>
             </CollapsibleTrigger>
             {pokemonCount > 0 && (
-              <CollapsibleContent>
+              <CollapsibleContent className="space-y-3">
                 <TeamPreview pokemon={submittedTeam.pokemon} compact />
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => startTeamEditing("paste")}
+                  className="text-muted-foreground hover:text-foreground h-auto p-0 text-xs"
+                >
+                  <RotateCcw className="mr-1.5 h-3 w-3" />
+                  Replace Team
+                </Button>
               </CollapsibleContent>
             )}
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => startTeamEditing("paste")}
-              className="text-muted-foreground hover:text-foreground h-auto p-0 text-xs"
-            >
-              <RotateCcw className="mr-1.5 h-3 w-3" />
-              Replace Team
-            </Button>
           </Collapsible>
         </>
       );
