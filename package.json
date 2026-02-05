@@ -56,10 +56,10 @@
     "pds:logs": "./infra/pds/local-dev.sh logs",
     "// test": "",
     "test": "turbo run test",
-    "test:ci": "jest --coverage --ci --reporters=default --reporters=jest-junit",
+    "test:ci": "turbo run test --ui stream",
     "test:e2e": "turbo run test:e2e --filter=@trainers/web",
     "test:unit": "turbo run test",
-    "test:watch": "jest --watchAll",
+    "test:watch": "turbo run test:watch",
     "// cleanup": "",
     "clean": "turbo run clean && rm -rf node_modules .turbo"
   },

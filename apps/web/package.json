@@ -11,6 +11,7 @@
     "build": "node scripts/verify-database.mjs && next build",
     "start": "next start",
     "test": "jest",
+    "test:watch": "jest --watch",
     "test:e2e": "playwright test",
     "lint": "eslint . --max-warnings 0 --cache",
     "typecheck": "tsc --noEmit",

@@ -12,6 +12,7 @@
     "build:dev-device": "eas build --platform ios --profile development-device",
     "build:preview": "eas build --platform ios --profile preview",
     "test": "jest",
+    "test:watch": "jest --watch",
     "lint": "eslint . --max-warnings 0 --cache",
     "typecheck": "tsc --noEmit",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",

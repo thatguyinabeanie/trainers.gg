@@ -9,6 +9,8 @@
  * @returns {import("jest").Config}
  */
 function createConfig(overrides = {}) {
+  const isCI = process.env.CI === "true";
+
   return {
     testEnvironment: "node",
     transform: {
@@ -24,6 +26,11 @@ function createConfig(overrides = {}) {
     },
     extensionsToTreatAsEsm: [".ts", ".tsx"],
     coverageDirectory: "<rootDir>/coverage",
+    // In CI: enable coverage and add junit reporter
+    ...(isCI && {
+      collectCoverage: true,
+      reporters: ["default", "jest-junit"],
+    }),
     ...overrides,
   };
 }
