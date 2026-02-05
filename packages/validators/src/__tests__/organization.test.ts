@@ -79,7 +79,7 @@ describe("createOrganizationSchema", () => {
   });
 
   it("rejects name with profanity", () => {
-    const result = createOrganizationSchema.safeParse({
+    const _result = createOrganizationSchema.safeParse({
       name: "Bad Organization Name",
       slug: "test-org",
     });
@@ -87,7 +87,7 @@ describe("createOrganizationSchema", () => {
   });
 
   it("rejects slug with profanity", () => {
-    const result = createOrganizationSchema.safeParse({
+    const _result = createOrganizationSchema.safeParse({
       name: "Test Organization",
       slug: "badslug",
     });
@@ -95,7 +95,7 @@ describe("createOrganizationSchema", () => {
   });
 
   it("rejects description with profanity", () => {
-    const result = createOrganizationSchema.safeParse({
+    const _result = createOrganizationSchema.safeParse({
       name: "Pokemon League",
       slug: "pokemon-league",
       description: "Bad description text",

@@ -134,7 +134,7 @@ describe("createTournamentSchema", () => {
   });
 
   it("rejects name with profanity", () => {
-    const result = createTournamentSchema.safeParse({
+    const _result = createTournamentSchema.safeParse({
       name: "Bad Tournament",
       slug: "test-tournament",
     });
@@ -142,7 +142,7 @@ describe("createTournamentSchema", () => {
   });
 
   it("rejects slug with profanity", () => {
-    const result = createTournamentSchema.safeParse({
+    const _result = createTournamentSchema.safeParse({
       name: "Test Tournament",
       slug: "badslug",
     });
@@ -150,7 +150,7 @@ describe("createTournamentSchema", () => {
   });
 
   it("rejects description with profanity", () => {
-    const result = createTournamentSchema.safeParse({
+    const _result = createTournamentSchema.safeParse({
       name: "Test Tournament",
       slug: "test-tournament",
       description: "Bad description text",

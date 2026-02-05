@@ -88,7 +88,7 @@ describe("usernameSchema", () => {
 
   it("rejects usernames with profanity", () => {
     // Using censored test case
-    const result = usernameSchema.safeParse("badword123");
+    const _result = usernameSchema.safeParse("badword123");
     // The result depends on whether "badword" is in the profanity list
     // We just test the mechanism works without asserting specific outcomes
   });

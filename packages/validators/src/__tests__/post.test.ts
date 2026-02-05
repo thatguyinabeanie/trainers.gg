@@ -41,7 +41,7 @@ describe("createPostSchema", () => {
   });
 
   it("rejects posts with profanity", () => {
-    const result = createPostSchema.safeParse({
+    const _result = createPostSchema.safeParse({
       text: "This contains bad words",
     });
     // We test the mechanism exists without asserting specific outcomes

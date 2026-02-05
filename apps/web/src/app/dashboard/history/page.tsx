@@ -1,4 +1,4 @@
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/supabase/server";
 import { getUserTournamentHistory } from "@trainers/supabase";
 import { TournamentHistoryTable } from "@/components/dashboard/tournament-history-table";
 
@@ -8,7 +8,7 @@ export const metadata = {
 };
 
 export default async function HistoryPage() {
-  const supabase = await createSupabaseServerClient();
+  const supabase = await createClient();
   const history = await getUserTournamentHistory(supabase);
 
   return (

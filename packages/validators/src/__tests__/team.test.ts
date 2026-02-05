@@ -171,7 +171,7 @@ Level: 50
     const team = parseShowdownText(text);
     // Set a nickname that would be flagged
     team[0]!.nickname = "TestBad";
-    const errors = validateTeamStructure(team);
+    const _errors = validateTeamStructure(team);
     // We test the mechanism exists without asserting specific outcomes
     // The profanity filter should catch inappropriate nicknames
   });
@@ -345,7 +345,7 @@ describe("parseAndValidateTeam", () => {
   });
 
   it("skips format validation when structural errors exist", () => {
-    const team = parseShowdownText(VALID_SHOWDOWN_MON);
+    const _team = parseShowdownText(VALID_SHOWDOWN_MON);
     // Duplicate the pokemon to trigger a structural error
     const duplicateText = `${VALID_SHOWDOWN_MON}\n\n${VALID_SHOWDOWN_MON}`;
     const result = parseAndValidateTeam(duplicateText, "reg-i");
