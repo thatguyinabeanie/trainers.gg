@@ -58,7 +58,21 @@ pnpm dev:web              # Run web app only
 pnpm dev:mobile           # Run mobile app only
 pnpm dev:backend          # Run Supabase backend only
 pnpm dev:web+backend      # Run web + Supabase in parallel
+pnpm cleanup-ports        # Clean up stale worktree port allocations
 ```
+
+**Git Worktree Support:**
+
+This project supports running multiple instances simultaneously using git worktrees. Each worktree gets unique port allocations automatically:
+
+```bash
+git worktree add ../feature-branch feature-branch
+cd ../feature-branch
+pnpm install   # Auto-allocates ports (Next.js: 3010, PDS: 3110, Expo: 8091)
+pnpm dev       # Runs on unique ports, shares Supabase with main worktree
+```
+
+See [docs/worktree-setup.md](./docs/worktree-setup.md) for full documentation.
 
 ### Build & Quality
 

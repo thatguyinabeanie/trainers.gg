@@ -146,28 +146,41 @@ EOF
 # =============================================================================
 # Step 2: Create symlinks (idempotent)
 # =============================================================================
+# Note: In worktrees, .env.local is NOT symlinked but kept as a separate file.
+# This allows each worktree to have its own port configuration.
 create_symlinks() {
   local created=0
 
-  # App directories get .env.local symlinks
-  local app_dirs=("$ROOT_DIR/apps/web" "$ROOT_DIR/apps/mobile")
-  for app_dir in "${app_dirs[@]}"; do
-    if [ -d "$app_dir" ]; then
-      local target="$app_dir/.env.local"
-      if [ -L "$target" ]; then
-        continue  # symlink already exists
-      fi
-      if [ -f "$target" ]; then
-        mv "$target" "$target.backup"
-        log_warn "Backed up existing $target"
-      fi
-      cd "$app_dir"
-      ln -s "../../.env.local" ".env.local"
-      created=$((created + 1))
-    fi
-  done
+  # Check if we're in a git worktree
+  local is_worktree=false
+  if [ -f "$ROOT_DIR/.git" ]; then
+    is_worktree=true
+    log_info "Detected git worktree - using worktree-specific .env.local"
+  fi
 
-  # Supabase directories get .env symlinks
+  # In worktrees, skip symlink creation for .env.local (but still create it)
+  # In main worktree, create symlinks as before
+  if [ "$is_worktree" = false ]; then
+    # App directories get .env.local symlinks (main worktree only)
+    local app_dirs=("$ROOT_DIR/apps/web" "$ROOT_DIR/apps/mobile")
+    for app_dir in "${app_dirs[@]}"; do
+      if [ -d "$app_dir" ]; then
+        local target="$app_dir/.env.local"
+        if [ -L "$target" ]; then
+          continue  # symlink already exists
+        fi
+        if [ -f "$target" ]; then
+          mv "$target" "$target.backup"
+          log_warn "Backed up existing $target"
+        fi
+        cd "$app_dir"
+        ln -s "../../.env.local" ".env.local"
+        created=$((created + 1))
+      fi
+    done
+  fi
+
+  # Supabase directories get .env symlinks (both main and worktrees)
   local supabase_targets=(
     "$ROOT_DIR/packages/supabase:.env:../../.env.local"
     "$ROOT_DIR/packages/supabase/supabase:.env:../../../.env.local"

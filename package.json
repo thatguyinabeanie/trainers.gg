@@ -10,7 +10,8 @@
     "postinstall": "./scripts/postinstall.sh",
     "prepare": "husky",
     "// dev": "",
-    "dev": "rm -rf apps/web/.next/dev && turbo run dev",
+    "dev:setup": "tsx scripts/setup-worktree-env.ts",
+    "dev": "pnpm dev:setup && rm -rf apps/web/.next/dev && turbo run dev",
     "dev:web": "turbo run dev --filter=@trainers/web",
     "dev:mobile": "turbo run dev --filter=@trainers/mobile",
     "dev:backend": "turbo run dev --filter=@trainers/supabase",
@@ -61,7 +62,8 @@
     "test:unit": "turbo run test",
     "test:watch": "turbo run test:watch",
     "// cleanup": "",
-    "clean": "turbo run clean && rm -rf node_modules .turbo"
+    "clean": "turbo run clean && rm -rf node_modules .turbo",
+    "cleanup-ports": "tsx scripts/cleanup-worktree-ports.ts"
   },
   "devDependencies": {
     "@atproto/jwk-jose": "^0.1.11",
@@ -78,6 +80,7 @@
     "supabase": "^2.75.3",
     "ts-jest": "^29.4.6",
     "ts-node": "^10.9.2",
+    "tsx": "^4.21.0",
     "turbo": "^2.8.3",
     "typescript": "catalog:"
   },

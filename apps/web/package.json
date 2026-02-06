@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "next dev --turbopack",
+    "dev": "tsx ../../scripts/dev-with-ports.ts next dev --turbopack",
     "verify-db": "node scripts/verify-database.mjs",
     "migrate": "node scripts/run-migrations.mjs",
     "prebuild": "node scripts/generate-jwks.mjs && node scripts/run-migrations.mjs",

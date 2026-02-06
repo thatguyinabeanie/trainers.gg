@@ -84,3 +84,6 @@ apps/web/public/oauth/jwks.json
 .eslintcache
 **/.eslintcache
 **/settings.local.json
+
+# Worktree port allocation registry
+scripts/worktree-ports.json
