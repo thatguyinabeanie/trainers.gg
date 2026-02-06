@@ -17,10 +17,11 @@ import { type ActionResult } from "@trainers/validators";
  */
 export async function GET(
   _request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const tournamentId = parseInt(params.id, 10);
+    const { id } = await params;
+    const tournamentId = parseInt(id, 10);
 
     if (isNaN(tournamentId)) {
       const result: ActionResult = {
@@ -60,10 +61,11 @@ export async function GET(
  */
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const tournamentId = parseInt(params.id, 10);
+    const { id } = await params;
+    const tournamentId = parseInt(id, 10);
 
     if (isNaN(tournamentId)) {
       const result: ActionResult = {
