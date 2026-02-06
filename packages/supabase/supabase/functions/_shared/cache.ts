@@ -129,24 +129,44 @@ export async function invalidateCache(pattern: string): Promise<void> {
  *
  * @param maxAge - Cache duration in seconds (default: 60)
  * @param staleWhileRevalidate - Stale-while-revalidate duration (default: 30)
+ * @param isPublic - Whether data is public (same for all users) or user-specific (default: false)
  * @returns Headers object with Cache-Control and Vary
  *
  * @example
+ * // Public data (tournament list - same for all users)
  * return Response.json(data, {
  *   headers: {
  *     ...cors,
- *     ...getCacheHeaders(60, 30),
+ *     ...getCacheHeaders(60, 30, true),
+ *   }
+ * });
+ *
+ * @example
+ * // User-specific data (user's notifications)
+ * return Response.json(data, {
+ *   headers: {
+ *     ...cors,
+ *     ...getCacheHeaders(60, 30, false),
  *   }
  * });
  */
 export function getCacheHeaders(
   maxAge: number = 60,
-  staleWhileRevalidate: number = 30
+  staleWhileRevalidate: number = 30,
+  isPublic: boolean = false
 ): Record<string, string> {
-  return {
-    "Cache-Control": `public, max-age=${maxAge}, s-maxage=${maxAge}, stale-while-revalidate=${staleWhileRevalidate}`,
-    Vary: "Authorization", // Cache separately per user (due to auth header)
-  };
+  if (isPublic) {
+    // Public data: same for all users, can be cached by CDN
+    return {
+      "Cache-Control": `public, max-age=${maxAge}, s-maxage=${maxAge}, stale-while-revalidate=${staleWhileRevalidate}`,
+    };
+  } else {
+    // User-specific data: must not be shared between users
+    return {
+      "Cache-Control": `private, max-age=${maxAge}, stale-while-revalidate=${staleWhileRevalidate}`,
+      Vary: "Authorization", // Defense in depth
+    };
+  }
 }
 
 /**

@@ -148,7 +148,7 @@ Deno.serve(async (req) => {
         { success: true, data: result },
         200,
         cors,
-        getCacheHeaders(60, 30)
+        getCacheHeaders(60, 30, true)
       );
     }
 
@@ -192,7 +192,7 @@ Deno.serve(async (req) => {
         { success: true, data: result },
         200,
         cors,
-        getCacheHeaders(60, 30)
+        getCacheHeaders(60, 30, true)
       );
     }
 
