@@ -108,11 +108,26 @@ export async function invalidateCache(pattern: string): Promise<void> {
 
   try {
     if (pattern.endsWith("*")) {
-      // Pattern-based invalidation using SCAN
-      const keys = await redis.keys(pattern);
-      if (keys.length > 0) {
-        await redis.del(...keys);
-        console.log(`[cache] INVALIDATE: ${pattern} (${keys.length} keys)`);
+      // Pattern-based invalidation using cursor-based SCAN
+      let cursor: string | number = 0;
+      let totalDeleted = 0;
+
+      do {
+        const [nextCursor, keys] = await redis.scan(cursor, {
+          match: pattern,
+          count: 100,
+        });
+
+        if (keys.length > 0) {
+          await redis.del(...keys);
+          totalDeleted += keys.length;
+        }
+
+        cursor = nextCursor;
+      } while (cursor !== 0 && cursor !== "0");
+
+      if (totalDeleted > 0) {
+        console.log(`[cache] INVALIDATE: ${pattern} (${totalDeleted} keys)`);
       }
     } else {
       // Single key invalidation
