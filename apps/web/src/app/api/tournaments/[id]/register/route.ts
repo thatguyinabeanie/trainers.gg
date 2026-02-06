@@ -9,6 +9,9 @@ import { type ActionResult } from "@trainers/validators";
 /**
  * POST /api/tournaments/:id/register
  * Register for a tournament
+ *
+ * Note: In Next.js 15+, route segment params are async.
+ * See: https://nextjs.org/docs/messages/sync-dynamic-apis
  */
 export async function POST(
   request: NextRequest,

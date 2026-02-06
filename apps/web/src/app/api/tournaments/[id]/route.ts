@@ -11,6 +11,9 @@ import { type ActionResult } from "@trainers/validators";
 /**
  * GET /api/tournaments/:id
  * Get tournament details by ID
+ *
+ * Note: In Next.js 15+, route segment params are async.
+ * See: https://nextjs.org/docs/messages/sync-dynamic-apis
  */
 export async function GET(
   request: NextRequest,
@@ -80,6 +83,9 @@ export async function GET(
 /**
  * PATCH /api/tournaments/:id
  * Update tournament details
+ *
+ * Note: In Next.js 15+, route segment params are async.
+ * See: https://nextjs.org/docs/messages/sync-dynamic-apis
  */
 export async function PATCH(
   request: NextRequest,
