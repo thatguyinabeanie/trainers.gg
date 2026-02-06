@@ -1,5 +1,6 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import type { AppRouterInstance } from "next/dist/shared/lib/app-router-context.shared-runtime";
 import { ResetPasswordForm } from "../reset-password-form";
 import { useAuth } from "@/hooks/use-auth";
 import { useRouter } from "next/navigation";
@@ -15,14 +16,14 @@ const mockUseRouter = useRouter as jest.Mock;
 
 describe("ResetPasswordForm", () => {
   let mockUpdatePassword: jest.Mock;
-  let mockRouter: any;
+  let mockRouter: Partial<AppRouterInstance>;
 
   beforeEach(() => {
     mockUpdatePassword = jest.fn();
     mockRouter = {
       push: jest.fn(),
       refresh: jest.fn(),
-    };
+    } as Partial<AppRouterInstance>;
 
     mockUseAuth.mockReturnValue({
       updatePassword: mockUpdatePassword,
@@ -371,7 +372,9 @@ describe("ResetPasswordForm", () => {
     await user.click(submitButton);
 
     await waitFor(() => {
-      expect(screen.getByText(/uppercase letter/i)).toBeInTheDocument();
+      expect(
+        screen.getByText("Password must contain at least one uppercase letter")
+      ).toBeInTheDocument();
     });
 
     await user.clear(passwordInput);
@@ -383,7 +386,9 @@ describe("ResetPasswordForm", () => {
     await user.click(submitButton);
 
     await waitFor(() => {
-      expect(screen.getByText(/lowercase letter/i)).toBeInTheDocument();
+      expect(
+        screen.getByText("Password must contain at least one lowercase letter")
+      ).toBeInTheDocument();
     });
 
     await user.clear(passwordInput);
@@ -395,7 +400,9 @@ describe("ResetPasswordForm", () => {
     await user.click(submitButton);
 
     await waitFor(() => {
-      expect(screen.getByText(/number/i)).toBeInTheDocument();
+      expect(
+        screen.getByText("Password must contain at least one number")
+      ).toBeInTheDocument();
     });
 
     await user.clear(passwordInput);
@@ -407,7 +414,9 @@ describe("ResetPasswordForm", () => {
     await user.click(submitButton);
 
     await waitFor(() => {
-      expect(screen.getByText(/symbol/i)).toBeInTheDocument();
+      expect(
+        screen.getByText(/Password must contain at least one.*symbol/i)
+      ).toBeInTheDocument();
     });
   });
 });

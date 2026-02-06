@@ -443,14 +443,26 @@ describe("flattenFeedPages", () => {
     const pages = [
       {
         posts: [
-          { uri: "post1", indexedAt: "2024-01-01" } as any,
-          { uri: "post2", indexedAt: "2024-01-02" } as any,
+          {
+            uri: "post1",
+            indexedAt: "2024-01-01",
+          } as AppBskyFeedDefs.FeedViewPost,
+          {
+            uri: "post2",
+            indexedAt: "2024-01-02",
+          } as AppBskyFeedDefs.FeedViewPost,
         ],
       },
       {
         posts: [
-          { uri: "post3", indexedAt: "2024-01-03" } as any,
-          { uri: "post4", indexedAt: "2024-01-04" } as any,
+          {
+            uri: "post3",
+            indexedAt: "2024-01-03",
+          } as AppBskyFeedDefs.FeedViewPost,
+          {
+            uri: "post4",
+            indexedAt: "2024-01-04",
+          } as AppBskyFeedDefs.FeedViewPost,
         ],
       },
     ];

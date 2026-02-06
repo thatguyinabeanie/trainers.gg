@@ -145,7 +145,7 @@ describe("hooks.ts - React hooks for Supabase", () => {
         data: { user: null },
       });
 
-      let authCallback: (event: string, session: any) => void;
+      let authCallback: ((event: string, session: unknown) => void) | undefined;
       mockOnAuthStateChange.mockImplementation((callback) => {
         authCallback = callback;
         return {
@@ -163,7 +163,7 @@ describe("hooks.ts - React hooks for Supabase", () => {
 
       // Simulate auth state change
       act(() => {
-        authCallback!("SIGNED_IN", { user: mockUser });
+        authCallback?.("SIGNED_IN", { user: mockUser });
       });
 
       expect(result.current.user).toEqual(mockUser);
@@ -184,7 +184,7 @@ describe("hooks.ts - React hooks for Supabase", () => {
         data: { user: mockUser },
       });
 
-      let authCallback: (event: string, session: any) => void;
+      let authCallback: ((event: string, session: unknown) => void) | undefined;
       mockOnAuthStateChange.mockImplementation((callback) => {
         authCallback = callback;
         return {
@@ -200,7 +200,7 @@ describe("hooks.ts - React hooks for Supabase", () => {
 
       // Simulate sign out
       act(() => {
-        authCallback!("SIGNED_OUT", null);
+        authCallback?.("SIGNED_OUT", null);
       });
 
       expect(result.current.user).toBeNull();
@@ -371,7 +371,7 @@ describe("hooks.ts - React hooks for Supabase", () => {
       expect(result.current.isLoading).toBe(false);
       expect(result.current.error).toBeNull();
 
-      let mutationResult: any;
+      let mutationResult: unknown;
       await act(async () => {
         mutationResult = await result.current.mutate({ name: "Test" });
       });
@@ -423,7 +423,7 @@ describe("hooks.ts - React hooks for Supabase", () => {
 
       const { result } = renderHook(() => useSupabaseMutation(mutationFn));
 
-      let mutationResult: any;
+      let mutationResult: unknown;
       await act(async () => {
         mutationResult = await result.current.mutateAsync({ name: "Test" });
       });
@@ -440,7 +440,7 @@ describe("hooks.ts - React hooks for Supabase", () => {
       await act(async () => {
         try {
           await result.current.mutate({});
-        } catch (err) {
+        } catch {
           // Expected error
         }
       });
@@ -492,7 +492,7 @@ describe("hooks.ts - React hooks for Supabase", () => {
       await act(async () => {
         try {
           await result.current.mutate({});
-        } catch (err) {
+        } catch {
           caughtError = true;
         }
       });
@@ -513,7 +513,7 @@ describe("hooks.ts - React hooks for Supabase", () => {
         useSupabaseMutation(mutationFn)
       );
 
-      let result1: any;
+      let result1: unknown;
       await act(async () => {
         result1 = await result.current.mutate({ name: "First" });
       });
@@ -521,7 +521,7 @@ describe("hooks.ts - React hooks for Supabase", () => {
       expect(result1).toEqual(mockResult1);
       rerender(); // Force re-render to ensure state is stable
 
-      let result2: any;
+      let result2: unknown;
       await act(async () => {
         result2 = await result.current.mutate({ name: "Second" });
       });
@@ -544,7 +544,7 @@ describe("hooks.ts - React hooks for Supabase", () => {
       await act(async () => {
         try {
           await result.current.mutate({});
-        } catch (err) {
+        } catch {
           // Expected
         }
       });

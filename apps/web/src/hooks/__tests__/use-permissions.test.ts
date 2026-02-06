@@ -47,12 +47,14 @@ describe("usePermission", () => {
     });
 
     // Mock the query to return the permission check result
-    (useSupabaseQuery as jest.Mock).mockImplementation((queryFn, deps) => {
-      return {
-        data: true,
-        isLoading: false,
-      };
-    });
+    (useSupabaseQuery as jest.Mock).mockImplementation(
+      (_queryFn: unknown, _deps: unknown) => {
+        return {
+          data: true,
+          isLoading: false,
+        };
+      }
+    );
 
     const { result } = renderHook(() => usePermission("tournaments.create"));
 
@@ -95,12 +97,14 @@ describe("usePermission", () => {
       isLoading: false,
     });
 
-    (useSupabaseQuery as jest.Mock).mockImplementation((queryFn, deps) => {
-      return {
-        data: false,
-        isLoading: false,
-      };
-    });
+    (useSupabaseQuery as jest.Mock).mockImplementation(
+      (_queryFn: unknown, _deps: unknown) => {
+        return {
+          data: false,
+          isLoading: false,
+        };
+      }
+    );
 
     const { result } = renderHook(() => usePermission("tournaments.create"));
 
@@ -160,13 +164,15 @@ describe("usePermission", () => {
     });
 
     // Simulate the query function when not enabled
-    (useSupabaseQuery as jest.Mock).mockImplementation((queryFn, deps) => {
-      const enabled = deps[1];
-      return {
-        data: enabled ? undefined : false,
-        isLoading: false,
-      };
-    });
+    (useSupabaseQuery as jest.Mock).mockImplementation(
+      (_queryFn: unknown, deps: unknown[]) => {
+        const enabled = deps[1];
+        return {
+          data: enabled ? undefined : false,
+          isLoading: false,
+        };
+      }
+    );
 
     const { result } = renderHook(() =>
       usePermission("tournaments.view", false)
@@ -257,12 +263,14 @@ describe("usePermissions", () => {
     });
 
     // Mock user has tournaments.create and tournaments.view permissions
-    (useSupabaseQuery as jest.Mock).mockImplementation((queryFn, deps) => {
-      return {
-        data: ["tournaments.create", "tournaments.view"],
-        isLoading: false,
-      };
-    });
+    (useSupabaseQuery as jest.Mock).mockImplementation(
+      (_queryFn: unknown, _deps: unknown) => {
+        return {
+          data: ["tournaments.create", "tournaments.view"],
+          isLoading: false,
+        };
+      }
+    );
 
     const { result } = renderHook(() =>
       usePermissions([
@@ -320,12 +328,14 @@ describe("usePermissions", () => {
       isLoading: false,
     });
 
-    (useSupabaseQuery as jest.Mock).mockImplementation((queryFn, deps) => {
-      return {
-        data: [],
-        isLoading: false,
-      };
-    });
+    (useSupabaseQuery as jest.Mock).mockImplementation(
+      (_queryFn: unknown, _deps: unknown) => {
+        return {
+          data: [],
+          isLoading: false,
+        };
+      }
+    );
 
     const { result } = renderHook(() => usePermissions(["tournaments.create"]));
 
@@ -387,12 +397,14 @@ describe("usePermissions", () => {
       isLoading: false,
     });
 
-    (useSupabaseQuery as jest.Mock).mockImplementation((queryFn, deps) => {
-      return {
-        data: [],
-        isLoading: false,
-      };
-    });
+    (useSupabaseQuery as jest.Mock).mockImplementation(
+      (_queryFn: unknown, _deps: unknown) => {
+        return {
+          data: [],
+          isLoading: false,
+        };
+      }
+    );
 
     const { result } = renderHook(() => usePermissions(["tournaments.create"]));
 

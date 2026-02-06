@@ -1,4 +1,4 @@
-import { renderHook, waitFor, act } from "@testing-library/react";
+import { renderHook, waitFor } from "@testing-library/react";
 import {
   useProfile,
   useFollowMutation,
@@ -188,8 +188,15 @@ describe("useProfile", () => {
   });
 });
 
+interface MockQueryClient {
+  cancelQueries: jest.Mock;
+  getQueryData: jest.Mock;
+  setQueryData: jest.Mock;
+  invalidateQueries: jest.Mock;
+}
+
 describe("useFollowMutation", () => {
-  let mockQueryClient: any;
+  let mockQueryClient: MockQueryClient;
 
   beforeEach(() => {
     mockQueryClient = {
@@ -225,7 +232,12 @@ describe("useFollowMutation", () => {
   });
 
   it("should handle follow action", async () => {
-    let mutationFn: any;
+    let mutationFn:
+      | ((variables: {
+          targetDid: string;
+          isFollowing: boolean;
+        }) => Promise<unknown>)
+      | undefined;
 
     (useMutation as jest.Mock).mockImplementation((options) => {
       mutationFn = options.mutationFn;
@@ -238,16 +250,19 @@ describe("useFollowMutation", () => {
 
     renderHook(() => useFollowMutation());
 
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { followBlueskyUser } = require("@/actions/bluesky/social-actions");
     followBlueskyUser.mockResolvedValue({
       success: true,
       data: { followUri: "at://follow/123" },
     });
 
-    const result = await mutationFn({
-      targetDid: "did:plc:target",
-      isFollowing: false,
-    });
+    const result = mutationFn
+      ? await mutationFn({
+          targetDid: "did:plc:target",
+          isFollowing: false,
+        })
+      : null;
 
     expect(result).toEqual({
       following: true,
@@ -256,7 +271,13 @@ describe("useFollowMutation", () => {
   });
 
   it("should handle unfollow action", async () => {
-    let mutationFn: any;
+    let mutationFn:
+      | ((variables: {
+          targetDid: string;
+          isFollowing: boolean;
+          followUri?: string;
+        }) => Promise<unknown>)
+      | undefined;
 
     (useMutation as jest.Mock).mockImplementation((options) => {
       mutationFn = options.mutationFn;
@@ -269,16 +290,19 @@ describe("useFollowMutation", () => {
 
     renderHook(() => useFollowMutation());
 
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { unfollowBlueskyUser } = require("@/actions/bluesky/social-actions");
     unfollowBlueskyUser.mockResolvedValue({
       success: true,
     });
 
-    const result = await mutationFn({
-      targetDid: "did:plc:target",
-      isFollowing: true,
-      followUri: "at://follow/456",
-    });
+    const result = mutationFn
+      ? await mutationFn({
+          targetDid: "did:plc:target",
+          isFollowing: true,
+          followUri: "at://follow/456",
+        })
+      : null;
 
     expect(result).toEqual({
       following: false,
@@ -287,7 +311,12 @@ describe("useFollowMutation", () => {
   });
 
   it("should optimistically update profile on follow", async () => {
-    let onMutate: any;
+    let onMutate:
+      | ((variables: {
+          targetDid: string;
+          isFollowing: boolean;
+        }) => Promise<void>)
+      | undefined;
 
     (useMutation as jest.Mock).mockImplementation((options) => {
       onMutate = options.onMutate;
@@ -309,10 +338,12 @@ describe("useFollowMutation", () => {
 
     mockQueryClient.getQueryData.mockReturnValue(mockProfile);
 
-    await onMutate({
-      targetDid: "did:plc:target",
-      isFollowing: false,
-    });
+    if (onMutate) {
+      await onMutate({
+        targetDid: "did:plc:target",
+        isFollowing: false,
+      });
+    }
 
     expect(mockQueryClient.setQueryData).toHaveBeenCalledWith(
       ["profile", "detail", "did:plc:target"],
@@ -328,7 +359,12 @@ describe("useFollowMutation", () => {
   });
 
   it("should optimistically update profile on unfollow", async () => {
-    let onMutate: any;
+    let onMutate:
+      | ((variables: {
+          targetDid: string;
+          isFollowing: boolean;
+        }) => Promise<void>)
+      | undefined;
 
     (useMutation as jest.Mock).mockImplementation((options) => {
       onMutate = options.onMutate;
@@ -350,10 +386,12 @@ describe("useFollowMutation", () => {
 
     mockQueryClient.getQueryData.mockReturnValue(mockProfile);
 
-    await onMutate({
-      targetDid: "did:plc:target",
-      isFollowing: true,
-    });
+    if (onMutate) {
+      await onMutate({
+        targetDid: "did:plc:target",
+        isFollowing: true,
+      });
+    }
 
     const updater = mockQueryClient.setQueryData.mock.calls[0][1];
     const updated = updater(mockProfile);
@@ -363,7 +401,9 @@ describe("useFollowMutation", () => {
   });
 
   it("should rollback on error", () => {
-    let onError: any;
+    let onError:
+      | ((error: Error, variables: unknown, context?: unknown) => void)
+      | undefined;
 
     (useMutation as jest.Mock).mockImplementation((options) => {
       onError = options.onError;
@@ -385,7 +425,9 @@ describe("useFollowMutation", () => {
 
     const context = { previousProfile };
 
-    onError(new Error("Failed"), { targetDid: "did:plc:target" }, context);
+    if (onError) {
+      onError(new Error("Failed"), { targetDid: "did:plc:target" }, context);
+    }
 
     expect(mockQueryClient.setQueryData).toHaveBeenCalledWith(
       ["profile", "detail", "did:plc:target"],
@@ -394,7 +436,13 @@ describe("useFollowMutation", () => {
   });
 
   it("should invalidate queries on settle", () => {
-    let onSettled: any;
+    let onSettled:
+      | ((
+          data: unknown,
+          error: unknown,
+          variables: { targetDid: string }
+        ) => void)
+      | undefined;
 
     (useMutation as jest.Mock).mockImplementation((options) => {
       onSettled = options.onSettled;
@@ -407,7 +455,9 @@ describe("useFollowMutation", () => {
 
     renderHook(() => useFollowMutation());
 
-    onSettled(null, null, { targetDid: "did:plc:target" });
+    if (onSettled) {
+      onSettled(null, null, { targetDid: "did:plc:target" });
+    }
 
     expect(mockQueryClient.invalidateQueries).toHaveBeenCalledWith({
       queryKey: ["profile", "detail", "did:plc:target"],

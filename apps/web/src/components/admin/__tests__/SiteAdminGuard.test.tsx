@@ -1,5 +1,6 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import { useRouter } from "next/navigation";
+import type { AppRouterInstance } from "next/dist/shared/lib/app-router-context.shared-runtime";
 import SiteAdminGuard from "../SiteAdminGuard";
 import { useSiteAdmin } from "@/hooks/use-site-admin";
 
@@ -36,7 +37,7 @@ describe("SiteAdminGuard", () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    mockUseRouter.mockReturnValue(mockRouter as any);
+    mockUseRouter.mockReturnValue(mockRouter as Partial<AppRouterInstance>);
   });
 
   describe("Loading state", () => {
@@ -118,7 +119,7 @@ describe("SiteAdminGuard", () => {
         siteRoles: ["user"],
         isSiteAdmin: false,
         isLoading: false,
-        user: mockUser as any,
+        user: mockUser,
       });
 
       render(
@@ -139,7 +140,7 @@ describe("SiteAdminGuard", () => {
         siteRoles: [],
         isSiteAdmin: false,
         isLoading: false,
-        user: mockUser as any,
+        user: mockUser,
       });
 
       render(
@@ -160,7 +161,7 @@ describe("SiteAdminGuard", () => {
         siteRoles: [],
         isSiteAdmin: false,
         isLoading: false,
-        user: mockUser as any,
+        user: mockUser,
       });
 
       const { container } = render(
@@ -181,7 +182,7 @@ describe("SiteAdminGuard", () => {
         siteRoles: ["site_admin"],
         isSiteAdmin: true,
         isLoading: false,
-        user: mockUser as any,
+        user: mockUser,
       });
 
       render(
@@ -198,7 +199,7 @@ describe("SiteAdminGuard", () => {
         siteRoles: ["user", "site_admin", "moderator"],
         isSiteAdmin: true,
         isLoading: false,
-        user: mockUser as any,
+        user: mockUser,
       });
 
       render(
@@ -215,7 +216,7 @@ describe("SiteAdminGuard", () => {
         siteRoles: ["site_admin"],
         isSiteAdmin: true,
         isLoading: false,
-        user: mockUser as any,
+        user: mockUser,
       });
 
       render(
@@ -309,7 +310,7 @@ describe("SiteAdminGuard", () => {
         siteRoles: ["site_admin"],
         isSiteAdmin: true,
         isLoading: false,
-        user: mockUser as any,
+        user: mockUser,
       });
 
       rerender(
@@ -347,7 +348,7 @@ describe("SiteAdminGuard", () => {
         siteRoles: ["user"],
         isSiteAdmin: false,
         isLoading: false,
-        user: mockUser as any,
+        user: mockUser,
       });
 
       rerender(

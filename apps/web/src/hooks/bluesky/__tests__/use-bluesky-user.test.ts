@@ -17,8 +17,15 @@ jest.mock("@tanstack/react-query", () => ({
   useQuery: jest.fn(),
 }));
 
+interface MockSupabase {
+  from: jest.Mock;
+  select: jest.Mock;
+  eq: jest.Mock;
+  maybeSingle: jest.Mock;
+}
+
 describe("useBlueskyUser", () => {
-  let mockSupabase: any;
+  let mockSupabase: MockSupabase;
 
   beforeEach(() => {
     mockSupabase = {

@@ -9,6 +9,7 @@ import * as fs from "fs";
 import * as path from "path";
 import { execFileSync } from "child_process";
 import { fileURLToPath } from "url";
+import { findAvailablePort, findPortBlock } from "./ports.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -192,13 +193,13 @@ export function cleanupStaleWorktrees(registry: Registry): boolean {
 }
 
 /**
- * Allocate ports for a new worktree
+ * Allocate ports for a new worktree using dynamic port detection
  */
-export function allocateWorktreePorts(
+export async function allocateWorktreePorts(
   registry: Registry,
   worktreePath: string,
   isSupabaseOwner: boolean
-): WorktreeAllocation {
+): Promise<WorktreeAllocation> {
   const existingAllocation = registry.worktrees[worktreePath];
   if (existingAllocation) {
     existingAllocation.lastUsed = new Date().toISOString();
@@ -206,29 +207,22 @@ export function allocateWorktreePorts(
     return existingAllocation;
   }
 
-  // Find next available port block
-  const allocatedPorts = new Set<number>();
-  for (const worktree of Object.values(registry.worktrees)) {
-    allocatedPorts.add(worktree.nextjs);
-    allocatedPorts.add(worktree.pds);
-    allocatedPorts.add(worktree.expo);
-  }
-
-  // Allocate in blocks of 10 per worktree
+  // Calculate preferred ports based on worktree count (for predictability)
   const worktreeCount = Object.keys(registry.worktrees).length;
-  let nextjsPort = 3000 + worktreeCount * 10;
-  let pdsPort = 3100 + worktreeCount * 10;
-  let expoPort = 8081 + worktreeCount * 10;
+  const preferredNextjs = 3000 + worktreeCount * 10;
+  const preferredPds = 3100 + worktreeCount * 10;
+  const preferredExpo = 8081 + worktreeCount * 10;
 
-  // Ensure ports aren't already allocated
-  while (allocatedPorts.has(nextjsPort)) {
-    nextjsPort += 10;
-  }
-  while (allocatedPorts.has(pdsPort)) {
-    pdsPort += 10;
-  }
-  while (allocatedPorts.has(expoPort)) {
-    expoPort += 10;
+  // Find available ports with fallback to next available in range
+  const nextjsPort = await findAvailablePort(preferredNextjs, [3000, 3099]);
+  const pdsPort = await findAvailablePort(preferredPds, [3100, 3199]);
+  const expoPort = await findAvailablePort(preferredExpo, [8080, 8179]);
+
+  if (!nextjsPort || !pdsPort || !expoPort) {
+    throw new Error(
+      "Failed to allocate ports - no available ports in configured ranges. " +
+        "Try running 'pnpm cleanup-ports' to free up stale allocations."
+    );
   }
 
   const allocation: WorktreeAllocation = {
@@ -245,11 +239,12 @@ export function allocateWorktreePorts(
 
 /**
  * Allocate Supabase ports (singleton across all worktrees)
+ * Uses dynamic port detection with fallback to next available block
  */
-export function allocateSupabasePorts(
+export async function allocateSupabasePorts(
   registry: Registry,
   worktreePath: string
-): SupabaseAllocation {
+): Promise<SupabaseAllocation> {
   // If Supabase already allocated, return existing
   if (registry.supabase) {
     // Update owner if needed
@@ -259,18 +254,30 @@ export function allocateSupabasePorts(
     return registry.supabase;
   }
 
-  // Allocate new Supabase ports (default Supabase ports)
+  // Try to allocate Supabase ports block (need 8 contiguous ports)
+  // Preferred: default Supabase ports starting at 54320
+  let portBlock = await findPortBlock(8, 54320);
+
+  if (!portBlock) {
+    throw new Error(
+      "Failed to allocate Supabase port block - no 8 contiguous ports available. " +
+        "Check if Supabase is already running or other services are using these ports."
+    );
+  }
+
+  // Map the allocated ports to Supabase services
+  // Order: shadow_db, api, db, studio, inbucket, analytics, pooler, edge_functions
   const allocation: SupabaseAllocation = {
     owner: worktreePath,
     ports: {
-      api: 54321,
-      db: 54322,
-      studio: 54323,
-      inbucket: 54324,
-      pooler: 54329,
-      analytics: 54327,
-      edge_functions: 8083,
-      shadow_db: 54320,
+      shadow_db: portBlock[0],
+      api: portBlock[1],
+      db: portBlock[2],
+      studio: portBlock[3],
+      inbucket: portBlock[4],
+      analytics: portBlock[5],
+      pooler: portBlock[6],
+      edge_functions: portBlock[7],
     },
     lastStarted: new Date().toISOString(),
   };

@@ -45,6 +45,3 @@ export {
   roundStatusLabels,
   getLabel,
 } from "./labels";
-
-// ports.ts — port detection and allocation for worktree development
-export { isPortAvailable, findAvailablePort, findPortBlock } from "./ports";

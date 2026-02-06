@@ -1,5 +1,6 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import { useRouter } from "next/navigation";
+import type { AppRouterInstance } from "next/dist/shared/lib/app-router-context.shared-runtime";
 import AdminGuard from "../AdminGuard";
 import { usePermissions } from "@/hooks/use-permissions";
 import { PERMISSIONS } from "@trainers/utils";
@@ -40,7 +41,7 @@ describe("AdminGuard", () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    mockUseRouter.mockReturnValue(mockRouter as any);
+    mockUseRouter.mockReturnValue(mockRouter as Partial<AppRouterInstance>);
   });
 
   describe("Loading state", () => {
@@ -91,7 +92,7 @@ describe("AdminGuard", () => {
       mockUsePermissions.mockReturnValue({
         permissions: {},
         isLoading: false,
-        user: { ...mockUser, alt: null } as any,
+        user: { ...mockUser, alt: null },
       });
 
       render(
@@ -124,7 +125,7 @@ describe("AdminGuard", () => {
           [PERMISSIONS.ADMIN_VIEW_AUDIT_LOGS]: false,
         },
         isLoading: false,
-        user: mockUser as any,
+        user: mockUser,
       });
 
       render(
@@ -155,7 +156,7 @@ describe("AdminGuard", () => {
           [PERMISSIONS.ADMIN_VIEW_AUDIT_LOGS]: false,
         },
         isLoading: false,
-        user: mockUser as any,
+        user: mockUser,
       });
 
       render(
@@ -180,7 +181,7 @@ describe("AdminGuard", () => {
           [PERMISSIONS.ADMIN_VIEW_AUDIT_LOGS]: false,
         },
         isLoading: false,
-        user: mockUser as any,
+        user: mockUser,
       });
 
       render(
@@ -205,7 +206,7 @@ describe("AdminGuard", () => {
           [PERMISSIONS.ADMIN_VIEW_AUDIT_LOGS]: false,
         },
         isLoading: false,
-        user: mockUser as any,
+        user: mockUser,
       });
 
       render(
@@ -230,7 +231,7 @@ describe("AdminGuard", () => {
           [PERMISSIONS.ADMIN_VIEW_AUDIT_LOGS]: false,
         },
         isLoading: false,
-        user: mockUser as any,
+        user: mockUser,
       });
 
       render(
@@ -259,7 +260,7 @@ describe("AdminGuard", () => {
           [PERMISSIONS.ADMIN_VIEW_AUDIT_LOGS]: false,
         },
         isLoading: false,
-        user: mockUser as any,
+        user: mockUser,
       });
 
       render(
@@ -290,7 +291,7 @@ describe("AdminGuard", () => {
           [PERMISSIONS.ADMIN_VIEW_AUDIT_LOGS]: false,
         },
         isLoading: false,
-        user: mockUser as any,
+        user: mockUser,
       });
 
       render(
@@ -315,7 +316,7 @@ describe("AdminGuard", () => {
           [PERMISSIONS.ADMIN_VIEW_AUDIT_LOGS]: false,
         },
         isLoading: false,
-        user: mockUser as any,
+        user: mockUser,
       });
 
       render(

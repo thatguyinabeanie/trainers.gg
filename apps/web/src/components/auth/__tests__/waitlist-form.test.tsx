@@ -57,10 +57,16 @@ describe("WaitlistForm", () => {
     const submitButton = screen.getByRole("button", { name: "Join Waitlist" });
     await user.click(submitButton);
 
-    await waitFor(() => {
-      // Check for error via aria-invalid or text content
-      expect(emailInput).toHaveAttribute("aria-invalid", "true");
-    });
+    await waitFor(
+      () => {
+        // Check for validation error message with role="alert"
+        const errorMessage = screen.getByRole("alert");
+        expect(errorMessage).toHaveTextContent(
+          "Please enter a valid email address"
+        );
+      },
+      { timeout: 3000 }
+    );
   });
 
   it("accepts valid email format", async () => {

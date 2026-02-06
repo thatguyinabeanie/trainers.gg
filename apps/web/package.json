@@ -84,6 +84,7 @@
     "@types/node": "catalog:",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
+    "@vercel/toolbar": "^0.2.2",
     "babel-plugin-react-compiler": "^1.0.0",
     "eslint": "catalog:",
     "eslint-plugin-react-compiler": "19.1.0-rc.2",

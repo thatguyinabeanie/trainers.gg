@@ -109,7 +109,9 @@ export function ForgotPasswordForm() {
               {...register("email")}
             />
             {errors.email && (
-              <p className="text-destructive text-sm">{errors.email.message}</p>
+              <p role="alert" className="text-destructive text-sm">
+                {errors.email.message}
+              </p>
             )}
           </div>
 

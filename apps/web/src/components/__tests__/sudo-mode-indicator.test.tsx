@@ -188,15 +188,17 @@ describe("SudoModeIndicator", () => {
         expect(mockCheckSudoStatus).toHaveBeenCalledTimes(1);
       });
 
-      // Fast-forward 30 seconds
+      // Fast-forward 30 seconds and flush promises
       jest.advanceTimersByTime(30000);
+      await Promise.resolve(); // Flush promise queue
 
       await waitFor(() => {
         expect(mockCheckSudoStatus).toHaveBeenCalledTimes(2);
       });
 
-      // Fast-forward another 30 seconds
+      // Fast-forward another 30 seconds and flush promises
       jest.advanceTimersByTime(30000);
+      await Promise.resolve(); // Flush promise queue
 
       await waitFor(() => {
         expect(mockCheckSudoStatus).toHaveBeenCalledTimes(3);
@@ -220,8 +222,9 @@ describe("SudoModeIndicator", () => {
         expect(screen.queryByText("Sudo Mode Active")).not.toBeInTheDocument();
       });
 
-      // Fast-forward 30 seconds to trigger next check
+      // Fast-forward 30 seconds and flush promises
       jest.advanceTimersByTime(30000);
+      await Promise.resolve(); // Flush promise queue
 
       await waitFor(() => {
         expect(screen.getByText("Sudo Mode Active")).toBeInTheDocument();
@@ -245,8 +248,9 @@ describe("SudoModeIndicator", () => {
         expect(screen.getByText("Sudo Mode Active")).toBeInTheDocument();
       });
 
-      // Fast-forward 30 seconds to trigger next check
+      // Fast-forward 30 seconds and flush promises
       jest.advanceTimersByTime(30000);
+      await Promise.resolve(); // Flush promise queue
 
       await waitFor(() => {
         expect(screen.queryByText("Sudo Mode Active")).not.toBeInTheDocument();
@@ -361,8 +365,9 @@ describe("SudoModeIndicator", () => {
         expect(mockCheckSudoStatus).toHaveBeenCalledTimes(1);
       });
 
-      // Fast-forward 30 seconds
+      // Fast-forward 30 seconds and flush promises
       jest.advanceTimersByTime(30000);
+      await Promise.resolve(); // Flush promise queue
 
       await waitFor(() => {
         expect(mockCheckSudoStatus).toHaveBeenCalledTimes(2);

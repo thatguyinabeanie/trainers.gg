@@ -6,11 +6,11 @@ This project supports running multiple instances of the application simultaneous
 
 **Key Features:**
 
-- ✅ **Automatic port allocation** - Each worktree gets unique ports for Next.js, PDS, and Expo
+- ✅ **Dynamic port allocation** - Automatically detects available ports and allocates them
 - ✅ **Shared Supabase instance** - All worktrees connect to the same local database (saves resources)
 - ✅ **Worktree-specific configuration** - Each worktree has its own `.env.local` file
-- ✅ **Zero configuration** - `pnpm install` automatically sets up port allocation
-- ✅ **Self-healing** - Automatically detects and recovers from port conflicts
+- ✅ **Zero configuration** - `pnpm dev` automatically sets up port allocation (shown in Turbo UI)
+- ✅ **Self-healing** - Automatically detects and recovers from port conflicts in real-time
 
 ## Port Allocation
 
@@ -48,14 +48,14 @@ Each worktree gets allocated in blocks of 10 ports:
 git worktree add ../feature-branch feature-branch
 cd ../feature-branch
 
-# Install dependencies (automatically allocates ports)
+# Install dependencies
 pnpm install
 
-# Start development servers
+# Start development servers (automatically allocates ports)
 pnpm dev
 ```
 
-The setup script (`setup-worktree-env.ts`) runs automatically during `pnpm install` and:
+The setup script (`setup-worktree-env.ts`) runs automatically as part of `pnpm dev` (visible in Turbo UI) and:
 
 1. Detects if you're in a worktree
 2. Allocates unique ports for this worktree
@@ -136,17 +136,19 @@ Port allocations are tracked in `scripts/worktree-ports.json` (gitignored):
 
 ### Setup Flow
 
-1. **`pnpm install`** runs `postinstall.sh`
-2. `postinstall.sh` detects if running in a worktree (`.git` is a file, not a directory)
-3. In worktrees: creates worktree-specific `.env.local` (NOT a symlink)
-4. In main worktree: creates symlinks to root `.env.local` (backwards compatible)
-5. `pnpm dev` runs `setup-worktree-env.ts` which:
+1. **`pnpm dev`** triggers Turbo with TUI
+2. **Turbo runs `dev:setup` task** (visible in UI panel) which executes `setup-worktree-env.ts`:
    - Loads the port registry
    - Cleans up stale entries
    - Checks if Supabase is running
-   - Allocates ports for this worktree
+   - **Dynamically detects available ports** using Node.js `net` module
+   - Allocates ports for this worktree (falls back to next available if preferred port is occupied)
    - Updates `.env.local` with allocated ports
-6. Dev servers (`next dev`, `expo start`) read ports from environment variables
+3. **Dev servers start** in parallel:
+   - `next dev --turbopack` uses `PORT` from environment
+   - `expo start` uses `EXPO_PORT` from environment
+   - Supabase runs on shared ports (started by first worktree)
+4. All services appear in Turbo TUI with live logs
 
 ### Service Wrappers
 
@@ -288,32 +290,37 @@ Then access services at the displayed URLs:
 
 ### Key Files
 
-| File                                | Purpose                                     |
-| ----------------------------------- | ------------------------------------------- |
-| `packages/utils/src/ports.ts`       | Port detection utilities                    |
-| `scripts/worktree-registry.ts`      | Registry management functions               |
-| `scripts/setup-worktree-env.ts`     | Port allocation and .env.local setup        |
-| `scripts/dev-with-ports.ts`         | Service startup wrapper with port injection |
-| `scripts/cleanup-worktree-ports.ts` | Cleanup stale allocations                   |
-| `scripts/postinstall.sh`            | Worktree detection and initial setup        |
-| `scripts/worktree-ports.json`       | Port allocation registry (gitignored)       |
+| File                                | Purpose                                                 |
+| ----------------------------------- | ------------------------------------------------------- |
+| `scripts/ports.ts`                  | Dynamic port detection utilities (Node.js `net` module) |
+| `scripts/worktree-registry.ts`      | Registry management and allocation logic (async)        |
+| `scripts/setup-worktree-env.ts`     | Port allocation and .env.local setup (Turbo task)       |
+| `scripts/dev-with-ports.ts`         | Service startup wrapper with port injection             |
+| `scripts/cleanup-worktree-ports.ts` | Cleanup stale allocations                               |
+| `scripts/postinstall.sh`            | Initial .env.local setup                                |
+| `scripts/worktree-ports.json`       | Port allocation registry (gitignored)                   |
 
-### Port Detection Algorithm
+### Dynamic Port Detection Algorithm
 
-1. **Find available port in range:**
-   - Try preferred port first
-   - If occupied, search sequentially through range
-   - Return `null` if no ports available
+The system uses Node.js's `net.Server` to test port availability in real-time:
 
-2. **Allocate contiguous block (for Supabase):**
-   - Try to allocate N contiguous ports starting from preferred
-   - If any port in block is occupied, skip to next block
-   - Return `null` after 100 attempts
+1. **Find available port in range (`findAvailablePort`):**
+   - Try preferred port first by attempting to bind
+   - If `EADDRINUSE` error, port is occupied
+   - Search sequentially through range (e.g., 3000-3099)
+   - Return first available port or `null` if range exhausted
 
-3. **Worktree port allocation:**
-   - Allocate in blocks of 10 (e.g., 3000-3009, 3010-3019)
-   - Ensure no overlap with existing allocations
-   - Store in registry for persistence
+2. **Allocate contiguous block (`findPortBlock` for Supabase):**
+   - Test each port in sequence starting from preferred (54320)
+   - If all ports in block are available, allocate the block
+   - If any port is occupied, jump past it and try next block
+   - Return array of 8 contiguous ports or `null` after 100 attempts
+
+3. **Worktree allocation strategy:**
+   - Calculate preferred ports based on worktree count (3000, 3010, 3020...)
+   - Dynamically verify each preferred port is available
+   - If occupied, fall back to next available port in range
+   - Store allocation in registry for consistency across restarts
 
 ## Migration from Single Worktree
 

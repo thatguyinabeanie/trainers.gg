@@ -11,7 +11,7 @@
     "prepare": "husky",
     "// dev": "",
     "dev:setup": "tsx scripts/setup-worktree-env.ts",
-    "dev": "pnpm dev:setup && rm -rf apps/web/.next/dev && turbo run dev",
+    "dev": "rm -rf apps/web/.next/dev && TURBO_UI=1 turbo run dev",
     "dev:web": "turbo run dev --filter=@trainers/web",
     "dev:mobile": "turbo run dev --filter=@trainers/mobile",
     "dev:backend": "turbo run dev --filter=@trainers/supabase",

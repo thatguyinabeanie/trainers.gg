@@ -2,7 +2,6 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { SocialAuthButtons } from "../social-auth-buttons";
 import { useAuth } from "@/hooks/use-auth";
-import { oauthProviders } from "@/lib/supabase/auth";
 
 // Mock dependencies
 jest.mock("@/hooks/use-auth");
@@ -26,7 +25,9 @@ describe("SocialAuthButtons", () => {
     });
 
     // Mock window.location.href
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     delete (window as any).location;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     window.location = { ...originalLocation, href: "" } as any;
   });
 

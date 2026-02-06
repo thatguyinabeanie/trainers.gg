@@ -75,14 +75,14 @@ async function main() {
     }
 
     // Allocate Supabase ports (shared across all worktrees)
-    const supabasePorts = allocateSupabasePorts(registry, worktreePath);
+    const supabasePorts = await allocateSupabasePorts(registry, worktreePath);
     if (supabaseRunning && supabasePid) {
       supabasePorts.pid = supabasePid;
       registry.supabase = supabasePorts;
     }
 
     // Allocate worktree-specific ports
-    const worktreePorts = allocateWorktreePorts(
+    const worktreePorts = await allocateWorktreePorts(
       registry,
       worktreePath,
       isSupabaseOwner
@@ -116,8 +116,8 @@ async function main() {
 
 function updateEnvFile(
   envPath: string,
-  supabasePorts: ReturnType<typeof allocateSupabasePorts>,
-  worktreePorts: ReturnType<typeof allocateWorktreePorts>
+  supabasePorts: Awaited<ReturnType<typeof allocateSupabasePorts>>,
+  worktreePorts: Awaited<ReturnType<typeof allocateWorktreePorts>>
 ) {
   let envContent = "";
 

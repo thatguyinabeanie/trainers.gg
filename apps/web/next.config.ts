@@ -42,5 +42,5 @@ const sentryOptions = {
   automaticVercelMonitors: true,
 };
 
-// Wrap with Sentry first, then botId
+// Wrap with Sentry, then botId
 export default withBotId(withSentryConfig(nextConfig, sentryOptions));

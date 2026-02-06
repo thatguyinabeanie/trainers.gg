@@ -1,7 +1,11 @@
+/**
+ * @jest-environment jsdom
+ */
+
 import { renderHook, waitFor, act } from "@testing-library/react";
 import { useAuth } from "../use-auth";
 import { createClient } from "@/lib/supabase/client";
-import type { User, Session } from "@supabase/supabase-js";
+import type { User, Session, SupabaseClient } from "@supabase/supabase-js";
 
 // Mock Supabase client
 jest.mock("@/lib/supabase/client", () => ({
@@ -10,16 +14,32 @@ jest.mock("@/lib/supabase/client", () => ({
 
 // Mock window.location
 const mockWindowLocation = () => {
-  delete (window as any).location;
-  window.location = {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  delete (globalThis.window as any).location;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  (globalThis.window as any).location = {
     origin: "http://localhost:3000",
-  } as any;
+  };
 };
 
+interface MockAuth {
+  getSession: jest.Mock;
+  onAuthStateChange: jest.Mock;
+  signOut: jest.Mock;
+  signInWithOAuth: jest.Mock;
+  signInWithPassword: jest.Mock;
+  resetPasswordForEmail: jest.Mock;
+  updateUser: jest.Mock;
+}
+
+interface MockSubscription {
+  unsubscribe: jest.Mock;
+}
+
 describe("useAuth", () => {
-  let mockSupabase: any;
-  let mockAuth: any;
-  let mockSubscription: any;
+  let mockSupabase: Partial<SupabaseClient>;
+  let mockAuth: MockAuth;
+  let mockSubscription: MockSubscription;
 
   beforeEach(() => {
     mockWindowLocation();
@@ -41,10 +61,10 @@ describe("useAuth", () => {
     };
 
     mockSupabase = {
-      auth: mockAuth,
+      auth: mockAuth as unknown as SupabaseClient["auth"],
     };
 
-    (createClient as jest.Mock).mockReturnValue(mockSupabase);
+    (createClient as jest.Mock).mockReturnValue(mockSupabase as SupabaseClient);
   });
 
   afterEach(() => {

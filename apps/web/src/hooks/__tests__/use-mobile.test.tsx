@@ -17,16 +17,20 @@ describe("useIsMobile", () => {
       onchange: null,
       addListener: jest.fn(),
       removeListener: jest.fn(),
-      addEventListener: jest.fn((event: string, listener: any) => {
-        if (event === "change") {
-          listeners.push(listener);
+      addEventListener: jest.fn(
+        (event: string, listener: (e: MediaQueryListEvent) => void) => {
+          if (event === "change") {
+            listeners.push(listener);
+          }
         }
-      }),
-      removeEventListener: jest.fn((event: string, listener: any) => {
-        if (event === "change") {
-          listeners = listeners.filter((l) => l !== listener);
+      ),
+      removeEventListener: jest.fn(
+        (event: string, listener: (e: MediaQueryListEvent) => void) => {
+          if (event === "change") {
+            listeners = listeners.filter((l) => l !== listener);
+          }
         }
-      }),
+      ),
       dispatchEvent: jest.fn(),
     }));
 

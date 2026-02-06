@@ -14,15 +14,23 @@ jest.mock("@/lib/supabase/client", () => ({
 }));
 
 // Helper to create base64-encoded JWT payload
-const createMockJWT = (claims: Record<string, any>) => {
+const createMockJWT = (claims: Record<string, unknown>) => {
   const payload = JSON.stringify(claims);
   const base64 = btoa(payload);
   return `header.${base64}.signature`;
 };
 
+interface MockAuth {
+  getSession: jest.Mock;
+}
+
+interface MockSupabase {
+  auth: MockAuth;
+}
+
 describe("useSiteAdmin", () => {
-  let mockSupabase: any;
-  let mockAuth: any;
+  let mockSupabase: MockSupabase;
+  let mockAuth: MockAuth;
 
   beforeEach(() => {
     mockAuth = {

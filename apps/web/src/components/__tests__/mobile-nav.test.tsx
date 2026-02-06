@@ -28,7 +28,7 @@ describe("MobileNav", () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    mockUseRouter.mockReturnValue(mockRouter as any);
+    mockUseRouter.mockReturnValue(mockRouter as ReturnType<typeof useRouter>);
   });
 
   describe("Toggle button", () => {
@@ -187,7 +187,12 @@ describe("MobileNav", () => {
   describe("Authenticated navigation", () => {
     beforeEach(() => {
       mockUseAuth.mockReturnValue({
-        user: { id: "user-123", email: "player@trainers.local" } as any,
+        user: {
+          id: "user-123",
+          email: "player@trainers.local",
+          aud: "authenticated",
+          created_at: "",
+        },
         loading: false,
         isAuthenticated: true,
         signOut: jest.fn(),
@@ -374,7 +379,12 @@ describe("MobileNav", () => {
   describe("Navigation order", () => {
     it("shows nav items in correct order for authenticated users", async () => {
       mockUseAuth.mockReturnValue({
-        user: { id: "user-123", email: "player@trainers.local" } as any,
+        user: {
+          id: "user-123",
+          email: "player@trainers.local",
+          aud: "authenticated",
+          created_at: "",
+        },
         loading: false,
         isAuthenticated: true,
         signOut: jest.fn(),

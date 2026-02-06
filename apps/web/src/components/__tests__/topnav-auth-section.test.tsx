@@ -1,6 +1,8 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { useRouter } from "next/navigation";
+import type { AppRouterInstance } from "next/dist/shared/lib/app-router-context.shared-runtime";
+import type { User } from "@supabase/supabase-js";
 import { TopNavAuthSection } from "../topnav-auth-section";
 import { useAuth } from "@/components/auth/auth-provider";
 import { useSupabaseQuery } from "@/lib/supabase";
@@ -63,18 +65,24 @@ const mockCheckSudoStatus = checkSudoStatus as jest.MockedFunction<
 >;
 
 describe("TopNavAuthSection", () => {
-  const mockRouter = {
+  const mockRouter: AppRouterInstance = {
     push: jest.fn(),
     replace: jest.fn(),
     refresh: jest.fn(),
     back: jest.fn(),
     forward: jest.fn(),
     prefetch: jest.fn(),
-  };
+  } as unknown as AppRouterInstance;
 
-  const mockUser = {
+  const mockUser: User & {
+    profile?: { displayName?: string; avatarUrl?: string };
+  } = {
     id: "user-123",
     email: "player@trainers.local",
+    aud: "authenticated",
+    created_at: "2024-01-01T00:00:00Z",
+    app_metadata: {},
+    user_metadata: {},
     profile: {
       displayName: "Test Player",
       avatarUrl: "https://example.com/avatar.jpg",
@@ -83,7 +91,7 @@ describe("TopNavAuthSection", () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    mockUseRouter.mockReturnValue(mockRouter as any);
+    mockUseRouter.mockReturnValue(mockRouter);
     mockCheckSudoStatus.mockResolvedValue({
       isActive: false,
       isSiteAdmin: false,
@@ -160,7 +168,7 @@ describe("TopNavAuthSection", () => {
   describe("Authenticated state", () => {
     beforeEach(() => {
       mockUseAuth.mockReturnValue({
-        user: mockUser as any,
+        user: mockUser,
         loading: false,
         isAuthenticated: true,
         signOut: jest.fn(),
@@ -171,7 +179,7 @@ describe("TopNavAuthSection", () => {
         isLoading: false,
         error: null,
         refetch: jest.fn(),
-      } as any);
+      });
     });
 
     it("renders user avatar and display name", () => {
@@ -253,7 +261,7 @@ describe("TopNavAuthSection", () => {
       const user = userEvent.setup();
       const mockSignOut = jest.fn().mockResolvedValue(undefined);
       mockUseAuth.mockReturnValue({
-        user: mockUser as any,
+        user: mockUser,
         loading: false,
         isAuthenticated: true,
         signOut: mockSignOut,
@@ -278,7 +286,7 @@ describe("TopNavAuthSection", () => {
   describe("Organizations", () => {
     beforeEach(() => {
       mockUseAuth.mockReturnValue({
-        user: mockUser as any,
+        user: mockUser,
         loading: false,
         isAuthenticated: true,
         signOut: jest.fn(),
@@ -297,7 +305,7 @@ describe("TopNavAuthSection", () => {
         isLoading: false,
         error: null,
         refetch: jest.fn(),
-      } as any);
+      });
 
       const user = userEvent.setup();
       render(<TopNavAuthSection />);
@@ -316,7 +324,7 @@ describe("TopNavAuthSection", () => {
         isLoading: false,
         error: null,
         refetch: jest.fn(),
-      } as any);
+      });
 
       const user = userEvent.setup();
       render(<TopNavAuthSection />);
@@ -335,7 +343,7 @@ describe("TopNavAuthSection", () => {
         isLoading: false,
         error: null,
         refetch: jest.fn(),
-      } as any);
+      });
 
       const user = userEvent.setup();
       render(<TopNavAuthSection />);
@@ -353,7 +361,7 @@ describe("TopNavAuthSection", () => {
   describe("Sudo mode", () => {
     beforeEach(() => {
       mockUseAuth.mockReturnValue({
-        user: mockUser as any,
+        user: mockUser,
         loading: false,
         isAuthenticated: true,
         signOut: jest.fn(),
@@ -364,7 +372,7 @@ describe("TopNavAuthSection", () => {
         isLoading: false,
         error: null,
         refetch: jest.fn(),
-      } as any);
+      });
     });
 
     it("shows sudo mode toggle for site admins", async () => {
@@ -506,7 +514,7 @@ describe("TopNavAuthSection", () => {
   describe("Avatar display", () => {
     it("displays avatar image when avatarUrl is available", () => {
       mockUseAuth.mockReturnValue({
-        user: mockUser as any,
+        user: mockUser,
         loading: false,
         isAuthenticated: true,
         signOut: jest.fn(),
@@ -517,7 +525,7 @@ describe("TopNavAuthSection", () => {
         isLoading: false,
         error: null,
         refetch: jest.fn(),
-      } as any);
+      });
 
       render(<TopNavAuthSection />);
 
@@ -529,7 +537,7 @@ describe("TopNavAuthSection", () => {
     });
 
     it("displays fallback initial when no avatar URL", () => {
-      const userWithoutAvatar = {
+      const userWithoutAvatar: typeof mockUser = {
         ...mockUser,
         profile: {
           displayName: "Test Player",
@@ -538,7 +546,7 @@ describe("TopNavAuthSection", () => {
       };
 
       mockUseAuth.mockReturnValue({
-        user: userWithoutAvatar as any,
+        user: userWithoutAvatar,
         loading: false,
         isAuthenticated: true,
         signOut: jest.fn(),
@@ -549,7 +557,7 @@ describe("TopNavAuthSection", () => {
         isLoading: false,
         error: null,
         refetch: jest.fn(),
-      } as any);
+      });
 
       render(<TopNavAuthSection />);
 
@@ -557,16 +565,19 @@ describe("TopNavAuthSection", () => {
     });
 
     it("uses user_metadata avatar_url as fallback", () => {
-      const userWithMetadataAvatar = {
+      const userWithMetadataAvatar: User = {
         id: "user-123",
         email: "player@trainers.local",
+        aud: "authenticated",
+        created_at: "2024-01-01T00:00:00Z",
+        app_metadata: {},
         user_metadata: {
           avatar_url: "https://example.com/metadata-avatar.jpg",
         },
       };
 
       mockUseAuth.mockReturnValue({
-        user: userWithMetadataAvatar as any,
+        user: userWithMetadataAvatar,
         loading: false,
         isAuthenticated: true,
         signOut: jest.fn(),
@@ -577,7 +588,7 @@ describe("TopNavAuthSection", () => {
         isLoading: false,
         error: null,
         refetch: jest.fn(),
-      } as any);
+      });
 
       render(<TopNavAuthSection />);
 

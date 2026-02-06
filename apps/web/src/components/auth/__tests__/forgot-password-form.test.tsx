@@ -68,12 +68,16 @@ describe("ForgotPasswordForm", () => {
     });
     await user.click(submitButton);
 
-    await waitFor(() => {
-      // Check for validation error message
-      expect(
-        screen.getByText("Please enter a valid email address")
-      ).toBeInTheDocument();
-    });
+    await waitFor(
+      () => {
+        // Check for validation error message with role="alert"
+        const errorMessage = screen.getByRole("alert");
+        expect(errorMessage).toHaveTextContent(
+          "Please enter a valid email address"
+        );
+      },
+      { timeout: 3000 }
+    );
   });
 
   it("accepts valid email format", async () => {

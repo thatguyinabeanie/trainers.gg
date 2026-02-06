@@ -1,5 +1,6 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import type { AppRouterInstance } from "next/dist/shared/lib/app-router-context.shared-runtime";
 import { SignInForm, SignInView } from "../sign-in-form";
 import { useAuth } from "@/hooks/use-auth";
 import { useRouter } from "next/navigation";
@@ -21,10 +22,10 @@ jest.mock("@/app/(auth-pages)/actions", () => ({
 const mockUseAuth = useAuth as jest.Mock;
 const mockUseRouter = useRouter as jest.Mock;
 const mockResolveLoginIdentifier = resolveLoginIdentifier as jest.Mock;
-const mockCheckUsernameAvailability = checkUsernameAvailability as jest.Mock;
+const _mockCheckUsernameAvailability = checkUsernameAvailability as jest.Mock;
 
 describe("SignInForm", () => {
-  let mockRouter: any;
+  let mockRouter: Partial<AppRouterInstance>;
   let mockSignInWithEmail: jest.Mock;
   let mockSignUpWithEmail: jest.Mock;
 
@@ -32,7 +33,7 @@ describe("SignInForm", () => {
     mockRouter = {
       push: jest.fn(),
       refresh: jest.fn(),
-    };
+    } as Partial<AppRouterInstance>;
     mockSignInWithEmail = jest.fn();
     mockSignUpWithEmail = jest.fn();
 
@@ -93,14 +94,14 @@ describe("SignInForm", () => {
 });
 
 describe("SignInView", () => {
-  let mockRouter: any;
+  let mockRouter: Partial<AppRouterInstance>;
   let mockSignInWithEmail: jest.Mock;
 
   beforeEach(() => {
     mockRouter = {
       push: jest.fn(),
       refresh: jest.fn(),
-    };
+    } as Partial<AppRouterInstance>;
     mockSignInWithEmail = jest.fn();
 
     mockUseRouter.mockReturnValue(mockRouter);

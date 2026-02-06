@@ -1,15 +1,16 @@
+import type { ReactNode } from "react";
 import { render, screen } from "@testing-library/react";
 import { Providers } from "../providers";
 
 // Mock dependencies
 jest.mock("@/components/auth/auth-provider", () => ({
-  AuthProvider: ({ children }: { children: React.ReactNode }) => (
+  AuthProvider: ({ children }: { children: ReactNode }) => (
     <div data-testid="auth-provider">{children}</div>
   ),
 }));
 
 jest.mock("next-themes", () => ({
-  ThemeProvider: ({ children }: { children: React.ReactNode }) => (
+  ThemeProvider: ({ children }: { children: ReactNode }) => (
     <div data-testid="theme-provider">{children}</div>
   ),
 }));
@@ -22,7 +23,7 @@ jest.mock("@tanstack/react-query", () => ({
     mount: jest.fn(),
     unmount: jest.fn(),
   })),
-  QueryClientProvider: ({ children }: { children: React.ReactNode }) => (
+  QueryClientProvider: ({ children }: { children: ReactNode }) => (
     <div data-testid="query-client-provider">{children}</div>
   ),
 }));
@@ -69,7 +70,7 @@ describe("Providers", () => {
   });
 
   it("nests providers in correct order: Query -> Auth -> Theme", () => {
-    const { container } = render(
+    render(
       <Providers>
         <div>Test Child</div>
       </Providers>
@@ -154,13 +155,14 @@ describe("Providers QueryClient configuration", () => {
 
     jest.doMock("@tanstack/react-query", () => ({
       QueryClient: QueryClientMock,
-      QueryClientProvider: ({ children }: { children: React.ReactNode }) => (
+      QueryClientProvider: ({ children }: { children: ReactNode }) => (
         <div data-testid="query-client-provider">{children}</div>
       ),
     }));
   });
 
   it("creates QueryClient with correct default options", () => {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { Providers: FreshProviders } = require("../providers");
 
     render(
