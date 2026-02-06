@@ -126,7 +126,10 @@ export function LoginScreen() {
         {/* Username sign-in */}
         <form onSubmit={handleContinue} className="flex w-full flex-col gap-4">
           {error && (
-            <div className="bg-destructive/10 text-destructive rounded-lg p-3 text-sm">
+            <div
+              role="alert"
+              className="bg-destructive/10 text-destructive rounded-lg p-3 text-sm"
+            >
               {error}
             </div>
           )}
