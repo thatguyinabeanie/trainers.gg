@@ -16,8 +16,25 @@ import { type ActionResult } from "@trainers/validators";
  * GET /api/tournaments
  * List all tournaments grouped by status (active, upcoming, completed)
  */
-export async function GET(_request: NextRequest) {
+export async function GET(request: NextRequest) {
   try {
+    const authHeader = request.headers.get("authorization");
+
+    // This route uses cookie-based Supabase auth via @trainers/supabase/server.
+    // If a mobile/external client sends a Bearer token, we currently cannot
+    // bind that token to the Supabase client here, so reject explicitly instead
+    // of silently treating the request as anonymous.
+    if (authHeader && authHeader.toLowerCase().startsWith("bearer ")) {
+      const result: ActionResult = {
+        success: false,
+        error:
+          "Bearer token authentication is not supported on this route. " +
+          "Please use the dedicated Edge Function endpoint: /functions/v1/api-tournaments",
+      };
+
+      return NextResponse.json(result, { status: 401 });
+    }
+
     const tournaments = await listTournamentsGrouped({ completedLimit: 10 });
 
     const result: ActionResult<typeof tournaments> = {
@@ -48,6 +65,23 @@ export async function GET(_request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
   try {
+    const authHeader = request.headers.get("authorization");
+
+    // This route uses cookie-based Supabase auth via @trainers/supabase/server.
+    // If a mobile/external client sends a Bearer token, we currently cannot
+    // bind that token to the Supabase client here, so reject explicitly instead
+    // of silently treating the request as anonymous.
+    if (authHeader && authHeader.toLowerCase().startsWith("bearer ")) {
+      const result: ActionResult = {
+        success: false,
+        error:
+          "Bearer token authentication is not supported on this route. " +
+          "Please use the dedicated Edge Function endpoint: /functions/v1/api-tournaments",
+      };
+
+      return NextResponse.json(result, { status: 401 });
+    }
+
     const body = await request.json();
 
     // TODO: Add Zod validation
