@@ -20,7 +20,7 @@
  * 3. Edge Function cache (Upstash Redis)
  */
 
-import { createClient } from "jsr:@supabase/supabase-js@2";
+import { createClient } from "@supabase/supabase-js";
 import { getCorsHeaders } from "../_shared/cors.ts";
 import {
   withCache,
@@ -32,6 +32,8 @@ import type { ActionResult } from "@trainers/validators";
 import {
   listTournamentsGrouped,
   getTournamentById,
+} from "@trainers/supabase/queries";
+import {
   createTournament as createTournamentMutation,
   updateTournament as updateTournamentMutation,
   registerForTournament as registerForTournamentMutation,
@@ -41,7 +43,7 @@ import {
   startTournamentEnhanced as startTournamentEnhancedMutation,
   createRound as createRoundMutation,
   advanceToTopCut as advanceToTopCutMutation,
-} from "jsr:@trainers/supabase";
+} from "@trainers/supabase/mutations";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;

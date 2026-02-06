@@ -10,7 +10,7 @@
  * - POST /api-alts/:id/set-main → Set as main alt
  */
 
-import { createClient } from "jsr:@supabase/supabase-js@2";
+import { createClient } from "@supabase/supabase-js";
 import { getCorsHeaders } from "../_shared/cors.ts";
 import {
   withCache,
@@ -19,14 +19,13 @@ import {
   CACHE_TTL,
 } from "../_shared/cache.ts";
 import type { ActionResult } from "@trainers/validators";
+import { getCurrentUserAlts, getAltById } from "@trainers/supabase/queries";
 import {
-  getCurrentUserAlts,
-  getAltById,
   createAlt,
   updateAlt,
   deleteAlt,
   setMainAlt,
-} from "jsr:@trainers/supabase";
+} from "@trainers/supabase/mutations";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;

@@ -11,7 +11,7 @@
  * - POST /api-matches/:id/reset → Reset entire match (judge only)
  */
 
-import { createClient } from "jsr:@supabase/supabase-js@2";
+import { createClient } from "@supabase/supabase-js";
 import { getCorsHeaders } from "../_shared/cors.ts";
 import {
   withCache,
@@ -20,15 +20,15 @@ import {
   CACHE_TTL,
 } from "../_shared/cache.ts";
 import type { ActionResult } from "@trainers/validators";
+import { getMatchById } from "@trainers/supabase/queries";
 import {
-  getMatchById,
   submitGameSelection,
   sendMatchMessage,
   createMatchGames,
   judgeOverrideGame,
   judgeResetGame,
   resetMatch,
-} from "jsr:@trainers/supabase";
+} from "@trainers/supabase/mutations";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
