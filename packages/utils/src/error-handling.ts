@@ -19,8 +19,11 @@ export function getErrorMessage(
     return shouldSanitize ? fallback : error.message;
   }
   if (typeof error === "object" && error !== null && "message" in error) {
-    const msg = (error as { message: string }).message;
-    return shouldSanitize ? fallback : msg;
+    const maybeMessage = (error as any).message;
+    if (typeof maybeMessage === "string") {
+      return shouldSanitize ? fallback : maybeMessage;
+    }
+    return fallback;
   }
   return fallback;
 }
