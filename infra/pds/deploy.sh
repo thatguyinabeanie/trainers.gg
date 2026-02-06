@@ -186,6 +186,41 @@ if [ "$SKIP_FLY" = false ]; then
     log_success "Handle domains configured (.${DOMAIN})"
   fi
 
+  # Configure Supabase Storage S3 credentials
+  log_step "Configuring Supabase Storage S3..."
+
+  # Check if S3 credentials are already set
+  if echo "$EXISTING_SECRETS" | grep -q "PDS_BLOBSTORE_S3_ENDPOINT"; then
+    log_warning "Supabase Storage S3 credentials already configured. Skipping."
+    log_warning "To update, manually run:"
+    echo "  fly secrets set PDS_BLOBSTORE_S3_ENDPOINT=<endpoint> --app $FLY_APP_NAME"
+    echo "  fly secrets set PDS_BLOBSTORE_S3_BUCKET=<bucket> --app $FLY_APP_NAME"
+    echo "  fly secrets set PDS_BLOBSTORE_S3_REGION=<region> --app $FLY_APP_NAME"
+    echo "  fly secrets set PDS_BLOBSTORE_S3_ACCESS_KEY_ID=<key> --app $FLY_APP_NAME"
+    echo "  fly secrets set PDS_BLOBSTORE_S3_SECRET_ACCESS_KEY=<secret> --app $FLY_APP_NAME"
+    echo "  fly secrets set PDS_BLOBSTORE_S3_FORCE_PATH_STYLE=true --app $FLY_APP_NAME"
+  else
+    log_warning "Supabase Storage S3 credentials NOT configured."
+    log_warning "Please obtain S3 credentials from Supabase Dashboard:"
+    echo ""
+    echo "  1. Go to https://supabase.com/dashboard/project/<project-id>/settings/storage"
+    echo "  2. Navigate to S3 Connection section"
+    echo "  3. Create S3 access credentials"
+    echo "  4. Create a bucket named 'pds-blobs'"
+    echo ""
+    log_warning "Then set secrets manually:"
+    echo "  fly secrets set PDS_BLOBSTORE_S3_ENDPOINT=https://<project-ref>.supabase.co/storage/v1/s3 --app $FLY_APP_NAME"
+    echo "  fly secrets set PDS_BLOBSTORE_S3_BUCKET=pds-blobs --app $FLY_APP_NAME"
+    echo "  fly secrets set PDS_BLOBSTORE_S3_REGION=auto --app $FLY_APP_NAME"
+    echo "  fly secrets set PDS_BLOBSTORE_S3_ACCESS_KEY_ID=<access-key> --app $FLY_APP_NAME"
+    echo "  fly secrets set PDS_BLOBSTORE_S3_SECRET_ACCESS_KEY=<secret-key> --app $FLY_APP_NAME"
+    echo "  fly secrets set PDS_BLOBSTORE_S3_FORCE_PATH_STYLE=true --app $FLY_APP_NAME"
+    echo ""
+    log_warning "Deployment will continue, but PDS will fail to store blobs until S3 is configured."
+    echo ""
+    read -p "Press Enter to continue or Ctrl+C to abort..."
+  fi
+
   # Deploy
   log_step "Deploying PDS..."
   fly deploy --app "$FLY_APP_NAME"
