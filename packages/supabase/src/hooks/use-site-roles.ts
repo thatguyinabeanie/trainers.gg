@@ -151,9 +151,13 @@ export function useSiteRoles(params: SiteRolesHook): SiteRolesResult {
 }
 
 /**
- * Alias for useSiteRoles with simpler return type.
+ * Simplified hook for checking site admin status.
  * Returns just isSiteAdmin and loading state.
  */
-export function useSiteAdmin(params: SiteRolesHook) {
-  return useSiteRoles(params);
+export function useSiteAdmin(params: SiteRolesHook): {
+  isSiteAdmin: boolean;
+  isLoading: boolean;
+} {
+  const { isSiteAdmin, isLoading } = useSiteRoles(params);
+  return { isSiteAdmin, isLoading };
 }
