@@ -53,6 +53,9 @@ export {
   parseAtUri,
 } from "./utils";
 
+// Handle utilities
+export { extractUsernameFromHandle } from "./handle-utils";
+
 // Errors
 export { BlueskyAuthError, BlueskyApiError } from "./errors";
 

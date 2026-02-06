@@ -2,7 +2,7 @@
 
 import { z } from "zod";
 import { checkBotId } from "botid/server";
-import { getErrorMessage } from "@/lib/utils";
+import { getErrorMessage } from "@trainers/utils";
 import { type ActionResult } from "@trainers/validators";
 
 // Re-export ActionResult for backward compatibility
@@ -37,7 +37,11 @@ export async function withAction<T>(
     console.error("[server-action]", error);
     return {
       success: false,
-      error: getErrorMessage(error, fallbackMessage),
+      error: getErrorMessage(
+        error,
+        fallbackMessage,
+        process.env.NODE_ENV === "production"
+      ),
     };
   }
 }

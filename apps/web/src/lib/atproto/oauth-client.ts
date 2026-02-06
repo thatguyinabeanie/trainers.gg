@@ -374,13 +374,5 @@ export async function getBlueskyProfile(
   }
 }
 
-/**
- * Extract username from a Bluesky handle
- * e.g., "thatguyinabeanie.bsky.social" -> "thatguyinabeanie"
- * e.g., "user.trainers.gg" -> "user"
- */
-export function extractUsernameFromHandle(handle: string): string {
-  // Remove the domain suffix to get the username part
-  const parts = handle.split(".");
-  return parts[0] || handle;
-}
+// Re-export from shared package
+export { extractUsernameFromHandle } from "@trainers/atproto";

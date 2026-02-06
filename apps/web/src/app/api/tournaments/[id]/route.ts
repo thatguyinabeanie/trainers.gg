@@ -5,10 +5,7 @@
  */
 
 import { type NextRequest, NextResponse } from "next/server";
-import {
-  getTournamentByIdService,
-  updateTournamentService,
-} from "@/lib/services/tournaments";
+import { getTournamentById, updateTournament } from "@trainers/supabase/server";
 import { type ActionResult } from "@trainers/validators";
 
 /**
@@ -31,7 +28,15 @@ export async function GET(
       return NextResponse.json(result, { status: 400 });
     }
 
-    const tournament = await getTournamentByIdService(tournamentId);
+    const tournament = await getTournamentById(tournamentId);
+
+    if (!tournament) {
+      const result: ActionResult = {
+        success: false,
+        error: "Tournament not found",
+      };
+      return NextResponse.json(result, { status: 404 });
+    }
 
     const result: ActionResult<typeof tournament> = {
       success: true,
@@ -78,7 +83,7 @@ export async function PATCH(
     const body = await request.json();
 
     // TODO: Add Zod validation
-    await updateTournamentService(tournamentId, body);
+    await updateTournament(tournamentId, body);
 
     const result: ActionResult<{ success: true }> = {
       success: true,

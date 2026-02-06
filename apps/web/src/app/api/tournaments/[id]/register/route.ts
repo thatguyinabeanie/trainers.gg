@@ -3,7 +3,7 @@
  */
 
 import { type NextRequest, NextResponse } from "next/server";
-import { registerForTournamentService } from "@/lib/services/tournaments";
+import { registerForTournament } from "@trainers/supabase/server";
 import { type ActionResult } from "@trainers/validators";
 
 /**
@@ -37,7 +37,7 @@ export async function POST(
       return NextResponse.json(result, { status: 400 });
     }
 
-    await registerForTournamentService(tournamentId, altId);
+    await registerForTournament(tournamentId, { altId });
 
     const result: ActionResult<{ success: true }> = {
       success: true,

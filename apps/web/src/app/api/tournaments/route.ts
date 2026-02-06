@@ -2,14 +2,14 @@
  * Tournament API Routes
  *
  * RESTful endpoints for mobile app (and future external clients).
- * Calls the same service layer functions as Server Actions.
+ * Uses auto-generated server wrappers from @trainers/supabase/server.
  */
 
 import { type NextRequest, NextResponse } from "next/server";
 import {
-  listTournamentsService,
-  createTournamentService,
-} from "@/lib/services/tournaments";
+  listTournamentsGrouped,
+  createTournament,
+} from "@trainers/supabase/server";
 import { type ActionResult } from "@trainers/validators";
 
 /**
@@ -18,7 +18,7 @@ import { type ActionResult } from "@trainers/validators";
  */
 export async function GET(_request: NextRequest) {
   try {
-    const tournaments = await listTournamentsService({ completedLimit: 10 });
+    const tournaments = await listTournamentsGrouped({ completedLimit: 10 });
 
     const result: ActionResult<typeof tournaments> = {
       success: true,
@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
 
     // TODO: Add Zod validation
-    const tournament = await createTournamentService(body);
+    const tournament = await createTournament(body);
 
     const result: ActionResult<typeof tournament> = {
       success: true,
