@@ -257,8 +257,13 @@ The web/mobile apps have an integrated signup flow that:
 | Variable                                    | Description                        | Required |
 | ------------------------------------------- | ---------------------------------- | -------- |
 | `PDS_HOSTNAME`                              | `pds.trainers.gg`                  | Yes      |
-| `PDS_DATA_DIRECTORY`                        | `/data`                            | Yes      |
-| `PDS_BLOBSTORE_DISK_LOCATION`               | `/data/blobs`                      | Yes      |
+| `PDS_DATA_DIRECTORY`                        | `/pds`                             | Yes      |
+| `PDS_BLOBSTORE_S3_ENDPOINT`                 | Supabase S3 endpoint               | Yes (Production) |
+| `PDS_BLOBSTORE_S3_BUCKET`                   | `pds-blobs`                        | Yes (Production) |
+| `PDS_BLOBSTORE_S3_REGION`                   | `auto` or Supabase region          | Yes (Production) |
+| `PDS_BLOBSTORE_S3_ACCESS_KEY_ID`            | Supabase S3 access key             | Yes (Production) |
+| `PDS_BLOBSTORE_S3_SECRET_ACCESS_KEY`        | Supabase S3 secret key             | Yes (Production) |
+| `PDS_BLOBSTORE_S3_FORCE_PATH_STYLE`         | `true` for S3-compatible services  | Yes (Production) |
 | `PDS_DID_PLC_URL`                           | `https://plc.directory`            | Yes      |
 | `PDS_BSKY_APP_VIEW_URL`                     | `https://api.bsky.app`             | Yes      |
 | `PDS_BSKY_APP_VIEW_DID`                     | `did:web:api.bsky.app`             | Yes      |
@@ -271,6 +276,147 @@ The web/mobile apps have an integrated signup flow that:
 | `PDS_SERVICE_HANDLE_DOMAINS`                | `.trainers.gg`                     | Yes      |
 
 > **Note:** `PDS_SERVICE_HANDLE_DOMAINS` tells the PDS which domains are valid for user handles. Without it, the PDS only accepts handles under `*.pds.trainers.gg` (derived from `PDS_HOSTNAME`). Setting it to `.trainers.gg` (with leading dot) enables `@username.trainers.gg` handles.
+
+---
+
+## Blob Storage: Supabase Storage S3 API
+
+**All environments** use **Supabase Storage** for PDS blob storage (images, videos). This provides:
+- Scalable object storage (no volume size limits)
+- Infrastructure consolidation (all in Supabase)
+- Better cost economics at scale
+- Automatic setup via `config.toml`
+
+### Bucket Configuration (All Environments)
+
+The `pds-blobs` bucket is defined in `packages/supabase/supabase/config.toml`:
+
+```toml
+[storage.buckets.pds-blobs]
+public = false
+file_size_limit = "50MiB"
+allowed_mime_types = ["image/*", "video/*"]
+```
+
+**How it works**:
+- **Local dev**: Bucket auto-created when running `pnpm db:start`
+- **Preview branches**: Each preview branch gets isolated `pds-blobs` bucket
+- **Production**: Bucket created automatically via GitHub Integration OR manually (see below)
+
+### Setup for Each Environment
+
+#### Local Development (Automatic)
+
+```bash
+# Start local Supabase - bucket is created automatically
+pnpm db:start
+
+# Bucket available at: http://127.0.0.1:54321/storage/v1/bucket/pds-blobs
+```
+
+No manual setup needed! The bucket is created from `config.toml`.
+
+#### Preview Branches (Automatic)
+
+**Enable GitHub Integration** in Supabase Dashboard:
+1. Settings → Integrations → GitHub
+2. Enable "Deploy to production" checkbox
+3. Connect your repository
+
+Now when you create a PR:
+- Supabase automatically creates a preview branch
+- `pds-blobs` bucket is created automatically
+- Each preview branch has **isolated storage** (no data sharing)
+- Preview branches are deleted when PR is closed
+
+#### Production (Automatic or Manual)
+
+**Option A: Automatic (Recommended)**
+
+If GitHub Integration is enabled with "Deploy to production", the bucket is created automatically when you merge to main.
+
+**Option B: Manual (One-time)**
+
+If not using GitHub Integration, create the bucket once:
+
+```bash
+# Create bucket manually in production (if needed)
+supabase storage buckets create pds-blobs \
+  --public false \
+  --project-ref <production-project-ref>
+```
+
+#### Generate S3 Credentials (Required for All)
+
+Once the bucket exists (via any method above), generate S3 credentials:
+
+1. Supabase Dashboard → Project Settings → Storage
+2. Scroll to **S3 Connection** section
+3. Click **Create access credentials**
+4. Save the:
+   - Access Key ID
+   - Secret Access Key
+   - S3 Endpoint URL (format: `https://<project-ref>.supabase.co/storage/v1/s3`)
+
+#### Configure Fly.io Secrets
+
+```bash
+# Set S3 configuration
+fly secrets set PDS_BLOBSTORE_S3_ENDPOINT="https://<project-ref>.supabase.co/storage/v1/s3" --app trainers-pds
+fly secrets set PDS_BLOBSTORE_S3_BUCKET="pds-blobs" --app trainers-pds
+fly secrets set PDS_BLOBSTORE_S3_REGION="auto" --app trainers-pds
+fly secrets set PDS_BLOBSTORE_S3_ACCESS_KEY_ID="<access-key>" --app trainers-pds
+fly secrets set PDS_BLOBSTORE_S3_SECRET_ACCESS_KEY="<secret-key>" --app trainers-pds
+fly secrets set PDS_BLOBSTORE_S3_FORCE_PATH_STYLE="true" --app trainers-pds
+```
+
+#### 4. Deploy
+
+```bash
+fly deploy --app trainers-pds
+```
+
+The PDS will now store blobs in Supabase Storage instead of the local Fly volume.
+
+### Local Development with S3 (Optional)
+
+To test S3 locally, add these variables to `.pds-local.env`:
+
+```bash
+PDS_BLOBSTORE_S3_ENDPOINT=https://<project-ref>.supabase.co/storage/v1/s3
+PDS_BLOBSTORE_S3_BUCKET=pds-blobs
+PDS_BLOBSTORE_S3_REGION=auto
+PDS_BLOBSTORE_S3_ACCESS_KEY_ID=<access-key>
+PDS_BLOBSTORE_S3_SECRET_ACCESS_KEY=<secret-key>
+PDS_BLOBSTORE_S3_FORCE_PATH_STYLE=true
+# Comment out PDS_BLOBSTORE_DISK_LOCATION to use S3
+```
+
+**Note**: Local dev defaults to disk storage for simplicity. Most developers don't need S3 locally.
+
+### Verify Blob Upload
+
+After deploying:
+
+1. Create a test account (see "Creating User Accounts" section)
+2. Upload an image via Bluesky app or API
+3. Check Supabase Dashboard → Storage → pds-blobs bucket
+4. Verify the blob appears in the bucket
+
+### Troubleshooting
+
+**Blobs not uploading:**
+- Check `fly logs` for S3 errors
+- Verify S3 credentials are correct: `fly secrets list --app trainers-pds`
+- Ensure bucket exists and is accessible
+- Check bucket permissions in Supabase Dashboard
+
+**Blobs not accessible via federation:**
+- Verify bucket is set to Private (not Public)
+- Check CORS settings in Supabase Storage
+- Test blob URL directly: `https://<project-ref>.supabase.co/storage/v1/object/public/pds-blobs/<blob-path>`
+
+---
 
 ## Monitoring
 
@@ -287,7 +433,9 @@ fly status
 
 ## Backup
 
-The SQLite database and blobs are stored in `/data`. Back up regularly:
+### SQLite Database
+
+The SQLite database is stored in `/pds` on the Fly volume. Back up regularly:
 
 ```bash
 # Create snapshot
@@ -297,20 +445,44 @@ fly volumes snapshots create <volume-id>
 fly volumes snapshots list <volume-id>
 ```
 
+**Note**: Volume snapshots will be billable starting January 2026 (Fly.io announcement).
+
+### Blobs (Supabase Storage)
+
+Blobs are stored in Supabase Storage, which provides:
+- Automatic replication across multiple regions
+- 11-nines durability (99.999999999%)
+- Point-in-time recovery (Supabase features)
+
+No manual blob backups needed - Supabase handles this.
+
 ## Cost Estimate
 
-| Resource    | Size                   | Monthly Cost  |
-| ----------- | ---------------------- | ------------- |
-| Fly Machine | shared-cpu-1x, 1GB RAM | ~$5           |
-| Volume      | 10GB SSD               | ~$1.50        |
-| Bandwidth   | 100GB outbound         | Free tier     |
-| **Total**   |                        | **~$7/month** |
+| Resource             | Size/Usage             | Monthly Cost           |
+| -------------------- | ---------------------- | ---------------------- |
+| Fly Machine          | shared-cpu-1x, 1GB RAM | ~$5                    |
+| Fly Volume (SQLite)  | 10GB SSD               | ~$1.50                 |
+| Supabase Storage     | 10GB blobs             | ~$0.15 (Free tier: 100GB) |
+| Storage Egress       | 50GB/month             | ~$1.25                 |
+| **Total (Early)**    |                        | **~$8/month**          |
 
-Scale up as needed:
+### Scaling Costs
 
-- More RAM for more concurrent users
-- More storage for media uploads
-- Multiple regions for lower latency
+| Scenario | Users | Blobs | Storage Cost | Egress Cost | Total  |
+|----------|-------|-------|--------------|-------------|--------|
+| Early    | 100   | 10GB  | Free         | ~$1.25      | ~$8    |
+| Growth   | 1,000 | 100GB | Free         | ~$12.50     | ~$20   |
+| Scale    | 10,000| 500GB | ~$10         | ~$62.50     | ~$80   |
+
+**Notes**:
+- Supabase Storage: First 100GB free, then $0.025/GB/month
+- Supabase Egress: $0.025/GB (federated network access)
+- Fly Machine + Volume costs remain ~$6.50/month
+
+Scale options:
+- More RAM/CPU for more concurrent users
+- Larger Fly volume if SQLite grows (unlikely - mostly metadata)
+- No blob storage limits with Supabase S3
 
 ## Troubleshooting
 
