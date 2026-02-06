@@ -1,3 +1,6 @@
+// Action result type
+export { type ActionResult } from "./action-result";
+
 // Profanity filtering
 export {
   containsProfanity,

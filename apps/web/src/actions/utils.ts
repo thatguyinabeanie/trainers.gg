@@ -3,13 +3,10 @@
 import { z } from "zod";
 import { checkBotId } from "botid/server";
 import { getErrorMessage } from "@/lib/utils";
+import { type ActionResult } from "@trainers/validators";
 
-/**
- * Consistent action result type for server actions.
- */
-export type ActionResult<T = void> =
-  | { success: true; data: T }
-  | { success: false; error: string };
+// Re-export ActionResult for backward compatibility
+export type { ActionResult };
 
 /**
  * Reject requests classified as bots by Vercel BotID.
