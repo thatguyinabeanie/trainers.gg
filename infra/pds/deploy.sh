@@ -186,6 +186,41 @@ if [ "$SKIP_FLY" = false ]; then
     log_success "Handle domains configured (.${DOMAIN})"
   fi
 
+  # Configure Supabase Storage S3 credentials
+  log_step "Configuring Supabase Storage S3..."
+
+  # Check if S3 credentials are already set
+  if echo "$EXISTING_SECRETS" | grep -q "PDS_BLOBSTORE_S3_ENDPOINT"; then
+    log_warning "Supabase Storage S3 credentials already configured. Skipping."
+    log_warning "To update, manually run:"
+    echo "  fly secrets set PDS_BLOBSTORE_S3_ENDPOINT=<endpoint> --app $FLY_APP_NAME"
+    echo "  fly secrets set PDS_BLOBSTORE_S3_BUCKET=<bucket> --app $FLY_APP_NAME"
+    echo "  fly secrets set PDS_BLOBSTORE_S3_REGION=<region> --app $FLY_APP_NAME"
+    echo "  fly secrets set PDS_BLOBSTORE_S3_ACCESS_KEY_ID=<key> --app $FLY_APP_NAME"
+    echo "  fly secrets set PDS_BLOBSTORE_S3_SECRET_ACCESS_KEY=<secret> --app $FLY_APP_NAME"
+    echo "  fly secrets set PDS_BLOBSTORE_S3_FORCE_PATH_STYLE=true --app $FLY_APP_NAME"
+  else
+    log_warning "Supabase Storage S3 credentials NOT configured."
+    log_warning "Please obtain S3 credentials from Supabase Dashboard:"
+    echo ""
+    echo "  1. Go to https://supabase.com/dashboard/project/<project-id>/settings/storage"
+    echo "  2. Navigate to S3 Connection section"
+    echo "  3. Create S3 access credentials"
+    echo "  4. Create a bucket named 'pds-blobs'"
+    echo ""
+    log_warning "Then set secrets manually:"
+    echo "  fly secrets set PDS_BLOBSTORE_S3_ENDPOINT=https://<project-ref>.supabase.co/storage/v1/s3 --app $FLY_APP_NAME"
+    echo "  fly secrets set PDS_BLOBSTORE_S3_BUCKET=pds-blobs --app $FLY_APP_NAME"
+    echo "  fly secrets set PDS_BLOBSTORE_S3_REGION=auto --app $FLY_APP_NAME"
+    echo "  fly secrets set PDS_BLOBSTORE_S3_ACCESS_KEY_ID=<access-key> --app $FLY_APP_NAME"
+    echo "  fly secrets set PDS_BLOBSTORE_S3_SECRET_ACCESS_KEY=<secret-key> --app $FLY_APP_NAME"
+    echo "  fly secrets set PDS_BLOBSTORE_S3_FORCE_PATH_STYLE=true --app $FLY_APP_NAME"
+    echo ""
+    log_warning "Deployment will continue, but PDS will fail to store blobs until S3 is configured."
+    echo ""
+    read -p "Press Enter to continue or Ctrl+C to abort..."
+  fi
+
   # Deploy
   log_step "Deploying PDS..."
   fly deploy --app "$FLY_APP_NAME"
@@ -303,6 +338,30 @@ if [ "$SKIP_SUPABASE" = false ]; then
     echo "  supabase secrets set PDS_ADMIN_PASSWORD=<password> --project-ref <ref>"
   else
     log_step "Found Supabase project: $SUPABASE_PROJECT_REF"
+
+    # Verify Supabase Storage bucket exists
+    log_step "Verifying Supabase Storage bucket..."
+
+    BUCKET_EXISTS=$(supabase storage buckets list --project-ref "$SUPABASE_PROJECT_REF" 2>/dev/null | grep -q "pds-blobs" && echo "true" || echo "false")
+
+    if [ "$BUCKET_EXISTS" = "true" ]; then
+      log_success "Bucket 'pds-blobs' exists"
+    else
+      log_warning "Bucket 'pds-blobs' does NOT exist in Supabase"
+      log_warning "Creating bucket..."
+
+      # Attempt to create bucket
+      if supabase storage buckets create pds-blobs --public false --project-ref "$SUPABASE_PROJECT_REF" 2>/dev/null; then
+        log_success "Bucket 'pds-blobs' created"
+      else
+        log_warning "Could not create bucket automatically. Please create manually:"
+        echo "  1. Go to Supabase Dashboard → Storage"
+        echo "  2. Create bucket named 'pds-blobs' (Private)"
+        echo "  OR run: supabase storage buckets create pds-blobs --public false --project-ref $SUPABASE_PROJECT_REF"
+        echo ""
+        read -p "Press Enter after creating the bucket, or Ctrl+C to abort..."
+      fi
+    fi
 
     # Get admin password
     ADMIN_PASS=""
