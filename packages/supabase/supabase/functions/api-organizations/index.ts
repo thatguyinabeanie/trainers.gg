@@ -23,7 +23,7 @@ import {
 } from "../_shared/cache.ts";
 import type { ActionResult } from "@trainers/validators";
 import {
-  listOrganizations,
+  listPublicOrganizations,
   getOrganizationBySlug,
   getOrganizationById,
 } from "@trainers/supabase/queries";
@@ -117,7 +117,7 @@ Deno.serve(async (req) => {
       const result = await withCache(
         `organizations:list`,
         async () => {
-          return await listOrganizations(supabase);
+          return await listPublicOrganizations(supabase);
         },
         CACHE_TTL.ORGANIZATION
       );
