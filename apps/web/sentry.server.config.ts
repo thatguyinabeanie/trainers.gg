@@ -1,24 +1,19 @@
+// This file configures the initialization of Sentry on the server.
+// The config you add here will be used whenever the server handles a request.
+// https://docs.sentry.io/platforms/javascript/guides/nextjs/
+
 import * as Sentry from "@sentry/nextjs";
 
 Sentry.init({
-  dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
+  dsn: "https://7867effa3cab6a4357732d1a1cfab463@o4510837336178688.ingest.us.sentry.io/4510837336440832",
 
-  // Adjust this value in production, or use tracesSampler for greater control
-  tracesSampleRate: 1.0,
+  // Define how likely traces are sampled. Adjust this value in production, or use tracesSampler for greater control.
+  tracesSampleRate: 1,
 
-  // Setting this option to true will send default PII data to Sentry
+  // Enable logs to be sent to Sentry
+  enableLogs: true,
+
+  // Enable sending user PII (Personally Identifiable Information)
+  // https://docs.sentry.io/platforms/javascript/guides/nextjs/configuration/options/#sendDefaultPii
   sendDefaultPii: true,
-
-  // Environment detection
-  environment: process.env.NODE_ENV,
-
-  // Enable debug mode in development
-  debug: process.env.NODE_ENV === "development",
-
-  // Add custom tags
-  initialScope: {
-    tags: {
-      runtime: "server",
-    },
-  },
 });
