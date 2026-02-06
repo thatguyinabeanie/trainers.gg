@@ -9,7 +9,7 @@ interface PageContainerProps {
 }
 
 const variantStyles = {
-  default: "max-w-screen-xl",
+  default: "max-w-screen-2xl",
   narrow: "max-w-2xl",
   wide: "max-w-screen-2xl",
 };

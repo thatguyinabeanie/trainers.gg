@@ -8,10 +8,7 @@ import { cn } from "@/lib/utils";
 
 export default function WaitlistPage() {
   return (
-    <PageContainer
-      variant="narrow"
-      className="flex min-h-[80vh] flex-col items-center justify-center"
-    >
+    <PageContainer className="flex min-h-[80vh] flex-col items-center justify-center">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <CardTitle className="text-2xl">Private Beta</CardTitle>
