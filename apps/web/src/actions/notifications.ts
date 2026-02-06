@@ -11,7 +11,8 @@ import {
   markAllNotificationsRead,
   deleteNotification,
 } from "@trainers/supabase";
-import { type ActionResult, withAction } from "./utils";
+import { type ActionResult } from "@trainers/validators";
+import { withAction } from "./utils";
 
 const idSchema = z.number().int().positive();
 

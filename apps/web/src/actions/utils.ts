@@ -3,10 +3,7 @@
 import { z } from "zod";
 import { checkBotId } from "botid/server";
 import { getErrorMessage } from "@trainers/utils";
-import { type ActionResult } from "@trainers/validators";
-
-// Re-export ActionResult for backward compatibility
-export type { ActionResult };
+import type { ActionResult } from "@trainers/validators";
 
 /**
  * Reject requests classified as bots by Vercel BotID.
