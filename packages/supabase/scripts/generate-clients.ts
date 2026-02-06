@@ -125,9 +125,10 @@ ${allExports
     return `/**
  * ${exp.name} (auto-injected with server client)
  */
-export async function ${exp.name}(...args: any[]) {
+export async function ${exp.name}(
+  ...args: Parameters<typeof ${exp.name}_core> extends [first: infer _F, ...rest: infer R] ? R : never
+): Promise<Awaited<ReturnType<typeof ${exp.name}_core>>> {
   const client = await createServerSupabaseClient();
-  // @ts-ignore - Variadic argument passing
   return ${exp.name}_core(client, ...args);
 }`;
   })
@@ -173,9 +174,10 @@ ${allExports
     return `/**
  * ${exp.name} (auto-injected with browser client)
  */
-export async function ${exp.name}(...args: any[]) {
+export async function ${exp.name}(
+  ...args: Parameters<typeof ${exp.name}_core> extends [first: infer _F, ...rest: infer R] ? R : never
+): Promise<Awaited<ReturnType<typeof ${exp.name}_core>>> {
   const client = createBrowserSupabaseClient();
-  // @ts-ignore - Variadic argument passing
   return ${exp.name}_core(client, ...args);
 }`;
   })
@@ -221,9 +223,10 @@ ${allExports
     return `/**
  * ${exp.name} (auto-injected with mobile client)
  */
-export async function ${exp.name}(...args: any[]) {
+export async function ${exp.name}(
+  ...args: Parameters<typeof ${exp.name}_core> extends [first: infer _F, ...rest: infer R] ? R : never
+): Promise<Awaited<ReturnType<typeof ${exp.name}_core>>> {
   const client = createMobileSupabaseClient();
-  // @ts-ignore - Variadic argument passing
   return ${exp.name}_core(client, ...args);
 }`;
   })

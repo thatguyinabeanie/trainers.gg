@@ -160,1322 +160,2207 @@ import { completeTournament as completeTournament_core } from "../mutations/tour
 /**
  * getTournamentAuditLog (auto-injected with server client)
  */
-export async function getTournamentAuditLog(...args: any[]) {
+export async function getTournamentAuditLog(
+  ...args: Parameters<typeof getTournamentAuditLog_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof getTournamentAuditLog_core>>> {
   const client = await createServerSupabaseClient();
-  // @ts-ignore - Variadic argument passing
   return getTournamentAuditLog_core(client, ...args);
 }
 
 /**
  * getMatchAuditLog (auto-injected with server client)
  */
-export async function getMatchAuditLog(...args: any[]) {
+export async function getMatchAuditLog(
+  ...args: Parameters<typeof getMatchAuditLog_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof getMatchAuditLog_core>>> {
   const client = await createServerSupabaseClient();
-  // @ts-ignore - Variadic argument passing
   return getMatchAuditLog_core(client, ...args);
 }
 
 /**
  * getMatchGames (auto-injected with server client)
  */
-export async function getMatchGames(...args: any[]) {
+export async function getMatchGames(
+  ...args: Parameters<typeof getMatchGames_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof getMatchGames_core>>> {
   const client = await createServerSupabaseClient();
-  // @ts-ignore - Variadic argument passing
   return getMatchGames_core(client, ...args);
 }
 
 /**
  * getMatchGamesForPlayer (auto-injected with server client)
  */
-export async function getMatchGamesForPlayer(...args: any[]) {
+export async function getMatchGamesForPlayer(
+  ...args: Parameters<typeof getMatchGamesForPlayer_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof getMatchGamesForPlayer_core>>> {
   const client = await createServerSupabaseClient();
-  // @ts-ignore - Variadic argument passing
   return getMatchGamesForPlayer_core(client, ...args);
 }
 
 /**
  * getMatchMessages (auto-injected with server client)
  */
-export async function getMatchMessages(...args: any[]) {
+export async function getMatchMessages(
+  ...args: Parameters<typeof getMatchMessages_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof getMatchMessages_core>>> {
   const client = await createServerSupabaseClient();
-  // @ts-ignore - Variadic argument passing
   return getMatchMessages_core(client, ...args);
 }
 
 /**
  * getMatchGame (auto-injected with server client)
  */
-export async function getMatchGame(...args: any[]) {
+export async function getMatchGame(
+  ...args: Parameters<typeof getMatchGame_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof getMatchGame_core>>> {
   const client = await createServerSupabaseClient();
-  // @ts-ignore - Variadic argument passing
   return getMatchGame_core(client, ...args);
 }
 
 /**
  * getNotifications (auto-injected with server client)
  */
-export async function getNotifications(...args: any[]) {
+export async function getNotifications(
+  ...args: Parameters<typeof getNotifications_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof getNotifications_core>>> {
   const client = await createServerSupabaseClient();
-  // @ts-ignore - Variadic argument passing
   return getNotifications_core(client, ...args);
 }
 
 /**
  * getUnreadNotificationCount (auto-injected with server client)
  */
-export async function getUnreadNotificationCount(...args: any[]) {
+export async function getUnreadNotificationCount(
+  ...args: Parameters<typeof getUnreadNotificationCount_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof getUnreadNotificationCount_core>>> {
   const client = await createServerSupabaseClient();
-  // @ts-ignore - Variadic argument passing
   return getUnreadNotificationCount_core(client, ...args);
 }
 
 /**
  * getActiveMatchNotifications (auto-injected with server client)
  */
-export async function getActiveMatchNotifications(...args: any[]) {
+export async function getActiveMatchNotifications(
+  ...args: Parameters<typeof getActiveMatchNotifications_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof getActiveMatchNotifications_core>>> {
   const client = await createServerSupabaseClient();
-  // @ts-ignore - Variadic argument passing
   return getActiveMatchNotifications_core(client, ...args);
 }
 
 /**
  * listPublicOrganizations (auto-injected with server client)
  */
-export async function listPublicOrganizations(...args: any[]) {
+export async function listPublicOrganizations(
+  ...args: Parameters<typeof listPublicOrganizations_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof listPublicOrganizations_core>>> {
   const client = await createServerSupabaseClient();
-  // @ts-ignore - Variadic argument passing
   return listPublicOrganizations_core(client, ...args);
 }
 
 /**
  * listOrganizations (auto-injected with server client)
  */
-export async function listOrganizations(...args: any[]) {
+export async function listOrganizations(
+  ...args: Parameters<typeof listOrganizations_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof listOrganizations_core>>> {
   const client = await createServerSupabaseClient();
-  // @ts-ignore - Variadic argument passing
   return listOrganizations_core(client, ...args);
 }
 
 /**
  * getOrganizationBySlug (auto-injected with server client)
  */
-export async function getOrganizationBySlug(...args: any[]) {
+export async function getOrganizationBySlug(
+  ...args: Parameters<typeof getOrganizationBySlug_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof getOrganizationBySlug_core>>> {
   const client = await createServerSupabaseClient();
-  // @ts-ignore - Variadic argument passing
   return getOrganizationBySlug_core(client, ...args);
 }
 
 /**
  * getOrganizationById (auto-injected with server client)
  */
-export async function getOrganizationById(...args: any[]) {
+export async function getOrganizationById(
+  ...args: Parameters<typeof getOrganizationById_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof getOrganizationById_core>>> {
   const client = await createServerSupabaseClient();
-  // @ts-ignore - Variadic argument passing
   return getOrganizationById_core(client, ...args);
 }
 
 /**
  * listMyOrganizations (auto-injected with server client)
  */
-export async function listMyOrganizations(...args: any[]) {
+export async function listMyOrganizations(
+  ...args: Parameters<typeof listMyOrganizations_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof listMyOrganizations_core>>> {
   const client = await createServerSupabaseClient();
-  // @ts-ignore - Variadic argument passing
   return listMyOrganizations_core(client, ...args);
 }
 
 /**
  * canManageOrganization (auto-injected with server client)
  */
-export async function canManageOrganization(...args: any[]) {
+export async function canManageOrganization(
+  ...args: Parameters<typeof canManageOrganization_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof canManageOrganization_core>>> {
   const client = await createServerSupabaseClient();
-  // @ts-ignore - Variadic argument passing
   return canManageOrganization_core(client, ...args);
 }
 
 /**
  * listOrganizationStaff (auto-injected with server client)
  */
-export async function listOrganizationStaff(...args: any[]) {
+export async function listOrganizationStaff(
+  ...args: Parameters<typeof listOrganizationStaff_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof listOrganizationStaff_core>>> {
   const client = await createServerSupabaseClient();
-  // @ts-ignore - Variadic argument passing
   return listOrganizationStaff_core(client, ...args);
 }
 
 /**
  * hasOrganizationAccess (auto-injected with server client)
  */
-export async function hasOrganizationAccess(...args: any[]) {
+export async function hasOrganizationAccess(
+  ...args: Parameters<typeof hasOrganizationAccess_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof hasOrganizationAccess_core>>> {
   const client = await createServerSupabaseClient();
-  // @ts-ignore - Variadic argument passing
   return hasOrganizationAccess_core(client, ...args);
 }
 
 /**
  * getMyOrganizationInvitations (auto-injected with server client)
  */
-export async function getMyOrganizationInvitations(...args: any[]) {
+export async function getMyOrganizationInvitations(
+  ...args: Parameters<typeof getMyOrganizationInvitations_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof getMyOrganizationInvitations_core>>> {
   const client = await createServerSupabaseClient();
-  // @ts-ignore - Variadic argument passing
   return getMyOrganizationInvitations_core(client, ...args);
 }
 
 /**
  * getOrganizationInvitations (auto-injected with server client)
  */
-export async function getOrganizationInvitations(...args: any[]) {
+export async function getOrganizationInvitations(
+  ...args: Parameters<typeof getOrganizationInvitations_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof getOrganizationInvitations_core>>> {
   const client = await createServerSupabaseClient();
-  // @ts-ignore - Variadic argument passing
   return getOrganizationInvitations_core(client, ...args);
 }
 
 /**
  * listMyOwnedOrganizations (auto-injected with server client)
  */
-export async function listMyOwnedOrganizations(...args: any[]) {
+export async function listMyOwnedOrganizations(
+  ...args: Parameters<typeof listMyOwnedOrganizations_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof listMyOwnedOrganizations_core>>> {
   const client = await createServerSupabaseClient();
-  // @ts-ignore - Variadic argument passing
   return listMyOwnedOrganizations_core(client, ...args);
 }
 
 /**
  * getOrganizationWithTournamentStats (auto-injected with server client)
  */
-export async function getOrganizationWithTournamentStats(...args: any[]) {
+export async function getOrganizationWithTournamentStats(
+  ...args: Parameters<typeof getOrganizationWithTournamentStats_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<
+  Awaited<ReturnType<typeof getOrganizationWithTournamentStats_core>>
+> {
   const client = await createServerSupabaseClient();
-  // @ts-ignore - Variadic argument passing
   return getOrganizationWithTournamentStats_core(client, ...args);
 }
 
 /**
  * listOrganizationTournaments (auto-injected with server client)
  */
-export async function listOrganizationTournaments(...args: any[]) {
+export async function listOrganizationTournaments(
+  ...args: Parameters<typeof listOrganizationTournaments_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof listOrganizationTournaments_core>>> {
   const client = await createServerSupabaseClient();
-  // @ts-ignore - Variadic argument passing
   return listOrganizationTournaments_core(client, ...args);
 }
 
 /**
  * listOrganizationStaffWithRoles (auto-injected with server client)
  */
-export async function listOrganizationStaffWithRoles(...args: any[]) {
+export async function listOrganizationStaffWithRoles(
+  ...args: Parameters<typeof listOrganizationStaffWithRoles_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof listOrganizationStaffWithRoles_core>>> {
   const client = await createServerSupabaseClient();
-  // @ts-ignore - Variadic argument passing
   return listOrganizationStaffWithRoles_core(client, ...args);
 }
 
 /**
  * listOrganizationGroups (auto-injected with server client)
  */
-export async function listOrganizationGroups(...args: any[]) {
+export async function listOrganizationGroups(
+  ...args: Parameters<typeof listOrganizationGroups_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof listOrganizationGroups_core>>> {
   const client = await createServerSupabaseClient();
-  // @ts-ignore - Variadic argument passing
   return listOrganizationGroups_core(client, ...args);
 }
 
 /**
  * searchUsersForInvite (auto-injected with server client)
  */
-export async function searchUsersForInvite(...args: any[]) {
+export async function searchUsersForInvite(
+  ...args: Parameters<typeof searchUsersForInvite_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof searchUsersForInvite_core>>> {
   const client = await createServerSupabaseClient();
-  // @ts-ignore - Variadic argument passing
   return searchUsersForInvite_core(client, ...args);
 }
 
 /**
  * hasOrgPermission (auto-injected with server client)
  */
-export async function hasOrgPermission(...args: any[]) {
+export async function hasOrgPermission(
+  ...args: Parameters<typeof hasOrgPermission_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof hasOrgPermission_core>>> {
   const client = await createServerSupabaseClient();
-  // @ts-ignore - Variadic argument passing
   return hasOrgPermission_core(client, ...args);
 }
 
 /**
  * getUserPermissions (auto-injected with server client)
  */
-export async function getUserPermissions(...args: any[]) {
+export async function getUserPermissions(
+  ...args: Parameters<typeof getUserPermissions_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof getUserPermissions_core>>> {
   const client = await createServerSupabaseClient();
-  // @ts-ignore - Variadic argument passing
   return getUserPermissions_core(client, ...args);
 }
 
 /**
  * hasPermission (auto-injected with server client)
  */
-export async function hasPermission(...args: any[]) {
+export async function hasPermission(
+  ...args: Parameters<typeof hasPermission_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof hasPermission_core>>> {
   const client = await createServerSupabaseClient();
-  // @ts-ignore - Variadic argument passing
   return hasPermission_core(client, ...args);
 }
 
 /**
  * getFeedPosts (auto-injected with server client)
  */
-export async function getFeedPosts(...args: any[]) {
+export async function getFeedPosts(
+  ...args: Parameters<typeof getFeedPosts_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof getFeedPosts_core>>> {
   const client = await createServerSupabaseClient();
-  // @ts-ignore - Variadic argument passing
   return getFeedPosts_core(client, ...args);
 }
 
 /**
  * getFollowingFeedPosts (auto-injected with server client)
  */
-export async function getFollowingFeedPosts(...args: any[]) {
+export async function getFollowingFeedPosts(
+  ...args: Parameters<typeof getFollowingFeedPosts_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof getFollowingFeedPosts_core>>> {
   const client = await createServerSupabaseClient();
-  // @ts-ignore - Variadic argument passing
   return getFollowingFeedPosts_core(client, ...args);
 }
 
 /**
  * getPostWithReplies (auto-injected with server client)
  */
-export async function getPostWithReplies(...args: any[]) {
+export async function getPostWithReplies(
+  ...args: Parameters<typeof getPostWithReplies_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof getPostWithReplies_core>>> {
   const client = await createServerSupabaseClient();
-  // @ts-ignore - Variadic argument passing
   return getPostWithReplies_core(client, ...args);
 }
 
 /**
  * getUserPosts (auto-injected with server client)
  */
-export async function getUserPosts(...args: any[]) {
+export async function getUserPosts(
+  ...args: Parameters<typeof getUserPosts_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof getUserPosts_core>>> {
   const client = await createServerSupabaseClient();
-  // @ts-ignore - Variadic argument passing
   return getUserPosts_core(client, ...args);
 }
 
 /**
  * isSiteAdmin (auto-injected with server client)
  */
-export async function isSiteAdmin(...args: any[]) {
+export async function isSiteAdmin(
+  ...args: Parameters<typeof isSiteAdmin_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof isSiteAdmin_core>>> {
   const client = await createServerSupabaseClient();
-  // @ts-ignore - Variadic argument passing
   return isSiteAdmin_core(client, ...args);
 }
 
 /**
  * getSiteRoles (auto-injected with server client)
  */
-export async function getSiteRoles(...args: any[]) {
+export async function getSiteRoles(
+  ...args: Parameters<typeof getSiteRoles_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof getSiteRoles_core>>> {
   const client = await createServerSupabaseClient();
-  // @ts-ignore - Variadic argument passing
   return getSiteRoles_core(client, ...args);
 }
 
 /**
  * getSiteAdmins (auto-injected with server client)
  */
-export async function getSiteAdmins(...args: any[]) {
+export async function getSiteAdmins(
+  ...args: Parameters<typeof getSiteAdmins_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof getSiteAdmins_core>>> {
   const client = await createServerSupabaseClient();
-  // @ts-ignore - Variadic argument passing
   return getSiteAdmins_core(client, ...args);
 }
 
 /**
  * getUserSiteRoles (auto-injected with server client)
  */
-export async function getUserSiteRoles(...args: any[]) {
+export async function getUserSiteRoles(
+  ...args: Parameters<typeof getUserSiteRoles_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof getUserSiteRoles_core>>> {
   const client = await createServerSupabaseClient();
-  // @ts-ignore - Variadic argument passing
   return getUserSiteRoles_core(client, ...args);
 }
 
 /**
  * grantSiteRole (auto-injected with server client)
  */
-export async function grantSiteRole(...args: any[]) {
+export async function grantSiteRole(
+  ...args: Parameters<typeof grantSiteRole_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof grantSiteRole_core>>> {
   const client = await createServerSupabaseClient();
-  // @ts-ignore - Variadic argument passing
   return grantSiteRole_core(client, ...args);
 }
 
 /**
  * revokeSiteRole (auto-injected with server client)
  */
-export async function revokeSiteRole(...args: any[]) {
+export async function revokeSiteRole(
+  ...args: Parameters<typeof revokeSiteRole_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof revokeSiteRole_core>>> {
   const client = await createServerSupabaseClient();
-  // @ts-ignore - Variadic argument passing
   return revokeSiteRole_core(client, ...args);
 }
 
 /**
  * getActiveSudoSession (auto-injected with server client)
  */
-export async function getActiveSudoSession(...args: any[]) {
+export async function getActiveSudoSession(
+  ...args: Parameters<typeof getActiveSudoSession_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof getActiveSudoSession_core>>> {
   const client = await createServerSupabaseClient();
-  // @ts-ignore - Variadic argument passing
   return getActiveSudoSession_core(client, ...args);
 }
 
 /**
  * isSudoModeActive (auto-injected with server client)
  */
-export async function isSudoModeActive(...args: any[]) {
+export async function isSudoModeActive(
+  ...args: Parameters<typeof isSudoModeActive_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof isSudoModeActive_core>>> {
   const client = await createServerSupabaseClient();
-  // @ts-ignore - Variadic argument passing
   return isSudoModeActive_core(client, ...args);
 }
 
 /**
  * getSudoSessions (auto-injected with server client)
  */
-export async function getSudoSessions(...args: any[]) {
+export async function getSudoSessions(
+  ...args: Parameters<typeof getSudoSessions_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof getSudoSessions_core>>> {
   const client = await createServerSupabaseClient();
-  // @ts-ignore - Variadic argument passing
   return getSudoSessions_core(client, ...args);
 }
 
 /**
  * startSudoSession (auto-injected with server client)
  */
-export async function startSudoSession(...args: any[]) {
+export async function startSudoSession(
+  ...args: Parameters<typeof startSudoSession_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof startSudoSession_core>>> {
   const client = await createServerSupabaseClient();
-  // @ts-ignore - Variadic argument passing
   return startSudoSession_core(client, ...args);
 }
 
 /**
  * endSudoSession (auto-injected with server client)
  */
-export async function endSudoSession(...args: any[]) {
+export async function endSudoSession(
+  ...args: Parameters<typeof endSudoSession_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof endSudoSession_core>>> {
   const client = await createServerSupabaseClient();
-  // @ts-ignore - Variadic argument passing
   return endSudoSession_core(client, ...args);
 }
 
 /**
  * listTournamentsGrouped (auto-injected with server client)
  */
-export async function listTournamentsGrouped(...args: any[]) {
+export async function listTournamentsGrouped(
+  ...args: Parameters<typeof listTournamentsGrouped_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof listTournamentsGrouped_core>>> {
   const client = await createServerSupabaseClient();
-  // @ts-ignore - Variadic argument passing
   return listTournamentsGrouped_core(client, ...args);
 }
 
 /**
  * listPublicTournaments (auto-injected with server client)
  */
-export async function listPublicTournaments(...args: any[]) {
+export async function listPublicTournaments(
+  ...args: Parameters<typeof listPublicTournaments_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof listPublicTournaments_core>>> {
   const client = await createServerSupabaseClient();
-  // @ts-ignore - Variadic argument passing
   return listPublicTournaments_core(client, ...args);
 }
 
 /**
  * listTournaments (auto-injected with server client)
  */
-export async function listTournaments(...args: any[]) {
+export async function listTournaments(
+  ...args: Parameters<typeof listTournaments_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof listTournaments_core>>> {
   const client = await createServerSupabaseClient();
-  // @ts-ignore - Variadic argument passing
   return listTournaments_core(client, ...args);
 }
 
 /**
  * getTournamentByOrgAndSlug (auto-injected with server client)
  */
-export async function getTournamentByOrgAndSlug(...args: any[]) {
+export async function getTournamentByOrgAndSlug(
+  ...args: Parameters<typeof getTournamentByOrgAndSlug_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof getTournamentByOrgAndSlug_core>>> {
   const client = await createServerSupabaseClient();
-  // @ts-ignore - Variadic argument passing
   return getTournamentByOrgAndSlug_core(client, ...args);
 }
 
 /**
  * checkTournamentSlugAvailable (auto-injected with server client)
  */
-export async function checkTournamentSlugAvailable(...args: any[]) {
+export async function checkTournamentSlugAvailable(
+  ...args: Parameters<typeof checkTournamentSlugAvailable_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof checkTournamentSlugAvailable_core>>> {
   const client = await createServerSupabaseClient();
-  // @ts-ignore - Variadic argument passing
   return checkTournamentSlugAvailable_core(client, ...args);
 }
 
 /**
  * getTournamentBySlug (auto-injected with server client)
  */
-export async function getTournamentBySlug(...args: any[]) {
+export async function getTournamentBySlug(
+  ...args: Parameters<typeof getTournamentBySlug_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof getTournamentBySlug_core>>> {
   const client = await createServerSupabaseClient();
-  // @ts-ignore - Variadic argument passing
   return getTournamentBySlug_core(client, ...args);
 }
 
 /**
  * getTournamentById (auto-injected with server client)
  */
-export async function getTournamentById(...args: any[]) {
+export async function getTournamentById(
+  ...args: Parameters<typeof getTournamentById_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof getTournamentById_core>>> {
   const client = await createServerSupabaseClient();
-  // @ts-ignore - Variadic argument passing
   return getTournamentById_core(client, ...args);
 }
 
 /**
  * getTournamentRegistrations (auto-injected with server client)
  */
-export async function getTournamentRegistrations(...args: any[]) {
+export async function getTournamentRegistrations(
+  ...args: Parameters<typeof getTournamentRegistrations_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof getTournamentRegistrations_core>>> {
   const client = await createServerSupabaseClient();
-  // @ts-ignore - Variadic argument passing
   return getTournamentRegistrations_core(client, ...args);
 }
 
 /**
  * isRegisteredForTournament (auto-injected with server client)
  */
-export async function isRegisteredForTournament(...args: any[]) {
+export async function isRegisteredForTournament(
+  ...args: Parameters<typeof isRegisteredForTournament_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof isRegisteredForTournament_core>>> {
   const client = await createServerSupabaseClient();
-  // @ts-ignore - Variadic argument passing
   return isRegisteredForTournament_core(client, ...args);
 }
 
 /**
  * getCurrentUserRegisteredTournamentIds (auto-injected with server client)
  */
-export async function getCurrentUserRegisteredTournamentIds(...args: any[]) {
+export async function getCurrentUserRegisteredTournamentIds(
+  ...args: Parameters<
+    typeof getCurrentUserRegisteredTournamentIds_core
+  > extends [first: infer _F, ...rest: infer R]
+    ? R
+    : never
+): Promise<
+  Awaited<ReturnType<typeof getCurrentUserRegisteredTournamentIds_core>>
+> {
   const client = await createServerSupabaseClient();
-  // @ts-ignore - Variadic argument passing
   return getCurrentUserRegisteredTournamentIds_core(client, ...args);
 }
 
 /**
  * getUserRegistrationDetails (auto-injected with server client)
  */
-export async function getUserRegistrationDetails(...args: any[]) {
+export async function getUserRegistrationDetails(
+  ...args: Parameters<typeof getUserRegistrationDetails_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof getUserRegistrationDetails_core>>> {
   const client = await createServerSupabaseClient();
-  // @ts-ignore - Variadic argument passing
   return getUserRegistrationDetails_core(client, ...args);
 }
 
 /**
  * getTournamentPhases (auto-injected with server client)
  */
-export async function getTournamentPhases(...args: any[]) {
+export async function getTournamentPhases(
+  ...args: Parameters<typeof getTournamentPhases_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof getTournamentPhases_core>>> {
   const client = await createServerSupabaseClient();
-  // @ts-ignore - Variadic argument passing
   return getTournamentPhases_core(client, ...args);
 }
 
 /**
  * getTournamentRounds (auto-injected with server client)
  */
-export async function getTournamentRounds(...args: any[]) {
+export async function getTournamentRounds(
+  ...args: Parameters<typeof getTournamentRounds_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof getTournamentRounds_core>>> {
   const client = await createServerSupabaseClient();
-  // @ts-ignore - Variadic argument passing
   return getTournamentRounds_core(client, ...args);
 }
 
 /**
  * getRoundMatches (auto-injected with server client)
  */
-export async function getRoundMatches(...args: any[]) {
+export async function getRoundMatches(
+  ...args: Parameters<typeof getRoundMatches_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof getRoundMatches_core>>> {
   const client = await createServerSupabaseClient();
-  // @ts-ignore - Variadic argument passing
   return getRoundMatches_core(client, ...args);
 }
 
 /**
  * getTournamentStandings (auto-injected with server client)
  */
-export async function getTournamentStandings(...args: any[]) {
+export async function getTournamentStandings(
+  ...args: Parameters<typeof getTournamentStandings_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof getTournamentStandings_core>>> {
   const client = await createServerSupabaseClient();
-  // @ts-ignore - Variadic argument passing
   return getTournamentStandings_core(client, ...args);
 }
 
 /**
  * getPlayerTournamentStats (auto-injected with server client)
  */
-export async function getPlayerTournamentStats(...args: any[]) {
+export async function getPlayerTournamentStats(
+  ...args: Parameters<typeof getPlayerTournamentStats_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof getPlayerTournamentStats_core>>> {
   const client = await createServerSupabaseClient();
-  // @ts-ignore - Variadic argument passing
   return getPlayerTournamentStats_core(client, ...args);
 }
 
 /**
  * getTournamentPlayerStats (auto-injected with server client)
  */
-export async function getTournamentPlayerStats(...args: any[]) {
+export async function getTournamentPlayerStats(
+  ...args: Parameters<typeof getTournamentPlayerStats_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof getTournamentPlayerStats_core>>> {
   const client = await createServerSupabaseClient();
-  // @ts-ignore - Variadic argument passing
   return getTournamentPlayerStats_core(client, ...args);
 }
 
 /**
  * getPhaseRoundsWithStats (auto-injected with server client)
  */
-export async function getPhaseRoundsWithStats(...args: any[]) {
+export async function getPhaseRoundsWithStats(
+  ...args: Parameters<typeof getPhaseRoundsWithStats_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof getPhaseRoundsWithStats_core>>> {
   const client = await createServerSupabaseClient();
-  // @ts-ignore - Variadic argument passing
   return getPhaseRoundsWithStats_core(client, ...args);
 }
 
 /**
  * getRoundMatchesWithStats (auto-injected with server client)
  */
-export async function getRoundMatchesWithStats(...args: any[]) {
+export async function getRoundMatchesWithStats(
+  ...args: Parameters<typeof getRoundMatchesWithStats_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof getRoundMatchesWithStats_core>>> {
   const client = await createServerSupabaseClient();
-  // @ts-ignore - Variadic argument passing
   return getRoundMatchesWithStats_core(client, ...args);
 }
 
 /**
  * getPhaseRoundsWithMatches (auto-injected with server client)
  */
-export async function getPhaseRoundsWithMatches(...args: any[]) {
+export async function getPhaseRoundsWithMatches(
+  ...args: Parameters<typeof getPhaseRoundsWithMatches_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof getPhaseRoundsWithMatches_core>>> {
   const client = await createServerSupabaseClient();
-  // @ts-ignore - Variadic argument passing
   return getPhaseRoundsWithMatches_core(client, ...args);
 }
 
 /**
  * getCheckInStatus (auto-injected with server client)
  */
-export async function getCheckInStatus(...args: any[]) {
+export async function getCheckInStatus(
+  ...args: Parameters<typeof getCheckInStatus_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof getCheckInStatus_core>>> {
   const client = await createServerSupabaseClient();
-  // @ts-ignore - Variadic argument passing
   return getCheckInStatus_core(client, ...args);
 }
 
 /**
  * getCheckInStats (auto-injected with server client)
  */
-export async function getCheckInStats(...args: any[]) {
+export async function getCheckInStats(
+  ...args: Parameters<typeof getCheckInStats_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof getCheckInStats_core>>> {
   const client = await createServerSupabaseClient();
-  // @ts-ignore - Variadic argument passing
   return getCheckInStats_core(client, ...args);
 }
 
 /**
  * getUserTeams (auto-injected with server client)
  */
-export async function getUserTeams(...args: any[]) {
+export async function getUserTeams(
+  ...args: Parameters<typeof getUserTeams_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof getUserTeams_core>>> {
   const client = await createServerSupabaseClient();
-  // @ts-ignore - Variadic argument passing
   return getUserTeams_core(client, ...args);
 }
 
 /**
  * getMatchDetails (auto-injected with server client)
  */
-export async function getMatchDetails(...args: any[]) {
+export async function getMatchDetails(
+  ...args: Parameters<typeof getMatchDetails_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof getMatchDetails_core>>> {
   const client = await createServerSupabaseClient();
-  // @ts-ignore - Variadic argument passing
   return getMatchDetails_core(client, ...args);
 }
 
 /**
  * getPlayerMatches (auto-injected with server client)
  */
-export async function getPlayerMatches(...args: any[]) {
+export async function getPlayerMatches(
+  ...args: Parameters<typeof getPlayerMatches_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof getPlayerMatches_core>>> {
   const client = await createServerSupabaseClient();
-  // @ts-ignore - Variadic argument passing
   return getPlayerMatches_core(client, ...args);
 }
 
 /**
  * getTournamentMatchesForStaff (auto-injected with server client)
  */
-export async function getTournamentMatchesForStaff(...args: any[]) {
+export async function getTournamentMatchesForStaff(
+  ...args: Parameters<typeof getTournamentMatchesForStaff_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof getTournamentMatchesForStaff_core>>> {
   const client = await createServerSupabaseClient();
-  // @ts-ignore - Variadic argument passing
   return getTournamentMatchesForStaff_core(client, ...args);
 }
 
 /**
  * getMyDashboardData (auto-injected with server client)
  */
-export async function getMyDashboardData(...args: any[]) {
+export async function getMyDashboardData(
+  ...args: Parameters<typeof getMyDashboardData_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof getMyDashboardData_core>>> {
   const client = await createServerSupabaseClient();
-  // @ts-ignore - Variadic argument passing
   return getMyDashboardData_core(client, ...args);
 }
 
 /**
  * getRegistrationStatus (auto-injected with server client)
  */
-export async function getRegistrationStatus(...args: any[]) {
+export async function getRegistrationStatus(
+  ...args: Parameters<typeof getRegistrationStatus_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof getRegistrationStatus_core>>> {
   const client = await createServerSupabaseClient();
-  // @ts-ignore - Variadic argument passing
   return getRegistrationStatus_core(client, ...args);
 }
 
 /**
  * getTournamentInvitationsSent (auto-injected with server client)
  */
-export async function getTournamentInvitationsSent(...args: any[]) {
+export async function getTournamentInvitationsSent(
+  ...args: Parameters<typeof getTournamentInvitationsSent_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof getTournamentInvitationsSent_core>>> {
   const client = await createServerSupabaseClient();
-  // @ts-ignore - Variadic argument passing
   return getTournamentInvitationsSent_core(client, ...args);
 }
 
 /**
  * getTournamentInvitationsReceived (auto-injected with server client)
  */
-export async function getTournamentInvitationsReceived(...args: any[]) {
+export async function getTournamentInvitationsReceived(
+  ...args: Parameters<typeof getTournamentInvitationsReceived_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof getTournamentInvitationsReceived_core>>> {
   const client = await createServerSupabaseClient();
-  // @ts-ignore - Variadic argument passing
   return getTournamentInvitationsReceived_core(client, ...args);
 }
 
 /**
  * getTeamForRegistration (auto-injected with server client)
  */
-export async function getTeamForRegistration(...args: any[]) {
+export async function getTeamForRegistration(
+  ...args: Parameters<typeof getTeamForRegistration_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof getTeamForRegistration_core>>> {
   const client = await createServerSupabaseClient();
-  // @ts-ignore - Variadic argument passing
   return getTeamForRegistration_core(client, ...args);
 }
 
 /**
  * getUnpairedCheckedInPlayers (auto-injected with server client)
  */
-export async function getUnpairedCheckedInPlayers(...args: any[]) {
+export async function getUnpairedCheckedInPlayers(
+  ...args: Parameters<typeof getUnpairedCheckedInPlayers_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof getUnpairedCheckedInPlayers_core>>> {
   const client = await createServerSupabaseClient();
-  // @ts-ignore - Variadic argument passing
   return getUnpairedCheckedInPlayers_core(client, ...args);
 }
 
 /**
  * getUserTournamentHistory (auto-injected with server client)
  */
-export async function getUserTournamentHistory(...args: any[]) {
+export async function getUserTournamentHistory(
+  ...args: Parameters<typeof getUserTournamentHistory_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof getUserTournamentHistory_core>>> {
   const client = await createServerSupabaseClient();
-  // @ts-ignore - Variadic argument passing
   return getUserTournamentHistory_core(client, ...args);
 }
 
 /**
  * getUserCount (auto-injected with server client)
  */
-export async function getUserCount(...args: any[]) {
+export async function getUserCount(
+  ...args: Parameters<typeof getUserCount_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof getUserCount_core>>> {
   const client = await createServerSupabaseClient();
-  // @ts-ignore - Variadic argument passing
   return getUserCount_core(client, ...args);
 }
 
 /**
  * getCurrentUser (auto-injected with server client)
  */
-export async function getCurrentUser(...args: any[]) {
+export async function getCurrentUser(
+  ...args: Parameters<typeof getCurrentUser_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof getCurrentUser_core>>> {
   const client = await createServerSupabaseClient();
-  // @ts-ignore - Variadic argument passing
   return getCurrentUser_core(client, ...args);
 }
 
 /**
  * getUserSpritePreference (auto-injected with server client)
  */
-export async function getUserSpritePreference(...args: any[]) {
+export async function getUserSpritePreference(
+  ...args: Parameters<typeof getUserSpritePreference_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof getUserSpritePreference_core>>> {
   const client = await createServerSupabaseClient();
-  // @ts-ignore - Variadic argument passing
   return getUserSpritePreference_core(client, ...args);
 }
 
 /**
  * getUserById (auto-injected with server client)
  */
-export async function getUserById(...args: any[]) {
+export async function getUserById(
+  ...args: Parameters<typeof getUserById_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof getUserById_core>>> {
   const client = await createServerSupabaseClient();
-  // @ts-ignore - Variadic argument passing
   return getUserById_core(client, ...args);
 }
 
 /**
  * getUserWithAlt (auto-injected with server client)
  */
-export async function getUserWithAlt(...args: any[]) {
+export async function getUserWithAlt(
+  ...args: Parameters<typeof getUserWithAlt_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof getUserWithAlt_core>>> {
   const client = await createServerSupabaseClient();
-  // @ts-ignore - Variadic argument passing
   return getUserWithAlt_core(client, ...args);
 }
 
 /**
  * getAltByUsername (auto-injected with server client)
  */
-export async function getAltByUsername(...args: any[]) {
+export async function getAltByUsername(
+  ...args: Parameters<typeof getAltByUsername_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof getAltByUsername_core>>> {
   const client = await createServerSupabaseClient();
-  // @ts-ignore - Variadic argument passing
   return getAltByUsername_core(client, ...args);
 }
 
 /**
  * getAltByUserId (auto-injected with server client)
  */
-export async function getAltByUserId(...args: any[]) {
+export async function getAltByUserId(
+  ...args: Parameters<typeof getAltByUserId_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof getAltByUserId_core>>> {
   const client = await createServerSupabaseClient();
-  // @ts-ignore - Variadic argument passing
   return getAltByUserId_core(client, ...args);
 }
 
 /**
  * getAltsByUserId (auto-injected with server client)
  */
-export async function getAltsByUserId(...args: any[]) {
+export async function getAltsByUserId(
+  ...args: Parameters<typeof getAltsByUserId_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof getAltsByUserId_core>>> {
   const client = await createServerSupabaseClient();
-  // @ts-ignore - Variadic argument passing
   return getAltsByUserId_core(client, ...args);
 }
 
 /**
  * getCurrentUserAlts (auto-injected with server client)
  */
-export async function getCurrentUserAlts(...args: any[]) {
+export async function getCurrentUserAlts(
+  ...args: Parameters<typeof getCurrentUserAlts_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof getCurrentUserAlts_core>>> {
   const client = await createServerSupabaseClient();
-  // @ts-ignore - Variadic argument passing
   return getCurrentUserAlts_core(client, ...args);
 }
 
 /**
  * searchAlts (auto-injected with server client)
  */
-export async function searchAlts(...args: any[]) {
+export async function searchAlts(
+  ...args: Parameters<typeof searchAlts_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof searchAlts_core>>> {
   const client = await createServerSupabaseClient();
-  // @ts-ignore - Variadic argument passing
   return searchAlts_core(client, ...args);
 }
 
 /**
  * getEmailByUsername (auto-injected with server client)
  */
-export async function getEmailByUsername(...args: any[]) {
+export async function getEmailByUsername(
+  ...args: Parameters<typeof getEmailByUsername_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof getEmailByUsername_core>>> {
   const client = await createServerSupabaseClient();
-  // @ts-ignore - Variadic argument passing
   return getEmailByUsername_core(client, ...args);
 }
 
 /**
  * submitGameSelection (auto-injected with server client)
  */
-export async function submitGameSelection(...args: any[]) {
+export async function submitGameSelection(
+  ...args: Parameters<typeof submitGameSelection_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof submitGameSelection_core>>> {
   const client = await createServerSupabaseClient();
-  // @ts-ignore - Variadic argument passing
   return submitGameSelection_core(client, ...args);
 }
 
 /**
  * sendMatchMessage (auto-injected with server client)
  */
-export async function sendMatchMessage(...args: any[]) {
+export async function sendMatchMessage(
+  ...args: Parameters<typeof sendMatchMessage_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof sendMatchMessage_core>>> {
   const client = await createServerSupabaseClient();
-  // @ts-ignore - Variadic argument passing
   return sendMatchMessage_core(client, ...args);
 }
 
 /**
  * sendSystemMessage (auto-injected with server client)
  */
-export async function sendSystemMessage(...args: any[]) {
+export async function sendSystemMessage(
+  ...args: Parameters<typeof sendSystemMessage_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof sendSystemMessage_core>>> {
   const client = await createServerSupabaseClient();
-  // @ts-ignore - Variadic argument passing
   return sendSystemMessage_core(client, ...args);
 }
 
 /**
  * createMatchGames (auto-injected with server client)
  */
-export async function createMatchGames(...args: any[]) {
+export async function createMatchGames(
+  ...args: Parameters<typeof createMatchGames_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof createMatchGames_core>>> {
   const client = await createServerSupabaseClient();
-  // @ts-ignore - Variadic argument passing
   return createMatchGames_core(client, ...args);
 }
 
 /**
  * judgeOverrideGame (auto-injected with server client)
  */
-export async function judgeOverrideGame(...args: any[]) {
+export async function judgeOverrideGame(
+  ...args: Parameters<typeof judgeOverrideGame_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof judgeOverrideGame_core>>> {
   const client = await createServerSupabaseClient();
-  // @ts-ignore - Variadic argument passing
   return judgeOverrideGame_core(client, ...args);
 }
 
 /**
  * judgeResetGame (auto-injected with server client)
  */
-export async function judgeResetGame(...args: any[]) {
+export async function judgeResetGame(
+  ...args: Parameters<typeof judgeResetGame_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof judgeResetGame_core>>> {
   const client = await createServerSupabaseClient();
-  // @ts-ignore - Variadic argument passing
   return judgeResetGame_core(client, ...args);
 }
 
 /**
  * resetMatch (auto-injected with server client)
  */
-export async function resetMatch(...args: any[]) {
+export async function resetMatch(
+  ...args: Parameters<typeof resetMatch_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof resetMatch_core>>> {
   const client = await createServerSupabaseClient();
-  // @ts-ignore - Variadic argument passing
   return resetMatch_core(client, ...args);
 }
 
 /**
  * markNotificationRead (auto-injected with server client)
  */
-export async function markNotificationRead(...args: any[]) {
+export async function markNotificationRead(
+  ...args: Parameters<typeof markNotificationRead_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof markNotificationRead_core>>> {
   const client = await createServerSupabaseClient();
-  // @ts-ignore - Variadic argument passing
   return markNotificationRead_core(client, ...args);
 }
 
 /**
  * markAllNotificationsRead (auto-injected with server client)
  */
-export async function markAllNotificationsRead(...args: any[]) {
+export async function markAllNotificationsRead(
+  ...args: Parameters<typeof markAllNotificationsRead_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof markAllNotificationsRead_core>>> {
   const client = await createServerSupabaseClient();
-  // @ts-ignore - Variadic argument passing
   return markAllNotificationsRead_core(client, ...args);
 }
 
 /**
  * deleteNotification (auto-injected with server client)
  */
-export async function deleteNotification(...args: any[]) {
+export async function deleteNotification(
+  ...args: Parameters<typeof deleteNotification_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof deleteNotification_core>>> {
   const client = await createServerSupabaseClient();
-  // @ts-ignore - Variadic argument passing
   return deleteNotification_core(client, ...args);
 }
 
 /**
  * createOrganization (auto-injected with server client)
  */
-export async function createOrganization(...args: any[]) {
+export async function createOrganization(
+  ...args: Parameters<typeof createOrganization_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof createOrganization_core>>> {
   const client = await createServerSupabaseClient();
-  // @ts-ignore - Variadic argument passing
   return createOrganization_core(client, ...args);
 }
 
 /**
  * updateOrganization (auto-injected with server client)
  */
-export async function updateOrganization(...args: any[]) {
+export async function updateOrganization(
+  ...args: Parameters<typeof updateOrganization_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof updateOrganization_core>>> {
   const client = await createServerSupabaseClient();
-  // @ts-ignore - Variadic argument passing
   return updateOrganization_core(client, ...args);
 }
 
 /**
  * inviteToOrganization (auto-injected with server client)
  */
-export async function inviteToOrganization(...args: any[]) {
+export async function inviteToOrganization(
+  ...args: Parameters<typeof inviteToOrganization_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof inviteToOrganization_core>>> {
   const client = await createServerSupabaseClient();
-  // @ts-ignore - Variadic argument passing
   return inviteToOrganization_core(client, ...args);
 }
 
 /**
  * acceptOrganizationInvitation (auto-injected with server client)
  */
-export async function acceptOrganizationInvitation(...args: any[]) {
+export async function acceptOrganizationInvitation(
+  ...args: Parameters<typeof acceptOrganizationInvitation_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof acceptOrganizationInvitation_core>>> {
   const client = await createServerSupabaseClient();
-  // @ts-ignore - Variadic argument passing
   return acceptOrganizationInvitation_core(client, ...args);
 }
 
 /**
  * declineOrganizationInvitation (auto-injected with server client)
  */
-export async function declineOrganizationInvitation(...args: any[]) {
+export async function declineOrganizationInvitation(
+  ...args: Parameters<typeof declineOrganizationInvitation_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof declineOrganizationInvitation_core>>> {
   const client = await createServerSupabaseClient();
-  // @ts-ignore - Variadic argument passing
   return declineOrganizationInvitation_core(client, ...args);
 }
 
 /**
  * leaveOrganization (auto-injected with server client)
  */
-export async function leaveOrganization(...args: any[]) {
+export async function leaveOrganization(
+  ...args: Parameters<typeof leaveOrganization_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof leaveOrganization_core>>> {
   const client = await createServerSupabaseClient();
-  // @ts-ignore - Variadic argument passing
   return leaveOrganization_core(client, ...args);
 }
 
 /**
  * removeStaff (auto-injected with server client)
  */
-export async function removeStaff(...args: any[]) {
+export async function removeStaff(
+  ...args: Parameters<typeof removeStaff_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof removeStaff_core>>> {
   const client = await createServerSupabaseClient();
-  // @ts-ignore - Variadic argument passing
   return removeStaff_core(client, ...args);
 }
 
 /**
  * addStaffMember (auto-injected with server client)
  */
-export async function addStaffMember(...args: any[]) {
+export async function addStaffMember(
+  ...args: Parameters<typeof addStaffMember_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof addStaffMember_core>>> {
   const client = await createServerSupabaseClient();
-  // @ts-ignore - Variadic argument passing
   return addStaffMember_core(client, ...args);
 }
 
 /**
  * addStaffToGroup (auto-injected with server client)
  */
-export async function addStaffToGroup(...args: any[]) {
+export async function addStaffToGroup(
+  ...args: Parameters<typeof addStaffToGroup_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof addStaffToGroup_core>>> {
   const client = await createServerSupabaseClient();
-  // @ts-ignore - Variadic argument passing
   return addStaffToGroup_core(client, ...args);
 }
 
 /**
  * removeStaffFromGroup (auto-injected with server client)
  */
-export async function removeStaffFromGroup(...args: any[]) {
+export async function removeStaffFromGroup(
+  ...args: Parameters<typeof removeStaffFromGroup_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof removeStaffFromGroup_core>>> {
   const client = await createServerSupabaseClient();
-  // @ts-ignore - Variadic argument passing
   return removeStaffFromGroup_core(client, ...args);
 }
 
 /**
  * changeStaffRole (auto-injected with server client)
  */
-export async function changeStaffRole(...args: any[]) {
+export async function changeStaffRole(
+  ...args: Parameters<typeof changeStaffRole_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof changeStaffRole_core>>> {
   const client = await createServerSupabaseClient();
-  // @ts-ignore - Variadic argument passing
   return changeStaffRole_core(client, ...args);
 }
 
 /**
  * removeStaffCompletely (auto-injected with server client)
  */
-export async function removeStaffCompletely(...args: any[]) {
+export async function removeStaffCompletely(
+  ...args: Parameters<typeof removeStaffCompletely_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof removeStaffCompletely_core>>> {
   const client = await createServerSupabaseClient();
-  // @ts-ignore - Variadic argument passing
   return removeStaffCompletely_core(client, ...args);
 }
 
 /**
  * updateAlt (auto-injected with server client)
  */
-export async function updateAlt(...args: any[]) {
+export async function updateAlt(
+  ...args: Parameters<typeof updateAlt_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof updateAlt_core>>> {
   const client = await createServerSupabaseClient();
-  // @ts-ignore - Variadic argument passing
   return updateAlt_core(client, ...args);
 }
 
 /**
  * updateUsername (auto-injected with server client)
  */
-export async function updateUsername(...args: any[]) {
+export async function updateUsername(
+  ...args: Parameters<typeof updateUsername_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof updateUsername_core>>> {
   const client = await createServerSupabaseClient();
-  // @ts-ignore - Variadic argument passing
   return updateUsername_core(client, ...args);
 }
 
 /**
  * ensureAlt (auto-injected with server client)
  */
-export async function ensureAlt(...args: any[]) {
+export async function ensureAlt(
+  ...args: Parameters<typeof ensureAlt_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof ensureAlt_core>>> {
   const client = await createServerSupabaseClient();
-  // @ts-ignore - Variadic argument passing
   return ensureAlt_core(client, ...args);
 }
 
 /**
  * createAlt (auto-injected with server client)
  */
-export async function createAlt(...args: any[]) {
+export async function createAlt(
+  ...args: Parameters<typeof createAlt_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof createAlt_core>>> {
   const client = await createServerSupabaseClient();
-  // @ts-ignore - Variadic argument passing
   return createAlt_core(client, ...args);
 }
 
 /**
  * deleteAlt (auto-injected with server client)
  */
-export async function deleteAlt(...args: any[]) {
+export async function deleteAlt(
+  ...args: Parameters<typeof deleteAlt_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof deleteAlt_core>>> {
   const client = await createServerSupabaseClient();
-  // @ts-ignore - Variadic argument passing
   return deleteAlt_core(client, ...args);
 }
 
 /**
  * setMainAlt (auto-injected with server client)
  */
-export async function setMainAlt(...args: any[]) {
+export async function setMainAlt(
+  ...args: Parameters<typeof setMainAlt_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof setMainAlt_core>>> {
   const client = await createServerSupabaseClient();
-  // @ts-ignore - Variadic argument passing
   return setMainAlt_core(client, ...args);
 }
 
 /**
  * startMatch (auto-injected with server client)
  */
-export async function startMatch(...args: any[]) {
+export async function startMatch(
+  ...args: Parameters<typeof startMatch_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof startMatch_core>>> {
   const client = await createServerSupabaseClient();
-  // @ts-ignore - Variadic argument passing
   return startMatch_core(client, ...args);
 }
 
 /**
  * reportMatchResult (auto-injected with server client)
  */
-export async function reportMatchResult(...args: any[]) {
+export async function reportMatchResult(
+  ...args: Parameters<typeof reportMatchResult_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof reportMatchResult_core>>> {
   const client = await createServerSupabaseClient();
-  // @ts-ignore - Variadic argument passing
   return reportMatchResult_core(client, ...args);
 }
 
 /**
  * updatePhase (auto-injected with server client)
  */
-export async function updatePhase(...args: any[]) {
+export async function updatePhase(
+  ...args: Parameters<typeof updatePhase_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof updatePhase_core>>> {
   const client = await createServerSupabaseClient();
-  // @ts-ignore - Variadic argument passing
   return updatePhase_core(client, ...args);
 }
 
 /**
  * createPhase (auto-injected with server client)
  */
-export async function createPhase(...args: any[]) {
+export async function createPhase(
+  ...args: Parameters<typeof createPhase_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof createPhase_core>>> {
   const client = await createServerSupabaseClient();
-  // @ts-ignore - Variadic argument passing
   return createPhase_core(client, ...args);
 }
 
 /**
  * deletePhase (auto-injected with server client)
  */
-export async function deletePhase(...args: any[]) {
+export async function deletePhase(
+  ...args: Parameters<typeof deletePhase_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof deletePhase_core>>> {
   const client = await createServerSupabaseClient();
-  // @ts-ignore - Variadic argument passing
   return deletePhase_core(client, ...args);
 }
 
 /**
  * saveTournamentPhases (auto-injected with server client)
  */
-export async function saveTournamentPhases(...args: any[]) {
+export async function saveTournamentPhases(
+  ...args: Parameters<typeof saveTournamentPhases_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof saveTournamentPhases_core>>> {
   const client = await createServerSupabaseClient();
-  // @ts-ignore - Variadic argument passing
   return saveTournamentPhases_core(client, ...args);
 }
 
 /**
  * registerForTournament (auto-injected with server client)
  */
-export async function registerForTournament(...args: any[]) {
+export async function registerForTournament(
+  ...args: Parameters<typeof registerForTournament_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof registerForTournament_core>>> {
   const client = await createServerSupabaseClient();
-  // @ts-ignore - Variadic argument passing
   return registerForTournament_core(client, ...args);
 }
 
 /**
  * updateRegistrationPreferences (auto-injected with server client)
  */
-export async function updateRegistrationPreferences(...args: any[]) {
+export async function updateRegistrationPreferences(
+  ...args: Parameters<typeof updateRegistrationPreferences_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof updateRegistrationPreferences_core>>> {
   const client = await createServerSupabaseClient();
-  // @ts-ignore - Variadic argument passing
   return updateRegistrationPreferences_core(client, ...args);
 }
 
 /**
  * cancelRegistration (auto-injected with server client)
  */
-export async function cancelRegistration(...args: any[]) {
+export async function cancelRegistration(
+  ...args: Parameters<typeof cancelRegistration_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof cancelRegistration_core>>> {
   const client = await createServerSupabaseClient();
-  // @ts-ignore - Variadic argument passing
   return cancelRegistration_core(client, ...args);
 }
 
 /**
  * updateRegistrationStatus (auto-injected with server client)
  */
-export async function updateRegistrationStatus(...args: any[]) {
+export async function updateRegistrationStatus(
+  ...args: Parameters<typeof updateRegistrationStatus_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof updateRegistrationStatus_core>>> {
   const client = await createServerSupabaseClient();
-  // @ts-ignore - Variadic argument passing
   return updateRegistrationStatus_core(client, ...args);
 }
 
 /**
  * checkIn (auto-injected with server client)
  */
-export async function checkIn(...args: any[]) {
+export async function checkIn(
+  ...args: Parameters<typeof checkIn_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof checkIn_core>>> {
   const client = await createServerSupabaseClient();
-  // @ts-ignore - Variadic argument passing
   return checkIn_core(client, ...args);
 }
 
 /**
  * undoCheckIn (auto-injected with server client)
  */
-export async function undoCheckIn(...args: any[]) {
+export async function undoCheckIn(
+  ...args: Parameters<typeof undoCheckIn_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof undoCheckIn_core>>> {
   const client = await createServerSupabaseClient();
-  // @ts-ignore - Variadic argument passing
   return undoCheckIn_core(client, ...args);
 }
 
 /**
  * withdrawFromTournament (auto-injected with server client)
  */
-export async function withdrawFromTournament(...args: any[]) {
+export async function withdrawFromTournament(
+  ...args: Parameters<typeof withdrawFromTournament_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof withdrawFromTournament_core>>> {
   const client = await createServerSupabaseClient();
-  // @ts-ignore - Variadic argument passing
   return withdrawFromTournament_core(client, ...args);
 }
 
 /**
  * sendTournamentInvitations (auto-injected with server client)
  */
-export async function sendTournamentInvitations(...args: any[]) {
+export async function sendTournamentInvitations(
+  ...args: Parameters<typeof sendTournamentInvitations_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof sendTournamentInvitations_core>>> {
   const client = await createServerSupabaseClient();
-  // @ts-ignore - Variadic argument passing
   return sendTournamentInvitations_core(client, ...args);
 }
 
 /**
  * respondToTournamentInvitation (auto-injected with server client)
  */
-export async function respondToTournamentInvitation(...args: any[]) {
+export async function respondToTournamentInvitation(
+  ...args: Parameters<typeof respondToTournamentInvitation_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof respondToTournamentInvitation_core>>> {
   const client = await createServerSupabaseClient();
-  // @ts-ignore - Variadic argument passing
   return respondToTournamentInvitation_core(client, ...args);
 }
 
 /**
  * generateRoundPairings (auto-injected with server client)
  */
-export async function generateRoundPairings(...args: any[]) {
+export async function generateRoundPairings(
+  ...args: Parameters<typeof generateRoundPairings_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof generateRoundPairings_core>>> {
   const client = await createServerSupabaseClient();
-  // @ts-ignore - Variadic argument passing
   return generateRoundPairings_core(client, ...args);
 }
 
 /**
  * startRound (auto-injected with server client)
  */
-export async function startRound(...args: any[]) {
+export async function startRound(
+  ...args: Parameters<typeof startRound_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof startRound_core>>> {
   const client = await createServerSupabaseClient();
-  // @ts-ignore - Variadic argument passing
   return startRound_core(client, ...args);
 }
 
 /**
  * completeRound (auto-injected with server client)
  */
-export async function completeRound(...args: any[]) {
+export async function completeRound(
+  ...args: Parameters<typeof completeRound_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof completeRound_core>>> {
   const client = await createServerSupabaseClient();
-  // @ts-ignore - Variadic argument passing
   return completeRound_core(client, ...args);
 }
 
 /**
  * createRound (auto-injected with server client)
  */
-export async function createRound(...args: any[]) {
+export async function createRound(
+  ...args: Parameters<typeof createRound_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof createRound_core>>> {
   const client = await createServerSupabaseClient();
-  // @ts-ignore - Variadic argument passing
   return createRound_core(client, ...args);
 }
 
 /**
  * deleteRoundAndMatches (auto-injected with server client)
  */
-export async function deleteRoundAndMatches(...args: any[]) {
+export async function deleteRoundAndMatches(
+  ...args: Parameters<typeof deleteRoundAndMatches_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof deleteRoundAndMatches_core>>> {
   const client = await createServerSupabaseClient();
-  // @ts-ignore - Variadic argument passing
   return deleteRoundAndMatches_core(client, ...args);
 }
 
 /**
  * recalculateStandings (auto-injected with server client)
  */
-export async function recalculateStandings(...args: any[]) {
+export async function recalculateStandings(
+  ...args: Parameters<typeof recalculateStandings_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof recalculateStandings_core>>> {
   const client = await createServerSupabaseClient();
-  // @ts-ignore - Variadic argument passing
   return recalculateStandings_core(client, ...args);
 }
 
 /**
  * dropPlayer (auto-injected with server client)
  */
-export async function dropPlayer(...args: any[]) {
+export async function dropPlayer(
+  ...args: Parameters<typeof dropPlayer_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof dropPlayer_core>>> {
   const client = await createServerSupabaseClient();
-  // @ts-ignore - Variadic argument passing
   return dropPlayer_core(client, ...args);
 }
 
 /**
  * submitTeam (auto-injected with server client)
  */
-export async function submitTeam(...args: any[]) {
+export async function submitTeam(
+  ...args: Parameters<typeof submitTeam_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof submitTeam_core>>> {
   const client = await createServerSupabaseClient();
-  // @ts-ignore - Variadic argument passing
   return submitTeam_core(client, ...args);
 }
 
 /**
  * selectTeamForTournament (auto-injected with server client)
  */
-export async function selectTeamForTournament(...args: any[]) {
+export async function selectTeamForTournament(
+  ...args: Parameters<typeof selectTeamForTournament_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof selectTeamForTournament_core>>> {
   const client = await createServerSupabaseClient();
-  // @ts-ignore - Variadic argument passing
   return selectTeamForTournament_core(client, ...args);
 }
 
 /**
  * createTournament (auto-injected with server client)
  */
-export async function createTournament(...args: any[]) {
+export async function createTournament(
+  ...args: Parameters<typeof createTournament_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof createTournament_core>>> {
   const client = await createServerSupabaseClient();
-  // @ts-ignore - Variadic argument passing
   return createTournament_core(client, ...args);
 }
 
 /**
  * updateTournament (auto-injected with server client)
  */
-export async function updateTournament(...args: any[]) {
+export async function updateTournament(
+  ...args: Parameters<typeof updateTournament_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof updateTournament_core>>> {
   const client = await createServerSupabaseClient();
-  // @ts-ignore - Variadic argument passing
   return updateTournament_core(client, ...args);
 }
 
 /**
  * archiveTournament (auto-injected with server client)
  */
-export async function archiveTournament(...args: any[]) {
+export async function archiveTournament(
+  ...args: Parameters<typeof archiveTournament_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof archiveTournament_core>>> {
   const client = await createServerSupabaseClient();
-  // @ts-ignore - Variadic argument passing
   return archiveTournament_core(client, ...args);
 }
 
 /**
  * deleteTournament (auto-injected with server client)
  */
-export async function deleteTournament(...args: any[]) {
+export async function deleteTournament(
+  ...args: Parameters<typeof deleteTournament_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof deleteTournament_core>>> {
   const client = await createServerSupabaseClient();
-  // @ts-ignore - Variadic argument passing
   return deleteTournament_core(client, ...args);
 }
 
 /**
  * startTournamentEnhanced (auto-injected with server client)
  */
-export async function startTournamentEnhanced(...args: any[]) {
+export async function startTournamentEnhanced(
+  ...args: Parameters<typeof startTournamentEnhanced_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof startTournamentEnhanced_core>>> {
   const client = await createServerSupabaseClient();
-  // @ts-ignore - Variadic argument passing
   return startTournamentEnhanced_core(client, ...args);
 }
 
 /**
  * advanceToTopCut (auto-injected with server client)
  */
-export async function advanceToTopCut(...args: any[]) {
+export async function advanceToTopCut(
+  ...args: Parameters<typeof advanceToTopCut_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof advanceToTopCut_core>>> {
   const client = await createServerSupabaseClient();
-  // @ts-ignore - Variadic argument passing
   return advanceToTopCut_core(client, ...args);
 }
 
 /**
  * generateEliminationPairings (auto-injected with server client)
  */
-export async function generateEliminationPairings(...args: any[]) {
+export async function generateEliminationPairings(
+  ...args: Parameters<typeof generateEliminationPairings_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof generateEliminationPairings_core>>> {
   const client = await createServerSupabaseClient();
-  // @ts-ignore - Variadic argument passing
   return generateEliminationPairings_core(client, ...args);
 }
 
 /**
  * completeTournament (auto-injected with server client)
  */
-export async function completeTournament(...args: any[]) {
+export async function completeTournament(
+  ...args: Parameters<typeof completeTournament_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof completeTournament_core>>> {
   const client = await createServerSupabaseClient();
-  // @ts-ignore - Variadic argument passing
   return completeTournament_core(client, ...args);
 }

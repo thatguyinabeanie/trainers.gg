@@ -6,6 +6,7 @@
  */
 
 import { useEffect, useState, useRef } from "react";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
 /**
  * Generic query result type
@@ -53,8 +54,8 @@ export interface QueryResult<T> {
  * }
  */
 export function useSupabaseQuery<T>(
-  queryFn: (supabase: any) => Promise<T>,
-  getClient: () => any,
+  queryFn: (supabase: SupabaseClient) => Promise<T>,
+  getClient: () => SupabaseClient,
   deps: unknown[] = []
 ): QueryResult<T> {
   const [data, setData] = useState<T | undefined>(undefined);
@@ -97,8 +98,7 @@ export function useSupabaseQuery<T>(
     return () => {
       mountedRef.current = false;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [depsKey]);
+  }, [depsKey, getClient]);
 
   return {
     data,

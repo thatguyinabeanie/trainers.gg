@@ -6,6 +6,7 @@
  */
 
 import { useState } from "react";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
 /**
  * Mutation result type
@@ -51,8 +52,8 @@ export interface MutationResult<TArgs, TResult> {
  * }
  */
 export function useSupabaseMutation<TArgs, TResult>(
-  mutationFn: (supabase: any, args: TArgs) => Promise<TResult>,
-  getClient: () => any
+  mutationFn: (supabase: SupabaseClient, args: TArgs) => Promise<TResult>,
+  getClient: () => SupabaseClient
 ): MutationResult<TArgs, TResult> {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);

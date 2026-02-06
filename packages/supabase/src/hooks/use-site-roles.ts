@@ -6,14 +6,14 @@
  */
 
 import { useEffect, useState } from "react";
-import type { User } from "@supabase/supabase-js";
+import type { User, SupabaseClient } from "@supabase/supabase-js";
 
 interface SiteRolesHook {
   /**
    * Get Supabase client for the current platform.
    * This should return the platform-specific client.
    */
-  getSupabaseClient: () => { auth: { getSession: () => Promise<any> } };
+  getSupabaseClient: () => SupabaseClient;
 
   /**
    * Get current authenticated user.
