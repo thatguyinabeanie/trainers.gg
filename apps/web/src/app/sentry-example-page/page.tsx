@@ -52,7 +52,7 @@ export default function Page() {
           Click the button below, and view the sample error on the Sentry{" "}
           <a
             target="_blank"
-            rel="noopener"
+            rel="noreferrer"
             href="https://gabe-mendoza.sentry.io/issues/?project=4510837336440832"
           >
             Issues Page
@@ -60,7 +60,7 @@ export default function Page() {
           . For more details about setting up Sentry,{" "}
           <a
             target="_blank"
-            rel="noopener"
+            rel="noreferrer"
             href="https://docs.sentry.io/platforms/javascript/guides/nextjs/"
           >
             read our docs
