@@ -19,7 +19,7 @@ export function getErrorMessage(
     return shouldSanitize ? fallback : error.message;
   }
   if (typeof error === "object" && error !== null && "message" in error) {
-    const maybeMessage = (error as any).message;
+    const maybeMessage = (error as { message: unknown }).message;
     if (typeof maybeMessage === "string") {
       return shouldSanitize ? fallback : maybeMessage;
     }
