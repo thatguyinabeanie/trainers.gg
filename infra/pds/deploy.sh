@@ -339,6 +339,30 @@ if [ "$SKIP_SUPABASE" = false ]; then
   else
     log_step "Found Supabase project: $SUPABASE_PROJECT_REF"
 
+    # Verify Supabase Storage bucket exists
+    log_step "Verifying Supabase Storage bucket..."
+
+    BUCKET_EXISTS=$(supabase storage buckets list --project-ref "$SUPABASE_PROJECT_REF" 2>/dev/null | grep -q "pds-blobs" && echo "true" || echo "false")
+
+    if [ "$BUCKET_EXISTS" = "true" ]; then
+      log_success "Bucket 'pds-blobs' exists"
+    else
+      log_warning "Bucket 'pds-blobs' does NOT exist in Supabase"
+      log_warning "Creating bucket..."
+
+      # Attempt to create bucket
+      if supabase storage buckets create pds-blobs --public false --project-ref "$SUPABASE_PROJECT_REF" 2>/dev/null; then
+        log_success "Bucket 'pds-blobs' created"
+      else
+        log_warning "Could not create bucket automatically. Please create manually:"
+        echo "  1. Go to Supabase Dashboard → Storage"
+        echo "  2. Create bucket named 'pds-blobs' (Private)"
+        echo "  OR run: supabase storage buckets create pds-blobs --public false --project-ref $SUPABASE_PROJECT_REF"
+        echo ""
+        read -p "Press Enter after creating the bucket, or Ctrl+C to abort..."
+      fi
+    fi
+
     # Get admin password
     ADMIN_PASS=""
     if [ -f ".admin-password" ]; then

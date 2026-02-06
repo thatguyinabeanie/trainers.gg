@@ -114,7 +114,14 @@ enabled = true
 # The maximum file size allowed (e.g. "5MB", "500KB").
 file_size_limit = "50MiB"
 
-# Uncomment to configure local storage buckets
+# PDS blob storage bucket (images, videos from Bluesky PDS)
+[storage.buckets.pds-blobs]
+public = false
+file_size_limit = "50MiB"
+allowed_mime_types = ["image/*", "video/*"]
+# objects_path = "./seed/storage/pds-blobs"  # Optional: for seeding local dev with test files
+
+# Example: other storage buckets
 # [storage.buckets.images]
 # public = false
 # file_size_limit = "50MiB"

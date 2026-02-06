@@ -281,24 +281,76 @@ The web/mobile apps have an integrated signup flow that:
 
 ## Blob Storage: Supabase Storage S3 API
 
-**Production** uses **Supabase Storage S3 API** for blob storage (images, videos). This provides:
+**All environments** use **Supabase Storage** for PDS blob storage (images, videos). This provides:
 - Scalable object storage (no volume size limits)
 - Infrastructure consolidation (all in Supabase)
 - Better cost economics at scale
+- Automatic setup via `config.toml`
 
-**Local development** uses disk storage by default for simplicity.
+### Bucket Configuration (All Environments)
 
-### Setup Supabase Storage S3
+The `pds-blobs` bucket is defined in `packages/supabase/supabase/config.toml`:
 
-#### 1. Create S3 Bucket
+```toml
+[storage.buckets.pds-blobs]
+public = false
+file_size_limit = "50MiB"
+allowed_mime_types = ["image/*", "video/*"]
+```
 
-1. Go to Supabase Dashboard → Storage → Configuration
-2. Create a new bucket named `pds-blobs`
-3. Set bucket to **Private** (PDS handles access control)
+**How it works**:
+- **Local dev**: Bucket auto-created when running `pnpm db:start`
+- **Preview branches**: Each preview branch gets isolated `pds-blobs` bucket
+- **Production**: Bucket created automatically via GitHub Integration OR manually (see below)
 
-#### 2. Generate S3 Credentials
+### Setup for Each Environment
 
-1. Go to Supabase Dashboard → Project Settings → Storage
+#### Local Development (Automatic)
+
+```bash
+# Start local Supabase - bucket is created automatically
+pnpm db:start
+
+# Bucket available at: http://127.0.0.1:54321/storage/v1/bucket/pds-blobs
+```
+
+No manual setup needed! The bucket is created from `config.toml`.
+
+#### Preview Branches (Automatic)
+
+**Enable GitHub Integration** in Supabase Dashboard:
+1. Settings → Integrations → GitHub
+2. Enable "Deploy to production" checkbox
+3. Connect your repository
+
+Now when you create a PR:
+- Supabase automatically creates a preview branch
+- `pds-blobs` bucket is created automatically
+- Each preview branch has **isolated storage** (no data sharing)
+- Preview branches are deleted when PR is closed
+
+#### Production (Automatic or Manual)
+
+**Option A: Automatic (Recommended)**
+
+If GitHub Integration is enabled with "Deploy to production", the bucket is created automatically when you merge to main.
+
+**Option B: Manual (One-time)**
+
+If not using GitHub Integration, create the bucket once:
+
+```bash
+# Create bucket manually in production (if needed)
+supabase storage buckets create pds-blobs \
+  --public false \
+  --project-ref <production-project-ref>
+```
+
+#### Generate S3 Credentials (Required for All)
+
+Once the bucket exists (via any method above), generate S3 credentials:
+
+1. Supabase Dashboard → Project Settings → Storage
 2. Scroll to **S3 Connection** section
 3. Click **Create access credentials**
 4. Save the:
@@ -306,7 +358,7 @@ The web/mobile apps have an integrated signup flow that:
    - Secret Access Key
    - S3 Endpoint URL (format: `https://<project-ref>.supabase.co/storage/v1/s3`)
 
-#### 3. Configure Fly.io Secrets
+#### Configure Fly.io Secrets
 
 ```bash
 # Set S3 configuration
