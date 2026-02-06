@@ -1,7 +1,4 @@
-import {
-  AdvancedTeamValidator,
-  SUPPORTED_FORMATS,
-} from "../team-validator";
+import { AdvancedTeamValidator, SUPPORTED_FORMATS } from "../team-validator";
 import type { PokemonSet } from "../types";
 
 // -- Helper: creates a valid VGC-style PokemonSet --

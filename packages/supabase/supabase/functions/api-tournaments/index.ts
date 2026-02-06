@@ -123,7 +123,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    const { user, supabase } = authResult;
+    const { supabase } = authResult;
 
     // Parse URL and route to handler
     const url = new URL(req.url);

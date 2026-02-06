@@ -103,7 +103,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    const { user, supabase } = authResult;
+    const { supabase } = authResult;
 
     const url = new URL(req.url);
     const pathParts = url.pathname.split("/").filter(Boolean);

@@ -112,6 +112,14 @@ Deno.serve(async (req) => {
     const pathParts = url.pathname.split("/").filter(Boolean);
     const method = req.method;
 
+    // TODO: Use supabase for database queries (example placeholder)
+    console.log(
+      "Authenticated user:",
+      user.id,
+      "with supabase client:",
+      !!supabase
+    );
+
     // Example: GET /api-domain (list items)
     if (method === "GET" && pathParts.length === 1) {
       const result = await withCache(
@@ -173,6 +181,7 @@ Deno.serve(async (req) => {
 
       // TODO: Call your domain-specific mutation function
       // const item = await createItemMutation(supabase, validated);
+      console.log("Creating item:", body, "for user:", user.id);
 
       // Invalidate cache
       await invalidateCache(`domain:list:${user.id}*`);
@@ -194,6 +203,7 @@ Deno.serve(async (req) => {
 
       // TODO: Call your domain-specific mutation function
       // const item = await updateItemMutation(supabase, itemId, validated);
+      console.log("Updating item:", itemId, body);
 
       // Invalidate caches
       await invalidateCache(`domain:${itemId}`);
