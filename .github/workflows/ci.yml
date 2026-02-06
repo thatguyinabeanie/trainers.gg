@@ -366,12 +366,20 @@ jobs:
           E2E_AUTH_BYPASS_SECRET: ${{ secrets.E2E_AUTH_BYPASS_SECRET }}
         run: pnpm --filter=@trainers/web exec playwright test --shard=${{ matrix.shard }}/${{ matrix.total-shards }}
 
-      - name: Upload Playwright report
+      - name: Upload Playwright HTML report
         uses: actions/upload-artifact@v4
         if: always()
         with:
           name: playwright-report-shard-${{ matrix.shard }}
           path: apps/web/playwright-report/
+          retention-days: 7
+
+      - name: Upload JUnit XML report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: junit-report-shard-${{ matrix.shard }}
+          path: apps/web/test-results/junit.xml
           retention-days: 7
 
       - name: Upload test traces (on failure)
@@ -389,35 +397,72 @@ jobs:
     if: always() && github.event_name == 'pull_request'
     needs: [e2e-tests]
     steps:
-      - name: Download all E2E reports
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Download all HTML reports
         uses: actions/download-artifact@v4
         with:
           pattern: playwright-report-shard-*
           path: playwright-reports
           merge-multiple: false
 
-      - name: Merge Playwright HTML reports
-        run: |
-          mkdir -p merged-report
-          # Copy first shard as base
-          cp -r playwright-reports/playwright-report-shard-1/* merged-report/ || true
-          # Note: Playwright HTML reports don't merge easily
-          # For production use, consider uploading to a service like Argos or Percy
-          echo "Reports uploaded as separate artifacts"
+      - name: Download all JUnit reports
+        uses: actions/download-artifact@v4
+        with:
+          pattern: junit-report-shard-*
+          path: junit-reports
+          merge-multiple: false
 
-      - name: Comment PR with test results
+      - name: Merge JUnit XML reports
+        run: |
+          mkdir -p merged-reports
+          # Install xmlstarlet for merging
+          sudo apt-get update && sudo apt-get install -y xmlstarlet
+
+          # Merge all JUnit XML files
+          echo '<?xml version="1.0" encoding="UTF-8"?>' > merged-reports/junit.xml
+          echo '<testsuites>' >> merged-reports/junit.xml
+
+          for file in junit-reports/*/junit.xml; do
+            if [ -f "$file" ]; then
+              # Extract testsuite elements and append
+              xmlstarlet sel -t -c '//testsuite' "$file" >> merged-reports/junit.xml || true
+            fi
+          done
+
+          echo '</testsuites>' >> merged-reports/junit.xml
+
+          echo "Merged JUnit reports:"
+          ls -lh merged-reports/
+
+      - name: Publish E2E test results
+        uses: EnricoMi/publish-unit-test-result-action@v2
+        if: always()
+        with:
+          files: merged-reports/junit.xml
+          check_name: E2E Test Results
+          comment_title: 🎭 E2E Test Results
+          comment_mode: always
+          compare_to_earlier_commit: true
+          report_individual_runs: true
+          deduplicate_classes_by_file_name: false
+
+      - name: Comment PR with HTML report links
         uses: actions/github-script@v7
         if: always()
         with:
           script: |
-            const fs = require('fs');
             const shards = [1, 2];
-            let comment = '## 🎭 E2E Test Results\n\n';
+            let comment = '## 📊 Playwright HTML Reports\n\n';
+            comment += 'Download the HTML reports to view detailed test results:\n\n';
 
             for (const shard of shards) {
-              comment += `### Shard ${shard}\n`;
-              comment += `[View Report](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})\n\n`;
+              comment += `- [Shard ${shard} HTML Report](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}#artifacts)\n`;
             }
+
+            comment += '\n> 💡 Download the artifact and open `index.html` in your browser to view the full report.\n';
 
             github.rest.issues.createComment({
               issue_number: context.issue.number,

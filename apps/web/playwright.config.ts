@@ -19,7 +19,11 @@ export default defineConfig({
   workers: process.env.CI ? 1 : undefined,
 
   reporter: process.env.CI
-    ? [["github"], ["html", { open: "never" }]]
+    ? [
+        ["github"],
+        ["html", { open: "never" }],
+        ["junit", { outputFile: "test-results/junit.xml" }],
+      ]
     : [["html", { open: "on-failure" }]],
 
   use: {
