@@ -444,7 +444,7 @@ jobs:
           files: merged-reports/junit.xml
           check_name: E2E Test Results
           comment_title: 🎭 E2E Test Results
-          comment_mode: create new then update
+          comment_mode: always
           compare_to_earlier_commit: true
           report_individual_runs: true
           deduplicate_classes_by_file_name: false
