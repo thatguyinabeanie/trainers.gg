@@ -126,7 +126,7 @@ Deno.serve(async (req) => {
         { success: true, data: result },
         200,
         cors,
-        getCacheHeaders(30, 15, true)
+        getCacheHeaders(CACHE_TTL.MATCH, 15, true)
       );
     }
 

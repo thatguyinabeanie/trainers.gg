@@ -20,7 +20,6 @@ import type { ActionResult } from "@trainers/validators";
 import {
   listPublicOrganizations,
   getOrganizationBySlug,
-  getOrganizationById,
 } from "@trainers/supabase/queries";
 import {
   createOrganization as createOrganizationMutation,

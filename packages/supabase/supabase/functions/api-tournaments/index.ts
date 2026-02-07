@@ -175,7 +175,7 @@ Deno.serve(async (req) => {
         { success: true, data: result },
         200,
         cors,
-        getCacheHeaders(60, 30, true)
+        getCacheHeaders(CACHE_TTL.TOURNAMENT, 30, true)
       );
     }
 
@@ -215,9 +215,8 @@ Deno.serve(async (req) => {
 
       await updateTournamentMutation(supabase, tournamentId, body);
 
-      // If tournament was published (status → upcoming), invalidate list
-      if (body.status === "upcoming") {
-      }
+      // Cache invalidation handled by Next.js Server Actions via revalidateTag()
+      // Edge functions can't invalidate Next.js cache tags (different runtime)
 
       return jsonResponse(
         { success: true, data: { success: true } },

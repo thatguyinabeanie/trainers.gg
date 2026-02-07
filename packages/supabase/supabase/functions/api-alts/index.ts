@@ -91,7 +91,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    const { user, supabase } = authResult;
+    const { supabase } = authResult;
 
     const url = new URL(req.url);
     const pathParts = url.pathname.split("/").filter(Boolean);
@@ -135,7 +135,7 @@ Deno.serve(async (req) => {
         { success: true, data: result },
         200,
         cors,
-        getCacheHeaders(300, 60)
+        getCacheHeaders(CACHE_TTL.ALT, 60)
       );
     }
 

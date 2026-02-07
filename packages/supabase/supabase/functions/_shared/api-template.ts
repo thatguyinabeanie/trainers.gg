@@ -131,10 +131,10 @@ Deno.serve(async (req) => {
 
     // Example: GET /api-domain/:id (get item by ID)
     if (method === "GET" && pathParts.length === 2) {
-      const itemId = pathParts[1];
+      const _itemId = pathParts[1];
 
       // TODO: Call your domain-specific query function
-      // const result = await getItemById(supabase, itemId);
+      // const result = await getItemById(supabase, _itemId);
       const result = null;
 
       if (!result) {
@@ -192,10 +192,10 @@ Deno.serve(async (req) => {
 
     // Example: DELETE /api-domain/:id (delete item)
     if (method === "DELETE" && pathParts.length === 2) {
-      const itemId = pathParts[1];
+      const _itemId = pathParts[1];
 
       // TODO: Call your domain-specific mutation function
-      // await deleteItemMutation(supabase, itemId);
+      // await deleteItemMutation(supabase, _itemId);
 
       return jsonResponse({ success: true, data: null }, 200, cors);
     }
