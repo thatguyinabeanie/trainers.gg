@@ -1,7 +1,7 @@
 "use client";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { type DashboardTournament } from "@/lib/types/dashboard";
+import { type DashboardTournament } from "@/types/dashboard";
 
 interface QuickStatsProps {
   myTournaments: DashboardTournament[];

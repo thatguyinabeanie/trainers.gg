@@ -5,7 +5,10 @@
     "strict": true
   },
   "imports": {
-    "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@2.49.4"
+    "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@2.49.4",
+    "@trainers/validators": "../../../validators/src/index.ts",
+    "@trainers/supabase/mutations": "../../src/mutations/index.ts",
+    "@trainers/supabase/queries": "../../src/queries/index.ts"
   },
   "lint": {
     "rules": {

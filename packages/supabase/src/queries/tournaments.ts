@@ -1866,9 +1866,7 @@ export async function getUserTournamentHistory(supabase: TypedClient) {
   if (completedTournamentIds.length > 0) {
     const { data: standings } = await supabase
       .from("tournament_standings")
-      .select(
-        "tournament_id, alt_id, rank, game_wins, game_losses"
-      )
+      .select("tournament_id, alt_id, rank, game_wins, game_losses")
       .in("tournament_id", completedTournamentIds)
       .in("alt_id", altIds);
 

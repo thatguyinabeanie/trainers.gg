@@ -9,7 +9,8 @@
 
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
-import { type ActionResult, withAction } from "./utils";
+import { type ActionResult } from "@trainers/validators";
+import { withAction } from "./utils";
 
 // --- Input Schemas ---
 

@@ -77,13 +77,11 @@ export async function injectE2EMockAuth(
 
       const projectRef = "shsijtmbiibknwygcdtc"; // From NEXT_PUBLIC_SUPABASE_URL
       const storageKey = `sb-${projectRef}-auth-token`;
-      // eslint-disable-next-line no-undef -- window is available in browser context (addInitScript)
       window.localStorage.setItem(storageKey, JSON.stringify(mockAuthToken));
 
       console.log("[E2E] Mock auth injected:", {
         userId: mockUser.id,
         email: mockUser.email,
-        // eslint-disable-next-line no-undef -- window is available in browser context (addInitScript)
         hasToken: !!window.localStorage.getItem(storageKey),
       });
     },

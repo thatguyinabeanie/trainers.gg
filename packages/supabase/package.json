@@ -5,7 +5,10 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
-    "./client": "./src/client.ts",
+    "./server": "./src/clients/server.ts",
+    "./client": "./src/clients/client.ts",
+    "./mobile": "./src/clients/mobile.ts",
+    "./hooks": "./src/hooks/index.ts",
     "./queries": "./src/queries/index.ts",
     "./mutations": "./src/mutations/index.ts",
     "./types": "./src/types.ts"
@@ -19,6 +22,7 @@
     "db:restart": "supabase stop && supabase start",
     "db:status": "supabase status",
     "functions:serve": "supabase functions serve --no-verify-jwt --env-file .env",
+    "generate-clients": "tsx scripts/generate-clients.ts",
     "test": "jest",
     "test:watch": "jest --watch",
     "lint": "eslint . --max-warnings 0 --cache",
@@ -41,15 +45,45 @@
     "@trainers/validators": "workspace:*",
     "zod": "catalog:"
   },
+  "peerDependencies": {
+    "@supabase/ssr": "catalog:",
+    "expo-secure-store": "*",
+    "next": "catalog:",
+    "react": "catalog:",
+    "react-native-url-polyfill": "*"
+  },
+  "peerDependenciesMeta": {
+    "@supabase/ssr": {
+      "optional": true
+    },
+    "expo-secure-store": {
+      "optional": true
+    },
+    "next": {
+      "optional": true
+    },
+    "react": {
+      "optional": true
+    },
+    "react-native-url-polyfill": {
+      "optional": true
+    }
+  },
   "devDependencies": {
     "@faker-js/faker": "^10.2.0",
     "@jest/globals": "^30.2.0",
+    "@supabase/ssr": "catalog:",
     "@trainers/eslint-config": "workspace:*",
     "@trainers/jest-config": "workspace:*",
     "@trainers/prettier-config": "workspace:*",
     "@trainers/typescript-config": "workspace:*",
     "@types/node": "catalog:",
+    "@types/react": "catalog:",
     "eslint": "catalog:",
+    "expo-secure-store": "~14.0.0",
+    "next": "^16.1.6",
+    "react": "catalog:",
+    "react-native-url-polyfill": "^2.0.0",
     "tsx": "^4.21.0",
     "typescript": "catalog:"
   },

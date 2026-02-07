@@ -1,4 +1,3 @@
-/* global require, module */
 /**
  * Expo config plugin to fix iOS build warnings.
  *

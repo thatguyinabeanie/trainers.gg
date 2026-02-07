@@ -52,7 +52,9 @@ describe("getCorsHeaders", () => {
 
   it("includes expected CORS headers", () => {
     const headers = getCorsHeaders(requestWithOrigin("https://trainers.gg"));
-    expect(headers["Access-Control-Allow-Methods"]).toBe("POST, OPTIONS");
+    expect(headers["Access-Control-Allow-Methods"]).toBe(
+      "GET, POST, PATCH, DELETE, OPTIONS"
+    );
     expect(headers["Access-Control-Allow-Headers"]).toContain("authorization");
     expect(headers["Access-Control-Allow-Headers"]).toContain("content-type");
   });

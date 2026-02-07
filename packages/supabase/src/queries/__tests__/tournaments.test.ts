@@ -362,13 +362,15 @@ describe("listTournamentsGrouped", () => {
     });
 
     // Mock RPC call for registration counts
-    (mockClient as unknown as { rpc: typeof jest.fn }).rpc = jest.fn().mockResolvedValue({
-      data: [
-        { tournament_id: 1, registration_count: 32 },
-        { tournament_id: 2, registration_count: 16 },
-      ],
-      error: null,
-    });
+    (mockClient as unknown as { rpc: typeof jest.fn }).rpc = jest
+      .fn()
+      .mockResolvedValue({
+        data: [
+          { tournament_id: 1, registration_count: 32 },
+          { tournament_id: 2, registration_count: 16 },
+        ],
+        error: null,
+      });
 
     const result = await listTournamentsGrouped(mockClient);
 
@@ -430,10 +432,12 @@ describe("listTournamentsGrouped", () => {
       return mockClient;
     });
 
-    (mockClient as unknown as { rpc: typeof jest.fn }).rpc = jest.fn().mockResolvedValue({
-      data: [{ tournament_id: 3, registration_count: 8 }],
-      error: null,
-    });
+    (mockClient as unknown as { rpc: typeof jest.fn }).rpc = jest
+      .fn()
+      .mockResolvedValue({
+        data: [{ tournament_id: 3, registration_count: 8 }],
+        error: null,
+      });
 
     const result = await listTournamentsGrouped(mockClient);
 
@@ -487,10 +491,12 @@ describe("listTournamentsGrouped", () => {
       return mockClient;
     });
 
-    (mockClient as unknown as { rpc: typeof jest.fn }).rpc = jest.fn().mockResolvedValue({
-      data: [{ tournament_id: 4, registration_count: 12 }],
-      error: null,
-    });
+    (mockClient as unknown as { rpc: typeof jest.fn }).rpc = jest
+      .fn()
+      .mockResolvedValue({
+        data: [{ tournament_id: 4, registration_count: 12 }],
+        error: null,
+      });
 
     // Mock console.error to avoid test output noise
     const consoleErrorSpy = jest.spyOn(console, "error").mockImplementation();

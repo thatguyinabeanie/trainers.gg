@@ -20,7 +20,8 @@ import {
 } from "@trainers/supabase";
 import type { Database } from "@trainers/supabase";
 import { CacheTags } from "@/lib/cache";
-import { type ActionResult, rejectBots, withAction } from "./utils";
+import { type ActionResult } from "@trainers/validators";
+import { rejectBots, withAction } from "./utils";
 
 // --- Input Schemas ---
 
