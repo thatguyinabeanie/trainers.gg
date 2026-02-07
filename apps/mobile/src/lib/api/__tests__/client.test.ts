@@ -6,22 +6,7 @@ jest.mock("../../supabase", () => ({
   getSupabase: jest.fn(),
 }));
 
-// Mock expo constants
-jest.mock("expo-constants", () => ({
-  default: {
-    expoConfig: {
-      extra: {
-        supabaseUrl: "https://test.supabase.co",
-      },
-    },
-  },
-}));
-
 const mockGetSupabase = getSupabase as jest.MockedFunction<typeof getSupabase>;
-
-// Mock fetch
-global.fetch = jest.fn();
-const mockFetch = global.fetch as jest.MockedFunction<typeof fetch>;
 
 describe("apiCall", () => {
   let mockSupabase: {
@@ -29,8 +14,23 @@ describe("apiCall", () => {
       getSession: jest.Mock;
     };
   };
+  let mockFetch: jest.MockedFunction<typeof fetch>;
+  let originalFetch: typeof fetch;
+
+  beforeAll(() => {
+    originalFetch = global.fetch;
+  });
+
+  afterAll(() => {
+    global.fetch = originalFetch;
+  });
 
   beforeEach(() => {
+    jest.clearAllMocks();
+
+    mockFetch = jest.fn() as jest.MockedFunction<typeof fetch>;
+    global.fetch = mockFetch;
+
     mockSupabase = {
       auth: {
         getSession: jest.fn(),
@@ -39,7 +39,6 @@ describe("apiCall", () => {
     mockGetSupabase.mockReturnValue(
       mockSupabase as unknown as ReturnType<typeof getSupabase>
     );
-    jest.clearAllMocks();
   });
 
   it("should make successful API call with auth token", async () => {

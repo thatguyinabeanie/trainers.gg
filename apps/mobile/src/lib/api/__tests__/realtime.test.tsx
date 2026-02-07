@@ -26,6 +26,8 @@ describe("useRealtimeSubscription", () => {
   };
 
   beforeEach(() => {
+    jest.clearAllMocks();
+
     queryClient = new QueryClient({
       defaultOptions: {
         queries: { retry: false },
@@ -48,7 +50,6 @@ describe("useRealtimeSubscription", () => {
     mockGetSupabase.mockReturnValue(
       mockSupabase as unknown as ReturnType<typeof getSupabase>
     );
-    jest.clearAllMocks();
   });
 
   const wrapper = ({ children }: { children: ReactNode }) => (
@@ -170,6 +171,8 @@ describe("useTournamentRealtime", () => {
   };
 
   beforeEach(() => {
+    jest.clearAllMocks();
+
     queryClient = new QueryClient();
     mockChannel = {
       on: jest.fn().mockReturnThis(),
@@ -184,7 +187,6 @@ describe("useTournamentRealtime", () => {
     mockGetSupabase.mockReturnValue(
       mockSupabase as unknown as ReturnType<typeof getSupabase>
     );
-    jest.clearAllMocks();
   });
 
   const wrapper = ({ children }: { children: ReactNode }) => (
@@ -224,6 +226,8 @@ describe("useMatchRealtime", () => {
   };
 
   beforeEach(() => {
+    jest.clearAllMocks();
+
     queryClient = new QueryClient();
     mockChannel = {
       on: jest.fn().mockReturnThis(),
@@ -238,7 +242,6 @@ describe("useMatchRealtime", () => {
     mockGetSupabase.mockReturnValue(
       mockSupabase as unknown as ReturnType<typeof getSupabase>
     );
-    jest.clearAllMocks();
   });
 
   const wrapper = ({ children }: { children: ReactNode }) => (
@@ -271,6 +274,8 @@ describe("useNotificationsRealtime", () => {
   };
 
   beforeEach(() => {
+    jest.clearAllMocks();
+
     queryClient = new QueryClient();
     mockChannel = {
       on: jest.fn().mockReturnThis(),
@@ -285,7 +290,6 @@ describe("useNotificationsRealtime", () => {
     mockGetSupabase.mockReturnValue(
       mockSupabase as unknown as ReturnType<typeof getSupabase>
     );
-    jest.clearAllMocks();
   });
 
   const wrapper = ({ children }: { children: ReactNode }) => (
