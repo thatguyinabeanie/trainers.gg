@@ -14,6 +14,7 @@ const config: Config = {
   ],
   coverageDirectory: "<rootDir>/coverage",
   setupFilesAfterEnv: ["<rootDir>/test-setup.ts"],
+  setupFiles: ["<rootDir>/../../node_modules/react-native/jest/setup.js"],
 };
 
 export default config;
