@@ -22,12 +22,7 @@
 
 import { createClient } from "@supabase/supabase-js";
 import { getCorsHeaders } from "../_shared/cors.ts";
-import {
-  withCache,
-  invalidateCache,
-  getCacheHeaders,
-  CACHE_TTL,
-} from "../_shared/cache.ts";
+import { getCacheHeaders, CACHE_TTL } from "../_shared/cache.ts";
 import type { ActionResult } from "@trainers/validators";
 import {
   listTournamentsGrouped,
@@ -134,21 +129,15 @@ Deno.serve(async (req) => {
 
     // GET /api-tournaments → List tournaments (grouped by status)
     if (method === "GET" && pathParts.length === 1) {
-      const result = await withCache(
-        `tournaments:list:grouped`,
-        async () => {
-          return await listTournamentsGrouped(supabase, {
-            completedLimit: 10,
-          });
-        },
-        CACHE_TTL.TOURNAMENT
-      );
+      const result = await listTournamentsGrouped(supabase, {
+        completedLimit: 10,
+      });
 
       return jsonResponse(
         { success: true, data: result },
         200,
         cors,
-        getCacheHeaders(60, 30, true)
+        getCacheHeaders(CACHE_TTL.TOURNAMENT, 30, true)
       );
     }
 
@@ -168,13 +157,7 @@ Deno.serve(async (req) => {
         );
       }
 
-      const result = await withCache(
-        `tournament:${tournamentId}`,
-        async () => {
-          return await getTournamentById(supabase, tournamentId);
-        },
-        CACHE_TTL.TOURNAMENT
-      );
+      const result = await getTournamentById(supabase, tournamentId);
 
       if (!result) {
         return jsonResponse(
@@ -232,12 +215,8 @@ Deno.serve(async (req) => {
 
       await updateTournamentMutation(supabase, tournamentId, body);
 
-      // Invalidate caches
-      await invalidateCache(`tournament:${tournamentId}`);
-
       // If tournament was published (status → upcoming), invalidate list
       if (body.status === "upcoming") {
-        await invalidateCache(`tournaments:list:*`);
       }
 
       return jsonResponse(
@@ -284,10 +263,6 @@ Deno.serve(async (req) => {
 
       await registerForTournamentMutation(supabase, tournamentId, altId);
 
-      // Invalidate tournament cache (registration count changed)
-      await invalidateCache(`tournament:${tournamentId}`);
-      await invalidateCache(`tournaments:list:*`);
-
       return jsonResponse(
         { success: true, data: { success: true } },
         200,
@@ -317,9 +292,6 @@ Deno.serve(async (req) => {
 
       await checkInMutation(supabase, tournamentId);
 
-      // Invalidate tournament cache
-      await invalidateCache(`tournament:${tournamentId}`);
-
       return jsonResponse(
         { success: true, data: { success: true } },
         200,
@@ -348,10 +320,6 @@ Deno.serve(async (req) => {
       }
 
       await cancelRegistrationMutation(supabase, tournamentId);
-
-      // Invalidate tournament cache
-      await invalidateCache(`tournament:${tournamentId}`);
-      await invalidateCache(`tournaments:list:*`);
 
       return jsonResponse(
         { success: true, data: { success: true } },
@@ -401,9 +369,6 @@ Deno.serve(async (req) => {
         showdownText
       );
 
-      // Invalidate tournament cache
-      await invalidateCache(`tournament:${tournamentId}`);
-
       return jsonResponse({ success: true, data: result }, 200, cors);
     }
 
@@ -428,10 +393,6 @@ Deno.serve(async (req) => {
       }
 
       await startTournamentEnhancedMutation(supabase, tournamentId);
-
-      // Invalidate tournament cache
-      await invalidateCache(`tournament:${tournamentId}`);
-      await invalidateCache(`tournaments:list:*`);
 
       return jsonResponse(
         { success: true, data: { success: true } },
@@ -462,9 +423,6 @@ Deno.serve(async (req) => {
 
       const result = await createRoundMutation(supabase, tournamentId);
 
-      // Invalidate tournament cache
-      await invalidateCache(`tournament:${tournamentId}`);
-
       return jsonResponse({ success: true, data: result }, 200, cors);
     }
 
@@ -489,9 +447,6 @@ Deno.serve(async (req) => {
       }
 
       await advanceToTopCutMutation(supabase, tournamentId);
-
-      // Invalidate tournament cache
-      await invalidateCache(`tournament:${tournamentId}`);
 
       return jsonResponse(
         { success: true, data: { success: true } },

@@ -10,12 +10,7 @@
 
 import { createClient } from "@supabase/supabase-js";
 import { getCorsHeaders } from "../_shared/cors.ts";
-import {
-  withCache,
-  invalidateCache,
-  getCacheHeaders,
-  CACHE_TTL,
-} from "../_shared/cache.ts";
+import { getCacheHeaders, CACHE_TTL } from "../_shared/cache.ts";
 import type { ActionResult } from "@trainers/validators";
 import { getUserNotifications } from "@trainers/supabase/queries";
 import {
@@ -101,13 +96,7 @@ Deno.serve(async (req) => {
 
     // GET /api-notifications → List user's notifications
     if (method === "GET" && pathParts.length === 1) {
-      const result = await withCache(
-        `notifications:user:${user.id}`,
-        async () => {
-          return await getUserNotifications(supabase);
-        },
-        CACHE_TTL.NOTIFICATION
-      );
+      const result = await getUserNotifications(supabase);
 
       return jsonResponse(
         { success: true, data: result },
@@ -135,9 +124,6 @@ Deno.serve(async (req) => {
 
       await markNotificationRead(supabase, notificationId);
 
-      // Invalidate user's notifications cache
-      await invalidateCache(`notifications:user:${user.id}`);
-
       return jsonResponse(
         { success: true, data: { success: true } },
         200,
@@ -148,9 +134,6 @@ Deno.serve(async (req) => {
     // PATCH /api-notifications/read-all → Mark all notifications as read
     if (method === "PATCH" && pathParts[1] === "read-all") {
       await markAllNotificationsRead(supabase);
-
-      // Invalidate user's notifications cache
-      await invalidateCache(`notifications:user:${user.id}`);
 
       return jsonResponse(
         { success: true, data: { success: true } },
@@ -176,9 +159,6 @@ Deno.serve(async (req) => {
       }
 
       await deleteNotification(supabase, notificationId);
-
-      // Invalidate user's notifications cache
-      await invalidateCache(`notifications:user:${user.id}`);
 
       return jsonResponse(
         { success: true, data: { success: true } },

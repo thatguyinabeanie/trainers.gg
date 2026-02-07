@@ -5,7 +5,7 @@
  * - CORS (OPTIONS preflight)
  * - Auth (JWT validation, user extraction)
  * - Error handling (consistent ActionResult format)
- * - Caching (Redis + HTTP headers)
+ * - Caching (HTTP Cache-Control headers for CDN/browser caching)
  *
  * Usage:
  * 1. Copy this template to new Edge Function directory
@@ -16,12 +16,7 @@
 
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import { getCorsHeaders } from "./cors.ts";
-import {
-  withCache,
-  invalidateCache,
-  getCacheHeaders,
-  CACHE_TTL,
-} from "./cache.ts";
+import { getCacheHeaders, CACHE_TTL } from "./cache.ts";
 import type { ActionResult } from "@trainers/validators";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
@@ -122,22 +117,15 @@ Deno.serve(async (req) => {
 
     // Example: GET /api-domain (list items)
     if (method === "GET" && pathParts.length === 1) {
-      const result = await withCache(
-        `domain:list:${user.id}:${url.search}`,
-        async () => {
-          // TODO: Call your domain-specific query function
-          // const items = await listItems(supabase, filters);
-          // return items;
-          return [];
-        },
-        CACHE_TTL.TOURNAMENT // Use appropriate TTL
-      );
+      // TODO: Call your domain-specific query function
+      // const result = await listItems(supabase, filters);
+      const result = [];
 
       return jsonResponse(
         { success: true, data: result },
         200,
         cors,
-        getCacheHeaders(60, 30)
+        getCacheHeaders(CACHE_TTL.TOURNAMENT, 30) // Use appropriate TTL
       );
     }
 
@@ -145,16 +133,9 @@ Deno.serve(async (req) => {
     if (method === "GET" && pathParts.length === 2) {
       const itemId = pathParts[1];
 
-      const result = await withCache(
-        `domain:${itemId}`,
-        async () => {
-          // TODO: Call your domain-specific query function
-          // const item = await getItemById(supabase, itemId);
-          // return item;
-          return null;
-        },
-        CACHE_TTL.TOURNAMENT
-      );
+      // TODO: Call your domain-specific query function
+      // const result = await getItemById(supabase, itemId);
+      const result = null;
 
       if (!result) {
         return jsonResponse(
@@ -183,9 +164,6 @@ Deno.serve(async (req) => {
       // const item = await createItemMutation(supabase, validated);
       console.log("Creating item:", body, "for user:", user.id);
 
-      // Invalidate cache
-      await invalidateCache(`domain:list:${user.id}*`);
-
       return jsonResponse(
         { success: true, data: null }, // Replace with created item
         201,
@@ -205,10 +183,6 @@ Deno.serve(async (req) => {
       // const item = await updateItemMutation(supabase, itemId, validated);
       console.log("Updating item:", itemId, body);
 
-      // Invalidate caches
-      await invalidateCache(`domain:${itemId}`);
-      await invalidateCache(`domain:list:*`);
-
       return jsonResponse(
         { success: true, data: null }, // Replace with updated item
         200,
@@ -222,10 +196,6 @@ Deno.serve(async (req) => {
 
       // TODO: Call your domain-specific mutation function
       // await deleteItemMutation(supabase, itemId);
-
-      // Invalidate caches
-      await invalidateCache(`domain:${itemId}`);
-      await invalidateCache(`domain:list:*`);
 
       return jsonResponse({ success: true, data: null }, 200, cors);
     }

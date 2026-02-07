@@ -12,12 +12,7 @@
 
 import { createClient } from "@supabase/supabase-js";
 import { getCorsHeaders } from "../_shared/cors.ts";
-import {
-  withCache,
-  invalidateCache,
-  getCacheHeaders,
-  CACHE_TTL,
-} from "../_shared/cache.ts";
+import { getCacheHeaders, CACHE_TTL } from "../_shared/cache.ts";
 import type { ActionResult } from "@trainers/validators";
 import { getCurrentUserAlts, getAltById } from "@trainers/supabase/queries";
 import {
@@ -104,19 +99,13 @@ Deno.serve(async (req) => {
 
     // GET /api-alts → List current user's alts
     if (method === "GET" && pathParts.length === 1) {
-      const result = await withCache(
-        `alts:user:${user.id}`,
-        async () => {
-          return await getCurrentUserAlts(supabase);
-        },
-        CACHE_TTL.ALT
-      );
+      const result = await getCurrentUserAlts(supabase);
 
       return jsonResponse(
         { success: true, data: result },
         200,
         cors,
-        getCacheHeaders(300, 60)
+        getCacheHeaders(CACHE_TTL.ALT, 60)
       );
     }
 
@@ -132,13 +121,7 @@ Deno.serve(async (req) => {
         );
       }
 
-      const result = await withCache(
-        `alt:${altId}`,
-        async () => {
-          return await getAltById(supabase, altId);
-        },
-        CACHE_TTL.ALT
-      );
+      const result = await getAltById(supabase, altId);
 
       if (!result) {
         return jsonResponse(
@@ -181,9 +164,6 @@ Deno.serve(async (req) => {
         inGameName,
       });
 
-      // Invalidate user's alt list cache
-      await invalidateCache(`alts:user:${user.id}`);
-
       return jsonResponse({ success: true, data: { id: alt.id } }, 201, cors);
     }
 
@@ -204,10 +184,6 @@ Deno.serve(async (req) => {
       // TODO: Add Zod validation for updateAltSchema
 
       await updateAlt(supabase, altId, body);
-
-      // Invalidate caches
-      await invalidateCache(`alt:${altId}`);
-      await invalidateCache(`alts:user:${user.id}`);
 
       return jsonResponse(
         { success: true, data: { success: true } },
@@ -230,10 +206,6 @@ Deno.serve(async (req) => {
 
       await deleteAlt(supabase, altId);
 
-      // Invalidate caches
-      await invalidateCache(`alt:${altId}`);
-      await invalidateCache(`alts:user:${user.id}`);
-
       return jsonResponse(
         { success: true, data: { success: true } },
         200,
@@ -254,9 +226,6 @@ Deno.serve(async (req) => {
       }
 
       await setMainAlt(supabase, altId);
-
-      // Invalidate user's alt list cache
-      await invalidateCache(`alts:user:${user.id}`);
 
       return jsonResponse(
         { success: true, data: { success: true } },

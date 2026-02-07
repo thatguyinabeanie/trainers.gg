@@ -13,12 +13,7 @@
 
 import { createClient } from "@supabase/supabase-js";
 import { getCorsHeaders } from "../_shared/cors.ts";
-import {
-  withCache,
-  invalidateCache,
-  getCacheHeaders,
-  CACHE_TTL,
-} from "../_shared/cache.ts";
+import { getCacheHeaders, CACHE_TTL } from "../_shared/cache.ts";
 import type { ActionResult } from "@trainers/validators";
 import { getMatchById } from "@trainers/supabase/queries";
 import {
@@ -117,13 +112,7 @@ Deno.serve(async (req) => {
         );
       }
 
-      const result = await withCache(
-        `match:${matchId}`,
-        async () => {
-          return await getMatchById(supabase, matchId);
-        },
-        CACHE_TTL.MATCH
-      );
+      const result = await getMatchById(supabase, matchId);
 
       if (!result) {
         return jsonResponse(
@@ -170,9 +159,6 @@ Deno.serve(async (req) => {
 
       await submitGameSelection(supabase, gameId, selectedWinnerAltId);
 
-      // Invalidate match cache
-      await invalidateCache(`match:${matchId}`);
-
       return jsonResponse(
         { success: true, data: { success: true } },
         200,
@@ -215,9 +201,6 @@ Deno.serve(async (req) => {
         messageType
       );
 
-      // Invalidate match cache
-      await invalidateCache(`match:${matchId}`);
-
       return jsonResponse({ success: true, data: { id: data.id } }, 200, cors);
     }
 
@@ -249,9 +232,6 @@ Deno.serve(async (req) => {
       }
 
       await createMatchGames(supabase, matchId, numberOfGames);
-
-      // Invalidate match cache
-      await invalidateCache(`match:${matchId}`);
 
       return jsonResponse(
         { success: true, data: { success: true } },
@@ -289,9 +269,6 @@ Deno.serve(async (req) => {
 
       await judgeOverrideGame(supabase, gameId, winnerAltId);
 
-      // Invalidate match cache
-      await invalidateCache(`match:${matchId}`);
-
       return jsonResponse(
         { success: true, data: { success: true } },
         200,
@@ -324,9 +301,6 @@ Deno.serve(async (req) => {
 
       await judgeResetGame(supabase, gameId);
 
-      // Invalidate match cache
-      await invalidateCache(`match:${matchId}`);
-
       return jsonResponse(
         { success: true, data: { success: true } },
         200,
@@ -347,9 +321,6 @@ Deno.serve(async (req) => {
       }
 
       await resetMatch(supabase, matchId);
-
-      // Invalidate match cache
-      await invalidateCache(`match:${matchId}`);
 
       return jsonResponse(
         { success: true, data: { success: true } },

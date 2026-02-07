@@ -36,7 +36,7 @@
       "expo-router",
       "expo-font",
       "expo-secure-store",
-      "./plugins/with-ios-build-fixes"
+      "./plugins/with-ios-build-fixes.cjs"
     ],
     "experiments": {
       "typedRoutes": true

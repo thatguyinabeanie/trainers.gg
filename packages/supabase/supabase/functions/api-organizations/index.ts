@@ -15,12 +15,7 @@
 
 import { createClient } from "@supabase/supabase-js";
 import { getCorsHeaders } from "../_shared/cors.ts";
-import {
-  withCache,
-  invalidateCache,
-  getCacheHeaders,
-  CACHE_TTL,
-} from "../_shared/cache.ts";
+import { getCacheHeaders, CACHE_TTL } from "../_shared/cache.ts";
 import type { ActionResult } from "@trainers/validators";
 import {
   listPublicOrganizations,
@@ -114,19 +109,13 @@ Deno.serve(async (req) => {
 
     // GET /api-organizations → List organizations
     if (method === "GET" && pathParts.length === 1) {
-      const result = await withCache(
-        `organizations:list`,
-        async () => {
-          return await listPublicOrganizations(supabase);
-        },
-        CACHE_TTL.ORGANIZATION
-      );
+      const result = await listPublicOrganizations(supabase);
 
       return jsonResponse(
         { success: true, data: result },
         200,
         cors,
-        getCacheHeaders(300, 60, true)
+        getCacheHeaders(CACHE_TTL.ORGANIZATION, 60, true)
       );
     }
 
@@ -134,13 +123,7 @@ Deno.serve(async (req) => {
     if (method === "GET" && pathParts.length === 2) {
       const slug = pathParts[1];
 
-      const result = await withCache(
-        `organization:${slug}`,
-        async () => {
-          return await getOrganizationBySlug(supabase, slug);
-        },
-        CACHE_TTL.ORGANIZATION
-      );
+      const result = await getOrganizationBySlug(supabase, slug);
 
       if (!result) {
         return jsonResponse(
@@ -158,7 +141,7 @@ Deno.serve(async (req) => {
         { success: true, data: result },
         200,
         cors,
-        getCacheHeaders(300, 60, true)
+        getCacheHeaders(CACHE_TTL.ORGANIZATION, 60, true)
       );
     }
 
@@ -169,9 +152,6 @@ Deno.serve(async (req) => {
       // TODO: Add Zod validation for createOrganizationSchema
 
       const result = await createOrganizationMutation(supabase, body);
-
-      // Invalidate organizations list cache
-      await invalidateCache(`organizations:list`);
 
       return jsonResponse(
         {
@@ -199,29 +179,11 @@ Deno.serve(async (req) => {
         );
       }
 
-      // Fetch org first to get slug for cache invalidation
-      const org = await getOrganizationById(supabase, organizationId);
-      if (!org) {
-        return jsonResponse(
-          {
-            success: false,
-            error: "Organization not found",
-            code: "NOT_FOUND",
-          },
-          404,
-          cors
-        );
-      }
-
       const body = await req.json();
 
       // TODO: Add Zod validation for updateOrganizationSchema
 
       await updateOrganizationMutation(supabase, organizationId, body);
-
-      // Invalidate caches using slug as key
-      await invalidateCache(`organizations:list`);
-      await invalidateCache(`organization:${org.slug}`);
 
       return jsonResponse(
         { success: true, data: { success: true } },
@@ -292,9 +254,6 @@ Deno.serve(async (req) => {
 
       await acceptOrganizationInvitationMutation(supabase, invitationId);
 
-      // Invalidate organizations list cache (user is now staff)
-      await invalidateCache(`organizations:list`);
-
       return jsonResponse(
         { success: true, data: { success: true } },
         200,
@@ -360,25 +319,7 @@ Deno.serve(async (req) => {
         );
       }
 
-      // Fetch org first to get slug for cache invalidation
-      const org = await getOrganizationById(supabase, organizationId);
-      if (!org) {
-        return jsonResponse(
-          {
-            success: false,
-            error: "Organization not found",
-            code: "NOT_FOUND",
-          },
-          404,
-          cors
-        );
-      }
-
       await removeStaffMutation(supabase, organizationId, userId);
-
-      // Invalidate organization cache using slug as key
-      await invalidateCache(`organization:${org.slug}`);
-      await invalidateCache(`organizations:list`);
 
       return jsonResponse(
         { success: true, data: { success: true } },
@@ -403,25 +344,7 @@ Deno.serve(async (req) => {
         );
       }
 
-      // Fetch org first to get slug for cache invalidation
-      const org = await getOrganizationById(supabase, organizationId);
-      if (!org) {
-        return jsonResponse(
-          {
-            success: false,
-            error: "Organization not found",
-            code: "NOT_FOUND",
-          },
-          404,
-          cors
-        );
-      }
-
       await leaveOrganizationMutation(supabase, organizationId);
-
-      // Invalidate caches using slug as key
-      await invalidateCache(`organization:${org.slug}`);
-      await invalidateCache(`organizations:list`);
 
       return jsonResponse(
         { success: true, data: { success: true } },
