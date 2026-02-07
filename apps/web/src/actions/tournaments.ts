@@ -47,8 +47,8 @@ import {
 } from "@trainers/supabase";
 import type { Database } from "@trainers/supabase";
 import { CacheTags } from "@/lib/cache";
-
-import { type ActionResult, rejectBots } from "./utils";
+import { type ActionResult } from "@trainers/validators";
+import { rejectBots } from "./utils";
 
 type TournamentFormat = Database["public"]["Enums"]["tournament_format"];
 type TournamentStatus = Database["public"]["Enums"]["tournament_status"];

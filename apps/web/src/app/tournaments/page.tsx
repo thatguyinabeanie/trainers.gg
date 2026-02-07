@@ -143,8 +143,7 @@ export default async function TournamentsPage({
                 actionSlot={(tournament) => {
                   const isFull =
                     tournament.max_participants &&
-                    tournament.registrationCount >=
-                      tournament.max_participants;
+                    tournament.registrationCount >= tournament.max_participants;
                   const isRegistered = registeredTournamentIds.has(
                     tournament.id
                   );

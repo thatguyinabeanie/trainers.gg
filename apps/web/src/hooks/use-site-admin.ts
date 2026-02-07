@@ -1,7 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { type User } from "@supabase/supabase-js";
+/**
+ * Web App Site Admin Hook
+ *
+ * Wrapper around shared @trainers/supabase/hooks that injects
+ * Next.js-specific dependencies.
+ */
+
+import { useSiteRoles as useSiteRolesBase } from "@trainers/supabase/hooks";
 import { createClient } from "@/lib/supabase/client";
 import { useAuthContext } from "@/components/auth/auth-provider";
 
@@ -11,56 +17,19 @@ import { useAuthContext } from "@/components/auth/auth-provider";
  *
  * @returns Object with siteRoles array, isSiteAdmin boolean, and loading state
  */
-export function useSiteAdmin(): {
-  siteRoles: string[];
-  isSiteAdmin: boolean;
-  isLoading: boolean;
-  user: User | null;
-} {
-  const { user, loading: userLoading } = useAuthContext();
-  const [siteRoles, setSiteRoles] = useState<string[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+export function useSiteAdmin() {
+  const { user, loading } = useAuthContext();
 
-  useEffect(() => {
-    async function checkSiteRoles() {
-      if (!user) {
-        setSiteRoles([]);
-        setIsLoading(false);
-        return;
-      }
-
-      try {
-        const supabase = createClient();
-        const {
-          data: { session },
-        } = await supabase.auth.getSession();
-
-        if (session?.access_token) {
-          // Decode JWT payload to get site_roles claim
-          const payload = session.access_token.split(".")[1];
-          if (payload) {
-            const claims = JSON.parse(atob(payload)) as {
-              site_roles?: string[];
-            };
-            setSiteRoles(claims.site_roles ?? []);
-          }
-        } else {
-          setSiteRoles([]);
-        }
-      } catch {
-        setSiteRoles([]);
-      } finally {
-        setIsLoading(false);
-      }
-    }
-
-    checkSiteRoles();
-  }, [user]);
-
-  return {
-    siteRoles,
-    isSiteAdmin: siteRoles.includes("site_admin"),
-    isLoading: userLoading || isLoading,
+  return useSiteRolesBase({
+    getSupabaseClient: createClient,
     user,
-  };
+    userLoading: loading,
+  });
+}
+
+/**
+ * Alias for useSiteAdmin
+ */
+export function useSiteRoles() {
+  return useSiteAdmin();
 }

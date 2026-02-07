@@ -1,9 +1,23 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+/**
+ * Next.js Supabase Hooks
+ *
+ * Web app-specific wrappers around shared @trainers/supabase/hooks.
+ * Injects Next.js browser client automatically.
+ */
+
+import { useEffect, useState } from "react";
 import { createClient } from "./client";
 import type { TypedSupabaseClient } from "@trainers/supabase";
 import type { User } from "@supabase/supabase-js";
+import {
+  useSupabaseQuery as useSupabaseQueryBase,
+  useSupabaseMutation as useSupabaseMutationBase,
+} from "@trainers/supabase/hooks";
+
+// Re-export types
+export type { QueryResult, MutationResult } from "@trainers/supabase/hooks";
 
 /**
  * Hook to get a Supabase client for client components.
@@ -48,124 +62,22 @@ export function useUser() {
 }
 
 /**
- * Generic query result type
- */
-interface QueryResult<T> {
-  data: T | undefined;
-  error: Error | null;
-  isLoading: boolean;
-  refetch: () => Promise<void>;
-}
-
-/**
- * Hook for executing Supabase queries with auto-refetch
- * Similar to Convex's useQuery but for Supabase
+ * Hook for executing Supabase queries with auto-refetch.
+ * Web-specific wrapper that injects Next.js browser client.
  */
 export function useSupabaseQuery<T>(
   queryFn: (supabase: TypedSupabaseClient) => Promise<T>,
   deps: unknown[] = []
-): QueryResult<T> {
-  const supabase = useSupabase();
-  const [data, setData] = useState<T | undefined>(undefined);
-  const [error, setError] = useState<Error | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const mountedRef = useRef(true);
-  // Store queryFn in a ref to avoid triggering re-executions
-  const queryFnRef = useRef(queryFn);
-  queryFnRef.current = queryFn;
-
-  // Stringify deps to trigger re-execution when values change
-  const depsKey = JSON.stringify(deps);
-
-  const execute = async () => {
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      const result = await queryFnRef.current(supabase);
-      if (mountedRef.current) {
-        setData(result);
-      }
-    } catch (err) {
-      if (mountedRef.current) {
-        setError(err instanceof Error ? err : new Error(String(err)));
-      }
-    } finally {
-      if (mountedRef.current) {
-        setIsLoading(false);
-      }
-    }
-  };
-
-  useEffect(() => {
-    mountedRef.current = true;
-    execute();
-
-    return () => {
-      mountedRef.current = false;
-    };
-  }, [supabase, depsKey]);
-
-  return {
-    data,
-    error,
-    isLoading,
-    refetch: execute,
-  };
+) {
+  return useSupabaseQueryBase(queryFn, createClient, deps);
 }
 
 /**
- * Mutation result type
- */
-interface MutationResult<TArgs, TResult> {
-  mutate: (args: TArgs) => Promise<TResult>;
-  mutateAsync: (args: TArgs) => Promise<TResult>;
-  isLoading: boolean;
-  error: Error | null;
-  reset: () => void;
-}
-
-/**
- * Hook for executing Supabase mutations
- * Similar to Convex's useMutation but for Supabase
+ * Hook for executing Supabase mutations.
+ * Web-specific wrapper that injects Next.js browser client.
  */
 export function useSupabaseMutation<TArgs, TResult>(
   mutationFn: (supabase: TypedSupabaseClient, args: TArgs) => Promise<TResult>
-): MutationResult<TArgs, TResult> {
-  const supabase = useSupabase();
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<Error | null>(null);
-
-  const mutateAsync = async (args: TArgs): Promise<TResult> => {
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      const result = await mutationFn(supabase, args);
-      return result;
-    } catch (err) {
-      const error = err instanceof Error ? err : new Error(String(err));
-      setError(error);
-      throw error;
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const mutate = async (args: TArgs): Promise<TResult> => {
-    return mutateAsync(args);
-  };
-
-  const reset = () => {
-    setError(null);
-    setIsLoading(false);
-  };
-
-  return {
-    mutate,
-    mutateAsync,
-    isLoading,
-    error,
-    reset,
-  };
+) {
+  return useSupabaseMutationBase(mutationFn, createClient);
 }

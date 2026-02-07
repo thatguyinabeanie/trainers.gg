@@ -360,6 +360,97 @@ When adding new library code, consider whether it belongs in a shared package or
 | `@trainers/ui`          | Shared React UI components                                                |
 | `@trainers/theme`       | OKLCH color tokens, light/dark mode                                       |
 
+### Code Reuse and DRY Principles
+
+**Always optimize for code reuse.** Identify patterns and create reusable abstractions when you see repetition. Examples from this codebase:
+
+**✅ Good Examples:**
+
+1. **TanStack Query Factories** (`apps/mobile/src/lib/api/query-factory.ts`):
+
+   ```typescript
+   // Instead of repeating useQuery boilerplate in every hook:
+   export function createQuery<T>(queryKey, endpoint, options) {
+     return useQuery({
+       queryKey,
+       queryFn: async () => {
+         const result = await apiCall<T>(endpoint);
+         if (!result.success) throw new Error(result.error);
+         return result.data;
+       },
+       ...options,
+     });
+   }
+
+   // Now hooks are one-liners:
+   export function useTournament(id: string) {
+     return createQuery<Tournament>(
+       ["tournament", id],
+       `api-tournaments/${id}`
+     );
+   }
+   ```
+
+2. **Mutation Factories with Auto-Invalidation**:
+
+   ```typescript
+   // Reusable mutation pattern with automatic cache invalidation:
+   export function createMutation<TData, TVariables>(
+     mutationFn,
+     options: { invalidates?: (vars) => QueryKey[] }
+   ) {
+     const queryClient = useQueryClient();
+     return useMutation({
+       mutationFn: async (vars) => {
+         const result = await mutationFn(vars);
+         if (!result.success) throw new Error(result.error);
+         return result.data;
+       },
+       onSuccess: (data, vars, context) => {
+         if (options.invalidates) {
+           options
+             .invalidates(vars)
+             .forEach((key) =>
+               queryClient.invalidateQueries({ queryKey: key })
+             );
+         }
+       },
+     });
+   }
+   ```
+
+3. **Shared Error Handling** (`packages/utils/src/error-handling.ts`):
+   ```typescript
+   // Single source of truth for extracting error messages:
+   export function getErrorMessage(
+     error: unknown,
+     fallback: string,
+     shouldSanitize = false
+   ): string {
+     // Handles Error, Supabase errors, and unknown types
+   }
+   ```
+
+**❌ Bad Examples (Avoid):**
+
+- Duplicating the same try/catch pattern in every function
+- Copy-pasting useQuery hooks with only the endpoint changed
+- Repeating validation logic across components
+- Duplicating cache invalidation logic in every mutation
+
+**When to Create Abstractions:**
+
+- **After 2-3 repetitions**: If you've written similar code 2-3 times, extract a reusable function/component
+- **Before adding a 4th hook**: If you're about to create the 4th similar TanStack Query hook, create a factory instead
+- **When patterns emerge**: React table logic, form handling, API calls, validation, error handling
+- **Cross-app functionality**: If web and mobile need the same logic, it belongs in a shared package
+
+**When NOT to Create Abstractions:**
+
+- Don't abstract after just 1 occurrence (wait for the pattern to emerge)
+- Don't create "utils" dumping grounds (prefer domain-specific packages like `@trainers/tournaments`)
+- Don't over-engineer for hypothetical future use cases (YAGNI principle)
+
 ### React Server Components
 
 - Server Components are the default — no directive needed

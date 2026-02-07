@@ -1,12 +1,13 @@
-import { useEffect, useState } from "react";
+/**
+ * Mobile App Site Roles Hook
+ *
+ * Wrapper around shared @trainers/supabase/hooks that injects
+ * Expo-specific dependencies.
+ */
+
+import { useSiteRoles as useSiteRolesBase } from "@trainers/supabase/hooks";
 import { useAuth } from "./auth-provider";
 import { getSupabase } from "./client";
-
-interface SiteRolesState {
-  siteRoles: string[];
-  isSiteAdmin: boolean;
-  isLoading: boolean;
-}
 
 /**
  * Hook to get the current user's site roles from JWT claims.
@@ -14,50 +15,19 @@ interface SiteRolesState {
  *
  * @returns Object with siteRoles array, isSiteAdmin boolean, and loading state
  */
-export function useSiteRoles(): SiteRolesState {
-  const { user } = useAuth();
-  const [state, setState] = useState<SiteRolesState>({
-    siteRoles: [],
-    isSiteAdmin: false,
-    isLoading: true,
+export function useSiteRoles() {
+  const { user, loading } = useAuth();
+
+  return useSiteRolesBase({
+    getSupabaseClient: getSupabase,
+    user,
+    userLoading: loading,
   });
+}
 
-  useEffect(() => {
-    async function checkClaims() {
-      if (!user) {
-        setState({ siteRoles: [], isSiteAdmin: false, isLoading: false });
-        return;
-      }
-
-      try {
-        const {
-          data: { session },
-        } = await getSupabase().auth.getSession();
-
-        if (session?.access_token) {
-          const payload = session.access_token.split(".")[1];
-          if (payload) {
-            const claims = JSON.parse(atob(payload)) as {
-              site_roles?: string[];
-            };
-            const roles = claims.site_roles ?? [];
-            setState({
-              siteRoles: roles,
-              isSiteAdmin: roles.includes("site_admin"),
-              isLoading: false,
-            });
-            return;
-          }
-        }
-      } catch (error) {
-        console.error("Error reading JWT claims:", error);
-      }
-
-      setState({ siteRoles: [], isSiteAdmin: false, isLoading: false });
-    }
-
-    checkClaims();
-  }, [user]);
-
-  return state;
+/**
+ * Alias for useSiteRoles
+ */
+export function useSiteAdmin() {
+  return useSiteRoles();
 }

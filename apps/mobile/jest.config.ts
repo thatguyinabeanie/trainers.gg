@@ -1,15 +1,19 @@
 import type { Config } from "jest";
-import { createConfig } from "@trainers/jest-config";
 
-const config: Config = createConfig({
+const config: Config = {
   displayName: "mobile",
-  extensionsToTreatAsEsm: [".ts", ".tsx"],
+  preset: "jest-expo",
   testMatch: ["<rootDir>/src/**/__tests__/**/*.test.{ts,tsx}"],
+  transformIgnorePatterns: [
+    "node_modules/(?!((jest-)?react-native|@react-native(-community)?)|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|@react-navigation/.*|@unimodules/.*|unimodules|sentry-expo|native-base|react-native-svg)",
+  ],
   collectCoverageFrom: [
     "src/**/*.{ts,tsx}",
     "!src/**/__tests__/**",
     "!src/**/*.test.{ts,tsx}",
   ],
-});
+  coverageDirectory: "<rootDir>/coverage",
+  setupFilesAfterEnv: ["<rootDir>/test-setup.ts"],
+};
 
 export default config;

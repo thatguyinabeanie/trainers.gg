@@ -7,6 +7,14 @@ import globals from "globals";
 export default [
   ...base,
   {
+    files: ["**/*.ts", "**/*.tsx", "**/*.js", "**/*.jsx"],
+    languageOptions: {
+      globals: {
+        ...globals.browser,
+      },
+    },
+  },
+  {
     files: ["**/*.tsx", "**/*.jsx"],
     plugins: {
       react,
@@ -17,9 +25,6 @@ export default [
         ecmaFeatures: {
           jsx: true,
         },
-      },
-      globals: {
-        ...globals.browser,
       },
     },
     settings: {

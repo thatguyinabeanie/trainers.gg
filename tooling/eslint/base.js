@@ -34,6 +34,8 @@ export default [
         { prefer: "type-imports", fixStyle: "inline-type-imports" },
       ],
       "@typescript-eslint/no-empty-object-type": "off",
+      // TypeScript handles undefined variables, so no-undef is redundant
+      "no-undef": "off",
     },
   },
   {

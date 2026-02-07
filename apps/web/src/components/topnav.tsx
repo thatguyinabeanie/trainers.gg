@@ -29,6 +29,12 @@ export function TopNav() {
             Organizations
           </Link>
           <Link
+            href="/builder"
+            className="text-muted-foreground hover:text-foreground text-sm transition-colors"
+          >
+            Builder
+          </Link>
+          <Link
             href="/analytics"
             className="text-muted-foreground hover:text-foreground text-sm transition-colors"
           >

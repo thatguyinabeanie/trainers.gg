@@ -5,6 +5,15 @@ test.describe("Sign in", () => {
   test.use({ storageState: { cookies: [], origins: [] } });
 
   test("signs in with valid credentials", async ({ page }) => {
+    const baseURL = process.env.PLAYWRIGHT_BASE_URL || "";
+    // Skip this test for Vercel preview deployments (they don't have seeded test users)
+    // Only run on localhost (dev) or production deployment
+    test.skip(
+      baseURL.includes("vercel.app") &&
+        !baseURL.includes("trainers-gg.vercel.app"),
+      "Test users not available in preview environments"
+    );
+
     await loginViaUI(page, TEST_USERS.player);
     // Should be redirected away from sign-in
     expect(page.url()).not.toContain("/sign-in");

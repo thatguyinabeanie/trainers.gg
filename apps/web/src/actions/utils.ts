@@ -2,14 +2,8 @@
 
 import { z } from "zod";
 import { checkBotId } from "botid/server";
-import { getErrorMessage } from "@/lib/utils";
-
-/**
- * Consistent action result type for server actions.
- */
-export type ActionResult<T = void> =
-  | { success: true; data: T }
-  | { success: false; error: string };
+import { getErrorMessage } from "@trainers/utils";
+import type { ActionResult } from "@trainers/validators";
 
 /**
  * Reject requests classified as bots by Vercel BotID.
@@ -40,7 +34,11 @@ export async function withAction<T>(
     console.error("[server-action]", error);
     return {
       success: false,
-      error: getErrorMessage(error, fallbackMessage),
+      error: getErrorMessage(
+        error,
+        fallbackMessage,
+        process.env.NODE_ENV === "production"
+      ),
     };
   }
 }
