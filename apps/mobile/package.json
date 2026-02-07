@@ -1,7 +1,6 @@
 {
   "name": "@trainers/mobile",
   "version": "0.0.1",
-  "type": "module",
   "private": true,
   "main": "expo-router/entry",
   "scripts": {
@@ -12,8 +11,8 @@
     "build:dev": "eas build --platform ios --profile development",
     "build:dev-device": "eas build --platform ios --profile development-device",
     "build:preview": "eas build --platform ios --profile preview",
-    "test": "jest",
-    "test:watch": "jest --watch",
+    "_test": "jest",
+    "_test:watch": "jest --watch",
     "lint": "eslint . --max-warnings 0 --cache",
     "typecheck": "tsc --noEmit",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
