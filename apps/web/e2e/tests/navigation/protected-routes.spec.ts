@@ -4,7 +4,11 @@ test.describe("Protected routes redirect unauthenticated users", () => {
   // Disable E2E bypass for these tests - we're testing actual unauthenticated behavior
   test.use({
     storageState: { cookies: [], origins: [] },
-    extraHTTPHeaders: {}, // Override global bypass header
+    extraHTTPHeaders: {
+      // Explicitly set bypass header to empty string to ensure it doesn't match the secret
+      // This prevents the E2E auth bypass from taking effect in these tests
+      "x-e2e-auth-bypass": "",
+    },
   });
 
   const protectedRoutes = [
