@@ -15,7 +15,6 @@ packages/
   utils/               # Shared utilities (formatting, countries, tiers) - @trainers/utils
   supabase/            # Supabase client, queries, edge functions - @trainers/supabase
   atproto/             # AT Protocol / Bluesky utilities - @trainers/atproto
-  ui/                  # Shared UI components - @trainers/ui
   theme/               # Shared theme tokens - @trainers/theme
   validators/          # Zod schemas + team parsing (@pkmn/sets) - @trainers/validators
 
@@ -31,19 +30,20 @@ tooling/
 
 ## Tech Stack
 
-| Layer            | Technology              | Notes                                                        |
-| ---------------- | ----------------------- | ------------------------------------------------------------ |
-| Auth             | Supabase Auth           | Email/password + OAuth (Google, X, Discord, GitHub, Bluesky) |
-| Database         | Supabase (PostgreSQL)   | Row Level Security with auth.uid()                           |
-| Edge Functions   | Supabase Edge Functions | Deno runtime                                                 |
-| Social/Identity  | AT Protocol (Bluesky)   | Decentralized identity and federation                        |
-| PDS              | Fly.io                  | Self-hosted at pds.trainers.gg                               |
-| Web              | Next.js 16              | React 19, App Router, Server Components                      |
-| Mobile           | Expo 54                 | React Native with Tamagui                                    |
-| UI Components    | shadcn/ui + Base UI     | Base UI primitives (NOT Radix), no `asChild`                 |
-| Styling (Web)    | Tailwind CSS 4          | Uses @tailwindcss/postcss                                    |
-| Styling (Mobile) | Tamagui                 | Universal UI components with theme tokens                    |
-| Theme            | @trainers/theme         | OKLCH colors, light/dark mode support                        |
+| Layer                  | Technology              | Notes                                                           |
+| ---------------------- | ----------------------- | --------------------------------------------------------------- |
+| Auth                   | Supabase Auth           | Email/password + OAuth (Google, X, Discord, GitHub, Bluesky)    |
+| Database               | Supabase (PostgreSQL)   | Row Level Security with auth.uid()                              |
+| Edge Functions         | Supabase Edge Functions | Deno runtime                                                    |
+| Social/Identity        | AT Protocol (Bluesky)   | Decentralized identity and federation                           |
+| PDS                    | Fly.io                  | Self-hosted at pds.trainers.gg                                  |
+| Web                    | Next.js 16              | React 19, App Router, Server Components                         |
+| Mobile                 | Expo 54                 | React Native with Tamagui                                       |
+| UI Components (Web)    | shadcn/ui + Base UI     | Base UI primitives (NOT Radix), no `asChild`                    |
+| UI Components (Mobile) | Tamagui                 | Platform-specific UI components, no shared UI package           |
+| Styling (Web)          | Tailwind CSS 4          | Uses @tailwindcss/postcss                                       |
+| Styling (Mobile)       | Tamagui                 | Universal UI components with theme tokens                       |
+| Theme                  | @trainers/theme         | OKLCH colors, light/dark mode support (shared across platforms) |
 
 ---
 
@@ -343,7 +343,6 @@ When adding new library code, consider whether it belongs in a shared package or
 | `@trainers/utils`       | Formatting, countries, tiers, permissions                                 |
 | `@trainers/atproto`     | AT Protocol / Bluesky utilities                                           |
 | `@trainers/supabase`    | Supabase client, queries, mutations, edge functions                       |
-| `@trainers/ui`          | Shared React UI components                                                |
 | `@trainers/theme`       | OKLCH color tokens, light/dark mode                                       |
 
 ### Code Reuse and DRY Principles

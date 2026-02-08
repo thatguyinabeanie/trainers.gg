@@ -17,3 +17,15 @@ jest.mock("expo-router", () => ({
 
 // Silence the warning: Animated: `useNativeDriver` is not supported
 jest.mock("react-native/Libraries/Animated/NativeAnimatedHelper");
+
+// Mock expo-constants for tests
+jest.mock("expo-constants", () => ({
+  default: {
+    expoConfig: {
+      extra: {
+        supabaseUrl: "https://test.supabase.co",
+        supabaseAnonKey: "test-anon-key",
+      },
+    },
+  },
+}));
