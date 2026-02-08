@@ -24,13 +24,30 @@ test.describe("Public routes", () => {
 
   test("sign-in page loads", async ({ page }) => {
     await page.goto("/sign-in");
-    await expect(page.getByRole("button", { name: /sign in/i })).toBeVisible();
+    // Sign-in page shows "Continue" button initially (username step)
+    // or "Continue with Email" button from social auth options
+    await expect(
+      page.getByRole("button", { name: "Continue" }).first()
+    ).toBeVisible();
   });
 
   test("sign-up page loads", async ({ page }) => {
     await page.goto("/sign-up");
-    await expect(
-      page.getByRole("button", { name: /sign up|create account/i })
-    ).toBeVisible();
+    // In maintenance mode, sign-up page shows waitlist form
+    // In normal mode, it shows social auth buttons like "Continue with Bluesky"
+    const url = page.url();
+    const isMaintenanceMode = url.includes("/waitlist");
+
+    if (isMaintenanceMode) {
+      // Maintenance mode: should show waitlist form
+      await expect(
+        page.getByRole("heading", { name: /join.*waitlist/i })
+      ).toBeVisible();
+    } else {
+      // Normal mode: should show social auth buttons
+      await expect(
+        page.getByRole("button", { name: /continue with/i }).first()
+      ).toBeVisible();
+    }
   });
 });
