@@ -1,7 +1,11 @@
 import { test, expect } from "@playwright/test";
 
 test.describe("Protected routes redirect unauthenticated users", () => {
-  test.use({ storageState: { cookies: [], origins: [] } });
+  // Disable E2E bypass for these tests - we're testing actual unauthenticated behavior
+  test.use({
+    storageState: { cookies: [], origins: [] },
+    extraHTTPHeaders: {}, // Override global bypass header
+  });
 
   const protectedRoutes = [
     "/dashboard",

@@ -1,8 +1,13 @@
 import { defineConfig, devices } from "@playwright/test";
 import path from "path";
 import { fileURLToPath } from "url";
+import { config as dotenvConfig } from "dotenv";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+// Load .env.local for E2E_AUTH_BYPASS_SECRET and other env vars
+// Look in the repo root (two levels up from apps/web)
+dotenvConfig({ path: path.resolve(__dirname, "../../.env.local") });
 const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? "http://localhost:3000";
 const storageStatePath = path.resolve(
   __dirname,
