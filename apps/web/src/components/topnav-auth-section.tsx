@@ -32,6 +32,7 @@ import type { TypedSupabaseClient } from "@trainers/supabase";
 import { toggleSudoMode, checkSudoStatus } from "@/lib/sudo/actions";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import { isMaintenanceModeEnabled } from "@/lib/maintenance";
 
 export function TopNavAuthSection() {
   const router = useRouter();
@@ -100,7 +101,7 @@ export function TopNavAuthSection() {
   };
 
   // Check if maintenance mode is active
-  const maintenanceMode = process.env.NEXT_PUBLIC_MAINTENANCE_MODE === "true";
+  const maintenanceMode = isMaintenanceModeEnabled();
 
   // Show loading state
   if (loading) {

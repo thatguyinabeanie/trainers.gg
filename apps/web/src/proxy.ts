@@ -2,6 +2,7 @@ import { type NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/middleware";
 import { cookies } from "next/headers";
 import type { User } from "@supabase/supabase-js";
+import { isMaintenanceModeEnabled } from "@/lib/maintenance";
 
 /**
  * Proxy (Next.js 16 request interception)
@@ -91,6 +92,16 @@ function isPublicRoute(pathname: string): boolean {
   );
 }
 
+/**
+ * Check if a route is public during maintenance mode
+ *
+ * During maintenance mode, the home page (/) is treated as a public route
+ * so it can render and display the waitlist form for unauthenticated users.
+ */
+function isPublicRouteDuringMaintenance(pathname: string): boolean {
+  return pathname === "/" || isPublicRoute(pathname);
+}
+
 function isProtectedRoute(pathname: string): boolean {
   return (
     PROTECTED_ROUTES.some(
@@ -118,7 +129,7 @@ export default async function proxy(request: NextRequest) {
   }
 
   // Read maintenance mode at runtime
-  const maintenanceMode = process.env.NEXT_PUBLIC_MAINTENANCE_MODE === "true";
+  const maintenanceMode = isMaintenanceModeEnabled();
 
   // E2E test bypass: Check BOTH the header (for initial setup) AND the cookie (for subsequent requests)
   // Header: Set by Playwright config extraHTTPHeaders (initial request only)
@@ -241,13 +252,8 @@ export default async function proxy(request: NextRequest) {
 
   // === PRIVATE BETA / MAINTENANCE MODE ===
   // Redirect unauthenticated users on non-public routes to /waitlist
-  // Exception: Allow home page (/) to render and handle maintenance mode internally
-  if (
-    maintenanceMode &&
-    !user &&
-    !isPublicRoute(pathname) &&
-    pathname !== "/"
-  ) {
+  // During maintenance mode, home page (/) is treated as public to display waitlist
+  if (maintenanceMode && !user && !isPublicRouteDuringMaintenance(pathname)) {
     const waitlistUrl = new URL("/waitlist", request.url);
     return NextResponse.redirect(waitlistUrl);
   }

@@ -17,6 +17,7 @@ import { PenSquare } from "lucide-react";
 import { LoginScreen } from "@/components/auth/login-screen";
 import { WaitlistForm } from "@/components/auth/waitlist-form";
 import { PageContainer } from "@/components/layout/page-container";
+import { isMaintenanceModeEnabled } from "@/lib/maintenance";
 
 export default function HomePage() {
   const { user, loading: authLoading } = useAuth();
@@ -29,7 +30,7 @@ export default function HomePage() {
   const isLoading = authLoading || blueskyLoading;
 
   // Check if maintenance mode is active
-  const maintenanceMode = process.env.NEXT_PUBLIC_MAINTENANCE_MODE === "true";
+  const maintenanceMode = isMaintenanceModeEnabled();
 
   // Fetch Pokemon feed (default)
   const pokemonFeed = usePokemonFeed(blueskyDid);
