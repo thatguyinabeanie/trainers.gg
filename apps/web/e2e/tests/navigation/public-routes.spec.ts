@@ -18,7 +18,7 @@ test.describe("Public routes", () => {
   test("organizations page loads", async ({ page }) => {
     await page.goto("/organizations");
     await expect(
-      page.getByRole("heading", { name: /organizations/i })
+      page.getByRole("heading", { name: "Organizations", exact: true })
     ).toBeVisible();
   });
 

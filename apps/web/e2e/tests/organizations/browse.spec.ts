@@ -4,7 +4,7 @@ test.describe("Organization browsing", () => {
   test("organizations page loads", async ({ page }) => {
     await page.goto("/organizations");
     await expect(
-      page.getByRole("heading", { name: /organizations/i })
+      page.getByRole("heading", { name: "Organizations", exact: true })
     ).toBeVisible();
   });
 
@@ -15,7 +15,7 @@ test.describe("Organization browsing", () => {
     await page.goto("/organizations");
     expect(page.url()).toContain("/organizations");
     await expect(
-      page.getByRole("heading", { name: /organizations/i })
+      page.getByRole("heading", { name: "Organizations", exact: true })
     ).toBeVisible();
   });
 });
