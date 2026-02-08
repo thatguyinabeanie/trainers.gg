@@ -284,18 +284,13 @@ jobs:
           echo "::error::Timeout waiting for Vercel preview deployment"
           exit 1
 
-  # ── E2E tests (Playwright with sharding) ───────────────────
+  # ── E2E tests (Playwright) ─────────────────────────────────
   e2e-tests:
-    name: E2E Tests (Shard ${{ matrix.shard }})
+    name: E2E Tests
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     needs: [install, wait-for-preview]
-    strategy:
-      fail-fast: false
-      matrix:
-        shard: [1, 2]
-        total-shards: [2]
     steps:
       - uses: actions/checkout@v4
         with:
@@ -328,10 +323,9 @@ jobs:
         uses: actions/cache@v4
         with:
           path: .turbo
-          key: turbo-e2e-${{ runner.os }}-${{ matrix.shard }}-${{ hashFiles('**/pnpm-lock.yaml', 'turbo.json') }}
+          key: turbo-e2e-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml', 'turbo.json') }}
           restore-keys: |
-            turbo-e2e-${{ runner.os }}-${{ matrix.shard }}-${{ hashFiles('**/pnpm-lock.yaml') }}-
-            turbo-e2e-${{ runner.os }}-${{ matrix.shard }}-
+            turbo-e2e-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml') }}-
             turbo-e2e-${{ runner.os }}-
 
       - name: Cache Playwright browsers
@@ -358,19 +352,19 @@ jobs:
           echo "TURBO_TOKEN=${{ secrets.TURBO_TOKEN }}" >> "$GITHUB_ENV"
           echo "TURBO_TEAM=${{ vars.TURBO_TEAM }}" >> "$GITHUB_ENV"
 
-      - name: Run E2E tests (shard ${{ matrix.shard }}/${{ matrix.total-shards }})
+      - name: Run E2E tests
         env:
           CI: true
           PLAYWRIGHT_BASE_URL: ${{ needs.wait-for-preview.outputs.url }}
           VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
           E2E_AUTH_BYPASS_SECRET: ${{ secrets.E2E_AUTH_BYPASS_SECRET }}
-        run: pnpm --filter=@trainers/web exec playwright test --shard=${{ matrix.shard }}/${{ matrix.total-shards }}
+        run: pnpm --filter=@trainers/web exec playwright test
 
       - name: Upload Playwright HTML report
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: playwright-report-shard-${{ matrix.shard }}
+          name: playwright-report
           path: apps/web/playwright-report/
           retention-days: 7
 
@@ -378,7 +372,7 @@ jobs:
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: junit-report-shard-${{ matrix.shard }}
+          name: junit-report
           path: apps/web/test-results/junit.xml
           retention-days: 7
 
@@ -386,11 +380,11 @@ jobs:
         uses: actions/upload-artifact@v4
         if: failure()
         with:
-          name: playwright-traces-shard-${{ matrix.shard }}
+          name: playwright-traces
           path: apps/web/test-results/
           retention-days: 7
 
-  # ── Merge E2E reports ───────────────────────────────────────
+  # ── E2E test results ────────────────────────────────────────
   e2e-results:
     name: E2E Test Results
     runs-on: ubuntu-latest
@@ -401,47 +395,17 @@ jobs:
         with:
           fetch-depth: 1
 
-      - name: Download all HTML reports
+      - name: Download JUnit report
         uses: actions/download-artifact@v4
         with:
-          pattern: playwright-report-shard-*
-          path: playwright-reports
-          merge-multiple: false
-
-      - name: Download all JUnit reports
-        uses: actions/download-artifact@v4
-        with:
-          pattern: junit-report-shard-*
-          path: junit-reports
-          merge-multiple: false
-
-      - name: Merge JUnit XML reports
-        run: |
-          mkdir -p merged-reports
-          # Install xmlstarlet for merging
-          sudo apt-get update && sudo apt-get install -y xmlstarlet
-
-          # Merge all JUnit XML files
-          echo '<?xml version="1.0" encoding="UTF-8"?>' > merged-reports/junit.xml
-          echo '<testsuites>' >> merged-reports/junit.xml
-
-          for file in junit-reports/*/junit.xml; do
-            if [ -f "$file" ]; then
-              # Extract testsuite elements and append
-              xmlstarlet sel -t -c '//testsuite' "$file" >> merged-reports/junit.xml || true
-            fi
-          done
-
-          echo '</testsuites>' >> merged-reports/junit.xml
-
-          echo "Merged JUnit reports:"
-          ls -lh merged-reports/
+          name: junit-report
+          path: test-results
 
       - name: Publish E2E test results
         uses: EnricoMi/publish-unit-test-result-action@v2
         if: always()
         with:
-          files: merged-reports/junit.xml
+          files: test-results/junit.xml
           check_name: E2E Test Results
           comment_title: 🎭 E2E Test Results
           comment_mode: always

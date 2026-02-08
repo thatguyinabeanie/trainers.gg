@@ -32,6 +32,7 @@ import type { TypedSupabaseClient } from "@trainers/supabase";
 import { toggleSudoMode, checkSudoStatus } from "@/lib/sudo/actions";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import { isMaintenanceModeEnabled } from "@/lib/maintenance";
 
 export function TopNavAuthSection() {
   const router = useRouter();
@@ -99,6 +100,9 @@ export function TopNavAuthSection() {
     }
   };
 
+  // Check if maintenance mode is active
+  const maintenanceMode = isMaintenanceModeEnabled();
+
   // Show loading state
   if (loading) {
     return (
@@ -113,16 +117,36 @@ export function TopNavAuthSection() {
     return (
       <div className="flex items-center gap-2">
         <ThemeSwitcher />
-        <Link href="/sign-in">
-          <button className="hover:bg-accent rounded-md px-3 py-1.5 text-sm font-medium">
-            Sign In
-          </button>
-        </Link>
-        <Link href="/sign-up">
-          <button className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-md px-3 py-1.5 text-sm font-medium">
-            Sign Up
-          </button>
-        </Link>
+        {/* In maintenance mode, buttons are disabled */}
+        {maintenanceMode ? (
+          <>
+            <button
+              disabled
+              className="cursor-not-allowed rounded-md px-3 py-1.5 text-sm font-medium opacity-50"
+            >
+              Sign In
+            </button>
+            <button
+              disabled
+              className="bg-primary text-primary-foreground cursor-not-allowed rounded-md px-3 py-1.5 text-sm font-medium opacity-50"
+            >
+              Sign Up
+            </button>
+          </>
+        ) : (
+          <>
+            <Link href="/sign-in">
+              <button className="hover:bg-accent rounded-md px-3 py-1.5 text-sm font-medium">
+                Sign In
+              </button>
+            </Link>
+            <Link href="/sign-up">
+              <button className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-md px-3 py-1.5 text-sm font-medium">
+                Sign Up
+              </button>
+            </Link>
+          </>
+        )}
       </div>
     );
   }
