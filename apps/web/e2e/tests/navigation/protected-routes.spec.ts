@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 
-test.describe("Protected routes redirect to sign-in", () => {
+test.describe("Protected routes redirect unauthenticated users", () => {
   test.use({ storageState: { cookies: [], origins: [] } });
 
   const protectedRoutes = [
@@ -13,7 +13,18 @@ test.describe("Protected routes redirect to sign-in", () => {
   for (const route of protectedRoutes) {
     test(`${route} redirects unauthenticated users`, async ({ page }) => {
       await page.goto(route);
-      await expect(page).toHaveURL(/sign-in/);
+
+      // In maintenance mode, protected routes redirect to /waitlist
+      // Otherwise, they redirect to /sign-in
+      // We check which redirect happened to handle both scenarios
+      const url = page.url();
+      const isMaintenanceMode = url.includes("/waitlist");
+
+      if (isMaintenanceMode) {
+        await expect(page).toHaveURL(/waitlist/);
+      } else {
+        await expect(page).toHaveURL(/sign-in/);
+      }
     });
   }
 });
