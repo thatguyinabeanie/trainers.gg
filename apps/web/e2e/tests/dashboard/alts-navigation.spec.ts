@@ -12,7 +12,7 @@ test.describe("Alts page", () => {
 
     // Click Alts tab in dashboard nav (first() to avoid ambiguity with settings menu)
     await page.getByRole("link", { name: "Alts" }).first().click();
-    await expect(page).toHaveURL("/dashboard/alts");
+    await page.waitForURL("/dashboard/alts");
     await expect(page.getByRole("heading", { name: "My Alts" })).toBeVisible();
   });
 
@@ -24,7 +24,7 @@ test.describe("Alts page", () => {
 
     // Click My Alts
     await page.getByRole("menuitem", { name: "My Alts" }).click();
-    await expect(page).toHaveURL("/dashboard/alts");
+    await page.waitForURL("/dashboard/alts");
   });
 
   test("shows New Alt button and alt list", async ({ page }) => {
@@ -42,6 +42,6 @@ test.describe("Alts page", () => {
 
     // Click Settings (goes to /dashboard/settings which redirects based on route structure)
     await page.getByRole("menuitem", { name: "Settings" }).click();
-    await expect(page).toHaveURL(/\/dashboard\/settings/);
+    await page.waitForURL(/\/dashboard\/settings/);
   });
 });

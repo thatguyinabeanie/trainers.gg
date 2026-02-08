@@ -18,7 +18,7 @@ test.describe("Settings navigation", () => {
 
     // Navigate to account tab
     await page.getByRole("link", { name: "Account" }).click();
-    await expect(page).toHaveURL("/dashboard/settings/account");
+    await page.waitForURL("/dashboard/settings/account");
     await expect(page.getByRole("link", { name: "Account" })).toHaveAttribute(
       "class",
       /border-primary/
@@ -26,7 +26,7 @@ test.describe("Settings navigation", () => {
 
     // Navigate back to profile tab
     await page.getByRole("link", { name: "Profile" }).click();
-    await expect(page).toHaveURL("/dashboard/settings/profile");
+    await page.waitForURL("/dashboard/settings/profile");
   });
 
   test("shows profile settings with display name and bio", async ({ page }) => {
