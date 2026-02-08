@@ -99,6 +99,9 @@ export function TopNavAuthSection() {
     }
   };
 
+  // Check if maintenance mode is active
+  const maintenanceMode = process.env.NEXT_PUBLIC_MAINTENANCE_MODE === "true";
+
   // Show loading state
   if (loading) {
     return (
@@ -110,6 +113,16 @@ export function TopNavAuthSection() {
   }
 
   if (!user) {
+    // In maintenance mode, only show theme switcher
+    if (maintenanceMode) {
+      return (
+        <div className="flex items-center gap-2">
+          <ThemeSwitcher />
+        </div>
+      );
+    }
+
+    // Normal mode - show sign-in and sign-up buttons
     return (
       <div className="flex items-center gap-2">
         <ThemeSwitcher />

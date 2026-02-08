@@ -241,7 +241,13 @@ export default async function proxy(request: NextRequest) {
 
   // === PRIVATE BETA / MAINTENANCE MODE ===
   // Redirect unauthenticated users on non-public routes to /waitlist
-  if (maintenanceMode && !user && !isPublicRoute(pathname)) {
+  // Exception: Allow home page (/) to render and handle maintenance mode internally
+  if (
+    maintenanceMode &&
+    !user &&
+    !isPublicRoute(pathname) &&
+    pathname !== "/"
+  ) {
     const waitlistUrl = new URL("/waitlist", request.url);
     return NextResponse.redirect(waitlistUrl);
   }

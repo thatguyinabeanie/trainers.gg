@@ -15,6 +15,8 @@ import {
 } from "@/components/bluesky/compose";
 import { PenSquare } from "lucide-react";
 import { LoginScreen } from "@/components/auth/login-screen";
+import { WaitlistForm } from "@/components/auth/waitlist-form";
+import { PageContainer } from "@/components/layout/page-container";
 
 export default function HomePage() {
   const { user, loading: authLoading } = useAuth();
@@ -25,6 +27,9 @@ export default function HomePage() {
   const [replyContext, setReplyContext] = useState<ReplyContext | undefined>();
 
   const isLoading = authLoading || blueskyLoading;
+
+  // Check if maintenance mode is active
+  const maintenanceMode = process.env.NEXT_PUBLIC_MAINTENANCE_MODE === "true";
 
   // Fetch Pokemon feed (default)
   const pokemonFeed = usePokemonFeed(blueskyDid);
@@ -50,8 +55,15 @@ export default function HomePage() {
     pokemonFeed.refetch();
   };
 
-  // Not signed in state - show login screen
+  // Not signed in state - show waitlist in maintenance mode, otherwise login screen
   if (!isLoading && !user) {
+    if (maintenanceMode) {
+      return (
+        <PageContainer className="flex min-h-[80vh] flex-col items-center justify-center">
+          <WaitlistForm />
+        </PageContainer>
+      );
+    }
     return <LoginScreen />;
   }
 
