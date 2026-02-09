@@ -138,6 +138,12 @@ SUPABASE_AUTH_EXTERNAL_DISCORD_SECRET=
 # GitHub: https://github.com/settings/developers
 SUPABASE_AUTH_EXTERNAL_GITHUB_CLIENT_ID=
 SUPABASE_AUTH_EXTERNAL_GITHUB_SECRET=
+
+# =============================================================================
+# E2E Testing
+# =============================================================================
+# Enables auth bypass for Playwright tests (avoids refresh token race conditions)
+E2E_AUTH_BYPASS_SECRET=test-secret-for-e2e
 EOF
 
   log_success "Created .env.local"

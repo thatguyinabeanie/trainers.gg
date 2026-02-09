@@ -50,6 +50,14 @@ export default defineConfig({
     },
   },
 
+  // Start the dev server automatically (reuses an existing one if already running)
+  webServer: {
+    command: "pnpm dev",
+    url: baseURL,
+    reuseExistingServer: !process.env.CI,
+    timeout: 120_000,
+  },
+
   projects: [
     // Auth setup — runs first, saves storage state (skip if E2E bypass enabled)
     ...(process.env.E2E_AUTH_BYPASS_SECRET
