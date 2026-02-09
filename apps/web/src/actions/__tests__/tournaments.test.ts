@@ -2,16 +2,6 @@
  * @jest-environment node
  */
 
-import {
-  createTournament,
-  updateTournament,
-  publishTournament,
-  registerForTournament,
-  cancelRegistration,
-  startRound,
-  deleteTournament,
-} from "../tournaments";
-
 // ---------------------------------------------------------------------------
 // Mock setup
 // ---------------------------------------------------------------------------
@@ -78,6 +68,16 @@ jest.mock("@/lib/supabase/server", () => ({
 jest.mock("@/lib/utils", () => ({
   getErrorMessage: jest.fn((_err: unknown, fallback: string) => fallback),
 }));
+
+import {
+  createTournament,
+  updateTournament,
+  publishTournament,
+  registerForTournament,
+  cancelRegistration,
+  startRound,
+  deleteTournament,
+} from "../tournaments";
 
 // ---------------------------------------------------------------------------
 // Tests

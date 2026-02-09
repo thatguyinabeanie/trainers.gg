@@ -2,14 +2,6 @@
  * @jest-environment node
  */
 
-import {
-  createAltAction,
-  updateAltAction,
-  deleteAltAction,
-  setMainAltAction,
-  updateProfileAction,
-} from "../alts";
-
 // Mock Supabase client
 const mockSupabaseClient = {};
 jest.mock("@/lib/supabase/server", () => ({
@@ -27,6 +19,14 @@ jest.mock("@trainers/supabase", () => ({
   deleteAlt: (...args: unknown[]) => mockDeleteAlt(...args),
   setMainAlt: (...args: unknown[]) => mockSetMainAlt(...args),
 }));
+
+import {
+  createAltAction,
+  updateAltAction,
+  deleteAltAction,
+  setMainAltAction,
+  updateProfileAction,
+} from "../alts";
 
 describe("createAltAction", () => {
   beforeEach(() => {

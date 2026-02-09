@@ -3,7 +3,6 @@
  */
 
 import { z } from "zod";
-import { rejectBots, withAction } from "../utils";
 
 // Mock botid/server
 const mockCheckBotId = jest.fn();
@@ -16,6 +15,8 @@ const mockGetErrorMessage = jest.fn();
 jest.mock("@trainers/utils", () => ({
   getErrorMessage: (...args: unknown[]) => mockGetErrorMessage(...args),
 }));
+
+import { rejectBots, withAction } from "../utils";
 
 describe("withAction", () => {
   beforeEach(() => {

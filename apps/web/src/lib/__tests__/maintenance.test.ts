@@ -2,7 +2,7 @@
  * @jest-environment node
  */
 
-import { describe, it, expect, beforeEach } from "@jest/globals";
+import { describe, it, expect, beforeEach, afterAll } from "@jest/globals";
 
 describe("isMaintenanceModeEnabled", () => {
   const originalEnv = process.env;

@@ -34,8 +34,10 @@ import proxy from "../proxy";
 
 // Helper to create a mock JWT token
 function createMockJWT(payload: object): string {
-  const header = btoa(JSON.stringify({ alg: "HS256", typ: "JWT" }));
-  const body = btoa(JSON.stringify(payload));
+  const header = Buffer.from(
+    JSON.stringify({ alg: "HS256", typ: "JWT" })
+  ).toString("base64");
+  const body = Buffer.from(JSON.stringify(payload)).toString("base64");
   const signature = "mock-signature";
   return `${header}.${body}.${signature}`;
 }
