@@ -140,8 +140,9 @@ export default async function proxy(request: NextRequest) {
   const e2eBypassHeader = request.headers.get("x-e2e-auth-bypass");
   const e2eTestModeCookie = request.cookies.get("e2e-test-mode");
   const isE2ETest =
-    (e2eBypassSecret && e2eBypassHeader === e2eBypassSecret) ||
-    e2eTestModeCookie?.value === "true";
+    e2eBypassSecret !== undefined &&
+    (e2eBypassHeader === e2eBypassSecret ||
+      e2eTestModeCookie?.value === "true");
 
   // Create Supabase client and refresh session
   const { supabase, response } = createClient(request);
@@ -212,7 +213,8 @@ export default async function proxy(request: NextRequest) {
         ) as { site_roles?: string[] };
         isSiteAdmin = payload?.site_roles?.includes("site_admin") ?? false;
       }
-    } catch {
+    } catch (error) {
+      console.error("[proxy] Failed to decode admin role from JWT:", error);
       isSiteAdmin = false;
     }
 
