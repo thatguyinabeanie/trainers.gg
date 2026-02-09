@@ -27,6 +27,7 @@
     "@types/node": "catalog:",
     "eslint": "catalog:",
     "jest": "catalog:",
+    "jest-junit": "catalog:",
     "prettier": "catalog:",
     "ts-jest": "catalog:",
     "typescript": "catalog:"

@@ -551,6 +551,9 @@ importers:
       jest:
         specifier: 'catalog:'
         version: 29.7.0(@types/node@22.19.7)(babel-plugin-macros@3.1.0)(ts-node@10.9.2(@types/node@22.19.7)(typescript@5.9.3))
+      jest-junit:
+        specifier: 'catalog:'
+        version: 16.0.0
       prettier:
         specifier: 'catalog:'
         version: 3.8.1
