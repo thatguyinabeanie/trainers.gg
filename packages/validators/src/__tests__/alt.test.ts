@@ -74,6 +74,20 @@ describe("createAltSchema", () => {
     });
     expect(result.success).toBe(true);
   });
+
+  it("accepts uppercase usernames", () => {
+    const result = createAltSchema.safeParse({
+      username: "TRAINER_ASH",
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("accepts usernames with emoji", () => {
+    const result = createAltSchema.safeParse({
+      username: "fire\u{1F525}trainer",
+    });
+    expect(result.success).toBe(true);
+  });
 });
 
 describe("updateAltSchema", () => {

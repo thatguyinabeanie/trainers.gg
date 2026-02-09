@@ -166,7 +166,7 @@ describe("checkUsernameAvailability", () => {
       if (table === "users") {
         return {
           select: jest.fn().mockReturnValue({
-            eq: jest.fn().mockReturnValue({
+            ilike: jest.fn().mockReturnValue({
               maybeSingle: jest
                 .fn()
                 .mockResolvedValue({ data: { id: "user-123" } }),
@@ -177,7 +177,7 @@ describe("checkUsernameAvailability", () => {
       // alts table fallback (should not be reached in this test)
       return {
         select: jest.fn().mockReturnValue({
-          eq: jest.fn().mockReturnValue({
+          ilike: jest.fn().mockReturnValue({
             maybeSingle: jest.fn().mockResolvedValue({ data: null }),
           }),
         }),
@@ -195,7 +195,7 @@ describe("checkUsernameAvailability", () => {
       if (table === "users") {
         return {
           select: jest.fn().mockReturnValue({
-            eq: jest.fn().mockReturnValue({
+            ilike: jest.fn().mockReturnValue({
               maybeSingle: jest.fn().mockResolvedValue({ data: null }),
             }),
           }),
@@ -204,7 +204,7 @@ describe("checkUsernameAvailability", () => {
       if (table === "alts") {
         return {
           select: jest.fn().mockReturnValue({
-            eq: jest.fn().mockReturnValue({
+            ilike: jest.fn().mockReturnValue({
               maybeSingle: jest.fn().mockResolvedValue({ data: { id: 42 } }),
             }),
           }),
@@ -223,7 +223,7 @@ describe("checkUsernameAvailability", () => {
   it("returns available when the username is not found in either table", async () => {
     mockFrom.mockImplementation(() => ({
       select: jest.fn().mockReturnValue({
-        eq: jest.fn().mockReturnValue({
+        ilike: jest.fn().mockReturnValue({
           maybeSingle: jest.fn().mockResolvedValue({ data: null }),
         }),
       }),

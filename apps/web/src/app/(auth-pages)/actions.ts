@@ -12,14 +12,14 @@ import { getEmailByUsername } from "@trainers/supabase";
 export async function resolveLoginIdentifier(
   identifier: string
 ): Promise<{ email: string | null; error: string | null }> {
-  const trimmed = identifier.trim().toLowerCase();
+  const trimmed = identifier.trim();
 
-  // If it looks like an email, return it directly
+  // If it looks like an email, return it directly (emails are case-insensitive)
   if (trimmed.includes("@")) {
-    return { email: trimmed, error: null };
+    return { email: trimmed.toLowerCase(), error: null };
   }
 
-  // Otherwise, treat it as a username and look up the email
+  // Otherwise, treat it as a username and look up the email (case-insensitive)
   try {
     const supabase = await createClient();
     const email = await getEmailByUsername(supabase, trimmed);
@@ -77,32 +77,39 @@ export async function joinWaitlist(
 export async function checkUsernameAvailability(
   username: string
 ): Promise<{ available: boolean; error: string | null }> {
-  const trimmed = username.trim().toLowerCase();
+  const trimmed = username.trim();
 
-  // Validate username format
-  if (!/^[a-zA-Z0-9_-]{3,20}$/.test(trimmed)) {
+  // Validate username format (letters, numbers, emoji, underscores, hyphens)
+  if (
+    [...trimmed].length < 3 ||
+    [...trimmed].length > 20 ||
+    !/^[\p{L}\p{N}\p{Extended_Pictographic}_-]+$/u.test(trimmed)
+  ) {
     return { available: false, error: "Invalid username format" };
   }
+
+  // Escape LIKE special characters for case-insensitive matching
+  const escaped = trimmed.replace(/[%_\\]/g, "\\$&");
 
   try {
     const supabase = await createClient();
 
-    // Check users table
+    // Check users table (case-insensitive)
     const { data: existingUser } = await supabase
       .from("users")
       .select("id")
-      .eq("username", trimmed)
+      .ilike("username", escaped)
       .maybeSingle();
 
     if (existingUser) {
       return { available: false, error: null };
     }
 
-    // Check alts table
+    // Check alts table (case-insensitive)
     const { data: existingAlt } = await supabase
       .from("alts")
       .select("id")
-      .eq("username", trimmed)
+      .ilike("username", escaped)
       .maybeSingle();
 
     if (existingAlt) {

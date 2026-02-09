@@ -12,6 +12,7 @@ type MockQueryBuilder = {
   select: jest.Mock;
   eq: jest.Mock;
   neq: jest.Mock;
+  ilike: jest.Mock;
   single: jest.Mock;
   maybeSingle: jest.Mock;
   update: jest.Mock;
@@ -30,6 +31,7 @@ const createMockClient = () => {
     select: jest.fn().mockReturnThis(),
     eq: jest.fn().mockReturnThis(),
     neq: jest.fn().mockReturnThis(),
+    ilike: jest.fn().mockReturnThis(),
     single: jest.fn(),
     maybeSingle: jest.fn(),
     update: jest.fn().mockReturnThis(),
@@ -229,10 +231,10 @@ describe("User Mutations", () => {
         }),
       } as unknown as MockQueryBuilder);
 
-      // Mock: Check username uniqueness (not found)
+      // Mock: Check username uniqueness (case-insensitive, not found)
       fromSpy.mockReturnValueOnce({
         select: jest.fn().mockReturnThis(),
-        eq: jest.fn().mockReturnThis(),
+        ilike: jest.fn().mockReturnThis(),
         neq: jest.fn().mockReturnThis(),
         single: jest.fn().mockResolvedValue({ data: null, error: null }),
       } as unknown as MockQueryBuilder);
@@ -248,7 +250,7 @@ describe("User Mutations", () => {
       expect(result).toEqual({ success: true });
     });
 
-    it("should lowercase the username before storing", async () => {
+    it("should preserve username casing when storing", async () => {
       const fromSpy = jest.spyOn(mockClient, "from");
 
       fromSpy.mockReturnValueOnce({
@@ -260,10 +262,10 @@ describe("User Mutations", () => {
         }),
       } as unknown as MockQueryBuilder);
 
-      const eqMock = jest.fn().mockReturnThis();
+      const ilikeMock = jest.fn().mockReturnThis();
       fromSpy.mockReturnValueOnce({
         select: jest.fn().mockReturnThis(),
-        eq: eqMock,
+        ilike: ilikeMock,
         neq: jest.fn().mockReturnThis(),
         single: jest.fn().mockResolvedValue({ data: null, error: null }),
       } as unknown as MockQueryBuilder);
@@ -276,10 +278,10 @@ describe("User Mutations", () => {
 
       await updateUsername(mockClient, altId, "MixedCase");
 
-      // Check that eq was called with lowercase username
-      expect(eqMock).toHaveBeenCalledWith("username", "mixedcase");
-      // Check that update was called with lowercase username
-      expect(updateMock).toHaveBeenCalledWith({ username: "mixedcase" });
+      // Check that ilike was used for case-insensitive uniqueness check
+      expect(ilikeMock).toHaveBeenCalledWith("username", "MixedCase");
+      // Check that update preserves original casing
+      expect(updateMock).toHaveBeenCalledWith({ username: "MixedCase" });
     });
 
     it("should throw error if username already taken", async () => {
@@ -294,10 +296,10 @@ describe("User Mutations", () => {
         }),
       } as unknown as MockQueryBuilder);
 
-      // Username exists
+      // Username exists (case-insensitive check)
       fromSpy.mockReturnValueOnce({
         select: jest.fn().mockReturnThis(),
-        eq: jest.fn().mockReturnThis(),
+        ilike: jest.fn().mockReturnThis(),
         neq: jest.fn().mockReturnThis(),
         single: jest.fn().mockResolvedValue({
           data: { id: 999 },
@@ -361,7 +363,7 @@ describe("User Mutations", () => {
 
       fromSpy.mockReturnValueOnce({
         select: jest.fn().mockReturnThis(),
-        eq: jest.fn().mockReturnThis(),
+        ilike: jest.fn().mockReturnThis(),
         neq: jest.fn().mockReturnThis(),
         single: jest.fn().mockResolvedValue({ data: null, error: null }),
       } as unknown as MockQueryBuilder);
@@ -615,18 +617,18 @@ describe("User Mutations", () => {
     it("should create a new alt successfully", async () => {
       const fromSpy = jest.spyOn(mockClient, "from");
 
-      // Mock: Username uniqueness check (available)
+      // Mock: Username uniqueness check (available, case-insensitive)
       fromSpy.mockReturnValueOnce({
         select: jest.fn().mockReturnThis(),
-        eq: jest.fn().mockReturnThis(),
+        ilike: jest.fn().mockReturnThis(),
         maybeSingle: jest.fn().mockResolvedValue({ data: null, error: null }),
       } as unknown as MockQueryBuilder);
 
-      // Mock: Insert alt (display_name auto-synced with username)
+      // Mock: Insert alt (display_name auto-synced with username, casing preserved)
       const newAlt = {
         id: 20,
-        username: "newplayer",
-        display_name: "newplayer",
+        username: "NewPlayer",
+        display_name: "NewPlayer",
       };
       fromSpy.mockReturnValueOnce({
         insert: jest.fn().mockReturnThis(),
@@ -649,7 +651,7 @@ describe("User Mutations", () => {
 
       fromSpy.mockReturnValueOnce({
         select: jest.fn().mockReturnThis(),
-        eq: jest.fn().mockReturnThis(),
+        ilike: jest.fn().mockReturnThis(),
         maybeSingle: jest.fn().mockResolvedValue({ data: null, error: null }),
       } as unknown as MockQueryBuilder);
 
@@ -678,13 +680,13 @@ describe("User Mutations", () => {
       });
     });
 
-    it("should lowercase username before checking and storing", async () => {
+    it("should preserve username casing while checking case-insensitively", async () => {
       const fromSpy = jest.spyOn(mockClient, "from");
 
-      const eqMock = jest.fn().mockReturnThis();
+      const ilikeMock = jest.fn().mockReturnThis();
       fromSpy.mockReturnValueOnce({
         select: jest.fn().mockReturnThis(),
-        eq: eqMock,
+        ilike: ilikeMock,
         maybeSingle: jest.fn().mockResolvedValue({ data: null, error: null }),
       } as unknown as MockQueryBuilder);
 
@@ -702,10 +704,11 @@ describe("User Mutations", () => {
         username: "MixedCase",
       });
 
-      expect(eqMock).toHaveBeenCalledWith("username", "mixedcase");
+      expect(ilikeMock).toHaveBeenCalledWith("username", "MixedCase");
       expect(insertMock).toHaveBeenCalledWith(
         expect.objectContaining({
-          username: "mixedcase",
+          username: "MixedCase",
+          display_name: "MixedCase",
         })
       );
     });
@@ -713,7 +716,7 @@ describe("User Mutations", () => {
     it("should throw error if username is already taken", async () => {
       (mockClient.from as jest.Mock).mockReturnValue({
         select: jest.fn().mockReturnThis(),
-        eq: jest.fn().mockReturnThis(),
+        ilike: jest.fn().mockReturnThis(),
         maybeSingle: jest.fn().mockResolvedValue({
           data: { id: 999 },
           error: null,
@@ -744,7 +747,7 @@ describe("User Mutations", () => {
 
       fromSpy.mockReturnValueOnce({
         select: jest.fn().mockReturnThis(),
-        eq: jest.fn().mockReturnThis(),
+        ilike: jest.fn().mockReturnThis(),
         maybeSingle: jest.fn().mockResolvedValue({ data: null, error: null }),
       } as unknown as MockQueryBuilder);
 

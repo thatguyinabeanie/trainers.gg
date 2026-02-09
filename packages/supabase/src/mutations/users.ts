@@ -70,11 +70,12 @@ export async function updateUsername(
     throw new Error("You can only update your own alt");
   }
 
-  // Check username uniqueness
+  // Check username uniqueness (case-insensitive)
+  const escapedUsername = newUsername.replace(/[%_\\]/g, "\\$&");
   const { data: existing } = await supabase
     .from("alts")
     .select("id")
-    .eq("username", newUsername.toLowerCase())
+    .ilike("username", escapedUsername)
     .neq("id", altId)
     .single();
 
@@ -84,7 +85,7 @@ export async function updateUsername(
 
   const { error } = await supabase
     .from("alts")
-    .update({ username: newUsername.toLowerCase() })
+    .update({ username: newUsername })
     .eq("id", altId);
 
   if (error) throw error;
@@ -174,11 +175,12 @@ export async function createAlt(
   } = await supabase.auth.getUser();
   if (!user) throw new Error("Not authenticated");
 
-  // Check username uniqueness
+  // Check username uniqueness (case-insensitive)
+  const escapedUsername = data.username.replace(/[%_\\]/g, "\\$&");
   const { data: usernameExists } = await supabase
     .from("alts")
     .select("id")
-    .eq("username", data.username.toLowerCase())
+    .ilike("username", escapedUsername)
     .maybeSingle();
 
   if (usernameExists) {
@@ -190,8 +192,8 @@ export async function createAlt(
     .from("alts")
     .insert({
       user_id: user.id,
-      username: data.username.toLowerCase(),
-      display_name: data.username.toLowerCase(),
+      username: data.username,
+      display_name: data.username,
       avatar_url: data.avatarUrl ?? null,
       in_game_name: data.inGameName ?? null,
     })

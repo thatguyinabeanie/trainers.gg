@@ -203,20 +203,23 @@ export async function getEmailByUsername(
   supabase: TypedClient,
   username: string
 ): Promise<string | null> {
-  // First try users.username (direct match)
+  // Escape LIKE special characters for case-insensitive exact matching
+  const escaped = username.replace(/[%_\\]/g, "\\$&");
+
+  // First try users.username (case-insensitive match)
   const { data: user } = await supabase
     .from("users")
     .select("email")
-    .eq("username", username)
+    .ilike("username", escaped)
     .maybeSingle();
 
   if (user?.email) return user.email;
 
-  // Fallback: check alts.username and join to users
+  // Fallback: check alts.username and join to users (case-insensitive)
   const { data: alt } = await supabase
     .from("alts")
     .select("user:users(email)")
-    .eq("username", username)
+    .ilike("username", escaped)
     .maybeSingle();
 
   // Type assertion since we know the structure

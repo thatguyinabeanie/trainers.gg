@@ -30,22 +30,37 @@ async function checkPdsHandleAvailable(handle: string): Promise<boolean> {
 }
 
 /**
- * Generate a trainers.gg handle from a username
+ * Generate a trainers.gg handle from a username.
+ * AT Protocol handles must be ASCII, so strip non-ASCII characters.
  */
 function generateHandle(username: string): string {
-  return `${username.toLowerCase()}.trainers.gg`;
+  const asciiPart = username.toLowerCase().replace(/[^a-z0-9-]/g, "");
+  if (asciiPart.length < 3) return "";
+  return `${asciiPart}.trainers.gg`;
+}
+
+/**
+ * Escape LIKE special characters for case-insensitive exact matching via ilike.
+ */
+function escapeLike(value: string): string {
+  return value.replace(/[%_\\]/g, "\\$&");
 }
 
 // --- Schemas ---
 
 const usernameSchema = z
   .string()
-  .min(3, "Username must be at least 3 characters")
-  .max(20, "Username must be at most 20 characters")
-  .regex(
-    /^[a-z0-9_-]+$/,
-    "Username can only contain lowercase letters, numbers, underscores, and hyphens"
-  );
+  .min(1, "Username is required")
+  .refine((val) => [...val].length >= 3, {
+    message: "Username must be at least 3 characters",
+  })
+  .refine((val) => [...val].length <= 20, {
+    message: "Username must be at most 20 characters",
+  })
+  .refine((val) => /^[\p{L}\p{N}\p{Extended_Pictographic}_-]+$/u.test(val), {
+    message:
+      "Username can only contain letters, numbers, emoji, underscores, and hyphens",
+  });
 
 const updateProfileSchema = z.object({
   username: usernameSchema.optional(),
@@ -88,11 +103,11 @@ export async function checkUsernameAvailability(username: string) {
       data: { user },
     } = await supabase.auth.getUser();
 
-    // Check if username exists in users table (excluding self)
+    // Check if username exists in users table (case-insensitive, excluding self)
     const query = supabase
       .from("users")
       .select("id")
-      .eq("username", username.toLowerCase());
+      .ilike("username", escapeLike(username));
 
     // Exclude self if authenticated
     if (user) {
@@ -113,15 +128,17 @@ export async function checkUsernameAvailability(username: string) {
       return { available: false, error: null };
     }
 
-    // Also check PDS handle availability
+    // Also check PDS handle availability (skip for emoji-only usernames)
     const handle = generateHandle(username);
-    const pdsAvailable = await checkPdsHandleAvailable(handle);
+    if (handle) {
+      const pdsAvailable = await checkPdsHandleAvailable(handle);
 
-    if (!pdsAvailable) {
-      return {
-        available: false,
-        error: "This handle is already registered on Bluesky",
-      };
+      if (!pdsAvailable) {
+        return {
+          available: false,
+          error: "This handle is already registered on Bluesky",
+        };
+      }
     }
 
     return { available: true, error: null };
@@ -211,7 +228,7 @@ export async function updateProfile(data: {
         return { success: false, error: "Please choose a custom username" };
       }
 
-      userUpdate.username = username.toLowerCase();
+      userUpdate.username = username;
     }
 
     if (validated.birthDate !== undefined) {
@@ -257,6 +274,11 @@ export async function updateProfile(data: {
         }
 
         // Call provision-pds edge function (30s timeout)
+        // PDS handles must be ASCII — derive from username
+        const pdsUsername =
+          validated.username!.toLowerCase().replace(/[^a-z0-9-]/g, "") ||
+          `user-${user.id.slice(0, 8)}`;
+
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 30_000);
 
@@ -271,7 +293,7 @@ export async function updateProfile(data: {
                 Authorization: `Bearer ${session.access_token}`,
               },
               body: JSON.stringify({
-                username: validated.username!.toLowerCase(),
+                username: pdsUsername,
               }),
               signal: controller.signal,
             }
@@ -335,7 +357,7 @@ export async function updateProfile(data: {
 
     // If username changed, also update the main alt's username + display_name
     if (hasUsernameChange) {
-      const username = validated.username!.toLowerCase();
+      const username = validated.username!;
 
       // Get main alt ID
       const { data: userData } = await supabase

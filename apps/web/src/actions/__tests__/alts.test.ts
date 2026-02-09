@@ -46,14 +46,14 @@ describe("createAltAction", () => {
     });
   });
 
-  it("returns a validation error for an invalid username (uppercase)", async () => {
+  it("returns a validation error for an invalid username (special characters)", async () => {
     const result = await createAltAction({
       username: "InvalidUser!",
     });
 
     expect(result.success).toBe(false);
     if (!result.success) {
-      expect(result.error).toMatch(/lowercase/i);
+      expect(result.error).toMatch(/letters, numbers, emoji, underscores/i);
     }
     // The mutation should never be called when validation fails
     expect(mockCreateAlt).not.toHaveBeenCalled();
