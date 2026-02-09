@@ -265,21 +265,25 @@ describe("generateSwissPairings", () => {
         createPlayerRecord({
           profileId: "p1",
           matchPoints: 1,
+          roundsPlayed: 1,
           previousOpponents: ["p2"],
         }),
         createPlayerRecord({
           profileId: "p2",
           matchPoints: 0,
+          roundsPlayed: 1,
           previousOpponents: ["p1"],
         }),
         createPlayerRecord({
           profileId: "p3",
           matchPoints: 1,
+          roundsPlayed: 1,
           previousOpponents: ["p4"],
         }),
         createPlayerRecord({
           profileId: "p4",
           matchPoints: 0,
+          roundsPlayed: 1,
           previousOpponents: ["p3"],
         }),
       ];
@@ -375,21 +379,25 @@ describe("generateSwissPairings", () => {
         createPlayerRecord({
           profileId: "p1",
           matchPoints: 1,
+          roundsPlayed: 1,
           previousOpponents: ["p2"],
         }),
         createPlayerRecord({
           profileId: "p2",
           matchPoints: 1,
+          roundsPlayed: 1,
           previousOpponents: ["p1"],
         }),
         createPlayerRecord({
           profileId: "p3",
           matchPoints: 0,
+          roundsPlayed: 1,
           previousOpponents: ["p4"],
         }),
         createPlayerRecord({
           profileId: "p4",
           matchPoints: 0,
+          roundsPlayed: 1,
           previousOpponents: ["p3"],
         }),
       ];
@@ -410,27 +418,31 @@ describe("generateSwissPairings", () => {
     });
 
     it("falls back to rematch when no valid opponents remain", () => {
-      // 4 players who have all played each other (3+ rounds completed).
+      // 4 players who have all played each other (3 rounds completed).
       // The algorithm must allow rematches as fallback.
       const players: PlayerRecord[] = [
         createPlayerRecord({
           profileId: "p1",
           matchPoints: 2,
+          roundsPlayed: 3,
           previousOpponents: ["p2", "p3", "p4"],
         }),
         createPlayerRecord({
           profileId: "p2",
           matchPoints: 2,
+          roundsPlayed: 3,
           previousOpponents: ["p1", "p3", "p4"],
         }),
         createPlayerRecord({
           profileId: "p3",
           matchPoints: 1,
+          roundsPlayed: 3,
           previousOpponents: ["p1", "p2", "p4"],
         }),
         createPlayerRecord({
           profileId: "p4",
           matchPoints: 1,
+          roundsPlayed: 3,
           previousOpponents: ["p1", "p2", "p3"],
         }),
       ];
