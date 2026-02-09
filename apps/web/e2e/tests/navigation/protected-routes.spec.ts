@@ -1,7 +1,7 @@
 import { test, expect } from "@playwright/test";
 
 test.describe("Protected routes redirect unauthenticated users", () => {
-  // Disable E2E bypass for these tests - we're testing actual unauthenticated behavior
+  // Use empty storage state so there's no authenticated session
   test.use({
     storageState: { cookies: [], origins: [] },
     extraHTTPHeaders: {
@@ -12,9 +12,6 @@ test.describe("Protected routes redirect unauthenticated users", () => {
               process.env.VERCEL_AUTOMATION_BYPASS_SECRET,
           }
         : {}),
-      // Explicitly set E2E bypass header to empty string to disable it
-      // This prevents the E2E auth bypass from taking effect in these tests
-      "x-e2e-auth-bypass": "",
     },
   });
 
@@ -31,7 +28,6 @@ test.describe("Protected routes redirect unauthenticated users", () => {
 
       // In maintenance mode, protected routes redirect to /waitlist
       // Otherwise, they redirect to /sign-in
-      // We check which redirect happened to handle both scenarios
       const url = page.url();
       const isMaintenanceMode = url.includes("/waitlist");
 

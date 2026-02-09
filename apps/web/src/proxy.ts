@@ -1,8 +1,14 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/middleware";
 import { cookies } from "next/headers";
-import type { User } from "@supabase/supabase-js";
 import { isMaintenanceModeEnabled } from "@/lib/maintenance";
+import {
+  isStaticFile,
+  isPublicRouteDuringMaintenance,
+  isProtectedRoute,
+  isAdminRoute,
+  isNextInternal,
+} from "@/lib/proxy-routes";
 
 /**
  * Proxy (Next.js 16 request interception)
@@ -30,98 +36,6 @@ import { isMaintenanceModeEnabled } from "@/lib/maintenance";
  *    - /auth/*, /api/*, /_next/*, static files are always allowed
  */
 
-// Maintenance mode is read inside the function at runtime.
-
-// Admin routes — require site_admin JWT role (checked separately from PROTECTED_ROUTES)
-const ADMIN_ROUTES = ["/admin"];
-
-// Routes that require authentication (enforced regardless of maintenance mode)
-const PROTECTED_ROUTES = [
-  "/dashboard",
-  "/to-dashboard",
-  "/onboarding",
-  "/organizations/create",
-  "/feed",
-];
-
-// Dynamic route patterns that require authentication (checked via regex)
-const PROTECTED_PATTERNS = [
-  /^\/tournaments\/[^/]+\/matches(\/|$)/, // Match pages contain chat, teams, game data
-];
-
-// Routes that are always accessible (even in maintenance mode)
-const PUBLIC_ROUTES = [
-  "/sign-in",
-  "/sign-up",
-  "/forgot-password",
-  "/reset-password",
-  "/waitlist",
-  "/invite", // Beta invite acceptance (unauthenticated users need access)
-  "/tournaments", // Browse tournaments (public directory)
-  "/organizations", // Browse organizations (public directory)
-  "/auth",
-  "/api",
-  "/oauth", // OAuth JWKS and well-known files (AT Protocol requires no redirects)
-  "/.well-known", // AT Protocol well-known paths (handle resolution)
-];
-
-// Static file extensions to skip
-const STATIC_FILE_EXTENSIONS = [
-  ".ico",
-  ".png",
-  ".jpg",
-  ".jpeg",
-  ".svg",
-  ".gif",
-  ".webp",
-  ".css",
-  ".js",
-  ".woff",
-  ".woff2",
-  ".ttf",
-  ".eot",
-  ".json", // Include JSON for OAuth JWKS and other static config files
-];
-
-function isStaticFile(pathname: string): boolean {
-  return STATIC_FILE_EXTENSIONS.some((ext) => pathname.endsWith(ext));
-}
-
-function isPublicRoute(pathname: string): boolean {
-  // Check exact matches and prefix matches
-  return PUBLIC_ROUTES.some(
-    (route) => pathname === route || pathname.startsWith(`${route}/`)
-  );
-}
-
-/**
- * Check if a route is public during maintenance mode
- *
- * During maintenance mode, the home page (/) is treated as a public route
- * so it can render and display the waitlist form for unauthenticated users.
- */
-function isPublicRouteDuringMaintenance(pathname: string): boolean {
-  return pathname === "/" || isPublicRoute(pathname);
-}
-
-function isProtectedRoute(pathname: string): boolean {
-  return (
-    PROTECTED_ROUTES.some(
-      (route) => pathname === route || pathname.startsWith(`${route}/`)
-    ) || PROTECTED_PATTERNS.some((pattern) => pattern.test(pathname))
-  );
-}
-
-function isAdminRoute(pathname: string): boolean {
-  return ADMIN_ROUTES.some(
-    (route) => pathname === route || pathname.startsWith(`${route}/`)
-  );
-}
-
-function isNextInternal(pathname: string): boolean {
-  return pathname.startsWith("/_next") || pathname.startsWith("/__next");
-}
-
 export default async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
@@ -133,59 +47,25 @@ export default async function proxy(request: NextRequest) {
   // Read maintenance mode at runtime
   const maintenanceMode = isMaintenanceModeEnabled();
 
-  // E2E test bypass: Check BOTH the header (for initial setup) AND the cookie (for subsequent requests)
-  // Header: Set by Playwright config extraHTTPHeaders (initial request only)
-  // Cookie: Set by addInitScript or by this proxy (persists across requests)
-  const e2eBypassSecret = process.env.E2E_AUTH_BYPASS_SECRET;
-  const e2eBypassHeader = request.headers.get("x-e2e-auth-bypass");
-  const e2eTestModeCookie = request.cookies.get("e2e-test-mode");
-  const isE2ETest =
-    e2eBypassSecret !== undefined &&
-    (e2eBypassHeader === e2eBypassSecret ||
-      e2eTestModeCookie?.value === "true");
-
   // Create Supabase client and refresh session
   const { supabase, response } = createClient(request);
 
+  // Get current user (this also refreshes the session)
   let user = null;
+  try {
+    const {
+      data: { user: authUser },
+      error,
+    } = await supabase.auth.getUser();
 
-  if (isE2ETest) {
-    // Mock authenticated user for E2E tests
-    // The test user details must match the seeded user from apps/web/e2e/fixtures/auth.ts
-    user = {
-      id: "b2c3d4e5-f6a7-5b6c-9d0e-1f2a3b4c5d6e", // Matches player@trainers.local from seed
-      email: "player@trainers.local",
-      app_metadata: {},
-      user_metadata: {},
-      aud: "authenticated",
-      created_at: new Date().toISOString(),
-    } as User;
-
-    // Set a cookie so both Server Components and Client Components know we're in E2E test mode
-    // Note: httpOnly is false so AuthProvider can read it via document.cookie
-    response.cookies.set("e2e-test-mode", "true", {
-      httpOnly: false,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      path: "/",
-    });
-  } else {
-    // Get current user (this also refreshes the session)
-    try {
-      const {
-        data: { user: authUser },
-        error,
-      } = await supabase.auth.getUser();
-
-      // AuthSessionMissingError is expected when user is not logged in — don't log it
-      if (error && error.name !== "AuthSessionMissingError") {
-        console.error("Failed to get user in proxy:", error);
-      } else {
-        user = authUser;
-      }
-    } catch (err) {
-      console.error("Exception in proxy getUser():", err);
+    // AuthSessionMissingError is expected when user is not logged in — don't log it
+    if (error && error.name !== "AuthSessionMissingError") {
+      console.error("Failed to get user in proxy:", error);
+    } else {
+      user = authUser;
     }
+  } catch (err) {
+    console.error("Exception in proxy getUser():", err);
   }
 
   // Admin routes require site_admin role in JWT AND active sudo mode
