@@ -5,7 +5,14 @@ test.describe("Protected routes redirect unauthenticated users", () => {
   test.use({
     storageState: { cookies: [], origins: [] },
     extraHTTPHeaders: {
-      // Explicitly set bypass header to empty string to ensure it doesn't match the secret
+      // Preserve Vercel protection bypass header for CI
+      ...(process.env.VERCEL_AUTOMATION_BYPASS_SECRET
+        ? {
+            "x-vercel-protection-bypass":
+              process.env.VERCEL_AUTOMATION_BYPASS_SECRET,
+          }
+        : {}),
+      // Explicitly set E2E bypass header to empty string to disable it
       // This prevents the E2E auth bypass from taking effect in these tests
       "x-e2e-auth-bypass": "",
     },
