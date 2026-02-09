@@ -81,7 +81,7 @@
     "@types/react": "catalog:",
     "eslint": "catalog:",
     "expo-secure-store": "~14.0.0",
-    "next": "^16.1.6",
+    "next": "^16.1.5",
     "react": "catalog:",
     "react-native-url-polyfill": "^2.0.0",
     "tsx": "^4.21.0",
