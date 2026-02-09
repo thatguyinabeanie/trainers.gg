@@ -18,7 +18,6 @@ test.describe("Protected routes redirect unauthenticated users", () => {
   const protectedRoutes = [
     "/dashboard",
     "/to-dashboard",
-    "/onboarding",
     "/organizations/create",
   ];
 
