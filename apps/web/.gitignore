@@ -5,8 +5,7 @@
 
 # Generated OAuth JWKS (built from ATPROTO_PRIVATE_KEY)
 /public/oauth/
-.env*.local
-
+.env.*
 # Playwright
 test-results/
 playwright-report/

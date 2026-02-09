@@ -1,12 +1,6 @@
 import { test, expect } from "@playwright/test";
-import { injectE2EMockAuth } from "../../fixtures/auth-bypass";
 
 test.describe("Alts page", () => {
-  test.beforeEach(async ({ page }) => {
-    // Inject mock auth BEFORE navigating
-    await injectE2EMockAuth(page);
-  });
-
   test("shows alts page from dashboard nav", async ({ page }) => {
     await page.goto("/dashboard");
 

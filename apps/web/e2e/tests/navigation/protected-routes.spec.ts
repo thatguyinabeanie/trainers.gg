@@ -1,7 +1,22 @@
 import { test, expect } from "@playwright/test";
 
 test.describe("Protected routes redirect unauthenticated users", () => {
-  test.use({ storageState: { cookies: [], origins: [] } });
+  // Disable E2E bypass for these tests - we're testing actual unauthenticated behavior
+  test.use({
+    storageState: { cookies: [], origins: [] },
+    extraHTTPHeaders: {
+      // Preserve Vercel protection bypass header for CI
+      ...(process.env.VERCEL_AUTOMATION_BYPASS_SECRET
+        ? {
+            "x-vercel-protection-bypass":
+              process.env.VERCEL_AUTOMATION_BYPASS_SECRET,
+          }
+        : {}),
+      // Explicitly set E2E bypass header to empty string to disable it
+      // This prevents the E2E auth bypass from taking effect in these tests
+      "x-e2e-auth-bypass": "",
+    },
+  });
 
   const protectedRoutes = [
     "/dashboard",

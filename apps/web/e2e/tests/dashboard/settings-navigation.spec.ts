@@ -1,12 +1,6 @@
 import { test, expect } from "@playwright/test";
-import { injectE2EMockAuth } from "../../fixtures/auth-bypass";
 
 test.describe("Settings navigation", () => {
-  test.beforeEach(async ({ page }) => {
-    // Inject mock auth BEFORE navigating
-    await injectE2EMockAuth(page);
-  });
-
   test("shows settings tabs and allows navigation", async ({ page }) => {
     await page.goto("/dashboard/settings/profile");
 
