@@ -16,15 +16,19 @@
     "format:check": "prettier --check \"src/**/*.{ts,tsx,js,jsx,json,md}\""
   },
   "dependencies": {
-    "@atproto/api": "^0.18.17"
+    "@atproto/api": "catalog:"
   },
   "devDependencies": {
+    "@types/jest": "catalog:",
     "@trainers/eslint-config": "workspace:*",
     "@trainers/jest-config": "workspace:*",
     "@trainers/prettier-config": "workspace:*",
     "@trainers/typescript-config": "workspace:*",
     "@types/node": "catalog:",
     "eslint": "catalog:",
+    "jest": "catalog:",
+    "prettier": "catalog:",
+    "ts-jest": "catalog:",
     "typescript": "catalog:"
   },
   "prettier": "@trainers/prettier-config"

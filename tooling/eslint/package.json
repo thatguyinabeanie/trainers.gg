@@ -27,7 +27,8 @@
     "globals": "^17.0.0"
   },
   "devDependencies": {
-    "@trainers/prettier-config": "workspace:*"
+    "@trainers/prettier-config": "workspace:*",
+    "prettier": "catalog:"
   },
   "peerDependencies": {
     "eslint": "^9.39.0",

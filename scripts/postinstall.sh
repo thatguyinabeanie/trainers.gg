@@ -215,7 +215,7 @@ generate_oauth_keys() {
   fi
 
   log_info "Generating OAuth keys..."
-  (cd "$ROOT_DIR" && node "$ROOT_DIR/scripts/generate-oauth-keys.mjs")
+  (cd "$ROOT_DIR/apps/web" && node "$ROOT_DIR/apps/web/scripts/generate-oauth-keys.mjs")
 
   if [ $? -eq 0 ]; then
     log_success "OAuth keys generated"

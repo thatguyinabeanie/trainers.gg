@@ -17,17 +17,22 @@
     "format:check": "prettier --check \"src/**/*.{ts,tsx,js,jsx,json,md}\""
   },
   "dependencies": {
-    "@pkmn/data": "^0.10.5",
-    "@pkmn/dex": "^0.10.5",
-    "@pkmn/img": "^0.3.3",
-    "@pkmn/sim": "^0.10.5"
+    "@pkmn/data": "catalog:",
+    "@pkmn/dex": "catalog:",
+    "@pkmn/img": "catalog:",
+    "@pkmn/sim": "catalog:"
   },
   "devDependencies": {
+    "@types/jest": "catalog:",
     "@trainers/eslint-config": "workspace:*",
     "@trainers/jest-config": "workspace:*",
     "@trainers/prettier-config": "workspace:*",
     "@trainers/typescript-config": "workspace:*",
     "eslint": "catalog:",
+    "jest": "catalog:",
+    "jest-junit": "catalog:",
+    "prettier": "catalog:",
+    "ts-jest": "catalog:",
     "typescript": "catalog:"
   },
   "prettier": "@trainers/prettier-config"

@@ -364,3 +364,447 @@ describe("calculateStandings", () => {
     expect(standings[0]!.opponentGameWinPercentage).toBe(0.5);
   });
 });
+
+describe("calculateStandings - tiebreaker cascading", () => {
+  it("breaks tie using GW% when matchPoints and OMW% are equal", () => {
+    // A and B both have 1 matchPt. Their opponents (C and D) both have 0 matchPts
+    // so OMW% is equal (both 0.33 floor). But A won 2-0 (GW% = 1.0) while
+    // B won 2-1 (GW% = 0.667). A should rank above B.
+    const players = [
+      createPlayer("A"),
+      createPlayer("B"),
+      createPlayer("C"),
+      createPlayer("D"),
+    ];
+    const matches = [
+      createMatch({
+        player1Id: "A",
+        player2Id: "C",
+        player1MatchPoints: 1,
+        player2MatchPoints: 0,
+        player1GameWins: 2,
+        player2GameWins: 0,
+        roundNumber: 1,
+      }),
+      createMatch({
+        player1Id: "B",
+        player2Id: "D",
+        player1MatchPoints: 1,
+        player2MatchPoints: 0,
+        player1GameWins: 2,
+        player2GameWins: 1,
+        roundNumber: 1,
+      }),
+    ];
+
+    const standings = calculateStandings(players, matches);
+
+    const standingA = standings.find((s) => s.playerId === "A")!;
+    const standingB = standings.find((s) => s.playerId === "B")!;
+
+    // Both have 1 matchPt
+    expect(standingA.matchPoints).toBe(1);
+    expect(standingB.matchPoints).toBe(1);
+
+    // Both opponents have 0-1 record → MWP = 0.33 (floor), so OMW% tied
+    expect(standingA.opponentMatchWinPercentage).toBeCloseTo(0.33, 2);
+    expect(standingB.opponentMatchWinPercentage).toBeCloseTo(0.33, 2);
+
+    // GW% differs: A = 2/2 = 1.0, B = 2/3 ≈ 0.667
+    expect(standingA.gameWinPercentage).toBe(1.0);
+    expect(standingB.gameWinPercentage).toBeCloseTo(2 / 3, 5);
+
+    // A should rank higher than B (lower rank number)
+    expect(standingA.rank).toBeLessThan(standingB.rank);
+  });
+
+  it("breaks tie using OGW% when first 3 tiebreakers are equal", () => {
+    // A and B both have 1 matchPt, same GW% (2/3), same OMW% (0.5).
+    // A's opponent (C) has better game record than B's opponent (D),
+    // so A's OGW% > B's OGW%.
+    const players = [
+      createPlayer("A"),
+      createPlayer("B"),
+      createPlayer("C"),
+      createPlayer("D"),
+      createPlayer("E"),
+      createPlayer("F"),
+    ];
+    const matches = [
+      // A beats C 2-1
+      createMatch({
+        player1Id: "A",
+        player2Id: "C",
+        player1MatchPoints: 1,
+        player2MatchPoints: 0,
+        player1GameWins: 2,
+        player2GameWins: 1,
+        roundNumber: 1,
+      }),
+      // B beats D 2-1
+      createMatch({
+        player1Id: "B",
+        player2Id: "D",
+        player1MatchPoints: 1,
+        player2MatchPoints: 0,
+        player1GameWins: 2,
+        player2GameWins: 1,
+        roundNumber: 1,
+      }),
+      // C beats E 2-0 (gives C a better game record: 3/5 = 0.6 GW%)
+      createMatch({
+        player1Id: "C",
+        player2Id: "E",
+        player1MatchPoints: 1,
+        player2MatchPoints: 0,
+        player1GameWins: 2,
+        player2GameWins: 0,
+        roundNumber: 2,
+      }),
+      // D beats F 2-1 (gives D a worse game record: 3/6 = 0.5 GW%)
+      createMatch({
+        player1Id: "D",
+        player2Id: "F",
+        player1MatchPoints: 1,
+        player2MatchPoints: 0,
+        player1GameWins: 2,
+        player2GameWins: 1,
+        roundNumber: 2,
+      }),
+    ];
+
+    const standings = calculateStandings(players, matches);
+
+    const standingA = standings.find((s) => s.playerId === "A")!;
+    const standingB = standings.find((s) => s.playerId === "B")!;
+
+    // Same matchPoints
+    expect(standingA.matchPoints).toBe(1);
+    expect(standingB.matchPoints).toBe(1);
+
+    // Same OMW%: C MWP = 1/2 = 0.5, D MWP = 1/2 = 0.5
+    expect(standingA.opponentMatchWinPercentage).toBeCloseTo(0.5, 2);
+    expect(standingB.opponentMatchWinPercentage).toBeCloseTo(0.5, 2);
+
+    // Same GW%: both 2/3
+    expect(standingA.gameWinPercentage).toBeCloseTo(2 / 3, 5);
+    expect(standingB.gameWinPercentage).toBeCloseTo(2 / 3, 5);
+
+    // OGW% differs: A's opponent C has GW% = 3/5 = 0.6, B's opponent D has GW% = 3/6 = 0.5
+    expect(standingA.opponentGameWinPercentage).toBeCloseTo(0.6, 2);
+    expect(standingB.opponentGameWinPercentage).toBeCloseTo(0.5, 2);
+
+    // A should rank higher
+    expect(standingA.rank).toBeLessThan(standingB.rank);
+  });
+
+  it("handles three-way tie resolved by GW%", () => {
+    // 3 players (p1, p2, p3) each with 1 matchPt and same OMW% (0.33 floor).
+    // Different game scores produce different GW%.
+    const players = [
+      createPlayer("p1"),
+      createPlayer("p2"),
+      createPlayer("p3"),
+      createPlayer("opp1"),
+      createPlayer("opp2"),
+      createPlayer("opp3"),
+    ];
+    const matches = [
+      // p1 beats opp1 with 2-0 → GW% = 2/2 = 1.0
+      createMatch({
+        player1Id: "p1",
+        player2Id: "opp1",
+        player1MatchPoints: 1,
+        player2MatchPoints: 0,
+        player1GameWins: 2,
+        player2GameWins: 0,
+        roundNumber: 1,
+      }),
+      // p2 beats opp2 with 2-1 → GW% = 2/3 ≈ 0.667
+      createMatch({
+        player1Id: "p2",
+        player2Id: "opp2",
+        player1MatchPoints: 1,
+        player2MatchPoints: 0,
+        player1GameWins: 2,
+        player2GameWins: 1,
+        roundNumber: 1,
+      }),
+      // p3 beats opp3 with 3-2 → GW% = 3/5 = 0.6
+      createMatch({
+        player1Id: "p3",
+        player2Id: "opp3",
+        player1MatchPoints: 1,
+        player2MatchPoints: 0,
+        player1GameWins: 3,
+        player2GameWins: 2,
+        roundNumber: 1,
+      }),
+    ];
+
+    const standings = calculateStandings(players, matches);
+
+    const s1 = standings.find((s) => s.playerId === "p1")!;
+    const s2 = standings.find((s) => s.playerId === "p2")!;
+    const s3 = standings.find((s) => s.playerId === "p3")!;
+
+    // All have 1 matchPt, all OMW% = 0.33 (opponents all 0-1)
+    expect(s1.matchPoints).toBe(1);
+    expect(s2.matchPoints).toBe(1);
+    expect(s3.matchPoints).toBe(1);
+
+    // GW% ordering: p1 (1.0) > p2 (0.667) > p3 (0.6)
+    expect(s1.rank).toBeLessThan(s2.rank);
+    expect(s2.rank).toBeLessThan(s3.rank);
+  });
+
+  it("includes bye winner match points but excludes bye from game stats and opponents", () => {
+    // A has a bye (1 matchPt) then beats B (2-1). B beats C (2-0).
+    // Bye should give A match points but NOT contribute to game records or opponent list.
+    const players = [createPlayer("A"), createPlayer("B"), createPlayer("C")];
+    const matches = [
+      // A's bye
+      createMatch({
+        player1Id: "A",
+        player2Id: null,
+        player1MatchPoints: 1,
+        player2MatchPoints: 0,
+        player1GameWins: 0,
+        player2GameWins: 0,
+        isBye: true,
+        roundNumber: 1,
+      }),
+      // A beats B 2-1
+      createMatch({
+        player1Id: "A",
+        player2Id: "B",
+        player1MatchPoints: 1,
+        player2MatchPoints: 0,
+        player1GameWins: 2,
+        player2GameWins: 1,
+        roundNumber: 2,
+      }),
+      // B beats C 2-0
+      createMatch({
+        player1Id: "B",
+        player2Id: "C",
+        player1MatchPoints: 1,
+        player2MatchPoints: 0,
+        player1GameWins: 2,
+        player2GameWins: 0,
+        roundNumber: 1,
+      }),
+    ];
+
+    const standings = calculateStandings(players, matches);
+    const standingA = standings.find((s) => s.playerId === "A")!;
+
+    // A has 2 match points (bye + win)
+    expect(standingA.matchPoints).toBe(2);
+    expect(standingA.matchesPlayed).toBe(2);
+
+    // A's game stats should only count the real match (2 wins, 3 total games)
+    expect(standingA.gameWins).toBe(2);
+    expect(standingA.gamePoints).toBe(3); // 2 + 1 total games
+    expect(standingA.gameWinPercentage).toBeCloseTo(2 / 3, 5);
+
+    // A's OMW% should only include B (not the bye opponent)
+    // B has 1 win, 1 loss → MWP = 1/2 = 0.5
+    expect(standingA.opponentMatchWinPercentage).toBeCloseTo(0.5, 2);
+
+    // A should be rank 1
+    expect(standingA.rank).toBe(1);
+  });
+
+  it("includes dropped opponent's record in OMW% calculation", () => {
+    // A beats B, then B loses to C (B "drops" after going 0-2).
+    // B's 0-2 record (MWP = 0.33 floor) should still count in A's OMW%.
+    const players = [createPlayer("A"), createPlayer("B"), createPlayer("C")];
+    const matches = [
+      // A beats B 2-0
+      createMatch({
+        player1Id: "A",
+        player2Id: "B",
+        player1MatchPoints: 1,
+        player2MatchPoints: 0,
+        player1GameWins: 2,
+        player2GameWins: 0,
+        roundNumber: 1,
+      }),
+      // C beats B 2-1 (B now 0-2, effectively dropped)
+      createMatch({
+        player1Id: "C",
+        player2Id: "B",
+        player1MatchPoints: 1,
+        player2MatchPoints: 0,
+        player1GameWins: 2,
+        player2GameWins: 1,
+        roundNumber: 2,
+      }),
+    ];
+
+    const standings = calculateStandings(players, matches);
+    const standingA = standings.find((s) => s.playerId === "A")!;
+
+    // A's only opponent is B. B's record: 0 wins, 2 matches.
+    // B's MWP = max(0/2, 0.33) = 0.33
+    // A's OMW% = 0.33
+    expect(standingA.opponentMatchWinPercentage).toBeCloseTo(0.33, 2);
+  });
+
+  it("calculates correct standings for 8-player Swiss after 3 rounds", () => {
+    const players = Array.from({ length: 8 }, (_, i) =>
+      createPlayer(`p${i + 1}`)
+    );
+
+    const matches = [
+      // Round 1
+      createMatch({
+        player1Id: "p1",
+        player2Id: "p5",
+        player1MatchPoints: 1,
+        player2MatchPoints: 0,
+        player1GameWins: 2,
+        player2GameWins: 0,
+        roundNumber: 1,
+      }),
+      createMatch({
+        player1Id: "p2",
+        player2Id: "p6",
+        player1MatchPoints: 1,
+        player2MatchPoints: 0,
+        player1GameWins: 2,
+        player2GameWins: 1,
+        roundNumber: 1,
+      }),
+      createMatch({
+        player1Id: "p3",
+        player2Id: "p7",
+        player1MatchPoints: 1,
+        player2MatchPoints: 0,
+        player1GameWins: 2,
+        player2GameWins: 1,
+        roundNumber: 1,
+      }),
+      createMatch({
+        player1Id: "p4",
+        player2Id: "p8",
+        player1MatchPoints: 1,
+        player2MatchPoints: 0,
+        player1GameWins: 2,
+        player2GameWins: 0,
+        roundNumber: 1,
+      }),
+      // Round 2: 1-0 players face each other, 0-1 players face each other
+      createMatch({
+        player1Id: "p1",
+        player2Id: "p2",
+        player1MatchPoints: 1,
+        player2MatchPoints: 0,
+        player1GameWins: 2,
+        player2GameWins: 1,
+        roundNumber: 2,
+      }),
+      createMatch({
+        player1Id: "p3",
+        player2Id: "p4",
+        player1MatchPoints: 1,
+        player2MatchPoints: 0,
+        player1GameWins: 2,
+        player2GameWins: 0,
+        roundNumber: 2,
+      }),
+      createMatch({
+        player1Id: "p5",
+        player2Id: "p6",
+        player1MatchPoints: 1,
+        player2MatchPoints: 0,
+        player1GameWins: 2,
+        player2GameWins: 1,
+        roundNumber: 2,
+      }),
+      createMatch({
+        player1Id: "p7",
+        player2Id: "p8",
+        player1MatchPoints: 1,
+        player2MatchPoints: 0,
+        player1GameWins: 2,
+        player2GameWins: 0,
+        roundNumber: 2,
+      }),
+      // Round 3: 2-0 face each other, 1-1 face each other, 0-2 face each other
+      createMatch({
+        player1Id: "p1",
+        player2Id: "p3",
+        player1MatchPoints: 1,
+        player2MatchPoints: 0,
+        player1GameWins: 2,
+        player2GameWins: 0,
+        roundNumber: 3,
+      }),
+      createMatch({
+        player1Id: "p2",
+        player2Id: "p5",
+        player1MatchPoints: 1,
+        player2MatchPoints: 0,
+        player1GameWins: 2,
+        player2GameWins: 1,
+        roundNumber: 3,
+      }),
+      createMatch({
+        player1Id: "p4",
+        player2Id: "p7",
+        player1MatchPoints: 1,
+        player2MatchPoints: 0,
+        player1GameWins: 2,
+        player2GameWins: 1,
+        roundNumber: 3,
+      }),
+      createMatch({
+        player1Id: "p6",
+        player2Id: "p8",
+        player1MatchPoints: 1,
+        player2MatchPoints: 0,
+        player1GameWins: 2,
+        player2GameWins: 0,
+        roundNumber: 3,
+      }),
+    ];
+
+    const standings = calculateStandings(players, matches);
+
+    // Verify all 8 players have unique sequential ranks
+    const ranks = standings.map((s) => s.rank).sort((a, b) => a - b);
+    expect(ranks).toEqual([1, 2, 3, 4, 5, 6, 7, 8]);
+
+    // p1 went 3-0: must be rank 1
+    expect(standings.find((s) => s.playerId === "p1")!.rank).toBe(1);
+    expect(standings.find((s) => s.playerId === "p1")!.matchPoints).toBe(3);
+
+    // p8 went 0-3: must be rank 8
+    expect(standings.find((s) => s.playerId === "p8")!.rank).toBe(8);
+    expect(standings.find((s) => s.playerId === "p8")!.matchPoints).toBe(0);
+
+    // 2-1 players (p2, p3, p4) should be ranked 2-4
+    const twoOneRanks = ["p2", "p3", "p4"].map(
+      (id) => standings.find((s) => s.playerId === id)!.rank
+    );
+    for (const rank of twoOneRanks) {
+      expect(rank).toBeGreaterThanOrEqual(2);
+      expect(rank).toBeLessThanOrEqual(4);
+    }
+
+    // 1-2 players (p5, p6, p7) should be ranked 5-7
+    const oneTwoRanks = ["p5", "p6", "p7"].map(
+      (id) => standings.find((s) => s.playerId === id)!.rank
+    );
+    for (const rank of oneTwoRanks) {
+      expect(rank).toBeGreaterThanOrEqual(5);
+      expect(rank).toBeLessThanOrEqual(7);
+    }
+
+    // Tiebreakers should differentiate within each group (no two players share a rank)
+    expect(new Set(twoOneRanks).size).toBe(3);
+    expect(new Set(oneTwoRanks).size).toBe(3);
+  });
+});

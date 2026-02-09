@@ -64,27 +64,9 @@
     "clean": "turbo run clean && rm -rf node_modules .turbo"
   },
   "devDependencies": {
-    "@atproto/jwk-jose": "^0.1.11",
-    "@trainers/prettier-config": "workspace:*",
-    "@types/jest": "^29.5.14",
-    "eslint": "catalog:",
     "husky": "^9.1.7",
-    "jest": "^29.7.0",
-    "jest-junit": "^16.0.0",
-    "jose": "^5.10.0",
     "lint-staged": "^16.2.7",
-    "prettier": "catalog:",
-    "prettier-plugin-tailwindcss": "^0.6.14",
-    "supabase": "^2.75.3",
-    "ts-jest": "^29.4.6",
-    "ts-node": "^10.9.2",
-    "turbo": "^2.8.3",
-    "typescript": "catalog:"
-  },
-  "lint-staged": {
-    "*.{js,jsx,ts,tsx,json,md,css,html,yml,yaml}": [
-      "prettier --write"
-    ]
+    "turbo": "^2.8.3"
   },
   "pnpm": {
     "overrides": {
