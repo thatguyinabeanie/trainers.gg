@@ -3,6 +3,7 @@
 import { checkBotId } from "botid/server";
 import { createClient } from "@/lib/supabase/server";
 import { getEmailByUsername } from "@trainers/supabase";
+import { escapeLike } from "@trainers/utils";
 
 /**
  * Resolve a login identifier (email or username) to an email address.
@@ -88,29 +89,44 @@ export async function checkUsernameAvailability(
     return { available: false, error: "Invalid username format" };
   }
 
-  // Escape LIKE special characters for case-insensitive matching
-  const escaped = trimmed.replace(/[%_\\]/g, "\\$&");
+  const escaped = escapeLike(trimmed);
 
   try {
     const supabase = await createClient();
 
     // Check users table (case-insensitive)
-    const { data: existingUser } = await supabase
+    const { data: existingUser, error: usersError } = await supabase
       .from("users")
       .select("id")
       .ilike("username", escaped)
       .maybeSingle();
+
+    if (usersError) {
+      console.error("Error checking username in users:", usersError);
+      return {
+        available: false,
+        error: "An error occurred. Please try again.",
+      };
+    }
 
     if (existingUser) {
       return { available: false, error: null };
     }
 
     // Check alts table (case-insensitive)
-    const { data: existingAlt } = await supabase
+    const { data: existingAlt, error: altsError } = await supabase
       .from("alts")
       .select("id")
       .ilike("username", escaped)
       .maybeSingle();
+
+    if (altsError) {
+      console.error("Error checking username in alts:", altsError);
+      return {
+        available: false,
+        error: "An error occurred. Please try again.",
+      };
+    }
 
     if (existingAlt) {
       return { available: false, error: null };

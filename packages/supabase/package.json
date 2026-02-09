@@ -43,6 +43,7 @@
   "dependencies": {
     "@supabase/ssr": "catalog:",
     "@supabase/supabase-js": "catalog:",
+    "@trainers/utils": "workspace:*",
     "@trainers/validators": "workspace:*",
     "next": "catalog:",
     "react": "catalog:",

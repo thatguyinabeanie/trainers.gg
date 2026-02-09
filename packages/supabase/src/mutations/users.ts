@@ -1,5 +1,6 @@
 import type { TypedClient } from "../client";
 import type { Database } from "../types";
+import { escapeLike } from "@trainers/utils";
 
 /**
  * Update user alt
@@ -71,7 +72,7 @@ export async function updateUsername(
   }
 
   // Check username uniqueness (case-insensitive)
-  const escapedUsername = newUsername.replace(/[%_\\]/g, "\\$&");
+  const escapedUsername = escapeLike(newUsername);
   const { data: existing } = await supabase
     .from("alts")
     .select("id")
@@ -128,19 +129,24 @@ export async function ensureAlt(supabase: TypedClient) {
       ?.toLowerCase()
       .replace(/[^a-z0-9_]/g, "_") || `user_${user.id.slice(0, 8)}`;
 
-  // Ensure username is unique by appending random suffix if needed
+  // Ensure username is unique (case-insensitive) by appending random suffix if needed
   let username = defaultUsername;
   let attempts = 0;
   while (attempts < 5) {
     const { data: usernameExists } = await supabase
       .from("alts")
       .select("id")
-      .eq("username", username)
-      .single();
+      .ilike("username", escapeLike(username))
+      .maybeSingle();
 
     if (!usernameExists) break;
     username = `${defaultUsername}_${Math.random().toString(36).slice(2, 6)}`;
     attempts++;
+  }
+
+  if (attempts >= 5) {
+    // All attempts exhausted — use a UUID-based fallback
+    username = `user_${user.id.slice(0, 12)}`;
   }
 
   // display_name is auto-synced with username
@@ -176,7 +182,7 @@ export async function createAlt(
   if (!user) throw new Error("Not authenticated");
 
   // Check username uniqueness (case-insensitive)
-  const escapedUsername = data.username.replace(/[%_\\]/g, "\\$&");
+  const escapedUsername = escapeLike(data.username);
   const { data: usernameExists } = await supabase
     .from("alts")
     .select("id")

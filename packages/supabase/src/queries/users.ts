@@ -1,4 +1,5 @@
 import type { TypedClient } from "../client";
+import { escapeLike } from "@trainers/utils";
 
 /**
  * Get count of all users (for seeding check)
@@ -185,10 +186,11 @@ export async function searchAlts(
   query: string,
   limit = 10
 ) {
+  const escapedQuery = escapeLike(query);
   const { data, error } = await supabase
     .from("alts")
     .select("*")
-    .or(`username.ilike.%${query}%,display_name.ilike.%${query}%`)
+    .or(`username.ilike.%${escapedQuery}%,display_name.ilike.%${escapedQuery}%`)
     .limit(limit);
 
   if (error) throw error;
@@ -203,24 +205,33 @@ export async function getEmailByUsername(
   supabase: TypedClient,
   username: string
 ): Promise<string | null> {
-  // Escape LIKE special characters for case-insensitive exact matching
-  const escaped = username.replace(/[%_\\]/g, "\\$&");
+  const escaped = escapeLike(username);
 
   // First try users.username (case-insensitive match)
-  const { data: user } = await supabase
+  const { data: user, error: userError } = await supabase
     .from("users")
     .select("email")
     .ilike("username", escaped)
     .maybeSingle();
 
+  if (userError) {
+    console.error("Error looking up email by username in users:", userError);
+    return null;
+  }
+
   if (user?.email) return user.email;
 
   // Fallback: check alts.username and join to users (case-insensitive)
-  const { data: alt } = await supabase
+  const { data: alt, error: altError } = await supabase
     .from("alts")
     .select("user:users(email)")
     .ilike("username", escaped)
     .maybeSingle();
+
+  if (altError) {
+    console.error("Error looking up email by username in alts:", altError);
+    return null;
+  }
 
   // Type assertion since we know the structure
   const altUser = alt?.user as { email: string | null } | null;

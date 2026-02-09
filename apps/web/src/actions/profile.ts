@@ -4,63 +4,57 @@ import { z } from "zod";
 import { checkBotId } from "botid/server";
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
+import { usernameSchema } from "@trainers/validators";
+import { escapeLike } from "@trainers/utils";
 
 const PDS_HOST = process.env.PDS_HOST || "https://pds.trainers.gg";
 
 /**
- * Check if a handle is available on the PDS
+ * Check if a handle is available on the PDS.
+ * Returns true if available, false if taken.
+ * On network errors, assumes available (provisioning will catch conflicts).
  */
 async function checkPdsHandleAvailable(handle: string): Promise<boolean> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 5_000);
+
   try {
     const response = await fetch(
-      `${PDS_HOST}/xrpc/com.atproto.identity.resolveHandle?handle=${encodeURIComponent(handle)}`
+      `${PDS_HOST}/xrpc/com.atproto.identity.resolveHandle?handle=${encodeURIComponent(handle)}`,
+      { signal: controller.signal }
     );
 
-    // 400 with "Unable to resolve handle" means it's available
+    // 400 means the handle could not be resolved — it's available
     if (response.status === 400) {
       return true;
     }
 
     // 200 means handle exists (not available)
     return false;
-  } catch {
-    // Network error - assume available but will fail at creation
+  } catch (error) {
+    if (error instanceof Error && error.name === "AbortError") {
+      console.warn("PDS handle check timed out for:", handle);
+    } else {
+      console.warn("PDS handle check failed for:", handle, error);
+    }
+    // Assume available — provisioning will catch conflicts
     return true;
+  } finally {
+    clearTimeout(timeoutId);
   }
 }
 
 /**
  * Generate a trainers.gg handle from a username.
- * AT Protocol handles must be ASCII, so strip non-ASCII characters.
+ * AT Protocol handles must be ASCII lowercase alphanumeric + hyphens,
+ * so non-matching characters (emoji, underscores, etc.) are stripped.
+ * Returns empty string if the result is too short (< 3 chars).
  */
 function generateHandle(username: string): string {
   const asciiPart = username.toLowerCase().replace(/[^a-z0-9-]/g, "");
   if (asciiPart.length < 3) return "";
   return `${asciiPart}.trainers.gg`;
 }
-
-/**
- * Escape LIKE special characters for case-insensitive exact matching via ilike.
- */
-function escapeLike(value: string): string {
-  return value.replace(/[%_\\]/g, "\\$&");
-}
-
-// --- Schemas ---
-
-const usernameSchema = z
-  .string()
-  .min(1, "Username is required")
-  .refine((val) => [...val].length >= 3, {
-    message: "Username must be at least 3 characters",
-  })
-  .refine((val) => [...val].length <= 20, {
-    message: "Username must be at most 20 characters",
-  })
-  .refine((val) => /^[\p{L}\p{N}\p{Extended_Pictographic}_-]+$/u.test(val), {
-    message:
-      "Username can only contain letters, numbers, emoji, underscores, and hyphens",
-  });
 
 const updateProfileSchema = z.object({
   username: usernameSchema.optional(),
@@ -81,14 +75,7 @@ const updateProfileSchema = z.object({
  */
 export async function checkUsernameAvailability(username: string) {
   try {
-    // Reject placeholder usernames (temp_*, user_*)
-    if (username.startsWith("temp_") || username.startsWith("user_")) {
-      return {
-        available: false,
-        error: "Please choose a custom username",
-      };
-    }
-
+    // usernameSchema rejects temp_*/user_* placeholders + profanity
     const validated = usernameSchema.safeParse(username);
     if (!validated.success) {
       return {
@@ -103,21 +90,23 @@ export async function checkUsernameAvailability(username: string) {
       data: { user },
     } = await supabase.auth.getUser();
 
-    // Check if username exists in users table (case-insensitive, excluding self)
-    const query = supabase
+    const escaped = escapeLike(username);
+
+    // Check users table (case-insensitive, excluding self)
+    const usersQuery = supabase
       .from("users")
       .select("id")
-      .ilike("username", escapeLike(username));
+      .ilike("username", escaped);
 
-    // Exclude self if authenticated
     if (user) {
-      query.neq("id", user.id);
+      usersQuery.neq("id", user.id);
     }
 
-    const { data: existingUser, error } = await query.maybeSingle();
+    const { data: existingUser, error: usersError } =
+      await usersQuery.maybeSingle();
 
-    if (error) {
-      console.error("Error checking username:", error);
+    if (usersError) {
+      console.error("Error checking username in users:", usersError);
       return {
         available: false,
         error: "Failed to check username availability",
@@ -128,7 +117,32 @@ export async function checkUsernameAvailability(username: string) {
       return { available: false, error: null };
     }
 
-    // Also check PDS handle availability (skip for emoji-only usernames)
+    // Check alts table (case-insensitive, excluding current user's alts)
+    const altsQuery = supabase
+      .from("alts")
+      .select("id")
+      .ilike("username", escaped);
+
+    if (user) {
+      altsQuery.neq("user_id", user.id);
+    }
+
+    const { data: existingAlt, error: altsError } =
+      await altsQuery.maybeSingle();
+
+    if (altsError) {
+      console.error("Error checking username in alts:", altsError);
+      return {
+        available: false,
+        error: "Failed to check username availability",
+      };
+    }
+
+    if (existingAlt) {
+      return { available: false, error: null };
+    }
+
+    // Check PDS handle availability (skip for emoji-only usernames)
     const handle = generateHandle(username);
     if (handle) {
       const pdsAvailable = await checkPdsHandleAvailable(handle);
@@ -161,11 +175,16 @@ export async function getCurrentUserProfile() {
 
     if (!user) return null;
 
-    const { data: userData } = await supabase
+    const { data: userData, error: dbError } = await supabase
       .from("users")
       .select("id, username, pds_status, pds_handle, did, birth_date, country")
       .eq("id", user.id)
       .maybeSingle();
+
+    if (dbError) {
+      console.error("Error fetching user profile:", dbError);
+      return null;
+    }
 
     if (!userData) return null;
 
@@ -221,14 +240,8 @@ export async function updateProfile(data: {
     const hasUsernameChange = validated.username !== undefined;
 
     if (hasUsernameChange) {
-      const username = validated.username!;
-
-      // Reject placeholder usernames
-      if (username.startsWith("temp_") || username.startsWith("user_")) {
-        return { success: false, error: "Please choose a custom username" };
-      }
-
-      userUpdate.username = username;
+      // usernameSchema already rejects temp_*/user_* placeholders + profanity
+      userUpdate.username = validated.username!;
     }
 
     if (validated.birthDate !== undefined) {
@@ -314,7 +327,23 @@ export async function updateProfile(data: {
           clearTimeout(timeoutId);
         }
 
-        const provisionResult = await provisionResponse.json();
+        let provisionResult: {
+          success?: boolean;
+          code?: string;
+          error?: string;
+        };
+        try {
+          provisionResult = await provisionResponse.json();
+        } catch {
+          console.error(
+            "Failed to parse provision-pds response:",
+            provisionResponse.status
+          );
+          return {
+            success: false,
+            error: "Failed to create your Bluesky account. Please try again.",
+          };
+        }
 
         if (!provisionResult.success) {
           if (provisionResult.code === "HANDLE_TAKEN") {
@@ -360,28 +389,40 @@ export async function updateProfile(data: {
       const username = validated.username!;
 
       // Get main alt ID
-      const { data: userData } = await supabase
+      const { data: userData, error: altFetchError } = await supabase
         .from("users")
         .select("main_alt_id")
         .eq("id", user.id)
         .maybeSingle();
 
+      if (altFetchError) {
+        console.error("Error fetching main_alt_id:", altFetchError);
+      }
+
       if (userData?.main_alt_id) {
-        await supabase
+        const { error: altUpdateError } = await supabase
           .from("alts")
           .update({
             username,
             display_name: username,
           })
           .eq("id", userData.main_alt_id);
+
+        if (altUpdateError) {
+          console.error("Error updating main alt username:", altUpdateError);
+        }
       }
 
       // Update auth user metadata
-      await supabase.auth.updateUser({
+      const { error: authUpdateError } = await supabase.auth.updateUser({
         data: {
           username,
         },
       });
+
+      if (authUpdateError) {
+        console.error("Error updating auth metadata:", authUpdateError);
+      }
     }
 
     revalidatePath("/");

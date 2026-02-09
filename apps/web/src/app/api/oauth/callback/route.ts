@@ -110,10 +110,17 @@ export async function GET(request: Request) {
       // If DID wasn't set on the user record, update it now
       // Set pds_status to 'pending' so they get a trainers.gg PDS account
       if (!existingUser.did) {
-        await supabaseAtproto
+        const { error: didUpdateError } = await supabaseAtproto
           .from("users")
           .update({ did, pds_status: "pending" })
           .eq("id", existingUser.id);
+
+        if (didUpdateError) {
+          console.error(
+            "Failed to update DID on existing user:",
+            didUpdateError
+          );
+        }
       }
     } else {
       // User not found in public.users - try to create or sign in
@@ -157,7 +164,7 @@ export async function GET(request: Request) {
             .maybeSingle();
 
           if (userByPlaceholderEmail) {
-            await supabaseAtproto
+            const { error: updateExistingError } = await supabaseAtproto
               .from("users")
               .update({
                 did,
@@ -165,6 +172,13 @@ export async function GET(request: Request) {
                 image: profile.avatar,
               })
               .eq("id", userByPlaceholderEmail.id);
+
+            if (updateExistingError) {
+              console.error(
+                "Failed to update existing user with DID:",
+                updateExistingError
+              );
+            }
           }
           // userEmail is already set to placeholderEmail, proceed to magic link
         } else {
@@ -174,7 +188,7 @@ export async function GET(request: Request) {
       } else if (authData?.user) {
         // New user created successfully - update their public.users record
         // pds_status = 'pending' — they'll get a trainers.gg PDS when they set a username
-        await supabaseAtproto
+        const { error: newUserUpdateError } = await supabaseAtproto
           .from("users")
           .update({
             did,
@@ -182,6 +196,13 @@ export async function GET(request: Request) {
             image: profile.avatar,
           })
           .eq("id", authData.user.id);
+
+        if (newUserUpdateError) {
+          console.error(
+            "Failed to update new user with DID:",
+            newUserUpdateError
+          );
+        }
       }
     }
 

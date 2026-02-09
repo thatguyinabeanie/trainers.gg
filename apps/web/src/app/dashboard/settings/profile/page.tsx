@@ -45,6 +45,8 @@ export default function ProfileSettingsPage() {
   >("idle");
   const [usernameError, setUsernameError] = useState<string | null>(null);
   const [originalUsername, setOriginalUsername] = useState("");
+  const [originalBirthDate, setOriginalBirthDate] = useState("");
+  const [originalCountry, setOriginalCountry] = useState("");
 
   const displayName = user ? getUserDisplayName(user) : "";
   const avatarUrl =
@@ -59,7 +61,9 @@ export default function ProfileSettingsPage() {
         setUsername(profile.username ?? "");
         setOriginalUsername(profile.username ?? "");
         setBirthDate(profile.birthDate ?? "");
+        setOriginalBirthDate(profile.birthDate ?? "");
         setCountry(profile.country ?? "");
+        setOriginalCountry(profile.country ?? "");
       }
       setIsLoading(false);
     }
@@ -127,12 +131,15 @@ export default function ProfileSettingsPage() {
 
   const hasUsernameChanged =
     username !== originalUsername && username.length > 0;
+  const hasBirthDateChanged = birthDate !== originalBirthDate;
+  const hasCountryChanged = country !== originalCountry;
+  const hasAnyChange =
+    hasUsernameChanged || hasBirthDateChanged || hasCountryChanged;
 
   const canSave =
     !isPending &&
-    (hasUsernameChanged
-      ? usernameStatus === "available"
-      : username === originalUsername) &&
+    hasAnyChange &&
+    (hasUsernameChanged ? usernameStatus === "available" : true) &&
     usernameStatus !== "checking";
 
   const handleSave = () => {
@@ -166,6 +173,8 @@ export default function ProfileSettingsPage() {
       if (result.success) {
         toast.success("Profile updated");
         setOriginalUsername(username);
+        setOriginalBirthDate(birthDate);
+        setOriginalCountry(country);
         setUsernameStatus("idle");
       } else {
         toast.error(result.error);
