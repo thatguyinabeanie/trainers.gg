@@ -80,11 +80,11 @@ export async function checkUsernameAvailability(
 ): Promise<{ available: boolean; error: string | null }> {
   const trimmed = username.trim();
 
-  // Validate username format (letters, numbers, emoji, underscores, hyphens)
+  // Validate username format (letters, numbers, underscores, hyphens)
   if (
-    [...trimmed].length < 3 ||
-    [...trimmed].length > 20 ||
-    !/^[\p{L}\p{N}\p{Extended_Pictographic}_-]+$/u.test(trimmed)
+    trimmed.length < 3 ||
+    trimmed.length > 20 ||
+    !/^[\p{L}\p{N}_-]+$/u.test(trimmed)
   ) {
     return { available: false, error: "Invalid username format" };
   }

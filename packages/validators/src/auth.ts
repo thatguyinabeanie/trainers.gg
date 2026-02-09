@@ -22,8 +22,8 @@ export const passwordSchema = z
 
 /**
  * Username requirements:
- * - 3-20 characters (counted by code points for emoji support)
- * - Letters (any case/script), numbers, emoji, underscores, and hyphens
+ * - 3-20 characters
+ * - Letters (any case/script), numbers, underscores, and hyphens
  * - Cannot start with temp_ or user_ (reserved for system-generated placeholders)
  * - Cannot contain profanity, slurs, or offensive language
  * - Case-insensitive uniqueness is enforced at the query layer (not here)
@@ -31,16 +31,12 @@ export const passwordSchema = z
 export const usernameSchema = z
   .string()
   .min(1, "Username is required")
-  .refine((val) => [...val].length >= 3, {
-    message: "Username must be at least 3 characters",
-  })
-  .refine((val) => [...val].length <= 20, {
-    message: "Username must be at most 20 characters",
-  })
-  .refine((val) => /^[\p{L}\p{N}\p{Extended_Pictographic}_-]+$/u.test(val), {
-    message:
-      "Username can only contain letters, numbers, emoji, underscores, and hyphens",
-  })
+  .min(3, "Username must be at least 3 characters")
+  .max(20, "Username must be at most 20 characters")
+  .regex(
+    /^[\p{L}\p{N}_-]+$/u,
+    "Username can only contain letters, numbers, underscores, and hyphens"
+  )
   .refine((val) => !val.startsWith("temp_") && !val.startsWith("user_"), {
     message: "Please choose a custom username",
   })

@@ -79,24 +79,23 @@ export default function ProfileSettingsPage() {
         return;
       }
 
-      // Basic validation before server check (code-point length for emoji)
-      const codePointLength = [...value].length;
-      if (codePointLength < 3) {
+      // Basic validation before server check
+      if (value.length < 3) {
         setUsernameStatus("error");
         setUsernameError("Username must be at least 3 characters");
         return;
       }
 
-      if (codePointLength > 20) {
+      if (value.length > 20) {
         setUsernameStatus("error");
         setUsernameError("Username must be at most 20 characters");
         return;
       }
 
-      if (!/^[\p{L}\p{N}\p{Extended_Pictographic}_-]+$/u.test(value)) {
+      if (!/^[\p{L}\p{N}_-]+$/u.test(value)) {
         setUsernameStatus("error");
         setUsernameError(
-          "Username can only contain letters, numbers, emoji, underscores, and hyphens"
+          "Username can only contain letters, numbers, underscores, and hyphens"
         );
         return;
       }
@@ -250,8 +249,8 @@ export default function ProfileSettingsPage() {
             </p>
           )}
           <p className="text-muted-foreground text-xs">
-            3-20 characters. Letters, numbers, emoji, underscores, and hyphens.
-            Casing is preserved but uniqueness is case-insensitive.
+            3-20 characters. Letters, numbers, underscores, and hyphens. Casing
+            is preserved but uniqueness is case-insensitive.
           </p>
         </div>
 

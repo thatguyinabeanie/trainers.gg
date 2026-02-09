@@ -53,7 +53,7 @@ describe("createAltAction", () => {
 
     expect(result.success).toBe(false);
     if (!result.success) {
-      expect(result.error).toMatch(/letters, numbers, emoji, underscores/i);
+      expect(result.error).toMatch(/letters, numbers, underscores/i);
     }
     // The mutation should never be called when validation fails
     expect(mockCreateAlt).not.toHaveBeenCalled();

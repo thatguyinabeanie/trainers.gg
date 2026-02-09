@@ -10,16 +10,12 @@ export const createAltSchema = z.object({
   username: z
     .string()
     .min(1, "Username is required")
-    .refine((val) => [...val].length >= 3, {
-      message: "Username must be at least 3 characters",
-    })
-    .refine((val) => [...val].length <= 20, {
-      message: "Username must be at most 20 characters",
-    })
-    .refine((val) => /^[\p{L}\p{N}\p{Extended_Pictographic}_-]+$/u.test(val), {
-      message:
-        "Username can only contain letters, numbers, emoji, underscores, and hyphens",
-    })
+    .min(3, "Username must be at least 3 characters")
+    .max(20, "Username must be at most 20 characters")
+    .regex(
+      /^[\p{L}\p{N}_-]+$/u,
+      "Username can only contain letters, numbers, underscores, and hyphens"
+    )
     .refine((val) => !containsProfanity(val), {
       message: PROFANITY_ERROR_MESSAGE,
     }),

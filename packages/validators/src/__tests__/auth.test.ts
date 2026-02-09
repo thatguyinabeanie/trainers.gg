@@ -55,19 +55,21 @@ describe("usernameSchema", () => {
     expect(usernameSchema.safeParse("MixedCase").success).toBe(true);
   });
 
-  it("accepts usernames with emoji", () => {
-    expect(usernameSchema.safeParse("fire\u{1F525}trainer").success).toBe(true);
+  it("rejects usernames with emoji", () => {
+    expect(usernameSchema.safeParse("fire\u{1F525}trainer").success).toBe(
+      false
+    );
     expect(
       usernameSchema.safeParse("\u{1F525}\u{1F525}\u{1F525}").success
-    ).toBe(true);
-    expect(usernameSchema.safeParse("pika\u{26A1}chu").success).toBe(true);
+    ).toBe(false);
+    expect(usernameSchema.safeParse("pika\u{26A1}chu").success).toBe(false);
   });
 
   it("rejects usernames shorter than 3 characters", () => {
     expect(usernameSchema.safeParse("ab").success).toBe(false);
   });
 
-  it("rejects usernames longer than 20 characters (by code points)", () => {
+  it("rejects usernames longer than 20 characters", () => {
     expect(usernameSchema.safeParse("a".repeat(21)).success).toBe(false);
   });
 

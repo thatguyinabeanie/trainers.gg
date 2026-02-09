@@ -82,11 +82,11 @@ describe("createAltSchema", () => {
     expect(result.success).toBe(true);
   });
 
-  it("accepts usernames with emoji", () => {
+  it("rejects usernames with emoji", () => {
     const result = createAltSchema.safeParse({
       username: "fire\u{1F525}trainer",
     });
-    expect(result.success).toBe(true);
+    expect(result.success).toBe(false);
   });
 });
 
