@@ -40,35 +40,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const fetchUser = useCallback(async () => {
     try {
-      // Check for E2E test mode cookie (set by proxy.ts during auth bypass).
-      // Safety: This cookie is only set by proxy.ts after validating E2E_AUTH_BYPASS_SECRET,
-      // so it cannot exist in production where the secret is not configured.
-      const isE2EMode =
-        typeof document !== "undefined" &&
-        document.cookie.includes("e2e-test-mode=true");
-
-      if (isE2EMode) {
-        // In E2E mode, create a mock user matching the proxy.ts mock
-        const mockUser: AuthUser = {
-          id: "b2c3d4e5-f6a7-5b6c-9d0e-1f2a3b4c5d6e",
-          email: "player@trainers.local",
-          aud: "authenticated",
-          role: "authenticated",
-          email_confirmed_at: new Date().toISOString(),
-          phone: "",
-          confirmed_at: new Date().toISOString(),
-          last_sign_in_at: new Date().toISOString(),
-          app_metadata: {},
-          user_metadata: { username: "ash_ketchum" },
-          identities: [],
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        };
-        setUser(mockUser);
-        setLoading(false);
-        return;
-      }
-
       const {
         data: { session },
         error,
@@ -89,16 +60,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     fetchUser();
-
-    // Skip auth state change listener in E2E mode (mock user is static).
-    // Safety: Cookie only exists when proxy.ts validated E2E_AUTH_BYPASS_SECRET.
-    const isE2EMode =
-      typeof document !== "undefined" &&
-      document.cookie.includes("e2e-test-mode=true");
-
-    if (isE2EMode) {
-      return;
-    }
 
     const {
       data: { subscription },
