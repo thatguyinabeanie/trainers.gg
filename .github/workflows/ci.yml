@@ -266,9 +266,15 @@ jobs:
                   -H "x-vercel-protection-bypass: $BYPASS_SECRET" "$URL")
 
                 if [ "$STATUS" -ge 200 ] && [ "$STATUS" -lt 400 ]; then
-                  echo "url=$URL" >> "$GITHUB_OUTPUT"
-                  echo "Preview ready at $URL (HTTP $STATUS)"
-                  exit 0
+                  # Verify the page isn't a Vercel error/cancelled deployment page
+                  BODY=$(curl -s -H "x-vercel-protection-bypass: $BYPASS_SECRET" "$URL" | head -c 5000)
+                  if echo "$BODY" | grep -qi "Deployment was cancelled\|deployment not found\|deployment error"; then
+                    echo "Deployment at $URL shows error page (attempt $i/40)"
+                  else
+                    echo "url=$URL" >> "$GITHUB_OUTPUT"
+                    echo "Preview ready at $URL (HTTP $STATUS)"
+                    exit 0
+                  fi
                 fi
                 echo "Deployment returned HTTP $STATUS (attempt $i/40)"
               else
