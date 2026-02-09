@@ -7,7 +7,10 @@ test.describe("Alts page", () => {
     // Click Alts tab in dashboard nav (first() to avoid ambiguity with settings menu)
     await page.getByRole("link", { name: "Alts" }).first().click();
     await page.waitForURL("/dashboard/alts");
-    await expect(page.getByRole("heading", { name: "My Alts" })).toBeVisible();
+    // Server Components may stream in slowly on cold Vercel previews
+    await expect(page.getByRole("heading", { name: "My Alts" })).toBeVisible({
+      timeout: 15_000,
+    });
   });
 
   test("shows alts from topnav dropdown", async ({ page }) => {

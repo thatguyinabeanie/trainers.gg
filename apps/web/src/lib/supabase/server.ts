@@ -66,7 +66,7 @@ export async function getUser(): Promise<User | null> {
   const cookieStore = await cookies();
   const e2eTestMode = cookieStore.get("e2e-test-mode");
 
-  if (e2eTestMode?.value === "true") {
+  if (process.env.E2E_AUTH_BYPASS_SECRET && e2eTestMode?.value === "true") {
     // Return mock user matching player@trainers.local from seed
     return {
       id: "b2c3d4e5-f6a7-5b6c-9d0e-1f2a3b4c5d6e",

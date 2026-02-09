@@ -14,7 +14,8 @@
     "library.json"
   ],
   "devDependencies": {
-    "@trainers/prettier-config": "workspace:*"
+    "@trainers/prettier-config": "workspace:*",
+    "prettier": "catalog:"
   },
   "prettier": "@trainers/prettier-config"
 }

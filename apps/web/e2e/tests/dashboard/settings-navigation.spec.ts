@@ -10,9 +10,13 @@ test.describe("Settings navigation", () => {
       /border-primary/
     );
 
+    // Wait for hydration before clicking navigation links
+    // On cold Vercel previews, clicks during hydration get swallowed
+    await page.waitForLoadState("networkidle");
+
     // Navigate to account tab
     await page.getByRole("link", { name: "Account" }).click();
-    await page.waitForURL("/dashboard/settings/account");
+    await expect(page).toHaveURL(/\/dashboard\/settings\/account/);
     await expect(page.getByRole("link", { name: "Account" })).toHaveAttribute(
       "class",
       /border-primary/
@@ -20,7 +24,7 @@ test.describe("Settings navigation", () => {
 
     // Navigate back to profile tab
     await page.getByRole("link", { name: "Profile" }).click();
-    await page.waitForURL("/dashboard/settings/profile");
+    await expect(page).toHaveURL(/\/dashboard\/settings\/profile/);
   });
 
   test("shows profile settings with display name and bio", async ({ page }) => {

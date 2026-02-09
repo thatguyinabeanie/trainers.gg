@@ -265,21 +265,25 @@ describe("generateSwissPairings", () => {
         createPlayerRecord({
           profileId: "p1",
           matchPoints: 1,
+          roundsPlayed: 1,
           previousOpponents: ["p2"],
         }),
         createPlayerRecord({
           profileId: "p2",
           matchPoints: 0,
+          roundsPlayed: 1,
           previousOpponents: ["p1"],
         }),
         createPlayerRecord({
           profileId: "p3",
           matchPoints: 1,
+          roundsPlayed: 1,
           previousOpponents: ["p4"],
         }),
         createPlayerRecord({
           profileId: "p4",
           matchPoints: 0,
+          roundsPlayed: 1,
           previousOpponents: ["p3"],
         }),
       ];
@@ -296,6 +300,165 @@ describe("generateSwissPairings", () => {
           expect(player.previousOpponents).not.toContain(pairing.profile2Id);
         }
       }
+    });
+
+    it("does not assign bye to same player across multiple rounds", () => {
+      // 5 players: p5 already received bye in round 1
+      const players: PlayerRecord[] = [
+        createPlayerRecord({
+          profileId: "p1",
+          matchPoints: 1,
+          roundsPlayed: 1,
+          previousOpponents: ["p2"],
+        }),
+        createPlayerRecord({
+          profileId: "p2",
+          matchPoints: 0,
+          roundsPlayed: 1,
+          previousOpponents: ["p1"],
+        }),
+        createPlayerRecord({
+          profileId: "p3",
+          matchPoints: 1,
+          roundsPlayed: 1,
+          previousOpponents: ["p4"],
+        }),
+        createPlayerRecord({
+          profileId: "p4",
+          matchPoints: 0,
+          roundsPlayed: 1,
+          previousOpponents: ["p3"],
+        }),
+        createPlayerRecord({
+          profileId: "p5",
+          matchPoints: 1,
+          roundsPlayed: 1,
+          hasReceivedBye: true,
+          previousOpponents: [],
+        }),
+      ];
+
+      const result = generateSwissPairings(players, 2);
+      const byePairing = result.pairings.find((p) => p.isBye);
+
+      expect(byePairing).toBeDefined();
+      // p5 already had a bye, so another player should get it
+      expect(byePairing!.profile1Id).not.toBe("p5");
+    });
+
+    it("produces valid pairings when all players have same record", () => {
+      // 6 players all with 1 matchPt (common mid-tournament scenario)
+      const players: PlayerRecord[] = Array.from({ length: 6 }, (_, i) =>
+        createPlayerRecord({
+          profileId: `p${i + 1}`,
+          matchPoints: 1,
+          roundsPlayed: 1,
+          previousOpponents: [],
+        })
+      );
+
+      const result = generateSwissPairings(players, 2);
+
+      expect(result.pairings).toHaveLength(3);
+      expect(result.pairings.every((p) => !p.isBye)).toBe(true);
+
+      // All 6 players should appear exactly once
+      const pairedIds = new Set<string>();
+      for (const pairing of result.pairings) {
+        pairedIds.add(pairing.profile1Id);
+        if (pairing.profile2Id) pairedIds.add(pairing.profile2Id);
+      }
+      expect(pairedIds.size).toBe(6);
+    });
+
+    it("pairs across point groups when within-group pairing blocked by rematch", () => {
+      // 4 players: p1 and p2 at 1pt already faced each other,
+      // p3 and p4 at 0pt already faced each other.
+      // Must pair cross-group: p1 vs p3/p4, p2 vs p4/p3
+      const players: PlayerRecord[] = [
+        createPlayerRecord({
+          profileId: "p1",
+          matchPoints: 1,
+          roundsPlayed: 1,
+          previousOpponents: ["p2"],
+        }),
+        createPlayerRecord({
+          profileId: "p2",
+          matchPoints: 1,
+          roundsPlayed: 1,
+          previousOpponents: ["p1"],
+        }),
+        createPlayerRecord({
+          profileId: "p3",
+          matchPoints: 0,
+          roundsPlayed: 1,
+          previousOpponents: ["p4"],
+        }),
+        createPlayerRecord({
+          profileId: "p4",
+          matchPoints: 0,
+          roundsPlayed: 1,
+          previousOpponents: ["p3"],
+        }),
+      ];
+
+      const result = generateSwissPairings(players, 2);
+
+      // Should produce 2 valid pairings with no byes
+      expect(result.pairings).toHaveLength(2);
+      expect(result.pairings.every((p) => !p.isBye)).toBe(true);
+
+      // All 4 players should be paired
+      const pairedIds = new Set<string>();
+      for (const pairing of result.pairings) {
+        pairedIds.add(pairing.profile1Id);
+        if (pairing.profile2Id) pairedIds.add(pairing.profile2Id);
+      }
+      expect(pairedIds.size).toBe(4);
+    });
+
+    it("falls back to rematch when no valid opponents remain", () => {
+      // 4 players who have all played each other (3 rounds completed).
+      // The algorithm must allow rematches as fallback.
+      const players: PlayerRecord[] = [
+        createPlayerRecord({
+          profileId: "p1",
+          matchPoints: 2,
+          roundsPlayed: 3,
+          previousOpponents: ["p2", "p3", "p4"],
+        }),
+        createPlayerRecord({
+          profileId: "p2",
+          matchPoints: 2,
+          roundsPlayed: 3,
+          previousOpponents: ["p1", "p3", "p4"],
+        }),
+        createPlayerRecord({
+          profileId: "p3",
+          matchPoints: 1,
+          roundsPlayed: 3,
+          previousOpponents: ["p1", "p2", "p4"],
+        }),
+        createPlayerRecord({
+          profileId: "p4",
+          matchPoints: 1,
+          roundsPlayed: 3,
+          previousOpponents: ["p1", "p2", "p3"],
+        }),
+      ];
+
+      const result = generateSwissPairings(players, 4);
+
+      // Should still produce 2 pairings (rematches allowed as fallback)
+      expect(result.pairings).toHaveLength(2);
+
+      // All 4 players should be paired
+      const pairedIds = new Set<string>();
+      for (const pairing of result.pairings) {
+        pairedIds.add(pairing.profile1Id);
+        if (pairing.profile2Id) pairedIds.add(pairing.profile2Id);
+      }
+      expect(pairedIds.size).toBe(4);
     });
   });
 

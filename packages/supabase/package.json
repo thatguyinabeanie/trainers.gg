@@ -71,6 +71,7 @@
   },
   "devDependencies": {
     "@faker-js/faker": "^10.2.0",
+    "@types/jest": "catalog:",
     "@jest/globals": "^30.2.0",
     "@supabase/ssr": "catalog:",
     "@trainers/eslint-config": "workspace:*",
@@ -80,11 +81,16 @@
     "@types/node": "catalog:",
     "@types/react": "catalog:",
     "eslint": "catalog:",
+    "jest": "catalog:",
+    "jest-junit": "catalog:",
     "expo-secure-store": "~14.0.0",
-    "next": "^16.1.6",
+    "next": "catalog:",
+    "prettier": "catalog:",
     "react": "catalog:",
     "react-native-url-polyfill": "^2.0.0",
-    "tsx": "^4.21.0",
+    "supabase": "catalog:",
+    "ts-jest": "catalog:",
+    "tsx": "catalog:",
     "typescript": "catalog:"
   },
   "prettier": "@trainers/prettier-config"

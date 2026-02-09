@@ -40,7 +40,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const fetchUser = useCallback(async () => {
     try {
-      // Check for E2E test mode cookie (set by proxy.ts during auth bypass)
+      // Check for E2E test mode cookie (set by proxy.ts during auth bypass).
+      // Safety: This cookie is only set by proxy.ts after validating E2E_AUTH_BYPASS_SECRET,
+      // so it cannot exist in production where the secret is not configured.
       const isE2EMode =
         typeof document !== "undefined" &&
         document.cookie.includes("e2e-test-mode=true");
@@ -88,7 +90,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     fetchUser();
 
-    // Skip auth state change listener in E2E mode (mock user is static)
+    // Skip auth state change listener in E2E mode (mock user is static).
+    // Safety: Cookie only exists when proxy.ts validated E2E_AUTH_BYPASS_SECRET.
     const isE2EMode =
       typeof document !== "undefined" &&
       document.cookie.includes("e2e-test-mode=true");
