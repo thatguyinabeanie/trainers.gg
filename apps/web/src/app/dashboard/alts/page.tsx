@@ -15,7 +15,6 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -280,19 +279,17 @@ function CreateAltForm({
 }) {
   const [isPending, startTransition] = useTransition();
   const [username, setUsername] = useState("");
-  const [displayName, setDisplayName] = useState("");
   const [inGameName, setBattleTag] = useState("");
 
   const handleSubmit = () => {
-    if (!username.trim() || !displayName.trim()) {
-      toast.error("Username and display name are required");
+    if (!username.trim()) {
+      toast.error("Username is required");
       return;
     }
 
     startTransition(async () => {
       const result = await createAltAction({
         username: username.trim().toLowerCase(),
-        displayName: displayName.trim(),
         inGameName: inGameName.trim() || undefined,
       });
 
@@ -326,27 +323,16 @@ function CreateAltForm({
           />
         </div>
         <div className="space-y-1">
-          <Label htmlFor="newDisplayName" className="text-xs">
-            Display Name
+          <Label htmlFor="newBattleTag" className="text-xs">
+            IGN (optional)
           </Label>
           <Input
-            id="newDisplayName"
-            value={displayName}
-            onChange={(e) => setDisplayName(e.target.value)}
-            placeholder="Display Name"
+            id="newBattleTag"
+            value={inGameName}
+            onChange={(e) => setBattleTag(e.target.value)}
+            placeholder="Player#1234"
           />
         </div>
-      </div>
-      <div className="space-y-1">
-        <Label htmlFor="newBattleTag" className="text-xs">
-          IGN (optional)
-        </Label>
-        <Input
-          id="newBattleTag"
-          value={inGameName}
-          onChange={(e) => setBattleTag(e.target.value)}
-          placeholder="Player#1234"
-        />
       </div>
       <Button size="sm" onClick={handleSubmit} disabled={isPending}>
         {isPending ? (
@@ -370,27 +356,17 @@ function EditAltForm({
     username: string;
     display_name: string;
     in_game_name: string | null;
-    bio: string | null;
   };
   onSaved: () => void;
   onCancel: () => void;
 }) {
   const [isPending, startTransition] = useTransition();
-  const [displayName, setDisplayName] = useState(alt.display_name);
   const [inGameName, setBattleTag] = useState(alt.in_game_name ?? "");
-  const [bio, setBio] = useState(alt.bio ?? "");
 
   const handleSubmit = () => {
-    if (!displayName.trim()) {
-      toast.error("Display name is required");
-      return;
-    }
-
     startTransition(async () => {
       const result = await updateAltAction(alt.id, {
-        displayName: displayName.trim(),
         inGameName: inGameName.trim() || null,
-        bio: bio.trim() || undefined,
       });
 
       if (result.success) {
@@ -410,40 +386,15 @@ function EditAltForm({
           <X className="h-4 w-4" />
         </Button>
       </div>
-      <div className="grid gap-3 sm:grid-cols-2">
-        <div className="space-y-1">
-          <Label htmlFor={`editDisplayName-${alt.id}`} className="text-xs">
-            Display Name
-          </Label>
-          <Input
-            id={`editDisplayName-${alt.id}`}
-            value={displayName}
-            onChange={(e) => setDisplayName(e.target.value)}
-            placeholder="Display Name"
-          />
-        </div>
-        <div className="space-y-1">
-          <Label htmlFor={`editBattleTag-${alt.id}`} className="text-xs">
-            IGN
-          </Label>
-          <Input
-            id={`editBattleTag-${alt.id}`}
-            value={inGameName}
-            onChange={(e) => setBattleTag(e.target.value)}
-            placeholder="Player#1234"
-          />
-        </div>
-      </div>
       <div className="space-y-1">
-        <Label htmlFor={`editBio-${alt.id}`} className="text-xs">
-          Bio
+        <Label htmlFor={`editBattleTag-${alt.id}`} className="text-xs">
+          IGN
         </Label>
-        <Textarea
-          id={`editBio-${alt.id}`}
-          value={bio}
-          onChange={(e) => setBio(e.target.value)}
-          placeholder="About this alt..."
-          rows={2}
+        <Input
+          id={`editBattleTag-${alt.id}`}
+          value={inGameName}
+          onChange={(e) => setBattleTag(e.target.value)}
+          placeholder="Player#1234"
         />
       </div>
       <div className="flex gap-2">

@@ -25,7 +25,7 @@ import {
  *
  * 2. Protected routes (auth required, always enforced):
  *    - /dashboard (includes /dashboard/settings, /dashboard/alts)
- *    - /to-dashboard, /onboarding, /organizations/create, /feed
+ *    - /to-dashboard, /organizations/create, /feed
  *    - /tournaments/[slug]/matches/* (match pages contain chat, teams, game data)
  *    - Unauthenticated users are redirected to /sign-in?redirect=<path>
  *

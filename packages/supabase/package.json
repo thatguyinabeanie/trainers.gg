@@ -41,39 +41,19 @@
     "supabase": "supabase"
   },
   "dependencies": {
+    "@supabase/ssr": "catalog:",
     "@supabase/supabase-js": "catalog:",
     "@trainers/validators": "workspace:*",
-    "zod": "catalog:"
-  },
-  "peerDependencies": {
-    "@supabase/ssr": "catalog:",
-    "expo-secure-store": "*",
+    "expo-secure-store": "~14.0.0",
     "next": "catalog:",
     "react": "catalog:",
-    "react-native-url-polyfill": "*"
-  },
-  "peerDependenciesMeta": {
-    "@supabase/ssr": {
-      "optional": true
-    },
-    "expo-secure-store": {
-      "optional": true
-    },
-    "next": {
-      "optional": true
-    },
-    "react": {
-      "optional": true
-    },
-    "react-native-url-polyfill": {
-      "optional": true
-    }
+    "react-native-url-polyfill": "^2.0.0",
+    "zod": "catalog:"
   },
   "devDependencies": {
     "@faker-js/faker": "^10.2.0",
     "@types/jest": "catalog:",
     "@jest/globals": "^30.2.0",
-    "@supabase/ssr": "catalog:",
     "@trainers/eslint-config": "workspace:*",
     "@trainers/jest-config": "workspace:*",
     "@trainers/prettier-config": "workspace:*",
@@ -83,11 +63,7 @@
     "eslint": "catalog:",
     "jest": "catalog:",
     "jest-junit": "catalog:",
-    "expo-secure-store": "~14.0.0",
-    "next": "catalog:",
     "prettier": "catalog:",
-    "react": "catalog:",
-    "react-native-url-polyfill": "^2.0.0",
     "supabase": "catalog:",
     "ts-jest": "catalog:",
     "tsx": "catalog:",

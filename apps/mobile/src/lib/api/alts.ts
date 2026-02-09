@@ -55,7 +55,6 @@ export function useCreateAlt() {
     Alt,
     {
       username: string;
-      displayName: string;
       battleTag?: string;
     }
   >(
@@ -89,7 +88,6 @@ export function useUpdateAlt() {
     {
       id: string;
       username?: string;
-      displayName?: string;
       battleTag?: string;
     }
   >(

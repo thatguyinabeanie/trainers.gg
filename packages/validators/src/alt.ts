@@ -3,7 +3,8 @@ import { containsProfanity, PROFANITY_ERROR_MESSAGE } from "./profanity";
 
 /**
  * Schema for creating an alt (alternative player identity).
- * Validates username, display name, and optional battle tag.
+ * Validates username and optional battle tag.
+ * display_name is auto-synced with username (not user-editable).
  */
 export const createAltSchema = z.object({
   username: z
@@ -14,13 +15,6 @@ export const createAltSchema = z.object({
       /^[a-zA-Z0-9_-]+$/,
       "Username can only contain letters, numbers, underscores, and hyphens"
     )
-    .refine((val) => !containsProfanity(val), {
-      message: PROFANITY_ERROR_MESSAGE,
-    }),
-  displayName: z
-    .string()
-    .min(1, "Display name is required")
-    .max(64)
     .refine((val) => !containsProfanity(val), {
       message: PROFANITY_ERROR_MESSAGE,
     }),
@@ -37,14 +31,6 @@ export const createAltSchema = z.object({
  * Schema for updating an alt.
  */
 export const updateAltSchema = z.object({
-  displayName: z
-    .string()
-    .min(1, "Display name is required")
-    .max(64)
-    .refine((val) => !containsProfanity(val), {
-      message: PROFANITY_ERROR_MESSAGE,
-    })
-    .optional(),
   battleTag: z
     .string()
     .max(20)

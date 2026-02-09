@@ -8,8 +8,6 @@ export async function updateAlt(
   supabase: TypedClient,
   altId: number,
   updates: {
-    displayName?: string;
-    bio?: string;
     avatarUrl?: string;
     inGameName?: string | null;
   }
@@ -33,9 +31,6 @@ export async function updateAlt(
 
   // Prepare update data
   const updateData: Database["public"]["Tables"]["alts"]["Update"] = {};
-  if (updates.displayName !== undefined)
-    updateData.display_name = updates.displayName;
-  if (updates.bio !== undefined) updateData.bio = updates.bio;
   if (updates.avatarUrl !== undefined)
     updateData.avatar_url = updates.avatarUrl;
   if (updates.inGameName !== undefined)
@@ -147,12 +142,13 @@ export async function ensureAlt(supabase: TypedClient) {
     attempts++;
   }
 
+  // display_name is auto-synced with username
   const { data: alt, error } = await supabase
     .from("alts")
     .insert({
       user_id: user.id,
       username,
-      display_name: userData?.name ?? username,
+      display_name: username,
       avatar_url: userData?.image ?? null,
     })
     .select()
@@ -169,8 +165,6 @@ export async function createAlt(
   supabase: TypedClient,
   data: {
     username: string;
-    displayName: string;
-    bio?: string;
     avatarUrl?: string;
     inGameName?: string;
   }
@@ -191,13 +185,13 @@ export async function createAlt(
     throw new Error("Username is already taken");
   }
 
+  // display_name is auto-synced with username
   const { data: alt, error } = await supabase
     .from("alts")
     .insert({
       user_id: user.id,
       username: data.username.toLowerCase(),
-      display_name: data.displayName,
-      bio: data.bio ?? null,
+      display_name: data.username.toLowerCase(),
       avatar_url: data.avatarUrl ?? null,
       in_game_name: data.inGameName ?? null,
     })

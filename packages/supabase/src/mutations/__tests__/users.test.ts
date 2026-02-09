@@ -62,7 +62,7 @@ describe("User Mutations", () => {
       } as MockAuthResponse);
     });
 
-    it("should successfully update alt display name", async () => {
+    it("should successfully update alt avatar", async () => {
       const fromSpy = jest.spyOn(mockClient, "from");
 
       // Mock: Get alt to verify ownership
@@ -82,13 +82,13 @@ describe("User Mutations", () => {
       } as unknown as MockQueryBuilder);
 
       const result = await updateAlt(mockClient, altId, {
-        displayName: "New Display Name",
+        avatarUrl: "https://example.com/avatar.png",
       });
 
       expect(result).toEqual({ success: true });
     });
 
-    it("should update bio, avatar, and in-game name", async () => {
+    it("should update avatar and in-game name", async () => {
       const fromSpy = jest.spyOn(mockClient, "from");
 
       fromSpy.mockReturnValueOnce({
@@ -107,13 +107,11 @@ describe("User Mutations", () => {
       } as unknown as MockQueryBuilder);
 
       await updateAlt(mockClient, altId, {
-        bio: "New bio",
         avatarUrl: "https://example.com/avatar.png",
         inGameName: "PlayerOne",
       });
 
       expect(updateMock).toHaveBeenCalledWith({
-        bio: "New bio",
         avatar_url: "https://example.com/avatar.png",
         in_game_name: "PlayerOne",
       });
@@ -152,7 +150,7 @@ describe("User Mutations", () => {
       } as MockAuthResponse);
 
       await expect(
-        updateAlt(mockClient, altId, { displayName: "Test" })
+        updateAlt(mockClient, altId, { inGameName: "Test" })
       ).rejects.toThrow("Not authenticated");
     });
 
@@ -164,7 +162,7 @@ describe("User Mutations", () => {
       });
 
       await expect(
-        updateAlt(mockClient, altId, { displayName: "Test" })
+        updateAlt(mockClient, altId, { inGameName: "Test" })
       ).rejects.toThrow("Alt not found");
     });
 
@@ -179,7 +177,7 @@ describe("User Mutations", () => {
       });
 
       await expect(
-        updateAlt(mockClient, altId, { displayName: "Test" })
+        updateAlt(mockClient, altId, { inGameName: "Test" })
       ).rejects.toThrow("You can only update your own alt");
     });
 
@@ -202,7 +200,7 @@ describe("User Mutations", () => {
       } as unknown as MockQueryBuilder);
 
       await expect(
-        updateAlt(mockClient, altId, { displayName: "Test" })
+        updateAlt(mockClient, altId, { inGameName: "Test" })
       ).rejects.toThrow("Database error");
     });
   });
@@ -624,11 +622,11 @@ describe("User Mutations", () => {
         maybeSingle: jest.fn().mockResolvedValue({ data: null, error: null }),
       } as unknown as MockQueryBuilder);
 
-      // Mock: Insert alt
+      // Mock: Insert alt (display_name auto-synced with username)
       const newAlt = {
         id: 20,
         username: "newplayer",
-        display_name: "New Player",
+        display_name: "newplayer",
       };
       fromSpy.mockReturnValueOnce({
         insert: jest.fn().mockReturnThis(),
@@ -641,7 +639,6 @@ describe("User Mutations", () => {
 
       const result = await createAlt(mockClient, {
         username: "NewPlayer",
-        displayName: "New Player",
       });
 
       expect(result).toEqual(newAlt);
@@ -668,8 +665,6 @@ describe("User Mutations", () => {
 
       await createAlt(mockClient, {
         username: "player",
-        displayName: "Player",
-        bio: "I love Pokemon",
         avatarUrl: "https://example.com/avatar.png",
         inGameName: "PlayerOne",
       });
@@ -677,8 +672,7 @@ describe("User Mutations", () => {
       expect(insertMock).toHaveBeenCalledWith({
         user_id: mockUser.id,
         username: "player",
-        display_name: "Player",
-        bio: "I love Pokemon",
+        display_name: "player",
         avatar_url: "https://example.com/avatar.png",
         in_game_name: "PlayerOne",
       });
@@ -706,7 +700,6 @@ describe("User Mutations", () => {
 
       await createAlt(mockClient, {
         username: "MixedCase",
-        displayName: "Test",
       });
 
       expect(eqMock).toHaveBeenCalledWith("username", "mixedcase");
@@ -730,7 +723,6 @@ describe("User Mutations", () => {
       await expect(
         createAlt(mockClient, {
           username: "taken",
-          displayName: "Test",
         })
       ).rejects.toThrow("Username is already taken");
     });
@@ -743,7 +735,6 @@ describe("User Mutations", () => {
       await expect(
         createAlt(mockClient, {
           username: "test",
-          displayName: "Test",
         })
       ).rejects.toThrow("Not authenticated");
     });
@@ -767,7 +758,6 @@ describe("User Mutations", () => {
       await expect(
         createAlt(mockClient, {
           username: "test",
-          displayName: "Test",
         })
       ).rejects.toThrow("Insert failed");
     });

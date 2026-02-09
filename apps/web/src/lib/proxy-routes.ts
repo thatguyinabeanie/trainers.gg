@@ -11,7 +11,6 @@ export const ADMIN_ROUTES = ["/admin"];
 export const PROTECTED_ROUTES = [
   "/dashboard",
   "/to-dashboard",
-  "/onboarding",
   "/organizations/create",
   "/feed",
 ];

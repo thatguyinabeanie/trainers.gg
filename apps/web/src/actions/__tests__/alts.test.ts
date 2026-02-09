@@ -25,7 +25,6 @@ import {
   updateAltAction,
   deleteAltAction,
   setMainAltAction,
-  updateProfileAction,
 } from "../alts";
 
 describe("createAltAction", () => {
@@ -38,13 +37,11 @@ describe("createAltAction", () => {
 
     const result = await createAltAction({
       username: "ash_ketchum",
-      displayName: "Ash",
     });
 
     expect(result).toEqual({ success: true, data: { id: 101 } });
     expect(mockCreateAlt).toHaveBeenCalledWith(mockSupabaseClient, {
       username: "ash_ketchum",
-      displayName: "Ash",
       inGameName: undefined,
     });
   });
@@ -52,7 +49,6 @@ describe("createAltAction", () => {
   it("returns a validation error for an invalid username (uppercase)", async () => {
     const result = await createAltAction({
       username: "InvalidUser!",
-      displayName: "Test",
     });
 
     expect(result.success).toBe(false);
@@ -68,7 +64,6 @@ describe("createAltAction", () => {
 
     const result = await createAltAction({
       username: "duplicate_user",
-      displayName: "Dupe",
     });
 
     expect(result.success).toBe(false);
@@ -87,25 +82,23 @@ describe("updateAltAction", () => {
     mockUpdateAlt.mockResolvedValue(undefined);
 
     const result = await updateAltAction(1, {
-      displayName: "New Name",
-      bio: "Hello world",
+      inGameName: "Player#1234",
     });
 
     expect(result).toEqual({ success: true, data: { success: true } });
     expect(mockUpdateAlt).toHaveBeenCalledWith(mockSupabaseClient, 1, {
-      displayName: "New Name",
-      bio: "Hello world",
+      inGameName: "Player#1234",
     });
   });
 
-  it("returns a validation error when displayName exceeds max length", async () => {
-    const longName = "A".repeat(65);
+  it("returns a validation error when inGameName exceeds max length", async () => {
+    const longName = "A".repeat(51);
 
-    const result = await updateAltAction(1, { displayName: longName });
+    const result = await updateAltAction(1, { inGameName: longName });
 
     expect(result.success).toBe(false);
     if (!result.success) {
-      expect(result.error).toMatch(/64 characters/i);
+      expect(result.error).toMatch(/50 characters/i);
     }
     expect(mockUpdateAlt).not.toHaveBeenCalled();
   });
@@ -151,39 +144,6 @@ describe("setMainAltAction", () => {
 
     expect(result).toEqual({ success: true, data: { success: true } });
     expect(mockSetMainAlt).toHaveBeenCalledWith(mockSupabaseClient, 7);
-  });
-});
-
-describe("updateProfileAction", () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
-  });
-
-  it("updates a profile successfully", async () => {
-    mockUpdateAlt.mockResolvedValue(undefined);
-
-    const result = await updateProfileAction(3, {
-      displayName: "Updated Name",
-      bio: "New bio",
-    });
-
-    expect(result).toEqual({ success: true, data: { success: true } });
-    expect(mockUpdateAlt).toHaveBeenCalledWith(mockSupabaseClient, 3, {
-      displayName: "Updated Name",
-      bio: "New bio",
-    });
-  });
-
-  it("returns a validation error when bio exceeds max length", async () => {
-    const longBio = "B".repeat(257);
-
-    const result = await updateProfileAction(3, { bio: longBio });
-
-    expect(result.success).toBe(false);
-    if (!result.success) {
-      expect(result.error).toMatch(/256 characters/i);
-    }
-    expect(mockUpdateAlt).not.toHaveBeenCalled();
   });
 });
 
