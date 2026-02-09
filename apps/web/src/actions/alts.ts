@@ -26,8 +26,8 @@ const createAltSchema = z.object({
     .min(1, "Username is required")
     .max(30, "Username must be 30 characters or fewer")
     .regex(
-      /^[a-z0-9_]+$/,
-      "Username must be lowercase letters, numbers, and underscores only"
+      /^[a-z0-9_-]+$/,
+      "Username must be lowercase letters, numbers, underscores, and hyphens only"
     ),
   inGameName: z
     .string()

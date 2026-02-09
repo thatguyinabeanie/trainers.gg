@@ -88,10 +88,10 @@ export default function ProfileSettingsPage() {
         return;
       }
 
-      if (!/^[a-zA-Z0-9_-]+$/.test(value)) {
+      if (!/^[a-z0-9_-]+$/.test(value)) {
         setUsernameStatus("error");
         setUsernameError(
-          "Username can only contain letters, numbers, underscores, and hyphens"
+          "Username can only contain lowercase letters, numbers, underscores, and hyphens"
         );
         return;
       }
@@ -164,7 +164,7 @@ export default function ProfileSettingsPage() {
 
       if (result.success) {
         toast.success("Profile updated");
-        setOriginalUsername(username.toLowerCase());
+        setOriginalUsername(username);
         setUsernameStatus("idle");
       } else {
         toast.error(result.error);
@@ -217,7 +217,7 @@ export default function ProfileSettingsPage() {
             <Input
               id="username"
               value={username}
-              onChange={(e) => setUsername(e.target.value)}
+              onChange={(e) => setUsername(e.target.value.toLowerCase())}
               placeholder="Choose a username"
               className="pr-10"
             />
@@ -240,7 +240,8 @@ export default function ProfileSettingsPage() {
             </p>
           )}
           <p className="text-muted-foreground text-xs">
-            3-20 characters. Letters, numbers, underscores, and hyphens.
+            3-20 characters. Lowercase letters, numbers, underscores, and
+            hyphens.
           </p>
         </div>
 

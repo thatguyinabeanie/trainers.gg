@@ -67,7 +67,7 @@ describe("proxy-routes", () => {
       expect(isPublicRoute("/dashboard")).toBe(false);
       expect(isPublicRoute("/admin")).toBe(false);
       expect(isPublicRoute("/")).toBe(false);
-      expect(isPublicRoute("/settings")).toBe(false);
+      expect(isPublicRoute("/dashboard/settings")).toBe(false);
       expect(isPublicRoute("/feed")).toBe(false);
     });
 

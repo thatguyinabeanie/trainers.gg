@@ -43,14 +43,20 @@ const usernameSchema = z
   .min(3, "Username must be at least 3 characters")
   .max(20, "Username must be at most 20 characters")
   .regex(
-    /^[a-zA-Z0-9_-]+$/,
-    "Username can only contain letters, numbers, underscores, and hyphens"
+    /^[a-z0-9_-]+$/,
+    "Username can only contain lowercase letters, numbers, underscores, and hyphens"
   );
 
 const updateProfileSchema = z.object({
   username: usernameSchema.optional(),
-  birthDate: z.string().optional(),
-  country: z.string().max(2).optional(),
+  birthDate: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, "Birth date must be in YYYY-MM-DD format")
+    .optional(),
+  country: z
+    .string()
+    .length(2, "Country must be a 2-letter ISO code")
+    .optional(),
 });
 
 // --- Actions ---
