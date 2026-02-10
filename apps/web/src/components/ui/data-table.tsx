@@ -125,8 +125,8 @@ export function DataTable<TData, TValue>({
         </Table>
       </div>
 
-      {/* Pagination Controls */}
-      {table.getPageCount() > 1 && (
+      {/* Pagination Controls (hidden when pagination is handled externally) */}
+      {!manualPagination && table.getPageCount() > 1 && (
         <div className="flex items-center justify-between">
           <div className="text-muted-foreground text-sm">
             Page {table.getState().pagination.pageIndex + 1} of{" "}
