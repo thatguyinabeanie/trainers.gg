@@ -73,7 +73,7 @@ export default function ProfileSettingsPage() {
   // Debounced username availability check
   const checkAvailability = useCallback(
     async (value: string) => {
-      if (!value || value === originalUsername) {
+      if (!value || value.toLowerCase() === originalUsername.toLowerCase()) {
         setUsernameStatus("idle");
         setUsernameError(null);
         return;
@@ -129,7 +129,8 @@ export default function ProfileSettingsPage() {
     originalUsername.startsWith("user_");
 
   const hasUsernameChanged =
-    username !== originalUsername && username.length > 0;
+    username.toLowerCase() !== originalUsername.toLowerCase() &&
+    username.length > 0;
   const hasBirthDateChanged = birthDate !== originalBirthDate;
   const hasCountryChanged = country !== originalCountry;
   const hasAnyChange =
