@@ -30,7 +30,7 @@ export async function withAdminAction(
     const supabase = createServiceRoleClient();
     return await action(supabase, adminCheck.userId);
   } catch (err) {
-    console.error(errorMessage, err);
+    console.error("%s", errorMessage, err);
     return { success: false, error: errorMessage };
   }
 }
