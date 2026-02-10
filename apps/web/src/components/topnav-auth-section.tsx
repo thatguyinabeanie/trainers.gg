@@ -16,7 +16,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import {
   LogOut,
   Settings,
-  UserCircle,
   LayoutDashboard,
   Building2,
   ChevronRight,
@@ -190,13 +189,9 @@ export function TopNavAuthSection() {
             <p className="text-sm leading-none font-medium">{displayName}</p>
           </div>
           <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={() => router.push("/dashboard")}>
+          <DropdownMenuItem render={<Link href="/dashboard" />}>
             <LayoutDashboard className="mr-2 h-4 w-4" />
             <span>Dashboard</span>
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => router.push("/dashboard/alts")}>
-            <UserCircle className="mr-2 h-4 w-4" />
-            <span>My Alts</span>
           </DropdownMenuItem>
 
           {/* My Organizations Section - Only show if user has orgs */}
@@ -210,7 +205,7 @@ export function TopNavAuthSection() {
                 {myOrganizations.map((org) => (
                   <DropdownMenuItem
                     key={org.id}
-                    onClick={() => router.push(`/to-dashboard/${org.slug}`)}
+                    render={<Link href={`/to-dashboard/${org.slug}`} />}
                     className="justify-between"
                   >
                     <div className="flex items-center">
@@ -246,7 +241,7 @@ export function TopNavAuthSection() {
           )}
 
           <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={() => router.push("/dashboard/settings")}>
+          <DropdownMenuItem render={<Link href="/dashboard/settings" />}>
             <Settings className="mr-2 h-4 w-4" />
             <span>Settings</span>
           </DropdownMenuItem>
