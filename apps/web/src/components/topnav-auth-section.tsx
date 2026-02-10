@@ -189,9 +189,11 @@ export function TopNavAuthSection() {
             <p className="text-sm leading-none font-medium">{displayName}</p>
           </div>
           <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={() => router.push("/dashboard")}>
-            <LayoutDashboard className="mr-2 h-4 w-4" />
-            <span>Dashboard</span>
+          <DropdownMenuItem>
+            <Link href="/dashboard" className="flex items-center gap-1.5">
+              <LayoutDashboard className="mr-2 h-4 w-4" />
+              <span>Dashboard</span>
+            </Link>
           </DropdownMenuItem>
 
           {/* My Organizations Section - Only show if user has orgs */}
@@ -203,16 +205,17 @@ export function TopNavAuthSection() {
                   My Organizations
                 </DropdownMenuLabel>
                 {myOrganizations.map((org) => (
-                  <DropdownMenuItem
-                    key={org.id}
-                    onClick={() => router.push(`/to-dashboard/${org.slug}`)}
-                    className="justify-between"
-                  >
-                    <div className="flex items-center">
-                      <Building2 className="mr-2 h-4 w-4" />
-                      <span className="truncate">{org.name}</span>
-                    </div>
-                    <ChevronRight className="text-muted-foreground h-4 w-4" />
+                  <DropdownMenuItem key={org.id} className="justify-between">
+                    <Link
+                      href={`/to-dashboard/${org.slug}`}
+                      className="flex flex-1 items-center justify-between gap-1.5"
+                    >
+                      <div className="flex items-center">
+                        <Building2 className="mr-2 h-4 w-4" />
+                        <span className="truncate">{org.name}</span>
+                      </div>
+                      <ChevronRight className="text-muted-foreground h-4 w-4" />
+                    </Link>
                   </DropdownMenuItem>
                 ))}
               </DropdownMenuGroup>
@@ -241,9 +244,14 @@ export function TopNavAuthSection() {
           )}
 
           <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={() => router.push("/dashboard/settings")}>
-            <Settings className="mr-2 h-4 w-4" />
-            <span>Settings</span>
+          <DropdownMenuItem>
+            <Link
+              href="/dashboard/settings"
+              className="flex items-center gap-1.5"
+            >
+              <Settings className="mr-2 h-4 w-4" />
+              <span>Settings</span>
+            </Link>
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem
