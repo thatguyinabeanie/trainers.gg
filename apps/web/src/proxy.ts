@@ -2,6 +2,7 @@ import { type NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/middleware";
 import { cookies } from "next/headers";
 import { isMaintenanceModeEnabled } from "@/lib/maintenance";
+import { isMaintenanceModeEnabledAsync } from "@/lib/maintenance-server";
 import {
   isStaticFile,
   isPublicRouteDuringMaintenance,
@@ -13,7 +14,7 @@ import {
 /**
  * Proxy (Next.js 16 request interception)
  *
- * Three layers of route protection:
+ * Four layers of route protection:
  *
  * 1. Admin routes (role-based + sudo mode):
  *    - /admin/* requires BOTH:
@@ -22,18 +23,23 @@ import {
  *    - Unauthenticated users are redirected to /sign-in
  *    - Authenticated non-admins are rewritten to /forbidden (preserves URL)
  *    - Site admins without sudo mode are redirected to /admin/sudo-required
+ *    - Admin routes always use the admin's real identity (impersonation is ignored)
  *
- * 2. Protected routes (auth required, always enforced):
- *    - /dashboard (includes /dashboard/settings, /dashboard/alts)
- *    - /to-dashboard, /organizations/create, /feed
- *    - /tournaments/[slug]/matches/* (match pages contain chat, teams, game data)
+ * 2. Impersonation (admin acting as another user):
+ *    - When impersonation cookie is set AND not on admin routes,
+ *      the `x-impersonation-target` header is set so downstream
+ *      code can optionally swap the effective user context
+ *    - Impersonation requires an active sudo session
+ *
+ * 3. Protected routes (auth required, always enforced):
+ *    - /dashboard, /to-dashboard, /organizations/create, /feed
+ *    - /tournaments/[slug]/matches/*
  *    - Unauthenticated users are redirected to /sign-in?redirect=<path>
  *
- * 3. Private beta / maintenance mode (when NEXT_PUBLIC_MAINTENANCE_MODE=true):
- *    - Unauthenticated users requesting non-public routes are redirected to /waitlist
- *    - Public routes (sign-in, sign-up, forgot/reset-password, waitlist) remain accessible
- *    - Authenticated users can access all pages
- *    - /auth/*, /api/*, /_next/*, static files are always allowed
+ * 4. Private beta / maintenance mode:
+ *    - Checks NEXT_PUBLIC_MAINTENANCE_MODE env var (sync, fast)
+ *    - Also checks `maintenance_mode` feature flag in Supabase (async)
+ *    - Unauthenticated users on non-public routes redirected to /waitlist
  */
 
 export default async function proxy(request: NextRequest) {
@@ -44,8 +50,8 @@ export default async function proxy(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Read maintenance mode at runtime
-  const maintenanceMode = isMaintenanceModeEnabled();
+  // Fast sync check for maintenance mode (env var override)
+  let maintenanceMode = isMaintenanceModeEnabled();
 
   // Create Supabase client and refresh session
   const { supabase, response } = createClient(request);
@@ -66,6 +72,15 @@ export default async function proxy(request: NextRequest) {
     }
   } catch (err) {
     console.error("Exception in proxy getUser():", err);
+  }
+
+  // If env var didn't activate maintenance mode, check the DB feature flag
+  if (!maintenanceMode) {
+    try {
+      maintenanceMode = await isMaintenanceModeEnabledAsync();
+    } catch (err) {
+      console.error("[proxy] Failed to check maintenance mode flag:", err);
+    }
   }
 
   // Admin routes require site_admin role in JWT AND active sudo mode
@@ -117,9 +132,42 @@ export default async function proxy(request: NextRequest) {
       return NextResponse.redirect(sudoUrl);
     }
 
-    // Verify sudo session is still valid in database
-    // (This is checked via RPC in the sudo utilities, but we do a quick cookie check here)
-    // Full validation happens in server components that call requireSudoMode()
+    // Admin routes always use the admin's real identity — no impersonation header
+    return response;
+  }
+
+  // === IMPERSONATION ===
+  // For non-admin routes, check if admin is impersonating another user.
+  // Set a response header as a debugging aid (visible in DevTools).
+  // The actual impersonation detection uses cookie-based DB lookups via
+  // getImpersonationTarget(), not this header.
+  // Only set the header if the user has the site_admin role (defense-in-depth).
+  if (user) {
+    const impersonationCookie = request.cookies.get("impersonation_mode");
+    if (impersonationCookie?.value) {
+      // Verify the user is a site admin before propagating impersonation info
+      let isAdmin = false;
+      try {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+        if (session?.access_token) {
+          const payload = JSON.parse(
+            atob(session.access_token.split(".")[1]!)
+          ) as { site_roles?: string[] };
+          isAdmin = payload?.site_roles?.includes("site_admin") ?? false;
+        }
+      } catch {
+        // If JWT parsing fails, don't propagate impersonation
+      }
+
+      if (isAdmin) {
+        response.headers.set(
+          "x-impersonation-session",
+          impersonationCookie.value
+        );
+      }
+    }
   }
 
   // Protected routes always require authentication (redirect to sign-in)

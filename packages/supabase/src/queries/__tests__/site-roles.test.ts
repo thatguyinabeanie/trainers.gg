@@ -365,7 +365,12 @@ describe("site-roles queries", () => {
         return Promise.resolve({ data: null, error: null }).then(resolve);
       });
 
-      const result = await grantSiteRole(mockClient, "user-123", 1);
+      const result = await grantSiteRole(
+        mockClient,
+        "user-123",
+        1,
+        "admin-456"
+      );
 
       expect(result.success).toBe(true);
       expect(mockClient._queryBuilder.insert).toHaveBeenCalledWith({
@@ -381,7 +386,12 @@ describe("site-roles queries", () => {
         error: new Error("Role not found"),
       });
 
-      const result = await grantSiteRole(mockClient, "user-123", 999);
+      const result = await grantSiteRole(
+        mockClient,
+        "user-123",
+        999,
+        "admin-456"
+      );
 
       expect(result.success).toBe(false);
       expect(result.error).toBe("Role not found");
@@ -396,7 +406,12 @@ describe("site-roles queries", () => {
         error: null,
       });
 
-      const result = await grantSiteRole(mockClient, "user-123", 1);
+      const result = await grantSiteRole(
+        mockClient,
+        "user-123",
+        1,
+        "admin-456"
+      );
 
       expect(result.success).toBe(false);
       expect(result.error).toBe("Cannot grant non-site role via this function");
@@ -418,7 +433,12 @@ describe("site-roles queries", () => {
         error: null,
       });
 
-      const result = await grantSiteRole(mockClient, "user-123", 1);
+      const result = await grantSiteRole(
+        mockClient,
+        "user-123",
+        1,
+        "admin-456"
+      );
 
       expect(result.success).toBe(false);
       expect(result.error).toBe("User already has this role");
@@ -448,7 +468,12 @@ describe("site-roles queries", () => {
         .spyOn(console, "error")
         .mockImplementation(() => {});
 
-      const result = await grantSiteRole(mockClient, "user-123", 1);
+      const result = await grantSiteRole(
+        mockClient,
+        "user-123",
+        1,
+        "admin-456"
+      );
 
       expect(result.success).toBe(false);
       expect(result.error).toBe("Insert failed");
@@ -465,7 +490,12 @@ describe("site-roles queries", () => {
         return Promise.resolve({ data: null, error: null }).then(resolve);
       });
 
-      const result = await revokeSiteRole(mockClient, "user-123", 1);
+      const result = await revokeSiteRole(
+        mockClient,
+        "user-123",
+        1,
+        "admin-456"
+      );
 
       expect(result.success).toBe(true);
       expect(mockClient.from).toHaveBeenCalledWith("user_roles");
@@ -488,7 +518,12 @@ describe("site-roles queries", () => {
         .spyOn(console, "error")
         .mockImplementation(() => {});
 
-      const result = await revokeSiteRole(mockClient, "user-123", 1);
+      const result = await revokeSiteRole(
+        mockClient,
+        "user-123",
+        1,
+        "admin-456"
+      );
 
       expect(result.success).toBe(false);
       expect(result.error).toBe("Delete failed");
@@ -506,7 +541,12 @@ describe("site-roles queries", () => {
         return Promise.resolve({ data: null, error: null }).then(resolve);
       });
 
-      const result = await revokeSiteRole(mockClient, "user-123", 999);
+      const result = await revokeSiteRole(
+        mockClient,
+        "user-123",
+        999,
+        "admin-456"
+      );
 
       expect(result.success).toBe(true);
     });
@@ -517,8 +557,18 @@ describe("site-roles queries", () => {
         return Promise.resolve({ data: null, error: null }).then(resolve);
       });
 
-      const result1 = await revokeSiteRole(mockClient, "user-123", 1);
-      const result2 = await revokeSiteRole(mockClient, "user-123", 2);
+      const result1 = await revokeSiteRole(
+        mockClient,
+        "user-123",
+        1,
+        "admin-456"
+      );
+      const result2 = await revokeSiteRole(
+        mockClient,
+        "user-123",
+        2,
+        "admin-456"
+      );
 
       expect(result1.success).toBe(true);
       expect(result2.success).toBe(true);
