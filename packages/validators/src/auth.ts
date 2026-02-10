@@ -23,16 +23,18 @@ export const passwordSchema = z
 /**
  * Username requirements:
  * - 3-20 characters
- * - Only letters, numbers, underscores, and hyphens
+ * - Letters (any case/script), numbers, underscores, and hyphens
  * - Cannot start with temp_ or user_ (reserved for system-generated placeholders)
  * - Cannot contain profanity, slurs, or offensive language
+ * - Case-insensitive uniqueness is enforced at the query layer (not here)
  */
 export const usernameSchema = z
   .string()
+  .min(1, "Username is required")
   .min(3, "Username must be at least 3 characters")
   .max(20, "Username must be at most 20 characters")
   .regex(
-    /^[a-zA-Z0-9_-]+$/,
+    /^[\p{L}\p{N}_-]+$/u,
     "Username can only contain letters, numbers, underscores, and hyphens"
   )
   .refine((val) => !val.startsWith("temp_") && !val.startsWith("user_"), {

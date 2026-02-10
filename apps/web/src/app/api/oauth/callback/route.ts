@@ -9,9 +9,9 @@
  * 2. If DID exists in our DB → generate magic link → redirect to verify
  * 3. If DID is new → create account from Bluesky profile → sign in
  *
- * NOTE: Bluesky OAuth users get pds_status = 'external' because they already
- * have a PDS account elsewhere (e.g., @username.bsky.social). They don't need
- * one on pds.trainers.gg.
+ * NOTE: Bluesky OAuth users get pds_status = 'pending' so they can be
+ * provisioned a trainers.gg PDS account when they set their username in
+ * dashboard settings.
  *
  * GET /api/oauth/callback?code=...&state=...
  */
@@ -29,7 +29,7 @@ import {
 
 /**
  * Sanitize a username from a Bluesky handle
- * Does NOT check for uniqueness - that happens during onboarding
+ * Does NOT check for uniqueness - that happens in dashboard settings
  */
 function sanitizeUsername(handle: string): string {
   const baseUsername = extractUsernameFromHandle(handle);
@@ -108,12 +108,19 @@ export async function GET(request: Request) {
       userEmail = existingUser.email;
 
       // If DID wasn't set on the user record, update it now
-      // Note: Keep pds_status as 'external' for Bluesky users
+      // Set pds_status to 'pending' so they get a trainers.gg PDS account
       if (!existingUser.did) {
-        await supabaseAtproto
+        const { error: didUpdateError } = await supabaseAtproto
           .from("users")
-          .update({ did, pds_status: "external" })
+          .update({ did, pds_status: "pending" })
           .eq("id", existingUser.id);
+
+        if (didUpdateError) {
+          console.error(
+            "Failed to update DID on existing user:",
+            didUpdateError
+          );
+        }
       }
     } else {
       // User not found in public.users - try to create or sign in
@@ -124,8 +131,8 @@ export async function GET(request: Request) {
       }
 
       // Extract username from handle (e.g., "pikachu" from "pikachu.bsky.social")
-      // This may conflict with existing usernames - that's OK, we'll handle it
-      // during onboarding by making the username field read-only for Bluesky users
+      // This may conflict with existing usernames - that's OK, the user can
+      // choose a different username from dashboard settings
       const username = sanitizeUsername(profile.handle);
 
       userEmail = placeholderEmail;
@@ -157,15 +164,21 @@ export async function GET(request: Request) {
             .maybeSingle();
 
           if (userByPlaceholderEmail) {
-            await supabaseAtproto
+            const { error: updateExistingError } = await supabaseAtproto
               .from("users")
               .update({
                 did,
-                pds_handle: profile.handle,
-                pds_status: "external",
+                pds_status: "pending",
                 image: profile.avatar,
               })
               .eq("id", userByPlaceholderEmail.id);
+
+            if (updateExistingError) {
+              console.error(
+                "Failed to update existing user with DID:",
+                updateExistingError
+              );
+            }
           }
           // userEmail is already set to placeholderEmail, proceed to magic link
         } else {
@@ -174,16 +187,22 @@ export async function GET(request: Request) {
         }
       } else if (authData?.user) {
         // New user created successfully - update their public.users record
-        // Note: pds_status = 'external' because they already have a Bluesky PDS
-        await supabaseAtproto
+        // pds_status = 'pending' — they'll get a trainers.gg PDS when they set a username
+        const { error: newUserUpdateError } = await supabaseAtproto
           .from("users")
           .update({
             did,
-            pds_handle: profile.handle,
-            pds_status: "external",
+            pds_status: "pending",
             image: profile.avatar,
           })
           .eq("id", authData.user.id);
+
+        if (newUserUpdateError) {
+          console.error(
+            "Failed to update new user with DID:",
+            newUserUpdateError
+          );
+        }
       }
     }
 

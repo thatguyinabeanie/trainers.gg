@@ -33,6 +33,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { cn } from "@/lib/utils";
 
 interface TournamentInvitationsViewProps {
   className?: string;
@@ -98,7 +99,7 @@ export function TournamentInvitationsView({
 
   if (isLoading) {
     return (
-      <div className={`space-y-4 ${className || ""}`}>
+      <div className={cn("space-y-4", className)}>
         <div className="bg-muted h-8 animate-pulse rounded" />
         {Array.from({ length: 3 }).map((_, i) => (
           <Card key={i} className="animate-pulse">
@@ -133,7 +134,7 @@ export function TournamentInvitationsView({
     return (
       <Card
         key={invitation.id}
-        className={`transition-all ${isPending ? "border-primary/20" : ""}`}
+        className={cn("transition-all", isPending && "border-primary/20")}
       >
         <CardHeader className="pb-3">
           <div className="flex items-start justify-between">

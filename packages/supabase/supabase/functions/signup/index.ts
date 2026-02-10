@@ -87,14 +87,33 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Validate username format
-    const usernameRegex = /^[a-zA-Z0-9_-]{3,20}$/;
-    if (!usernameRegex.test(username)) {
+    // Validate username format (letters, numbers, underscores, hyphens)
+    const usernameRegex = /^[\p{L}\p{N}_-]+$/u;
+    if (
+      username.length < 3 ||
+      username.length > 20 ||
+      !usernameRegex.test(username)
+    ) {
       return new Response(
         JSON.stringify({
           success: false,
           error:
-            "Username must be 3-20 characters, alphanumeric with underscores/hyphens only",
+            "Username must be 3-20 characters: letters, numbers, underscores, and hyphens",
+          code: "INVALID_USERNAME",
+        } satisfies SignupResponse),
+        {
+          status: 400,
+          headers: { ...cors, "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    // Reject placeholder usernames
+    if (username.startsWith("temp_") || username.startsWith("user_")) {
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: "Please choose a custom username",
           code: "INVALID_USERNAME",
         } satisfies SignupResponse),
         {
@@ -235,11 +254,14 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Check username availability in Supabase
+    // Escape LIKE special characters for case-insensitive matching
+    const escapedUsername = username.replace(/[%_\\]/g, "\\$&");
+
+    // Check username availability in users table (case-insensitive)
     const { data: existingUser } = await supabaseAdmin
       .from("users")
       .select("id")
-      .ilike("username", username)
+      .ilike("username", escapedUsername)
       .maybeSingle();
 
     if (existingUser) {
@@ -256,11 +278,33 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Check username availability in alts table (case-insensitive)
+    const { data: existingAlt } = await supabaseAdmin
+      .from("alts")
+      .select("id")
+      .ilike("username", escapedUsername)
+      .maybeSingle();
+
+    if (existingAlt) {
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: "Username is already taken",
+          code: "USERNAME_TAKEN",
+        } satisfies SignupResponse),
+        {
+          status: 409,
+          headers: { ...cors, "Content-Type": "application/json" },
+        }
+      );
+    }
+
     // Check if email already exists
+    const escapedEmail = email.replace(/[%_\\]/g, "\\$&");
     const { data: existingEmail } = await supabaseAdmin
       .from("users")
       .select("id")
-      .ilike("email", email)
+      .ilike("email", escapedEmail)
       .maybeSingle();
 
     if (existingEmail) {

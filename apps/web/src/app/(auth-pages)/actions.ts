@@ -3,6 +3,7 @@
 import { checkBotId } from "botid/server";
 import { createClient } from "@/lib/supabase/server";
 import { getEmailByUsername } from "@trainers/supabase";
+import { escapeLike } from "@trainers/utils";
 
 /**
  * Resolve a login identifier (email or username) to an email address.
@@ -12,14 +13,14 @@ import { getEmailByUsername } from "@trainers/supabase";
 export async function resolveLoginIdentifier(
   identifier: string
 ): Promise<{ email: string | null; error: string | null }> {
-  const trimmed = identifier.trim().toLowerCase();
+  const trimmed = identifier.trim();
 
-  // If it looks like an email, return it directly
+  // If it looks like an email, return it directly (emails are case-insensitive)
   if (trimmed.includes("@")) {
-    return { email: trimmed, error: null };
+    return { email: trimmed.toLowerCase(), error: null };
   }
 
-  // Otherwise, treat it as a username and look up the email
+  // Otherwise, treat it as a username and look up the email (case-insensitive)
   try {
     const supabase = await createClient();
     const email = await getEmailByUsername(supabase, trimmed);
@@ -77,33 +78,55 @@ export async function joinWaitlist(
 export async function checkUsernameAvailability(
   username: string
 ): Promise<{ available: boolean; error: string | null }> {
-  const trimmed = username.trim().toLowerCase();
+  const trimmed = username.trim();
 
-  // Validate username format
-  if (!/^[a-zA-Z0-9_-]{3,20}$/.test(trimmed)) {
+  // Validate username format (letters, numbers, underscores, hyphens)
+  if (
+    trimmed.length < 3 ||
+    trimmed.length > 20 ||
+    !/^[\p{L}\p{N}_-]+$/u.test(trimmed)
+  ) {
     return { available: false, error: "Invalid username format" };
   }
+
+  const escaped = escapeLike(trimmed);
 
   try {
     const supabase = await createClient();
 
-    // Check users table
-    const { data: existingUser } = await supabase
+    // Check users table (case-insensitive)
+    const { data: existingUser, error: usersError } = await supabase
       .from("users")
       .select("id")
-      .eq("username", trimmed)
+      .ilike("username", escaped)
       .maybeSingle();
+
+    if (usersError) {
+      console.error("Error checking username in users:", usersError);
+      return {
+        available: false,
+        error: "An error occurred. Please try again.",
+      };
+    }
 
     if (existingUser) {
       return { available: false, error: null };
     }
 
-    // Check alts table
-    const { data: existingAlt } = await supabase
+    // Check alts table (case-insensitive)
+    const { data: existingAlt, error: altsError } = await supabase
       .from("alts")
       .select("id")
-      .eq("username", trimmed)
+      .ilike("username", escaped)
       .maybeSingle();
+
+    if (altsError) {
+      console.error("Error checking username in alts:", altsError);
+      return {
+        available: false,
+        error: "An error occurred. Please try again.",
+      };
+    }
 
     if (existingAlt) {
       return { available: false, error: null };

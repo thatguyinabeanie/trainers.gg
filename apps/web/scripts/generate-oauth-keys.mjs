@@ -20,9 +20,10 @@ import { createPublicKey, generateKeyPairSync } from "node:crypto";
 import { exportJWK } from "jose";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const ROOT_DIR = join(__dirname, "..");
+const WEB_DIR = join(__dirname, "..");
+const ROOT_DIR = join(WEB_DIR, "../..");
 const ENV_FILE = join(ROOT_DIR, ".env.local");
-const JWKS_DIR = join(ROOT_DIR, "apps/web/public/oauth");
+const JWKS_DIR = join(WEB_DIR, "public/oauth");
 const JWKS_FILE = join(JWKS_DIR, "jwks.json");
 
 // Colors for terminal output

@@ -51,3 +51,6 @@ export { getErrorMessage } from "./error-handling";
 
 // notifications.ts — notification type checking
 export { isMatchNotification } from "./notifications";
+
+// sql.ts — SQL/PostgREST helpers
+export { escapeLike } from "./sql";

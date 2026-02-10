@@ -127,13 +127,6 @@ export function WaitlistForm() {
             </Button>
           </form>
         </Form>
-
-        <p className="text-muted-foreground text-center text-sm">
-          Already have an account?{" "}
-          <Link href="/sign-in" className="text-primary hover:underline">
-            Sign in
-          </Link>
-        </p>
       </CardContent>
     </Card>
   );

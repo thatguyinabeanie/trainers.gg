@@ -335,7 +335,7 @@ Deno.serve(async (req) => {
         if (!userByEmail.did) {
           await supabaseAdmin
             .from("users")
-            .update({ did, pds_status: "external" })
+            .update({ did, pds_status: "pending" })
             .eq("id", userByEmail.id);
         }
       } else {
@@ -376,8 +376,7 @@ Deno.serve(async (req) => {
                 .from("users")
                 .update({
                   did,
-                  pds_handle: handle,
-                  pds_status: "external",
+                  pds_status: "pending",
                   image: profile?.avatar,
                 })
                 .eq("id", existByEmail.id);
@@ -413,13 +412,12 @@ Deno.serve(async (req) => {
           userEmail = placeholderEmail;
 
           // Update the user record with DID and profile data
-          // Note: pds_status = 'external' because they already have a PDS elsewhere
+          // pds_status = 'pending' — they'll get a trainers.gg PDS when they set a username
           await supabaseAdmin
             .from("users")
             .update({
               did,
-              pds_handle: handle,
-              pds_status: "external",
+              pds_status: "pending",
               image: profile?.avatar,
             })
             .eq("id", authData.user.id);

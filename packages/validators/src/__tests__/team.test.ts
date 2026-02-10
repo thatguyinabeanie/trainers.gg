@@ -95,6 +95,21 @@ Ability: Static
     expect(team[0]!.ev_hp).toBe(0);
     expect(team[0]!.ev_defense).toBe(0);
   });
+
+  it("parses Tera Type from Showdown export", () => {
+    // VALID_SHOWDOWN_MON includes "Tera Type: Electric"
+    const team = parseShowdownText(VALID_SHOWDOWN_MON);
+    expect(team[0]!.tera_type).toBe("Electric");
+  });
+
+  it("defaults Tera Type to null when not specified", () => {
+    const text = `Pikachu
+Ability: Static
+Level: 50
+- Thunderbolt`;
+    const team = parseShowdownText(text);
+    expect(team[0]!.tera_type).toBeNull();
+  });
 });
 
 describe("validateTeamStructure", () => {

@@ -1,5 +1,6 @@
 import type { TypedClient } from "../client";
 import type { Database } from "../types";
+import { escapeLike } from "@trainers/utils";
 
 /**
  * Update user alt
@@ -8,8 +9,6 @@ export async function updateAlt(
   supabase: TypedClient,
   altId: number,
   updates: {
-    displayName?: string;
-    bio?: string;
     avatarUrl?: string;
     inGameName?: string | null;
   }
@@ -33,9 +32,6 @@ export async function updateAlt(
 
   // Prepare update data
   const updateData: Database["public"]["Tables"]["alts"]["Update"] = {};
-  if (updates.displayName !== undefined)
-    updateData.display_name = updates.displayName;
-  if (updates.bio !== undefined) updateData.bio = updates.bio;
   if (updates.avatarUrl !== undefined)
     updateData.avatar_url = updates.avatarUrl;
   if (updates.inGameName !== undefined)
@@ -75,11 +71,12 @@ export async function updateUsername(
     throw new Error("You can only update your own alt");
   }
 
-  // Check username uniqueness
+  // Check username uniqueness (case-insensitive)
+  const escapedUsername = escapeLike(newUsername);
   const { data: existing } = await supabase
     .from("alts")
     .select("id")
-    .eq("username", newUsername.toLowerCase())
+    .ilike("username", escapedUsername)
     .neq("id", altId)
     .single();
 
@@ -89,7 +86,7 @@ export async function updateUsername(
 
   const { error } = await supabase
     .from("alts")
-    .update({ username: newUsername.toLowerCase() })
+    .update({ username: newUsername })
     .eq("id", altId);
 
   if (error) throw error;
@@ -132,27 +129,33 @@ export async function ensureAlt(supabase: TypedClient) {
       ?.toLowerCase()
       .replace(/[^a-z0-9_]/g, "_") || `user_${user.id.slice(0, 8)}`;
 
-  // Ensure username is unique by appending random suffix if needed
+  // Ensure username is unique (case-insensitive) by appending random suffix if needed
   let username = defaultUsername;
   let attempts = 0;
   while (attempts < 5) {
     const { data: usernameExists } = await supabase
       .from("alts")
       .select("id")
-      .eq("username", username)
-      .single();
+      .ilike("username", escapeLike(username))
+      .maybeSingle();
 
     if (!usernameExists) break;
     username = `${defaultUsername}_${Math.random().toString(36).slice(2, 6)}`;
     attempts++;
   }
 
+  if (attempts >= 5) {
+    // All attempts exhausted — use a UUID-based fallback
+    username = `user_${user.id.slice(0, 12)}`;
+  }
+
+  // display_name is auto-synced with username
   const { data: alt, error } = await supabase
     .from("alts")
     .insert({
       user_id: user.id,
       username,
-      display_name: userData?.name ?? username,
+      display_name: username,
       avatar_url: userData?.image ?? null,
     })
     .select()
@@ -169,8 +172,6 @@ export async function createAlt(
   supabase: TypedClient,
   data: {
     username: string;
-    displayName: string;
-    bio?: string;
     avatarUrl?: string;
     inGameName?: string;
   }
@@ -180,24 +181,25 @@ export async function createAlt(
   } = await supabase.auth.getUser();
   if (!user) throw new Error("Not authenticated");
 
-  // Check username uniqueness
+  // Check username uniqueness (case-insensitive)
+  const escapedUsername = escapeLike(data.username);
   const { data: usernameExists } = await supabase
     .from("alts")
     .select("id")
-    .eq("username", data.username.toLowerCase())
+    .ilike("username", escapedUsername)
     .maybeSingle();
 
   if (usernameExists) {
     throw new Error("Username is already taken");
   }
 
+  // display_name is auto-synced with username
   const { data: alt, error } = await supabase
     .from("alts")
     .insert({
       user_id: user.id,
-      username: data.username.toLowerCase(),
-      display_name: data.displayName,
-      bio: data.bio ?? null,
+      username: data.username,
+      display_name: data.username,
       avatar_url: data.avatarUrl ?? null,
       in_game_name: data.inGameName ?? null,
     })
