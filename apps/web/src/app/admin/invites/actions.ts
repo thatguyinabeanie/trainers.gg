@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { requireAdminWithSudo } from "@/lib/auth/require-admin";
 import {
   withAdminAction,
   type ActionResult,
@@ -20,6 +21,10 @@ export async function sendBetaInvite(email: string): Promise<{
   code?: string;
 }> {
   try {
+    // Enforce admin role + active sudo session before calling the edge function
+    const adminCheck = await requireAdminWithSudo();
+    if ("success" in adminCheck) return adminCheck;
+
     const supabase = await createClient();
 
     // Get the current session for the auth token
