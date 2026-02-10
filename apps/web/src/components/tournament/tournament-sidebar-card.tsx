@@ -424,8 +424,9 @@ export function TournamentSidebarCard({
       const result = await submitTeamAction(tournamentId, rawText);
 
       if (result.success) {
+        const speciesList = result.data.species.join(", ");
         toast.success("Team submitted", {
-          description: `${result.data.pokemonCount} Pokemon saved successfully`,
+          description: `${result.data.teamName}: ${speciesList}`,
         });
         // Update local state with the validated team data
         setSubmittedTeam({
@@ -444,9 +445,22 @@ export function TournamentSidebarCard({
         setRawText("");
         refetchRegistration();
       } else {
-        toast.error("Submission failed", {
-          description: result.error,
-        });
+        // Show structured validation errors if available
+        if (result.validationErrors && result.validationErrors.length > 0) {
+          toast.error("Team validation failed", {
+            description: (
+              <ul className="mt-1 list-inside list-disc space-y-0.5">
+                {result.validationErrors.map((err, i) => (
+                  <li key={i}>{err}</li>
+                ))}
+              </ul>
+            ),
+          });
+        } else {
+          toast.error("Submission failed", {
+            description: result.error,
+          });
+        }
       }
     } catch (error) {
       toast.error("Submission failed", {
@@ -471,8 +485,9 @@ export function TournamentSidebarCard({
         const result = await selectTeamAction(tournamentId, numericId);
 
         if (result.success) {
+          const speciesList = result.data.species.join(", ");
           toast.success("Team selected", {
-            description: `${result.data.pokemonCount} Pokemon linked to registration`,
+            description: `${result.data.teamName}: ${speciesList}`,
           });
           setSubmittedTeam({
             teamId: result.data.teamId,
@@ -487,9 +502,22 @@ export function TournamentSidebarCard({
           setTeamEditMode(false);
           refetchRegistration();
         } else {
-          toast.error("Selection failed", {
-            description: result.error,
-          });
+          // Show structured validation errors if available
+          if (result.validationErrors && result.validationErrors.length > 0) {
+            toast.error("Team validation failed", {
+              description: (
+                <ul className="mt-1 list-inside list-disc space-y-0.5">
+                  {result.validationErrors.map((err, i) => (
+                    <li key={i}>{err}</li>
+                  ))}
+                </ul>
+              ),
+            });
+          } else {
+            toast.error("Selection failed", {
+              description: result.error,
+            });
+          }
         }
       } catch (error) {
         toast.error("Selection failed", {
@@ -674,6 +702,15 @@ export function TournamentSidebarCard({
                 Pokepaste URL
               </Button>
             </div>
+
+            {/* Team lock warning */}
+            <Alert>
+              <Lock className="h-4 w-4" />
+              <AlertDescription>
+                Your team will be locked when the tournament begins. Make sure
+                to finalize your team before the start time.
+              </AlertDescription>
+            </Alert>
 
             {/* Input area */}
             {teamInputMode === "paste" ? (
