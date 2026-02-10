@@ -120,12 +120,17 @@ EXCEPTION
   WHEN undefined_object THEN NULL;
 END $$;
 
+-- Drop the existing text default before changing the column type
+-- (PostgreSQL cannot auto-cast a text default to an enum)
+ALTER TABLE public.announcements
+  ALTER COLUMN type DROP DEFAULT;
+
 -- Now alter the column type from text to the enum
 ALTER TABLE public.announcements
   ALTER COLUMN type TYPE public.announcement_type
   USING type::public.announcement_type;
 
--- Re-set the default (enum cast)
+-- Re-set the default as the enum type
 ALTER TABLE public.announcements
   ALTER COLUMN type SET DEFAULT 'info'::public.announcement_type;
 
