@@ -97,7 +97,7 @@ export function InviteSignUp({ email, token }: InviteSignUpProps) {
 
       // Invite is already marked as used by the signup edge function
 
-      // Redirect to onboarding or dashboard
+      // Redirect to dashboard
       router.push("/");
       router.refresh();
     } catch (err) {

@@ -49,6 +49,22 @@ describe("usernameSchema", () => {
     expect(usernameSchema.safeParse("abc").success).toBe(true);
   });
 
+  it("accepts uppercase usernames", () => {
+    expect(usernameSchema.safeParse("ASH_KETCHUM").success).toBe(true);
+    expect(usernameSchema.safeParse("Player-1").success).toBe(true);
+    expect(usernameSchema.safeParse("MixedCase").success).toBe(true);
+  });
+
+  it("rejects usernames with emoji", () => {
+    expect(usernameSchema.safeParse("fire\u{1F525}trainer").success).toBe(
+      false
+    );
+    expect(
+      usernameSchema.safeParse("\u{1F525}\u{1F525}\u{1F525}").success
+    ).toBe(false);
+    expect(usernameSchema.safeParse("pika\u{26A1}chu").success).toBe(false);
+  });
+
   it("rejects usernames shorter than 3 characters", () => {
     expect(usernameSchema.safeParse("ab").success).toBe(false);
   });

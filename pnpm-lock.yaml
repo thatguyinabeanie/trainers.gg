@@ -615,12 +615,30 @@ importers:
 
   packages/supabase:
     dependencies:
+      '@supabase/ssr':
+        specifier: 'catalog:'
+        version: 0.8.0(@supabase/supabase-js@2.91.0(bufferutil@4.1.0)(utf-8-validate@5.0.10))
       '@supabase/supabase-js':
         specifier: 'catalog:'
         version: 2.91.0(bufferutil@4.1.0)(utf-8-validate@5.0.10)
+      '@trainers/utils':
+        specifier: workspace:*
+        version: link:../utils
       '@trainers/validators':
         specifier: workspace:*
         version: link:../validators
+      expo-secure-store:
+        specifier: ~14.0.0
+        version: 14.0.1(expo@54.0.33)
+      next:
+        specifier: 'catalog:'
+        version: 16.1.6(@babel/core@7.29.0)(@opentelemetry/api@1.9.0)(@playwright/test@1.58.1)(babel-plugin-macros@3.1.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
+      react:
+        specifier: 'catalog:'
+        version: 19.1.0
+      react-native-url-polyfill:
+        specifier: ^2.0.0
+        version: 2.0.0(react-native@0.81.5(@babel/core@7.29.0)(@types/react@19.1.17)(bufferutil@4.1.0)(react@19.1.0)(utf-8-validate@5.0.10))
       zod:
         specifier: 'catalog:'
         version: 3.25.76
@@ -631,9 +649,6 @@ importers:
       '@jest/globals':
         specifier: ^30.2.0
         version: 30.2.0
-      '@supabase/ssr':
-        specifier: 'catalog:'
-        version: 0.8.0(@supabase/supabase-js@2.91.0(bufferutil@4.1.0)(utf-8-validate@5.0.10))
       '@trainers/eslint-config':
         specifier: workspace:*
         version: link:../../tooling/eslint
@@ -658,27 +673,15 @@ importers:
       eslint:
         specifier: 'catalog:'
         version: 9.39.2(jiti@2.6.1)
-      expo-secure-store:
-        specifier: ~14.0.0
-        version: 14.0.1(expo@54.0.33)
       jest:
         specifier: 'catalog:'
         version: 29.7.0(@types/node@22.19.7)(babel-plugin-macros@3.1.0)(ts-node@10.9.2(@types/node@22.19.7)(typescript@5.9.3))
       jest-junit:
         specifier: 'catalog:'
         version: 16.0.0
-      next:
-        specifier: 'catalog:'
-        version: 16.1.6(@babel/core@7.29.0)(@opentelemetry/api@1.9.0)(@playwright/test@1.58.1)(babel-plugin-macros@3.1.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
       prettier:
         specifier: 'catalog:'
         version: 3.8.1
-      react:
-        specifier: 'catalog:'
-        version: 19.1.0
-      react-native-url-polyfill:
-        specifier: ^2.0.0
-        version: 2.0.0(react-native@0.81.5(@babel/core@7.29.0)(@types/react@19.1.17)(bufferutil@4.1.0)(react@19.1.0)(utf-8-validate@5.0.10))
       supabase:
         specifier: 'catalog:'
         version: 2.75.3

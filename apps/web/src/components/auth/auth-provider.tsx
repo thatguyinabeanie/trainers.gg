@@ -15,7 +15,6 @@ interface Profile {
   id: number;
   displayName: string;
   username: string;
-  bio?: string;
   avatarUrl?: string;
 }
 

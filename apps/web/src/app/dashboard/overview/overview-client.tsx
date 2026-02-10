@@ -1,8 +1,10 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import { useAuth } from "@/components/auth/auth-provider";
 import { useSupabaseQuery } from "@/lib/supabase";
 import { getMyDashboardData } from "@trainers/supabase";
+import { toast } from "sonner";
 import {
   QuickActions,
   UpcomingTournaments,
@@ -14,6 +16,20 @@ import {
 export function OverviewClient() {
   const { user } = useAuth();
   const profileId = user?.profile?.id;
+  const toastShown = useRef(false);
+
+  // Show welcome toast for users with placeholder usernames
+  useEffect(() => {
+    if (toastShown.current) return;
+    const username = (user?.user_metadata?.username as string) ?? "";
+    if (username.startsWith("temp_") || username.startsWith("user_")) {
+      toastShown.current = true;
+      toast.info(
+        "Welcome to trainers.gg! You can set your username and profile details in Settings.",
+        { duration: 8000 }
+      );
+    }
+  }, [user]);
 
   const dashboardDataQueryFn = (
     supabase: Parameters<typeof getMyDashboardData>[0]

@@ -12,6 +12,7 @@ type MockQueryBuilder = {
   select: jest.Mock;
   eq: jest.Mock;
   neq: jest.Mock;
+  ilike: jest.Mock;
   single: jest.Mock;
   maybeSingle: jest.Mock;
   update: jest.Mock;
@@ -30,6 +31,7 @@ const createMockClient = () => {
     select: jest.fn().mockReturnThis(),
     eq: jest.fn().mockReturnThis(),
     neq: jest.fn().mockReturnThis(),
+    ilike: jest.fn().mockReturnThis(),
     single: jest.fn(),
     maybeSingle: jest.fn(),
     update: jest.fn().mockReturnThis(),
@@ -62,7 +64,7 @@ describe("User Mutations", () => {
       } as MockAuthResponse);
     });
 
-    it("should successfully update alt display name", async () => {
+    it("should successfully update alt avatar", async () => {
       const fromSpy = jest.spyOn(mockClient, "from");
 
       // Mock: Get alt to verify ownership
@@ -82,13 +84,13 @@ describe("User Mutations", () => {
       } as unknown as MockQueryBuilder);
 
       const result = await updateAlt(mockClient, altId, {
-        displayName: "New Display Name",
+        avatarUrl: "https://example.com/avatar.png",
       });
 
       expect(result).toEqual({ success: true });
     });
 
-    it("should update bio, avatar, and in-game name", async () => {
+    it("should update avatar and in-game name", async () => {
       const fromSpy = jest.spyOn(mockClient, "from");
 
       fromSpy.mockReturnValueOnce({
@@ -107,13 +109,11 @@ describe("User Mutations", () => {
       } as unknown as MockQueryBuilder);
 
       await updateAlt(mockClient, altId, {
-        bio: "New bio",
         avatarUrl: "https://example.com/avatar.png",
         inGameName: "PlayerOne",
       });
 
       expect(updateMock).toHaveBeenCalledWith({
-        bio: "New bio",
         avatar_url: "https://example.com/avatar.png",
         in_game_name: "PlayerOne",
       });
@@ -152,7 +152,7 @@ describe("User Mutations", () => {
       } as MockAuthResponse);
 
       await expect(
-        updateAlt(mockClient, altId, { displayName: "Test" })
+        updateAlt(mockClient, altId, { inGameName: "Test" })
       ).rejects.toThrow("Not authenticated");
     });
 
@@ -164,7 +164,7 @@ describe("User Mutations", () => {
       });
 
       await expect(
-        updateAlt(mockClient, altId, { displayName: "Test" })
+        updateAlt(mockClient, altId, { inGameName: "Test" })
       ).rejects.toThrow("Alt not found");
     });
 
@@ -179,7 +179,7 @@ describe("User Mutations", () => {
       });
 
       await expect(
-        updateAlt(mockClient, altId, { displayName: "Test" })
+        updateAlt(mockClient, altId, { inGameName: "Test" })
       ).rejects.toThrow("You can only update your own alt");
     });
 
@@ -202,7 +202,7 @@ describe("User Mutations", () => {
       } as unknown as MockQueryBuilder);
 
       await expect(
-        updateAlt(mockClient, altId, { displayName: "Test" })
+        updateAlt(mockClient, altId, { inGameName: "Test" })
       ).rejects.toThrow("Database error");
     });
   });
@@ -231,10 +231,10 @@ describe("User Mutations", () => {
         }),
       } as unknown as MockQueryBuilder);
 
-      // Mock: Check username uniqueness (not found)
+      // Mock: Check username uniqueness (case-insensitive, not found)
       fromSpy.mockReturnValueOnce({
         select: jest.fn().mockReturnThis(),
-        eq: jest.fn().mockReturnThis(),
+        ilike: jest.fn().mockReturnThis(),
         neq: jest.fn().mockReturnThis(),
         single: jest.fn().mockResolvedValue({ data: null, error: null }),
       } as unknown as MockQueryBuilder);
@@ -250,7 +250,7 @@ describe("User Mutations", () => {
       expect(result).toEqual({ success: true });
     });
 
-    it("should lowercase the username before storing", async () => {
+    it("should preserve username casing when storing", async () => {
       const fromSpy = jest.spyOn(mockClient, "from");
 
       fromSpy.mockReturnValueOnce({
@@ -262,10 +262,10 @@ describe("User Mutations", () => {
         }),
       } as unknown as MockQueryBuilder);
 
-      const eqMock = jest.fn().mockReturnThis();
+      const ilikeMock = jest.fn().mockReturnThis();
       fromSpy.mockReturnValueOnce({
         select: jest.fn().mockReturnThis(),
-        eq: eqMock,
+        ilike: ilikeMock,
         neq: jest.fn().mockReturnThis(),
         single: jest.fn().mockResolvedValue({ data: null, error: null }),
       } as unknown as MockQueryBuilder);
@@ -278,10 +278,10 @@ describe("User Mutations", () => {
 
       await updateUsername(mockClient, altId, "MixedCase");
 
-      // Check that eq was called with lowercase username
-      expect(eqMock).toHaveBeenCalledWith("username", "mixedcase");
-      // Check that update was called with lowercase username
-      expect(updateMock).toHaveBeenCalledWith({ username: "mixedcase" });
+      // Check that ilike was used for case-insensitive uniqueness check
+      expect(ilikeMock).toHaveBeenCalledWith("username", "MixedCase");
+      // Check that update preserves original casing
+      expect(updateMock).toHaveBeenCalledWith({ username: "MixedCase" });
     });
 
     it("should throw error if username already taken", async () => {
@@ -296,10 +296,10 @@ describe("User Mutations", () => {
         }),
       } as unknown as MockQueryBuilder);
 
-      // Username exists
+      // Username exists (case-insensitive check)
       fromSpy.mockReturnValueOnce({
         select: jest.fn().mockReturnThis(),
-        eq: jest.fn().mockReturnThis(),
+        ilike: jest.fn().mockReturnThis(),
         neq: jest.fn().mockReturnThis(),
         single: jest.fn().mockResolvedValue({
           data: { id: 999 },
@@ -363,7 +363,7 @@ describe("User Mutations", () => {
 
       fromSpy.mockReturnValueOnce({
         select: jest.fn().mockReturnThis(),
-        eq: jest.fn().mockReturnThis(),
+        ilike: jest.fn().mockReturnThis(),
         neq: jest.fn().mockReturnThis(),
         single: jest.fn().mockResolvedValue({ data: null, error: null }),
       } as unknown as MockQueryBuilder);
@@ -429,11 +429,11 @@ describe("User Mutations", () => {
         }),
       } as unknown as MockQueryBuilder);
 
-      // Mock: Check username uniqueness (available)
+      // Mock: Check username uniqueness (case-insensitive, available)
       fromSpy.mockReturnValueOnce({
         select: jest.fn().mockReturnThis(),
-        eq: jest.fn().mockReturnThis(),
-        single: jest.fn().mockResolvedValue({ data: null, error: null }),
+        ilike: jest.fn().mockReturnThis(),
+        maybeSingle: jest.fn().mockResolvedValue({ data: null, error: null }),
       } as unknown as MockQueryBuilder);
 
       // Mock: Insert new alt
@@ -477,21 +477,21 @@ describe("User Mutations", () => {
         }),
       } as unknown as MockQueryBuilder);
 
-      // Mock: First username check (taken)
+      // Mock: First username check (taken, case-insensitive)
       fromSpy.mockReturnValueOnce({
         select: jest.fn().mockReturnThis(),
-        eq: jest.fn().mockReturnThis(),
-        single: jest.fn().mockResolvedValue({
+        ilike: jest.fn().mockReturnThis(),
+        maybeSingle: jest.fn().mockResolvedValue({
           data: { id: 999 },
           error: null,
         }),
       } as unknown as MockQueryBuilder);
 
-      // Mock: Second username check (available)
+      // Mock: Second username check (available, case-insensitive)
       fromSpy.mockReturnValueOnce({
         select: jest.fn().mockReturnThis(),
-        eq: jest.fn().mockReturnThis(),
-        single: jest.fn().mockResolvedValue({ data: null, error: null }),
+        ilike: jest.fn().mockReturnThis(),
+        maybeSingle: jest.fn().mockResolvedValue({ data: null, error: null }),
       } as unknown as MockQueryBuilder);
 
       // Mock: Insert new alt
@@ -536,11 +536,11 @@ describe("User Mutations", () => {
         }),
       } as unknown as MockQueryBuilder);
 
-      // Mock: Check username uniqueness (available)
+      // Mock: Check username uniqueness (case-insensitive, available)
       fromSpy.mockReturnValueOnce({
         select: jest.fn().mockReturnThis(),
-        eq: jest.fn().mockReturnThis(),
-        single: jest.fn().mockResolvedValue({ data: null, error: null }),
+        ilike: jest.fn().mockReturnThis(),
+        maybeSingle: jest.fn().mockResolvedValue({ data: null, error: null }),
       } as unknown as MockQueryBuilder);
 
       // Mock: Insert new alt
@@ -575,12 +575,14 @@ describe("User Mutations", () => {
     it("should propagate insert errors", async () => {
       const fromSpy = jest.spyOn(mockClient, "from");
 
+      // Mock: No existing alt
       fromSpy.mockReturnValueOnce({
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
         single: jest.fn().mockResolvedValue({ data: null, error: null }),
       } as unknown as MockQueryBuilder);
 
+      // Mock: Get user data
       fromSpy.mockReturnValueOnce({
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
@@ -590,12 +592,14 @@ describe("User Mutations", () => {
         }),
       } as unknown as MockQueryBuilder);
 
+      // Mock: Check username uniqueness (case-insensitive, available)
       fromSpy.mockReturnValueOnce({
         select: jest.fn().mockReturnThis(),
-        eq: jest.fn().mockReturnThis(),
-        single: jest.fn().mockResolvedValue({ data: null, error: null }),
+        ilike: jest.fn().mockReturnThis(),
+        maybeSingle: jest.fn().mockResolvedValue({ data: null, error: null }),
       } as unknown as MockQueryBuilder);
 
+      // Mock: Insert new alt (error)
       const dbError = new Error("Insert failed");
       fromSpy.mockReturnValueOnce({
         insert: jest.fn().mockReturnThis(),
@@ -617,18 +621,18 @@ describe("User Mutations", () => {
     it("should create a new alt successfully", async () => {
       const fromSpy = jest.spyOn(mockClient, "from");
 
-      // Mock: Username uniqueness check (available)
+      // Mock: Username uniqueness check (available, case-insensitive)
       fromSpy.mockReturnValueOnce({
         select: jest.fn().mockReturnThis(),
-        eq: jest.fn().mockReturnThis(),
+        ilike: jest.fn().mockReturnThis(),
         maybeSingle: jest.fn().mockResolvedValue({ data: null, error: null }),
       } as unknown as MockQueryBuilder);
 
-      // Mock: Insert alt
+      // Mock: Insert alt (display_name auto-synced with username, casing preserved)
       const newAlt = {
         id: 20,
-        username: "newplayer",
-        display_name: "New Player",
+        username: "NewPlayer",
+        display_name: "NewPlayer",
       };
       fromSpy.mockReturnValueOnce({
         insert: jest.fn().mockReturnThis(),
@@ -641,7 +645,6 @@ describe("User Mutations", () => {
 
       const result = await createAlt(mockClient, {
         username: "NewPlayer",
-        displayName: "New Player",
       });
 
       expect(result).toEqual(newAlt);
@@ -652,7 +655,7 @@ describe("User Mutations", () => {
 
       fromSpy.mockReturnValueOnce({
         select: jest.fn().mockReturnThis(),
-        eq: jest.fn().mockReturnThis(),
+        ilike: jest.fn().mockReturnThis(),
         maybeSingle: jest.fn().mockResolvedValue({ data: null, error: null }),
       } as unknown as MockQueryBuilder);
 
@@ -668,8 +671,6 @@ describe("User Mutations", () => {
 
       await createAlt(mockClient, {
         username: "player",
-        displayName: "Player",
-        bio: "I love Pokemon",
         avatarUrl: "https://example.com/avatar.png",
         inGameName: "PlayerOne",
       });
@@ -677,20 +678,19 @@ describe("User Mutations", () => {
       expect(insertMock).toHaveBeenCalledWith({
         user_id: mockUser.id,
         username: "player",
-        display_name: "Player",
-        bio: "I love Pokemon",
+        display_name: "player",
         avatar_url: "https://example.com/avatar.png",
         in_game_name: "PlayerOne",
       });
     });
 
-    it("should lowercase username before checking and storing", async () => {
+    it("should preserve username casing while checking case-insensitively", async () => {
       const fromSpy = jest.spyOn(mockClient, "from");
 
-      const eqMock = jest.fn().mockReturnThis();
+      const ilikeMock = jest.fn().mockReturnThis();
       fromSpy.mockReturnValueOnce({
         select: jest.fn().mockReturnThis(),
-        eq: eqMock,
+        ilike: ilikeMock,
         maybeSingle: jest.fn().mockResolvedValue({ data: null, error: null }),
       } as unknown as MockQueryBuilder);
 
@@ -706,13 +706,13 @@ describe("User Mutations", () => {
 
       await createAlt(mockClient, {
         username: "MixedCase",
-        displayName: "Test",
       });
 
-      expect(eqMock).toHaveBeenCalledWith("username", "mixedcase");
+      expect(ilikeMock).toHaveBeenCalledWith("username", "MixedCase");
       expect(insertMock).toHaveBeenCalledWith(
         expect.objectContaining({
-          username: "mixedcase",
+          username: "MixedCase",
+          display_name: "MixedCase",
         })
       );
     });
@@ -720,7 +720,7 @@ describe("User Mutations", () => {
     it("should throw error if username is already taken", async () => {
       (mockClient.from as jest.Mock).mockReturnValue({
         select: jest.fn().mockReturnThis(),
-        eq: jest.fn().mockReturnThis(),
+        ilike: jest.fn().mockReturnThis(),
         maybeSingle: jest.fn().mockResolvedValue({
           data: { id: 999 },
           error: null,
@@ -730,7 +730,6 @@ describe("User Mutations", () => {
       await expect(
         createAlt(mockClient, {
           username: "taken",
-          displayName: "Test",
         })
       ).rejects.toThrow("Username is already taken");
     });
@@ -743,7 +742,6 @@ describe("User Mutations", () => {
       await expect(
         createAlt(mockClient, {
           username: "test",
-          displayName: "Test",
         })
       ).rejects.toThrow("Not authenticated");
     });
@@ -753,7 +751,7 @@ describe("User Mutations", () => {
 
       fromSpy.mockReturnValueOnce({
         select: jest.fn().mockReturnThis(),
-        eq: jest.fn().mockReturnThis(),
+        ilike: jest.fn().mockReturnThis(),
         maybeSingle: jest.fn().mockResolvedValue({ data: null, error: null }),
       } as unknown as MockQueryBuilder);
 
@@ -767,7 +765,6 @@ describe("User Mutations", () => {
       await expect(
         createAlt(mockClient, {
           username: "test",
-          displayName: "Test",
         })
       ).rejects.toThrow("Insert failed");
     });

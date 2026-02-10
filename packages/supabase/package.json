@@ -42,15 +42,16 @@
   },
   "dependencies": {
     "@supabase/supabase-js": "catalog:",
+    "@trainers/utils": "workspace:*",
     "@trainers/validators": "workspace:*",
     "zod": "catalog:"
   },
   "peerDependencies": {
     "@supabase/ssr": "catalog:",
-    "expo-secure-store": "*",
+    "expo-secure-store": "~14.0.0",
     "next": "catalog:",
     "react": "catalog:",
-    "react-native-url-polyfill": "*"
+    "react-native-url-polyfill": "^2.0.0"
   },
   "peerDependenciesMeta": {
     "@supabase/ssr": {
@@ -73,7 +74,6 @@
     "@faker-js/faker": "^10.2.0",
     "@types/jest": "catalog:",
     "@jest/globals": "^30.2.0",
-    "@supabase/ssr": "catalog:",
     "@trainers/eslint-config": "workspace:*",
     "@trainers/jest-config": "workspace:*",
     "@trainers/prettier-config": "workspace:*",
@@ -83,11 +83,7 @@
     "eslint": "catalog:",
     "jest": "catalog:",
     "jest-junit": "catalog:",
-    "expo-secure-store": "~14.0.0",
-    "next": "catalog:",
     "prettier": "catalog:",
-    "react": "catalog:",
-    "react-native-url-polyfill": "^2.0.0",
     "supabase": "catalog:",
     "ts-jest": "catalog:",
     "tsx": "catalog:",

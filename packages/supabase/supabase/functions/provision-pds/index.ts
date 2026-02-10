@@ -1,5 +1,5 @@
 // Provision PDS Edge Function
-// Creates a PDS account for Social OAuth users during onboarding
+// Creates a PDS account when a user sets their username from dashboard settings
 //
 // Flow:
 // 1. Verify JWT and extract user ID

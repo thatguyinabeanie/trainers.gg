@@ -142,13 +142,13 @@ Deno.serve(async (req) => {
     // POST /api-alts → Create new alt
     if (method === "POST" && pathParts.length === 1) {
       const body = await req.json();
-      const { username, displayName, inGameName } = body;
+      const { username, inGameName } = body;
 
-      if (!username || !displayName) {
+      if (!username) {
         return jsonResponse(
           {
             success: false,
-            error: "Username and display name required",
+            error: "Username is required",
             code: "MISSING_FIELDS",
           },
           400,
@@ -156,11 +156,8 @@ Deno.serve(async (req) => {
         );
       }
 
-      // TODO: Add Zod validation for createAltSchema
-
       const alt = await createAlt(supabase, {
         username,
-        displayName,
         inGameName,
       });
 
