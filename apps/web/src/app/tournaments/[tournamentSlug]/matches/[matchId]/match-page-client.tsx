@@ -16,6 +16,7 @@ import {
 import type { GameData } from "@/components/match/game-card";
 import { MatchChat } from "@/components/match/match-chat";
 import { MatchCheckIn } from "@/components/match/match-check-in";
+import { PostMatchSummary } from "@/components/match/post-match-summary";
 import { useMatchPresence } from "@/components/match/presence-indicator";
 import { TeamSheet, type TeamData } from "@/components/match/team-sheet";
 import { resolveHeaderPerspective } from "./match-perspective";
@@ -59,7 +60,7 @@ export interface MatchPageClientProps {
 export function MatchPageClient({
   matchId,
   tournamentId,
-  tournamentSlug: _tournamentSlug,
+  tournamentSlug,
   matchStatus: initialStatus,
   staffRequested: initialStaffRequested,
   player1CheckedIn: initialPlayer1CheckedIn,
@@ -392,6 +393,22 @@ export function MatchPageClient({
                 setPlayer2CheckedIn(true);
               }
             }}
+          />
+        </div>
+      )}
+
+      {/* Post-Match Summary (when match is completed) */}
+      {matchStatus === "completed" && isParticipant && (
+        <div className="shrink-0">
+          <PostMatchSummary
+            tournamentId={tournamentId}
+            tournamentSlug={tournamentSlug}
+            matchId={matchId}
+            userAltId={userAltId}
+            myWins={myWins}
+            opponentWins={opponentWins}
+            myName={headerMyName}
+            roundNumber={roundNumber}
           />
         </div>
       )}
