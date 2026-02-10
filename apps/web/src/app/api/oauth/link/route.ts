@@ -61,11 +61,12 @@ export async function POST(request: Request) {
     }
 
     // Link the DID to the current user
+    // Note: We only update the DID here. The pds_status transitions are handled
+    // by the PDS edge function to ensure proper account lifecycle management.
     const { error: updateError } = await supabase
       .from("users")
       .update({
         did,
-        pds_status: "active",
       })
       .eq("id", user.id);
 
