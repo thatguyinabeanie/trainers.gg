@@ -37,6 +37,7 @@ const mockCreateMatchGames = jest.fn();
 const mockJudgeOverrideGame = jest.fn();
 const mockJudgeResetGame = jest.fn();
 const mockResetMatch = jest.fn();
+const mockConfirmMatchCheckIn = jest.fn();
 jest.mock("@trainers/supabase", () => ({
   submitGameSelection: (...args: unknown[]) => mockSubmitGameSelection(...args),
   sendMatchMessage: (...args: unknown[]) => mockSendMatchMessage(...args),
@@ -44,6 +45,7 @@ jest.mock("@trainers/supabase", () => ({
   judgeOverrideGame: (...args: unknown[]) => mockJudgeOverrideGame(...args),
   judgeResetGame: (...args: unknown[]) => mockJudgeResetGame(...args),
   resetMatch: (...args: unknown[]) => mockResetMatch(...args),
+  confirmMatchCheckIn: (...args: unknown[]) => mockConfirmMatchCheckIn(...args),
 }));
 
 import {
@@ -53,6 +55,7 @@ import {
   judgeResetGameAction,
   requestJudgeAction,
   resetMatchAction,
+  confirmMatchCheckInAction,
 } from "../matches";
 
 // =============================================================================
@@ -236,5 +239,99 @@ describe("resetMatchAction", () => {
       expect(result.error).toBeTruthy();
     }
     expect(mockUpdateTag).not.toHaveBeenCalled();
+  });
+});
+
+// =============================================================================
+// confirmMatchCheckInAction
+// =============================================================================
+
+describe("confirmMatchCheckInAction", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it("confirms check-in and returns matchActivated status", async () => {
+    mockConfirmMatchCheckIn.mockResolvedValue({
+      success: true,
+      match_activated: true,
+    });
+
+    const result = await confirmMatchCheckInAction(10, 50);
+
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data).toEqual({ matchActivated: true });
+    }
+    expect(mockConfirmMatchCheckIn).toHaveBeenCalledWith(mockSupabase, 10);
+    expect(mockUpdateTag).toHaveBeenCalledWith("tournament:50");
+  });
+
+  it("defaults matchActivated to false when not returned", async () => {
+    mockConfirmMatchCheckIn.mockResolvedValue({
+      success: true,
+    });
+
+    const result = await confirmMatchCheckInAction(10, 50);
+
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data).toEqual({ matchActivated: false });
+    }
+  });
+
+  it("returns matchActivated false when match not yet activated", async () => {
+    mockConfirmMatchCheckIn.mockResolvedValue({
+      success: true,
+      match_activated: false,
+    });
+
+    const result = await confirmMatchCheckInAction(10, 50);
+
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data).toEqual({ matchActivated: false });
+    }
+  });
+
+  it("returns a validation error for a negative matchId", async () => {
+    const result = await confirmMatchCheckInAction(-1, 50);
+
+    expect(result.success).toBe(false);
+    expect(mockConfirmMatchCheckIn).not.toHaveBeenCalled();
+    expect(mockUpdateTag).not.toHaveBeenCalled();
+  });
+
+  it("returns a validation error for a negative tournamentId", async () => {
+    const result = await confirmMatchCheckInAction(10, -1);
+
+    expect(result.success).toBe(false);
+    expect(mockConfirmMatchCheckIn).not.toHaveBeenCalled();
+    expect(mockUpdateTag).not.toHaveBeenCalled();
+  });
+
+  it("returns an error when the mutation throws", async () => {
+    mockConfirmMatchCheckIn.mockRejectedValue(
+      new Error("Match is not in pending status")
+    );
+
+    const result = await confirmMatchCheckInAction(10, 50);
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error).toBeTruthy();
+    }
+    expect(mockUpdateTag).not.toHaveBeenCalled();
+  });
+
+  it("revalidates the tournament cache on success", async () => {
+    mockConfirmMatchCheckIn.mockResolvedValue({
+      success: true,
+      match_activated: false,
+    });
+
+    await confirmMatchCheckInAction(10, 99);
+
+    expect(mockUpdateTag).toHaveBeenCalledWith("tournament:99");
   });
 });

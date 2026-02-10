@@ -16,7 +16,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import {
   LogOut,
   Settings,
-  UserCircle,
   LayoutDashboard,
   Building2,
   ChevronRight,
@@ -193,10 +192,6 @@ export function TopNavAuthSection() {
           <DropdownMenuItem onClick={() => router.push("/dashboard")}>
             <LayoutDashboard className="mr-2 h-4 w-4" />
             <span>Dashboard</span>
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => router.push("/dashboard/alts")}>
-            <UserCircle className="mr-2 h-4 w-4" />
-            <span>My Alts</span>
           </DropdownMenuItem>
 
           {/* My Organizations Section - Only show if user has orgs */}

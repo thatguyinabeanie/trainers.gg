@@ -33,7 +33,7 @@
     "generate-seed-json": "tsx scripts/generate-seed-data/generate-user-data.ts",
     "generate-seeds": "tsx scripts/generate-seed-data/index.ts",
     "db:migrate": "supabase db push",
-    "db:reset": "supabase db reset",
+    "db:reset": "supabase db reset || (docker restart supabase_kong_supabase > /dev/null 2>&1 && sleep 2 && supabase status > /dev/null 2>&1)",
     "db:diff": "supabase db diff",
     "db:lint": "supabase db lint",
     "db:seed": "supabase db seed",

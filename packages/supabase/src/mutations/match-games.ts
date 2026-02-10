@@ -163,3 +163,41 @@ export async function resetMatch(supabase: TypedClient, matchId: number) {
   if (error) throw error;
   return { id: matchId };
 }
+
+/**
+ * Confirm match check-in (player readiness). When both players confirm,
+ * the match automatically transitions from pending to active.
+ * Staff can specify altId to force-check-in a specific player.
+ *
+ * Uses a type cast because the RPC is defined in a migration that may not
+ * yet be reflected in generated types. Regenerate types after applying
+ * the migration to remove the cast.
+ */
+export async function confirmMatchCheckIn(
+  supabase: TypedClient,
+  matchId: number,
+  altId?: number
+) {
+  // Cast needed until types are regenerated after migration
+  const { data, error } = await (supabase.rpc as CallableFunction)(
+    "confirm_match_checkin",
+    {
+      p_match_id: matchId,
+      p_alt_id: altId ?? null,
+    }
+  );
+
+  if (error) throw error;
+  const result = data as unknown as {
+    success: boolean;
+    error?: string;
+    match_activated?: boolean;
+    already_checked_in?: boolean;
+    already_active?: boolean;
+    player_name?: string;
+  };
+  if (!result.success) {
+    throw new Error(result.error ?? "Failed to confirm match check-in");
+  }
+  return result;
+}

@@ -294,6 +294,8 @@ export default async function MatchPage({ params }: PageProps) {
         tournamentSlug={tournamentSlug}
         matchStatus={matchData.match.status ?? "pending"}
         staffRequested={matchData.match.staff_requested ?? false}
+        player1CheckedIn={matchData.match.player1_match_confirmed ?? false}
+        player2CheckedIn={matchData.match.player2_match_confirmed ?? false}
         player1={player1}
         player2={player2}
         alt1Id={matchData.match.alt1_id}
