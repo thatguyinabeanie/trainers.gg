@@ -40,21 +40,21 @@ export async function startImpersonationAction(
       return { success: false, error: "User not found" };
     }
 
-    // End any existing impersonation session first
-    const existing = await getImpersonationTarget();
-    if (existing) {
-      const { error: endError } = await supabase
-        .from("impersonation_sessions")
-        .update({ ended_at: new Date().toISOString() })
-        .eq("id", existing.sessionId);
+    // End any existing active impersonation sessions for this admin.
+    // Uses a direct DB query (not cookie-dependent) so orphaned sessions
+    // are cleaned up even if the cookie was cleared or expired.
+    const { error: endError } = await supabase
+      .from("impersonation_sessions")
+      .update({ ended_at: new Date().toISOString() })
+      .eq("admin_user_id", adminUserId)
+      .is("ended_at", null);
 
-      if (endError) {
-        console.error("Error ending previous impersonation session:", endError);
-        return {
-          success: false,
-          error: "Failed to end previous impersonation session",
-        };
-      }
+    if (endError) {
+      console.error("Error ending previous impersonation session:", endError);
+      return {
+        success: false,
+        error: "Failed to end previous impersonation session",
+      };
     }
 
     // Get request metadata

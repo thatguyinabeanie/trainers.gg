@@ -62,8 +62,16 @@ const createMockClient = () => {
 // ---------------------------------------------------------------------------
 
 describe("announcements queries", () => {
+  let consoleErrorSpy: jest.SpiedFunction<typeof console.error>;
+
   beforeEach(() => {
     jest.clearAllMocks();
+    // Spy on console.error to verify audit log warning behavior
+    consoleErrorSpy = jest.spyOn(console, "error").mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    consoleErrorSpy.mockRestore();
   });
 
   // -----------------------------------------------------------------------
@@ -236,7 +244,7 @@ describe("announcements queries", () => {
   // -----------------------------------------------------------------------
 
   describe("createAnnouncement", () => {
-    it("should insert a new announcement and create audit log entry", async () => {
+    it("should insert a new announcement with required fields", async () => {
       const mockAnnouncement = {
         id: 1,
         title: "New Announcement",
@@ -294,20 +302,9 @@ describe("announcements queries", () => {
           created_by: "admin-1",
         })
       );
-      expect(mockAuditChain.insert).toHaveBeenCalledWith(
-        expect.objectContaining({
-          action: "admin.announcement_created",
-          actor_user_id: "admin-1",
-          metadata: expect.objectContaining({
-            announcement_id: 1,
-            title: "New Announcement",
-            type: "info",
-          }),
-        })
-      );
     });
 
-    it("should use provided start_at and end_at values", async () => {
+    it("should use provided optional fields (start_at, end_at, is_active)", async () => {
       const mockAnnouncement = {
         id: 1,
         title: "Scheduled",
@@ -362,6 +359,60 @@ describe("announcements queries", () => {
       );
     });
 
+    it("should log audit entry on success", async () => {
+      const mockAnnouncement = {
+        id: 42,
+        title: "Audited Announcement",
+        message: "Test audit",
+        type: "success",
+        is_active: true,
+        created_by: "admin-1",
+      };
+
+      const mockClient = createMockClient();
+
+      const mockInsertChain = {
+        insert: jest.fn().mockReturnValue({
+          select: jest.fn().mockReturnValue({
+            single: jest.fn().mockResolvedValue({
+              data: mockAnnouncement,
+              error: null,
+            }),
+          }),
+        }),
+      };
+
+      const mockAuditChain = {
+        insert: jest.fn().mockResolvedValue({ data: null, error: null }),
+      };
+
+      (mockClient.from as jest.Mock)
+        .mockReturnValueOnce(mockInsertChain)
+        .mockReturnValueOnce(mockAuditChain);
+
+      await createAnnouncement(
+        mockClient,
+        {
+          title: "Audited Announcement",
+          message: "Test audit",
+          type: "success",
+        },
+        "admin-1"
+      );
+
+      expect(mockAuditChain.insert).toHaveBeenCalledWith(
+        expect.objectContaining({
+          action: "admin.announcement_created",
+          actor_user_id: "admin-1",
+          metadata: expect.objectContaining({
+            announcement_id: 42,
+            title: "Audited Announcement",
+            type: "success",
+          }),
+        })
+      );
+    });
+
     it("should throw on insert error", async () => {
       const mockClient = createMockClient();
       const dbError = new Error("Insert failed");
@@ -387,6 +438,58 @@ describe("announcements queries", () => {
         )
       ).rejects.toThrow("Insert failed");
     });
+
+    it("should log warning but not throw when audit insert fails", async () => {
+      const mockAnnouncement = {
+        id: 1,
+        title: "Test",
+        message: "Test",
+        type: "info",
+        is_active: true,
+        created_by: "admin-1",
+      };
+
+      const mockClient = createMockClient();
+
+      const mockInsertChain = {
+        insert: jest.fn().mockReturnValue({
+          select: jest.fn().mockReturnValue({
+            single: jest.fn().mockResolvedValue({
+              data: mockAnnouncement,
+              error: null,
+            }),
+          }),
+        }),
+      };
+
+      const auditError = new Error("Audit insert failed");
+      const mockAuditChain = {
+        insert: jest.fn().mockResolvedValue({
+          data: null,
+          error: auditError,
+        }),
+      };
+
+      (mockClient.from as jest.Mock)
+        .mockReturnValueOnce(mockInsertChain)
+        .mockReturnValueOnce(mockAuditChain);
+
+      // Should NOT throw despite audit error
+      const result = await createAnnouncement(
+        mockClient,
+        { title: "Test", message: "Test", type: "info" },
+        "admin-1"
+      );
+
+      // Should still return the announcement successfully
+      expect(result).toEqual(mockAnnouncement);
+
+      // Should log the error to console.error
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        "Failed to log announcement_created to audit log:",
+        auditError
+      );
+    });
   });
 
   // -----------------------------------------------------------------------
@@ -394,7 +497,7 @@ describe("announcements queries", () => {
   // -----------------------------------------------------------------------
 
   describe("updateAnnouncement", () => {
-    it("should update the announcement and create audit log entry", async () => {
+    it("should update specified fields only", async () => {
       const mockAnnouncement = {
         id: 1,
         title: "Updated Title",
@@ -405,6 +508,7 @@ describe("announcements queries", () => {
       const mockClient = createMockClient();
 
       // Mock update chain for announcements
+      const mockUpdateFn = jest.fn();
       const mockUpdateChain = {
         eq: jest.fn().mockReturnValue({
           select: jest.fn().mockReturnValue({
@@ -416,6 +520,8 @@ describe("announcements queries", () => {
         }),
       };
 
+      mockUpdateFn.mockReturnValue(mockUpdateChain);
+
       // Mock audit log insert
       const mockAuditChain = {
         insert: jest.fn().mockResolvedValue({ data: null, error: null }),
@@ -423,7 +529,7 @@ describe("announcements queries", () => {
 
       (mockClient.from as jest.Mock)
         .mockReturnValueOnce({
-          update: jest.fn().mockReturnValue(mockUpdateChain),
+          update: mockUpdateFn,
         })
         .mockReturnValueOnce(mockAuditChain);
 
@@ -437,20 +543,23 @@ describe("announcements queries", () => {
       expect(result).toEqual(mockAnnouncement);
       expect(mockClient.from).toHaveBeenNthCalledWith(1, "announcements");
       expect(mockClient.from).toHaveBeenNthCalledWith(2, "audit_log");
-      expect(mockAuditChain.insert).toHaveBeenCalledWith(
-        expect.objectContaining({
-          action: "admin.announcement_updated",
-          actor_user_id: "admin-1",
-          metadata: expect.objectContaining({
-            announcement_id: 1,
-            title: "Updated Title",
-            updated_fields: ["title", "message"],
-          }),
-        })
-      );
+
+      // Verify the update payload includes only provided fields + updated_at
+      const updatePayload = mockUpdateFn.mock.calls[0]![0] as Record<
+        string,
+        unknown
+      >;
+      expect(updatePayload).toHaveProperty("title", "Updated Title");
+      expect(updatePayload).toHaveProperty("message", "Updated message");
+      expect(updatePayload).toHaveProperty("updated_at");
+      // Should NOT contain fields that were not provided
+      expect(updatePayload).not.toHaveProperty("type");
+      expect(updatePayload).not.toHaveProperty("start_at");
+      expect(updatePayload).not.toHaveProperty("end_at");
+      expect(updatePayload).not.toHaveProperty("is_active");
     });
 
-    it("should handle partial updates", async () => {
+    it("should record only non-undefined fields in audit metadata", async () => {
       const mockAnnouncement = {
         id: 1,
         title: "Only Title",
@@ -484,7 +593,10 @@ describe("announcements queries", () => {
 
       expect(mockAuditChain.insert).toHaveBeenCalledWith(
         expect.objectContaining({
+          action: "admin.announcement_updated",
+          actor_user_id: "admin-1",
           metadata: expect.objectContaining({
+            announcement_id: 1,
             updated_fields: ["is_active"],
           }),
         })
@@ -513,6 +625,59 @@ describe("announcements queries", () => {
       await expect(
         updateAnnouncement(mockClient, 1, { title: "fail" }, "admin-1")
       ).rejects.toThrow("Update failed");
+    });
+
+    it("should log warning but not throw when audit insert fails", async () => {
+      const mockAnnouncement = {
+        id: 1,
+        title: "Updated",
+        message: "Updated message",
+        type: "info",
+      };
+
+      const mockClient = createMockClient();
+
+      const mockUpdateChain = {
+        eq: jest.fn().mockReturnValue({
+          select: jest.fn().mockReturnValue({
+            single: jest.fn().mockResolvedValue({
+              data: mockAnnouncement,
+              error: null,
+            }),
+          }),
+        }),
+      };
+
+      const auditError = new Error("Audit insert failed");
+      const mockAuditChain = {
+        insert: jest.fn().mockResolvedValue({
+          data: null,
+          error: auditError,
+        }),
+      };
+
+      (mockClient.from as jest.Mock)
+        .mockReturnValueOnce({
+          update: jest.fn().mockReturnValue(mockUpdateChain),
+        })
+        .mockReturnValueOnce(mockAuditChain);
+
+      // Should NOT throw despite audit error
+      const result = await updateAnnouncement(
+        mockClient,
+        1,
+        { title: "Updated" },
+        "admin-1"
+      );
+
+      // Should still return the announcement successfully
+      expect(result).toEqual(mockAnnouncement);
+
+      // Should log the error to console.error
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        "Failed to log announcement_updated to audit log:",
+        auditError
+      );
     });
   });
 
@@ -578,7 +743,7 @@ describe("announcements queries", () => {
       );
     });
 
-    it("should throw on fetch error", async () => {
+    it("should throw when announcement not found (fetch error)", async () => {
       const mockClient = createMockClient();
       const dbError = new Error("Fetch failed");
 
@@ -631,6 +796,62 @@ describe("announcements queries", () => {
       await expect(
         deleteAnnouncement(mockClient, 1, "admin-1")
       ).rejects.toThrow("Delete failed");
+    });
+
+    it("should log warning but not throw when audit insert fails", async () => {
+      const existingAnnouncement = {
+        id: 1,
+        title: "To Delete",
+        type: "info",
+      };
+
+      const mockClient = createMockClient();
+
+      // First from call: fetch existing announcement
+      const mockFetchChain = {
+        select: jest.fn().mockReturnValue({
+          eq: jest.fn().mockReturnValue({
+            single: jest.fn().mockResolvedValue({
+              data: existingAnnouncement,
+              error: null,
+            }),
+          }),
+        }),
+      };
+
+      // Second from call: delete announcement (succeeds)
+      const mockDeleteChain = {
+        delete: jest.fn().mockReturnValue({
+          eq: jest.fn().mockResolvedValue({
+            error: null,
+          }),
+        }),
+      };
+
+      // Third from call: audit log (fails)
+      const auditError = new Error("Audit insert failed");
+      const mockAuditChain = {
+        insert: jest.fn().mockResolvedValue({
+          data: null,
+          error: auditError,
+        }),
+      };
+
+      (mockClient.from as jest.Mock)
+        .mockReturnValueOnce(mockFetchChain)
+        .mockReturnValueOnce(mockDeleteChain)
+        .mockReturnValueOnce(mockAuditChain);
+
+      // Should NOT throw despite audit error
+      await expect(
+        deleteAnnouncement(mockClient, 1, "admin-1")
+      ).resolves.toBeUndefined();
+
+      // Should log the error to console.error
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        "Failed to log announcement_deleted to audit log:",
+        auditError
+      );
     });
   });
 });

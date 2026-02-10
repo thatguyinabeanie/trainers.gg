@@ -167,10 +167,11 @@ export function ActivityTab() {
     (client: TypedSupabaseClient) => getAuditLogStats(client),
     []
   );
-  const { data: stats, isLoading: statsLoading } = useSupabaseQuery(
-    statsQueryFn,
-    [refreshKey]
-  );
+  const {
+    data: stats,
+    isLoading: statsLoading,
+    error: statsError,
+  } = useSupabaseQuery(statsQueryFn, [refreshKey]);
 
   // Fetch audit log entries
   const logQueryFn = useCallback(
@@ -186,6 +187,7 @@ export function ActivityTab() {
   const {
     data: logResult,
     isLoading: logLoading,
+    error: logError,
     refetch,
   } = useSupabaseQuery(logQueryFn, [
     actionFilter,
@@ -232,6 +234,13 @@ export function ActivityTab() {
 
   return (
     <div className="space-y-6">
+      {/* Error banner */}
+      {(statsError || logError) && (
+        <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700 dark:border-red-800 dark:bg-red-950 dark:text-red-300">
+          Failed to load audit log data. Please try again.
+        </div>
+      )}
+
       {/* Stat Cards */}
       <div className="grid gap-4 md:grid-cols-3">
         <StatCard

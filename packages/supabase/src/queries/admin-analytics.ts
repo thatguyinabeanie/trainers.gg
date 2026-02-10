@@ -83,33 +83,33 @@ export async function getPlatformOverview(
  * Returns an array sorted by date (ascending), one entry per day that
  * had at least one signup. Days with zero signups are back-filled so the
  * returned array always has `days` entries.
+ *
+ * Uses the `get_user_growth_stats` RPC for server-side aggregation.
  */
 export async function getUserGrowthStats(
   supabase: TypedClient,
   days = 30
 ): Promise<UserGrowthEntry[]> {
-  // Calculate the start-of-day boundary for the lookback window.
+  // Call the RPC — aggregation happens in the database.
+  // Cast needed: RPC not yet in generated types (added by migration 20260210000003).
+  const { data, error } = await (supabase.rpc as CallableFunction)(
+    "get_user_growth_stats",
+    { lookback_days: days }
+  );
+
+  if (error) throw error;
+
+  // Build a lookup from the RPC results.
+  const countsByDate = new Map<string, number>();
+  for (const row of (data as { date: string; count: number }[]) ?? []) {
+    countsByDate.set(row.date, row.count);
+  }
+
+  // Back-fill zero-count days so the returned array is contiguous.
   const since = new Date();
   since.setDate(since.getDate() - days);
   since.setHours(0, 0, 0, 0);
 
-  const { data, error } = await supabase
-    .from("users")
-    .select("created_at")
-    .gte("created_at", since.toISOString())
-    .order("created_at", { ascending: true });
-
-  if (error) throw error;
-
-  // Group rows by date string client-side.
-  const countsByDate = new Map<string, number>();
-  for (const row of data ?? []) {
-    if (!row.created_at) continue;
-    const dateKey = toDateString(new Date(row.created_at));
-    countsByDate.set(dateKey, (countsByDate.get(dateKey) ?? 0) + 1);
-  }
-
-  // Build a contiguous array covering every day in the range.
   const results: UserGrowthEntry[] = [];
   const cursor = new Date(since);
   const today = new Date();
@@ -164,20 +164,24 @@ export async function getActiveUserStats(
  *
  * Returns a record mapping each status string to its count
  * (e.g. `{ draft: 5, in_progress: 2, completed: 12 }`).
+ *
+ * Uses the `get_tournament_counts_by_status` RPC for server-side
+ * aggregation instead of fetching all rows.
  */
 export async function getTournamentStats(
   supabase: TypedClient
 ): Promise<Record<string, number>> {
-  const { data, error } = await supabase
-    .from("tournaments")
-    .select("id, status");
+  // Cast needed: RPC not yet in generated types (added by migration 20260210000003).
+  const { data, error } = await (supabase.rpc as CallableFunction)(
+    "get_tournament_counts_by_status"
+  );
 
   if (error) throw error;
 
+  // Transform the RPC result array into a Record<status, count>.
   const countsByStatus: Record<string, number> = {};
-  for (const row of data ?? []) {
-    const status = row.status ?? "unknown";
-    countsByStatus[status] = (countsByStatus[status] ?? 0) + 1;
+  for (const row of (data as { status: string; count: number }[]) ?? []) {
+    countsByStatus[row.status] = row.count;
   }
 
   return countsByStatus;
@@ -185,28 +189,30 @@ export async function getTournamentStats(
 
 /**
  * Get organization counts grouped by status and by tier.
+ *
+ * Uses the `get_organization_counts` RPC for server-side aggregation.
+ * The RPC returns a jsonb object with `by_status` and `by_tier` keys.
  */
 export async function getOrganizationStats(
   supabase: TypedClient
 ): Promise<OrganizationStats> {
-  const { data, error } = await supabase
-    .from("organizations")
-    .select("id, status, tier");
+  // Cast needed: RPC not yet in generated types (added by migration 20260210000003).
+  const { data, error } = await (supabase.rpc as CallableFunction)(
+    "get_organization_counts"
+  );
 
   if (error) throw error;
 
-  const byStatus: Record<string, number> = {};
-  const byTier: Record<string, number> = {};
+  // The RPC returns a jsonb object: { by_status: {...}, by_tier: {...} }
+  const result = data as unknown as {
+    by_status: Record<string, number>;
+    by_tier: Record<string, number>;
+  } | null;
 
-  for (const row of data ?? []) {
-    const status = row.status ?? "unknown";
-    byStatus[status] = (byStatus[status] ?? 0) + 1;
-
-    const tier = row.tier ?? "unknown";
-    byTier[tier] = (byTier[tier] ?? 0) + 1;
-  }
-
-  return { byStatus, byTier };
+  return {
+    byStatus: result?.by_status ?? {},
+    byTier: result?.by_tier ?? {},
+  };
 }
 
 /**

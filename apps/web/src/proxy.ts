@@ -138,15 +138,12 @@ export default async function proxy(request: NextRequest) {
 
   // === IMPERSONATION ===
   // For non-admin routes, check if admin is impersonating another user.
-  // Set a request header so server components can detect impersonation.
+  // Set a response header as a debugging aid (visible in DevTools).
+  // The actual impersonation detection uses cookie-based DB lookups via
+  // getImpersonationTarget(), not this header.
   if (user) {
-    const cookieStore = await cookies();
-    const impersonationCookie = cookieStore.get("impersonation_mode");
+    const impersonationCookie = request.cookies.get("impersonation_mode");
     if (impersonationCookie?.value) {
-      // Add impersonation session ID as a request header.
-      // Server components can use getImpersonationTarget() to look up the
-      // target user from the database. The header is informational only —
-      // the database session is authoritative.
       response.headers.set(
         "x-impersonation-session",
         impersonationCookie.value

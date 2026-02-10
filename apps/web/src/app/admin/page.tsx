@@ -445,48 +445,74 @@ function InviteFunnelCard({
 // ── Dashboard Content ───────────────────────────────────────────────
 
 function DashboardContent() {
-  const { data: overview, isLoading: overviewLoading } = useSupabaseQuery(
-    (s) => getPlatformOverview(s),
-    []
-  );
+  const {
+    data: overview,
+    isLoading: overviewLoading,
+    error: overviewError,
+  } = useSupabaseQuery((s) => getPlatformOverview(s), []);
 
-  const { data: activeUsers, isLoading: activeLoading } = useSupabaseQuery(
-    (s) => getActiveUserStats(s),
-    []
-  );
+  const {
+    data: activeUsers,
+    isLoading: activeLoading,
+    error: activeError,
+  } = useSupabaseQuery((s) => getActiveUserStats(s), []);
 
-  const { data: auditStats, isLoading: auditStatsLoading } = useSupabaseQuery(
-    (s) => getAuditLogStats(s),
-    []
-  );
+  const {
+    data: auditStats,
+    isLoading: auditStatsLoading,
+    error: auditStatsError,
+  } = useSupabaseQuery((s) => getAuditLogStats(s), []);
 
   const recentQueryFn = useCallback(
     (s: TypedSupabaseClient) => getAuditLog(s, { limit: 10, offset: 0 }),
     []
   );
-  const { data: recentLog, isLoading: recentLoading } = useSupabaseQuery(
-    recentQueryFn,
-    []
-  );
+  const {
+    data: recentLog,
+    isLoading: recentLoading,
+    error: recentError,
+  } = useSupabaseQuery(recentQueryFn, []);
 
-  const { data: orgStats, isLoading: orgLoading } = useSupabaseQuery(
-    (s) => getOrganizationStats(s),
-    []
-  );
+  const {
+    data: orgStats,
+    isLoading: orgLoading,
+    error: orgError,
+  } = useSupabaseQuery((s) => getOrganizationStats(s), []);
 
-  const { data: tournamentStats, isLoading: tournamentLoading } =
-    useSupabaseQuery((s) => getTournamentStats(s), []);
+  const {
+    data: tournamentStats,
+    isLoading: tournamentLoading,
+    error: tournamentError,
+  } = useSupabaseQuery((s) => getTournamentStats(s), []);
 
-  const { data: inviteStats, isLoading: inviteLoading } = useSupabaseQuery(
-    (s) => getInviteConversionStats(s),
-    []
-  );
+  const {
+    data: inviteStats,
+    isLoading: inviteLoading,
+    error: inviteError,
+  } = useSupabaseQuery((s) => getInviteConversionStats(s), []);
 
   const recentEntries = (recentLog?.data ?? []) as RecentEntry[];
   const pendingOrgs = orgStats?.byStatus?.pending ?? 0;
 
+  // Collect any query errors into a single check
+  const hasError =
+    overviewError ||
+    activeError ||
+    auditStatsError ||
+    recentError ||
+    orgError ||
+    tournamentError ||
+    inviteError;
+
   return (
     <div className="space-y-8">
+      {/* Error banner */}
+      {hasError && (
+        <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700 dark:border-red-800 dark:bg-red-950 dark:text-red-300">
+          Failed to load dashboard data. Please try again.
+        </div>
+      )}
+
       {/* ── Pending Org Alert ──────────────────────────────────── */}
       {!orgLoading && pendingOrgs > 0 && (
         <Link href="/admin/organizations">

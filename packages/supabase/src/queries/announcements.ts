@@ -168,7 +168,9 @@ export async function updateAnnouncement(
     metadata: {
       announcement_id: announcement.id,
       title: announcement.title,
-      updated_fields: Object.keys(data),
+      updated_fields: Object.keys(data).filter(
+        (k) => data[k as keyof typeof data] !== undefined
+      ),
     },
   });
 

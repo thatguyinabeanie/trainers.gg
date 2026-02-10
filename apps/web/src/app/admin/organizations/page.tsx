@@ -65,7 +65,7 @@ export default function AdminOrganizationsPage() {
   }, [search]);
 
   // Fetch organizations with server-side filtering and pagination
-  const { data, isLoading } = useSupabaseQuery(
+  const { data, isLoading, error } = useSupabaseQuery(
     async (supabase) => {
       const result = await listOrganizationsAdmin(supabase, {
         search: debouncedSearch || undefined,
@@ -145,6 +145,13 @@ export default function AdminOrganizationsPage() {
           </Button>
         ))}
       </div>
+
+      {/* Error banner */}
+      {error && (
+        <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700 dark:border-red-800 dark:bg-red-950 dark:text-red-300">
+          Failed to load organizations. Please try again.
+        </div>
+      )}
 
       {/* Table */}
       {isLoading ? (

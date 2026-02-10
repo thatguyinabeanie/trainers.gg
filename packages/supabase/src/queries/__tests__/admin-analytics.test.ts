@@ -12,9 +12,12 @@ import type { TypedClient } from "../../client";
 // ---------------------------------------------------------------------------
 // Mock Supabase client factory
 //
-// All builder methods return `this` for full chainability.
-// Resolution happens when the query is `await`-ed, which triggers
-// the `then` property on the builder (making it "thenable").
+// Supports two call patterns:
+// 1. `.from(table).select(...)...` — chainable query builder (thenable)
+// 2. `.rpc(fn, args)` — direct RPC call (returns Promise)
+//
+// Tests that use `.from()` share the `_queryBuilder` handle.
+// Tests that use `.rpc()` configure `_rpcResult` before calling.
 // ---------------------------------------------------------------------------
 
 type MockQueryBuilder = {
@@ -50,10 +53,29 @@ const createMockClient = () => {
     }),
   };
 
+  // Default RPC result — overridden per-test as needed.
+  let rpcResult: { data: unknown; error: unknown } = {
+    data: [],
+    error: null,
+  };
+
   return {
     from: jest.fn().mockReturnValue(mockQueryBuilder),
+    rpc: jest.fn().mockImplementation(() => Promise.resolve(rpcResult)),
     _queryBuilder: mockQueryBuilder,
-  } as unknown as TypedClient & { _queryBuilder: MockQueryBuilder };
+    /** Set the value that the next `.rpc()` call will resolve with. */
+    _setRpcResult(result: { data: unknown; error: unknown }) {
+      rpcResult = result;
+      // Re-bind so the mock picks up the new value.
+      (this as ReturnType<typeof createMockClient>).rpc = jest
+        .fn()
+        .mockImplementation(() => Promise.resolve(result));
+    },
+  } as unknown as TypedClient & {
+    _queryBuilder: MockQueryBuilder;
+    _setRpcResult: (result: { data: unknown; error: unknown }) => void;
+    rpc: jest.Mock;
+  };
 };
 
 /**
@@ -73,7 +95,7 @@ describe("admin-analytics queries", () => {
   });
 
   // -----------------------------------------------------------------------
-  // getPlatformOverview
+  // getPlatformOverview (unchanged — still uses .from().select())
   // -----------------------------------------------------------------------
 
   describe("getPlatformOverview", () => {
@@ -147,12 +169,12 @@ describe("admin-analytics queries", () => {
   });
 
   // -----------------------------------------------------------------------
-  // getUserGrowthStats
+  // getUserGrowthStats (refactored — now uses .rpc())
   // -----------------------------------------------------------------------
 
   describe("getUserGrowthStats", () => {
     it("should return daily signup counts for the default 30-day window", async () => {
-      // Compute dates relative to now (in UTC) to ensure they fall within
+      // Compute dates relative to now to ensure they fall within
       // the 30-day lookback window that getUserGrowthStats uses.
       const now = new Date();
       // Use a date 5 days ago (safely within the window)
@@ -165,15 +187,14 @@ describe("admin-analytics queries", () => {
       const dateB = toDateString(tenDaysAgo);
 
       const mockClient = createMockClient();
-      mockClient._queryBuilder.then = jest.fn((resolve) => {
-        return Promise.resolve({
-          data: [
-            { created_at: `${dateA}T10:00:00.000Z` },
-            { created_at: `${dateA}T14:00:00.000Z` },
-            { created_at: `${dateB}T09:00:00.000Z` },
-          ],
-          error: null,
-        }).then(resolve);
+
+      // The RPC returns pre-aggregated {date, count} rows.
+      mockClient._setRpcResult({
+        data: [
+          { date: dateB, count: 1 },
+          { date: dateA, count: 2 },
+        ],
+        error: null,
       });
 
       const result = await getUserGrowthStats(mockClient);
@@ -196,19 +217,30 @@ describe("admin-analytics queries", () => {
       // dateB should have 1 signup
       const dateBEntry = result.find((e) => e.date === dateB);
       expect(dateBEntry?.count).toBe(1);
+
+      // Verify the RPC was called with the correct function name and args
+      expect(mockClient.rpc).toHaveBeenCalledWith("get_user_growth_stats", {
+        lookback_days: 30,
+      });
     });
 
     it("should use custom day count", async () => {
       const mockClient = createMockClient();
 
+      // Default rpc result is { data: [], error: null } — no signups.
       const result = await getUserGrowthStats(mockClient, 7);
 
       // Should have at least 7 entries
       expect(result.length).toBeGreaterThanOrEqual(7);
-      // With no data (default mock returns []), all counts should be 0
+      // With no data, all counts should be 0
       for (const entry of result) {
         expect(entry.count).toBe(0);
       }
+
+      // Verify custom lookback was passed to RPC
+      expect(mockClient.rpc).toHaveBeenCalledWith("get_user_growth_stats", {
+        lookback_days: 7,
+      });
     });
 
     it("should back-fill days with zero signups", async () => {
@@ -225,43 +257,28 @@ describe("admin-analytics queries", () => {
     it("should throw on database error", async () => {
       const mockClient = createMockClient();
       const dbError = new Error("Database error");
-      mockClient._queryBuilder.then = jest.fn((resolve) => {
-        return Promise.resolve({ data: null, error: dbError }).then(resolve);
-      });
+      mockClient._setRpcResult({ data: null, error: dbError });
 
       await expect(getUserGrowthStats(mockClient)).rejects.toThrow(
         "Database error"
       );
     });
 
-    it("should skip rows with null created_at", async () => {
-      // Use a date within the 30-day window
-      const fiveDaysAgo = new Date();
-      fiveDaysAgo.setDate(fiveDaysAgo.getDate() - 5);
-      const signupDate = toDateString(fiveDaysAgo);
-
+    it("should handle null data as empty (all zeros)", async () => {
       const mockClient = createMockClient();
-      mockClient._queryBuilder.then = jest.fn((resolve) => {
-        return Promise.resolve({
-          data: [
-            { created_at: `${signupDate}T10:00:00.000Z` },
-            { created_at: null },
-            { created_at: `${signupDate}T14:00:00.000Z` },
-          ],
-          error: null,
-        }).then(resolve);
-      });
+      mockClient._setRpcResult({ data: null, error: null });
 
-      const result = await getUserGrowthStats(mockClient);
+      const result = await getUserGrowthStats(mockClient, 3);
 
-      // The entry for signupDate should have count 2 (null row skipped)
-      const entry = result.find((e) => e.date === signupDate);
-      expect(entry?.count).toBe(2);
+      expect(result.length).toBeGreaterThanOrEqual(3);
+      for (const entry of result) {
+        expect(entry.count).toBe(0);
+      }
     });
   });
 
   // -----------------------------------------------------------------------
-  // getActiveUserStats
+  // getActiveUserStats (unchanged — still uses .from().select())
   // -----------------------------------------------------------------------
 
   describe("getActiveUserStats", () => {
@@ -374,26 +391,21 @@ describe("admin-analytics queries", () => {
   });
 
   // -----------------------------------------------------------------------
-  // getTournamentStats
+  // getTournamentStats (refactored — now uses .rpc())
   // -----------------------------------------------------------------------
 
   describe("getTournamentStats", () => {
     it("should return tournament counts grouped by status", async () => {
-      const mockTournaments = [
-        { id: 1, status: "draft" },
-        { id: 2, status: "draft" },
-        { id: 3, status: "in_progress" },
-        { id: 4, status: "completed" },
-        { id: 5, status: "completed" },
-        { id: 6, status: "completed" },
-      ];
-
       const mockClient = createMockClient();
-      mockClient._queryBuilder.then = jest.fn((resolve) => {
-        return Promise.resolve({
-          data: mockTournaments,
-          error: null,
-        }).then(resolve);
+
+      // The RPC returns pre-aggregated {status, count} rows.
+      mockClient._setRpcResult({
+        data: [
+          { status: "draft", count: 2 },
+          { status: "in_progress", count: 1 },
+          { status: "completed", count: 3 },
+        ],
+        error: null,
       });
 
       const result = await getTournamentStats(mockClient);
@@ -403,34 +415,15 @@ describe("admin-analytics queries", () => {
         in_progress: 1,
         completed: 3,
       });
-      expect(mockClient.from).toHaveBeenCalledWith("tournaments");
-    });
-
-    it("should use 'unknown' for null status values", async () => {
-      const mockTournaments = [
-        { id: 1, status: null },
-        { id: 2, status: "active" },
-      ];
-
-      const mockClient = createMockClient();
-      mockClient._queryBuilder.then = jest.fn((resolve) => {
-        return Promise.resolve({
-          data: mockTournaments,
-          error: null,
-        }).then(resolve);
-      });
-
-      const result = await getTournamentStats(mockClient);
-
-      expect(result).toEqual({
-        unknown: 1,
-        active: 1,
-      });
+      expect(mockClient.rpc).toHaveBeenCalledWith(
+        "get_tournament_counts_by_status"
+      );
     });
 
     it("should return empty object when no tournaments exist", async () => {
       const mockClient = createMockClient();
 
+      // Default rpc result is { data: [], error: null }
       const result = await getTournamentStats(mockClient);
 
       expect(result).toEqual({});
@@ -438,9 +431,7 @@ describe("admin-analytics queries", () => {
 
     it("should handle null data as empty", async () => {
       const mockClient = createMockClient();
-      mockClient._queryBuilder.then = jest.fn((resolve) => {
-        return Promise.resolve({ data: null, error: null }).then(resolve);
-      });
+      mockClient._setRpcResult({ data: null, error: null });
 
       const result = await getTournamentStats(mockClient);
 
@@ -450,9 +441,7 @@ describe("admin-analytics queries", () => {
     it("should throw on database error", async () => {
       const mockClient = createMockClient();
       const dbError = new Error("Database error");
-      mockClient._queryBuilder.then = jest.fn((resolve) => {
-        return Promise.resolve({ data: null, error: dbError }).then(resolve);
-      });
+      mockClient._setRpcResult({ data: null, error: dbError });
 
       await expect(getTournamentStats(mockClient)).rejects.toThrow(
         "Database error"
@@ -461,22 +450,20 @@ describe("admin-analytics queries", () => {
   });
 
   // -----------------------------------------------------------------------
-  // getOrganizationStats
+  // getOrganizationStats (refactored — now uses .rpc())
   // -----------------------------------------------------------------------
 
   describe("getOrganizationStats", () => {
     it("should return organization counts grouped by status and tier", async () => {
-      const mockOrgs = [
-        { id: 1, status: "active", tier: "free" },
-        { id: 2, status: "active", tier: "premium" },
-        { id: 3, status: "pending", tier: "free" },
-        { id: 4, status: "suspended", tier: "premium" },
-        { id: 5, status: "active", tier: "free" },
-      ];
-
       const mockClient = createMockClient();
-      mockClient._queryBuilder.then = jest.fn((resolve) => {
-        return Promise.resolve({ data: mockOrgs, error: null }).then(resolve);
+
+      // The RPC returns a single jsonb object with by_status and by_tier.
+      mockClient._setRpcResult({
+        data: {
+          by_status: { active: 3, pending: 1, suspended: 1 },
+          by_tier: { free: 3, premium: 2 },
+        },
+        error: null,
       });
 
       const result = await getOrganizationStats(mockClient);
@@ -490,34 +477,26 @@ describe("admin-analytics queries", () => {
         free: 3,
         premium: 2,
       });
-      expect(mockClient.from).toHaveBeenCalledWith("organizations");
-    });
-
-    it("should use 'unknown' for null status or tier values", async () => {
-      const mockOrgs = [
-        { id: 1, status: null, tier: null },
-        { id: 2, status: "active", tier: "free" },
-      ];
-
-      const mockClient = createMockClient();
-      mockClient._queryBuilder.then = jest.fn((resolve) => {
-        return Promise.resolve({ data: mockOrgs, error: null }).then(resolve);
-      });
-
-      const result = await getOrganizationStats(mockClient);
-
-      expect(result.byStatus).toEqual({
-        unknown: 1,
-        active: 1,
-      });
-      expect(result.byTier).toEqual({
-        unknown: 1,
-        free: 1,
-      });
+      expect(mockClient.rpc).toHaveBeenCalledWith("get_organization_counts");
     });
 
     it("should return empty objects when no organizations exist", async () => {
       const mockClient = createMockClient();
+
+      // When tables are empty, the RPC returns { by_status: {}, by_tier: {} }
+      mockClient._setRpcResult({
+        data: { by_status: {}, by_tier: {} },
+        error: null,
+      });
+
+      const result = await getOrganizationStats(mockClient);
+
+      expect(result).toEqual({ byStatus: {}, byTier: {} });
+    });
+
+    it("should handle null data gracefully", async () => {
+      const mockClient = createMockClient();
+      mockClient._setRpcResult({ data: null, error: null });
 
       const result = await getOrganizationStats(mockClient);
 
@@ -527,9 +506,7 @@ describe("admin-analytics queries", () => {
     it("should throw on database error", async () => {
       const mockClient = createMockClient();
       const dbError = new Error("Database error");
-      mockClient._queryBuilder.then = jest.fn((resolve) => {
-        return Promise.resolve({ data: null, error: dbError }).then(resolve);
-      });
+      mockClient._setRpcResult({ data: null, error: dbError });
 
       await expect(getOrganizationStats(mockClient)).rejects.toThrow(
         "Database error"
@@ -538,7 +515,7 @@ describe("admin-analytics queries", () => {
   });
 
   // -----------------------------------------------------------------------
-  // getInviteConversionStats
+  // getInviteConversionStats (unchanged — still uses .from().select())
   // -----------------------------------------------------------------------
 
   describe("getInviteConversionStats", () => {

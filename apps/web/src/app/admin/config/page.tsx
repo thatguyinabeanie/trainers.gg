@@ -145,15 +145,17 @@ const announcementStatusConfig: Record<
 // --- Site Roles Section ---
 
 function SiteRolesSection() {
-  const { data: siteRoles, isLoading: rolesLoading } = useSupabaseQuery(
-    async (supabase) => getSiteRoles(supabase),
-    []
-  );
+  const {
+    data: siteRoles,
+    isLoading: rolesLoading,
+    error: rolesError,
+  } = useSupabaseQuery(async (supabase) => getSiteRoles(supabase), []);
 
-  const { data: siteAdmins, isLoading: adminsLoading } = useSupabaseQuery(
-    async (supabase) => getSiteAdmins(supabase),
-    []
-  );
+  const {
+    data: siteAdmins,
+    isLoading: adminsLoading,
+    error: adminsError,
+  } = useSupabaseQuery(async (supabase) => getSiteAdmins(supabase), []);
 
   const isLoading = rolesLoading || adminsLoading;
 
@@ -172,6 +174,13 @@ function SiteRolesSection() {
 
   return (
     <div className="space-y-6">
+      {/* Error banner */}
+      {(rolesError || adminsError) && (
+        <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700 dark:border-red-800 dark:bg-red-950 dark:text-red-300">
+          Failed to load site roles data. Please try again.
+        </div>
+      )}
+
       {/* Roles Table */}
       <div className="space-y-4">
         <h2 className="flex items-center gap-2 text-lg font-semibold">
