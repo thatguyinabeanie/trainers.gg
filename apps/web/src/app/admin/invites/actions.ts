@@ -1,7 +1,10 @@
 "use server";
 
-import { createClient, createServiceRoleClient } from "@/lib/supabase/server";
-import { requireAdminWithSudo } from "@/lib/auth/require-admin";
+import { createClient } from "@/lib/supabase/server";
+import {
+  withAdminAction,
+  type ActionResult,
+} from "@/lib/auth/with-admin-action";
 
 const EMAIL_DELIVERY_FAILED = "EMAIL_DELIVERY_FAILED";
 
@@ -74,21 +77,13 @@ export async function sendBetaInvite(email: string): Promise<{
 export async function resendBetaInvite(
   inviteId: number,
   email: string
-): Promise<{ success: boolean; error?: string }> {
-  try {
-    const adminCheck = await requireAdminWithSudo();
-    if ("success" in adminCheck) return adminCheck;
-
-    const supabase = createServiceRoleClient();
-
+): Promise<ActionResult> {
+  return withAdminAction(async (supabase) => {
     await supabase.from("beta_invites").delete().eq("id", inviteId);
 
     // Send a new invite
     return await sendBetaInvite(email);
-  } catch (err) {
-    console.error("Error resending beta invite:", err);
-    return { success: false, error: "An unexpected error occurred" };
-  }
+  }, "Error resending beta invite");
 }
 
 /**
@@ -96,13 +91,8 @@ export async function resendBetaInvite(
  */
 export async function revokeBetaInvite(
   inviteId: number
-): Promise<{ success: boolean; error?: string }> {
-  try {
-    const adminCheck = await requireAdminWithSudo();
-    if ("success" in adminCheck) return adminCheck;
-
-    const supabase = createServiceRoleClient();
-
+): Promise<ActionResult> {
+  return withAdminAction(async (supabase) => {
     const { error } = await supabase
       .from("beta_invites")
       .delete()
@@ -114,8 +104,5 @@ export async function revokeBetaInvite(
     }
 
     return { success: true };
-  } catch (err) {
-    console.error("Error revoking beta invite:", err);
-    return { success: false, error: "An unexpected error occurred" };
-  }
+  }, "Error revoking beta invite");
 }

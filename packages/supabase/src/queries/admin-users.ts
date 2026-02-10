@@ -288,8 +288,9 @@ export async function startImpersonation(
 /**
  * End the active impersonation session for an admin.
  *
- * Finds the active session via the `get_active_impersonation_session` RPC,
- * sets `ended_at`, and records an audit log entry.
+ * Directly queries `impersonation_sessions` by `admin_user_id` (not
+ * via the `auth.uid()`-dependent RPC) so this works correctly with a
+ * service-role client. Sets `ended_at` and records an audit log entry.
  *
  * @param supabase    - Typed Supabase client (service role)
  * @param adminUserId - UUID of the admin ending impersonation
@@ -298,14 +299,18 @@ export async function endImpersonation(
   supabase: TypedClient,
   adminUserId: string
 ) {
-  // Find the active impersonation session via RPC
-  const { data: sessions, error: rpcError } = await supabase.rpc(
-    "get_active_impersonation_session"
-  );
+  // Find the active impersonation session directly (no RPC, no auth.uid())
+  const { data: activeSession, error: fetchError } = await supabase
+    .from("impersonation_sessions")
+    .select("*")
+    .eq("admin_user_id", adminUserId)
+    .is("ended_at", null)
+    .order("started_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
 
-  if (rpcError) throw rpcError;
+  if (fetchError) throw fetchError;
 
-  const activeSession = sessions?.[0];
   if (!activeSession) {
     return null;
   }

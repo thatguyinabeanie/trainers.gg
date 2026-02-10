@@ -1,8 +1,10 @@
 "use server";
 
 import { z } from "zod";
-import { createServiceRoleClient } from "@/lib/supabase/server";
-import { requireAdminWithSudo } from "@/lib/auth/require-admin";
+import {
+  withAdminAction,
+  type ActionResult,
+} from "@/lib/auth/with-admin-action";
 import {
   approveOrganization,
   rejectOrganization,
@@ -19,29 +21,19 @@ const userIdSchema = z.string().uuid();
 
 // --- Approve ---
 
-export async function approveOrgAction(
-  orgId: number
-): Promise<{ success: boolean; error?: string }> {
-  try {
-    const parsedOrgId = orgIdSchema.safeParse(orgId);
-    if (!parsedOrgId.success) {
-      return {
-        success: false,
-        error: `Invalid input: ${parsedOrgId.error.issues[0]?.message}`,
-      };
-    }
-
-    const adminCheck = await requireAdminWithSudo();
-    if ("success" in adminCheck) return adminCheck;
-
-    const supabase = createServiceRoleClient();
-    await approveOrganization(supabase, orgId, adminCheck.userId);
-
-    return { success: true };
-  } catch (err) {
-    console.error("Error approving organization:", err);
-    return { success: false, error: "Failed to approve organization" };
+export async function approveOrgAction(orgId: number): Promise<ActionResult> {
+  const parsedOrgId = orgIdSchema.safeParse(orgId);
+  if (!parsedOrgId.success) {
+    return {
+      success: false,
+      error: `Invalid input: ${parsedOrgId.error.issues[0]?.message}`,
+    };
   }
+
+  return withAdminAction(async (supabase, adminUserId) => {
+    await approveOrganization(supabase, parsedOrgId.data, adminUserId);
+    return { success: true };
+  }, "Failed to approve organization");
 }
 
 // --- Reject ---
@@ -49,34 +41,31 @@ export async function approveOrgAction(
 export async function rejectOrgAction(
   orgId: number,
   reason: string
-): Promise<{ success: boolean; error?: string }> {
-  try {
-    const parsedOrgId = orgIdSchema.safeParse(orgId);
-    if (!parsedOrgId.success) {
-      return {
-        success: false,
-        error: `Invalid input: ${parsedOrgId.error.issues[0]?.message}`,
-      };
-    }
-    const parsedReason = reasonSchema.safeParse(reason);
-    if (!parsedReason.success) {
-      return {
-        success: false,
-        error: `Invalid input: ${parsedReason.error.issues[0]?.message}`,
-      };
-    }
-
-    const adminCheck = await requireAdminWithSudo();
-    if ("success" in adminCheck) return adminCheck;
-
-    const supabase = createServiceRoleClient();
-    await rejectOrganization(supabase, orgId, adminCheck.userId, reason);
-
-    return { success: true };
-  } catch (err) {
-    console.error("Error rejecting organization:", err);
-    return { success: false, error: "Failed to reject organization" };
+): Promise<ActionResult> {
+  const parsedOrgId = orgIdSchema.safeParse(orgId);
+  if (!parsedOrgId.success) {
+    return {
+      success: false,
+      error: `Invalid input: ${parsedOrgId.error.issues[0]?.message}`,
+    };
   }
+  const parsedReason = reasonSchema.safeParse(reason);
+  if (!parsedReason.success) {
+    return {
+      success: false,
+      error: `Invalid input: ${parsedReason.error.issues[0]?.message}`,
+    };
+  }
+
+  return withAdminAction(async (supabase, adminUserId) => {
+    await rejectOrganization(
+      supabase,
+      parsedOrgId.data,
+      adminUserId,
+      parsedReason.data
+    );
+    return { success: true };
+  }, "Failed to reject organization");
 }
 
 // --- Suspend ---
@@ -84,61 +73,48 @@ export async function rejectOrgAction(
 export async function suspendOrgAction(
   orgId: number,
   reason: string
-): Promise<{ success: boolean; error?: string }> {
-  try {
-    const parsedOrgId = orgIdSchema.safeParse(orgId);
-    if (!parsedOrgId.success) {
-      return {
-        success: false,
-        error: `Invalid input: ${parsedOrgId.error.issues[0]?.message}`,
-      };
-    }
-    const parsedReason = reasonSchema.safeParse(reason);
-    if (!parsedReason.success) {
-      return {
-        success: false,
-        error: `Invalid input: ${parsedReason.error.issues[0]?.message}`,
-      };
-    }
-
-    const adminCheck = await requireAdminWithSudo();
-    if ("success" in adminCheck) return adminCheck;
-
-    const supabase = createServiceRoleClient();
-    await suspendOrganization(supabase, orgId, adminCheck.userId, reason);
-
-    return { success: true };
-  } catch (err) {
-    console.error("Error suspending organization:", err);
-    return { success: false, error: "Failed to suspend organization" };
+): Promise<ActionResult> {
+  const parsedOrgId = orgIdSchema.safeParse(orgId);
+  if (!parsedOrgId.success) {
+    return {
+      success: false,
+      error: `Invalid input: ${parsedOrgId.error.issues[0]?.message}`,
+    };
   }
+  const parsedReason = reasonSchema.safeParse(reason);
+  if (!parsedReason.success) {
+    return {
+      success: false,
+      error: `Invalid input: ${parsedReason.error.issues[0]?.message}`,
+    };
+  }
+
+  return withAdminAction(async (supabase, adminUserId) => {
+    await suspendOrganization(
+      supabase,
+      parsedOrgId.data,
+      adminUserId,
+      parsedReason.data
+    );
+    return { success: true };
+  }, "Failed to suspend organization");
 }
 
 // --- Unsuspend ---
 
-export async function unsuspendOrgAction(
-  orgId: number
-): Promise<{ success: boolean; error?: string }> {
-  try {
-    const parsedOrgId = orgIdSchema.safeParse(orgId);
-    if (!parsedOrgId.success) {
-      return {
-        success: false,
-        error: `Invalid input: ${parsedOrgId.error.issues[0]?.message}`,
-      };
-    }
-
-    const adminCheck = await requireAdminWithSudo();
-    if ("success" in adminCheck) return adminCheck;
-
-    const supabase = createServiceRoleClient();
-    await unsuspendOrganization(supabase, orgId, adminCheck.userId);
-
-    return { success: true };
-  } catch (err) {
-    console.error("Error unsuspending organization:", err);
-    return { success: false, error: "Failed to unsuspend organization" };
+export async function unsuspendOrgAction(orgId: number): Promise<ActionResult> {
+  const parsedOrgId = orgIdSchema.safeParse(orgId);
+  if (!parsedOrgId.success) {
+    return {
+      success: false,
+      error: `Invalid input: ${parsedOrgId.error.issues[0]?.message}`,
+    };
   }
+
+  return withAdminAction(async (supabase, adminUserId) => {
+    await unsuspendOrganization(supabase, parsedOrgId.data, adminUserId);
+    return { success: true };
+  }, "Failed to unsuspend organization");
 }
 
 // --- Transfer Ownership ---
@@ -146,37 +122,29 @@ export async function unsuspendOrgAction(
 export async function transferOwnershipAction(
   orgId: number,
   newOwnerUserId: string
-): Promise<{ success: boolean; error?: string }> {
-  try {
-    const parsedOrgId = orgIdSchema.safeParse(orgId);
-    if (!parsedOrgId.success) {
-      return {
-        success: false,
-        error: `Invalid input: ${parsedOrgId.error.issues[0]?.message}`,
-      };
-    }
-    const parsedUserId = userIdSchema.safeParse(newOwnerUserId);
-    if (!parsedUserId.success) {
-      return {
-        success: false,
-        error: `Invalid input: ${parsedUserId.error.issues[0]?.message}`,
-      };
-    }
+): Promise<ActionResult> {
+  const parsedOrgId = orgIdSchema.safeParse(orgId);
+  if (!parsedOrgId.success) {
+    return {
+      success: false,
+      error: `Invalid input: ${parsedOrgId.error.issues[0]?.message}`,
+    };
+  }
+  const parsedUserId = userIdSchema.safeParse(newOwnerUserId);
+  if (!parsedUserId.success) {
+    return {
+      success: false,
+      error: `Invalid input: ${parsedUserId.error.issues[0]?.message}`,
+    };
+  }
 
-    const adminCheck = await requireAdminWithSudo();
-    if ("success" in adminCheck) return adminCheck;
-
-    const supabase = createServiceRoleClient();
+  return withAdminAction(async (supabase, adminUserId) => {
     await transferOrgOwnership(
       supabase,
-      orgId,
-      newOwnerUserId,
-      adminCheck.userId
+      parsedOrgId.data,
+      parsedUserId.data,
+      adminUserId
     );
-
     return { success: true };
-  } catch (err) {
-    console.error("Error transferring organization ownership:", err);
-    return { success: false, error: "Failed to transfer ownership" };
-  }
+  }, "Failed to transfer ownership");
 }

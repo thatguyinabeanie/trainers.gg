@@ -1,8 +1,10 @@
 "use server";
 
 import { z } from "zod";
-import { createServiceRoleClient } from "@/lib/supabase/server";
-import { requireAdminWithSudo } from "@/lib/auth/require-admin";
+import {
+  withAdminAction,
+  type ActionResult,
+} from "@/lib/auth/with-admin-action";
 import {
   createFeatureFlag,
   updateFeatureFlag,
@@ -64,27 +66,19 @@ export async function createFlagAction(data: {
   description?: string;
   enabled?: boolean;
   metadata?: Json;
-}): Promise<{ success: boolean; error?: string }> {
-  try {
-    const parsed = createFlagSchema.safeParse(data);
-    if (!parsed.success) {
-      return {
-        success: false,
-        error: `Invalid input: ${parsed.error.issues[0]?.message}`,
-      };
-    }
-
-    const adminCheck = await requireAdminWithSudo();
-    if ("success" in adminCheck) return adminCheck;
-
-    const supabase = createServiceRoleClient();
-    await createFeatureFlag(supabase, data, adminCheck.userId);
-
-    return { success: true };
-  } catch (err) {
-    console.error("Error creating feature flag:", err);
-    return { success: false, error: "An unexpected error occurred" };
+}): Promise<ActionResult> {
+  const parsed = createFlagSchema.safeParse(data);
+  if (!parsed.success) {
+    return {
+      success: false,
+      error: `Invalid input: ${parsed.error.issues[0]?.message}`,
+    };
   }
+
+  return withAdminAction(async (supabase, adminUserId) => {
+    await createFeatureFlag(supabase, parsed.data, adminUserId);
+    return { success: true };
+  }, "Error creating feature flag");
 }
 
 /**
@@ -98,63 +92,50 @@ export async function updateFlagAction(
     enabled?: boolean;
     metadata?: Json;
   }
-): Promise<{ success: boolean; error?: string }> {
-  try {
-    const parsedId = flagIdSchema.safeParse(id);
-    if (!parsedId.success) {
-      return {
-        success: false,
-        error: `Invalid input: ${parsedId.error.issues[0]?.message}`,
-      };
-    }
-    const parsedData = updateFlagDataSchema.safeParse(data);
-    if (!parsedData.success) {
-      return {
-        success: false,
-        error: `Invalid input: ${parsedData.error.issues[0]?.message}`,
-      };
-    }
-
-    const adminCheck = await requireAdminWithSudo();
-    if ("success" in adminCheck) return adminCheck;
-
-    const supabase = createServiceRoleClient();
-    await updateFeatureFlag(supabase, id, data, adminCheck.userId);
-
-    return { success: true };
-  } catch (err) {
-    console.error("Error updating feature flag:", err);
-    return { success: false, error: "An unexpected error occurred" };
+): Promise<ActionResult> {
+  const parsedId = flagIdSchema.safeParse(id);
+  if (!parsedId.success) {
+    return {
+      success: false,
+      error: `Invalid input: ${parsedId.error.issues[0]?.message}`,
+    };
   }
+  const parsedData = updateFlagDataSchema.safeParse(data);
+  if (!parsedData.success) {
+    return {
+      success: false,
+      error: `Invalid input: ${parsedData.error.issues[0]?.message}`,
+    };
+  }
+
+  return withAdminAction(async (supabase, adminUserId) => {
+    await updateFeatureFlag(
+      supabase,
+      parsedId.data,
+      parsedData.data,
+      adminUserId
+    );
+    return { success: true };
+  }, "Error updating feature flag");
 }
 
 /**
  * Delete a feature flag.
  * Requires admin + sudo mode.
  */
-export async function deleteFlagAction(
-  id: number
-): Promise<{ success: boolean; error?: string }> {
-  try {
-    const parsedId = flagIdSchema.safeParse(id);
-    if (!parsedId.success) {
-      return {
-        success: false,
-        error: `Invalid input: ${parsedId.error.issues[0]?.message}`,
-      };
-    }
-
-    const adminCheck = await requireAdminWithSudo();
-    if ("success" in adminCheck) return adminCheck;
-
-    const supabase = createServiceRoleClient();
-    await deleteFeatureFlag(supabase, id, adminCheck.userId);
-
-    return { success: true };
-  } catch (err) {
-    console.error("Error deleting feature flag:", err);
-    return { success: false, error: "An unexpected error occurred" };
+export async function deleteFlagAction(id: number): Promise<ActionResult> {
+  const parsedId = flagIdSchema.safeParse(id);
+  if (!parsedId.success) {
+    return {
+      success: false,
+      error: `Invalid input: ${parsedId.error.issues[0]?.message}`,
+    };
   }
+
+  return withAdminAction(async (supabase, adminUserId) => {
+    await deleteFeatureFlag(supabase, parsedId.data, adminUserId);
+    return { success: true };
+  }, "Error deleting feature flag");
 }
 
 // --- Announcement Actions ---
@@ -170,27 +151,19 @@ export async function createAnnouncementAction(data: {
   start_at?: string;
   end_at?: string;
   is_active?: boolean;
-}): Promise<{ success: boolean; error?: string }> {
-  try {
-    const parsed = createAnnouncementSchema.safeParse(data);
-    if (!parsed.success) {
-      return {
-        success: false,
-        error: `Invalid input: ${parsed.error.issues[0]?.message}`,
-      };
-    }
-
-    const adminCheck = await requireAdminWithSudo();
-    if ("success" in adminCheck) return adminCheck;
-
-    const supabase = createServiceRoleClient();
-    await createAnnouncement(supabase, data, adminCheck.userId);
-
-    return { success: true };
-  } catch (err) {
-    console.error("Error creating announcement:", err);
-    return { success: false, error: "An unexpected error occurred" };
+}): Promise<ActionResult> {
+  const parsed = createAnnouncementSchema.safeParse(data);
+  if (!parsed.success) {
+    return {
+      success: false,
+      error: `Invalid input: ${parsed.error.issues[0]?.message}`,
+    };
   }
+
+  return withAdminAction(async (supabase, adminUserId) => {
+    await createAnnouncement(supabase, parsed.data, adminUserId);
+    return { success: true };
+  }, "Error creating announcement");
 }
 
 /**
@@ -207,34 +180,31 @@ export async function updateAnnouncementAction(
     end_at?: string | null;
     is_active?: boolean;
   }
-): Promise<{ success: boolean; error?: string }> {
-  try {
-    const parsedId = announcementIdSchema.safeParse(id);
-    if (!parsedId.success) {
-      return {
-        success: false,
-        error: `Invalid input: ${parsedId.error.issues[0]?.message}`,
-      };
-    }
-    const parsedData = updateAnnouncementDataSchema.safeParse(data);
-    if (!parsedData.success) {
-      return {
-        success: false,
-        error: `Invalid input: ${parsedData.error.issues[0]?.message}`,
-      };
-    }
-
-    const adminCheck = await requireAdminWithSudo();
-    if ("success" in adminCheck) return adminCheck;
-
-    const supabase = createServiceRoleClient();
-    await updateAnnouncement(supabase, id, data, adminCheck.userId);
-
-    return { success: true };
-  } catch (err) {
-    console.error("Error updating announcement:", err);
-    return { success: false, error: "An unexpected error occurred" };
+): Promise<ActionResult> {
+  const parsedId = announcementIdSchema.safeParse(id);
+  if (!parsedId.success) {
+    return {
+      success: false,
+      error: `Invalid input: ${parsedId.error.issues[0]?.message}`,
+    };
   }
+  const parsedData = updateAnnouncementDataSchema.safeParse(data);
+  if (!parsedData.success) {
+    return {
+      success: false,
+      error: `Invalid input: ${parsedData.error.issues[0]?.message}`,
+    };
+  }
+
+  return withAdminAction(async (supabase, adminUserId) => {
+    await updateAnnouncement(
+      supabase,
+      parsedId.data,
+      parsedData.data,
+      adminUserId
+    );
+    return { success: true };
+  }, "Error updating announcement");
 }
 
 /**
@@ -243,25 +213,17 @@ export async function updateAnnouncementAction(
  */
 export async function deleteAnnouncementAction(
   id: number
-): Promise<{ success: boolean; error?: string }> {
-  try {
-    const parsedId = announcementIdSchema.safeParse(id);
-    if (!parsedId.success) {
-      return {
-        success: false,
-        error: `Invalid input: ${parsedId.error.issues[0]?.message}`,
-      };
-    }
-
-    const adminCheck = await requireAdminWithSudo();
-    if ("success" in adminCheck) return adminCheck;
-
-    const supabase = createServiceRoleClient();
-    await deleteAnnouncement(supabase, id, adminCheck.userId);
-
-    return { success: true };
-  } catch (err) {
-    console.error("Error deleting announcement:", err);
-    return { success: false, error: "An unexpected error occurred" };
+): Promise<ActionResult> {
+  const parsedId = announcementIdSchema.safeParse(id);
+  if (!parsedId.success) {
+    return {
+      success: false,
+      error: `Invalid input: ${parsedId.error.issues[0]?.message}`,
+    };
   }
+
+  return withAdminAction(async (supabase, adminUserId) => {
+    await deleteAnnouncement(supabase, parsedId.data, adminUserId);
+    return { success: true };
+  }, "Error deleting announcement");
 }

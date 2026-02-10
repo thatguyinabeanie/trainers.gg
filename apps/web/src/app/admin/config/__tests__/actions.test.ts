@@ -116,7 +116,7 @@ describe("createFlagAction", () => {
 
     expect(result).toEqual({
       success: false,
-      error: "An unexpected error occurred",
+      error: "Error creating feature flag",
     });
   });
 
@@ -127,7 +127,7 @@ describe("createFlagAction", () => {
 
     expect(result).toEqual({
       success: false,
-      error: "An unexpected error occurred",
+      error: "Error creating feature flag",
     });
   });
 });
@@ -172,7 +172,7 @@ describe("updateFlagAction", () => {
 
     expect(result).toEqual({
       success: false,
-      error: "An unexpected error occurred",
+      error: "Error updating feature flag",
     });
   });
 
@@ -183,7 +183,7 @@ describe("updateFlagAction", () => {
 
     expect(result).toEqual({
       success: false,
-      error: "An unexpected error occurred",
+      error: "Error updating feature flag",
     });
   });
 });
@@ -225,7 +225,7 @@ describe("deleteFlagAction", () => {
 
     expect(result).toEqual({
       success: false,
-      error: "An unexpected error occurred",
+      error: "Error deleting feature flag",
     });
   });
 
@@ -236,7 +236,7 @@ describe("deleteFlagAction", () => {
 
     expect(result).toEqual({
       success: false,
-      error: "An unexpected error occurred",
+      error: "Error deleting feature flag",
     });
   });
 });
@@ -317,7 +317,7 @@ describe("createAnnouncementAction", () => {
 
     expect(result).toEqual({
       success: false,
-      error: "An unexpected error occurred",
+      error: "Error creating announcement",
     });
   });
 
@@ -332,7 +332,7 @@ describe("createAnnouncementAction", () => {
 
     expect(result).toEqual({
       success: false,
-      error: "An unexpected error occurred",
+      error: "Error creating announcement",
     });
   });
 });
@@ -396,7 +396,7 @@ describe("updateAnnouncementAction", () => {
 
     expect(result).toEqual({
       success: false,
-      error: "An unexpected error occurred",
+      error: "Error updating announcement",
     });
   });
 
@@ -407,7 +407,7 @@ describe("updateAnnouncementAction", () => {
 
     expect(result).toEqual({
       success: false,
-      error: "An unexpected error occurred",
+      error: "Error updating announcement",
     });
   });
 });
@@ -454,7 +454,7 @@ describe("deleteAnnouncementAction", () => {
 
     expect(result).toEqual({
       success: false,
-      error: "An unexpected error occurred",
+      error: "Error deleting announcement",
     });
   });
 
@@ -465,7 +465,7 @@ describe("deleteAnnouncementAction", () => {
 
     expect(result).toEqual({
       success: false,
-      error: "An unexpected error occurred",
+      error: "Error deleting announcement",
     });
   });
 });

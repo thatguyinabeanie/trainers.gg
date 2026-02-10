@@ -256,7 +256,7 @@ describe("admin-organizations queries", () => {
         name: "Team Rocket",
         slug: "team-rocket",
         status: "active",
-        admin_notes: "Approved by admin",
+        organization_admin_notes: [{ notes: "Approved by admin" }],
         owner: { id: "user-1", username: "giovanni" },
       };
 
@@ -414,12 +414,11 @@ describe("admin-organizations queries", () => {
   // -----------------------------------------------------------------------
 
   describe("rejectOrganization", () => {
-    it("should set status to rejected with reason and create audit log", async () => {
+    it("should set status to rejected, upsert admin notes, and create audit log", async () => {
       const mockOrg = {
         id: 1,
         name: "Shady Org",
         status: "rejected",
-        admin_notes: "Violates policy",
       };
 
       const mockClient = createMockClient();
@@ -435,6 +434,10 @@ describe("admin-organizations queries", () => {
         }),
       };
 
+      const mockNotesChain = {
+        upsert: jest.fn().mockResolvedValue({ data: null, error: null }),
+      };
+
       const mockAuditChain = {
         insert: jest.fn().mockResolvedValue({ data: null, error: null }),
       };
@@ -443,6 +446,7 @@ describe("admin-organizations queries", () => {
         .mockReturnValueOnce({
           update: jest.fn().mockReturnValue(mockUpdateChain),
         })
+        .mockReturnValueOnce(mockNotesChain)
         .mockReturnValueOnce(mockAuditChain);
 
       const result = await rejectOrganization(
@@ -454,7 +458,19 @@ describe("admin-organizations queries", () => {
 
       expect(result).toEqual(mockOrg);
       expect(mockClient.from).toHaveBeenNthCalledWith(1, "organizations");
-      expect(mockClient.from).toHaveBeenNthCalledWith(2, "audit_log");
+      expect(mockClient.from).toHaveBeenNthCalledWith(
+        2,
+        "organization_admin_notes"
+      );
+      expect(mockClient.from).toHaveBeenNthCalledWith(3, "audit_log");
+      expect(mockNotesChain.upsert).toHaveBeenCalledWith(
+        expect.objectContaining({
+          organization_id: 1,
+          notes: "Violates policy",
+          updated_by: "admin-1",
+        }),
+        { onConflict: "organization_id" }
+      );
       expect(mockAuditChain.insert).toHaveBeenCalledWith(
         expect.objectContaining({
           action: "admin.org_rejected",
@@ -498,12 +514,11 @@ describe("admin-organizations queries", () => {
   // -----------------------------------------------------------------------
 
   describe("suspendOrganization", () => {
-    it("should set status to suspended with reason and create audit log", async () => {
+    it("should set status to suspended, upsert admin notes, and create audit log", async () => {
       const mockOrg = {
         id: 1,
         name: "Bad Org",
         status: "suspended",
-        admin_notes: "Repeated violations",
       };
 
       const mockClient = createMockClient();
@@ -519,6 +534,10 @@ describe("admin-organizations queries", () => {
         }),
       };
 
+      const mockNotesChain = {
+        upsert: jest.fn().mockResolvedValue({ data: null, error: null }),
+      };
+
       const mockAuditChain = {
         insert: jest.fn().mockResolvedValue({ data: null, error: null }),
       };
@@ -527,6 +546,7 @@ describe("admin-organizations queries", () => {
         .mockReturnValueOnce({
           update: jest.fn().mockReturnValue(mockUpdateChain),
         })
+        .mockReturnValueOnce(mockNotesChain)
         .mockReturnValueOnce(mockAuditChain);
 
       const result = await suspendOrganization(
@@ -537,6 +557,18 @@ describe("admin-organizations queries", () => {
       );
 
       expect(result).toEqual(mockOrg);
+      expect(mockClient.from).toHaveBeenNthCalledWith(
+        2,
+        "organization_admin_notes"
+      );
+      expect(mockNotesChain.upsert).toHaveBeenCalledWith(
+        expect.objectContaining({
+          organization_id: 1,
+          notes: "Repeated violations",
+          updated_by: "admin-1",
+        }),
+        { onConflict: "organization_id" }
+      );
       expect(mockAuditChain.insert).toHaveBeenCalledWith(
         expect.objectContaining({
           action: "admin.org_suspended",
@@ -589,6 +621,10 @@ describe("admin-organizations queries", () => {
         }),
       };
 
+      const mockNotesChain = {
+        upsert: jest.fn().mockResolvedValue({ data: null, error: null }),
+      };
+
       const auditError = new Error("Audit failed");
       const mockAuditChain = {
         insert: jest.fn().mockResolvedValue({ data: null, error: auditError }),
@@ -598,6 +634,7 @@ describe("admin-organizations queries", () => {
         .mockReturnValueOnce({
           update: jest.fn().mockReturnValue(mockUpdateChain),
         })
+        .mockReturnValueOnce(mockNotesChain)
         .mockReturnValueOnce(mockAuditChain);
 
       const result = await suspendOrganization(

@@ -28,7 +28,8 @@ export interface ListOrganizationsAdminOptions {
 /**
  * List organizations for the admin panel with search, filtering, and pagination.
  *
- * Selects core org fields plus the owner relationship and admin_notes.
+ * Selects core org fields plus the owner relationship and admin notes
+ * from the separate `organization_admin_notes` table.
  * Returns data and exact count for pagination.
  *
  * @param supabase - Typed Supabase client
@@ -50,10 +51,10 @@ export async function listOrganizationsAdmin(
       description,
       status,
       tier,
-      admin_notes,
       created_at,
       updated_at,
-      owner:users!organizations_owner_user_id_fkey(id, username, first_name, last_name, image)
+      owner:users!organizations_owner_user_id_fkey(id, username, first_name, last_name, image),
+      organization_admin_notes(notes, updated_at, updated_by)
     `,
       { count: "exact", head: false }
     )
@@ -83,7 +84,8 @@ export async function listOrganizationsAdmin(
 /**
  * Get full admin details for a single organization.
  *
- * Returns all org fields, the owner relationship, and admin_notes.
+ * Returns all org fields, the owner relationship, and admin notes
+ * from the separate `organization_admin_notes` table.
  * Returns null if the organization is not found.
  *
  * @param supabase - Typed Supabase client
@@ -98,8 +100,8 @@ export async function getOrganizationAdminDetails(
     .select(
       `
       *,
-      admin_notes,
-      owner:users!organizations_owner_user_id_fkey(id, username, first_name, last_name, image)
+      owner:users!organizations_owner_user_id_fkey(id, username, first_name, last_name, image),
+      organization_admin_notes(notes, updated_at, updated_by)
     `
     )
     .eq("id", orgId)
@@ -160,13 +162,13 @@ export async function approveOrganization(
 /**
  * Reject an organization (set status to 'rejected' with a reason).
  *
- * Updates the organization status and admin_notes, then creates
- * an audit log entry with the action 'admin.org_rejected'.
+ * Updates the organization status, stores the reason in
+ * `organization_admin_notes`, then creates an audit log entry.
  *
  * @param supabase - Typed Supabase client
  * @param orgId - Organization ID to reject
  * @param adminUserId - User ID of the admin performing the action
- * @param reason - Reason for rejection (stored in admin_notes)
+ * @param reason - Reason for rejection (stored in organization_admin_notes)
  */
 export async function rejectOrganization(
   supabase: TypedClient,
@@ -178,13 +180,30 @@ export async function rejectOrganization(
     .from("organizations")
     .update({
       status: "rejected" as const,
-      admin_notes: reason,
     })
     .eq("id", orgId)
     .select()
     .single();
 
   if (error) throw error;
+
+  // Upsert admin notes into the separate table
+  // NOTE: organization_admin_notes is created by migration but may not yet
+  // appear in the generated TypeScript types. Cast as needed.
+  const { error: notesError } = await (supabase.from as CallableFunction)(
+    "organization_admin_notes"
+  ).upsert(
+    {
+      organization_id: orgId,
+      notes: reason,
+      updated_by: adminUserId,
+    },
+    { onConflict: "organization_id" }
+  );
+
+  if (notesError) {
+    console.error("Error upserting org admin notes:", notesError);
+  }
 
   // Insert audit log entry
   const { error: auditError } = await supabase.from("audit_log").insert({
@@ -207,13 +226,13 @@ export async function rejectOrganization(
 /**
  * Suspend an organization (set status to 'suspended' with a reason).
  *
- * Updates the organization status and admin_notes, then creates
- * an audit log entry with the action 'admin.org_suspended'.
+ * Updates the organization status, stores the reason in
+ * `organization_admin_notes`, then creates an audit log entry.
  *
  * @param supabase - Typed Supabase client
  * @param orgId - Organization ID to suspend
  * @param adminUserId - User ID of the admin performing the action
- * @param reason - Reason for suspension (stored in admin_notes)
+ * @param reason - Reason for suspension (stored in organization_admin_notes)
  */
 export async function suspendOrganization(
   supabase: TypedClient,
@@ -225,13 +244,30 @@ export async function suspendOrganization(
     .from("organizations")
     .update({
       status: "suspended" as const,
-      admin_notes: reason,
     })
     .eq("id", orgId)
     .select()
     .single();
 
   if (error) throw error;
+
+  // Upsert admin notes into the separate table
+  // NOTE: organization_admin_notes is created by migration but may not yet
+  // appear in the generated TypeScript types. Cast as needed.
+  const { error: notesError } = await (supabase.from as CallableFunction)(
+    "organization_admin_notes"
+  ).upsert(
+    {
+      organization_id: orgId,
+      notes: reason,
+      updated_by: adminUserId,
+    },
+    { onConflict: "organization_id" }
+  );
+
+  if (notesError) {
+    console.error("Error upserting org admin notes:", notesError);
+  }
 
   // Insert audit log entry
   const { error: auditError } = await supabase.from("audit_log").insert({

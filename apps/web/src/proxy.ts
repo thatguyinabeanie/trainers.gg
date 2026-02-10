@@ -141,13 +141,32 @@ export default async function proxy(request: NextRequest) {
   // Set a response header as a debugging aid (visible in DevTools).
   // The actual impersonation detection uses cookie-based DB lookups via
   // getImpersonationTarget(), not this header.
+  // Only set the header if the user has the site_admin role (defense-in-depth).
   if (user) {
     const impersonationCookie = request.cookies.get("impersonation_mode");
     if (impersonationCookie?.value) {
-      response.headers.set(
-        "x-impersonation-session",
-        impersonationCookie.value
-      );
+      // Verify the user is a site admin before propagating impersonation info
+      let isAdmin = false;
+      try {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+        if (session?.access_token) {
+          const payload = JSON.parse(
+            atob(session.access_token.split(".")[1]!)
+          ) as { site_roles?: string[] };
+          isAdmin = payload?.site_roles?.includes("site_admin") ?? false;
+        }
+      } catch {
+        // If JWT parsing fails, don't propagate impersonation
+      }
+
+      if (isAdmin) {
+        response.headers.set(
+          "x-impersonation-session",
+          impersonationCookie.value
+        );
+      }
     }
   }
 

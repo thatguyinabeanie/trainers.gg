@@ -18,7 +18,6 @@ export interface OrgRow {
   description: string | null;
   status: "pending" | "active" | "rejected" | "suspended";
   tier: "regular" | "verified" | "partner";
-  admin_notes: string | null;
   created_at: string;
   updated_at: string;
   owner: {
@@ -28,6 +27,13 @@ export interface OrgRow {
     last_name: string | null;
     image: string | null;
   } | null;
+  organization_admin_notes:
+    | {
+        notes: string | null;
+        updated_at: string | null;
+        updated_by: string | null;
+      }[]
+    | null;
 }
 
 // --- Label / color mappings ---

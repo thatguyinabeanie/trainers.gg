@@ -1,8 +1,10 @@
 "use server";
 
 import { z } from "zod";
-import { createServiceRoleClient } from "@/lib/supabase/server";
-import { requireAdminWithSudo } from "@/lib/auth/require-admin";
+import {
+  withAdminAction,
+  type ActionResult,
+} from "@/lib/auth/with-admin-action";
 import {
   suspendUser,
   unsuspendUser,
@@ -26,40 +28,37 @@ const reasonSchema = z.string().max(1000).optional();
 export async function suspendUserAction(
   userId: string,
   reason?: string
-): Promise<{ success: boolean; error?: string }> {
-  try {
-    const parsedUserId = userIdSchema.safeParse(userId);
-    if (!parsedUserId.success) {
-      return {
-        success: false,
-        error: `Invalid input: ${parsedUserId.error.issues[0]?.message}`,
-      };
-    }
-    const parsedReason = reasonSchema.safeParse(reason);
-    if (!parsedReason.success) {
-      return {
-        success: false,
-        error: `Invalid input: ${parsedReason.error.issues[0]?.message}`,
-      };
-    }
+): Promise<ActionResult> {
+  const parsedUserId = userIdSchema.safeParse(userId);
+  if (!parsedUserId.success) {
+    return {
+      success: false,
+      error: `Invalid input: ${parsedUserId.error.issues[0]?.message}`,
+    };
+  }
+  const parsedReason = reasonSchema.safeParse(reason);
+  if (!parsedReason.success) {
+    return {
+      success: false,
+      error: `Invalid input: ${parsedReason.error.issues[0]?.message}`,
+    };
+  }
 
-    const adminCheck = await requireAdminWithSudo();
-    if ("success" in adminCheck) return adminCheck;
-    const { userId: adminUserId } = adminCheck;
-
+  return withAdminAction(async (supabase, adminUserId) => {
     // Prevent suspending yourself
-    if (userId === adminUserId) {
+    if (parsedUserId.data === adminUserId) {
       return { success: false, error: "Cannot suspend your own account" };
     }
 
-    const supabase = createServiceRoleClient();
-    await suspendUser(supabase, userId, adminUserId, reason);
+    await suspendUser(
+      supabase,
+      parsedUserId.data,
+      adminUserId,
+      parsedReason.data
+    );
 
     return { success: true };
-  } catch (err) {
-    console.error("Error suspending user:", err);
-    return { success: false, error: "An unexpected error occurred" };
-  }
+  }, "Error suspending user");
 }
 
 /**
@@ -67,28 +66,19 @@ export async function suspendUserAction(
  */
 export async function unsuspendUserAction(
   userId: string
-): Promise<{ success: boolean; error?: string }> {
-  try {
-    const parsedUserId = userIdSchema.safeParse(userId);
-    if (!parsedUserId.success) {
-      return {
-        success: false,
-        error: `Invalid input: ${parsedUserId.error.issues[0]?.message}`,
-      };
-    }
-
-    const adminCheck = await requireAdminWithSudo();
-    if ("success" in adminCheck) return adminCheck;
-    const { userId: adminUserId } = adminCheck;
-
-    const supabase = createServiceRoleClient();
-    await unsuspendUser(supabase, userId, adminUserId);
-
-    return { success: true };
-  } catch (err) {
-    console.error("Error unsuspending user:", err);
-    return { success: false, error: "An unexpected error occurred" };
+): Promise<ActionResult> {
+  const parsedUserId = userIdSchema.safeParse(userId);
+  if (!parsedUserId.success) {
+    return {
+      success: false,
+      error: `Invalid input: ${parsedUserId.error.issues[0]?.message}`,
+    };
   }
+
+  return withAdminAction(async (supabase, adminUserId) => {
+    await unsuspendUser(supabase, parsedUserId.data, adminUserId);
+    return { success: true };
+  }, "Error unsuspending user");
 }
 
 // ----------------------------------------------------------------
@@ -101,35 +91,30 @@ export async function unsuspendUserAction(
 export async function grantSiteRoleAction(
   userId: string,
   roleId: number
-): Promise<{ success: boolean; error?: string }> {
-  try {
-    const parsedUserId = userIdSchema.safeParse(userId);
-    if (!parsedUserId.success) {
-      return {
-        success: false,
-        error: `Invalid input: ${parsedUserId.error.issues[0]?.message}`,
-      };
-    }
-    const parsedRoleId = roleIdSchema.safeParse(roleId);
-    if (!parsedRoleId.success) {
-      return {
-        success: false,
-        error: `Invalid input: ${parsedRoleId.error.issues[0]?.message}`,
-      };
-    }
-
-    const adminCheck = await requireAdminWithSudo();
-    if ("success" in adminCheck) return adminCheck;
-    const { userId: adminUserId } = adminCheck;
-
-    const supabase = createServiceRoleClient();
-    const result = await grantSiteRole(supabase, userId, roleId, adminUserId);
-
-    return result;
-  } catch (err) {
-    console.error("Error granting site role:", err);
-    return { success: false, error: "An unexpected error occurred" };
+): Promise<ActionResult> {
+  const parsedUserId = userIdSchema.safeParse(userId);
+  if (!parsedUserId.success) {
+    return {
+      success: false,
+      error: `Invalid input: ${parsedUserId.error.issues[0]?.message}`,
+    };
   }
+  const parsedRoleId = roleIdSchema.safeParse(roleId);
+  if (!parsedRoleId.success) {
+    return {
+      success: false,
+      error: `Invalid input: ${parsedRoleId.error.issues[0]?.message}`,
+    };
+  }
+
+  return withAdminAction(async (supabase, adminUserId) => {
+    return await grantSiteRole(
+      supabase,
+      parsedUserId.data,
+      parsedRoleId.data,
+      adminUserId
+    );
+  }, "Error granting site role");
 }
 
 /**
@@ -139,31 +124,25 @@ export async function grantSiteRoleAction(
 export async function revokeSiteRoleAction(
   userId: string,
   roleId: number
-): Promise<{ success: boolean; error?: string }> {
-  try {
-    const parsedUserId = userIdSchema.safeParse(userId);
-    if (!parsedUserId.success) {
-      return {
-        success: false,
-        error: `Invalid input: ${parsedUserId.error.issues[0]?.message}`,
-      };
-    }
-    const parsedRoleId = roleIdSchema.safeParse(roleId);
-    if (!parsedRoleId.success) {
-      return {
-        success: false,
-        error: `Invalid input: ${parsedRoleId.error.issues[0]?.message}`,
-      };
-    }
+): Promise<ActionResult> {
+  const parsedUserId = userIdSchema.safeParse(userId);
+  if (!parsedUserId.success) {
+    return {
+      success: false,
+      error: `Invalid input: ${parsedUserId.error.issues[0]?.message}`,
+    };
+  }
+  const parsedRoleId = roleIdSchema.safeParse(roleId);
+  if (!parsedRoleId.success) {
+    return {
+      success: false,
+      error: `Invalid input: ${parsedRoleId.error.issues[0]?.message}`,
+    };
+  }
 
-    const adminCheck = await requireAdminWithSudo();
-    if ("success" in adminCheck) return adminCheck;
-    const { userId: adminUserId } = adminCheck;
-
-    const supabase = createServiceRoleClient();
-
+  return withAdminAction(async (supabase, adminUserId) => {
     // Prevent removing your own site_admin role
-    if (userId === adminUserId) {
+    if (parsedUserId.data === adminUserId) {
       const { data: role, error: roleError } = await supabase
         .from("roles")
         .select("name")
@@ -183,11 +162,11 @@ export async function revokeSiteRoleAction(
       }
     }
 
-    const result = await revokeSiteRole(supabase, userId, roleId, adminUserId);
-
-    return result;
-  } catch (err) {
-    console.error("Error revoking site role:", err);
-    return { success: false, error: "An unexpected error occurred" };
-  }
+    return await revokeSiteRole(
+      supabase,
+      parsedUserId.data,
+      parsedRoleId.data,
+      adminUserId
+    );
+  }, "Error revoking site role");
 }

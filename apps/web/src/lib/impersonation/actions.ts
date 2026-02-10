@@ -1,9 +1,15 @@
 "use server";
 
 import { headers } from "next/headers";
-import { createServiceRoleClient } from "@/lib/supabase/server";
-import { requireAdminWithSudo } from "@/lib/auth/require-admin";
-import { startImpersonation, endImpersonation } from "@trainers/supabase";
+import {
+  withAdminAction,
+  type ActionResult,
+} from "@/lib/auth/with-admin-action";
+import {
+  startImpersonation,
+  endImpersonation,
+  isSiteAdmin,
+} from "@trainers/supabase";
 import {
   setImpersonationCookie,
   clearImpersonationCookie,
@@ -16,18 +22,12 @@ import {
 export async function startImpersonationAction(
   targetUserId: string,
   reason?: string
-): Promise<{ success: boolean; error?: string }> {
-  try {
-    const adminCheck = await requireAdminWithSudo();
-    if ("success" in adminCheck) return adminCheck;
-    const { userId: adminUserId } = adminCheck;
-
+): Promise<ActionResult> {
+  return withAdminAction(async (supabase, adminUserId) => {
     // Cannot impersonate yourself
     if (targetUserId === adminUserId) {
       return { success: false, error: "Cannot impersonate yourself" };
     }
-
-    const supabase = createServiceRoleClient();
 
     // Verify target user exists
     const { data: targetUser } = await supabase
@@ -38,6 +38,15 @@ export async function startImpersonationAction(
 
     if (!targetUser) {
       return { success: false, error: "User not found" };
+    }
+
+    // Prevent impersonating other site admins
+    const targetIsAdmin = await isSiteAdmin(supabase, targetUserId);
+    if (targetIsAdmin) {
+      return {
+        success: false,
+        error: "Cannot impersonate another site admin",
+      };
     }
 
     // End any existing active impersonation sessions for this admin.
@@ -84,32 +93,20 @@ export async function startImpersonationAction(
     }
 
     return { success: true };
-  } catch (err) {
-    console.error("Error starting impersonation:", err);
-    return { success: false, error: "An unexpected error occurred" };
-  }
+  }, "Error starting impersonation");
 }
 
 /**
  * End the current impersonation session.
  */
-export async function endImpersonationAction(): Promise<{
-  success: boolean;
-  error?: string;
-}> {
-  try {
-    const adminCheck = await requireAdminWithSudo();
-    if ("success" in adminCheck) return adminCheck;
-    const { userId: adminUserId } = adminCheck;
-
+export async function endImpersonationAction(): Promise<ActionResult> {
+  return withAdminAction(async (supabase, adminUserId) => {
     const target = await getImpersonationTarget();
     if (!target) {
       // No active session, just clear cookie
       await clearImpersonationCookie();
       return { success: true };
     }
-
-    const supabase = createServiceRoleClient();
 
     // End the session + audit log via shared package function
     try {
@@ -123,8 +120,5 @@ export async function endImpersonationAction(): Promise<{
     await clearImpersonationCookie();
 
     return { success: true };
-  } catch (err) {
-    console.error("Error ending impersonation:", err);
-    return { success: false, error: "An unexpected error occurred" };
-  }
+  }, "Error ending impersonation");
 }

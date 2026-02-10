@@ -22,9 +22,11 @@ type MockQueryBuilder = {
   insert: jest.Mock<() => MockQueryBuilder>;
   update: jest.Mock<() => MockQueryBuilder>;
   eq: jest.Mock<() => MockQueryBuilder>;
+  is: jest.Mock<() => MockQueryBuilder>;
   or: jest.Mock<() => MockQueryBuilder>;
   order: jest.Mock<() => MockQueryBuilder>;
   range: jest.Mock<() => MockQueryBuilder>;
+  limit: jest.Mock<() => MockQueryBuilder>;
   single: jest.Mock<() => Promise<{ data: unknown; error: unknown }>>;
   maybeSingle: jest.Mock<() => Promise<{ data: unknown; error: unknown }>>;
   then: jest.Mock<
@@ -44,9 +46,11 @@ const createMockClient = () => {
     insert: jest.fn().mockReturnThis(),
     update: jest.fn().mockReturnThis(),
     eq: jest.fn().mockReturnThis(),
+    is: jest.fn().mockReturnThis(),
     or: jest.fn().mockReturnThis(),
     order: jest.fn().mockReturnThis(),
     range: jest.fn().mockReturnThis(),
+    limit: jest.fn().mockReturnThis(),
     single: jest.fn().mockResolvedValue({ data: null, error: null }),
     maybeSingle: jest.fn().mockResolvedValue({ data: null, error: null }),
     then: jest.fn((resolve) => {
@@ -772,13 +776,25 @@ describe("admin-users queries", () => {
 
       const mockClient = createMockClient();
 
-      // Mock RPC: get_active_impersonation_session
-      (mockClient.rpc as jest.Mock).mockResolvedValue({
-        data: [activeSession],
-        error: null,
-      });
+      // Mock Step 1: .from("impersonation_sessions").select("*").eq().is().order().limit().maybeSingle()
+      const mockFetchChain = {
+        select: jest.fn().mockReturnValue({
+          eq: jest.fn().mockReturnValue({
+            is: jest.fn().mockReturnValue({
+              order: jest.fn().mockReturnValue({
+                limit: jest.fn().mockReturnValue({
+                  maybeSingle: jest.fn().mockResolvedValue({
+                    data: activeSession,
+                    error: null,
+                  }),
+                }),
+              }),
+            }),
+          }),
+        }),
+      };
 
-      // Mock update chain for impersonation_sessions
+      // Mock Step 2: .from("impersonation_sessions").update().eq().select().single()
       const mockUpdateChain = {
         eq: jest.fn().mockReturnValue({
           select: jest.fn().mockReturnValue({
@@ -790,12 +806,13 @@ describe("admin-users queries", () => {
         }),
       };
 
-      // Mock insert chain for audit_log
+      // Mock Step 3: .from("audit_log").insert()
       const mockAuditInsertChain = {
         insert: jest.fn().mockResolvedValue({ data: null, error: null }),
       };
 
       (mockClient.from as jest.Mock)
+        .mockReturnValueOnce(mockFetchChain)
         .mockReturnValueOnce({
           update: jest.fn().mockReturnValue(mockUpdateChain),
         })
@@ -804,14 +821,18 @@ describe("admin-users queries", () => {
       const result = await endImpersonation(mockClient, "admin-1");
 
       expect(result).toEqual(endedSession);
-      expect(mockClient.rpc).toHaveBeenCalledWith(
-        "get_active_impersonation_session"
-      );
+      // First call: fetch active session from impersonation_sessions
       expect(mockClient.from).toHaveBeenNthCalledWith(
         1,
         "impersonation_sessions"
       );
-      expect(mockClient.from).toHaveBeenNthCalledWith(2, "audit_log");
+      // Second call: update impersonation_sessions
+      expect(mockClient.from).toHaveBeenNthCalledWith(
+        2,
+        "impersonation_sessions"
+      );
+      // Third call: insert audit_log
+      expect(mockClient.from).toHaveBeenNthCalledWith(3, "audit_log");
       expect(mockAuditInsertChain.insert).toHaveBeenCalledWith(
         expect.objectContaining({
           action: "admin.impersonation_ended",
@@ -828,42 +849,87 @@ describe("admin-users queries", () => {
     it("should return null when no active session exists", async () => {
       const mockClient = createMockClient();
 
-      (mockClient.rpc as jest.Mock).mockResolvedValue({
-        data: [],
-        error: null,
-      });
+      // Mock Step 1: .from("impersonation_sessions") query returns null (no active session)
+      const mockFetchChain = {
+        select: jest.fn().mockReturnValue({
+          eq: jest.fn().mockReturnValue({
+            is: jest.fn().mockReturnValue({
+              order: jest.fn().mockReturnValue({
+                limit: jest.fn().mockReturnValue({
+                  maybeSingle: jest.fn().mockResolvedValue({
+                    data: null,
+                    error: null,
+                  }),
+                }),
+              }),
+            }),
+          }),
+        }),
+      };
+
+      (mockClient.from as jest.Mock).mockReturnValueOnce(mockFetchChain);
 
       const result = await endImpersonation(mockClient, "admin-1");
 
       expect(result).toBeNull();
-      // Should not attempt to update or insert audit log
-      expect(mockClient.from).not.toHaveBeenCalled();
+      // Should only call from() once (the fetch), not attempt update or audit
+      expect(mockClient.from).toHaveBeenCalledTimes(1);
     });
 
-    it("should return null when RPC returns null data", async () => {
+    it("should return null when fetch returns null data", async () => {
       const mockClient = createMockClient();
 
-      (mockClient.rpc as jest.Mock).mockResolvedValue({
-        data: null,
-        error: null,
-      });
+      // Mock Step 1: maybeSingle returns null data
+      const mockFetchChain = {
+        select: jest.fn().mockReturnValue({
+          eq: jest.fn().mockReturnValue({
+            is: jest.fn().mockReturnValue({
+              order: jest.fn().mockReturnValue({
+                limit: jest.fn().mockReturnValue({
+                  maybeSingle: jest.fn().mockResolvedValue({
+                    data: null,
+                    error: null,
+                  }),
+                }),
+              }),
+            }),
+          }),
+        }),
+      };
+
+      (mockClient.from as jest.Mock).mockReturnValueOnce(mockFetchChain);
 
       const result = await endImpersonation(mockClient, "admin-1");
 
       expect(result).toBeNull();
     });
 
-    it("should throw on RPC error", async () => {
+    it("should throw on fetch error", async () => {
       const mockClient = createMockClient();
-      const rpcError = new Error("RPC failed");
+      const fetchError = new Error("Fetch failed");
 
-      (mockClient.rpc as jest.Mock).mockResolvedValue({
-        data: null,
-        error: rpcError,
-      });
+      // Mock Step 1: fetch returns an error
+      const mockFetchChain = {
+        select: jest.fn().mockReturnValue({
+          eq: jest.fn().mockReturnValue({
+            is: jest.fn().mockReturnValue({
+              order: jest.fn().mockReturnValue({
+                limit: jest.fn().mockReturnValue({
+                  maybeSingle: jest.fn().mockResolvedValue({
+                    data: null,
+                    error: fetchError,
+                  }),
+                }),
+              }),
+            }),
+          }),
+        }),
+      };
+
+      (mockClient.from as jest.Mock).mockReturnValueOnce(mockFetchChain);
 
       await expect(endImpersonation(mockClient, "admin-1")).rejects.toThrow(
-        "RPC failed"
+        "Fetch failed"
       );
     });
 
@@ -877,11 +943,25 @@ describe("admin-users queries", () => {
 
       const mockClient = createMockClient();
 
-      (mockClient.rpc as jest.Mock).mockResolvedValue({
-        data: [activeSession],
-        error: null,
-      });
+      // Mock Step 1: fetch returns active session
+      const mockFetchChain = {
+        select: jest.fn().mockReturnValue({
+          eq: jest.fn().mockReturnValue({
+            is: jest.fn().mockReturnValue({
+              order: jest.fn().mockReturnValue({
+                limit: jest.fn().mockReturnValue({
+                  maybeSingle: jest.fn().mockResolvedValue({
+                    data: activeSession,
+                    error: null,
+                  }),
+                }),
+              }),
+            }),
+          }),
+        }),
+      };
 
+      // Mock Step 2: update returns an error
       const updateError = new Error("Update failed");
       const mockUpdateChain = {
         eq: jest.fn().mockReturnValue({
@@ -894,9 +974,11 @@ describe("admin-users queries", () => {
         }),
       };
 
-      (mockClient.from as jest.Mock).mockReturnValueOnce({
-        update: jest.fn().mockReturnValue(mockUpdateChain),
-      });
+      (mockClient.from as jest.Mock)
+        .mockReturnValueOnce(mockFetchChain)
+        .mockReturnValueOnce({
+          update: jest.fn().mockReturnValue(mockUpdateChain),
+        });
 
       await expect(endImpersonation(mockClient, "admin-1")).rejects.toThrow(
         "Update failed"
@@ -918,11 +1000,25 @@ describe("admin-users queries", () => {
 
       const mockClient = createMockClient();
 
-      (mockClient.rpc as jest.Mock).mockResolvedValue({
-        data: [activeSession],
-        error: null,
-      });
+      // Mock Step 1: fetch returns active session
+      const mockFetchChain = {
+        select: jest.fn().mockReturnValue({
+          eq: jest.fn().mockReturnValue({
+            is: jest.fn().mockReturnValue({
+              order: jest.fn().mockReturnValue({
+                limit: jest.fn().mockReturnValue({
+                  maybeSingle: jest.fn().mockResolvedValue({
+                    data: activeSession,
+                    error: null,
+                  }),
+                }),
+              }),
+            }),
+          }),
+        }),
+      };
 
+      // Mock Step 2: update succeeds
       const mockUpdateChain = {
         eq: jest.fn().mockReturnValue({
           select: jest.fn().mockReturnValue({
@@ -934,12 +1030,14 @@ describe("admin-users queries", () => {
         }),
       };
 
+      // Mock Step 3: audit insert fails
       const auditError = new Error("Audit failed");
       const mockAuditInsertChain = {
         insert: jest.fn().mockResolvedValue({ data: null, error: auditError }),
       };
 
       (mockClient.from as jest.Mock)
+        .mockReturnValueOnce(mockFetchChain)
         .mockReturnValueOnce({
           update: jest.fn().mockReturnValue(mockUpdateChain),
         })

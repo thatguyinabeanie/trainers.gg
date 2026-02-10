@@ -78,7 +78,9 @@ export default function AdminOrganizationsPage() {
     [debouncedSearch, statusFilter, page]
   );
 
-  const organizations = (data?.data ?? []) as OrgRow[];
+  // NOTE: organization_admin_notes table is not yet in generated types,
+  // so the inferred type has SelectQueryError. Cast through unknown.
+  const organizations = (data?.data ?? []) as unknown as OrgRow[];
   const totalCount = data?.count ?? 0;
   const totalPages = Math.ceil(totalCount / PAGE_SIZE);
 
