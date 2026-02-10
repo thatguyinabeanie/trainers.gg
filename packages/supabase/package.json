@@ -41,17 +41,34 @@
     "supabase": "supabase"
   },
   "dependencies": {
-    "@supabase/ssr": "catalog:",
     "@supabase/supabase-js": "catalog:",
     "@trainers/utils": "workspace:*",
     "@trainers/validators": "workspace:*",
-    "next": "catalog:",
-    "react": "catalog:",
     "zod": "catalog:"
   },
-  "optionalDependencies": {
+  "peerDependencies": {
+    "@supabase/ssr": "catalog:",
     "expo-secure-store": "~14.0.0",
+    "next": "catalog:",
+    "react": "catalog:",
     "react-native-url-polyfill": "^2.0.0"
+  },
+  "peerDependenciesMeta": {
+    "@supabase/ssr": {
+      "optional": true
+    },
+    "expo-secure-store": {
+      "optional": true
+    },
+    "next": {
+      "optional": true
+    },
+    "react": {
+      "optional": true
+    },
+    "react-native-url-polyfill": {
+      "optional": true
+    }
   },
   "devDependencies": {
     "@faker-js/faker": "^10.2.0",
