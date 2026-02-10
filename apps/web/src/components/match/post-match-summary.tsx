@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import { useSupabase } from "@/lib/supabase";
 import { getPlayerMatches } from "@trainers/supabase";
-import { Button } from "@/components/ui/button";
 import { Trophy, TrendingUp, Clock, ArrowRight } from "lucide-react";
 import Link from "next/link";
 
@@ -66,10 +65,12 @@ export function PostMatchSummary({
             id: nextPendingMatch.id,
             roundNumber: round?.round_number ?? 0,
           });
+        } else {
+          setNextMatch(null);
         }
 
         // Check current round status if we have roundNumber
-        if (roundNumber) {
+        if (roundNumber != null) {
           const { data: round } = await supabase
             .from("tournament_rounds")
             .select("id")
@@ -142,23 +143,19 @@ export function PostMatchSummary({
       <div className="flex flex-col gap-2 sm:flex-row">
         <Link
           href={`/tournaments/${tournamentSlug}/standings`}
-          className="flex-1"
+          className="hover:bg-accent hover:text-accent-foreground border-input bg-background ring-offset-background focus-visible:ring-ring inline-flex h-10 flex-1 items-center justify-center gap-2 rounded-md border px-4 py-2 text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50"
         >
-          <Button variant="outline" className="w-full gap-2">
-            <TrendingUp className="h-4 w-4" />
-            View Standings
-          </Button>
+          <TrendingUp className="h-4 w-4" />
+          View Standings
         </Link>
 
         {!isLoading && nextMatch && (
           <Link
             href={`/tournaments/${tournamentSlug}/matches/${nextMatch.id}`}
-            className="flex-1"
+            className="bg-primary text-primary-foreground hover:bg-primary/90 ring-offset-background focus-visible:ring-ring inline-flex h-10 flex-1 items-center justify-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50"
           >
-            <Button className="w-full gap-2">
-              Next Match (Round {nextMatch.roundNumber})
-              <ArrowRight className="h-4 w-4" />
-            </Button>
+            Next Match (Round {nextMatch.roundNumber})
+            <ArrowRight className="h-4 w-4" />
           </Link>
         )}
       </div>

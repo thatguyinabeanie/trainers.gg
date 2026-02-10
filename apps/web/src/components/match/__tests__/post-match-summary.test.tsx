@@ -1,3 +1,4 @@
+import { type ReactNode } from "react";
 import { render, screen, waitFor } from "@testing-library/react";
 import { PostMatchSummary } from "../post-match-summary";
 import { useSupabase } from "@/lib/supabase";
@@ -18,7 +19,7 @@ jest.mock("next/link", () => {
     children,
     href,
   }: {
-    children: React.ReactNode;
+    children: ReactNode;
     href: string;
   }) => <a href={href}>{children}</a>;
   MockLink.displayName = "MockLink";
