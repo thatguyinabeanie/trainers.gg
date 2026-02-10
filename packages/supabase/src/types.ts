@@ -87,6 +87,53 @@ export type Database = {
           },
         ]
       }
+      announcements: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          end_at: string | null
+          id: number
+          is_active: boolean
+          message: string
+          start_at: string
+          title: string
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          end_at?: string | null
+          id?: never
+          is_active?: boolean
+          message: string
+          start_at?: string
+          title: string
+          type?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          end_at?: string | null
+          id?: never
+          is_active?: boolean
+          message?: string
+          start_at?: string
+          title?: string
+          type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "announcements_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       atproto_oauth_state: {
         Row: {
           created_at: string
@@ -285,6 +332,47 @@ export type Database = {
           },
         ]
       }
+      feature_flags: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string | null
+          enabled: boolean
+          id: number
+          key: string
+          metadata: Json
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          enabled?: boolean
+          id?: never
+          key: string
+          metadata?: Json
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          enabled?: boolean
+          id?: never
+          key?: string
+          metadata?: Json
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "feature_flags_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       feature_usage: {
         Row: {
           created_at: string | null
@@ -424,6 +512,54 @@ export type Database = {
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      impersonation_sessions: {
+        Row: {
+          admin_user_id: string
+          ended_at: string | null
+          id: number
+          ip_address: unknown
+          reason: string | null
+          started_at: string
+          target_user_id: string
+          user_agent: string | null
+        }
+        Insert: {
+          admin_user_id: string
+          ended_at?: string | null
+          id?: never
+          ip_address?: unknown
+          reason?: string | null
+          started_at?: string
+          target_user_id: string
+          user_agent?: string | null
+        }
+        Update: {
+          admin_user_id?: string
+          ended_at?: string | null
+          id?: never
+          ip_address?: unknown
+          reason?: string | null
+          started_at?: string
+          target_user_id?: string
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "impersonation_sessions_admin_user_id_fkey"
+            columns: ["admin_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "impersonation_sessions_target_user_id_fkey"
+            columns: ["target_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
             referencedColumns: ["id"]
           },
         ]
@@ -816,6 +952,7 @@ export type Database = {
       }
       organizations: {
         Row: {
+          admin_notes: string | null
           created_at: string | null
           description: string | null
           discord_url: string | null
@@ -838,6 +975,7 @@ export type Database = {
           website_url: string | null
         }
         Insert: {
+          admin_notes?: string | null
           created_at?: string | null
           description?: string | null
           discord_url?: string | null
@@ -860,6 +998,7 @@ export type Database = {
           website_url?: string | null
         }
         Update: {
+          admin_notes?: string | null
           created_at?: string | null
           description?: string | null
           discord_url?: string | null
@@ -2630,6 +2769,19 @@ export type Database = {
         Args: { p_bracket_size: number }
         Returns: number[]
       }
+      get_active_impersonation_session: {
+        Args: { timeout_minutes?: number }
+        Returns: {
+          admin_user_id: string
+          ended_at: string
+          id: number
+          ip_address: unknown
+          reason: string
+          started_at: string
+          target_user_id: string
+          user_agent: string
+        }[]
+      }
       get_active_sudo_session: {
         Args: { timeout_minutes?: number }
         Returns: {
@@ -2688,6 +2840,7 @@ export type Database = {
         Args: { org_id: number; permission_key: string }
         Returns: boolean
       }
+      is_impersonating: { Args: never; Returns: boolean }
       is_org_owner: {
         Args: { p_org_id: number; p_user_id: string }
         Returns: boolean
@@ -2753,6 +2906,23 @@ export type Database = {
         | "registration.late_checkin"
         | "admin.sudo_activated"
         | "admin.sudo_deactivated"
+        | "admin.user_suspended"
+        | "admin.user_unsuspended"
+        | "admin.role_granted"
+        | "admin.role_revoked"
+        | "admin.impersonation_started"
+        | "admin.impersonation_ended"
+        | "admin.org_approved"
+        | "admin.org_rejected"
+        | "admin.org_suspended"
+        | "admin.org_unsuspended"
+        | "admin.org_ownership_transferred"
+        | "admin.flag_created"
+        | "admin.flag_toggled"
+        | "admin.flag_deleted"
+        | "admin.announcement_created"
+        | "admin.announcement_updated"
+        | "admin.announcement_deleted"
       billing_interval: "monthly" | "annual"
       entity_type: "profile" | "organization" | "alt"
       invitation_status: "pending" | "accepted" | "declined" | "expired"
@@ -2775,7 +2945,7 @@ export type Database = {
         | "tournament_round"
         | "tournament_complete"
       org_request_status: "pending" | "approved" | "rejected"
-      organization_status: "pending" | "active" | "rejected"
+      organization_status: "pending" | "active" | "rejected" | "suspended"
       organization_subscription_tier:
         | "free"
         | "organization_plus"
@@ -2968,6 +3138,23 @@ export const Constants = {
         "registration.late_checkin",
         "admin.sudo_activated",
         "admin.sudo_deactivated",
+        "admin.user_suspended",
+        "admin.user_unsuspended",
+        "admin.role_granted",
+        "admin.role_revoked",
+        "admin.impersonation_started",
+        "admin.impersonation_ended",
+        "admin.org_approved",
+        "admin.org_rejected",
+        "admin.org_suspended",
+        "admin.org_unsuspended",
+        "admin.org_ownership_transferred",
+        "admin.flag_created",
+        "admin.flag_toggled",
+        "admin.flag_deleted",
+        "admin.announcement_created",
+        "admin.announcement_updated",
+        "admin.announcement_deleted",
       ],
       billing_interval: ["monthly", "annual"],
       entity_type: ["profile", "organization", "alt"],
@@ -2993,7 +3180,7 @@ export const Constants = {
         "tournament_complete",
       ],
       org_request_status: ["pending", "approved", "rejected"],
-      organization_status: ["pending", "active", "rejected"],
+      organization_status: ["pending", "active", "rejected", "suspended"],
       organization_subscription_tier: [
         "free",
         "organization_plus",

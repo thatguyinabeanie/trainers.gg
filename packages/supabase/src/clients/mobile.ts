@@ -11,6 +11,8 @@
 import { createMobileSupabaseClient } from "./base/mobile-client";
 import { getTournamentAuditLog as getTournamentAuditLog_core } from "../queries/audit-log";
 import { getMatchAuditLog as getMatchAuditLog_core } from "../queries/audit-log";
+import { getAuditLog as getAuditLog_core } from "../queries/audit-log";
+import { getAuditLogStats as getAuditLogStats_core } from "../queries/audit-log";
 import { getMatchGames as getMatchGames_core } from "../queries/match-games";
 import { getMatchGamesForPlayer as getMatchGamesForPlayer_core } from "../queries/match-games";
 import { getMatchMessages as getMatchMessages_core } from "../queries/match-games";
@@ -185,6 +187,36 @@ export async function getMatchAuditLog(
 ): Promise<Awaited<ReturnType<typeof getMatchAuditLog_core>>> {
   const client = createMobileSupabaseClient();
   return getMatchAuditLog_core(client, ...args);
+}
+
+/**
+ * getAuditLog (auto-injected with mobile client)
+ */
+export async function getAuditLog(
+  ...args: Parameters<typeof getAuditLog_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof getAuditLog_core>>> {
+  const client = createMobileSupabaseClient();
+  return getAuditLog_core(client, ...args);
+}
+
+/**
+ * getAuditLogStats (auto-injected with mobile client)
+ */
+export async function getAuditLogStats(
+  ...args: Parameters<typeof getAuditLogStats_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof getAuditLogStats_core>>> {
+  const client = createMobileSupabaseClient();
+  return getAuditLogStats_core(client, ...args);
 }
 
 /**

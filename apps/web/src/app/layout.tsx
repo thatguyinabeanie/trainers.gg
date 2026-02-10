@@ -2,6 +2,7 @@ import { Providers } from "@/components/providers";
 import { TopNav } from "@/components/topnav";
 import { Toaster } from "@/components/ui/sonner";
 import { SudoModeIndicator } from "@/components/sudo-mode-indicator";
+import { AnnouncementBanner } from "@/components/layout/announcement-banner";
 import type { Metadata, Viewport } from "next";
 import { Geist_Mono, Inter } from "next/font/google";
 import type { ReactNode } from "react";
@@ -54,6 +55,7 @@ export default function RootLayout({
         )}
       >
         <Providers>
+          <AnnouncementBanner />
           <TopNav />
           <main className="flex w-full flex-1 flex-col">{children}</main>
 

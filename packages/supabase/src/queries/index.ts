@@ -108,7 +108,12 @@ export {
 export { getNotifications, getUnreadNotificationCount } from "./notifications";
 
 // Audit log queries
-export { getTournamentAuditLog, getMatchAuditLog } from "./audit-log";
+export {
+  getTournamentAuditLog,
+  getMatchAuditLog,
+  getAuditLog,
+  getAuditLogStats,
+} from "./audit-log";
 
 // Sudo mode queries
 export {
@@ -118,3 +123,65 @@ export {
   startSudoSession,
   endSudoSession,
 } from "./sudo-mode";
+
+// Admin organization queries
+export {
+  listOrganizationsAdmin,
+  getOrganizationAdminDetails,
+  approveOrganization,
+  rejectOrganization,
+  suspendOrganization,
+  unsuspendOrganization,
+  transferOrgOwnership,
+} from "./admin-organizations";
+
+export type { ListOrganizationsAdminOptions } from "./admin-organizations";
+
+// Admin analytics queries
+export {
+  getPlatformOverview,
+  getUserGrowthStats,
+  getActiveUserStats,
+  getTournamentStats,
+  getOrganizationStats,
+  getInviteConversionStats,
+} from "./admin-analytics";
+
+export type {
+  PlatformOverview,
+  UserGrowthEntry,
+  ActiveUserStats,
+  OrganizationStats,
+  InviteConversionStats,
+} from "./admin-analytics";
+
+// Admin user management queries
+export {
+  listUsersAdmin,
+  getUserAdminDetails,
+  suspendUser,
+  unsuspendUser,
+  startImpersonation,
+  endImpersonation,
+} from "./admin-users";
+
+export type { ListUsersAdminOptions } from "./admin-users";
+
+// Feature flag queries
+export {
+  listFeatureFlags,
+  getFeatureFlag,
+  isFeatureEnabled,
+  createFeatureFlag,
+  updateFeatureFlag,
+  deleteFeatureFlag,
+} from "./feature-flags";
+
+// Announcement queries
+export {
+  listAnnouncements,
+  getActiveAnnouncements,
+  createAnnouncement,
+  updateAnnouncement,
+  deleteAnnouncement,
+} from "./announcements";
