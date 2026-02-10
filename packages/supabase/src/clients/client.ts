@@ -105,6 +105,7 @@ import { createMatchGames as createMatchGames_core } from "../mutations/match-ga
 import { judgeOverrideGame as judgeOverrideGame_core } from "../mutations/match-games";
 import { judgeResetGame as judgeResetGame_core } from "../mutations/match-games";
 import { resetMatch as resetMatch_core } from "../mutations/match-games";
+import { confirmMatchCheckIn as confirmMatchCheckIn_core } from "../mutations/match-games";
 import { markNotificationRead as markNotificationRead_core } from "../mutations/notifications";
 import { markAllNotificationsRead as markAllNotificationsRead_core } from "../mutations/notifications";
 import { deleteNotification as deleteNotification_core } from "../mutations/notifications";
@@ -1600,6 +1601,21 @@ export async function resetMatch(
 ): Promise<Awaited<ReturnType<typeof resetMatch_core>>> {
   const client = createBrowserSupabaseClient();
   return resetMatch_core(client, ...args);
+}
+
+/**
+ * confirmMatchCheckIn (auto-injected with browser client)
+ */
+export async function confirmMatchCheckIn(
+  ...args: Parameters<typeof confirmMatchCheckIn_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof confirmMatchCheckIn_core>>> {
+  const client = createBrowserSupabaseClient();
+  return confirmMatchCheckIn_core(client, ...args);
 }
 
 /**

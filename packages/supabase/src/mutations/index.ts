@@ -80,6 +80,7 @@ export {
   judgeOverrideGame,
   judgeResetGame,
   resetMatch,
+  confirmMatchCheckIn,
 } from "./match-games";
 
 // Notification mutations

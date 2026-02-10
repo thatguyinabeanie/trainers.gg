@@ -15,6 +15,7 @@ import {
 } from "@/components/match/match-header";
 import type { GameData } from "@/components/match/game-card";
 import { MatchChat } from "@/components/match/match-chat";
+import { MatchCheckIn } from "@/components/match/match-check-in";
 import { useMatchPresence } from "@/components/match/presence-indicator";
 import { TeamSheet, type TeamData } from "@/components/match/team-sheet";
 
@@ -28,6 +29,8 @@ export interface MatchPageClientProps {
   tournamentSlug: string;
   matchStatus: string;
   staffRequested: boolean;
+  player1CheckedIn: boolean;
+  player2CheckedIn: boolean;
   player1: PlayerInfo | null;
   player2: PlayerInfo | null;
   alt1Id: number | null;
@@ -58,6 +61,8 @@ export function MatchPageClient({
   tournamentSlug: _tournamentSlug,
   matchStatus: initialStatus,
   staffRequested: initialStaffRequested,
+  player1CheckedIn: initialPlayer1CheckedIn,
+  player2CheckedIn: initialPlayer2CheckedIn,
   player1,
   player2,
   alt1Id,
@@ -80,6 +85,12 @@ export function MatchPageClient({
   const supabase = useSupabase();
   const [matchStatus, setMatchStatus] = useState(initialStatus);
   const [staffRequested, setStaffRequested] = useState(initialStaffRequested);
+  const [player1CheckedIn, setPlayer1CheckedIn] = useState(
+    initialPlayer1CheckedIn
+  );
+  const [player2CheckedIn, setPlayer2CheckedIn] = useState(
+    initialPlayer2CheckedIn
+  );
   const [gamesRefreshKey, setGamesRefreshKey] = useState(0);
   const [messagesRefreshKey, setMessagesRefreshKey] = useState(0);
 
@@ -205,10 +216,18 @@ export function MatchPageClient({
           const newRow = payload.new as {
             status?: string;
             staff_requested?: boolean;
+            player1_match_confirmed?: boolean;
+            player2_match_confirmed?: boolean;
           };
           if (newRow.status) setMatchStatus(newRow.status);
           if (typeof newRow.staff_requested === "boolean") {
             setStaffRequested(newRow.staff_requested);
+          }
+          if (typeof newRow.player1_match_confirmed === "boolean") {
+            setPlayer1CheckedIn(newRow.player1_match_confirmed);
+          }
+          if (typeof newRow.player2_match_confirmed === "boolean") {
+            setPlayer2CheckedIn(newRow.player2_match_confirmed);
           }
           setGamesRefreshKey((k) => k + 1);
         }
@@ -334,6 +353,31 @@ export function MatchPageClient({
 
   return (
     <div className="flex h-[calc(100dvh-10rem)] flex-col gap-4 overflow-hidden">
+      {/* Match Check-In Banner (when match is pending) */}
+      {matchStatus === "pending" && (
+        <div className="shrink-0">
+          <MatchCheckIn
+            matchId={matchId}
+            tournamentId={tournamentId}
+            isParticipant={isParticipant}
+            isPlayer1={isPlayer1}
+            player1CheckedIn={player1CheckedIn}
+            player2CheckedIn={player2CheckedIn}
+            myName={headerMyName}
+            opponentName={headerOpponentName}
+            onCheckInComplete={() => {
+              // Optimistic: set own check-in state immediately
+              // Realtime will update the rest
+              if (isPlayer1) {
+                setPlayer1CheckedIn(true);
+              } else {
+                setPlayer2CheckedIn(true);
+              }
+            }}
+          />
+        </div>
+      )}
+
       {/* Match Header with game reporting strip */}
       <div className="shrink-0">
         <MatchHeader
