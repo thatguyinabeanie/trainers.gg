@@ -257,6 +257,37 @@ jobs:
               --jq '.[0].id // empty' 2>/dev/null || true)
 
             if [ -n "$DEPLOY_ID" ]; then
+              # Check if Vercel skipped this deployment (e.g. "Skipped - Not affected")
+              DEPLOY_DESC=$(gh api "repos/$GH_REPO/deployments/$DEPLOY_ID/statuses" \
+                --jq '.[0].description // empty' 2>/dev/null || true)
+
+              if echo "$DEPLOY_DESC" | grep -qi "skipped"; then
+                echo "Deployment was skipped by Vercel ($DEPLOY_DESC)"
+                echo "Falling back to latest successful preview deployment..."
+
+                # Find the most recent non-skipped preview deployment
+                FALLBACK_ID=$(gh api "repos/$GH_REPO/deployments?environment=Preview&per_page=10" \
+                  --jq '[.[] | select(.sha != env.PR_SHA)] | .[0].id // empty' 2>/dev/null || true)
+
+                if [ -n "$FALLBACK_ID" ]; then
+                  URL=$(gh api "repos/$GH_REPO/deployments/$FALLBACK_ID/statuses" \
+                    --jq '[.[] | select(.environment_url != null and .environment_url != "")] | .[0].environment_url // empty' 2>/dev/null || true)
+
+                  if [ -n "$URL" ]; then
+                    BODY=$(curl -s -H "x-vercel-protection-bypass: $BYPASS_SECRET" "$URL" | head -c 5000)
+                    if ! echo "$BODY" | grep -qi "Deployment was cancelled\|deployment not found\|deployment error"; then
+                      echo "url=$URL" >> "$GITHUB_OUTPUT"
+                      echo "Using fallback preview at $URL"
+                      exit 0
+                    fi
+                  fi
+                fi
+
+                echo "No usable fallback deployment found (attempt $i/40)"
+                sleep 15
+                continue
+              fi
+
               # Get environment_url from latest status (Vercel uses "inactive" state, not "success")
               URL=$(gh api "repos/$GH_REPO/deployments/$DEPLOY_ID/statuses" \
                 --jq '.[0].environment_url // empty' 2>/dev/null || true)

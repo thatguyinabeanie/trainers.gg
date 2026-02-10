@@ -1,39 +1,13 @@
 "use server";
 
+import { createClient } from "@/lib/supabase/server";
+import { requireAdminWithSudo } from "@/lib/auth/require-admin";
 import {
-  createClient,
-  createServiceRoleClient,
-  getUser,
-} from "@/lib/supabase/server";
+  withAdminAction,
+  type ActionResult,
+} from "@/lib/auth/with-admin-action";
 
 const EMAIL_DELIVERY_FAILED = "EMAIL_DELIVERY_FAILED";
-
-/**
- * Verify the current user is authenticated and has the site_admin role.
- * Returns the user ID on success, or an error object on failure.
- */
-async function requireAdmin(): Promise<
-  { userId: string } | { success: false; error: string }
-> {
-  const user = await getUser();
-  if (!user) {
-    return { success: false, error: "Not authenticated" };
-  }
-
-  const supabase = createServiceRoleClient();
-  const { data: adminRole } = await supabase
-    .from("user_roles")
-    .select("role_id, roles!inner(name)")
-    .eq("user_id", user.id)
-    .eq("roles.name", "site_admin")
-    .maybeSingle();
-
-  if (!adminRole) {
-    return { success: false, error: "Admin access required" };
-  }
-
-  return { userId: user.id };
-}
 
 /**
  * Send a beta invite to an email address.
@@ -47,6 +21,10 @@ export async function sendBetaInvite(email: string): Promise<{
   code?: string;
 }> {
   try {
+    // Enforce admin role + active sudo session before calling the edge function
+    const adminCheck = await requireAdminWithSudo();
+    if ("success" in adminCheck) return adminCheck;
+
     const supabase = await createClient();
 
     // Get the current session for the auth token
@@ -104,21 +82,13 @@ export async function sendBetaInvite(email: string): Promise<{
 export async function resendBetaInvite(
   inviteId: number,
   email: string
-): Promise<{ success: boolean; error?: string }> {
-  try {
-    const adminCheck = await requireAdmin();
-    if ("success" in adminCheck) return adminCheck;
-
-    const supabase = createServiceRoleClient();
-
+): Promise<ActionResult> {
+  return withAdminAction(async (supabase) => {
     await supabase.from("beta_invites").delete().eq("id", inviteId);
 
     // Send a new invite
     return await sendBetaInvite(email);
-  } catch (err) {
-    console.error("Error resending beta invite:", err);
-    return { success: false, error: "An unexpected error occurred" };
-  }
+  }, "Error resending beta invite");
 }
 
 /**
@@ -126,13 +96,8 @@ export async function resendBetaInvite(
  */
 export async function revokeBetaInvite(
   inviteId: number
-): Promise<{ success: boolean; error?: string }> {
-  try {
-    const adminCheck = await requireAdmin();
-    if ("success" in adminCheck) return adminCheck;
-
-    const supabase = createServiceRoleClient();
-
+): Promise<ActionResult> {
+  return withAdminAction(async (supabase) => {
     const { error } = await supabase
       .from("beta_invites")
       .delete()
@@ -144,8 +109,5 @@ export async function revokeBetaInvite(
     }
 
     return { success: true };
-  } catch (err) {
-    console.error("Error revoking beta invite:", err);
-    return { success: false, error: "An unexpected error occurred" };
-  }
+  }, "Error revoking beta invite");
 }

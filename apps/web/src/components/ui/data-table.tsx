@@ -31,6 +31,8 @@ interface DataTableProps<TData, TValue> {
   searchKey?: string;
   searchPlaceholder?: string;
   onRowClick?: (row: TData) => void;
+  /** Set to true when pagination is handled externally (server-side). Disables built-in pagination. */
+  manualPagination?: boolean;
 }
 
 export function DataTable<TData, TValue>({
@@ -39,6 +41,7 @@ export function DataTable<TData, TValue>({
   searchKey: _searchKey,
   searchPlaceholder: _searchPlaceholder = "Search...",
   onRowClick,
+  manualPagination = false,
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
@@ -52,7 +55,9 @@ export function DataTable<TData, TValue>({
     data,
     columns,
     getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
+    ...(manualPagination
+      ? { manualPagination: true }
+      : { getPaginationRowModel: getPaginationRowModel() }),
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     onSortingChange: setSorting,
@@ -120,8 +125,8 @@ export function DataTable<TData, TValue>({
         </Table>
       </div>
 
-      {/* Pagination Controls */}
-      {table.getPageCount() > 1 && (
+      {/* Pagination Controls (hidden when pagination is handled externally) */}
+      {!manualPagination && table.getPageCount() > 1 && (
         <div className="flex items-center justify-between">
           <div className="text-muted-foreground text-sm">
             Page {table.getState().pagination.pageIndex + 1} of{" "}
