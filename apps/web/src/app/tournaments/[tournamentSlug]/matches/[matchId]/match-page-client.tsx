@@ -18,6 +18,7 @@ import { MatchChat } from "@/components/match/match-chat";
 import { MatchCheckIn } from "@/components/match/match-check-in";
 import { useMatchPresence } from "@/components/match/presence-indicator";
 import { TeamSheet, type TeamData } from "@/components/match/team-sheet";
+import { resolveHeaderPerspective } from "./match-perspective";
 
 // =============================================================================
 // Types
@@ -106,14 +107,29 @@ export function MatchPageClient({
     opponent?.display_name ?? opponent?.username ?? "Opponent";
 
   // Header layout: left = opponent, right = me (current user).
-  // These are inverted from the swapped ternaries above because the header
-  // position logic is the opposite of the identity logic.
-  const headerOpponentAltId = swapped ? alt1Id : alt2Id;
-  const headerMyAltId = swapped ? alt2Id : alt1Id;
-  const headerOpponent = swapped ? player1 : player2;
-  const headerMyPlayer = swapped ? player2 : player1;
-  const headerOpponentStats = swapped ? player1Stats : player2Stats;
-  const headerMyStats = swapped ? player2Stats : player1Stats;
+  const perspectiveArgs = { isParticipant, isPlayer1 };
+  const {
+    headerOpponentValue: headerOpponentAltId,
+    headerMyValue: headerMyAltId,
+  } = resolveHeaderPerspective({
+    ...perspectiveArgs,
+    player1Value: alt1Id,
+    player2Value: alt2Id,
+  });
+  const { headerOpponentValue: headerOpponent, headerMyValue: headerMyPlayer } =
+    resolveHeaderPerspective({
+      ...perspectiveArgs,
+      player1Value: player1,
+      player2Value: player2,
+    });
+  const {
+    headerOpponentValue: headerOpponentStats,
+    headerMyValue: headerMyStats,
+  } = resolveHeaderPerspective({
+    ...perspectiveArgs,
+    player1Value: player1Stats,
+    player2Value: player2Stats,
+  });
   const headerOpponentName = isParticipant
     ? opponentName
     : (player1?.display_name ?? player1?.username ?? "Player 1");

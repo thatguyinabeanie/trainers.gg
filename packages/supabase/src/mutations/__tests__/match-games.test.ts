@@ -6,6 +6,7 @@ import {
   judgeOverrideGame,
   judgeResetGame,
   resetMatch,
+  confirmMatchCheckIn,
 } from "../match-games";
 import type { TypedClient } from "../../client";
 
@@ -700,6 +701,120 @@ describe("Match Game Mutations", () => {
       const result = await resetMatch(mockClient, 42);
 
       expect(result).toEqual({ id: 42 });
+    });
+  });
+
+  describe("confirmMatchCheckIn", () => {
+    const matchId = 1;
+
+    it("should confirm check-in successfully", async () => {
+      const rpcMock = mockClient.rpc as jest.Mock;
+      rpcMock.mockResolvedValue({
+        data: { success: true, match_activated: false, player_name: "ash" },
+        error: null,
+      });
+
+      const result = await confirmMatchCheckIn(mockClient, matchId);
+
+      expect(result).toEqual({
+        success: true,
+        match_activated: false,
+        player_name: "ash",
+      });
+    });
+
+    it("should call RPC with correct parameters", async () => {
+      const rpcMock = mockClient.rpc as jest.Mock;
+      rpcMock.mockResolvedValue({
+        data: { success: true, match_activated: false },
+        error: null,
+      });
+
+      await confirmMatchCheckIn(mockClient, matchId);
+
+      expect(rpcMock).toHaveBeenCalledWith("confirm_match_checkin", {
+        p_match_id: matchId,
+        p_alt_id: null,
+      });
+    });
+
+    it("should pass altId when provided (staff force check-in)", async () => {
+      const rpcMock = mockClient.rpc as jest.Mock;
+      rpcMock.mockResolvedValue({
+        data: { success: true, match_activated: false },
+        error: null,
+      });
+
+      await confirmMatchCheckIn(mockClient, matchId, 42);
+
+      expect(rpcMock).toHaveBeenCalledWith("confirm_match_checkin", {
+        p_match_id: matchId,
+        p_alt_id: 42,
+      });
+    });
+
+    it("should default altId to null when not provided", async () => {
+      const rpcMock = mockClient.rpc as jest.Mock;
+      rpcMock.mockResolvedValue({
+        data: { success: true, match_activated: false },
+        error: null,
+      });
+
+      await confirmMatchCheckIn(mockClient, matchId);
+
+      expect(rpcMock).toHaveBeenCalledWith(
+        "confirm_match_checkin",
+        expect.objectContaining({ p_alt_id: null })
+      );
+    });
+
+    it("should return match_activated: true when both players confirmed", async () => {
+      const rpcMock = mockClient.rpc as jest.Mock;
+      rpcMock.mockResolvedValue({
+        data: { success: true, match_activated: true },
+        error: null,
+      });
+
+      const result = await confirmMatchCheckIn(mockClient, matchId);
+
+      expect(result.match_activated).toBe(true);
+    });
+
+    it("should throw error when RPC fails", async () => {
+      const rpcMock = mockClient.rpc as jest.Mock;
+      const rpcError = new Error("RPC error");
+      rpcMock.mockResolvedValue({
+        data: null,
+        error: rpcError,
+      });
+
+      await expect(confirmMatchCheckIn(mockClient, matchId)).rejects.toThrow(
+        "RPC error"
+      );
+    });
+
+    it("should throw error when RPC returns success: false", async () => {
+      const rpcMock = mockClient.rpc as jest.Mock;
+      rpcMock.mockResolvedValue({
+        data: { success: false, error: "Match is not in pending status" },
+        error: null,
+      });
+
+      await expect(confirmMatchCheckIn(mockClient, matchId)).rejects.toThrow(
+        "Match is not in pending status"
+      );
+    });
+
+    it("should throw default error when RPC returns success: false without message", async () => {
+      const rpcMock = mockClient.rpc as jest.Mock;
+      rpcMock.mockResolvedValue({
+        data: { success: false },
+        error: null,
+      });
+
+      await expect(confirmMatchCheckIn(mockClient, matchId)).rejects.toThrow(
+        "Failed to confirm match check-in"
+      );
     });
   });
 });
