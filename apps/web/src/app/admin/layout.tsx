@@ -12,7 +12,7 @@ export default async function AdminLayout({
   await requireSiteAdmin();
 
   return (
-    <PageContainer variant="wide" noPadding>
+    <PageContainer>
       <div className="w-full py-8">
         <div className="mb-8 flex items-start justify-between">
           <div>
