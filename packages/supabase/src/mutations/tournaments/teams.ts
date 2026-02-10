@@ -224,17 +224,10 @@ export async function selectTeamForTournament(
     throw new Error("Teams are locked — the tournament has already started.");
   }
 
-  // 2. Verify tournament exists
-  // Note: Future enhancement will validate team against tournament.game_format
-  const { data: tournament } = await supabase
-    .from("tournaments")
-    .select("id")
-    .eq("id", tournamentId)
-    .single();
-
-  if (!tournament) throw new Error("Tournament not found.");
-
-  // 3. Verify the team belongs to this alt and fetch its Pokemon
+  // 2. Verify the team belongs to this alt and fetch its Pokemon
+  // Note: Tournament existence already validated via registration FK constraint.
+  // Future enhancement: validate team against tournament.game_format by implementing
+  // pokemonToShowdown utility to convert stored Pokemon back to Showdown format.
   const { data: team } = await supabase
     .from("teams")
     .select(
@@ -273,11 +266,7 @@ export async function selectTeamForTournament(
     };
   }
 
-  // 4. Note: Full format validation of existing teams would require converting
-  // stored Pokemon back to Showdown format. For now, we trust that teams were
-  // valid when created. Future enhancement: implement pokemonToShowdown utility.
-
-  // 5. Update registration: set team_id, team_submitted_at
+  // 3. Update registration: set team_id, team_submitted_at
   const { error: regError } = await supabase
     .from("tournament_registrations")
     .update({

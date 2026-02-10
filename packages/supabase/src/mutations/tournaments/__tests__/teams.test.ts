@@ -808,16 +808,6 @@ Timid Nature
         }),
       } as unknown as MockQueryBuilder);
 
-      // Mock: Get tournament (verify exists)
-      fromSpy.mockReturnValueOnce({
-        select: jest.fn().mockReturnThis(),
-        eq: jest.fn().mockReturnThis(),
-        single: jest.fn().mockResolvedValue({
-          data: { id: tournamentId },
-          error: null,
-        }),
-      } as unknown as MockQueryBuilder);
-
       // Mock: Verify team ownership and fetch Pokemon
       fromSpy.mockReturnValueOnce({
         select: jest.fn().mockReturnThis(),
@@ -929,16 +919,6 @@ Timid Nature
         }),
       } as unknown as MockQueryBuilder);
 
-      // Mock: Get tournament (verify exists)
-      fromSpy.mockReturnValueOnce({
-        select: jest.fn().mockReturnThis(),
-        eq: jest.fn().mockReturnThis(),
-        single: jest.fn().mockResolvedValue({
-          data: { id: tournamentId },
-          error: null,
-        }),
-      } as unknown as MockQueryBuilder);
-
       // Mock: Verify team ownership (not found)
       fromSpy.mockReturnValueOnce({
         select: jest.fn().mockReturnThis(),
@@ -968,16 +948,6 @@ Timid Nature
             team_id: null,
             team_locked: false,
           },
-          error: null,
-        }),
-      } as unknown as MockQueryBuilder);
-
-      // Mock: Get tournament (verify exists)
-      fromSpy.mockReturnValueOnce({
-        select: jest.fn().mockReturnThis(),
-        eq: jest.fn().mockReturnThis(),
-        single: jest.fn().mockResolvedValue({
-          data: { id: tournamentId },
           error: null,
         }),
       } as unknown as MockQueryBuilder);
@@ -1016,16 +986,6 @@ Timid Nature
             team_id: null,
             team_locked: false,
           },
-          error: null,
-        }),
-      } as unknown as MockQueryBuilder);
-
-      // Mock: Get tournament (verify exists)
-      fromSpy.mockReturnValueOnce({
-        select: jest.fn().mockReturnThis(),
-        eq: jest.fn().mockReturnThis(),
-        single: jest.fn().mockResolvedValue({
-          data: { id: tournamentId },
           error: null,
         }),
       } as unknown as MockQueryBuilder);
@@ -1077,16 +1037,6 @@ Timid Nature
         }),
       } as unknown as MockQueryBuilder);
 
-      // Mock: Get tournament (verify exists)
-      fromSpy.mockReturnValueOnce({
-        select: jest.fn().mockReturnThis(),
-        eq: jest.fn().mockReturnThis(),
-        single: jest.fn().mockResolvedValue({
-          data: { id: tournamentId },
-          error: null,
-        }),
-      } as unknown as MockQueryBuilder);
-
       // Mock: Verify team ownership and fetch Pokemon (null team_pokemon)
       fromSpy.mockReturnValueOnce({
         select: jest.fn().mockReturnThis(),
@@ -1130,16 +1080,6 @@ Timid Nature
             team_id: null,
             team_locked: false,
           },
-          error: null,
-        }),
-      } as unknown as MockQueryBuilder);
-
-      // Mock: Get tournament (verify exists)
-      fromSpy.mockReturnValueOnce({
-        select: jest.fn().mockReturnThis(),
-        eq: jest.fn().mockReturnThis(),
-        single: jest.fn().mockResolvedValue({
-          data: { id: tournamentId },
           error: null,
         }),
       } as unknown as MockQueryBuilder);
@@ -1189,16 +1129,6 @@ Timid Nature
             team_id: 900,
             team_locked: false,
           },
-          error: null,
-        }),
-      } as unknown as MockQueryBuilder);
-
-      // Mock: Get tournament (verify exists)
-      fromSpy.mockReturnValueOnce({
-        select: jest.fn().mockReturnThis(),
-        eq: jest.fn().mockReturnThis(),
-        single: jest.fn().mockResolvedValue({
-          data: { id: tournamentId },
           error: null,
         }),
       } as unknown as MockQueryBuilder);
