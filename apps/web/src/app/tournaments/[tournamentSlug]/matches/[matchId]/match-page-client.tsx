@@ -95,7 +95,7 @@ export function MatchPageClient({
   const [messagesRefreshKey, setMessagesRefreshKey] = useState(0);
 
   // Perspective: participants see themselves on the right, staff see player2 on the right.
-  // "swapped" means the current user is player2 (so we flip left/right).
+  // "swapped" means the current user is player2 (so we flip data to get myPlayer/opponent right).
   const swapped = isParticipant && !isPlayer1;
 
   const myPlayer = isParticipant ? (swapped ? player2 : player1) : null;
@@ -105,13 +105,15 @@ export function MatchPageClient({
   const opponentName =
     opponent?.display_name ?? opponent?.username ?? "Opponent";
 
-  // Header layout: left = opponent/player1, right = me/player2
-  const headerOpponentAltId = swapped ? alt2Id : alt1Id;
-  const headerMyAltId = swapped ? alt1Id : alt2Id;
-  const headerOpponent = swapped ? player2 : player1;
-  const headerMyPlayer = swapped ? player1 : player2;
-  const headerOpponentStats = swapped ? player2Stats : player1Stats;
-  const headerMyStats = swapped ? player1Stats : player2Stats;
+  // Header layout: left = opponent, right = me (current user).
+  // These are inverted from the swapped ternaries above because the header
+  // position logic is the opposite of the identity logic.
+  const headerOpponentAltId = swapped ? alt1Id : alt2Id;
+  const headerMyAltId = swapped ? alt2Id : alt1Id;
+  const headerOpponent = swapped ? player1 : player2;
+  const headerMyPlayer = swapped ? player2 : player1;
+  const headerOpponentStats = swapped ? player1Stats : player2Stats;
+  const headerMyStats = swapped ? player2Stats : player1Stats;
   const headerOpponentName = isParticipant
     ? opponentName
     : (player1?.display_name ?? player1?.username ?? "Player 1");
