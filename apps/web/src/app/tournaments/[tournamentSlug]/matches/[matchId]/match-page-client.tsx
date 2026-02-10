@@ -15,8 +15,10 @@ import {
 } from "@/components/match/match-header";
 import type { GameData } from "@/components/match/game-card";
 import { MatchChat } from "@/components/match/match-chat";
+import { MatchCheckIn } from "@/components/match/match-check-in";
 import { useMatchPresence } from "@/components/match/presence-indicator";
 import { TeamSheet, type TeamData } from "@/components/match/team-sheet";
+import { resolveHeaderPerspective } from "./match-perspective";
 
 // =============================================================================
 // Types
@@ -28,6 +30,8 @@ export interface MatchPageClientProps {
   tournamentSlug: string;
   matchStatus: string;
   staffRequested: boolean;
+  player1CheckedIn: boolean;
+  player2CheckedIn: boolean;
   player1: PlayerInfo | null;
   player2: PlayerInfo | null;
   alt1Id: number | null;
@@ -58,6 +62,8 @@ export function MatchPageClient({
   tournamentSlug: _tournamentSlug,
   matchStatus: initialStatus,
   staffRequested: initialStaffRequested,
+  player1CheckedIn: initialPlayer1CheckedIn,
+  player2CheckedIn: initialPlayer2CheckedIn,
   player1,
   player2,
   alt1Id,
@@ -80,11 +86,17 @@ export function MatchPageClient({
   const supabase = useSupabase();
   const [matchStatus, setMatchStatus] = useState(initialStatus);
   const [staffRequested, setStaffRequested] = useState(initialStaffRequested);
+  const [player1CheckedIn, setPlayer1CheckedIn] = useState(
+    initialPlayer1CheckedIn
+  );
+  const [player2CheckedIn, setPlayer2CheckedIn] = useState(
+    initialPlayer2CheckedIn
+  );
   const [gamesRefreshKey, setGamesRefreshKey] = useState(0);
   const [messagesRefreshKey, setMessagesRefreshKey] = useState(0);
 
   // Perspective: participants see themselves on the right, staff see player2 on the right.
-  // "swapped" means the current user is player2 (so we flip left/right).
+  // "swapped" means the current user is player2 (so we flip data to get myPlayer/opponent right).
   const swapped = isParticipant && !isPlayer1;
 
   const myPlayer = isParticipant ? (swapped ? player2 : player1) : null;
@@ -94,13 +106,30 @@ export function MatchPageClient({
   const opponentName =
     opponent?.display_name ?? opponent?.username ?? "Opponent";
 
-  // Header layout: left = opponent/player1, right = me/player2
-  const headerOpponentAltId = swapped ? alt2Id : alt1Id;
-  const headerMyAltId = swapped ? alt1Id : alt2Id;
-  const headerOpponent = swapped ? player2 : player1;
-  const headerMyPlayer = swapped ? player1 : player2;
-  const headerOpponentStats = swapped ? player2Stats : player1Stats;
-  const headerMyStats = swapped ? player1Stats : player2Stats;
+  // Header layout: left = opponent, right = me (current user).
+  const perspectiveArgs = { isParticipant, isPlayer1 };
+  const {
+    headerOpponentValue: headerOpponentAltId,
+    headerMyValue: headerMyAltId,
+  } = resolveHeaderPerspective({
+    ...perspectiveArgs,
+    player1Value: alt1Id,
+    player2Value: alt2Id,
+  });
+  const { headerOpponentValue: headerOpponent, headerMyValue: headerMyPlayer } =
+    resolveHeaderPerspective({
+      ...perspectiveArgs,
+      player1Value: player1,
+      player2Value: player2,
+    });
+  const {
+    headerOpponentValue: headerOpponentStats,
+    headerMyValue: headerMyStats,
+  } = resolveHeaderPerspective({
+    ...perspectiveArgs,
+    player1Value: player1Stats,
+    player2Value: player2Stats,
+  });
   const headerOpponentName = isParticipant
     ? opponentName
     : (player1?.display_name ?? player1?.username ?? "Player 1");
@@ -205,10 +234,18 @@ export function MatchPageClient({
           const newRow = payload.new as {
             status?: string;
             staff_requested?: boolean;
+            player1_match_confirmed?: boolean;
+            player2_match_confirmed?: boolean;
           };
           if (newRow.status) setMatchStatus(newRow.status);
           if (typeof newRow.staff_requested === "boolean") {
             setStaffRequested(newRow.staff_requested);
+          }
+          if (typeof newRow.player1_match_confirmed === "boolean") {
+            setPlayer1CheckedIn(newRow.player1_match_confirmed);
+          }
+          if (typeof newRow.player2_match_confirmed === "boolean") {
+            setPlayer2CheckedIn(newRow.player2_match_confirmed);
           }
           setGamesRefreshKey((k) => k + 1);
         }
@@ -334,6 +371,31 @@ export function MatchPageClient({
 
   return (
     <div className="flex h-[calc(100dvh-10rem)] flex-col gap-4 overflow-hidden">
+      {/* Match Check-In Banner (when match is pending) */}
+      {matchStatus === "pending" && (
+        <div className="shrink-0">
+          <MatchCheckIn
+            matchId={matchId}
+            tournamentId={tournamentId}
+            isParticipant={isParticipant}
+            isPlayer1={isPlayer1}
+            player1CheckedIn={player1CheckedIn}
+            player2CheckedIn={player2CheckedIn}
+            myName={headerMyName}
+            opponentName={headerOpponentName}
+            onCheckInComplete={() => {
+              // Optimistic: set own check-in state immediately
+              // Realtime will update the rest
+              if (isPlayer1) {
+                setPlayer1CheckedIn(true);
+              } else {
+                setPlayer2CheckedIn(true);
+              }
+            }}
+          />
+        </div>
+      )}
+
       {/* Match Header with game reporting strip */}
       <div className="shrink-0">
         <MatchHeader

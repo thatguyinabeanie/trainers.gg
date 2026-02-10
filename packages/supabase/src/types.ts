@@ -97,7 +97,7 @@ export type Database = {
           message: string
           start_at: string
           title: string
-          type: string
+          type: Database["public"]["Enums"]["announcement_type"]
           updated_at: string
         }
         Insert: {
@@ -109,7 +109,7 @@ export type Database = {
           message: string
           start_at?: string
           title: string
-          type?: string
+          type?: Database["public"]["Enums"]["announcement_type"]
           updated_at?: string
         }
         Update: {
@@ -121,7 +121,7 @@ export type Database = {
           message?: string
           start_at?: string
           title?: string
-          type?: string
+          type?: Database["public"]["Enums"]["announcement_type"]
           updated_at?: string
         }
         Relationships: [
@@ -795,6 +795,38 @@ export type Database = {
           },
         ]
       }
+      organization_admin_notes: {
+        Row: {
+          id: number
+          notes: string | null
+          organization_id: number
+          updated_at: string | null
+          updated_by: string | null
+        }
+        Insert: {
+          id?: never
+          notes?: string | null
+          organization_id: number
+          updated_at?: string | null
+          updated_by?: string | null
+        }
+        Update: {
+          id?: never
+          notes?: string | null
+          organization_id?: number
+          updated_at?: string | null
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organization_admin_notes_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: true
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       organization_invitations: {
         Row: {
           created_at: string | null
@@ -952,7 +984,6 @@ export type Database = {
       }
       organizations: {
         Row: {
-          admin_notes: string | null
           created_at: string | null
           description: string | null
           discord_url: string | null
@@ -975,7 +1006,6 @@ export type Database = {
           website_url: string | null
         }
         Insert: {
-          admin_notes?: string | null
           created_at?: string | null
           description?: string | null
           discord_url?: string | null
@@ -998,7 +1028,6 @@ export type Database = {
           website_url?: string | null
         }
         Update: {
-          admin_notes?: string | null
           created_at?: string | null
           description?: string | null
           discord_url?: string | null
@@ -2764,6 +2793,10 @@ export type Database = {
       }
       cancel_judge_request: { Args: { p_match_id: number }; Returns: undefined }
       clear_judge_request: { Args: { p_match_id: number }; Returns: undefined }
+      confirm_match_checkin: {
+        Args: { p_alt_id?: number; p_match_id: number }
+        Returns: Json
+      }
       custom_access_token_hook: { Args: { event: Json }; Returns: Json }
       generate_bracket_order: {
         Args: { p_bracket_size: number }
@@ -2817,6 +2850,7 @@ export type Database = {
         Args: { p_group_role_id: number }
         Returns: number
       }
+      get_organization_counts: { Args: never; Returns: Json }
       get_organization_tournament_counts: {
         Args: { org_ids: number[] }
         Returns: {
@@ -2835,6 +2869,20 @@ export type Database = {
       get_role_name_from_group_role: {
         Args: { p_group_role_id: number }
         Returns: string
+      }
+      get_tournament_counts_by_status: {
+        Args: never
+        Returns: {
+          count: number
+          status: string
+        }[]
+      }
+      get_user_growth_stats: {
+        Args: { lookback_days?: number }
+        Returns: {
+          count: number
+          date: string
+        }[]
       }
       has_org_permission: {
         Args: { org_id: number; permission_key: string }
@@ -2881,6 +2929,7 @@ export type Database = {
       }
     }
     Enums: {
+      announcement_type: "info" | "warning" | "error" | "success"
       audit_action:
         | "match.score_submitted"
         | "match.score_agreed"
@@ -3113,6 +3162,7 @@ export const Constants = {
   },
   public: {
     Enums: {
+      announcement_type: ["info", "warning", "error", "success"],
       audit_action: [
         "match.score_submitted",
         "match.score_agreed",

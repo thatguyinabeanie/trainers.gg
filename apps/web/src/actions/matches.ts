@@ -17,6 +17,7 @@ import {
   judgeOverrideGame,
   judgeResetGame,
   resetMatch,
+  confirmMatchCheckIn,
 } from "@trainers/supabase";
 import type { Database } from "@trainers/supabase";
 import { CacheTags } from "@/lib/cache";
@@ -263,4 +264,27 @@ export async function clearJudgeRequestAction(
     updateTag(CacheTags.tournament(validTournamentId));
     return { success: true as const };
   }, "Failed to clear judge request");
+}
+
+// =============================================================================
+// Match Check-In
+// =============================================================================
+
+/**
+ * Confirm match check-in (player readiness).
+ * When both players confirm, the match transitions from pending to active.
+ */
+export async function confirmMatchCheckInAction(
+  matchId: number,
+  tournamentId: number
+): Promise<ActionResult<{ matchActivated: boolean }>> {
+  return withAction(async () => {
+    await rejectBots();
+    const validMatchId = idSchema.parse(matchId);
+    const validTournamentId = idSchema.parse(tournamentId);
+    const supabase = await createClient();
+    const result = await confirmMatchCheckIn(supabase, validMatchId);
+    updateTag(CacheTags.tournament(validTournamentId));
+    return { matchActivated: result.match_activated ?? false };
+  }, "Failed to confirm match check-in");
 }
