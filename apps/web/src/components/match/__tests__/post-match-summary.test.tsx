@@ -26,22 +26,42 @@ jest.mock("next/link", () => {
   return MockLink;
 });
 
+const createQueryBuilder = (
+  response: { data?: unknown; count?: number } = {}
+) => {
+  const finalResponse = {
+    data: response.data ?? { id: 1 },
+    count: response.count ?? 0,
+    error: null,
+  };
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const builder: any = {};
+
+  builder.select = jest.fn(() => builder);
+  builder.eq = jest.fn(() => builder);
+
+  // Explicit helper when the code calls .maybeSingle()
+  builder.maybeSingle = jest.fn(() =>
+    Promise.resolve({ data: finalResponse.data, error: null })
+  );
+
+  // Explicit helper when the code calls .head()
+  builder.head = jest.fn(() =>
+    Promise.resolve({ count: finalResponse.count, error: null })
+  );
+
+  // Make the builder awaitable: await supabase.from(...).select(...).eq(...).eq(...)
+  builder.then = (
+    onFulfilled: (value: unknown) => unknown,
+    onRejected?: (reason: unknown) => unknown
+  ) => Promise.resolve(finalResponse).then(onFulfilled, onRejected);
+
+  return builder;
+};
+
 const mockSupabase = {
-  from: jest.fn(() => ({
-    select: jest.fn(() => ({
-      eq: jest.fn(() => ({
-        eq: jest.fn(() => ({
-          maybeSingle: jest.fn(() =>
-            Promise.resolve({ data: { id: 1 }, error: null })
-          ),
-        })),
-        count: jest.fn(() => ({
-          head: jest.fn(() => Promise.resolve({ count: 0, error: null })),
-        })),
-      })),
-      head: jest.fn(() => Promise.resolve({ count: 0, error: null })),
-    })),
-  })),
+  from: jest.fn(() => createQueryBuilder()),
 };
 
 describe("PostMatchSummary", () => {
@@ -129,11 +149,6 @@ describe("PostMatchSummary", () => {
     });
   });
 
-  // Note: Testing "Waiting for Round 3 to complete" state is complex due to
-  // asynchronous state updates and Supabase query mocking. The round status
-  // logic is covered by integration tests. This unit test focuses on the
-  // completed state which is simpler to test reliably.
-
   it("shows round complete status when round is completed", async () => {
     (getPlayerMatches as jest.Mock).mockResolvedValue([]);
 
@@ -141,6 +156,32 @@ describe("PostMatchSummary", () => {
 
     await waitFor(() => {
       expect(screen.getByText("Round 3 complete")).toBeInTheDocument();
+    });
+  });
+
+  it("shows waiting status when round is still active", async () => {
+    (getPlayerMatches as jest.Mock).mockResolvedValue([]);
+
+    // Mock Supabase to return count > 0 for active matches
+    const mockSupabaseWithActiveMatches = {
+      from: jest.fn((table: string) => {
+        if (table === "tournament_matches") {
+          // Return count > 0 to indicate active matches
+          return createQueryBuilder({ count: 2 });
+        }
+        // Default for tournament_rounds query
+        return createQueryBuilder({ data: { id: 1 } });
+      }),
+    };
+
+    (useSupabase as jest.Mock).mockReturnValue(mockSupabaseWithActiveMatches);
+
+    render(<PostMatchSummary {...defaultProps} />);
+
+    await waitFor(() => {
+      expect(
+        screen.getByText("Waiting for Round 3 to complete")
+      ).toBeInTheDocument();
     });
   });
 

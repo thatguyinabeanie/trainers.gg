@@ -39,9 +39,13 @@ export function PostMatchSummary({
 
   useEffect(() => {
     if (!userAltId) {
+      setNextMatch(null);
+      setRoundStatus(null);
       setIsLoading(false);
       return;
     }
+
+    let isCancelled = false;
 
     async function loadNextMatchData() {
       try {
@@ -52,10 +56,40 @@ export function PostMatchSummary({
           userAltId!
         );
 
-        // Find the next pending match (after current match)
-        const nextPendingMatch = matches.find(
-          (m) => m.id !== matchId && m.status === "pending"
-        );
+        if (isCancelled) return;
+
+        // Find the next pending match (after current match) in a deterministic way
+        const pendingMatches = matches
+          .filter((m) => m.id !== matchId && m.status === "pending")
+          .map((m) => {
+            const round = m.round as { round_number: number } | null;
+            const matchRoundNumber =
+              typeof round?.round_number === "number"
+                ? round.round_number
+                : Number.POSITIVE_INFINITY;
+            return { match: m, roundNumber: matchRoundNumber };
+          });
+
+        let candidateMatches = pendingMatches;
+
+        // If we know the current match's round, prefer pending matches in later rounds
+        if (typeof roundNumber === "number") {
+          const laterRoundMatches = pendingMatches.filter(
+            (m) => m.roundNumber > roundNumber
+          );
+          if (laterRoundMatches.length > 0) {
+            candidateMatches = laterRoundMatches;
+          }
+        }
+
+        candidateMatches.sort((a, b) => {
+          if (a.roundNumber !== b.roundNumber) {
+            return a.roundNumber - b.roundNumber;
+          }
+          return a.match.id - b.match.id;
+        });
+
+        const nextPendingMatch = candidateMatches[0]?.match;
 
         if (nextPendingMatch) {
           const round = nextPendingMatch.round as {
@@ -78,6 +112,8 @@ export function PostMatchSummary({
             .eq("round_number", roundNumber)
             .maybeSingle();
 
+          if (isCancelled) return;
+
           if (round) {
             // Check if there are any active matches in this round
             const { count } = await supabase
@@ -86,17 +122,26 @@ export function PostMatchSummary({
               .eq("round_id", round.id)
               .eq("status", "active");
 
+            if (isCancelled) return;
+
             setRoundStatus((count ?? 0) > 0 ? "active" : "completed");
           }
         }
       } catch (error) {
+        if (isCancelled) return;
         console.error("Error loading next match data:", error);
       } finally {
-        setIsLoading(false);
+        if (!isCancelled) {
+          setIsLoading(false);
+        }
       }
     }
 
     loadNextMatchData();
+
+    return () => {
+      isCancelled = true;
+    };
   }, [supabase, tournamentId, userAltId, matchId, roundNumber]);
 
   const didWin = myWins > opponentWins;
@@ -120,7 +165,7 @@ export function PostMatchSummary({
       </div>
 
       {/* Round Status */}
-      {!isLoading && roundStatus && roundNumber && (
+      {!isLoading && roundStatus && roundNumber != null && (
         <div className="flex items-center gap-2 text-sm">
           {roundStatus === "active" ? (
             <>
