@@ -2,7 +2,15 @@
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { Flag, Megaphone, Plus, Pencil, Trash2, RefreshCw } from "lucide-react";
+import {
+  Flag,
+  Megaphone,
+  Shield,
+  Plus,
+  Pencil,
+  Trash2,
+  RefreshCw,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
@@ -26,8 +34,12 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
+import { useSupabaseQuery } from "@/lib/supabase";
 import { createClient } from "@/lib/supabase/client";
+import { getSiteAdmins, getSiteRoles } from "@trainers/supabase";
 import {
   createFlagAction,
   updateFlagAction,
@@ -130,7 +142,162 @@ const announcementStatusConfig: Record<
   },
 };
 
-// --- Component ---
+// --- Site Roles Section ---
+
+function SiteRolesSection() {
+  const { data: siteRoles, isLoading: rolesLoading } = useSupabaseQuery(
+    async (supabase) => getSiteRoles(supabase),
+    []
+  );
+
+  const { data: siteAdmins, isLoading: adminsLoading } = useSupabaseQuery(
+    async (supabase) => getSiteAdmins(supabase),
+    []
+  );
+
+  const isLoading = rolesLoading || adminsLoading;
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center gap-2">
+          <Shield className="size-5" />
+          <Skeleton className="h-6 w-32" />
+        </div>
+        <Skeleton className="h-32 w-full" />
+        <Skeleton className="h-64 w-full" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Roles Table */}
+      <div className="space-y-4">
+        <h2 className="flex items-center gap-2 text-lg font-semibold">
+          <Shield className="size-5" />
+          Site Roles
+        </h2>
+
+        {siteRoles && siteRoles.length > 0 ? (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Role</TableHead>
+                <TableHead>Description</TableHead>
+                <TableHead>Scope</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {siteRoles.map((role) => (
+                <TableRow key={role.id}>
+                  <TableCell className="font-medium">{role.name}</TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {role.description ?? "-"}
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant="outline">{role.scope}</Badge>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        ) : (
+          <Card>
+            <CardContent className="py-8 text-center">
+              <p className="text-muted-foreground">No site roles defined</p>
+            </CardContent>
+          </Card>
+        )}
+      </div>
+
+      {/* Admins Table */}
+      <div className="space-y-4">
+        <h3 className="text-base font-semibold">Site Administrators</h3>
+
+        {siteAdmins && siteAdmins.length > 0 ? (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>User</TableHead>
+                <TableHead>Email</TableHead>
+                <TableHead>Role</TableHead>
+                <TableHead>Granted</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {siteAdmins.map((admin) => {
+                const user =
+                  admin.user && typeof admin.user === "object"
+                    ? (admin.user as {
+                        id: string;
+                        email: string | null;
+                        username: string | null;
+                        first_name: string | null;
+                        last_name: string | null;
+                        image: string | null;
+                      })
+                    : null;
+                const role =
+                  admin.role && typeof admin.role === "object"
+                    ? (admin.role as {
+                        id: number;
+                        name: string;
+                        scope: string;
+                      })
+                    : null;
+
+                return (
+                  <TableRow key={admin.id}>
+                    <TableCell>
+                      <div className="flex items-center gap-3">
+                        <Avatar className="h-8 w-8">
+                          <AvatarImage src={user?.image ?? undefined} />
+                          <AvatarFallback>
+                            {user?.username?.charAt(0).toUpperCase() ?? "?"}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <div className="font-medium">
+                            {user?.first_name} {user?.last_name}
+                          </div>
+                          <div className="text-muted-foreground text-xs">
+                            @{user?.username}
+                          </div>
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {user?.email}
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="secondary">{role?.name}</Badge>
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {admin.created_at
+                        ? new Date(admin.created_at).toLocaleDateString()
+                        : "-"}
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        ) : (
+          <Card>
+            <CardContent className="py-8 text-center">
+              <p className="text-muted-foreground">
+                No site administrators assigned
+              </p>
+            </CardContent>
+          </Card>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// --- Main Component ---
 
 export default function AdminConfigPage() {
   const router = useRouter();
@@ -610,6 +777,9 @@ export default function AdminConfigPage() {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* ========== Site Roles Section ========== */}
+      <SiteRolesSection />
 
       {/* ========== Flag Dialog (Create/Edit) ========== */}
       <FlagDialog

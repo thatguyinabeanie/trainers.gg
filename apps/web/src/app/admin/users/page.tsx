@@ -1,12 +1,13 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   Search,
   ChevronLeft,
   ChevronRight,
   RefreshCw,
   Users,
+  Mail,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,12 +18,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { DataTable } from "@/components/ui/data-table";
 import { Skeleton } from "@/components/ui/skeleton";
-import { createClient } from "@/lib/supabase/client";
+import { useSupabaseQuery } from "@/lib/supabase";
 import { listUsersAdmin } from "@trainers/supabase";
+import type { TypedSupabaseClient } from "@trainers/supabase";
 import { columns, type AdminUserRow } from "./columns";
 import { UserDetailSheet } from "./user-detail-sheet";
+import { InvitesTab } from "./invites-tab";
 
 // ----------------------------------------------------------------
 // Constants
@@ -41,16 +45,10 @@ const statusFilterLabels: Record<StatusFilter, string> = {
 };
 
 // ----------------------------------------------------------------
-// Component
+// Users Tab Content
 // ----------------------------------------------------------------
 
-export default function UsersPage() {
-  // Data state
-  const [users, setUsers] = useState<AdminUserRow[]>([]);
-  const [totalCount, setTotalCount] = useState(0);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
+function UsersTabContent() {
   // Filter state
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -61,13 +59,13 @@ export default function UsersPage() {
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
 
-  const supabase = useMemo(() => createClient(), []);
+  // Manual refresh trigger
+  const [refreshKey, setRefreshKey] = useState(0);
 
   // Debounce the search input
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearch(search);
-      // Reset to first page when search changes
       setPage(0);
     }, DEBOUNCE_MS);
     return () => clearTimeout(timer);
@@ -78,12 +76,9 @@ export default function UsersPage() {
     setPage(0);
   }, [statusFilter]);
 
-  // Fetch users
-  const fetchUsers = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-
-    try {
+  // Build query function
+  const queryFn = useCallback(
+    (supabase: TypedSupabaseClient) => {
       const isLocked =
         statusFilter === "active"
           ? false
@@ -91,26 +86,25 @@ export default function UsersPage() {
             ? true
             : undefined;
 
-      const result = await listUsersAdmin(supabase, {
+      return listUsersAdmin(supabase, {
         search: debouncedSearch || undefined,
         isLocked,
         limit: PAGE_SIZE,
         offset: page * PAGE_SIZE,
       });
+    },
+    [debouncedSearch, statusFilter, page]
+  );
 
-      setUsers(result.data as AdminUserRow[]);
-      setTotalCount(result.count);
-    } catch (err) {
-      console.error("Error fetching users:", err);
-      setError("Failed to load users");
-    } finally {
-      setLoading(false);
-    }
-  }, [supabase, debouncedSearch, statusFilter, page]);
+  const { data, isLoading, error, refetch } = useSupabaseQuery(queryFn, [
+    debouncedSearch,
+    statusFilter,
+    page,
+    refreshKey,
+  ]);
 
-  useEffect(() => {
-    fetchUsers();
-  }, [fetchUsers]);
+  const users = (data?.data ?? []) as AdminUserRow[];
+  const totalCount = data?.count ?? 0;
 
   // Pagination calculations
   const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
@@ -123,6 +117,11 @@ export default function UsersPage() {
     setSheetOpen(true);
   };
 
+  const handleRefresh = () => {
+    setRefreshKey((k) => k + 1);
+    refetch();
+  };
+
   return (
     <div className="space-y-4">
       {/* Header + controls */}
@@ -130,13 +129,13 @@ export default function UsersPage() {
         <h2 className="flex items-center gap-2 text-lg font-semibold">
           <Users className="size-5" />
           Users
-          {!loading && (
+          {!isLoading && (
             <span className="text-muted-foreground text-sm font-normal">
               ({totalCount})
             </span>
           )}
         </h2>
-        <Button variant="outline" size="sm" onClick={fetchUsers}>
+        <Button variant="outline" size="sm" onClick={handleRefresh}>
           <RefreshCw className="size-3.5" />
           Refresh
         </Button>
@@ -178,12 +177,12 @@ export default function UsersPage() {
       {/* Error state */}
       {error && (
         <div className="bg-destructive/10 text-destructive rounded-lg p-3 text-sm">
-          {error}
+          Failed to load users: {error.message}
         </div>
       )}
 
       {/* Loading skeleton */}
-      {loading && users.length === 0 && (
+      {isLoading && users.length === 0 && (
         <div className="space-y-2">
           <Skeleton className="h-10 w-full" />
           {Array.from({ length: 5 }).map((_, i) => (
@@ -193,8 +192,13 @@ export default function UsersPage() {
       )}
 
       {/* Data table */}
-      {(!loading || users.length > 0) && (
-        <DataTable columns={columns} data={users} onRowClick={handleRowClick} />
+      {(!isLoading || users.length > 0) && (
+        <DataTable
+          columns={columns}
+          data={users}
+          onRowClick={handleRowClick}
+          manualPagination
+        />
       )}
 
       {/* Server-side pagination controls */}
@@ -208,7 +212,7 @@ export default function UsersPage() {
               variant="outline"
               size="sm"
               onClick={() => setPage((p) => p - 1)}
-              disabled={!canPreviousPage || loading}
+              disabled={!canPreviousPage || isLoading}
             >
               <ChevronLeft className="size-4" />
               Previous
@@ -217,7 +221,7 @@ export default function UsersPage() {
               variant="outline"
               size="sm"
               onClick={() => setPage((p) => p + 1)}
-              disabled={!canNextPage || loading}
+              disabled={!canNextPage || isLoading}
             >
               Next
               <ChevronRight className="size-4" />
@@ -231,8 +235,37 @@ export default function UsersPage() {
         userId={selectedUserId}
         open={sheetOpen}
         onOpenChange={setSheetOpen}
-        onUserUpdated={fetchUsers}
+        onUserUpdated={handleRefresh}
       />
     </div>
+  );
+}
+
+// ----------------------------------------------------------------
+// Main Page with Tabs
+// ----------------------------------------------------------------
+
+export default function UsersPage() {
+  return (
+    <Tabs defaultValue="users">
+      <TabsList>
+        <TabsTrigger value="users">
+          <Users className="size-4" />
+          Users
+        </TabsTrigger>
+        <TabsTrigger value="invites">
+          <Mail className="size-4" />
+          Invites
+        </TabsTrigger>
+      </TabsList>
+
+      <TabsContent value="users">
+        <UsersTabContent />
+      </TabsContent>
+
+      <TabsContent value="invites">
+        <InvitesTab />
+      </TabsContent>
+    </Tabs>
   );
 }

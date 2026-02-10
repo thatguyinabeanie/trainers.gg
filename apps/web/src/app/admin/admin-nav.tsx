@@ -8,11 +8,7 @@ const navItems = [
   { href: "/admin", label: "Overview" },
   { href: "/admin/users", label: "Users" },
   { href: "/admin/organizations", label: "Organizations" },
-  { href: "/admin/activity", label: "Activity" },
-  { href: "/admin/config", label: "Config" },
-  { href: "/admin/analytics", label: "Analytics" },
-  { href: "/admin/site-roles", label: "Site Roles" },
-  { href: "/admin/invites", label: "Invites" },
+  { href: "/admin/config", label: "Settings" },
 ];
 
 export function AdminNav() {

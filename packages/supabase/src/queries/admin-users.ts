@@ -51,7 +51,7 @@ export async function listUsersAdmin(
       is_locked,
       created_at,
       last_sign_in_at,
-      alts (
+      alts!profiles_user_id_fkey (
         id,
         username,
         display_name,
@@ -106,7 +106,7 @@ export async function getUserAdminDetails(
     .select(
       `
       *,
-      alts (
+      alts!profiles_user_id_fkey (
         id,
         username,
         display_name,
