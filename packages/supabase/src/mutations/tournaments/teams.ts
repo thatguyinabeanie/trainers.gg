@@ -98,7 +98,7 @@ export async function submitTeam(
       created_by: alt.id,
       is_public: false,
     })
-    .select("id")
+    .select("id, name")
     .single();
 
   if (teamError || !newTeam) throw new Error("Failed to create team.");
@@ -171,7 +171,7 @@ export async function submitTeam(
     success: true,
     teamId: newTeam.id,
     pokemonCount: result.team.length,
-    teamName: "Tournament Team",
+    teamName: newTeam.name ?? "Unnamed Team",
     species: result.team.map((mon) => mon.species),
   };
 }
@@ -192,7 +192,7 @@ export type SelectTeamResult =
 /**
  * Select an existing team for a tournament registration.
  * Links a team already owned by the user's alt to their registration.
- * Validates the team against the tournament format.
+ * Currently does not validate the team against the tournament format.
  */
 export async function selectTeamForTournament(
   supabase: TypedClient,
@@ -224,10 +224,11 @@ export async function selectTeamForTournament(
     throw new Error("Teams are locked — the tournament has already started.");
   }
 
-  // 2. Get tournament format for validation
+  // 2. Verify tournament exists
+  // Note: Future enhancement will validate team against tournament.game_format
   const { data: tournament } = await supabase
     .from("tournaments")
-    .select("game_format")
+    .select("id")
     .eq("id", tournamentId)
     .single();
 
@@ -241,54 +242,35 @@ export async function selectTeamForTournament(
       id,
       name,
       created_by,
-      team_pokemon (
+      team_pokemon!inner (
         team_position,
-        pokemon (
-          species,
-          nickname,
-          ability,
-          held_item,
-          tera_type,
-          move1,
-          move2,
-          move3,
-          move4,
-          nature,
-          gender,
-          is_shiny,
-          level,
-          ev_hp,
-          ev_attack,
-          ev_defense,
-          ev_special_attack,
-          ev_special_defense,
-          ev_speed,
-          iv_hp,
-          iv_attack,
-          iv_defense,
-          iv_special_attack,
-          iv_special_defense,
-          iv_speed
+        pokemon!inner (
+          species
         )
       )
     `
     )
     .eq("id", teamId)
+    .order("team_position", {
+      referencedTable: "team_pokemon",
+      ascending: true,
+    })
     .single();
 
   if (!team || team.created_by !== alt.id) {
     throw new Error("This team does not belong to your account.");
   }
 
+  // Already sorted by team_position via query ordering
   const teamPokemon = (team.team_pokemon ?? [])
-    .sort((a, b) => (a.team_position ?? 0) - (b.team_position ?? 0))
     .map((tp) => tp.pokemon)
     .filter((p): p is NonNullable<typeof p> => p !== null);
 
   if (teamPokemon.length === 0) {
-    throw new Error(
-      "This team has no Pokemon. Please select a team with Pokemon."
-    );
+    return {
+      success: false,
+      errors: ["This team has no Pokemon. Please select a team with Pokemon."],
+    };
   }
 
   // 4. Note: Full format validation of existing teams would require converting

@@ -451,7 +451,7 @@ export function TournamentSidebarCard({
             description: (
               <ul className="mt-1 list-inside list-disc space-y-0.5">
                 {result.validationErrors.map((err, i) => (
-                  <li key={i}>{err}</li>
+                  <li key={`${err}-${i}`}>{err}</li>
                 ))}
               </ul>
             ),
