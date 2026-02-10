@@ -41,7 +41,8 @@ export async function requireSiteAdmin() {
       site_roles?: string[];
     };
     siteRoles = payload.site_roles ?? [];
-  } catch {
+  } catch (err) {
+    console.error("[auth] Failed to parse JWT site_roles:", err);
     redirect("/forbidden");
   }
 
@@ -94,7 +95,8 @@ export async function requireAdminWithSudo(): Promise<
     if (!isActive) {
       return { success: false, error: "Sudo session expired" };
     }
-  } catch {
+  } catch (err) {
+    console.error("[auth] Failed to verify sudo session:", err);
     return { success: false, error: "Failed to verify sudo session" };
   }
 

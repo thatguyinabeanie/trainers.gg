@@ -101,7 +101,7 @@ export async function createAnnouncement(
   if (error) throw error;
 
   // Audit log
-  await supabase.from("audit_log").insert({
+  const { error: auditError } = await supabase.from("audit_log").insert({
     action: "admin.announcement_created",
     actor_user_id: adminUserId,
     metadata: {
@@ -110,6 +110,13 @@ export async function createAnnouncement(
       type: announcement.type,
     },
   });
+
+  if (auditError) {
+    console.error(
+      "Failed to log announcement_created to audit log:",
+      auditError
+    );
+  }
 
   return announcement;
 }
@@ -155,7 +162,7 @@ export async function updateAnnouncement(
   if (error) throw error;
 
   // Audit log
-  await supabase.from("audit_log").insert({
+  const { error: auditError } = await supabase.from("audit_log").insert({
     action: "admin.announcement_updated",
     actor_user_id: adminUserId,
     metadata: {
@@ -164,6 +171,13 @@ export async function updateAnnouncement(
       updated_fields: Object.keys(data),
     },
   });
+
+  if (auditError) {
+    console.error(
+      "Failed to log announcement_updated to audit log:",
+      auditError
+    );
+  }
 
   return announcement;
 }
@@ -195,7 +209,7 @@ export async function deleteAnnouncement(
   if (error) throw error;
 
   // Audit log
-  await supabase.from("audit_log").insert({
+  const { error: auditError } = await supabase.from("audit_log").insert({
     action: "admin.announcement_deleted",
     actor_user_id: adminUserId,
     metadata: {
@@ -203,4 +217,11 @@ export async function deleteAnnouncement(
       title: existing.title,
     },
   });
+
+  if (auditError) {
+    console.error(
+      "Failed to log announcement_deleted to audit log:",
+      auditError
+    );
+  }
 }

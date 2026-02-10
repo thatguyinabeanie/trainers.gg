@@ -52,8 +52,8 @@ const mockGrantSiteRole = grantSiteRole as jest.Mock;
 const mockRevokeSiteRole = revokeSiteRole as jest.Mock;
 
 // --- Constants ---
-const ADMIN_USER_ID = "admin-123";
-const TARGET_USER_ID = "target-456";
+const ADMIN_USER_ID = "00000000-0000-0000-0000-000000000001";
+const TARGET_USER_ID = "00000000-0000-0000-0000-000000000002";
 
 // --- Tests ---
 
@@ -180,7 +180,8 @@ describe("grantSiteRoleAction", () => {
     expect(mockGrantSiteRole).toHaveBeenCalledWith(
       mockServiceClient,
       TARGET_USER_ID,
-      1
+      1,
+      ADMIN_USER_ID
     );
   });
 
@@ -238,7 +239,8 @@ describe("revokeSiteRoleAction", () => {
     expect(mockRevokeSiteRole).toHaveBeenCalledWith(
       mockServiceClient,
       TARGET_USER_ID,
-      1
+      1,
+      ADMIN_USER_ID
     );
   });
 
@@ -252,7 +254,8 @@ describe("revokeSiteRoleAction", () => {
     expect(mockRevokeSiteRole).toHaveBeenCalledWith(
       mockServiceClient,
       ADMIN_USER_ID,
-      2
+      2,
+      ADMIN_USER_ID
     );
   });
 

@@ -82,7 +82,7 @@ export async function createFeatureFlag(
   if (error) throw error;
 
   // Audit log
-  await supabase.from("audit_log").insert({
+  const { error: auditError } = await supabase.from("audit_log").insert({
     action: "admin.flag_created",
     actor_user_id: adminUserId,
     metadata: {
@@ -91,6 +91,10 @@ export async function createFeatureFlag(
       enabled: flag.enabled,
     },
   });
+
+  if (auditError) {
+    console.error("Failed to log flag_created to audit log:", auditError);
+  }
 
   return flag;
 }
@@ -141,7 +145,7 @@ export async function updateFeatureFlag(
   if (error) throw error;
 
   // Audit log
-  await supabase.from("audit_log").insert({
+  const { error: auditError } = await supabase.from("audit_log").insert({
     action: "admin.flag_toggled",
     actor_user_id: adminUserId,
     metadata: {
@@ -151,6 +155,10 @@ export async function updateFeatureFlag(
       new_enabled: flag.enabled,
     },
   });
+
+  if (auditError) {
+    console.error("Failed to log flag_toggled to audit log:", auditError);
+  }
 
   return flag;
 }
@@ -182,7 +190,7 @@ export async function deleteFeatureFlag(
   if (error) throw error;
 
   // Audit log
-  await supabase.from("audit_log").insert({
+  const { error: auditError } = await supabase.from("audit_log").insert({
     action: "admin.flag_deleted",
     actor_user_id: adminUserId,
     metadata: {
@@ -190,4 +198,8 @@ export async function deleteFeatureFlag(
       flag_key: existing.key,
     },
   });
+
+  if (auditError) {
+    console.error("Failed to log flag_deleted to audit log:", auditError);
+  }
 }

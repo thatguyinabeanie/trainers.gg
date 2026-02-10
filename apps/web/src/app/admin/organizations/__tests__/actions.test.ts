@@ -50,9 +50,9 @@ const mockUnsuspendOrganization = unsuspendOrganization as jest.Mock;
 const mockTransferOrgOwnership = transferOrgOwnership as jest.Mock;
 
 // --- Constants ---
-const ADMIN_USER_ID = "admin-123";
+const ADMIN_USER_ID = "00000000-0000-0000-0000-000000000001";
 const ORG_ID = 42;
-const NEW_OWNER_ID = "new-owner-789";
+const NEW_OWNER_ID = "00000000-0000-0000-0000-000000000003";
 
 // --- Tests ---
 
@@ -122,14 +122,20 @@ describe("rejectOrgAction", () => {
   it("returns an error when reason is empty", async () => {
     const result = await rejectOrgAction(ORG_ID, "");
 
-    expect(result).toEqual({ success: false, error: "A reason is required" });
+    expect(result).toEqual({
+      success: false,
+      error: expect.stringContaining("Invalid input"),
+    });
     expect(mockRejectOrganization).not.toHaveBeenCalled();
   });
 
   it("returns an error when reason is whitespace only", async () => {
     const result = await rejectOrgAction(ORG_ID, "   ");
 
-    expect(result).toEqual({ success: false, error: "A reason is required" });
+    expect(result).toEqual({
+      success: false,
+      error: expect.stringContaining("Invalid input"),
+    });
     expect(mockRejectOrganization).not.toHaveBeenCalled();
   });
 
@@ -179,14 +185,20 @@ describe("suspendOrgAction", () => {
   it("returns an error when reason is empty", async () => {
     const result = await suspendOrgAction(ORG_ID, "");
 
-    expect(result).toEqual({ success: false, error: "A reason is required" });
+    expect(result).toEqual({
+      success: false,
+      error: expect.stringContaining("Invalid input"),
+    });
     expect(mockSuspendOrganization).not.toHaveBeenCalled();
   });
 
   it("returns an error when reason is whitespace only", async () => {
     const result = await suspendOrgAction(ORG_ID, "   ");
 
-    expect(result).toEqual({ success: false, error: "A reason is required" });
+    expect(result).toEqual({
+      success: false,
+      error: expect.stringContaining("Invalid input"),
+    });
     expect(mockSuspendOrganization).not.toHaveBeenCalled();
   });
 
@@ -283,17 +295,17 @@ describe("transferOwnershipAction", () => {
 
     expect(result).toEqual({
       success: false,
-      error: "A new owner is required",
+      error: expect.stringContaining("Invalid input"),
     });
     expect(mockTransferOrgOwnership).not.toHaveBeenCalled();
   });
 
-  it("returns an error when new owner ID is whitespace only", async () => {
-    const result = await transferOwnershipAction(ORG_ID, "   ");
+  it("returns an error when new owner ID is not a valid UUID", async () => {
+    const result = await transferOwnershipAction(ORG_ID, "not-a-uuid");
 
     expect(result).toEqual({
       success: false,
-      error: "A new owner is required",
+      error: expect.stringContaining("Invalid input"),
     });
     expect(mockTransferOrgOwnership).not.toHaveBeenCalled();
   });

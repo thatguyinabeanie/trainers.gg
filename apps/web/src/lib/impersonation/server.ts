@@ -35,7 +35,8 @@ export async function isImpersonating(): Promise<boolean> {
       timeout_minutes: 30,
     });
     return Array.isArray(data) && data.length > 0;
-  } catch {
+  } catch (err) {
+    console.error("[impersonation] Failed to check session:", err);
     return false;
   }
 }
@@ -67,7 +68,8 @@ export async function getImpersonationTarget(): Promise<{
       sessionId: session.id,
       startedAt: session.started_at,
     };
-  } catch {
+  } catch (err) {
+    console.error("[impersonation] Failed to get target:", err);
     return null;
   }
 }
@@ -93,25 +95,4 @@ export async function setImpersonationCookie(sessionId: number): Promise<void> {
 export async function clearImpersonationCookie(): Promise<void> {
   const cookieStore = await cookies();
   cookieStore.delete(IMPERSONATION_COOKIE_NAME);
-}
-
-/**
- * Get request metadata for impersonation session logging.
- */
-export function getRequestMetadata(request?: Request): {
-  ipAddress?: string;
-  userAgent?: string;
-} {
-  if (!request) {
-    return {};
-  }
-
-  const ipAddress =
-    request.headers.get("x-forwarded-for")?.split(",")[0] ||
-    request.headers.get("x-real-ip") ||
-    undefined;
-
-  const userAgent = request.headers.get("user-agent") || undefined;
-
-  return { ipAddress, userAgent };
 }

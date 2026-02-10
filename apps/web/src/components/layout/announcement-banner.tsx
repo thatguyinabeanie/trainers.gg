@@ -36,8 +36,8 @@ export async function AnnouncementBanner() {
   try {
     const supabase = await createClient();
     announcements = await getActiveAnnouncements(supabase);
-  } catch {
-    // Silently fail - announcements are non-critical
+  } catch (err) {
+    console.error("[announcement-banner] Failed to fetch announcements:", err);
     return null;
   }
 

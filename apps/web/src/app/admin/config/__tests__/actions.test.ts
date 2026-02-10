@@ -54,7 +54,7 @@ const mockUpdateAnnouncement = updateAnnouncement as jest.Mock;
 const mockDeleteAnnouncement = deleteAnnouncement as jest.Mock;
 
 // --- Constants ---
-const ADMIN_USER_ID = "admin-123";
+const ADMIN_USER_ID = "00000000-0000-0000-0000-000000000001";
 
 // --- Feature Flag Action Tests ---
 
@@ -107,7 +107,7 @@ describe("createFlagAction", () => {
     expect(mockCreateFeatureFlag).not.toHaveBeenCalled();
   });
 
-  it("returns the error message from a thrown Error", async () => {
+  it("returns a generic error when the query throws an Error", async () => {
     mockCreateFeatureFlag.mockRejectedValue(
       new Error("Duplicate key constraint")
     );
@@ -116,7 +116,7 @@ describe("createFlagAction", () => {
 
     expect(result).toEqual({
       success: false,
-      error: "Duplicate key constraint",
+      error: "An unexpected error occurred",
     });
   });
 
@@ -165,12 +165,15 @@ describe("updateFlagAction", () => {
     expect(mockUpdateFeatureFlag).not.toHaveBeenCalled();
   });
 
-  it("returns the error message from a thrown Error", async () => {
+  it("returns a generic error when the query throws an Error", async () => {
     mockUpdateFeatureFlag.mockRejectedValue(new Error("Flag not found"));
 
     const result = await updateFlagAction(999, { enabled: true });
 
-    expect(result).toEqual({ success: false, error: "Flag not found" });
+    expect(result).toEqual({
+      success: false,
+      error: "An unexpected error occurred",
+    });
   });
 
   it("returns a generic error for non-Error throwables", async () => {
@@ -215,12 +218,15 @@ describe("deleteFlagAction", () => {
     expect(mockDeleteFeatureFlag).not.toHaveBeenCalled();
   });
 
-  it("returns the error message from a thrown Error", async () => {
+  it("returns a generic error when the query throws an Error", async () => {
     mockDeleteFeatureFlag.mockRejectedValue(new Error("Flag not found"));
 
     const result = await deleteFlagAction(999);
 
-    expect(result).toEqual({ success: false, error: "Flag not found" });
+    expect(result).toEqual({
+      success: false,
+      error: "An unexpected error occurred",
+    });
   });
 
   it("returns a generic error for non-Error throwables", async () => {
@@ -298,7 +304,7 @@ describe("createAnnouncementAction", () => {
     expect(mockCreateAnnouncement).not.toHaveBeenCalled();
   });
 
-  it("returns the error message from a thrown Error", async () => {
+  it("returns a generic error when the query throws an Error", async () => {
     mockCreateAnnouncement.mockRejectedValue(
       new Error("Validation failed: title too long")
     );
@@ -311,7 +317,7 @@ describe("createAnnouncementAction", () => {
 
     expect(result).toEqual({
       success: false,
-      error: "Validation failed: title too long",
+      error: "An unexpected error occurred",
     });
   });
 
@@ -381,7 +387,7 @@ describe("updateAnnouncementAction", () => {
     expect(mockUpdateAnnouncement).not.toHaveBeenCalled();
   });
 
-  it("returns the error message from a thrown Error", async () => {
+  it("returns a generic error when the query throws an Error", async () => {
     mockUpdateAnnouncement.mockRejectedValue(
       new Error("Announcement not found")
     );
@@ -390,7 +396,7 @@ describe("updateAnnouncementAction", () => {
 
     expect(result).toEqual({
       success: false,
-      error: "Announcement not found",
+      error: "An unexpected error occurred",
     });
   });
 
@@ -439,7 +445,7 @@ describe("deleteAnnouncementAction", () => {
     expect(mockDeleteAnnouncement).not.toHaveBeenCalled();
   });
 
-  it("returns the error message from a thrown Error", async () => {
+  it("returns a generic error when the query throws an Error", async () => {
     mockDeleteAnnouncement.mockRejectedValue(
       new Error("Announcement not found")
     );
@@ -448,7 +454,7 @@ describe("deleteAnnouncementAction", () => {
 
     expect(result).toEqual({
       success: false,
-      error: "Announcement not found",
+      error: "An unexpected error occurred",
     });
   });
 

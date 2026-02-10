@@ -21,7 +21,6 @@ import {
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent,
-  type ChartConfig,
 } from "@/components/ui/chart";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -42,81 +41,19 @@ import {
   getActionPrefix,
 } from "./activity/audit-action-badge";
 import { ActivityTab } from "./activity-tab";
+import {
+  CHART_COLORS,
+  TOURNAMENT_STATUS_LABELS,
+  ORG_STATUS_LABELS,
+  ORG_TIER_LABELS,
+  DEFAULT_FILL,
+  formatNumber,
+  relativeTime,
+  humanLabel,
+  buildChartData,
+} from "./helpers";
 
 type AuditAction = Database["public"]["Enums"]["audit_action"];
-
-// ── Label maps ──────────────────────────────────────────────────────
-
-const TOURNAMENT_STATUS_LABELS: Record<string, string> = {
-  draft: "Draft",
-  upcoming: "Upcoming",
-  active: "Active",
-  paused: "Paused",
-  completed: "Completed",
-  cancelled: "Cancelled",
-};
-
-const ORG_STATUS_LABELS: Record<string, string> = {
-  pending: "Pending",
-  active: "Active",
-  rejected: "Rejected",
-  suspended: "Suspended",
-};
-
-const ORG_TIER_LABELS: Record<string, string> = {
-  regular: "Regular",
-  verified: "Verified",
-  partner: "Partner",
-};
-
-// ── Chart color map (hex values for recharts fills) ─────────────────
-
-const CHART_COLORS: Record<string, string> = {
-  active: "oklch(0.765 0.177 163.22)",
-  upcoming: "oklch(0.623 0.214 259.53)",
-  draft: "oklch(0.705 0.015 286.07)",
-  paused: "oklch(0.769 0.188 70.08)",
-  completed: "oklch(0.705 0.015 286.07)",
-  cancelled: "oklch(0.637 0.237 25.33)",
-  pending: "oklch(0.769 0.188 70.08)",
-  rejected: "oklch(0.637 0.237 25.33)",
-  suspended: "oklch(0.637 0.237 25.33)",
-  regular: "oklch(0.705 0.015 286.07)",
-  verified: "oklch(0.623 0.214 259.53)",
-  partner: "oklch(0.765 0.177 163.22)",
-};
-
-// ── Helpers ─────────────────────────────────────────────────────────
-
-function formatNumber(n: number): string {
-  return n.toLocaleString();
-}
-
-function relativeTime(isoString: string): string {
-  const now = Date.now();
-  const then = new Date(isoString).getTime();
-  const diffMs = now - then;
-  const diffMin = Math.floor(diffMs / 60_000);
-
-  if (diffMin < 1) return "just now";
-  if (diffMin < 60) return `${diffMin}m ago`;
-
-  const diffHr = Math.floor(diffMin / 60);
-  if (diffHr < 24) return `${diffHr}h ago`;
-
-  const diffDays = Math.floor(diffHr / 24);
-  return `${diffDays}d ago`;
-}
-
-function humanLabel(key: string, labels: Record<string, string>): string {
-  return (
-    labels[key] ??
-    key
-      .split("_")
-      .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-      .join(" ")
-  );
-}
 
 // ── Metric Card ─────────────────────────────────────────────────────
 
@@ -211,26 +148,10 @@ function DonutBreakdownCard({
   isLoading: boolean;
 }) {
   // Build recharts data + chart config from the Record
-  const { chartData, chartConfig, total } = useMemo(() => {
-    const entries = data ? Object.entries(data) : [];
-    const t = entries.reduce((sum, [, v]) => sum + v, 0);
-
-    const cd = entries.map(([key, value]) => ({
-      name: key,
-      value,
-      fill: CHART_COLORS[key] ?? "oklch(0.705 0.015 286.07)",
-    }));
-
-    const cc: ChartConfig = {};
-    for (const [key] of entries) {
-      cc[key] = {
-        label: humanLabel(key, labels),
-        color: CHART_COLORS[key] ?? "oklch(0.705 0.015 286.07)",
-      };
-    }
-
-    return { chartData: cd, chartConfig: cc, total: t };
-  }, [data, labels]);
+  const { chartData, chartConfig, total } = useMemo(
+    () => buildChartData(data, labels),
+    [data, labels]
+  );
 
   return (
     <Card>
@@ -267,8 +188,7 @@ function DonutBreakdownCard({
                             className="size-2.5 shrink-0 rounded-[2px]"
                             style={{
                               backgroundColor:
-                                CHART_COLORS[name as string] ??
-                                "oklch(0.705 0.015 286.07)",
+                                CHART_COLORS[name as string] ?? DEFAULT_FILL,
                             }}
                           />
                           <span className="text-muted-foreground">

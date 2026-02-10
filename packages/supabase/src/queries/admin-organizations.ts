@@ -1,3 +1,4 @@
+import { escapeLike } from "@trainers/utils";
 import type { Database } from "../types";
 import type { TypedClient } from "../client";
 
@@ -60,7 +61,8 @@ export async function listOrganizationsAdmin(
 
   // Apply search filter (matches name or slug, case-insensitive)
   if (search) {
-    query = query.or(`name.ilike.%${search}%,slug.ilike.%${search}%`);
+    const escaped = escapeLike(search);
+    query = query.or(`name.ilike.%${escaped}%,slug.ilike.%${escaped}%`);
   }
 
   if (status) {
@@ -140,7 +142,7 @@ export async function approveOrganization(
   // NOTE: The audit_action enum values are added by migration but may not yet
   // appear in the generated TypeScript types. Cast as needed.
   const { error: auditError } = await supabase.from("audit_log").insert({
-    action: "admin.org_approved" as never,
+    action: "admin.org_approved" as const,
     actor_user_id: adminUserId,
     organization_id: orgId,
     metadata: {
@@ -186,7 +188,7 @@ export async function rejectOrganization(
 
   // Insert audit log entry
   const { error: auditError } = await supabase.from("audit_log").insert({
-    action: "admin.org_rejected" as never,
+    action: "admin.org_rejected" as const,
     actor_user_id: adminUserId,
     organization_id: orgId,
     metadata: {
@@ -233,7 +235,7 @@ export async function suspendOrganization(
 
   // Insert audit log entry
   const { error: auditError } = await supabase.from("audit_log").insert({
-    action: "admin.org_suspended" as never,
+    action: "admin.org_suspended" as const,
     actor_user_id: adminUserId,
     organization_id: orgId,
     metadata: {
@@ -276,7 +278,7 @@ export async function unsuspendOrganization(
 
   // Insert audit log entry
   const { error: auditError } = await supabase.from("audit_log").insert({
-    action: "admin.org_unsuspended" as never,
+    action: "admin.org_unsuspended" as const,
     actor_user_id: adminUserId,
     organization_id: orgId,
     metadata: {
@@ -332,7 +334,7 @@ export async function transferOrgOwnership(
 
   // Insert audit log entry with old and new owner metadata
   const { error: auditError } = await supabase.from("audit_log").insert({
-    action: "admin.org_ownership_transferred" as never,
+    action: "admin.org_ownership_transferred" as const,
     actor_user_id: adminUserId,
     organization_id: orgId,
     metadata: {

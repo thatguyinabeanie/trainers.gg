@@ -1,0 +1,270 @@
+-- =============================================================================
+-- Fix Platform Config: PR Review Feedback
+-- =============================================================================
+-- Fixes issues identified in review of migrations 20260209100002 and
+-- 20260209100003:
+--
+-- 1. admin_notes column leaks through public SELECT policy on organizations
+--    -> Move to separate organization_admin_notes table with admin-only RLS
+-- 2. Announcement `type` uses CHECK constraint instead of enum
+--    -> Create announcement_type enum and alter the column
+-- 3. Missing DROP POLICY IF EXISTS guards in migrations 2 & 3
+--    -> Recreate all affected policies with proper guards
+-- 4. Redundant index on feature_flags.key (already has UNIQUE constraint)
+--    -> Drop it
+-- 5. Missing updated_at triggers on feature_flags and announcements
+--    -> Add them
+-- 6. Missing end_at > start_at constraint on announcements
+--    -> Add it
+-- 7. Seed data comment clarifying these are system-required flags
+-- =============================================================================
+
+-- =============================================================================
+-- 1. Move admin_notes from organizations to separate table
+-- =============================================================================
+-- The organizations table has a public SELECT policy ("Organizations are
+-- viewable by everyone" USING (true)), which means admin_notes added in
+-- migration 20260209100002 is readable by all users. Fix by extracting to
+-- a separate table with admin-only RLS.
+
+CREATE TABLE IF NOT EXISTS public.organization_admin_notes (
+  id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  organization_id bigint NOT NULL REFERENCES public.organizations(id) ON DELETE CASCADE UNIQUE,
+  notes text,
+  updated_at timestamptz DEFAULT now(),
+  updated_by uuid REFERENCES auth.users(id) ON DELETE SET NULL
+);
+
+ALTER TABLE public.organization_admin_notes OWNER TO postgres;
+
+COMMENT ON TABLE public.organization_admin_notes IS
+  'Internal admin notes for organizations (admin-only access)';
+COMMENT ON COLUMN public.organization_admin_notes.notes IS
+  'Free-form internal notes written by site admins';
+COMMENT ON COLUMN public.organization_admin_notes.updated_by IS
+  'Admin who last updated these notes';
+
+-- Index on organization_id for lookups (UNIQUE already creates one, but be explicit)
+-- The UNIQUE constraint on organization_id already creates an index, so no
+-- additional index is needed here.
+
+-- RLS: only site admins can access this table
+ALTER TABLE public.organization_admin_notes ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Site admins can view organization admin notes"
+  ON public.organization_admin_notes;
+CREATE POLICY "Site admins can view organization admin notes"
+  ON public.organization_admin_notes
+  FOR SELECT
+  TO authenticated
+  USING (public.is_site_admin());
+
+DROP POLICY IF EXISTS "Site admins can create organization admin notes"
+  ON public.organization_admin_notes;
+CREATE POLICY "Site admins can create organization admin notes"
+  ON public.organization_admin_notes
+  FOR INSERT
+  TO authenticated
+  WITH CHECK (public.is_site_admin());
+
+DROP POLICY IF EXISTS "Site admins can update organization admin notes"
+  ON public.organization_admin_notes;
+CREATE POLICY "Site admins can update organization admin notes"
+  ON public.organization_admin_notes
+  FOR UPDATE
+  TO authenticated
+  USING (public.is_site_admin())
+  WITH CHECK (public.is_site_admin());
+
+DROP POLICY IF EXISTS "Site admins can delete organization admin notes"
+  ON public.organization_admin_notes;
+CREATE POLICY "Site admins can delete organization admin notes"
+  ON public.organization_admin_notes
+  FOR DELETE
+  TO authenticated
+  USING (public.is_site_admin());
+
+-- Migrate existing admin_notes data into the new table (if any rows have data)
+INSERT INTO public.organization_admin_notes (organization_id, notes)
+SELECT id, admin_notes
+FROM public.organizations
+WHERE admin_notes IS NOT NULL
+ON CONFLICT (organization_id) DO NOTHING;
+
+-- Drop the leaky column from organizations
+ALTER TABLE public.organizations DROP COLUMN IF EXISTS admin_notes;
+
+-- updated_at trigger for the new table
+CREATE OR REPLACE TRIGGER update_organization_admin_notes_updated_at
+  BEFORE UPDATE ON public.organization_admin_notes
+  FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
+-- =============================================================================
+-- 2. Announcement `type`: CHECK constraint -> enum
+-- =============================================================================
+-- Create the enum type if it doesn't exist
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'announcement_type') THEN
+    CREATE TYPE public.announcement_type AS ENUM ('info', 'warning', 'error', 'success');
+  END IF;
+END $$;
+
+-- Drop the CHECK constraint first.
+-- The constraint name is auto-generated by PostgreSQL as "announcements_type_check"
+-- when using inline CHECK syntax. Use a DO block to handle the case where the
+-- constraint might not exist or has a different name.
+DO $$ BEGIN
+  -- Try the standard auto-generated name first
+  ALTER TABLE public.announcements DROP CONSTRAINT IF EXISTS announcements_type_check;
+EXCEPTION
+  WHEN undefined_object THEN NULL;
+END $$;
+
+-- Now alter the column type from text to the enum
+ALTER TABLE public.announcements
+  ALTER COLUMN type TYPE public.announcement_type
+  USING type::public.announcement_type;
+
+-- Re-set the default (enum cast)
+ALTER TABLE public.announcements
+  ALTER COLUMN type SET DEFAULT 'info'::public.announcement_type;
+
+-- =============================================================================
+-- 3. Recreate policies from migrations 2 & 3 with DROP IF EXISTS guards
+-- =============================================================================
+
+-- --- Migration 2: organizations policies ---
+
+DROP POLICY IF EXISTS "Site admins can update organizations"
+  ON public.organizations;
+CREATE POLICY "Site admins can update organizations"
+  ON public.organizations
+  FOR UPDATE
+  TO authenticated
+  USING (public.is_site_admin())
+  WITH CHECK (public.is_site_admin());
+
+DROP POLICY IF EXISTS "Site admins can view all organizations"
+  ON public.organizations;
+CREATE POLICY "Site admins can view all organizations"
+  ON public.organizations
+  FOR SELECT
+  TO authenticated
+  USING (public.is_site_admin());
+
+-- --- Migration 3: feature_flags policies ---
+
+DROP POLICY IF EXISTS "Authenticated users can read feature flags"
+  ON public.feature_flags;
+CREATE POLICY "Authenticated users can read feature flags"
+  ON public.feature_flags
+  FOR SELECT
+  TO authenticated
+  USING (true);
+
+DROP POLICY IF EXISTS "Site admins can create feature flags"
+  ON public.feature_flags;
+CREATE POLICY "Site admins can create feature flags"
+  ON public.feature_flags
+  FOR INSERT
+  TO authenticated
+  WITH CHECK (public.is_site_admin());
+
+DROP POLICY IF EXISTS "Site admins can update feature flags"
+  ON public.feature_flags;
+CREATE POLICY "Site admins can update feature flags"
+  ON public.feature_flags
+  FOR UPDATE
+  TO authenticated
+  USING (public.is_site_admin())
+  WITH CHECK (public.is_site_admin());
+
+DROP POLICY IF EXISTS "Site admins can delete feature flags"
+  ON public.feature_flags;
+CREATE POLICY "Site admins can delete feature flags"
+  ON public.feature_flags
+  FOR DELETE
+  TO authenticated
+  USING (public.is_site_admin());
+
+-- --- Migration 3: announcements policies ---
+
+DROP POLICY IF EXISTS "Authenticated users can read active announcements"
+  ON public.announcements;
+CREATE POLICY "Authenticated users can read active announcements"
+  ON public.announcements
+  FOR SELECT
+  TO authenticated
+  USING (
+    -- Site admins can see all announcements (for admin panel)
+    public.is_site_admin()
+    OR (
+      -- Regular users only see active, currently scheduled announcements
+      is_active = true
+      AND start_at <= now()
+      AND (end_at IS NULL OR end_at > now())
+    )
+  );
+
+DROP POLICY IF EXISTS "Site admins can create announcements"
+  ON public.announcements;
+CREATE POLICY "Site admins can create announcements"
+  ON public.announcements
+  FOR INSERT
+  TO authenticated
+  WITH CHECK (public.is_site_admin());
+
+DROP POLICY IF EXISTS "Site admins can update announcements"
+  ON public.announcements;
+CREATE POLICY "Site admins can update announcements"
+  ON public.announcements
+  FOR UPDATE
+  TO authenticated
+  USING (public.is_site_admin())
+  WITH CHECK (public.is_site_admin());
+
+DROP POLICY IF EXISTS "Site admins can delete announcements"
+  ON public.announcements;
+CREATE POLICY "Site admins can delete announcements"
+  ON public.announcements
+  FOR DELETE
+  TO authenticated
+  USING (public.is_site_admin());
+
+-- =============================================================================
+-- 4. Drop redundant index on feature_flags.key
+-- =============================================================================
+-- The UNIQUE constraint on feature_flags.key already creates an implicit unique
+-- index. The explicit index is redundant.
+DROP INDEX IF EXISTS public.feature_flags_key_idx;
+
+-- =============================================================================
+-- 5. Add updated_at triggers for feature_flags and announcements
+-- =============================================================================
+CREATE OR REPLACE TRIGGER update_feature_flags_updated_at
+  BEFORE UPDATE ON public.feature_flags
+  FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
+CREATE OR REPLACE TRIGGER update_announcements_updated_at
+  BEFORE UPDATE ON public.announcements
+  FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
+-- =============================================================================
+-- 6. Add end_at > start_at constraint on announcements
+-- =============================================================================
+-- Prevent announcements from having an end time before their start time.
+DO $$ BEGIN
+  ALTER TABLE public.announcements
+    ADD CONSTRAINT announcement_end_after_start
+    CHECK (end_at IS NULL OR end_at > start_at);
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+END $$;
+
+-- =============================================================================
+-- 7. Add comment to seed data clarifying these are system-required flags
+-- =============================================================================
+-- The seed INSERT in migration 20260209100003 uses ON CONFLICT DO NOTHING,
+-- so we just add table/column comments to clarify intent.
+COMMENT ON COLUMN public.feature_flags.key IS
+  'Unique flag identifier. System-required flags (maintenance_mode, open_registration) are seeded by migration and must not be deleted.';

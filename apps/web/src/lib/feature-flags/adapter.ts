@@ -25,8 +25,8 @@ export const supabaseAdapter: Adapter<boolean, undefined> = {
     try {
       const flag = await getFlag(key);
       return flag?.enabled ?? false;
-    } catch {
-      // If the DB call fails, fall back to disabled
+    } catch (err) {
+      console.error(`[feature-flags] Failed to evaluate flag "${key}":`, err);
       return false;
     }
   },

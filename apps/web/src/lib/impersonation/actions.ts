@@ -3,6 +3,7 @@
 import { headers } from "next/headers";
 import { createServiceRoleClient } from "@/lib/supabase/server";
 import { requireAdminWithSudo } from "@/lib/auth/require-admin";
+import { startImpersonation, endImpersonation } from "@trainers/supabase";
 import {
   setImpersonationCookie,
   clearImpersonationCookie,
@@ -42,10 +43,18 @@ export async function startImpersonationAction(
     // End any existing impersonation session first
     const existing = await getImpersonationTarget();
     if (existing) {
-      await supabase
+      const { error: endError } = await supabase
         .from("impersonation_sessions")
         .update({ ended_at: new Date().toISOString() })
         .eq("id", existing.sessionId);
+
+      if (endError) {
+        console.error("Error ending previous impersonation session:", endError);
+        return {
+          success: false,
+          error: "Failed to end previous impersonation session",
+        };
+      }
     }
 
     // Get request metadata
@@ -56,40 +65,23 @@ export async function startImpersonationAction(
       undefined;
     const userAgent = headersList.get("user-agent") || undefined;
 
-    // Create impersonation session
-    const { data: session, error: sessionError } = await supabase
-      .from("impersonation_sessions")
-      .insert({
-        admin_user_id: adminUserId,
-        target_user_id: targetUserId,
-        reason: reason || null,
-        ip_address: ipAddress,
-        user_agent: userAgent,
-      })
-      .select()
-      .single();
+    // Create impersonation session + audit log via shared package function
+    try {
+      const session = await startImpersonation(
+        supabase,
+        adminUserId,
+        targetUserId,
+        reason,
+        ipAddress,
+        userAgent
+      );
 
-    if (sessionError) {
-      console.error("Error creating impersonation session:", sessionError);
+      // Set cookie
+      await setImpersonationCookie(session.id);
+    } catch (startError) {
+      console.error("Error creating impersonation session:", startError);
       return { success: false, error: "Failed to start impersonation" };
     }
-
-    // Log to audit
-    await supabase.from("audit_log").insert({
-      action: "admin.impersonation_started" as const,
-      actor_user_id: adminUserId,
-      metadata: {
-        session_id: session.id,
-        target_user_id: targetUserId,
-        target_username: targetUser.username,
-        reason,
-        ip_address: ipAddress,
-        user_agent: userAgent,
-      },
-    });
-
-    // Set cookie
-    await setImpersonationCookie(session.id);
 
     return { success: true };
   } catch (err) {
@@ -119,36 +111,15 @@ export async function endImpersonationAction(): Promise<{
 
     const supabase = createServiceRoleClient();
 
-    // End the session
-    const { data: session, error: sessionError } = await supabase
-      .from("impersonation_sessions")
-      .update({ ended_at: new Date().toISOString() })
-      .eq("id", target.sessionId)
-      .select()
-      .single();
-
-    if (sessionError) {
-      console.error("Error ending impersonation session:", sessionError);
+    // End the session + audit log via shared package function
+    try {
+      await endImpersonation(supabase, adminUserId);
+    } catch (endError) {
+      console.error("Error ending impersonation session:", endError);
+      return { success: false, error: "Failed to end impersonation session" };
     }
 
-    // Log to audit
-    await supabase.from("audit_log").insert({
-      action: "admin.impersonation_ended" as const,
-      actor_user_id: adminUserId,
-      metadata: {
-        session_id: target.sessionId,
-        target_user_id: target.targetUserId,
-        duration_seconds: session
-          ? Math.floor(
-              (new Date(session.ended_at!).getTime() -
-                new Date(session.started_at).getTime()) /
-                1000
-            )
-          : undefined,
-      },
-    });
-
-    // Clear cookie
+    // Only clear cookie on success
     await clearImpersonationCookie();
 
     return { success: true };

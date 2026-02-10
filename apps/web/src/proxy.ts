@@ -78,8 +78,8 @@ export default async function proxy(request: NextRequest) {
   if (!maintenanceMode) {
     try {
       maintenanceMode = await isMaintenanceModeEnabledAsync();
-    } catch {
-      // DB unreachable — keep maintenance mode off
+    } catch (err) {
+      console.error("[proxy] Failed to check maintenance mode flag:", err);
     }
   }
 

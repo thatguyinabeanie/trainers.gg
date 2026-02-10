@@ -21,8 +21,8 @@ export async function isMaintenanceModeEnabledAsync(): Promise<boolean> {
   try {
     const supabase = await createClient();
     return await isFeatureEnabled(supabase, "maintenance_mode");
-  } catch {
-    // If we can't reach the database, fall back to env var (already false)
+  } catch (err) {
+    console.error("[maintenance] Failed to check DB feature flag:", err);
     return false;
   }
 }

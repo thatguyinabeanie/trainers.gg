@@ -116,11 +116,17 @@ export async function getUserSiteRoles(supabase: TypedClient, userId: string) {
 
 /**
  * Grant a site role to a user
+ *
+ * @param supabase    - Typed Supabase client (service role)
+ * @param userId      - UUID of the user to grant the role to
+ * @param roleId      - ID of the site role to grant
+ * @param adminUserId - UUID of the admin performing the action
  */
 export async function grantSiteRole(
   supabase: TypedClient,
   userId: string,
-  roleId: number
+  roleId: number,
+  adminUserId: string
 ): Promise<{ success: boolean; error?: string }> {
   // First verify the role is site-scoped
   const { data: role, error: roleError } = await supabase
@@ -163,16 +169,36 @@ export async function grantSiteRole(
     return { success: false, error: insertError.message };
   }
 
+  // Insert audit log entry
+  const { error: auditError } = await supabase.from("audit_log").insert({
+    action: "admin.role_granted" as const,
+    actor_user_id: adminUserId,
+    metadata: {
+      target_user_id: userId,
+      role_id: roleId,
+    },
+  });
+
+  if (auditError) {
+    console.error("Failed to log role grant to audit log:", auditError);
+  }
+
   return { success: true };
 }
 
 /**
  * Revoke a site role from a user
+ *
+ * @param supabase    - Typed Supabase client (service role)
+ * @param userId      - UUID of the user to revoke the role from
+ * @param roleId      - ID of the site role to revoke
+ * @param adminUserId - UUID of the admin performing the action
  */
 export async function revokeSiteRole(
   supabase: TypedClient,
   userId: string,
-  roleId: number
+  roleId: number,
+  adminUserId: string
 ): Promise<{ success: boolean; error?: string }> {
   const { error } = await supabase
     .from("user_roles")
@@ -183,6 +209,20 @@ export async function revokeSiteRole(
   if (error) {
     console.error("Error revoking site role:", error);
     return { success: false, error: error.message };
+  }
+
+  // Insert audit log entry
+  const { error: auditError } = await supabase.from("audit_log").insert({
+    action: "admin.role_revoked" as const,
+    actor_user_id: adminUserId,
+    metadata: {
+      target_user_id: userId,
+      role_id: roleId,
+    },
+  });
+
+  if (auditError) {
+    console.error("Failed to log role revoke to audit log:", auditError);
   }
 
   return { success: true };
