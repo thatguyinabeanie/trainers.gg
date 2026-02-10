@@ -397,6 +397,7 @@ export async function updateProfile(data: {
 
       if (altFetchError) {
         console.error("Error fetching main_alt_id:", altFetchError);
+        return { success: false, error: "Failed to sync username to alt" };
       }
 
       if (userData?.main_alt_id) {
@@ -410,6 +411,7 @@ export async function updateProfile(data: {
 
         if (altUpdateError) {
           console.error("Error updating main alt username:", altUpdateError);
+          return { success: false, error: "Failed to sync username to alt" };
         }
       }
 
@@ -422,6 +424,7 @@ export async function updateProfile(data: {
 
       if (authUpdateError) {
         console.error("Error updating auth metadata:", authUpdateError);
+        return { success: false, error: "Failed to update auth metadata" };
       }
     }
 
