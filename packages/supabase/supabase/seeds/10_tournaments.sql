@@ -1697,9 +1697,9 @@ BEGIN
   SELECT
       t.id,
       a.id,
-      'checked_in'::registration_status,
+      'registered'::registration_status,
       (seed_now - interval '4 days 10 hours 37 minutes'),
-      (seed_now - interval '3 hours'),
+      NULL,
       (SELECT tm.id FROM public.teams tm WHERE tm.name = 'team-seed-112'),
       (seed_now - interval '4 days 10 hours 37 minutes'),
       TRUE
@@ -1710,9 +1710,9 @@ BEGIN
   SELECT
       t.id,
       a.id,
-      'checked_in'::registration_status,
+      'confirmed'::registration_status,
       (seed_now - interval '4 days 10 hours 37 minutes'),
-      (seed_now - interval '3 hours'),
+      NULL,
       (SELECT tm.id FROM public.teams tm WHERE tm.name = 'team-seed-113'),
       (seed_now - interval '4 days 10 hours 37 minutes'),
       TRUE
@@ -1723,9 +1723,9 @@ BEGIN
   SELECT
       t.id,
       a.id,
-      'checked_in'::registration_status,
+      'registered'::registration_status,
       (seed_now - interval '4 days 10 hours 37 minutes'),
-      (seed_now - interval '3 hours'),
+      NULL,
       (SELECT tm.id FROM public.teams tm WHERE tm.name = 'team-seed-114'),
       (seed_now - interval '4 days 10 hours 37 minutes'),
       TRUE
@@ -1736,9 +1736,9 @@ BEGIN
   SELECT
       t.id,
       a.id,
-      'checked_in'::registration_status,
+      'confirmed'::registration_status,
       (seed_now - interval '1 days 2 hours 30 minutes'),
-      (seed_now - interval '3 hours'),
+      NULL,
       (SELECT tm.id FROM public.teams tm WHERE tm.name = 'team-seed-115'),
       (seed_now - interval '1 days 2 hours 30 minutes'),
       TRUE
@@ -1762,9 +1762,9 @@ BEGIN
   SELECT
       t.id,
       a.id,
-      'checked_in'::registration_status,
+      'registered'::registration_status,
       (seed_now - interval '4 days 10 hours 37 minutes'),
-      (seed_now - interval '3 hours'),
+      NULL,
       (SELECT tm.id FROM public.teams tm WHERE tm.name = 'team-seed-117'),
       (seed_now - interval '4 days 10 hours 37 minutes'),
       TRUE
@@ -1775,9 +1775,9 @@ BEGIN
   SELECT
       t.id,
       a.id,
-      'checked_in'::registration_status,
+      'registered'::registration_status,
       (seed_now - interval '1 days 2 hours 30 minutes'),
-      (seed_now - interval '3 hours'),
+      NULL,
       (SELECT tm.id FROM public.teams tm WHERE tm.name = 'team-seed-118'),
       (seed_now - interval '1 days 2 hours 30 minutes'),
       TRUE
@@ -1801,9 +1801,9 @@ BEGIN
   SELECT
       t.id,
       a.id,
-      'checked_in'::registration_status,
+      'confirmed'::registration_status,
       (seed_now - interval '4 days 10 hours 37 minutes'),
-      (seed_now - interval '3 hours'),
+      NULL,
       (SELECT tm.id FROM public.teams tm WHERE tm.name = 'team-seed-120'),
       (seed_now - interval '4 days 10 hours 37 minutes'),
       TRUE
@@ -1814,9 +1814,9 @@ BEGIN
   SELECT
       t.id,
       a.id,
-      'checked_in'::registration_status,
+      'registered'::registration_status,
       (seed_now - interval '4 days 10 hours 37 minutes'),
-      (seed_now - interval '3 hours'),
+      NULL,
       (SELECT tm.id FROM public.teams tm WHERE tm.name = 'team-seed-121'),
       (seed_now - interval '4 days 10 hours 37 minutes'),
       TRUE
@@ -1827,7 +1827,7 @@ BEGIN
   SELECT
       t.id,
       a.id,
-      'checked_in'::registration_status,
+      'dropped'::registration_status,
       (seed_now - interval '4 days 10 hours 37 minutes'),
       (seed_now - interval '3 hours'),
       (SELECT tm.id FROM public.teams tm WHERE tm.name = 'team-seed-122'),
@@ -1840,9 +1840,9 @@ BEGIN
   SELECT
       t.id,
       a.id,
-      'checked_in'::registration_status,
+      'registered'::registration_status,
       (seed_now - interval '4 days 10 hours 37 minutes'),
-      (seed_now - interval '3 hours'),
+      NULL,
       (SELECT tm.id FROM public.teams tm WHERE tm.name = 'team-seed-123'),
       (seed_now - interval '4 days 10 hours 37 minutes'),
       TRUE
@@ -1853,9 +1853,9 @@ BEGIN
   SELECT
       t.id,
       a.id,
-      'checked_in'::registration_status,
+      'confirmed'::registration_status,
       (seed_now - interval '1 days 2 hours 30 minutes'),
-      (seed_now - interval '3 hours'),
+      NULL,
       (SELECT tm.id FROM public.teams tm WHERE tm.name = 'team-seed-124'),
       (seed_now - interval '1 days 2 hours 30 minutes'),
       TRUE
@@ -1866,9 +1866,9 @@ BEGIN
   SELECT
       t.id,
       a.id,
-      'checked_in'::registration_status,
+      'registered'::registration_status,
       (seed_now - interval '4 days 10 hours 37 minutes'),
-      (seed_now - interval '3 hours'),
+      NULL,
       (SELECT tm.id FROM public.teams tm WHERE tm.name = 'team-seed-125'),
       (seed_now - interval '4 days 10 hours 37 minutes'),
       TRUE
@@ -1879,7 +1879,7 @@ BEGIN
   SELECT
       t.id,
       a.id,
-      'checked_in'::registration_status,
+      'dropped'::registration_status,
       (seed_now - interval '4 days 10 hours 37 minutes'),
       (seed_now - interval '3 hours'),
       (SELECT tm.id FROM public.teams tm WHERE tm.name = 'team-seed-126'),
@@ -1892,9 +1892,9 @@ BEGIN
   SELECT
       t.id,
       a.id,
-      'checked_in'::registration_status,
+      'registered'::registration_status,
       (seed_now - interval '4 days 10 hours 37 minutes'),
-      (seed_now - interval '3 hours'),
+      NULL,
       (SELECT tm.id FROM public.teams tm WHERE tm.name = 'team-seed-127'),
       (seed_now - interval '4 days 10 hours 37 minutes'),
       TRUE

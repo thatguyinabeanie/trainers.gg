@@ -21,6 +21,7 @@ import {
   checkIn as checkInMutation,
   undoCheckIn as undoCheckInMutation,
   withdrawFromTournament as withdrawFromTournamentMutation,
+  updateRegistrationStatus as updateRegistrationStatusMutation,
   // Team submission
   submitTeam as submitTeamMutation,
   selectTeamForTournament as selectTeamForTournamentMutation,
@@ -868,6 +869,134 @@ export async function dropFromTournament(
     };
   }
 }
+
+// =============================================================================
+// Tournament Organizer Registration Actions
+// =============================================================================
+
+/**
+ * Force check-in a player (tournament organizer action)
+ */
+export async function forceCheckInPlayer(
+  registrationId: number,
+  tournamentId: number
+): Promise<ActionResult<{ success: true }>> {
+  try {
+    await rejectBots();
+    const supabase = await createClient();
+    await updateRegistrationStatusMutation(
+      supabase,
+      registrationId,
+      "checked_in"
+    );
+    updateTag(CacheTags.tournament(tournamentId));
+    return { success: true, data: { success: true } };
+  } catch (error) {
+    return {
+      success: false,
+      error: getErrorMessage(error, "Failed to force check-in player"),
+    };
+  }
+}
+
+/**
+ * Remove a player from tournament (tournament organizer action)
+ */
+export async function removePlayerFromTournament(
+  registrationId: number,
+  tournamentId: number
+): Promise<ActionResult<{ success: true }>> {
+  try {
+    await rejectBots();
+    const supabase = await createClient();
+    await updateRegistrationStatusMutation(supabase, registrationId, "dropped");
+    updateTag(CacheTags.tournament(tournamentId));
+    return { success: true, data: { success: true } };
+  } catch (error) {
+    return {
+      success: false,
+      error: getErrorMessage(error, "Failed to remove player"),
+    };
+  }
+}
+
+/**
+ * Bulk force check-in multiple players (tournament organizer action)
+ */
+export async function bulkForceCheckIn(
+  registrationIds: number[],
+  tournamentId: number
+): Promise<ActionResult<{ checkedIn: number; failed: number }>> {
+  try {
+    await rejectBots();
+    const supabase = await createClient();
+
+    let checkedIn = 0;
+    let failed = 0;
+
+    for (const registrationId of registrationIds) {
+      try {
+        await updateRegistrationStatusMutation(
+          supabase,
+          registrationId,
+          "checked_in"
+        );
+        checkedIn++;
+      } catch {
+        failed++;
+      }
+    }
+
+    updateTag(CacheTags.tournament(tournamentId));
+    return { success: true, data: { checkedIn, failed } };
+  } catch (error) {
+    return {
+      success: false,
+      error: getErrorMessage(error, "Failed to bulk check-in players"),
+    };
+  }
+}
+
+/**
+ * Bulk remove multiple players (tournament organizer action)
+ */
+export async function bulkRemovePlayers(
+  registrationIds: number[],
+  tournamentId: number
+): Promise<ActionResult<{ removed: number; failed: number }>> {
+  try {
+    await rejectBots();
+    const supabase = await createClient();
+
+    let removed = 0;
+    let failed = 0;
+
+    for (const registrationId of registrationIds) {
+      try {
+        await updateRegistrationStatusMutation(
+          supabase,
+          registrationId,
+          "dropped"
+        );
+        removed++;
+      } catch {
+        failed++;
+      }
+    }
+
+    updateTag(CacheTags.tournament(tournamentId));
+    return { success: true, data: { removed, failed } };
+  } catch (error) {
+    return {
+      success: false,
+      error: getErrorMessage(error, "Failed to bulk remove players"),
+    };
+  }
+}
+
+// =============================================================================
+// Match Management
+// =============================================================================
 
 /**
  * Report match result
