@@ -347,57 +347,147 @@ describe("removePlayerFromTournament", () => {
 // ── bulkForceCheckIn ───────────────────────────────────────────────────────
 
 describe("bulkForceCheckIn", () => {
-  it("checks in multiple players and returns counts", async () => {
-    mockUpdateRegistrationStatus
-      .mockResolvedValueOnce({ success: true, tournamentId: 10 })
-      .mockResolvedValueOnce({ success: true, tournamentId: 10 })
-      .mockRejectedValueOnce(new Error("failed"));
+  it("performs bulk update and returns counts", async () => {
+    // First call: select registrations
+    (mockSupabase.from as jest.Mock) = jest.fn().mockReturnValueOnce({
+      select: jest.fn().mockReturnThis(),
+      in: jest.fn().mockResolvedValue({
+        data: [
+          { id: 1, tournament_id: 10 },
+          { id: 2, tournament_id: 10 },
+        ],
+        error: null,
+      }),
+    });
+
+    // Second call: bulk update
+    (mockSupabase.from as jest.Mock).mockReturnValueOnce({
+      update: jest.fn().mockReturnThis(),
+      in: jest.fn().mockReturnThis(),
+      eq: jest.fn().mockReturnThis(),
+      select: jest.fn().mockResolvedValue({
+        data: [{ id: 1 }, { id: 2 }],
+        error: null,
+      }),
+    });
+
+    const result = await bulkForceCheckIn([1, 2]);
+
+    expect(result.success).toBe(true);
+    expect(result.data).toEqual({ checkedIn: 2, failed: 0 });
+    expect(mockUpdateTag).toHaveBeenCalledWith("tournament:10");
+  });
+
+  it("returns empty result for empty array", async () => {
+    const result = await bulkForceCheckIn([]);
+
+    expect(result.success).toBe(true);
+    expect(result.data).toEqual({ checkedIn: 0, failed: 0 });
+  });
+
+  it("handles partial update failures", async () => {
+    // Select returns 3 registrations
+    (mockSupabase.from as jest.Mock) = jest.fn().mockReturnValueOnce({
+      select: jest.fn().mockReturnThis(),
+      in: jest.fn().mockResolvedValue({
+        data: [
+          { id: 1, tournament_id: 10 },
+          { id: 2, tournament_id: 10 },
+          { id: 3, tournament_id: 10 },
+        ],
+        error: null,
+      }),
+    });
+
+    // Update only succeeds for 2 of them
+    (mockSupabase.from as jest.Mock).mockReturnValueOnce({
+      update: jest.fn().mockReturnThis(),
+      in: jest.fn().mockReturnThis(),
+      eq: jest.fn().mockReturnThis(),
+      select: jest.fn().mockResolvedValue({
+        data: [{ id: 1 }, { id: 2 }],
+        error: null,
+      }),
+    });
 
     const result = await bulkForceCheckIn([1, 2, 3]);
 
     expect(result.success).toBe(true);
     expect(result.data).toEqual({ checkedIn: 2, failed: 1 });
-    expect(mockUpdateRegistrationStatus).toHaveBeenCalledTimes(3);
     expect(mockUpdateTag).toHaveBeenCalledWith("tournament:10");
-  });
-
-  it("handles all failures gracefully", async () => {
-    mockUpdateRegistrationStatus.mockRejectedValue(new Error("db error"));
-
-    const result = await bulkForceCheckIn([1, 2]);
-
-    expect(result.success).toBe(true);
-    expect(result.data).toEqual({ checkedIn: 0, failed: 2 });
-    // No cache invalidation if all failed
-    expect(mockUpdateTag).not.toHaveBeenCalled();
   });
 });
 
 // ── bulkRemovePlayers ──────────────────────────────────────────────────────
 
 describe("bulkRemovePlayers", () => {
-  it("removes multiple players and returns counts", async () => {
-    mockUpdateRegistrationStatus
-      .mockResolvedValueOnce({ success: true, tournamentId: 10 })
-      .mockResolvedValueOnce({ success: true, tournamentId: 10 })
-      .mockRejectedValueOnce(new Error("failed"));
+  it("performs bulk update and returns counts", async () => {
+    // First call: select registrations
+    (mockSupabase.from as jest.Mock) = jest.fn().mockReturnValueOnce({
+      select: jest.fn().mockReturnThis(),
+      in: jest.fn().mockResolvedValue({
+        data: [
+          { id: 1, tournament_id: 10 },
+          { id: 2, tournament_id: 10 },
+        ],
+        error: null,
+      }),
+    });
+
+    // Second call: bulk update
+    (mockSupabase.from as jest.Mock).mockReturnValueOnce({
+      update: jest.fn().mockReturnThis(),
+      in: jest.fn().mockReturnThis(),
+      eq: jest.fn().mockReturnThis(),
+      select: jest.fn().mockResolvedValue({
+        data: [{ id: 1 }, { id: 2 }],
+        error: null,
+      }),
+    });
+
+    const result = await bulkRemovePlayers([1, 2]);
+
+    expect(result.success).toBe(true);
+    expect(result.data).toEqual({ removed: 2, failed: 0 });
+    expect(mockUpdateTag).toHaveBeenCalledWith("tournament:10");
+  });
+
+  it("returns empty result for empty array", async () => {
+    const result = await bulkRemovePlayers([]);
+
+    expect(result.success).toBe(true);
+    expect(result.data).toEqual({ removed: 0, failed: 0 });
+  });
+
+  it("handles partial update failures", async () => {
+    // Select returns 3 registrations
+    (mockSupabase.from as jest.Mock) = jest.fn().mockReturnValueOnce({
+      select: jest.fn().mockReturnThis(),
+      in: jest.fn().mockResolvedValue({
+        data: [
+          { id: 1, tournament_id: 10 },
+          { id: 2, tournament_id: 10 },
+          { id: 3, tournament_id: 10 },
+        ],
+        error: null,
+      }),
+    });
+
+    // Update only succeeds for 2 of them
+    (mockSupabase.from as jest.Mock).mockReturnValueOnce({
+      update: jest.fn().mockReturnThis(),
+      in: jest.fn().mockReturnThis(),
+      eq: jest.fn().mockReturnThis(),
+      select: jest.fn().mockResolvedValue({
+        data: [{ id: 1 }, { id: 2 }],
+        error: null,
+      }),
+    });
 
     const result = await bulkRemovePlayers([1, 2, 3]);
 
     expect(result.success).toBe(true);
     expect(result.data).toEqual({ removed: 2, failed: 1 });
-    expect(mockUpdateRegistrationStatus).toHaveBeenCalledTimes(3);
     expect(mockUpdateTag).toHaveBeenCalledWith("tournament:10");
-  });
-
-  it("handles all failures gracefully", async () => {
-    mockUpdateRegistrationStatus.mockRejectedValue(new Error("db error"));
-
-    const result = await bulkRemovePlayers([1, 2]);
-
-    expect(result.success).toBe(true);
-    expect(result.data).toEqual({ removed: 0, failed: 2 });
-    // No cache invalidation if all failed
-    expect(mockUpdateTag).not.toHaveBeenCalled();
   });
 });

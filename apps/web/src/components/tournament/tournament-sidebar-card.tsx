@@ -165,10 +165,17 @@ function CountdownTimer({ targetDate }: { targetDate: string | null }) {
       return;
     }
 
+    // Validate date string to prevent NaN calculations
+    const targetTimestamp = new Date(targetDate).getTime();
+    if (Number.isNaN(targetTimestamp)) {
+      console.error(`[CountdownTimer] Invalid date string: "${targetDate}"`);
+      setTimeRemaining(null);
+      return;
+    }
+
     const calculateTimeRemaining = () => {
       const now = new Date().getTime();
-      const target = new Date(targetDate).getTime();
-      const diff = target - now;
+      const diff = targetTimestamp - now;
 
       if (diff <= 0) {
         setTimeRemaining(null);

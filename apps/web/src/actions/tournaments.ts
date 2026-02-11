@@ -932,31 +932,51 @@ export async function bulkForceCheckIn(
     await rejectBots();
     const supabase = await createClient();
 
-    let checkedIn = 0;
-    let failed = 0;
-    let tournamentId: number | null = null;
-
-    for (const registrationId of registrationIds) {
-      try {
-        const result = await updateRegistrationStatusMutation(
-          supabase,
-          registrationId,
-          "checked_in"
-        );
-        // Capture tournament ID from first successful update
-        if (tournamentId === null) {
-          tournamentId = result.tournamentId;
-        }
-        checkedIn++;
-      } catch {
-        failed++;
-      }
+    // Short-circuit if nothing to update
+    if (!registrationIds.length) {
+      return { success: true, data: { checkedIn: 0, failed: 0 } };
     }
 
-    // Invalidate cache if any updates succeeded
-    if (tournamentId !== null) {
-      updateTag(CacheTags.tournament(tournamentId));
+    // Get registrations to verify they all belong to the same tournament
+    const { data: registrations } = await supabase
+      .from("tournament_registrations")
+      .select("id, tournament_id")
+      .in("id", registrationIds);
+
+    if (!registrations || registrations.length === 0) {
+      throw new Error("No registrations found");
     }
+
+    // Get unique tournament IDs
+    const tournamentIds = [
+      ...new Set(registrations.map((r) => r.tournament_id)),
+    ];
+    if (tournamentIds.length === 0) {
+      throw new Error("No tournament IDs found in registrations");
+    }
+    if (tournamentIds.length !== 1) {
+      throw new Error(
+        "Cannot bulk update registrations from multiple tournaments"
+      );
+    }
+
+    const tournamentId = tournamentIds[0]!;
+
+    // Perform single bulk update
+    const { data, error } = await supabase
+      .from("tournament_registrations")
+      .update({ status: "checked_in" })
+      .in("id", registrationIds)
+      .eq("tournament_id", tournamentId)
+      .select("id");
+
+    if (error) throw error;
+
+    const checkedIn = data?.length ?? 0;
+    const failed = registrationIds.length - checkedIn;
+
+    // Invalidate cache
+    updateTag(CacheTags.tournament(tournamentId));
 
     return { success: true, data: { checkedIn, failed } };
   } catch (error) {
@@ -977,31 +997,51 @@ export async function bulkRemovePlayers(
     await rejectBots();
     const supabase = await createClient();
 
-    let removed = 0;
-    let failed = 0;
-    let tournamentId: number | null = null;
-
-    for (const registrationId of registrationIds) {
-      try {
-        const result = await updateRegistrationStatusMutation(
-          supabase,
-          registrationId,
-          "dropped"
-        );
-        // Capture tournament ID from first successful update
-        if (tournamentId === null) {
-          tournamentId = result.tournamentId;
-        }
-        removed++;
-      } catch {
-        failed++;
-      }
+    // Short-circuit if nothing to update
+    if (!registrationIds.length) {
+      return { success: true, data: { removed: 0, failed: 0 } };
     }
 
-    // Invalidate cache if any updates succeeded
-    if (tournamentId !== null) {
-      updateTag(CacheTags.tournament(tournamentId));
+    // Get registrations to verify they all belong to the same tournament
+    const { data: registrations } = await supabase
+      .from("tournament_registrations")
+      .select("id, tournament_id")
+      .in("id", registrationIds);
+
+    if (!registrations || registrations.length === 0) {
+      throw new Error("No registrations found");
     }
+
+    // Get unique tournament IDs
+    const tournamentIds = [
+      ...new Set(registrations.map((r) => r.tournament_id)),
+    ];
+    if (tournamentIds.length === 0) {
+      throw new Error("No tournament IDs found in registrations");
+    }
+    if (tournamentIds.length !== 1) {
+      throw new Error(
+        "Cannot bulk update registrations from multiple tournaments"
+      );
+    }
+
+    const tournamentId = tournamentIds[0]!;
+
+    // Perform single bulk update
+    const { data, error } = await supabase
+      .from("tournament_registrations")
+      .update({ status: "dropped" })
+      .in("id", registrationIds)
+      .eq("tournament_id", tournamentId)
+      .select("id");
+
+    if (error) throw error;
+
+    const removed = data?.length ?? 0;
+    const failed = registrationIds.length - removed;
+
+    // Invalidate cache
+    updateTag(CacheTags.tournament(tournamentId));
 
     return { success: true, data: { removed, failed } };
   } catch (error) {

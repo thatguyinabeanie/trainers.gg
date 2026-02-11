@@ -27,10 +27,17 @@ function CountdownTimer({ targetDate }: { targetDate: string | null }) {
       return;
     }
 
+    // Validate date string to prevent NaN calculations
+    const targetTimestamp = new Date(targetDate).getTime();
+    if (Number.isNaN(targetTimestamp)) {
+      console.error(`[CountdownTimer] Invalid date string: "${targetDate}"`);
+      setTimeRemaining(null);
+      return;
+    }
+
     const calculateTimeRemaining = () => {
       const now = new Date().getTime();
-      const target = new Date(targetDate).getTime();
-      const diff = target - now;
+      const diff = targetTimestamp - now;
 
       if (diff <= 0) {
         setTimeRemaining(null);
@@ -228,5 +235,40 @@ describe("CountdownTimer", () => {
     render(<CountdownTimer targetDate={futureDate} />);
 
     expect(screen.getByTestId("countdown")).toHaveTextContent("1d 0h 30m 0s");
+  });
+
+  it("handles malformed date strings gracefully", () => {
+    const consoleErrorSpy = jest
+      .spyOn(console, "error")
+      .mockImplementation(() => {});
+
+    const { container } = render(
+      <CountdownTimer targetDate="invalid-date-string" />
+    );
+
+    // Should render null for invalid date
+    expect(container.firstChild).toBeNull();
+
+    // Should log error
+    expect(consoleErrorSpy).toHaveBeenCalledWith(
+      '[CountdownTimer] Invalid date string: "invalid-date-string"'
+    );
+
+    consoleErrorSpy.mockRestore();
+  });
+
+  it("prevents NaN calculations from creating infinite interval loops", () => {
+    const setIntervalSpy = jest.spyOn(global, "setInterval");
+    const consoleErrorSpy = jest
+      .spyOn(console, "error")
+      .mockImplementation(() => {});
+
+    render(<CountdownTimer targetDate="not-a-date" />);
+
+    // Should not create interval for invalid date
+    expect(setIntervalSpy).not.toHaveBeenCalled();
+
+    setIntervalSpy.mockRestore();
+    consoleErrorSpy.mockRestore();
   });
 });
