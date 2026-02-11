@@ -12,7 +12,6 @@ on:
 
 jobs:
   claude-review:
-    name: Code Review
     # Optional: Filter by PR author
     # if: |
     #   github.event.pull_request.user.login == 'external-contributor' ||
