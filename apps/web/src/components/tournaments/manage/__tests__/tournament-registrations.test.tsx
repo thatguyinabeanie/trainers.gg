@@ -18,14 +18,30 @@ jest.mock("@/actions/tournaments", () => ({
   bulkRemovePlayers: jest.fn(),
 }));
 
-// Mock the Supabase query hook
+// Mock Supabase hooks
+const mockChannel = {
+  on: jest.fn().mockReturnThis(),
+  subscribe: jest.fn((callback) => {
+    if (typeof callback === "function") {
+      callback("SUBSCRIBED", null);
+    }
+    return mockChannel;
+  }),
+  unsubscribe: jest.fn(),
+};
+
+const mockSupabaseClient = {
+  channel: jest.fn(() => mockChannel),
+};
+
 jest.mock("@/lib/supabase", () => ({
   useSupabaseQuery: jest.fn((queryFn) => {
     // Call the query function with a mock supabase client
     const mockSupabase = {} as TypedClient;
     const result = queryFn(mockSupabase);
-    return { data: result };
+    return { data: result, refetch: jest.fn() };
   }),
+  useSupabase: jest.fn(() => mockSupabaseClient),
 }));
 
 // Mock the getTournamentRegistrations query
