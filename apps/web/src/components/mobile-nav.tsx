@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useId } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
@@ -45,6 +45,7 @@ export function MobileNav() {
   const [open, setOpen] = useState(false);
   const { user } = useAuth();
   const router = useRouter();
+  const triggerId = useId();
 
   const handleNavClick = (href: string) => {
     setOpen(false);
@@ -56,6 +57,7 @@ export function MobileNav() {
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger
+        id={triggerId}
         className="focus-visible:ring-ring hover:bg-accent hover:text-accent-foreground inline-flex h-9 w-9 items-center justify-center rounded-md text-sm font-medium whitespace-nowrap transition-colors focus-visible:ring-1 focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50 md:hidden"
         aria-label="Toggle menu"
       >
