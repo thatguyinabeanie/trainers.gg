@@ -2,7 +2,7 @@ import React from "react";
 import { render, screen, waitFor } from "@testing-library/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { TournamentManageClient } from "../tournament-manage-client";
-import { useSupabaseQuery } from "@/lib/supabase";
+import { useSupabaseQuery, useSupabase } from "@/lib/supabase";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import userEvent from "@testing-library/user-event";
 
@@ -12,9 +12,25 @@ jest.mock("next/navigation", () => ({
   useSearchParams: jest.fn(),
 }));
 
-// Mock Supabase query hook
+// Mock Supabase hooks
+const mockChannel = {
+  on: jest.fn().mockReturnThis(),
+  subscribe: jest.fn((callback) => {
+    if (typeof callback === "function") {
+      callback("SUBSCRIBED", null);
+    }
+    return mockChannel;
+  }),
+  unsubscribe: jest.fn(),
+};
+
+const mockSupabase = {
+  channel: jest.fn(() => mockChannel),
+};
+
 jest.mock("@/lib/supabase", () => ({
   useSupabaseQuery: jest.fn(),
+  useSupabase: jest.fn(() => mockSupabase),
 }));
 
 // Mock current user hook
@@ -26,13 +42,16 @@ jest.mock("@/hooks/use-current-user", () => ({
 jest.mock("@/components/tournaments", () => ({
   TournamentOverview: () => <div data-testid="overview-tab">Overview</div>,
   TournamentSettings: () => <div data-testid="settings-tab">Settings</div>,
-  TournamentPairings: () => <div data-testid="pairings-tab">Pairings</div>,
   TournamentRegistrations: () => (
     <div data-testid="registrations-tab">Registrations</div>
   ),
   TournamentStandings: () => <div data-testid="standings-tab">Standings</div>,
-  TournamentJudge: () => <div data-testid="judge-tab">Judge</div>,
   TournamentAuditLog: () => <div data-testid="audit-tab">Audit Log</div>,
+}));
+
+// Mock TournamentPairingsJudge separately (imported from different path)
+jest.mock("@/components/tournaments/manage/tournament-pairings-judge", () => ({
+  TournamentPairingsJudge: () => <div data-testid="pairings-tab">Pairings</div>,
 }));
 
 describe("TournamentManageClient - Deep Linkable Tabs", () => {
@@ -84,8 +103,21 @@ describe("TournamentManageClient - Deep Linkable Tabs", () => {
     tournament_id: bigint;
   }> = [];
 
+  // Helper function to setup useSupabaseQuery mocks
+  const setupQueryMocks = () => {
+    let callIndex = 0;
+    const mockResponses = [mockOrganization, mockTournament, mockPhases];
+    (useSupabaseQuery as jest.Mock).mockImplementation(() => ({
+      data: mockResponses[callIndex++],
+      isLoading: false,
+    }));
+  };
+
   beforeEach(() => {
     jest.clearAllMocks();
+
+    // Re-setup persistent mocks after clearAllMocks
+    (useSupabase as jest.Mock).mockReturnValue(mockSupabase);
 
     (useRouter as jest.Mock).mockReturnValue(mockRouter);
     (useSearchParams as jest.Mock).mockReturnValue(new URLSearchParams());
@@ -94,24 +126,13 @@ describe("TournamentManageClient - Deep Linkable Tabs", () => {
       isLoading: false,
     });
 
-    // Setup default query mocks
-    (useSupabaseQuery as jest.Mock)
-      .mockReturnValueOnce({
-        data: mockOrganization,
-        isLoading: false,
-      }) // organization query
-      .mockReturnValueOnce({
-        data: mockTournament,
-        isLoading: false,
-      }) // tournament query
-      .mockReturnValueOnce({
-        data: mockPhases,
-        isLoading: false,
-      }); // phases query
+    // Note: Each test must set up its own useSupabaseQuery mocks
   });
 
   describe("Tab Navigation", () => {
     it("should show overview tab by default when no tab parameter is provided", async () => {
+      setupQueryMocks();
+
       render(
         <TournamentManageClient
           orgSlug="test-org"
@@ -129,6 +150,8 @@ describe("TournamentManageClient - Deep Linkable Tabs", () => {
         new URLSearchParams("tab=pairings")
       );
 
+      setupQueryMocks();
+
       render(
         <TournamentManageClient
           orgSlug="test-org"
@@ -143,6 +166,8 @@ describe("TournamentManageClient - Deep Linkable Tabs", () => {
 
     it("should update URL when switching tabs", async () => {
       const user = userEvent.setup();
+
+      setupQueryMocks();
 
       render(
         <TournamentManageClient
@@ -174,7 +199,6 @@ describe("TournamentManageClient - Deep Linkable Tabs", () => {
         { param: "registrations", testId: "registrations-tab" },
         { param: "pairings", testId: "pairings-tab" },
         { param: "standings", testId: "standings-tab" },
-        { param: "judge", testId: "judge-tab" },
         { param: "audit", testId: "audit-tab" },
         { param: "settings", testId: "settings-tab" },
       ];
@@ -191,20 +215,11 @@ describe("TournamentManageClient - Deep Linkable Tabs", () => {
           isLoading: false,
         });
 
+        // Re-setup useSupabase mock after clearAllMocks
+        (useSupabase as jest.Mock).mockReturnValue(mockSupabase);
+
         // Setup query mocks for each iteration
-        (useSupabaseQuery as jest.Mock)
-          .mockReturnValueOnce({
-            data: mockOrganization,
-            isLoading: false,
-          }) // organization query
-          .mockReturnValueOnce({
-            data: mockTournament,
-            isLoading: false,
-          }) // tournament query
-          .mockReturnValueOnce({
-            data: mockPhases,
-            isLoading: false,
-          }); // phases query
+        setupQueryMocks();
 
         const { unmount } = render(
           <TournamentManageClient
@@ -226,6 +241,8 @@ describe("TournamentManageClient - Deep Linkable Tabs", () => {
         new URLSearchParams("tab=invalid")
       );
 
+      setupQueryMocks();
+
       render(
         <TournamentManageClient
           orgSlug="test-org"
@@ -242,6 +259,8 @@ describe("TournamentManageClient - Deep Linkable Tabs", () => {
   describe("Browser Navigation", () => {
     it("should preserve tab state when navigating with browser back/forward", async () => {
       const user = userEvent.setup();
+
+      setupQueryMocks();
 
       const { rerender: _rerender, unmount } = render(
         <TournamentManageClient
@@ -268,20 +287,11 @@ describe("TournamentManageClient - Deep Linkable Tabs", () => {
         isLoading: false,
       });
 
+      // Re-setup useSupabase mock after clearAllMocks
+      (useSupabase as jest.Mock).mockReturnValue(mockSupabase);
+
       // Setup query mocks again for rerender
-      (useSupabaseQuery as jest.Mock)
-        .mockReturnValueOnce({
-          data: mockOrganization,
-          isLoading: false,
-        }) // organization query
-        .mockReturnValueOnce({
-          data: mockTournament,
-          isLoading: false,
-        }) // tournament query
-        .mockReturnValueOnce({
-          data: mockPhases,
-          isLoading: false,
-        }); // phases query
+      setupQueryMocks();
 
       render(
         <TournamentManageClient
@@ -302,6 +312,8 @@ describe("TournamentManageClient - Deep Linkable Tabs", () => {
       (useSearchParams as jest.Mock).mockReturnValue(
         new URLSearchParams("tab=settings")
       );
+
+      setupQueryMocks();
 
       render(
         <TournamentManageClient
