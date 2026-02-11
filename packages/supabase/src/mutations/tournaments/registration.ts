@@ -27,13 +27,11 @@ export async function registerForTournament(
     "register_for_tournament_atomic",
     {
       p_tournament_id: tournamentId,
-      p_alt_id: data?.altId ?? (null as unknown as undefined),
-      p_team_name: data?.teamName ?? (null as unknown as undefined),
-      p_in_game_name: data?.inGameName ?? (null as unknown as undefined),
-      p_display_name_option:
-        data?.displayNameOption ?? (null as unknown as undefined),
-      p_show_country_flag:
-        data?.showCountryFlag ?? (null as unknown as undefined),
+      p_alt_id: data?.altId ?? undefined,
+      p_team_name: data?.teamName ?? undefined,
+      p_in_game_name: data?.inGameName ?? undefined,
+      p_display_name_option: data?.displayNameOption ?? undefined,
+      p_show_country_flag: data?.showCountryFlag ?? undefined,
     }
   );
 
@@ -183,7 +181,7 @@ export async function updateRegistrationStatus(
     .eq("id", registrationId);
 
   if (error) throw error;
-  return { success: true };
+  return { success: true, tournamentId: registration.tournament_id };
 }
 
 /**

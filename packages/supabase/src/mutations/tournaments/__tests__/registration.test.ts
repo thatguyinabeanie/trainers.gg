@@ -95,11 +95,11 @@ describe("Tournament Registration Mutations", () => {
         "register_for_tournament_atomic",
         {
           p_tournament_id: tournamentId,
-          p_alt_id: null,
-          p_team_name: null,
-          p_in_game_name: null,
-          p_display_name_option: null,
-          p_show_country_flag: null,
+          p_alt_id: undefined,
+          p_team_name: undefined,
+          p_in_game_name: undefined,
+          p_display_name_option: undefined,
+          p_show_country_flag: undefined,
         }
       );
       expect(result).toEqual({
@@ -428,7 +428,7 @@ describe("Tournament Registration Mutations", () => {
         "checked_in"
       );
 
-      expect(result).toEqual({ success: true });
+      expect(result).toEqual({ success: true, tournamentId: 100 });
     });
 
     it("should throw error if not authenticated", async () => {
