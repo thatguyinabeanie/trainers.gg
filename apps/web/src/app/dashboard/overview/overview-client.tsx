@@ -3,7 +3,7 @@
 import { useEffect, useRef } from "react";
 import { useAuth } from "@/components/auth/auth-provider";
 import { useSupabaseQuery } from "@/lib/supabase";
-import { getMyDashboardData } from "@trainers/supabase";
+import { getMyDashboardData, getActiveMatch } from "@trainers/supabase";
 import { toast } from "sonner";
 import {
   QuickActions,
@@ -11,6 +11,7 @@ import {
   RecentActivity,
   StatsOverview,
   RecentAchievements,
+  ActiveMatchCard,
 } from "@/components/dashboard";
 
 export function OverviewClient() {
@@ -52,6 +53,16 @@ export function OverviewClient() {
         });
 
   const { data: dashboardData } = useSupabaseQuery(dashboardDataQueryFn, [
+    profileId,
+  ]);
+
+  // Fetch active match
+  const activeMatchQueryFn = (
+    supabase: Parameters<typeof getActiveMatch>[0]
+  ) =>
+    profileId ? getActiveMatch(supabase, profileId) : Promise.resolve(null);
+
+  const { data: activeMatch } = useSupabaseQuery(activeMatchQueryFn, [
     profileId,
   ]);
 
@@ -103,6 +114,9 @@ export function OverviewClient() {
           }
         }
       />
+
+      {/* Active match card */}
+      {activeMatch && <ActiveMatchCard match={activeMatch} />}
 
       <QuickActions />
 
