@@ -202,7 +202,16 @@ export function TournamentOverview({ tournament }: TournamentOverviewProps) {
           triggerRefresh();
         }
       )
-      .subscribe();
+      .subscribe((status, err) => {
+        if (status === "SUBSCRIBED") {
+          setRealtimeStatus("connected");
+        } else if (status === "CLOSED") {
+          setRealtimeStatus("disconnected");
+        } else if (err) {
+          console.error("[Realtime] overview matches error:", err);
+          setRealtimeStatus("error");
+        }
+      });
     channels.push(matchChannel);
 
     // Round changes (for round status)
@@ -221,7 +230,16 @@ export function TournamentOverview({ tournament }: TournamentOverviewProps) {
             triggerRefresh();
           }
         )
-        .subscribe();
+        .subscribe((status, err) => {
+          if (status === "SUBSCRIBED") {
+            setRealtimeStatus("connected");
+          } else if (status === "CLOSED") {
+            setRealtimeStatus("disconnected");
+          } else if (err) {
+            console.error("[Realtime] overview rounds error:", err);
+            setRealtimeStatus("error");
+          }
+        });
       channels.push(roundChannel);
     }
 
