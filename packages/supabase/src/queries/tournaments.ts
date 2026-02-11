@@ -1531,6 +1531,7 @@ export async function getRegistrationStatus(
       lateCheckInMaxRound: tournament.late_check_in_max_round,
       currentRound: tournament.current_round,
       allowLateRegistration: tournament.allow_late_registration,
+      startDate: tournament.start_date,
     },
     registrationStats: {
       registered: registeredCount,
