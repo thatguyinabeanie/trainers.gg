@@ -1829,7 +1829,7 @@ BEGIN
       a.id,
       'dropped'::registration_status,
       (seed_now - interval '4 days 10 hours 37 minutes'),
-      (seed_now - interval '3 hours'),
+      NULL,
       (SELECT tm.id FROM public.teams tm WHERE tm.name = 'team-seed-122'),
       (seed_now - interval '4 days 10 hours 37 minutes'),
       TRUE
@@ -1881,7 +1881,7 @@ BEGIN
       a.id,
       'dropped'::registration_status,
       (seed_now - interval '4 days 10 hours 37 minutes'),
-      (seed_now - interval '3 hours'),
+      NULL,
       (SELECT tm.id FROM public.teams tm WHERE tm.name = 'team-seed-126'),
       (seed_now - interval '4 days 10 hours 37 minutes'),
       TRUE

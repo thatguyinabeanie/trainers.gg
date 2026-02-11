@@ -324,6 +324,7 @@ export function TournamentRegistrations({
                         selectedIds.size === filteredRegistrations.length
                       }
                       onCheckedChange={toggleSelectAll}
+                      aria-label="Select all registrations"
                     />
                   </TableHead>
                   <TableHead>Player</TableHead>

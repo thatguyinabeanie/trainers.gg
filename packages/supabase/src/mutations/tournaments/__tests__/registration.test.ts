@@ -95,11 +95,11 @@ describe("Tournament Registration Mutations", () => {
         "register_for_tournament_atomic",
         {
           p_tournament_id: tournamentId,
-          p_alt_id: null,
-          p_team_name: null,
-          p_in_game_name: null,
-          p_display_name_option: null,
-          p_show_country_flag: null,
+          p_alt_id: undefined,
+          p_team_name: undefined,
+          p_in_game_name: undefined,
+          p_display_name_option: undefined,
+          p_show_country_flag: undefined,
         }
       );
       expect(result).toEqual({

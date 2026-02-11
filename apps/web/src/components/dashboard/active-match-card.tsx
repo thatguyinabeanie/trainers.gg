@@ -2,9 +2,9 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Swords, MapPin } from "lucide-react";
 import Link from "next/link";
+import { cn } from "@/lib/utils";
 
 interface ActiveMatchCardProps {
   match: {
@@ -72,9 +72,11 @@ export function ActiveMatchCard({ match }: ActiveMatchCardProps) {
         {/* Action button */}
         <Link
           href={`/tournaments/${match.tournamentSlug}/match/${match.id}`}
-          className="w-full"
+          className={cn(
+            "bg-primary text-primary-foreground hover:bg-primary/80 inline-flex h-8 w-full items-center justify-center rounded-lg border border-transparent px-2.5 text-sm font-medium whitespace-nowrap transition-all"
+          )}
         >
-          <Button className="w-full">View Match</Button>
+          View Match
         </Link>
       </CardContent>
     </Card>
