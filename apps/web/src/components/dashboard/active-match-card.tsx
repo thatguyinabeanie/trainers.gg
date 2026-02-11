@@ -62,7 +62,7 @@ export function ActiveMatchCard({ match }: ActiveMatchCardProps) {
         )}
 
         {/* Table number */}
-        {match.table && (
+        {match.table != null && (
           <div className="flex items-center gap-1.5 text-sm">
             <MapPin className="text-muted-foreground h-4 w-4" />
             <span className="text-muted-foreground">Table {match.table}</span>

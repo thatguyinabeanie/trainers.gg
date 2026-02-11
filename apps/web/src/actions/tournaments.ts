@@ -878,18 +878,17 @@ export async function dropFromTournament(
  * Force check-in a player (tournament organizer action)
  */
 export async function forceCheckInPlayer(
-  registrationId: number,
-  tournamentId: number
+  registrationId: number
 ): Promise<ActionResult<{ success: true }>> {
   try {
     await rejectBots();
     const supabase = await createClient();
-    await updateRegistrationStatusMutation(
+    const result = await updateRegistrationStatusMutation(
       supabase,
       registrationId,
       "checked_in"
     );
-    updateTag(CacheTags.tournament(tournamentId));
+    updateTag(CacheTags.tournament(result.tournamentId));
     return { success: true, data: { success: true } };
   } catch (error) {
     return {
@@ -903,14 +902,17 @@ export async function forceCheckInPlayer(
  * Remove a player from tournament (tournament organizer action)
  */
 export async function removePlayerFromTournament(
-  registrationId: number,
-  tournamentId: number
+  registrationId: number
 ): Promise<ActionResult<{ success: true }>> {
   try {
     await rejectBots();
     const supabase = await createClient();
-    await updateRegistrationStatusMutation(supabase, registrationId, "dropped");
-    updateTag(CacheTags.tournament(tournamentId));
+    const result = await updateRegistrationStatusMutation(
+      supabase,
+      registrationId,
+      "dropped"
+    );
+    updateTag(CacheTags.tournament(result.tournamentId));
     return { success: true, data: { success: true } };
   } catch (error) {
     return {
@@ -924,8 +926,7 @@ export async function removePlayerFromTournament(
  * Bulk force check-in multiple players (tournament organizer action)
  */
 export async function bulkForceCheckIn(
-  registrationIds: number[],
-  tournamentId: number
+  registrationIds: number[]
 ): Promise<ActionResult<{ checkedIn: number; failed: number }>> {
   try {
     await rejectBots();
@@ -933,21 +934,30 @@ export async function bulkForceCheckIn(
 
     let checkedIn = 0;
     let failed = 0;
+    let tournamentId: number | null = null;
 
     for (const registrationId of registrationIds) {
       try {
-        await updateRegistrationStatusMutation(
+        const result = await updateRegistrationStatusMutation(
           supabase,
           registrationId,
           "checked_in"
         );
+        // Capture tournament ID from first successful update
+        if (tournamentId === null) {
+          tournamentId = result.tournamentId;
+        }
         checkedIn++;
       } catch {
         failed++;
       }
     }
 
-    updateTag(CacheTags.tournament(tournamentId));
+    // Invalidate cache if any updates succeeded
+    if (tournamentId !== null) {
+      updateTag(CacheTags.tournament(tournamentId));
+    }
+
     return { success: true, data: { checkedIn, failed } };
   } catch (error) {
     return {
@@ -961,8 +971,7 @@ export async function bulkForceCheckIn(
  * Bulk remove multiple players (tournament organizer action)
  */
 export async function bulkRemovePlayers(
-  registrationIds: number[],
-  tournamentId: number
+  registrationIds: number[]
 ): Promise<ActionResult<{ removed: number; failed: number }>> {
   try {
     await rejectBots();
@@ -970,21 +979,30 @@ export async function bulkRemovePlayers(
 
     let removed = 0;
     let failed = 0;
+    let tournamentId: number | null = null;
 
     for (const registrationId of registrationIds) {
       try {
-        await updateRegistrationStatusMutation(
+        const result = await updateRegistrationStatusMutation(
           supabase,
           registrationId,
           "dropped"
         );
+        // Capture tournament ID from first successful update
+        if (tournamentId === null) {
+          tournamentId = result.tournamentId;
+        }
         removed++;
       } catch {
         failed++;
       }
     }
 
-    updateTag(CacheTags.tournament(tournamentId));
+    // Invalidate cache if any updates succeeded
+    if (tournamentId !== null) {
+      updateTag(CacheTags.tournament(tournamentId));
+    }
+
     return { success: true, data: { removed, failed } };
   } catch (error) {
     return {

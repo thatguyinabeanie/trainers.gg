@@ -183,7 +183,7 @@ export async function updateRegistrationStatus(
     .eq("id", registrationId);
 
   if (error) throw error;
-  return { success: true };
+  return { success: true, tournamentId: registration.tournament_id };
 }
 
 /**

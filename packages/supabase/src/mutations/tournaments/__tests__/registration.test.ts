@@ -428,7 +428,7 @@ describe("Tournament Registration Mutations", () => {
         "checked_in"
       );
 
-      expect(result).toEqual({ success: true });
+      expect(result).toEqual({ success: true, tournamentId: 100 });
     });
 
     it("should throw error if not authenticated", async () => {

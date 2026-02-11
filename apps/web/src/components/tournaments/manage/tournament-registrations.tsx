@@ -104,7 +104,7 @@ export function TournamentRegistrations({
   const handleForceCheckIn = async (registrationId: number) => {
     setIsProcessing(true);
     try {
-      const result = await forceCheckInPlayer(registrationId, tournament.id);
+      const result = await forceCheckInPlayer(registrationId);
       if (result.success) {
         toast.success("Player checked in successfully");
         refetch();
@@ -123,10 +123,7 @@ export function TournamentRegistrations({
 
     setIsProcessing(true);
     try {
-      const result = await removePlayerFromTournament(
-        registrationId,
-        tournament.id
-      );
+      const result = await removePlayerFromTournament(registrationId);
       if (result.success) {
         toast.success("Player removed successfully");
         refetch();
@@ -145,10 +142,7 @@ export function TournamentRegistrations({
 
     setIsProcessing(true);
     try {
-      const result = await bulkForceCheckIn(
-        Array.from(selectedIds),
-        tournament.id
-      );
+      const result = await bulkForceCheckIn(Array.from(selectedIds));
       if (result.success) {
         toast.success(
           `${result.data.checkedIn} player(s) checked in${result.data.failed > 0 ? `, ${result.data.failed} failed` : ""}`
@@ -174,10 +168,7 @@ export function TournamentRegistrations({
 
     setIsProcessing(true);
     try {
-      const result = await bulkRemovePlayers(
-        Array.from(selectedIds),
-        tournament.id
-      );
+      const result = await bulkRemovePlayers(Array.from(selectedIds));
       if (result.success) {
         toast.success(
           `${result.data.removed} player(s) removed${result.data.failed > 0 ? `, ${result.data.failed} failed` : ""}`
