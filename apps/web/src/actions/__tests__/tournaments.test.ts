@@ -16,6 +16,7 @@ const mockDeleteTournament = jest.fn();
 const mockRegisterForTournament = jest.fn();
 const mockCancelRegistration = jest.fn();
 const mockStartRound = jest.fn();
+const mockUpdateRegistrationStatus = jest.fn();
 
 jest.mock("@trainers/supabase", () => ({
   createTournament: (...args: unknown[]) => mockCreateTournament(...args),
@@ -25,6 +26,8 @@ jest.mock("@trainers/supabase", () => ({
     mockRegisterForTournament(...args),
   cancelRegistration: (...args: unknown[]) => mockCancelRegistration(...args),
   startRound: (...args: unknown[]) => mockStartRound(...args),
+  updateRegistrationStatus: (...args: unknown[]) =>
+    mockUpdateRegistrationStatus(...args),
   // Stub unused imports so the module resolves without errors
   archiveTournament: jest.fn(),
   updateRegistrationPreferences: jest.fn(),
@@ -77,6 +80,10 @@ import {
   cancelRegistration,
   startRound,
   deleteTournament,
+  forceCheckInPlayer,
+  removePlayerFromTournament,
+  bulkForceCheckIn,
+  bulkRemovePlayers,
 } from "../tournaments";
 
 // ---------------------------------------------------------------------------
@@ -267,5 +274,130 @@ describe("deleteTournament", () => {
       success: false,
       error: "Failed to delete tournament",
     });
+  });
+});
+// ── forceCheckInPlayer ─────────────────────────────────────────────────────
+
+describe("forceCheckInPlayer", () => {
+  it("updates status to checked_in and revalidates tournament cache", async () => {
+    mockUpdateRegistrationStatus.mockResolvedValue({
+      success: true,
+      tournamentId: 10,
+    });
+
+    const result = await forceCheckInPlayer(42);
+
+    expect(result).toEqual({ success: true, data: { success: true } });
+    expect(mockUpdateRegistrationStatus).toHaveBeenCalledWith(
+      mockSupabase,
+      42,
+      "checked_in"
+    );
+    expect(mockUpdateTag).toHaveBeenCalledWith("tournament:10");
+  });
+
+  it("returns error when mutation fails", async () => {
+    mockUpdateRegistrationStatus.mockRejectedValue(
+      new Error("permission denied")
+    );
+
+    const result = await forceCheckInPlayer(42);
+
+    expect(result).toEqual({
+      success: false,
+      error: "Failed to force check-in player",
+    });
+  });
+});
+
+// ── removePlayerFromTournament ─────────────────────────────────────────────
+
+describe("removePlayerFromTournament", () => {
+  it("updates status to dropped and revalidates tournament cache", async () => {
+    mockUpdateRegistrationStatus.mockResolvedValue({
+      success: true,
+      tournamentId: 10,
+    });
+
+    const result = await removePlayerFromTournament(42);
+
+    expect(result).toEqual({ success: true, data: { success: true } });
+    expect(mockUpdateRegistrationStatus).toHaveBeenCalledWith(
+      mockSupabase,
+      42,
+      "dropped"
+    );
+    expect(mockUpdateTag).toHaveBeenCalledWith("tournament:10");
+  });
+
+  it("returns error when mutation fails", async () => {
+    mockUpdateRegistrationStatus.mockRejectedValue(
+      new Error("permission denied")
+    );
+
+    const result = await removePlayerFromTournament(42);
+
+    expect(result).toEqual({
+      success: false,
+      error: "Failed to remove player",
+    });
+  });
+});
+
+// ── bulkForceCheckIn ───────────────────────────────────────────────────────
+
+describe("bulkForceCheckIn", () => {
+  it("checks in multiple players and returns counts", async () => {
+    mockUpdateRegistrationStatus
+      .mockResolvedValueOnce({ success: true, tournamentId: 10 })
+      .mockResolvedValueOnce({ success: true, tournamentId: 10 })
+      .mockRejectedValueOnce(new Error("failed"));
+
+    const result = await bulkForceCheckIn([1, 2, 3]);
+
+    expect(result.success).toBe(true);
+    expect(result.data).toEqual({ checkedIn: 2, failed: 1 });
+    expect(mockUpdateRegistrationStatus).toHaveBeenCalledTimes(3);
+    expect(mockUpdateTag).toHaveBeenCalledWith("tournament:10");
+  });
+
+  it("handles all failures gracefully", async () => {
+    mockUpdateRegistrationStatus.mockRejectedValue(new Error("db error"));
+
+    const result = await bulkForceCheckIn([1, 2]);
+
+    expect(result.success).toBe(true);
+    expect(result.data).toEqual({ checkedIn: 0, failed: 2 });
+    // No cache invalidation if all failed
+    expect(mockUpdateTag).not.toHaveBeenCalled();
+  });
+});
+
+// ── bulkRemovePlayers ──────────────────────────────────────────────────────
+
+describe("bulkRemovePlayers", () => {
+  it("removes multiple players and returns counts", async () => {
+    mockUpdateRegistrationStatus
+      .mockResolvedValueOnce({ success: true, tournamentId: 10 })
+      .mockResolvedValueOnce({ success: true, tournamentId: 10 })
+      .mockRejectedValueOnce(new Error("failed"));
+
+    const result = await bulkRemovePlayers([1, 2, 3]);
+
+    expect(result.success).toBe(true);
+    expect(result.data).toEqual({ removed: 2, failed: 1 });
+    expect(mockUpdateRegistrationStatus).toHaveBeenCalledTimes(3);
+    expect(mockUpdateTag).toHaveBeenCalledWith("tournament:10");
+  });
+
+  it("handles all failures gracefully", async () => {
+    mockUpdateRegistrationStatus.mockRejectedValue(new Error("db error"));
+
+    const result = await bulkRemovePlayers([1, 2]);
+
+    expect(result.success).toBe(true);
+    expect(result.data).toEqual({ removed: 0, failed: 2 });
+    // No cache invalidation if all failed
+    expect(mockUpdateTag).not.toHaveBeenCalled();
   });
 });
