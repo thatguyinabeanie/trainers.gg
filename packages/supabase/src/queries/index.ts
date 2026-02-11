@@ -65,6 +65,7 @@ export {
   getPhaseRoundsWithMatches,
   getRoundMatchesWithStats,
   getPlayerMatches,
+  getActiveMatch,
   getMyDashboardData,
   getCheckInStatus,
   getCheckInStats,

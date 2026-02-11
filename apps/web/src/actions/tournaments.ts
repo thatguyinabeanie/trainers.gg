@@ -21,6 +21,7 @@ import {
   checkIn as checkInMutation,
   undoCheckIn as undoCheckInMutation,
   withdrawFromTournament as withdrawFromTournamentMutation,
+  updateRegistrationStatus as updateRegistrationStatusMutation,
   // Team submission
   submitTeam as submitTeamMutation,
   selectTeamForTournament as selectTeamForTournamentMutation,
@@ -868,6 +869,192 @@ export async function dropFromTournament(
     };
   }
 }
+
+// =============================================================================
+// Tournament Organizer Registration Actions
+// =============================================================================
+
+/**
+ * Force check-in a player (tournament organizer action)
+ */
+export async function forceCheckInPlayer(
+  registrationId: number
+): Promise<ActionResult<{ success: true }>> {
+  try {
+    await rejectBots();
+    const supabase = await createClient();
+    const result = await updateRegistrationStatusMutation(
+      supabase,
+      registrationId,
+      "checked_in"
+    );
+    updateTag(CacheTags.tournament(result.tournamentId));
+    return { success: true, data: { success: true } };
+  } catch (error) {
+    return {
+      success: false,
+      error: getErrorMessage(error, "Failed to force check-in player"),
+    };
+  }
+}
+
+/**
+ * Remove a player from tournament (tournament organizer action)
+ */
+export async function removePlayerFromTournament(
+  registrationId: number
+): Promise<ActionResult<{ success: true }>> {
+  try {
+    await rejectBots();
+    const supabase = await createClient();
+    const result = await updateRegistrationStatusMutation(
+      supabase,
+      registrationId,
+      "dropped"
+    );
+    updateTag(CacheTags.tournament(result.tournamentId));
+    return { success: true, data: { success: true } };
+  } catch (error) {
+    return {
+      success: false,
+      error: getErrorMessage(error, "Failed to remove player"),
+    };
+  }
+}
+
+/**
+ * Bulk force check-in multiple players (tournament organizer action)
+ */
+export async function bulkForceCheckIn(
+  registrationIds: number[]
+): Promise<ActionResult<{ checkedIn: number; failed: number }>> {
+  try {
+    await rejectBots();
+    const supabase = await createClient();
+
+    // Short-circuit if nothing to update
+    if (!registrationIds.length) {
+      return { success: true, data: { checkedIn: 0, failed: 0 } };
+    }
+
+    // Get registrations to verify they all belong to the same tournament
+    const { data: registrations } = await supabase
+      .from("tournament_registrations")
+      .select("id, tournament_id")
+      .in("id", registrationIds);
+
+    if (!registrations || registrations.length === 0) {
+      throw new Error("No registrations found");
+    }
+
+    // Get unique tournament IDs
+    const tournamentIds = [
+      ...new Set(registrations.map((r) => r.tournament_id)),
+    ];
+    if (tournamentIds.length === 0) {
+      throw new Error("No tournament IDs found in registrations");
+    }
+    if (tournamentIds.length !== 1) {
+      throw new Error(
+        "Cannot bulk update registrations from multiple tournaments"
+      );
+    }
+
+    const tournamentId = tournamentIds[0]!;
+
+    // Perform single bulk update
+    const { data, error } = await supabase
+      .from("tournament_registrations")
+      .update({ status: "checked_in" })
+      .in("id", registrationIds)
+      .eq("tournament_id", tournamentId)
+      .select("id");
+
+    if (error) throw error;
+
+    const checkedIn = data?.length ?? 0;
+    const failed = registrationIds.length - checkedIn;
+
+    // Invalidate cache
+    updateTag(CacheTags.tournament(tournamentId));
+
+    return { success: true, data: { checkedIn, failed } };
+  } catch (error) {
+    return {
+      success: false,
+      error: getErrorMessage(error, "Failed to bulk check-in players"),
+    };
+  }
+}
+
+/**
+ * Bulk remove multiple players (tournament organizer action)
+ */
+export async function bulkRemovePlayers(
+  registrationIds: number[]
+): Promise<ActionResult<{ removed: number; failed: number }>> {
+  try {
+    await rejectBots();
+    const supabase = await createClient();
+
+    // Short-circuit if nothing to update
+    if (!registrationIds.length) {
+      return { success: true, data: { removed: 0, failed: 0 } };
+    }
+
+    // Get registrations to verify they all belong to the same tournament
+    const { data: registrations } = await supabase
+      .from("tournament_registrations")
+      .select("id, tournament_id")
+      .in("id", registrationIds);
+
+    if (!registrations || registrations.length === 0) {
+      throw new Error("No registrations found");
+    }
+
+    // Get unique tournament IDs
+    const tournamentIds = [
+      ...new Set(registrations.map((r) => r.tournament_id)),
+    ];
+    if (tournamentIds.length === 0) {
+      throw new Error("No tournament IDs found in registrations");
+    }
+    if (tournamentIds.length !== 1) {
+      throw new Error(
+        "Cannot bulk update registrations from multiple tournaments"
+      );
+    }
+
+    const tournamentId = tournamentIds[0]!;
+
+    // Perform single bulk update
+    const { data, error } = await supabase
+      .from("tournament_registrations")
+      .update({ status: "dropped" })
+      .in("id", registrationIds)
+      .eq("tournament_id", tournamentId)
+      .select("id");
+
+    if (error) throw error;
+
+    const removed = data?.length ?? 0;
+    const failed = registrationIds.length - removed;
+
+    // Invalidate cache
+    updateTag(CacheTags.tournament(tournamentId));
+
+    return { success: true, data: { removed, failed } };
+  } catch (error) {
+    return {
+      success: false,
+      error: getErrorMessage(error, "Failed to bulk remove players"),
+    };
+  }
+}
+
+// =============================================================================
+// Match Management
+// =============================================================================
 
 /**
  * Report match result

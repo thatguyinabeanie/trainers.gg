@@ -1225,6 +1225,79 @@ export async function getTournamentMatchesForStaff(
  * Get dashboard data for current user
  * Returns tournaments, organizations, stats, recent activity, and achievements
  */
+/**
+ * Get the user's active (pending or in-progress) match
+ * - pending: match is ready but not started
+ * - active: match is in progress
+ */
+export async function getActiveMatch(supabase: TypedClient, altId: number) {
+  const { data: match } = await supabase
+    .from("tournament_matches")
+    .select(
+      `
+      *,
+      player1:alts!tournament_matches_alt1_id_fkey(id, display_name, username),
+      player2:alts!tournament_matches_alt2_id_fkey(id, display_name, username),
+      round:tournament_rounds(
+        id,
+        round_number,
+        phase:tournament_phases(
+          id,
+          name,
+          tournament:tournaments(id, name, slug)
+        )
+      )
+    `
+    )
+    .in("status", ["pending", "active"])
+    .or(`alt1_id.eq.${altId},alt2_id.eq.${altId}`)
+    .order("updated_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (!match) return null;
+
+  // Extract tournament and round info
+  const round = match.round as {
+    id: number;
+    round_number: number;
+    phase: {
+      id: number;
+      name: string;
+      tournament: { id: number; name: string; slug: string } | null;
+    } | null;
+  } | null;
+
+  const tournament = round?.phase?.tournament;
+  if (!tournament) return null;
+
+  // Determine opponent
+  const isPlayer1 = match.alt1_id === altId;
+  const opponent = isPlayer1 ? match.player2 : match.player1;
+  const opponentArr = opponent as
+    | { id: number; display_name: string; username: string }[]
+    | null;
+  const opponentProfile = opponentArr?.[0] ?? null;
+
+  return {
+    id: match.id,
+    status: match.status as "pending" | "active",
+    tournamentId: tournament.id,
+    tournamentName: tournament.name,
+    tournamentSlug: tournament.slug,
+    roundNumber: round?.round_number ?? 0,
+    phaseName: round?.phase?.name ?? "",
+    opponent: opponentProfile
+      ? {
+          id: opponentProfile.id,
+          displayName: opponentProfile.display_name,
+          username: opponentProfile.username,
+        }
+      : null,
+    table: match.table_number,
+  };
+}
+
 export async function getMyDashboardData(supabase: TypedClient, altId: number) {
   // Fetch all registrations for this user
   const { data: tournamentRegistrations } = await supabase
@@ -1531,6 +1604,7 @@ export async function getRegistrationStatus(
       lateCheckInMaxRound: tournament.late_check_in_max_round,
       currentRound: tournament.current_round,
       allowLateRegistration: tournament.allow_late_registration,
+      startDate: tournament.start_date,
     },
     registrationStats: {
       registered: registeredCount,

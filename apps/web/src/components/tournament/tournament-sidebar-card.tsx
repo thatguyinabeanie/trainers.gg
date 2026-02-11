@@ -148,6 +148,81 @@ function SectionSeparator({ label }: { label: string }) {
   );
 }
 
+/**
+ * Countdown timer showing time remaining until a target date.
+ */
+function CountdownTimer({ targetDate }: { targetDate: string | null }) {
+  const [timeRemaining, setTimeRemaining] = useState<{
+    days: number;
+    hours: number;
+    minutes: number;
+    seconds: number;
+  } | null>(null);
+
+  useEffect(() => {
+    if (!targetDate) {
+      setTimeRemaining(null);
+      return;
+    }
+
+    // Validate date string to prevent NaN calculations
+    const targetTimestamp = new Date(targetDate).getTime();
+    if (Number.isNaN(targetTimestamp)) {
+      console.error(`[CountdownTimer] Invalid date string: "${targetDate}"`);
+      setTimeRemaining(null);
+      return;
+    }
+
+    const calculateTimeRemaining = () => {
+      const now = new Date().getTime();
+      const diff = targetTimestamp - now;
+
+      if (diff <= 0) {
+        setTimeRemaining(null);
+        return;
+      }
+
+      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+      const hours = Math.floor(
+        (diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)
+      );
+      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+
+      setTimeRemaining({ days, hours, minutes, seconds });
+    };
+
+    // Calculate immediately
+    calculateTimeRemaining();
+
+    // Update every second
+    const interval = setInterval(calculateTimeRemaining, 1000);
+
+    return () => clearInterval(interval);
+  }, [targetDate]);
+
+  if (!timeRemaining) return null;
+
+  const parts = [];
+  if (timeRemaining.days > 0) {
+    parts.push(`${timeRemaining.days}d`);
+  }
+  if (timeRemaining.hours > 0 || timeRemaining.days > 0) {
+    parts.push(`${timeRemaining.hours}h`);
+  }
+  parts.push(`${timeRemaining.minutes}m`);
+  parts.push(`${timeRemaining.seconds}s`);
+
+  return (
+    <div className="flex items-center gap-1.5">
+      <Clock className="h-3.5 w-3.5 text-amber-600" />
+      <span className="font-mono text-xs text-amber-600">
+        {parts.join(" ")}
+      </span>
+    </div>
+  );
+}
+
 // ---------------------------------------------------------------------------
 // Main Component
 // ---------------------------------------------------------------------------
@@ -1079,10 +1154,20 @@ export function TournamentSidebarCard({
             <div className="space-y-3">
               <p className="text-sm font-medium">Check-In</p>
 
-              {/* Late check-in info */}
-              {lateMaxRound && (
+              {/* Countdown timer for upcoming tournaments */}
+              {tournament.status === "upcoming" && tournament.startDate && (
+                <div className="rounded-lg bg-amber-500/10 p-2.5">
+                  <p className="text-muted-foreground mb-1.5 text-xs">
+                    Closes when tournament starts
+                  </p>
+                  <CountdownTimer targetDate={tournament.startDate} />
+                </div>
+              )}
+
+              {/* Late check-in info for active tournaments */}
+              {tournament.status === "active" && lateMaxRound && (
                 <p className="text-muted-foreground text-xs">
-                  Open until Round {lateMaxRound}
+                  Open until Round {lateMaxRound} starts
                 </p>
               )}
 
@@ -1098,24 +1183,23 @@ export function TournamentSidebarCard({
                 </div>
               )}
 
-              {/* Team warning */}
-              {!hasTeam && (
-                <p className="text-xs font-medium text-amber-600">
-                  Submit your team before checking in
-                </p>
+              {/* Check-in button with validation */}
+              {!hasTeam ? (
+                <Button disabled className="w-full" variant="outline">
+                  Submit a Team to Check In
+                </Button>
+              ) : (
+                <Button
+                  onClick={handleCheckIn}
+                  disabled={isChecking}
+                  className="w-full"
+                >
+                  {isChecking ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : null}
+                  Check In
+                </Button>
               )}
-
-              {/* Check-in button */}
-              <Button
-                onClick={handleCheckIn}
-                disabled={!hasTeam || isChecking}
-                className="w-full"
-              >
-                {isChecking ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                ) : null}
-                Check In
-              </Button>
             </div>
           </CardContent>
         </Card>
@@ -1263,9 +1347,20 @@ export function TournamentSidebarCard({
                 <Separator />
                 <p className="text-sm font-medium">Check-In</p>
 
-                {lateMaxRound && (
+                {/* Countdown timer for upcoming tournaments */}
+                {tournament.status === "upcoming" && tournament.startDate && (
+                  <div className="rounded-lg bg-amber-500/10 p-2.5">
+                    <p className="text-muted-foreground mb-1.5 text-xs">
+                      Closes when tournament starts
+                    </p>
+                    <CountdownTimer targetDate={tournament.startDate} />
+                  </div>
+                )}
+
+                {/* Late check-in info for active tournaments */}
+                {tournament.status === "active" && lateMaxRound && (
                   <p className="text-muted-foreground text-xs">
-                    Open until Round {lateMaxRound}
+                    Open until Round {lateMaxRound} starts
                   </p>
                 )}
 
