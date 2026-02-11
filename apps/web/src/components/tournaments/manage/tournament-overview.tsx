@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useTransition, useEffect, useCallback } from "react";
-import { useSupabaseQuery } from "@/lib/supabase";
+import { useState, useTransition, useEffect, useCallback, useRef } from "react";
+import { useSupabase, useSupabaseQuery } from "@/lib/supabase";
 import {
   getTournamentPhases,
   getPhaseRoundsWithStats,
@@ -18,6 +18,10 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Play, AlertCircle, Loader2, CheckCircle, X } from "lucide-react";
 import { toast } from "sonner";
+import {
+  RealtimeStatusBadge,
+  type RealtimeStatus,
+} from "./realtime-status-badge";
 
 // -- Types --
 
@@ -65,11 +69,26 @@ interface PreviewData {
 // -- Component --
 
 export function TournamentOverview({ tournament }: TournamentOverviewProps) {
+  const supabase = useSupabase();
   const [roundState, setRoundState] = useState<RoundState>("idle");
   const [previewData, setPreviewData] = useState<PreviewData | null>(null);
   const [isPending, startTransition] = useTransition();
+  const [refreshKey, setRefreshKey] = useState(0);
+  const [realtimeStatus, setRealtimeStatus] =
+    useState<RealtimeStatus>("connected");
+  const refreshTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
 
   const isActive = tournament.status === "active";
+
+  // Debounced refresh trigger (500ms delay to batch bulk operations)
+  const triggerRefresh = useCallback(() => {
+    if (refreshTimeoutRef.current) {
+      clearTimeout(refreshTimeoutRef.current);
+    }
+    refreshTimeoutRef.current = setTimeout(() => {
+      setRefreshKey((k) => k + 1);
+    }, 500);
+  }, []);
 
   // -- Data Fetching --
 
@@ -104,7 +123,11 @@ export function TournamentOverview({ tournament }: TournamentOverviewProps) {
     data: rounds,
     isLoading: roundsLoading,
     refetch: refetchRounds,
-  } = useSupabaseQuery(roundsQueryFn, [activePhaseId, "overview-rounds"]);
+  } = useSupabaseQuery(roundsQueryFn, [
+    activePhaseId,
+    "overview-rounds",
+    refreshKey,
+  ]);
 
   // Derive current round state from data
   const lastRound =
@@ -132,6 +155,83 @@ export function TournamentOverview({ tournament }: TournamentOverviewProps) {
     lastRound?.status === "pending" && lastRound.matchCount > 0
       ? lastRound
       : null;
+
+  // Real-time subscriptions for overview data
+  useEffect(() => {
+    const channels: ReturnType<typeof supabase.channel>[] = [];
+
+    // Registration changes (for check-in count)
+    const regChannel = supabase
+      .channel(`overview-registrations-${tournament.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "tournament_registrations",
+          filter: `tournament_id=eq.${tournament.id}`,
+        },
+        () => {
+          triggerRefresh();
+        }
+      )
+      .subscribe((status, err) => {
+        if (status === "SUBSCRIBED") {
+          setRealtimeStatus("connected");
+        } else if (status === "CLOSED") {
+          setRealtimeStatus("disconnected");
+        } else if (err) {
+          console.error("[Realtime] overview registrations error:", err);
+          setRealtimeStatus("error");
+        }
+      });
+    channels.push(regChannel);
+
+    // Match changes (for completion count)
+    const matchChannel = supabase
+      .channel(`overview-matches-${tournament.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "tournament_matches",
+          filter: `tournament_id=eq.${tournament.id}`,
+        },
+        () => {
+          triggerRefresh();
+        }
+      )
+      .subscribe();
+    channels.push(matchChannel);
+
+    // Round changes (for round status)
+    if (activePhaseId) {
+      const roundChannel = supabase
+        .channel(`overview-rounds-${activePhaseId}`)
+        .on(
+          "postgres_changes",
+          {
+            event: "UPDATE",
+            schema: "public",
+            table: "tournament_rounds",
+            filter: `phase_id=eq.${activePhaseId}`,
+          },
+          () => {
+            triggerRefresh();
+          }
+        )
+        .subscribe();
+      channels.push(roundChannel);
+    }
+
+    return () => {
+      if (refreshTimeoutRef.current) {
+        clearTimeout(refreshTimeoutRef.current);
+      }
+      channels.forEach((ch) => ch.unsubscribe());
+    };
+  }, [supabase, tournament.id, activePhaseId, triggerRefresh]);
 
   // Sync roundState from fetched data
   useEffect(() => {
@@ -313,6 +413,8 @@ export function TournamentOverview({ tournament }: TournamentOverviewProps) {
 
   return (
     <div className="space-y-6">
+      <RealtimeStatusBadge status={realtimeStatus} />
+
       {/* Round Command Center — only for active tournaments */}
       {isActive && (
         <RoundCommandCenter

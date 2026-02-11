@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { useSupabaseQuery } from "@/lib/supabase";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { useSupabase, useSupabaseQuery } from "@/lib/supabase";
 import { getTournamentRegistrations } from "@trainers/supabase";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -29,6 +29,10 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Search, MoreHorizontal, UserCheck, UserX, Mail } from "lucide-react";
+import {
+  RealtimeStatusBadge,
+  type RealtimeStatus,
+} from "./realtime-status-badge";
 
 interface TournamentRegistrationsProps {
   tournament: {
@@ -40,11 +44,61 @@ interface TournamentRegistrationsProps {
 export function TournamentRegistrations({
   tournament,
 }: TournamentRegistrationsProps) {
+  const supabase = useSupabase();
   const [searchTerm, setSearchTerm] = useState("");
+  const [refreshKey, setRefreshKey] = useState(0);
+  const [realtimeStatus, setRealtimeStatus] =
+    useState<RealtimeStatus>("connected");
+  const refreshTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
+
+  // Debounced refresh trigger (500ms delay to batch bulk operations)
+  const triggerRefresh = useCallback(() => {
+    if (refreshTimeoutRef.current) {
+      clearTimeout(refreshTimeoutRef.current);
+    }
+    refreshTimeoutRef.current = setTimeout(() => {
+      setRefreshKey((k) => k + 1);
+    }, 500);
+  }, []);
+
+  // Real-time subscription to tournament_registrations
+  useEffect(() => {
+    const channel = supabase
+      .channel(`registrations-${tournament.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*", // INSERT, UPDATE, DELETE
+          schema: "public",
+          table: "tournament_registrations",
+          filter: `tournament_id=eq.${tournament.id}`,
+        },
+        () => {
+          triggerRefresh();
+        }
+      )
+      .subscribe((status, err) => {
+        if (status === "SUBSCRIBED") {
+          setRealtimeStatus("connected");
+        } else if (status === "CLOSED") {
+          setRealtimeStatus("disconnected");
+        } else if (err) {
+          console.error("[Realtime] registrations error:", err);
+          setRealtimeStatus("error");
+        }
+      });
+
+    return () => {
+      if (refreshTimeoutRef.current) {
+        clearTimeout(refreshTimeoutRef.current);
+      }
+      channel.unsubscribe();
+    };
+  }, [supabase, tournament.id, triggerRefresh]);
 
   const { data: registrations } = useSupabaseQuery(
     (supabase) => getTournamentRegistrations(supabase, tournament.id),
-    [tournament.id]
+    [tournament.id, refreshKey]
   );
 
   const filteredRegistrations =
@@ -77,6 +131,7 @@ export function TournamentRegistrations({
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <RealtimeStatusBadge status={realtimeStatus} />
           <div className="relative">
             <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
             <Input
