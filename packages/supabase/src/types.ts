@@ -2895,6 +2895,17 @@ export type Database = {
       }
       is_site_admin: { Args: never; Returns: boolean }
       is_sudo_active: { Args: never; Returns: boolean }
+      register_for_tournament_atomic: {
+        Args: {
+          p_alt_id?: number
+          p_display_name_option?: string
+          p_in_game_name?: string
+          p_show_country_flag?: boolean
+          p_team_name?: string
+          p_tournament_id: number
+        }
+        Returns: Json
+      }
       report_match_result: {
         Args: {
           p_match_id: number

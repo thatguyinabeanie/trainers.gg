@@ -56,6 +56,7 @@ const createMockClient = () => {
     update: jest.fn().mockReturnThis(),
     delete: jest.fn().mockReturnThis(),
     single: jest.fn(),
+    rpc: jest.fn(),
   };
   return mockClient as unknown as TypedClient;
 };
@@ -78,41 +79,29 @@ describe("Tournament Registration Mutations", () => {
     });
 
     it("should successfully register a player for a tournament", async () => {
-      const fromSpy = jest.spyOn(mockClient, "from");
-
-      // Mock: Check existing registration - return null
-      fromSpy.mockReturnValueOnce({
-        select: jest.fn().mockReturnThis(),
-        eq: jest.fn().mockReturnThis(),
-        single: jest.fn().mockResolvedValue({ data: null, error: null }),
-      } as unknown as MockQueryBuilder);
-
-      // Mock: Get tournament details
-      fromSpy.mockReturnValueOnce({
-        select: jest.fn().mockReturnThis(),
-        eq: jest.fn().mockReturnThis(),
-        single: jest.fn().mockResolvedValue({
-          data: {
-            status: "draft",
-            max_participants: null,
-            allow_late_registration: false,
-          },
-          error: null,
-        }),
-      } as unknown as MockQueryBuilder);
-
-      // Mock: Insert registration
-      fromSpy.mockReturnValueOnce({
-        insert: jest.fn().mockReturnThis(),
-        select: jest.fn().mockReturnThis(),
-        single: jest.fn().mockResolvedValue({
-          data: { id: 500, status: "registered" },
-          error: null,
-        }),
-      } as unknown as MockQueryBuilder);
+      // Mock RPC call
+      (mockClient.rpc as jest.Mock).mockResolvedValue({
+        data: {
+          success: true,
+          registrationId: 500,
+          status: "registered",
+        },
+        error: null,
+      });
 
       const result = await registerForTournament(mockClient, tournamentId);
 
+      expect(mockClient.rpc).toHaveBeenCalledWith(
+        "register_for_tournament_atomic",
+        {
+          p_tournament_id: tournamentId,
+          p_alt_id: null,
+          p_team_name: null,
+          p_in_game_name: null,
+          p_display_name_option: null,
+          p_show_country_flag: null,
+        }
+      );
       expect(result).toEqual({
         success: true,
         registrationId: 500,
@@ -121,7 +110,15 @@ describe("Tournament Registration Mutations", () => {
     });
 
     it("should throw error if alt cannot be loaded", async () => {
-      (getCurrentAlt as jest.Mock).mockResolvedValue(null);
+      // RPC returns error for missing alt
+      (mockClient.rpc as jest.Mock).mockResolvedValue({
+        data: {
+          success: false,
+          error:
+            "Unable to load your account. Please try signing out and back in, or contact support.",
+        },
+        error: null,
+      });
 
       await expect(
         registerForTournament(mockClient, tournamentId)
@@ -129,18 +126,13 @@ describe("Tournament Registration Mutations", () => {
     });
 
     it("should throw error if already registered", async () => {
-      (mockClient.from as jest.Mock).mockImplementation((table: string) => {
-        if (table === "tournament_registrations") {
-          return {
-            select: jest.fn().mockReturnThis(),
-            eq: jest.fn().mockReturnThis(),
-            single: jest.fn().mockResolvedValue({
-              data: { id: 999 },
-              error: null,
-            }),
-          };
-        }
-        return mockClient;
+      // RPC returns error for duplicate registration
+      (mockClient.rpc as jest.Mock).mockResolvedValue({
+        data: {
+          success: false,
+          error: "Already registered for this tournament",
+        },
+        error: null,
       });
 
       await expect(
@@ -149,22 +141,13 @@ describe("Tournament Registration Mutations", () => {
     });
 
     it("should throw error if tournament not found", async () => {
-      (mockClient.from as jest.Mock).mockImplementation((table: string) => {
-        if (table === "tournament_registrations") {
-          return {
-            select: jest.fn().mockReturnThis(),
-            eq: jest.fn().mockReturnThis(),
-            single: jest.fn().mockResolvedValue({ data: null, error: null }),
-          };
-        }
-        if (table === "tournaments") {
-          return {
-            select: jest.fn().mockReturnThis(),
-            eq: jest.fn().mockReturnThis(),
-            single: jest.fn().mockResolvedValue({ data: null, error: null }),
-          };
-        }
-        return mockClient;
+      // RPC returns error for missing tournament
+      (mockClient.rpc as jest.Mock).mockResolvedValue({
+        data: {
+          success: false,
+          error: "Tournament not found",
+        },
+        error: null,
       });
 
       await expect(
@@ -173,31 +156,13 @@ describe("Tournament Registration Mutations", () => {
     });
 
     it("should throw error if tournament is not open for registration", async () => {
-      (checkRegistrationOpen as jest.Mock).mockReturnValue({ isOpen: false });
-
-      (mockClient.from as jest.Mock).mockImplementation((table: string) => {
-        if (table === "tournament_registrations") {
-          return {
-            select: jest.fn().mockReturnThis(),
-            eq: jest.fn().mockReturnThis(),
-            single: jest.fn().mockResolvedValue({ data: null, error: null }),
-          };
-        }
-        if (table === "tournaments") {
-          return {
-            select: jest.fn().mockReturnThis(),
-            eq: jest.fn().mockReturnThis(),
-            single: jest.fn().mockResolvedValue({
-              data: {
-                status: "completed",
-                max_participants: null,
-                allow_late_registration: false,
-              },
-              error: null,
-            }),
-          };
-        }
-        return mockClient;
+      // RPC returns error for closed registration
+      (mockClient.rpc as jest.Mock).mockResolvedValue({
+        data: {
+          success: false,
+          error: "Tournament is not open for registration",
+        },
+        error: null,
       });
 
       await expect(
@@ -206,51 +171,15 @@ describe("Tournament Registration Mutations", () => {
     });
 
     it("should register as waitlist when tournament is at max capacity", async () => {
-      const maxParticipants = 32;
-      const currentCount = 32;
-      const fromSpy = jest.spyOn(mockClient, "from");
-
-      // Mock: Check existing registration - return null
-      fromSpy.mockReturnValueOnce({
-        select: jest.fn().mockReturnThis(),
-        eq: jest.fn().mockReturnThis(),
-        single: jest.fn().mockResolvedValue({ data: null, error: null }),
-      } as unknown as MockQueryBuilder);
-
-      // Mock: Get tournament details
-      fromSpy.mockReturnValueOnce({
-        select: jest.fn().mockReturnThis(),
-        eq: jest.fn().mockReturnThis(),
-        single: jest.fn().mockResolvedValue({
-          data: {
-            status: "draft",
-            max_participants: maxParticipants,
-            allow_late_registration: false,
-          },
-          error: null,
-        }),
-      } as unknown as MockQueryBuilder);
-
-      // Mock: Count existing registrations (needs two .eq() calls)
-      const eqMock2 = jest.fn().mockResolvedValue({
-        count: currentCount,
+      // RPC returns waitlist status when tournament is full
+      (mockClient.rpc as jest.Mock).mockResolvedValue({
+        data: {
+          success: true,
+          registrationId: 501,
+          status: "waitlist",
+        },
         error: null,
       });
-      const eqMock1 = jest.fn().mockReturnValue({ eq: eqMock2 });
-      fromSpy.mockReturnValueOnce({
-        select: jest.fn().mockReturnThis(),
-        eq: eqMock1,
-      } as unknown as MockQueryBuilder);
-
-      // Mock: Insert registration as waitlist
-      fromSpy.mockReturnValueOnce({
-        insert: jest.fn().mockReturnThis(),
-        select: jest.fn().mockReturnThis(),
-        single: jest.fn().mockResolvedValue({
-          data: { id: 501, status: "waitlist" },
-          error: null,
-        }),
-      } as unknown as MockQueryBuilder);
 
       const result = await registerForTournament(mockClient, tournamentId);
 
@@ -270,55 +199,28 @@ describe("Tournament Registration Mutations", () => {
         showCountryFlag: true,
       };
 
-      (getCurrentAlt as jest.Mock).mockResolvedValue({
-        id: 20,
-        username: "jessie",
-        user_id: "user-456",
+      // Mock RPC call
+      (mockClient.rpc as jest.Mock).mockResolvedValue({
+        data: {
+          success: true,
+          registrationId: 502,
+          status: "registered",
+        },
+        error: null,
       });
-
-      const fromSpy = jest.spyOn(mockClient, "from");
-
-      // Mock: Check existing registration - return null
-      fromSpy.mockReturnValueOnce({
-        select: jest.fn().mockReturnThis(),
-        eq: jest.fn().mockReturnThis(),
-        single: jest.fn().mockResolvedValue({ data: null, error: null }),
-      } as unknown as MockQueryBuilder);
-
-      // Mock: Get tournament details
-      fromSpy.mockReturnValueOnce({
-        select: jest.fn().mockReturnThis(),
-        eq: jest.fn().mockReturnThis(),
-        single: jest.fn().mockResolvedValue({
-          data: {
-            status: "draft",
-            max_participants: null,
-            allow_late_registration: false,
-          },
-          error: null,
-        }),
-      } as unknown as MockQueryBuilder);
-
-      // Mock: Insert registration with data
-      const insertMock = jest.fn().mockReturnThis();
-      fromSpy.mockReturnValueOnce({
-        insert: insertMock,
-        select: jest.fn().mockReturnThis(),
-        single: jest.fn().mockResolvedValue({
-          data: { id: 502 },
-          error: null,
-        }),
-      } as unknown as MockQueryBuilder);
 
       await registerForTournament(mockClient, tournamentId, registrationData);
 
-      expect(insertMock).toHaveBeenCalledWith(
-        expect.objectContaining({
-          team_name: "Team Rocket",
-          in_game_name: "Jessie",
-          display_name_option: "in_game_name",
-          show_country_flag: true,
-        })
+      expect(mockClient.rpc).toHaveBeenCalledWith(
+        "register_for_tournament_atomic",
+        {
+          p_tournament_id: tournamentId,
+          p_alt_id: 20,
+          p_team_name: "Team Rocket",
+          p_in_game_name: "Jessie",
+          p_display_name_option: "in_game_name",
+          p_show_country_flag: true,
+        }
       );
     });
   });
