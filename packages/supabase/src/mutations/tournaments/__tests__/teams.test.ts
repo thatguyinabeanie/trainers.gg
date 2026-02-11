@@ -169,7 +169,7 @@ Timid Nature
         insert: jest.fn().mockReturnThis(),
         select: jest.fn().mockReturnThis(),
         single: jest.fn().mockResolvedValue({
-          data: { id: 1000 },
+          data: { id: 1000, name: "Tournament Team" },
           error: null,
         }),
       } as unknown as MockQueryBuilder);
@@ -200,6 +200,8 @@ Timid Nature
         success: true,
         teamId: 1000,
         pokemonCount: 2,
+        teamName: "Tournament Team",
+        species: ["Pikachu", "Charizard"],
       });
       expect(parseAndValidateTeam).toHaveBeenCalledWith(
         rawText,
@@ -267,7 +269,7 @@ Timid Nature
         insert: jest.fn().mockReturnThis(),
         select: jest.fn().mockReturnThis(),
         single: jest.fn().mockResolvedValue({
-          data: { id: 1000 },
+          data: { id: 1000, name: "Tournament Team" },
           error: null,
         }),
       } as unknown as MockQueryBuilder);
@@ -298,6 +300,8 @@ Timid Nature
         success: true,
         teamId: 1000,
         pokemonCount: 2,
+        teamName: "Tournament Team",
+        species: ["Pikachu", "Charizard"],
       });
     });
 
@@ -415,11 +419,15 @@ Timid Nature
         }),
       } as unknown as MockQueryBuilder);
 
-      await expect(
-        submitTeam(mockClient, tournamentId, rawText)
-      ).rejects.toThrow(
-        "Team validation failed:\n• Pikachu is not allowed in this format\n• Invalid ability for Charizard"
-      );
+      const result = await submitTeam(mockClient, tournamentId, rawText);
+
+      expect(result).toEqual({
+        success: false,
+        errors: [
+          "Pikachu is not allowed in this format",
+          "Invalid ability for Charizard",
+        ],
+      });
     });
 
     it("should throw error if team is empty", async () => {
@@ -456,9 +464,12 @@ Timid Nature
         }),
       } as unknown as MockQueryBuilder);
 
-      await expect(
-        submitTeam(mockClient, tournamentId, rawText)
-      ).rejects.toThrow("Team validation failed:");
+      const result = await submitTeam(mockClient, tournamentId, rawText);
+
+      expect(result).toEqual({
+        success: false,
+        errors: [],
+      });
     });
 
     it("should throw error if team creation fails", async () => {
@@ -537,7 +548,7 @@ Timid Nature
         insert: jest.fn().mockReturnThis(),
         select: jest.fn().mockReturnThis(),
         single: jest.fn().mockResolvedValue({
-          data: { id: 1000 },
+          data: { id: 1000, name: "Tournament Team" },
           error: null,
         }),
       } as unknown as MockQueryBuilder);
@@ -589,7 +600,7 @@ Timid Nature
         insert: jest.fn().mockReturnThis(),
         select: jest.fn().mockReturnThis(),
         single: jest.fn().mockResolvedValue({
-          data: { id: 1000 },
+          data: { id: 1000, name: "Tournament Team" },
           error: null,
         }),
       } as unknown as MockQueryBuilder);
@@ -648,7 +659,7 @@ Timid Nature
         insert: jest.fn().mockReturnThis(),
         select: jest.fn().mockReturnThis(),
         single: jest.fn().mockResolvedValue({
-          data: { id: 1000 },
+          data: { id: 1000, name: "Tournament Team" },
           error: null,
         }),
       } as unknown as MockQueryBuilder);
@@ -734,7 +745,7 @@ Timid Nature
         insert: jest.fn().mockReturnThis(),
         select: jest.fn().mockReturnThis(),
         single: jest.fn().mockResolvedValue({
-          data: { id: 1000 },
+          data: { id: 1000, name: "Tournament Team" },
           error: null,
         }),
       } as unknown as MockQueryBuilder);
@@ -765,6 +776,8 @@ Timid Nature
         success: true,
         teamId: 1000,
         pokemonCount: 2,
+        teamName: "Tournament Team",
+        species: ["Pikachu", "Charizard"],
       });
     });
   });
@@ -795,24 +808,25 @@ Timid Nature
         }),
       } as unknown as MockQueryBuilder);
 
-      // Mock: Verify team ownership
+      // Mock: Verify team ownership and fetch Pokemon
       fromSpy.mockReturnValueOnce({
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
+        order: jest.fn().mockReturnThis(),
         single: jest.fn().mockResolvedValue({
           data: {
             id: teamId,
+            name: "My Team",
             created_by: mockAlt.id,
+            team_pokemon: [
+              { team_position: 1, pokemon: { species: "Pikachu" } },
+              { team_position: 2, pokemon: { species: "Charizard" } },
+              { team_position: 3, pokemon: { species: "Blastoise" } },
+              { team_position: 4, pokemon: { species: "Venusaur" } },
+              { team_position: 5, pokemon: { species: "Snorlax" } },
+              { team_position: 6, pokemon: { species: "Dragonite" } },
+            ],
           },
-          error: null,
-        }),
-      } as unknown as MockQueryBuilder);
-
-      // Mock: Count pokemon in team
-      fromSpy.mockReturnValueOnce({
-        select: jest.fn().mockReturnThis(),
-        eq: jest.fn().mockResolvedValue({
-          count: 6,
           error: null,
         }),
       } as unknown as MockQueryBuilder);
@@ -830,8 +844,18 @@ Timid Nature
       );
 
       expect(result).toEqual({
+        success: true,
         teamId: 1000,
         pokemonCount: 6,
+        teamName: "My Team",
+        species: [
+          "Pikachu",
+          "Charizard",
+          "Blastoise",
+          "Venusaur",
+          "Snorlax",
+          "Dragonite",
+        ],
       });
     });
 
@@ -899,6 +923,7 @@ Timid Nature
       fromSpy.mockReturnValueOnce({
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
+        order: jest.fn().mockReturnThis(),
         single: jest.fn().mockResolvedValue({
           data: null,
           error: null,
@@ -931,10 +956,13 @@ Timid Nature
       fromSpy.mockReturnValueOnce({
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
+        order: jest.fn().mockReturnThis(),
         single: jest.fn().mockResolvedValue({
           data: {
             id: teamId,
+            name: "Other Team",
             created_by: 999,
+            team_pokemon: [],
           },
           error: null,
         }),
@@ -945,7 +973,7 @@ Timid Nature
       ).rejects.toThrow("This team does not belong to your account");
     });
 
-    it("should throw error if team has no pokemon", async () => {
+    it("should return structured error if team has no pokemon", async () => {
       const fromSpy = jest.spyOn(mockClient, "from");
 
       // Mock: Get registration
@@ -962,36 +990,37 @@ Timid Nature
         }),
       } as unknown as MockQueryBuilder);
 
-      // Mock: Verify team ownership
+      // Mock: Verify team ownership and fetch Pokemon (empty)
       fromSpy.mockReturnValueOnce({
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
+        order: jest.fn().mockReturnThis(),
         single: jest.fn().mockResolvedValue({
           data: {
             id: teamId,
+            name: "Empty Team",
             created_by: mockAlt.id,
+            team_pokemon: [],
           },
           error: null,
         }),
       } as unknown as MockQueryBuilder);
 
-      // Mock: Count pokemon in team (empty)
-      fromSpy.mockReturnValueOnce({
-        select: jest.fn().mockReturnThis(),
-        eq: jest.fn().mockResolvedValue({
-          count: 0,
-          error: null,
-        }),
-      } as unknown as MockQueryBuilder);
-
-      await expect(
-        selectTeamForTournament(mockClient, tournamentId, teamId)
-      ).rejects.toThrow(
-        "This team has no Pokemon. Please select a team with Pokemon"
+      const result = await selectTeamForTournament(
+        mockClient,
+        tournamentId,
+        teamId
       );
+
+      expect(result).toEqual({
+        success: false,
+        errors: [
+          "This team has no Pokemon. Please select a team with Pokemon.",
+        ],
+      });
     });
 
-    it("should throw error if team has null count", async () => {
+    it("should return structured error if team_pokemon is null", async () => {
       const fromSpy = jest.spyOn(mockClient, "from");
 
       // Mock: Get registration
@@ -1008,33 +1037,34 @@ Timid Nature
         }),
       } as unknown as MockQueryBuilder);
 
-      // Mock: Verify team ownership
+      // Mock: Verify team ownership and fetch Pokemon (null team_pokemon)
       fromSpy.mockReturnValueOnce({
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
+        order: jest.fn().mockReturnThis(),
         single: jest.fn().mockResolvedValue({
           data: {
             id: teamId,
+            name: "Team with null pokemon",
             created_by: mockAlt.id,
+            team_pokemon: null,
           },
           error: null,
         }),
       } as unknown as MockQueryBuilder);
 
-      // Mock: Count pokemon in team (null)
-      fromSpy.mockReturnValueOnce({
-        select: jest.fn().mockReturnThis(),
-        eq: jest.fn().mockResolvedValue({
-          count: null,
-          error: null,
-        }),
-      } as unknown as MockQueryBuilder);
-
-      await expect(
-        selectTeamForTournament(mockClient, tournamentId, teamId)
-      ).rejects.toThrow(
-        "This team has no Pokemon. Please select a team with Pokemon"
+      const result = await selectTeamForTournament(
+        mockClient,
+        tournamentId,
+        teamId
       );
+
+      expect(result).toEqual({
+        success: false,
+        errors: [
+          "This team has no Pokemon. Please select a team with Pokemon.",
+        ],
+      });
     });
 
     it("should throw error if updating registration fails", async () => {
@@ -1054,24 +1084,21 @@ Timid Nature
         }),
       } as unknown as MockQueryBuilder);
 
-      // Mock: Verify team ownership
+      // Mock: Verify team ownership and fetch Pokemon
       fromSpy.mockReturnValueOnce({
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
+        order: jest.fn().mockReturnThis(),
         single: jest.fn().mockResolvedValue({
           data: {
             id: teamId,
+            name: "Test Team",
             created_by: mockAlt.id,
+            team_pokemon: [
+              { team_position: 1, pokemon: { species: "Pikachu" } },
+              { team_position: 2, pokemon: { species: "Charizard" } },
+            ],
           },
-          error: null,
-        }),
-      } as unknown as MockQueryBuilder);
-
-      // Mock: Count pokemon in team
-      fromSpy.mockReturnValueOnce({
-        select: jest.fn().mockReturnThis(),
-        eq: jest.fn().mockResolvedValue({
-          count: 6,
           error: null,
         }),
       } as unknown as MockQueryBuilder);
@@ -1106,24 +1133,23 @@ Timid Nature
         }),
       } as unknown as MockQueryBuilder);
 
-      // Mock: Verify team ownership
+      // Mock: Verify team ownership and fetch Pokemon
       fromSpy.mockReturnValueOnce({
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
+        order: jest.fn().mockReturnThis(),
         single: jest.fn().mockResolvedValue({
           data: {
             id: teamId,
+            name: "Replacement Team",
             created_by: mockAlt.id,
+            team_pokemon: [
+              { team_position: 1, pokemon: { species: "Gengar" } },
+              { team_position: 2, pokemon: { species: "Alakazam" } },
+              { team_position: 3, pokemon: { species: "Machamp" } },
+              { team_position: 4, pokemon: { species: "Golem" } },
+            ],
           },
-          error: null,
-        }),
-      } as unknown as MockQueryBuilder);
-
-      // Mock: Count pokemon in team
-      fromSpy.mockReturnValueOnce({
-        select: jest.fn().mockReturnThis(),
-        eq: jest.fn().mockResolvedValue({
-          count: 4,
           error: null,
         }),
       } as unknown as MockQueryBuilder);
@@ -1141,8 +1167,11 @@ Timid Nature
       );
 
       expect(result).toEqual({
+        success: true,
         teamId: 1000,
         pokemonCount: 4,
+        teamName: "Replacement Team",
+        species: ["Gengar", "Alakazam", "Machamp", "Golem"],
       });
     });
   });

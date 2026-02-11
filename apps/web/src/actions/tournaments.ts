@@ -522,11 +522,26 @@ export async function updateRegistrationAction(
 export async function submitTeamAction(
   tournamentId: number,
   rawText: string
-): Promise<ActionResult<{ teamId: number; pokemonCount: number }>> {
+): Promise<
+  ActionResult<{
+    teamId: number;
+    pokemonCount: number;
+    teamName: string;
+    species: string[];
+  }>
+> {
   try {
     await rejectBots();
     const supabase = await createClient();
     const result = await submitTeamMutation(supabase, tournamentId, rawText);
+
+    if (!result.success) {
+      return {
+        success: false,
+        error: "Team validation failed",
+        validationErrors: result.errors,
+      };
+    }
 
     // Revalidate tournament detail page (shows team submission status)
     updateTag(CacheTags.tournament(tournamentId));
@@ -535,7 +550,12 @@ export async function submitTeamAction(
 
     return {
       success: true,
-      data: { teamId: result.teamId, pokemonCount: result.pokemonCount },
+      data: {
+        teamId: result.teamId,
+        pokemonCount: result.pokemonCount,
+        teamName: result.teamName,
+        species: result.species,
+      },
     };
   } catch (error) {
     return {
@@ -552,7 +572,14 @@ export async function submitTeamAction(
 export async function selectTeamAction(
   tournamentId: number,
   teamId: number
-): Promise<ActionResult<{ teamId: number; pokemonCount: number }>> {
+): Promise<
+  ActionResult<{
+    teamId: number;
+    pokemonCount: number;
+    teamName: string;
+    species: string[];
+  }>
+> {
   try {
     await rejectBots();
     const supabase = await createClient();
@@ -562,12 +589,25 @@ export async function selectTeamAction(
       teamId
     );
 
+    if (!result.success) {
+      return {
+        success: false,
+        error: "Team validation failed",
+        validationErrors: result.errors,
+      };
+    }
+
     updateTag(CacheTags.tournament(tournamentId));
     updateTag(CacheTags.tournamentTeams(tournamentId));
 
     return {
       success: true,
-      data: { teamId: result.teamId, pokemonCount: result.pokemonCount },
+      data: {
+        teamId: result.teamId,
+        pokemonCount: result.pokemonCount,
+        teamName: result.teamName,
+        species: result.species,
+      },
     };
   } catch (error) {
     return {
