@@ -1,6 +1,7 @@
--- Note: Sequence creation is now handled inside each table's DO block below.
--- This is because DROP IDENTITY also drops the identity-owned sequence,
--- so we need to create the sequence AFTER dropping identity.
+-- Remote schema migration: converts identity columns to sequence-based defaults
+-- and converts select columns from bigint to uuid.
+-- Sequence creation is handled inside each table's DO block because
+-- DROP IDENTITY also drops the identity-owned sequence.
 
 -- Drop pg_net extension if it exists (idempotent)
 DROP EXTENSION IF EXISTS "pg_net";
