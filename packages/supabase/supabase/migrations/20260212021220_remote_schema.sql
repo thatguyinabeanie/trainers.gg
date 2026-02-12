@@ -167,8 +167,8 @@ DO $$ BEGIN
   END IF;
 END $$;
 
--- Drop pg_net extension if it exists (idempotent)
-DROP EXTENSION IF EXISTS "pg_net";
+-- Note: pg_net extension is managed by Supabase Cloud and cannot be dropped by users.
+-- Skipping DROP EXTENSION "pg_net" to avoid permission errors on Supabase Cloud.
 
 -- Drop constraints if they exist (idempotent)
 ALTER TABLE IF EXISTS "public"."organization_requests"
