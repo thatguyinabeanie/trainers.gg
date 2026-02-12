@@ -345,7 +345,8 @@ async function runMigrations() {
   // This prevents schema drift errors from previous deployments
   if (env.type === "preview" && !isProductionDb) {
     console.log("\n🔄 Resetting preview database to clean state...");
-    exec("npx supabase db reset --linked", { env: cliEnv });
+    // Use printf to pipe 'y' to bypass interactive confirmation in CI
+    exec("printf 'y\\n' | npx supabase db reset --linked", { env: cliEnv });
   } else {
     // For production, only push new migrations (never reset)
     console.log("\n📤 Applying migrations...");
