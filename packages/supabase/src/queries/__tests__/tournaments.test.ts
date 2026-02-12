@@ -351,7 +351,6 @@ describe("listTournamentsGrouped", () => {
                 alt: {
                   id: 100,
                   username: "champion_player",
-                  display_name: "Champion Player",
                 },
               },
             ],
@@ -383,7 +382,6 @@ describe("listTournamentsGrouped", () => {
       winner: {
         id: 100,
         username: "champion_player",
-        display_name: "Champion Player",
       },
       registrationCount: 32,
     });
@@ -539,8 +537,8 @@ describe("getActiveMatch", () => {
       alt2_id: 20,
       table_number: 5,
       updated_at: "2026-02-10T10:00:00Z",
-      player1: [{ id: altId, display_name: "Player One", username: "player1" }],
-      player2: [{ id: 20, display_name: "Player Two", username: "player2" }],
+      player1: [{ id: altId, username: "player1" }],
+      player2: [{ id: 20, username: "player2" }],
       round: {
         id: 1,
         round_number: 3,
@@ -579,7 +577,7 @@ describe("getActiveMatch", () => {
       phaseName: "Swiss",
       opponent: {
         id: 20,
-        displayName: "Player Two",
+        displayName: "player2",
         username: "player2",
       },
       table: 5,
@@ -595,8 +593,8 @@ describe("getActiveMatch", () => {
       alt2_id: altId,
       table_number: 3,
       updated_at: "2026-02-10T10:00:00Z",
-      player1: [{ id: 10, display_name: "Player One", username: "player1" }],
-      player2: [{ id: altId, display_name: "Player Two", username: "player2" }],
+      player1: [{ id: 10, username: "player1" }],
+      player2: [{ id: altId, username: "player2" }],
       round: {
         id: 1,
         round_number: 1,
@@ -635,7 +633,7 @@ describe("getActiveMatch", () => {
       phaseName: "Swiss",
       opponent: {
         id: 10,
-        displayName: "Player One",
+        displayName: "player1",
         username: "player1",
       },
       table: 3,
@@ -651,8 +649,8 @@ describe("getActiveMatch", () => {
       alt2_id: 20,
       table_number: 0,
       updated_at: "2026-02-10T10:00:00Z",
-      player1: [{ id: altId, display_name: "Player One", username: "player1" }],
-      player2: [{ id: 20, display_name: "Player Two", username: "player2" }],
+      player1: [{ id: altId, username: "player1" }],
+      player2: [{ id: 20, username: "player2" }],
       round: {
         id: 1,
         round_number: 1,
@@ -707,8 +705,8 @@ describe("getActiveMatch", () => {
       alt2_id: 20,
       table_number: 5,
       updated_at: "2026-02-10T10:00:00Z",
-      player1: [{ id: 10, display_name: "Player One", username: "player1" }],
-      player2: [{ id: 20, display_name: "Player Two", username: "player2" }],
+      player1: [{ id: 10, username: "player1" }],
+      player2: [{ id: 20, username: "player2" }],
       round: null, // Missing round data
     };
 
@@ -737,7 +735,7 @@ describe("getActiveMatch", () => {
       alt2_id: null,
       table_number: null,
       updated_at: "2026-02-10T10:00:00Z",
-      player1: [{ id: altId, display_name: "Player One", username: "player1" }],
+      player1: [{ id: altId, username: "player1" }],
       player2: null,
       round: {
         id: 1,
