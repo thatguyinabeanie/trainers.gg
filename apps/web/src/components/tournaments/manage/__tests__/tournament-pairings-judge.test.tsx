@@ -91,16 +91,16 @@ describe("TournamentPairingsJudge", () => {
         table_number: 1,
         status: "active",
         staff_requested: false,
-        player1: { display_name: "Player A" },
-        player2: { display_name: "Player B" },
+        player1: { username: "playera" },
+        player2: { username: "playerb" },
       },
       {
         id: 2,
         table_number: 2,
         status: "pending",
         staff_requested: true,
-        player1: { display_name: "Player C" },
-        player2: { display_name: "Player D" },
+        player1: { username: "playerc" },
+        player2: { username: "playerd" },
       },
     ];
 
@@ -135,8 +135,8 @@ describe("TournamentPairingsJudge", () => {
 
       render(<TournamentPairingsJudge tournament={mockTournament} />);
 
-      expect(screen.getByText("Player A")).toBeInTheDocument();
-      expect(screen.getByText("Player B")).toBeInTheDocument();
+      expect(screen.getByText("playera")).toBeInTheDocument();
+      expect(screen.getByText("playerb")).toBeInTheDocument();
       expect(screen.getByText("Player C")).toBeInTheDocument();
       expect(screen.getByText("Player D")).toBeInTheDocument();
     });
@@ -171,24 +171,24 @@ describe("TournamentPairingsJudge", () => {
         table_number: 1,
         status: "active",
         staff_requested: false,
-        player1: { display_name: "Player A" },
-        player2: { display_name: "Player B" },
+        player1: { username: "playera" },
+        player2: { username: "playerb" },
       },
       {
         id: 2,
         table_number: 2,
         status: "active",
         staff_requested: true,
-        player1: { display_name: "Player C" },
-        player2: { display_name: "Player D" },
+        player1: { username: "playerc" },
+        player2: { username: "playerd" },
       },
       {
         id: 3,
         table_number: 3,
         status: "active",
         staff_requested: true,
-        player1: { display_name: "Player E" },
-        player2: { display_name: "Player F" },
+        player1: { username: "playere" },
+        player2: { username: "playerf" },
       },
     ];
 
@@ -237,7 +237,7 @@ describe("TournamentPairingsJudge", () => {
         expect(screen.getByText("Player C")).toBeInTheDocument();
         expect(screen.getByText("Player E")).toBeInTheDocument();
         // Player A and B should not be visible in judge queue
-        expect(screen.queryByText("Player A")).not.toBeInTheDocument();
+        expect(screen.queryByText("playera")).not.toBeInTheDocument();
       });
     });
 

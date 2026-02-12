@@ -10,11 +10,6 @@ import { LinkedIdentitiesSection } from "../linked-identities-section";
 // Mock dependencies
 const mockSignInWithOAuth = jest.fn();
 const mockUnlinkIdentity = jest.fn();
-const mockCreateClient = jest.fn(() => ({
-  auth: {
-    unlinkIdentity: mockUnlinkIdentity,
-  },
-}));
 
 jest.mock("@/hooks/use-auth", () => ({
   useAuth: () => ({
@@ -27,7 +22,11 @@ jest.mock("@/hooks/use-auth", () => ({
 }));
 
 jest.mock("@/lib/supabase/client", () => ({
-  createClient: mockCreateClient,
+  createClient: jest.fn(() => ({
+    auth: {
+      unlinkIdentity: mockUnlinkIdentity,
+    },
+  })),
 }));
 
 const mockGetBlueskyStatus = jest.fn();
