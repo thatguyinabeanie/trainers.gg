@@ -185,10 +185,10 @@ ALTER TABLE IF EXISTS "public"."tournament_templates"
 DO $$ BEGIN
   -- alts
   IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'alts' AND column_name = 'id') THEN
-    ALTER TABLE "public"."alts" ALTER COLUMN "id" SET DEFAULT nextval('public.alts_id_seq'::regclass);
     IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'alts' AND column_name = 'id' AND is_identity = 'YES') THEN
       ALTER TABLE "public"."alts" ALTER COLUMN "id" DROP IDENTITY;
     END IF;
+    ALTER TABLE "public"."alts" ALTER COLUMN "id" SET DEFAULT nextval('public.alts_id_seq'::regclass);
   END IF;
 END $$;
 
@@ -209,80 +209,80 @@ END $$;
 DO $$ BEGIN
   -- group_roles
   IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'group_roles' AND column_name = 'id') THEN
-    ALTER TABLE "public"."group_roles" ALTER COLUMN "id" SET DEFAULT nextval('public.group_roles_id_seq'::regclass);
     IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'group_roles' AND column_name = 'id' AND is_identity = 'YES') THEN
       ALTER TABLE "public"."group_roles" ALTER COLUMN "id" DROP IDENTITY;
     END IF;
+    ALTER TABLE "public"."group_roles" ALTER COLUMN "id" SET DEFAULT nextval('public.group_roles_id_seq'::regclass);
   END IF;
 END $$;
 
 DO $$ BEGIN
   -- groups
   IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'groups' AND column_name = 'id') THEN
-    ALTER TABLE "public"."groups" ALTER COLUMN "id" SET DEFAULT nextval('public.groups_id_seq'::regclass);
     IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'groups' AND column_name = 'id' AND is_identity = 'YES') THEN
       ALTER TABLE "public"."groups" ALTER COLUMN "id" DROP IDENTITY;
     END IF;
+    ALTER TABLE "public"."groups" ALTER COLUMN "id" SET DEFAULT nextval('public.groups_id_seq'::regclass);
   END IF;
 END $$;
 
 DO $$ BEGIN
   -- organization_invitations
   IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'organization_invitations' AND column_name = 'id') THEN
-    ALTER TABLE "public"."organization_invitations" ALTER COLUMN "id" SET DEFAULT nextval('public.organization_invitations_id_seq'::regclass);
     IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'organization_invitations' AND column_name = 'id' AND is_identity = 'YES') THEN
       ALTER TABLE "public"."organization_invitations" ALTER COLUMN "id" DROP IDENTITY;
     END IF;
+    ALTER TABLE "public"."organization_invitations" ALTER COLUMN "id" SET DEFAULT nextval('public.organization_invitations_id_seq'::regclass);
   END IF;
 END $$;
 
 DO $$ BEGIN
   -- organization_requests
   IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'organization_requests' AND column_name = 'id') THEN
-    ALTER TABLE "public"."organization_requests" ALTER COLUMN "id" SET DEFAULT nextval('public.organization_requests_id_seq'::regclass);
     IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'organization_requests' AND column_name = 'id' AND is_identity = 'YES') THEN
       ALTER TABLE "public"."organization_requests" ALTER COLUMN "id" DROP IDENTITY;
     END IF;
+    ALTER TABLE "public"."organization_requests" ALTER COLUMN "id" SET DEFAULT nextval('public.organization_requests_id_seq'::regclass);
   END IF;
 END $$;
 
 DO $$ BEGIN
   -- organization_staff
   IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'organization_staff' AND column_name = 'id') THEN
-    ALTER TABLE "public"."organization_staff" ALTER COLUMN "id" SET DEFAULT nextval('public.organization_staff_id_seq'::regclass);
     IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'organization_staff' AND column_name = 'id' AND is_identity = 'YES') THEN
       ALTER TABLE "public"."organization_staff" ALTER COLUMN "id" DROP IDENTITY;
     END IF;
+    ALTER TABLE "public"."organization_staff" ALTER COLUMN "id" SET DEFAULT nextval('public.organization_staff_id_seq'::regclass);
   END IF;
 END $$;
 
 DO $$ BEGIN
   -- organizations
   IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'organizations' AND column_name = 'id') THEN
-    ALTER TABLE "public"."organizations" ALTER COLUMN "id" SET DEFAULT nextval('public.organizations_id_seq'::regclass);
     IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'organizations' AND column_name = 'id' AND is_identity = 'YES') THEN
       ALTER TABLE "public"."organizations" ALTER COLUMN "id" DROP IDENTITY;
     END IF;
+    ALTER TABLE "public"."organizations" ALTER COLUMN "id" SET DEFAULT nextval('public.organizations_id_seq'::regclass);
   END IF;
 END $$;
 
 DO $$ BEGIN
   -- permissions
   IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'permissions' AND column_name = 'id') THEN
-    ALTER TABLE "public"."permissions" ALTER COLUMN "id" SET DEFAULT nextval('public.permissions_id_seq'::regclass);
     IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'permissions' AND column_name = 'id' AND is_identity = 'YES') THEN
       ALTER TABLE "public"."permissions" ALTER COLUMN "id" DROP IDENTITY;
     END IF;
+    ALTER TABLE "public"."permissions" ALTER COLUMN "id" SET DEFAULT nextval('public.permissions_id_seq'::regclass);
   END IF;
 END $$;
 
 DO $$ BEGIN
   -- pokemon
   IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'pokemon' AND column_name = 'id') THEN
-    ALTER TABLE "public"."pokemon" ALTER COLUMN "id" SET DEFAULT nextval('public.pokemon_id_seq'::regclass);
     IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'pokemon' AND column_name = 'id' AND is_identity = 'YES') THEN
       ALTER TABLE "public"."pokemon" ALTER COLUMN "id" DROP IDENTITY;
     END IF;
+    ALTER TABLE "public"."pokemon" ALTER COLUMN "id" SET DEFAULT nextval('public.pokemon_id_seq'::regclass);
   END IF;
 END $$;
 
@@ -302,20 +302,20 @@ END $$;
 DO $$ BEGIN
   -- role_permissions
   IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'role_permissions' AND column_name = 'id') THEN
-    ALTER TABLE "public"."role_permissions" ALTER COLUMN "id" SET DEFAULT nextval('public.role_permissions_id_seq'::regclass);
     IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'role_permissions' AND column_name = 'id' AND is_identity = 'YES') THEN
       ALTER TABLE "public"."role_permissions" ALTER COLUMN "id" DROP IDENTITY;
     END IF;
+    ALTER TABLE "public"."role_permissions" ALTER COLUMN "id" SET DEFAULT nextval('public.role_permissions_id_seq'::regclass);
   END IF;
 END $$;
 
 DO $$ BEGIN
   -- roles
   IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'roles' AND column_name = 'id') THEN
-    ALTER TABLE "public"."roles" ALTER COLUMN "id" SET DEFAULT nextval('public.roles_id_seq'::regclass);
     IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'roles' AND column_name = 'id' AND is_identity = 'YES') THEN
       ALTER TABLE "public"."roles" ALTER COLUMN "id" DROP IDENTITY;
     END IF;
+    ALTER TABLE "public"."roles" ALTER COLUMN "id" SET DEFAULT nextval('public.roles_id_seq'::regclass);
   END IF;
 END $$;
 
@@ -335,90 +335,90 @@ END $$;
 DO $$ BEGIN
   -- team_pokemon
   IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'team_pokemon' AND column_name = 'id') THEN
-    ALTER TABLE "public"."team_pokemon" ALTER COLUMN "id" SET DEFAULT nextval('public.team_pokemon_id_seq'::regclass);
     IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'team_pokemon' AND column_name = 'id' AND is_identity = 'YES') THEN
       ALTER TABLE "public"."team_pokemon" ALTER COLUMN "id" DROP IDENTITY;
     END IF;
+    ALTER TABLE "public"."team_pokemon" ALTER COLUMN "id" SET DEFAULT nextval('public.team_pokemon_id_seq'::regclass);
   END IF;
 END $$;
 
 DO $$ BEGIN
   -- teams
   IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'teams' AND column_name = 'id') THEN
-    ALTER TABLE "public"."teams" ALTER COLUMN "id" SET DEFAULT nextval('public.teams_id_seq'::regclass);
     IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'teams' AND column_name = 'id' AND is_identity = 'YES') THEN
       ALTER TABLE "public"."teams" ALTER COLUMN "id" DROP IDENTITY;
     END IF;
+    ALTER TABLE "public"."teams" ALTER COLUMN "id" SET DEFAULT nextval('public.teams_id_seq'::regclass);
   END IF;
 END $$;
 
 DO $$ BEGIN
   -- tournament_events
   IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'tournament_events' AND column_name = 'id') THEN
-    ALTER TABLE "public"."tournament_events" ALTER COLUMN "id" SET DEFAULT nextval('public.tournament_events_id_seq'::regclass);
     IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'tournament_events' AND column_name = 'id' AND is_identity = 'YES') THEN
       ALTER TABLE "public"."tournament_events" ALTER COLUMN "id" DROP IDENTITY;
     END IF;
+    ALTER TABLE "public"."tournament_events" ALTER COLUMN "id" SET DEFAULT nextval('public.tournament_events_id_seq'::regclass);
   END IF;
 END $$;
 
 DO $$ BEGIN
   -- tournament_invitations
   IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'tournament_invitations' AND column_name = 'id') THEN
-    ALTER TABLE "public"."tournament_invitations" ALTER COLUMN "id" SET DEFAULT nextval('public.tournament_invitations_id_seq'::regclass);
     IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'tournament_invitations' AND column_name = 'id' AND is_identity = 'YES') THEN
       ALTER TABLE "public"."tournament_invitations" ALTER COLUMN "id" DROP IDENTITY;
     END IF;
+    ALTER TABLE "public"."tournament_invitations" ALTER COLUMN "id" SET DEFAULT nextval('public.tournament_invitations_id_seq'::regclass);
   END IF;
 END $$;
 
 DO $$ BEGIN
   -- tournament_matches
   IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'tournament_matches' AND column_name = 'id') THEN
-    ALTER TABLE "public"."tournament_matches" ALTER COLUMN "id" SET DEFAULT nextval('public.tournament_matches_id_seq'::regclass);
     IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'tournament_matches' AND column_name = 'id' AND is_identity = 'YES') THEN
       ALTER TABLE "public"."tournament_matches" ALTER COLUMN "id" DROP IDENTITY;
     END IF;
+    ALTER TABLE "public"."tournament_matches" ALTER COLUMN "id" SET DEFAULT nextval('public.tournament_matches_id_seq'::regclass);
   END IF;
 END $$;
 
 DO $$ BEGIN
   -- tournament_opponent_history
   IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'tournament_opponent_history' AND column_name = 'id') THEN
-    ALTER TABLE "public"."tournament_opponent_history" ALTER COLUMN "id" SET DEFAULT nextval('public.tournament_opponent_history_id_seq'::regclass);
     IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'tournament_opponent_history' AND column_name = 'id' AND is_identity = 'YES') THEN
       ALTER TABLE "public"."tournament_opponent_history" ALTER COLUMN "id" DROP IDENTITY;
     END IF;
+    ALTER TABLE "public"."tournament_opponent_history" ALTER COLUMN "id" SET DEFAULT nextval('public.tournament_opponent_history_id_seq'::regclass);
   END IF;
 END $$;
 
 DO $$ BEGIN
   -- tournament_pairings
   IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'tournament_pairings' AND column_name = 'id') THEN
-    ALTER TABLE "public"."tournament_pairings" ALTER COLUMN "id" SET DEFAULT nextval('public.tournament_pairings_id_seq'::regclass);
     IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'tournament_pairings' AND column_name = 'id' AND is_identity = 'YES') THEN
       ALTER TABLE "public"."tournament_pairings" ALTER COLUMN "id" DROP IDENTITY;
     END IF;
+    ALTER TABLE "public"."tournament_pairings" ALTER COLUMN "id" SET DEFAULT nextval('public.tournament_pairings_id_seq'::regclass);
   END IF;
 END $$;
 
 DO $$ BEGIN
   -- tournament_phases
   IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'tournament_phases' AND column_name = 'id') THEN
-    ALTER TABLE "public"."tournament_phases" ALTER COLUMN "id" SET DEFAULT nextval('public.tournament_phases_id_seq'::regclass);
     IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'tournament_phases' AND column_name = 'id' AND is_identity = 'YES') THEN
       ALTER TABLE "public"."tournament_phases" ALTER COLUMN "id" DROP IDENTITY;
     END IF;
+    ALTER TABLE "public"."tournament_phases" ALTER COLUMN "id" SET DEFAULT nextval('public.tournament_phases_id_seq'::regclass);
   END IF;
 END $$;
 
 DO $$ BEGIN
   -- tournament_player_stats
   IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'tournament_player_stats' AND column_name = 'id') THEN
-    ALTER TABLE "public"."tournament_player_stats" ALTER COLUMN "id" SET DEFAULT nextval('public.tournament_player_stats_id_seq'::regclass);
     IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'tournament_player_stats' AND column_name = 'id' AND is_identity = 'YES') THEN
       ALTER TABLE "public"."tournament_player_stats" ALTER COLUMN "id" DROP IDENTITY;
     END IF;
+    ALTER TABLE "public"."tournament_player_stats" ALTER COLUMN "id" SET DEFAULT nextval('public.tournament_player_stats_id_seq'::regclass);
   END IF;
   -- Handle opponent_history column type change
   IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'tournament_player_stats' AND column_name = 'opponent_history') THEN
@@ -432,70 +432,70 @@ END $$;
 DO $$ BEGIN
   -- tournament_registration_pokemon
   IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'tournament_registration_pokemon' AND column_name = 'id') THEN
-    ALTER TABLE "public"."tournament_registration_pokemon" ALTER COLUMN "id" SET DEFAULT nextval('public.tournament_registration_pokemon_id_seq'::regclass);
     IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'tournament_registration_pokemon' AND column_name = 'id' AND is_identity = 'YES') THEN
       ALTER TABLE "public"."tournament_registration_pokemon" ALTER COLUMN "id" DROP IDENTITY;
     END IF;
+    ALTER TABLE "public"."tournament_registration_pokemon" ALTER COLUMN "id" SET DEFAULT nextval('public.tournament_registration_pokemon_id_seq'::regclass);
   END IF;
 END $$;
 
 DO $$ BEGIN
   -- tournament_registrations
   IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'tournament_registrations' AND column_name = 'id') THEN
-    ALTER TABLE "public"."tournament_registrations" ALTER COLUMN "id" SET DEFAULT nextval('public.tournament_registrations_id_seq'::regclass);
     IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'tournament_registrations' AND column_name = 'id' AND is_identity = 'YES') THEN
       ALTER TABLE "public"."tournament_registrations" ALTER COLUMN "id" DROP IDENTITY;
     END IF;
+    ALTER TABLE "public"."tournament_registrations" ALTER COLUMN "id" SET DEFAULT nextval('public.tournament_registrations_id_seq'::regclass);
   END IF;
 END $$;
 
 DO $$ BEGIN
   -- tournament_rounds
   IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'tournament_rounds' AND column_name = 'id') THEN
-    ALTER TABLE "public"."tournament_rounds" ALTER COLUMN "id" SET DEFAULT nextval('public.tournament_rounds_id_seq'::regclass);
     IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'tournament_rounds' AND column_name = 'id' AND is_identity = 'YES') THEN
       ALTER TABLE "public"."tournament_rounds" ALTER COLUMN "id" DROP IDENTITY;
     END IF;
+    ALTER TABLE "public"."tournament_rounds" ALTER COLUMN "id" SET DEFAULT nextval('public.tournament_rounds_id_seq'::regclass);
   END IF;
 END $$;
 
 DO $$ BEGIN
   -- tournament_standings
   IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'tournament_standings' AND column_name = 'id') THEN
-    ALTER TABLE "public"."tournament_standings" ALTER COLUMN "id" SET DEFAULT nextval('public.tournament_standings_id_seq'::regclass);
     IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'tournament_standings' AND column_name = 'id' AND is_identity = 'YES') THEN
       ALTER TABLE "public"."tournament_standings" ALTER COLUMN "id" DROP IDENTITY;
     END IF;
+    ALTER TABLE "public"."tournament_standings" ALTER COLUMN "id" SET DEFAULT nextval('public.tournament_standings_id_seq'::regclass);
   END IF;
 END $$;
 
 DO $$ BEGIN
   -- tournament_template_phases
   IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'tournament_template_phases' AND column_name = 'id') THEN
-    ALTER TABLE "public"."tournament_template_phases" ALTER COLUMN "id" SET DEFAULT nextval('public.tournament_template_phases_id_seq'::regclass);
     IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'tournament_template_phases' AND column_name = 'id' AND is_identity = 'YES') THEN
       ALTER TABLE "public"."tournament_template_phases" ALTER COLUMN "id" DROP IDENTITY;
     END IF;
+    ALTER TABLE "public"."tournament_template_phases" ALTER COLUMN "id" SET DEFAULT nextval('public.tournament_template_phases_id_seq'::regclass);
   END IF;
 END $$;
 
 DO $$ BEGIN
   -- tournament_templates
   IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'tournament_templates' AND column_name = 'id') THEN
-    ALTER TABLE "public"."tournament_templates" ALTER COLUMN "id" SET DEFAULT nextval('public.tournament_templates_id_seq'::regclass);
     IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'tournament_templates' AND column_name = 'id' AND is_identity = 'YES') THEN
       ALTER TABLE "public"."tournament_templates" ALTER COLUMN "id" DROP IDENTITY;
     END IF;
+    ALTER TABLE "public"."tournament_templates" ALTER COLUMN "id" SET DEFAULT nextval('public.tournament_templates_id_seq'::regclass);
   END IF;
 END $$;
 
 DO $$ BEGIN
   -- tournaments
   IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'tournaments' AND column_name = 'id') THEN
-    ALTER TABLE "public"."tournaments" ALTER COLUMN "id" SET DEFAULT nextval('public.tournaments_id_seq'::regclass);
     IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'tournaments' AND column_name = 'id' AND is_identity = 'YES') THEN
       ALTER TABLE "public"."tournaments" ALTER COLUMN "id" DROP IDENTITY;
     END IF;
+    ALTER TABLE "public"."tournaments" ALTER COLUMN "id" SET DEFAULT nextval('public.tournaments_id_seq'::regclass);
   END IF;
   -- Handle participants column type change
   IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'tournaments' AND column_name = 'participants') THEN
@@ -509,10 +509,10 @@ END $$;
 DO $$ BEGIN
   -- user_group_roles
   IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'user_group_roles' AND column_name = 'id') THEN
-    ALTER TABLE "public"."user_group_roles" ALTER COLUMN "id" SET DEFAULT nextval('public.user_group_roles_id_seq'::regclass);
     IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'user_group_roles' AND column_name = 'id' AND is_identity = 'YES') THEN
       ALTER TABLE "public"."user_group_roles" ALTER COLUMN "id" DROP IDENTITY;
     END IF;
+    ALTER TABLE "public"."user_group_roles" ALTER COLUMN "id" SET DEFAULT nextval('public.user_group_roles_id_seq'::regclass);
   END IF;
 END $$;
 
