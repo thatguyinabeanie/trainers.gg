@@ -68,10 +68,8 @@ interface UserDetail {
   alts: Array<{
     id: number;
     username: string | null;
-    display_name: string | null;
     avatar_url: string | null;
     bio: string | null;
-    in_game_name: string | null;
     tier: string | null;
     created_at: string | null;
   }> | null;
@@ -466,13 +464,8 @@ export function UserDetailSheet({
                         </Avatar>
                         <div className="min-w-0 flex-1">
                           <div className="truncate text-sm font-medium">
-                            {alt.display_name ?? alt.username ?? "—"}
+                            {alt.username ?? alt.username ?? "—"}
                           </div>
-                          {alt.in_game_name && (
-                            <div className="text-muted-foreground truncate text-xs">
-                              IGN: {alt.in_game_name}
-                            </div>
-                          )}
                         </div>
                         {alt.tier && (
                           <Badge variant="outline" className="text-xs">

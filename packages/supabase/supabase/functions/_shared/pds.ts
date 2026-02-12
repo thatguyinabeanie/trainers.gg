@@ -1,6 +1,8 @@
 // Shared PDS utilities for edge functions
 // Provides common functions for interacting with the Bluesky PDS
 
+import { AtpAgent } from "npm:@atproto/api@0.14.0";
+
 const PDS_HOST = Deno.env.get("PDS_HOST") || "https://pds.trainers.gg";
 const PDS_ADMIN_PASSWORD = Deno.env.get("PDS_ADMIN_PASSWORD");
 
@@ -179,3 +181,40 @@ export const PDS_CONFIG = {
   handleDomain: PDS_HANDLE_DOMAIN,
   hasAdminPassword: !!PDS_ADMIN_PASSWORD,
 } as const;
+
+/**
+ * Create and login to AT Protocol agent with DID and password
+ * Used for authenticated operations like updating handle
+ */
+export async function loginPdsAgent(
+  did: string,
+  password: string
+): Promise<
+  { success: true; agent: AtpAgent } | { success: false; error: string }
+> {
+  try {
+    // Create agent instance
+    const agent = new AtpAgent({ service: PDS_HOST });
+
+    // Authenticate with DID and password
+    await agent.login({
+      identifier: did,
+      password,
+    });
+
+    return { success: true, agent };
+  } catch (error) {
+    if (error instanceof DOMException && error.name === "AbortError") {
+      console.error("PDS agent login request timed out");
+      return { success: false, error: "PDS login request timed out" };
+    }
+    console.error("PDS agent login failed:", error);
+    return {
+      success: false,
+      error:
+        error instanceof Error
+          ? error.message
+          : "Failed to authenticate with PDS",
+    };
+  }
+}

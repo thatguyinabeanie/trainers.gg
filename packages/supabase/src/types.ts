@@ -39,9 +39,7 @@ export type Database = {
           avatar_url: string | null
           bio: string | null
           created_at: string | null
-          display_name: string
           id: number
-          in_game_name: string | null
           tier: Database["public"]["Enums"]["user_tier"] | null
           tier_expires_at: string | null
           tier_started_at: string | null
@@ -53,9 +51,7 @@ export type Database = {
           avatar_url?: string | null
           bio?: string | null
           created_at?: string | null
-          display_name: string
           id?: never
-          in_game_name?: string | null
           tier?: Database["public"]["Enums"]["user_tier"] | null
           tier_expires_at?: string | null
           tier_started_at?: string | null
@@ -67,9 +63,7 @@ export type Database = {
           avatar_url?: string | null
           bio?: string | null
           created_at?: string | null
-          display_name?: string
           id?: never
-          in_game_name?: string | null
           tier?: Database["public"]["Enums"]["user_tier"] | null
           tier_expires_at?: string | null
           tier_started_at?: string | null

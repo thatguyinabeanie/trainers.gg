@@ -23,7 +23,6 @@ interface PlayerSearchProps {
 interface SearchResult {
   id: number;
   username: string;
-  display_name: string;
   avatar_url?: string | null;
 }
 
@@ -66,7 +65,7 @@ export function PlayerSearch({
     onSelectPlayer({
       id: player.id,
       username: player.username,
-      displayName: player.display_name,
+      displayName: player.username,
       avatarUrl: player.avatar_url ?? undefined,
       tier: undefined,
     });
@@ -186,13 +185,11 @@ export function PlayerSearch({
                       <Avatar className="h-8 w-8">
                         <AvatarImage src={player.avatar_url ?? undefined} />
                         <AvatarFallback>
-                          {player.display_name.slice(0, 2).toUpperCase()}
+                          {player.username.slice(0, 2).toUpperCase()}
                         </AvatarFallback>
                       </Avatar>
                       <div>
-                        <p className="text-sm font-medium">
-                          {player.display_name}
-                        </p>
+                        <p className="text-sm font-medium">{player.username}</p>
                         <p className="text-muted-foreground text-xs">
                           @{player.username}
                         </p>

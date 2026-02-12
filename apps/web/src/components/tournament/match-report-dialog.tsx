@@ -230,7 +230,7 @@ export function MatchReportDialog({
                   </Avatar>
                   <div className="flex-1">
                     <p className="font-medium">
-                      {p1?.display_name ?? p1?.username ?? "BYE"}
+                      {p1?.username ?? p1?.username ?? "BYE"}
                     </p>
                     <p className="text-muted-foreground text-xs">Player 1</p>
                   </div>
@@ -303,7 +303,7 @@ export function MatchReportDialog({
                   </Avatar>
                   <div className="flex-1">
                     <p className="font-medium">
-                      {p2?.display_name ?? p2?.username ?? "BYE"}
+                      {p2?.username ?? p2?.username ?? "BYE"}
                     </p>
                     <p className="text-muted-foreground text-xs">Player 2</p>
                   </div>
@@ -377,7 +377,7 @@ export function MatchReportDialog({
                                 htmlFor="winner-1"
                                 className="flex-1 cursor-pointer font-normal"
                               >
-                                {p1.display_name ?? p1.username} wins
+                                {p1.username ?? p1.username} wins
                               </FormLabel>
                             </div>
                           )}
@@ -391,7 +391,7 @@ export function MatchReportDialog({
                                 htmlFor="winner-2"
                                 className="flex-1 cursor-pointer font-normal"
                               >
-                                {p2.display_name ?? p2.username} wins
+                                {p2.username ?? p2.username} wins
                               </FormLabel>
                             </div>
                           )}

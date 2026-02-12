@@ -658,7 +658,7 @@ export async function getCurrentUserAltsAction(): Promise<
       data: alts.map((a) => ({
         id: a.id,
         username: a.username,
-        display_name: a.display_name,
+        display_name: a.username,
         avatar_url: a.avatar_url,
         first_name: user?.first_name ?? null,
         last_name: user?.last_name ?? null,
@@ -1153,15 +1153,13 @@ export async function prepareRound(
 
       const isBye = !match.alt2_id;
       if (isBye && p1) {
-        byePlayer = p1.display_name ?? p1.username ?? "Unknown";
+        byePlayer = p1.username ?? p1.username ?? "Unknown";
       }
 
       return {
         tableNumber: match.table_number,
-        player1Name: p1?.display_name ?? p1?.username ?? "Unknown",
-        player2Name: isBye
-          ? null
-          : (p2?.display_name ?? p2?.username ?? "Unknown"),
+        player1Name: p1?.username ?? p1?.username ?? "Unknown",
+        player2Name: isBye ? null : (p2?.username ?? p2?.username ?? "Unknown"),
       };
     });
 

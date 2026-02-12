@@ -26,7 +26,6 @@ export interface AdminUserRow {
   alts: Array<{
     id: number;
     username: string | null;
-    display_name: string | null;
     avatar_url: string | null;
   }> | null;
   user_roles: Array<{

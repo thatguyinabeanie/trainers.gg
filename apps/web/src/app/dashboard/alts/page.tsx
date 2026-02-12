@@ -6,39 +6,27 @@ import { useSupabaseQuery } from "@/lib/supabase";
 import { getCurrentUserAlts } from "@trainers/supabase";
 import type { TypedSupabaseClient } from "@trainers/supabase";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import {
   Loader2,
-  Save,
   Plus,
-  Pencil,
   Trash2,
   Star,
   X,
-  Swords,
+  Users,
+  Trophy,
+  Check,
 } from "lucide-react";
 import { toast } from "sonner";
-import {
-  createAltAction,
-  updateAltAction,
-  deleteAltAction,
-  setMainAltAction,
-} from "@/actions/alts";
+import { createAltAction, deleteAltAction } from "@/actions/alts";
 
 export default function AltsPage() {
   const { user } = useAuth();
   const [isPending, startTransition] = useTransition();
-  const [editingAlt, setEditingAlt] = useState<number | null>(null);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
 
@@ -71,19 +59,6 @@ export default function AltsPage() {
     refreshKey,
   ]);
 
-  const handleSetMain = (altId: number) => {
-    startTransition(async () => {
-      const result = await setMainAltAction(altId);
-      if (result.success) {
-        toast.success("Main alt updated");
-        setRefreshKey((k) => k + 1);
-        refetch();
-      } else {
-        toast.error(result.error);
-      }
-    });
-  };
-
   const handleDelete = (altId: number, altName: string) => {
     if (mainAltId === altId) {
       toast.error("Cannot delete your main alt. Set a different main first.");
@@ -106,164 +81,250 @@ export default function AltsPage() {
 
   if (isLoading) {
     return (
-      <div className="flex min-h-[200px] items-center justify-center">
-        <Loader2 className="text-muted-foreground h-8 w-8 animate-spin" />
+      <div className="flex min-h-[400px] items-center justify-center">
+        <Loader2 className="text-muted-foreground size-8 animate-spin" />
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold">My Alts</h2>
-        <p className="text-muted-foreground text-sm">
-          Manage your player identities. Alts are used for tournament
-          registration.
-        </p>
-      </div>
-
-      <Card>
-        <CardHeader>
+      {/* Header */}
+      <div className="relative">
+        <div className="from-primary/5 absolute inset-0 rounded-lg bg-gradient-to-r via-transparent to-transparent" />
+        <div className="relative px-6 py-8">
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle>Your Alts</CardTitle>
-              <CardDescription>
-                Create and manage your player identities for tournament
-                registration
-              </CardDescription>
+              <h2 className="text-3xl font-bold tracking-tight">
+                Player Identities
+              </h2>
+              <p className="text-muted-foreground mt-1 font-medium">
+                Manage your alts • Tournament Registration
+              </p>
             </div>
             <Button
-              size="sm"
+              size="lg"
               onClick={() => setShowCreateForm(true)}
               disabled={showCreateForm}
+              className="gap-2"
             >
-              <Plus className="mr-2 h-4 w-4" />
+              <Plus className="size-4" />
               New Alt
             </Button>
           </div>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {showCreateForm && (
-            <CreateAltForm
-              onCreated={() => {
-                setShowCreateForm(false);
-                setRefreshKey((k) => k + 1);
-                refetch();
-              }}
-              onCancel={() => setShowCreateForm(false)}
-            />
-          )}
+        </div>
+      </div>
 
-          {!alts || alts.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-12">
-              <Swords className="text-muted-foreground mb-4 h-12 w-12 opacity-50" />
-              <h3 className="mb-2 text-lg font-semibold">No alts found</h3>
-              <p className="text-muted-foreground text-sm">
-                Create an alt to get started with tournament registration
-              </p>
+      {/* Create Form */}
+      {showCreateForm && (
+        <div className="animate-in slide-in-from-top-4 duration-300">
+          <CreateAltForm
+            onCreated={() => {
+              setShowCreateForm(false);
+              setRefreshKey((k) => k + 1);
+              refetch();
+            }}
+            onCancel={() => setShowCreateForm(false)}
+          />
+        </div>
+      )}
+
+      {/* Alts Table */}
+      {!alts || alts.length === 0 ? (
+        <Card className="border-2 border-dashed">
+          <CardContent className="flex flex-col items-center justify-center py-16">
+            <div className="bg-primary/10 flex size-16 items-center justify-center rounded-full">
+              <Users className="text-primary size-8" />
             </div>
-          ) : (
-            alts.map((alt) => {
+            <h3 className="mt-4 text-xl font-semibold">No alts yet</h3>
+            <p className="text-muted-foreground mt-2 max-w-sm text-center text-sm">
+              Create your first player identity to register for tournaments and
+              track your competitive journey
+            </p>
+            <Button
+              className="mt-6 gap-2"
+              onClick={() => setShowCreateForm(true)}
+            >
+              <Plus className="size-4" />
+              Create Your First Alt
+            </Button>
+          </CardContent>
+        </Card>
+      ) : (
+        <>
+          {/* Mobile: Card View */}
+          <div className="divide-y rounded-lg border md:hidden">
+            {alts.map((alt) => {
               const isMain = mainAltId === alt.id;
-
-              if (editingAlt === alt.id) {
-                return (
-                  <EditAltForm
-                    key={alt.id}
-                    alt={alt}
-                    onSaved={() => {
-                      setEditingAlt(null);
-                      setRefreshKey((k) => k + 1);
-                      refetch();
-                    }}
-                    onCancel={() => setEditingAlt(null)}
-                  />
-                );
-              }
-
               return (
                 <div
                   key={alt.id}
-                  className="flex items-center justify-between rounded-lg border p-4"
+                  className="hover:bg-muted/50 flex items-center gap-3 p-4 transition-colors"
                 >
-                  <div className="flex items-center gap-3">
-                    <Avatar className="h-10 w-10">
-                      {alt.avatar_url && (
-                        <AvatarImage
-                          src={alt.avatar_url}
-                          alt={alt.display_name ?? alt.username}
-                        />
-                      )}
-                      <AvatarFallback className="bg-primary/10 text-primary text-sm font-semibold">
-                        {(alt.display_name ?? alt.username)
-                          .charAt(0)
-                          .toUpperCase()}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <p className="font-medium">
-                          {alt.display_name ?? alt.username}
-                        </p>
-                        {isMain && (
-                          <Badge
-                            variant="outline"
-                            className="border-primary/30 bg-primary/10 text-primary text-xs"
-                          >
-                            <Star className="mr-1 h-3 w-3" />
-                            Main
-                          </Badge>
-                        )}
-                      </div>
-                      <p className="text-muted-foreground text-sm">
+                  {/* Avatar */}
+                  <Avatar className="ring-primary/10 size-11 ring-2">
+                    {alt.avatar_url && (
+                      <AvatarImage src={alt.avatar_url} alt={alt.username} />
+                    )}
+                    <AvatarFallback className="bg-primary/10 text-primary font-bold">
+                      {alt.username.charAt(0).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+
+                  {/* Info */}
+                  <div className="min-w-0 flex-1">
+                    <div className="mb-1 flex items-center gap-2">
+                      <p className="truncate font-mono text-[15px] font-semibold">
                         @{alt.username}
                       </p>
-                      {alt.in_game_name && (
-                        <p className="text-muted-foreground text-xs">
-                          IGN: {alt.in_game_name}
-                        </p>
+                      {isMain && (
+                        <Badge className="gap-1 border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400">
+                          <Star className="size-3 fill-current" />
+                          Main
+                        </Badge>
                       )}
                     </div>
+                    <p className="text-muted-foreground flex items-center gap-1.5 text-sm">
+                      <Trophy className="size-3.5" />0 tournaments · 0-0
+                    </p>
                   </div>
-                  <div className="flex items-center gap-1">
+
+                  {/* Actions */}
+                  <div className="flex shrink-0 gap-1">
                     {!isMain && (
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => handleSetMain(alt.id)}
+                        onClick={() => handleDelete(alt.id, alt.username)}
                         disabled={isPending}
-                        title="Set as main alt"
+                        className="text-destructive hover:bg-destructive/10 hover:text-destructive"
                       >
-                        <Star className="h-4 w-4" />
-                      </Button>
-                    )}
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setEditingAlt(alt.id)}
-                      title="Edit alt"
-                    >
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                    {!isMain && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() =>
-                          handleDelete(alt.id, alt.display_name ?? alt.username)
-                        }
-                        disabled={isPending}
-                        className="text-destructive hover:text-destructive"
-                        title="Delete alt"
-                      >
-                        <Trash2 className="h-4 w-4" />
+                        <Trash2 className="size-4" />
                       </Button>
                     )}
                   </div>
                 </div>
               );
-            })
-          )}
+            })}
+          </div>
+
+          {/* Desktop: Table View */}
+          <div className="hidden rounded-lg border md:block">
+            <div className="relative w-full overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="bg-muted/30 border-b">
+                    <th className="text-muted-foreground h-12 px-4 text-left align-middle text-xs font-medium tracking-wider uppercase">
+                      Handle
+                    </th>
+                    <th className="text-muted-foreground hidden h-12 px-4 text-left align-middle text-xs font-medium tracking-wider uppercase sm:table-cell">
+                      Stats
+                    </th>
+                    <th className="text-muted-foreground h-12 px-4 text-right align-middle text-xs font-medium tracking-wider uppercase">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {alts.map((alt) => {
+                    const isMain = mainAltId === alt.id;
+
+                    return (
+                      <tr
+                        key={alt.id}
+                        className="group hover:bg-muted/50 border-b transition-colors last:border-0"
+                      >
+                        {/* Alt Column */}
+                        <td className="px-4 py-3 align-middle">
+                          <div className="flex items-center gap-3">
+                            <Avatar className="ring-primary/10 size-11 ring-2">
+                              {alt.avatar_url && (
+                                <AvatarImage
+                                  src={alt.avatar_url}
+                                  alt={alt.username}
+                                />
+                              )}
+                              <AvatarFallback className="bg-primary/10 text-primary font-bold">
+                                {alt.username.charAt(0).toUpperCase()}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div className="flex min-w-0 items-center gap-2">
+                              <p className="truncate font-mono text-[15px] font-semibold">
+                                @{alt.username}
+                              </p>
+                              {isMain && (
+                                <Badge className="gap-1 border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400">
+                                  <Star className="size-3 fill-current" />
+                                  Main
+                                </Badge>
+                              )}
+                            </div>
+                          </div>
+                        </td>
+
+                        {/* Stats Column - Hidden on mobile */}
+                        <td className="hidden px-4 py-3 align-middle sm:table-cell">
+                          <div className="text-muted-foreground flex items-center gap-3 text-sm">
+                            <div className="flex items-center gap-1.5">
+                              <Trophy className="text-primary size-3.5" />
+                              <span className="text-foreground font-mono font-medium">
+                                0
+                              </span>
+                              <span>tournaments</span>
+                            </div>
+                            <span>•</span>
+                            <span className="font-mono">0-0</span>
+                          </div>
+                        </td>
+
+                        {/* Actions Column */}
+                        <td className="px-4 py-3 align-middle">
+                          <div className="flex justify-end gap-1">
+                            {!isMain && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() =>
+                                  handleDelete(alt.id, alt.username)
+                                }
+                                disabled={isPending}
+                                className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                                title="Delete alt"
+                              >
+                                <Trash2 className="size-4" />
+                              </Button>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* Info Card */}
+      <Card className="border-primary/20 bg-primary/5">
+        <CardContent className="p-6">
+          <div className="flex gap-4">
+            <div className="bg-primary/10 flex size-10 shrink-0 items-center justify-center rounded-lg">
+              <Trophy className="text-primary size-5" />
+            </div>
+            <div className="flex-1 space-y-1">
+              <h3 className="font-semibold">What are Alts?</h3>
+              <p className="text-muted-foreground text-sm">
+                Alts are player identities you use for tournament registration.
+                Each alt can register independently for tournaments, letting you
+                compete with different teams or strategies. Your{" "}
+                <span className="text-foreground font-medium">main alt</span>{" "}
+                matches your account username and serves as your primary
+                identity.
+              </p>
+            </div>
+          </div>
         </CardContent>
       </Card>
     </div>
@@ -279,7 +340,6 @@ function CreateAltForm({
 }) {
   const [isPending, startTransition] = useTransition();
   const [username, setUsername] = useState("");
-  const [inGameName, setBattleTag] = useState("");
 
   const handleSubmit = () => {
     if (!username.trim()) {
@@ -290,11 +350,10 @@ function CreateAltForm({
     startTransition(async () => {
       const result = await createAltAction({
         username: username.trim().toLowerCase(),
-        inGameName: inGameName.trim() || undefined,
       });
 
       if (result.success) {
-        toast.success("Alt created");
+        toast.success("Alt created successfully!");
         onCreated();
       } else {
         toast.error(result.error);
@@ -303,113 +362,60 @@ function CreateAltForm({
   };
 
   return (
-    <div className="bg-muted/30 space-y-3 rounded-lg border p-4">
-      <div className="flex items-center justify-between">
-        <p className="text-sm font-medium">Create New Alt</p>
-        <Button variant="ghost" size="sm" onClick={onCancel}>
-          <X className="h-4 w-4" />
-        </Button>
-      </div>
-      <div className="grid gap-3 sm:grid-cols-2">
-        <div className="space-y-1">
-          <Label htmlFor="newUsername" className="text-xs">
-            Username
+    <Card className="border-primary/20">
+      <CardContent className="p-6">
+        <div className="mb-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="bg-primary/10 flex size-10 items-center justify-center rounded-lg">
+              <Plus className="text-primary size-5" />
+            </div>
+            <div>
+              <h3 className="font-semibold">Create New Alt</h3>
+              <p className="text-muted-foreground text-sm">
+                Add a new player identity
+              </p>
+            </div>
+          </div>
+          <Button variant="ghost" size="sm" onClick={onCancel}>
+            <X className="size-4" />
+          </Button>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="newUsername" className="text-sm font-medium">
+            Username <span className="text-destructive">*</span>
           </Label>
           <Input
             id="newUsername"
             value={username}
             onChange={(e) => setUsername(e.target.value)}
             placeholder="username"
+            className="font-mono"
           />
+          <p className="text-muted-foreground text-xs">
+            Used for tournament registration
+          </p>
         </div>
-        <div className="space-y-1">
-          <Label htmlFor="newBattleTag" className="text-xs">
-            IGN (optional)
-          </Label>
-          <Input
-            id="newBattleTag"
-            value={inGameName}
-            onChange={(e) => setBattleTag(e.target.value)}
-            placeholder="Player#1234"
-          />
+
+        <div className="mt-6 flex gap-2">
+          <Button onClick={handleSubmit} disabled={isPending} className="gap-2">
+            {isPending ? (
+              <>
+                <Loader2 className="size-4 animate-spin" />
+                Creating...
+              </>
+            ) : (
+              <>
+                <Check className="size-4" />
+                Create Alt
+              </>
+            )}
+          </Button>
+          <Button variant="outline" onClick={onCancel}>
+            Cancel
+          </Button>
         </div>
-      </div>
-      <Button size="sm" onClick={handleSubmit} disabled={isPending}>
-        {isPending ? (
-          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-        ) : (
-          <Plus className="mr-2 h-4 w-4" />
-        )}
-        Create Alt
-      </Button>
-    </div>
-  );
-}
-
-function EditAltForm({
-  alt,
-  onSaved,
-  onCancel,
-}: {
-  alt: {
-    id: number;
-    username: string;
-    display_name: string;
-    in_game_name: string | null;
-  };
-  onSaved: () => void;
-  onCancel: () => void;
-}) {
-  const [isPending, startTransition] = useTransition();
-  const [inGameName, setBattleTag] = useState(alt.in_game_name ?? "");
-
-  const handleSubmit = () => {
-    startTransition(async () => {
-      const result = await updateAltAction(alt.id, {
-        inGameName: inGameName.trim() || null,
-      });
-
-      if (result.success) {
-        toast.success("Alt updated");
-        onSaved();
-      } else {
-        toast.error(result.error);
-      }
-    });
-  };
-
-  return (
-    <div className="bg-muted/30 space-y-3 rounded-lg border p-4">
-      <div className="flex items-center justify-between">
-        <p className="text-sm font-medium">Edit @{alt.username}</p>
-        <Button variant="ghost" size="sm" onClick={onCancel}>
-          <X className="h-4 w-4" />
-        </Button>
-      </div>
-      <div className="space-y-1">
-        <Label htmlFor={`editBattleTag-${alt.id}`} className="text-xs">
-          IGN
-        </Label>
-        <Input
-          id={`editBattleTag-${alt.id}`}
-          value={inGameName}
-          onChange={(e) => setBattleTag(e.target.value)}
-          placeholder="Player#1234"
-        />
-      </div>
-      <div className="flex gap-2">
-        <Button size="sm" onClick={handleSubmit} disabled={isPending}>
-          {isPending ? (
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-          ) : (
-            <Save className="mr-2 h-4 w-4" />
-          )}
-          Save
-        </Button>
-        <Button size="sm" variant="outline" onClick={onCancel}>
-          Cancel
-        </Button>
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   );
 }

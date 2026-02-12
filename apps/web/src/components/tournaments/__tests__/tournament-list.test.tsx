@@ -224,7 +224,6 @@ describe("CompletedTournaments", () => {
     winner: {
       id: 1,
       username: "champion",
-      display_name: "Champion Player",
     },
   };
 
@@ -234,7 +233,7 @@ describe("CompletedTournaments", () => {
     // Component renders both mobile and desktop views
     const names = screen.getAllByText("Test Tournament");
     expect(names.length).toBeGreaterThan(0);
-    const winners = screen.getAllByText("Champion Player");
+    const winners = screen.getAllByText("champion");
     expect(winners.length).toBeGreaterThan(0);
     expect(screen.getByText("16")).toBeInTheDocument();
   });

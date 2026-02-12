@@ -454,7 +454,7 @@ export function RegisterModal({
                           <SelectTrigger className="w-full">
                             <SelectValue placeholder="Select profile">
                               {selectedAlt
-                                ? `${selectedAlt.display_name || selectedAlt.username} (@${selectedAlt.username})`
+                                ? `${selectedAlt.username || selectedAlt.username} (@${selectedAlt.username})`
                                 : "Select profile"}
                             </SelectValue>
                           </SelectTrigger>
@@ -462,7 +462,7 @@ export function RegisterModal({
                         <SelectContent>
                           {alts.map((alt) => (
                             <SelectItem key={alt.id} value={alt.id.toString()}>
-                              {alt.display_name || alt.username} (@
+                              {alt.username || alt.username} (@
                               {alt.username})
                             </SelectItem>
                           ))}

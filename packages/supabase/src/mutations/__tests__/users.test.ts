@@ -90,69 +90,13 @@ describe("User Mutations", () => {
       expect(result).toEqual({ success: true });
     });
 
-    it("should update avatar and in-game name", async () => {
-      const fromSpy = jest.spyOn(mockClient, "from");
-
-      fromSpy.mockReturnValueOnce({
-        select: jest.fn().mockReturnThis(),
-        eq: jest.fn().mockReturnThis(),
-        single: jest.fn().mockResolvedValue({
-          data: mockAlt,
-          error: null,
-        }),
-      } as unknown as MockQueryBuilder);
-
-      const updateMock = jest.fn().mockReturnThis();
-      fromSpy.mockReturnValueOnce({
-        update: updateMock,
-        eq: jest.fn().mockResolvedValue({ error: null }),
-      } as unknown as MockQueryBuilder);
-
-      await updateAlt(mockClient, altId, {
-        avatarUrl: "https://example.com/avatar.png",
-        inGameName: "PlayerOne",
-      });
-
-      expect(updateMock).toHaveBeenCalledWith({
-        avatar_url: "https://example.com/avatar.png",
-        in_game_name: "PlayerOne",
-      });
-    });
-
-    it("should handle null in-game name", async () => {
-      const fromSpy = jest.spyOn(mockClient, "from");
-
-      fromSpy.mockReturnValueOnce({
-        select: jest.fn().mockReturnThis(),
-        eq: jest.fn().mockReturnThis(),
-        single: jest.fn().mockResolvedValue({
-          data: mockAlt,
-          error: null,
-        }),
-      } as unknown as MockQueryBuilder);
-
-      const updateMock = jest.fn().mockReturnThis();
-      fromSpy.mockReturnValueOnce({
-        update: updateMock,
-        eq: jest.fn().mockResolvedValue({ error: null }),
-      } as unknown as MockQueryBuilder);
-
-      await updateAlt(mockClient, altId, {
-        inGameName: null,
-      });
-
-      expect(updateMock).toHaveBeenCalledWith({
-        in_game_name: null,
-      });
-    });
-
     it("should throw error if not authenticated", async () => {
       (mockClient.auth.getUser as jest.Mock).mockResolvedValue({
         data: { user: null },
       } as MockAuthResponse);
 
       await expect(
-        updateAlt(mockClient, altId, { inGameName: "Test" })
+        updateAlt(mockClient, altId, { avatarUrl: "test.png" })
       ).rejects.toThrow("Not authenticated");
     });
 
@@ -164,7 +108,7 @@ describe("User Mutations", () => {
       });
 
       await expect(
-        updateAlt(mockClient, altId, { inGameName: "Test" })
+        updateAlt(mockClient, altId, { avatarUrl: "test.png" })
       ).rejects.toThrow("Alt not found");
     });
 
@@ -179,7 +123,7 @@ describe("User Mutations", () => {
       });
 
       await expect(
-        updateAlt(mockClient, altId, { inGameName: "Test" })
+        updateAlt(mockClient, altId, { avatarUrl: "test.png" })
       ).rejects.toThrow("You can only update your own alt");
     });
 
@@ -202,7 +146,7 @@ describe("User Mutations", () => {
       } as unknown as MockQueryBuilder);
 
       await expect(
-        updateAlt(mockClient, altId, { inGameName: "Test" })
+        updateAlt(mockClient, altId, { avatarUrl: "test.png" })
       ).rejects.toThrow("Database error");
     });
   });
@@ -672,7 +616,6 @@ describe("User Mutations", () => {
       await createAlt(mockClient, {
         username: "player",
         avatarUrl: "https://example.com/avatar.png",
-        inGameName: "PlayerOne",
       });
 
       expect(insertMock).toHaveBeenCalledWith({
@@ -680,7 +623,6 @@ describe("User Mutations", () => {
         username: "player",
         display_name: "player",
         avatar_url: "https://example.com/avatar.png",
-        in_game_name: "PlayerOne",
       });
     });
 

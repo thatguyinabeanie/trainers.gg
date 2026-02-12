@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { useSupabaseQuery } from "@/lib/supabase";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { useSupabase, useSupabaseQuery } from "@/lib/supabase";
 import { getTournamentRegistrations } from "@trainers/supabase";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -44,6 +44,10 @@ import {
   bulkForceCheckIn,
   bulkRemovePlayers,
 } from "@/actions/tournaments";
+import {
+  RealtimeStatusBadge,
+  type RealtimeStatus,
+} from "./realtime-status-badge";
 
 interface TournamentRegistrationsProps {
   tournament: {
@@ -55,21 +59,69 @@ interface TournamentRegistrationsProps {
 export function TournamentRegistrations({
   tournament,
 }: TournamentRegistrationsProps) {
+  const supabase = useSupabase();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [isProcessing, setIsProcessing] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
+  const [realtimeStatus, setRealtimeStatus] =
+    useState<RealtimeStatus>("connected");
+  const refreshTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
+
+  // Debounced refresh trigger (500ms delay to batch bulk operations)
+  const triggerRefresh = useCallback(() => {
+    if (refreshTimeoutRef.current) {
+      clearTimeout(refreshTimeoutRef.current);
+    }
+    refreshTimeoutRef.current = setTimeout(() => {
+      setRefreshKey((k) => k + 1);
+    }, 500);
+  }, []);
+
+  // Real-time subscription to tournament_registrations
+  useEffect(() => {
+    const channel = supabase
+      .channel(`registrations-${tournament.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*", // INSERT, UPDATE, DELETE
+          schema: "public",
+          table: "tournament_registrations",
+          filter: `tournament_id=eq.${tournament.id}`,
+        },
+        () => {
+          triggerRefresh();
+        }
+      )
+      .subscribe((status, err) => {
+        if (status === "SUBSCRIBED") {
+          setRealtimeStatus("connected");
+        } else if (status === "CLOSED") {
+          setRealtimeStatus("disconnected");
+        } else if (err) {
+          console.error("[Realtime] registrations error:", err);
+          setRealtimeStatus("error");
+        }
+      });
+
+    return () => {
+      if (refreshTimeoutRef.current) {
+        clearTimeout(refreshTimeoutRef.current);
+      }
+      channel.unsubscribe();
+    };
+  }, [supabase, tournament.id, triggerRefresh]);
 
   const { data: registrations, refetch } = useSupabaseQuery(
     (supabase) => getTournamentRegistrations(supabase, tournament.id),
-    [tournament.id]
+    [tournament.id, refreshKey]
   );
 
   const filteredRegistrations =
     registrations?.filter(
       (reg) =>
-        reg.alt?.display_name
-          ?.toLowerCase()
-          .includes(searchTerm.toLowerCase()) ||
+        reg.alt?.username?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         reg.team_name?.toLowerCase().includes(searchTerm.toLowerCase())
     ) || [];
 
@@ -196,6 +248,7 @@ export function TournamentRegistrations({
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <RealtimeStatusBadge status={realtimeStatus} />
           {selectedIds.size > 0 && (
             <>
               <Button
@@ -350,12 +403,12 @@ export function TournamentRegistrations({
                             src={registration.alt?.avatar_url ?? undefined}
                           />
                           <AvatarFallback>
-                            {registration.alt?.display_name?.charAt(0) || "?"}
+                            {registration.alt?.username?.charAt(0) || "?"}
                           </AvatarFallback>
                         </Avatar>
                         <div>
                           <div className="font-medium">
-                            {registration.alt?.display_name || "Unknown Player"}
+                            {registration.alt?.username || "Unknown Player"}
                           </div>
                           <div className="text-muted-foreground text-sm">
                             @{registration.alt?.username || "unknown"}

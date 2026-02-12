@@ -1,5 +1,6 @@
 # trainers.gg
 
+
 A Pokemon community platform for competitive players, tournament organizers, and teams. Integrated with the **AT Protocol (Bluesky)** for decentralized social features.
 
 ## Tech Stack
@@ -346,3 +347,6 @@ See [AGENTS.md](./AGENTS.md) for code style guidelines and architecture decision
 ## License
 
 Private - All rights reserved.
+ 
+ 
+ 

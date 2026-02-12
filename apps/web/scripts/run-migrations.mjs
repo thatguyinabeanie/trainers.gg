@@ -337,13 +337,21 @@ async function runMigrations() {
     SUPABASE_DB_PASSWORD: process.env.SUPABASE_POSTGRES_PASSWORD,
   };
 
-  // Link to project
-  console.log("\n🔗 Linking to Supabase project...");
-  exec(`npx supabase link --project-ref ${projectRef}`, { env: cliEnv });
+  // For preview environments, skip migrations - Supabase applies them automatically
+  // when creating the preview branch. Running migrations again causes conflicts.
+  if (env.type === "preview" && !isProductionDb) {
+    console.log("\n⏭️  Skipping migrations for preview branch");
+    console.log("   Supabase automatically applies migrations when creating preview branches.");
+    console.log("   Running migrations again would cause duplicate schema objects.");
+  } else {
+    // Link to project (only needed for production)
+    console.log("\n🔗 Linking to Supabase project...");
+    exec(`npx supabase link --project-ref ${projectRef}`, { env: cliEnv });
 
-  // Push migrations
-  console.log("\n📤 Applying migrations...");
-  exec("npx supabase db push --linked --include-all", { env: cliEnv });
+    // For production, only push new migrations (never reset)
+    console.log("\n📤 Applying migrations...");
+    exec("npx supabase db push --linked", { env: cliEnv });
+  }
 
   // Run seed data for preview environments
   if (env.shouldSeed) {

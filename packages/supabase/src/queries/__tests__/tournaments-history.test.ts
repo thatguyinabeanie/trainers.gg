@@ -56,8 +56,8 @@ describe("getUserTournamentHistory", () => {
   it("should return empty array if user has no tournament registrations", async () => {
     const mockUserId = "user-123";
     const mockAlts = [
-      { id: 1, username: "alt1", display_name: "Alt One" },
-      { id: 2, username: "alt2", display_name: "Alt Two" },
+      { id: 1, username: "alt1" },
+      { id: 2, username: "alt2" },
     ];
 
     (mockSupabase.auth.getUser as ReturnType<typeof jest.fn>).mockResolvedValue(
@@ -106,7 +106,7 @@ describe("getUserTournamentHistory", () => {
 
   it("should return tournament history with placement and team data", async () => {
     const mockUserId = "user-123";
-    const mockAlts = [{ id: 1, username: "alt1", display_name: "Alt One" }];
+    const mockAlts = [{ id: 1, username: "alt1" }];
     const mockRegistrations = [
       {
         id: 1,
@@ -253,7 +253,7 @@ describe("getUserTournamentHistory", () => {
       format: "VGC 2024 Reg G",
       altId: 1,
       altUsername: "alt1",
-      altDisplayName: "Alt One",
+      altDisplayName: "alt1",
       placement: 1,
       wins: 5,
       losses: 0,
@@ -272,7 +272,7 @@ describe("getUserTournamentHistory", () => {
 
   it("should filter out non-completed tournaments", async () => {
     const mockUserId = "user-123";
-    const mockAlts = [{ id: 1, username: "alt1", display_name: "Alt One" }];
+    const mockAlts = [{ id: 1, username: "alt1" }];
     const mockRegistrations = [
       {
         id: 1,

@@ -134,7 +134,7 @@ export function getUserDisplayName(user: AuthUser | null): string {
   // Check user_metadata (from auth)
   const metadata = user.user_metadata;
   const displayName =
-    (metadata?.display_name as string | undefined) ??
+    (metadata?.username as string | undefined) ??
     (metadata?.full_name as string | undefined) ??
     (metadata?.name as string | undefined) ??
     (metadata?.username as string | undefined) ??

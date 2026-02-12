@@ -11,7 +11,7 @@ type OrganizationRow = Database["public"]["Tables"]["organizations"]["Row"];
 export type TournamentWithOrg = TournamentRow & {
   organization: Pick<OrganizationRow, "id" | "name" | "slug"> | null;
   registrationCount: number;
-  winner: { id: number; username: string; display_name: string | null } | null;
+  winner: { id: number; username: string } | null;
 };
 
 export type GroupedTournaments = {
@@ -76,10 +76,7 @@ export async function listTournamentsGrouped(
     .filter((t) => t.status === "completed")
     .map((t) => t.id);
 
-  const winnerMap: Record<
-    string,
-    { id: number; username: string; display_name: string | null }
-  > = {};
+  const winnerMap: Record<string, { id: number; username: string }> = {};
 
   if (completedTournamentIds.length > 0) {
     const { data: standings, error: standingsError } = await supabase
@@ -87,7 +84,7 @@ export async function listTournamentsGrouped(
       .select(
         `
         tournament_id,
-        alt:alts(id, username, display_name)
+        alt:alts(id, username)
       `
       )
       .in("tournament_id", completedTournamentIds)
@@ -102,7 +99,6 @@ export async function listTournamentsGrouped(
         winnerMap[String(standing.tournament_id)] = {
           id: standing.alt.id,
           username: standing.alt.username,
-          display_name: standing.alt.display_name,
         };
       }
     }
@@ -656,7 +652,7 @@ export async function getTournamentPlayerStats(
     .select(
       `
       *,
-      alt:alts(id, username, display_name, avatar_url)
+      alt:alts(id, username, avatar_url)
     `
     )
     .eq("tournament_id", tournamentId)
@@ -747,9 +743,9 @@ export async function getRoundMatchesWithStats(
     .select(
       `
       *,
-      player1:alts!tournament_matches_alt1_id_fkey(id, username, display_name, avatar_url),
-      player2:alts!tournament_matches_alt2_id_fkey(id, username, display_name, avatar_url),
-      winner:alts!tournament_matches_winner_alt_id_fkey(id, username, display_name)
+      player1:alts!tournament_matches_alt1_id_fkey(id, username, avatar_url),
+      player2:alts!tournament_matches_alt2_id_fkey(id, username, avatar_url),
+      winner:alts!tournament_matches_winner_alt_id_fkey(id, username)
     `
     )
     .eq("round_id", roundId)
@@ -817,8 +813,8 @@ export async function getPhaseRoundsWithMatches(
     .select(
       `
       *,
-      player1:alts!tournament_matches_alt1_id_fkey(id, username, display_name),
-      player2:alts!tournament_matches_alt2_id_fkey(id, username, display_name)
+      player1:alts!tournament_matches_alt1_id_fkey(id, username),
+      player2:alts!tournament_matches_alt2_id_fkey(id, username)
     `
     )
     .in("round_id", roundIds)
@@ -1187,9 +1183,9 @@ export async function getTournamentMatchesForStaff(
     .select(
       `
       *,
-      player1:alts!tournament_matches_alt1_id_fkey(id, username, display_name, avatar_url),
-      player2:alts!tournament_matches_alt2_id_fkey(id, username, display_name, avatar_url),
-      winner:alts!tournament_matches_winner_alt_id_fkey(id, username, display_name)
+      player1:alts!tournament_matches_alt1_id_fkey(id, username, avatar_url),
+      player2:alts!tournament_matches_alt2_id_fkey(id, username, avatar_url),
+      winner:alts!tournament_matches_winner_alt_id_fkey(id, username)
     `
     )
     .in("round_id", roundIds)
@@ -1236,8 +1232,8 @@ export async function getActiveMatch(supabase: TypedClient, altId: number) {
     .select(
       `
       *,
-      player1:alts!tournament_matches_alt1_id_fkey(id, display_name, username),
-      player2:alts!tournament_matches_alt2_id_fkey(id, display_name, username),
+      player1:alts!tournament_matches_alt1_id_fkey(id, username),
+      player2:alts!tournament_matches_alt2_id_fkey(id, username),
       round:tournament_rounds(
         id,
         round_number,
@@ -1274,9 +1270,7 @@ export async function getActiveMatch(supabase: TypedClient, altId: number) {
   // Determine opponent
   const isPlayer1 = match.alt1_id === altId;
   const opponent = isPlayer1 ? match.player2 : match.player1;
-  const opponentArr = opponent as
-    | { id: number; display_name: string; username: string }[]
-    | null;
+  const opponentArr = opponent as { id: number; username: string }[] | null;
   const opponentProfile = opponentArr?.[0] ?? null;
 
   return {
@@ -1290,7 +1284,7 @@ export async function getActiveMatch(supabase: TypedClient, altId: number) {
     opponent: opponentProfile
       ? {
           id: opponentProfile.id,
-          displayName: opponentProfile.display_name,
+          displayName: opponentProfile.username,
           username: opponentProfile.username,
         }
       : null,
@@ -1317,6 +1311,8 @@ export async function getMyDashboardData(supabase: TypedClient, altId: number) {
     startDate: string | null;
     status: string;
     hasTeam: boolean;
+    registrationStatus: string;
+    registrationId: number;
   }[] = [];
   let activeTournamentsCount = 0;
 
@@ -1336,6 +1332,8 @@ export async function getMyDashboardData(supabase: TypedClient, altId: number) {
         startDate: tournament.start_date,
         status: tournament.status,
         hasTeam: reg.team_id != null,
+        registrationStatus: reg.status ?? "registered",
+        registrationId: reg.id,
       });
 
       if (tournament.status === "active" || tournament.status === "upcoming") {
@@ -1376,8 +1374,8 @@ export async function getMyDashboardData(supabase: TypedClient, altId: number) {
     .select(
       `
       *,
-      player1:alts!tournament_matches_alt1_id_fkey(id, display_name),
-      player2:alts!tournament_matches_alt2_id_fkey(id, display_name),
+      player1:alts!tournament_matches_alt1_id_fkey(id),
+      player2:alts!tournament_matches_alt2_id_fkey(id),
       round:tournament_rounds(
         id,
         phase:tournament_phases(
@@ -1416,16 +1414,14 @@ export async function getMyDashboardData(supabase: TypedClient, altId: number) {
     const isPlayer1 = match.alt1_id === altId;
     const opponent = isPlayer1 ? match.player2 : match.player1;
     // player1/player2 are arrays from Supabase join, take first element
-    const opponentArr = opponent as
-      | { id: number; display_name: string }[]
-      | null;
+    const opponentArr = opponent as { id: number; username: string }[] | null;
     const opponentProfile = opponentArr?.[0] ?? null;
     const won = match.winner_alt_id === altId;
 
     recentActivity.push({
       id: match.id,
       tournamentName: tournament.name,
-      opponentName: opponentProfile?.display_name || "Unknown",
+      opponentName: opponentProfile?.username || "Unknown",
       result: won ? "won" : "lost",
       date: match.end_time ? new Date(match.end_time).getTime() : Date.now(),
     });
@@ -1632,7 +1628,6 @@ export async function getTournamentInvitationsSent(
       invitedPlayer:alts!tournament_invitations_invited_alt_id_fkey(
         id,
         username,
-        display_name,
         avatar_url
       )
     `
@@ -1648,7 +1643,7 @@ export async function getTournamentInvitationsSent(
       ? {
           id: inv.invitedPlayer.id,
           username: inv.invitedPlayer.username,
-          displayName: inv.invitedPlayer.display_name,
+          displayName: inv.invitedPlayer.username,
           avatarUrl: inv.invitedPlayer.avatar_url,
         }
       : null,
@@ -1682,7 +1677,6 @@ export async function getTournamentInvitationsReceived(supabase: TypedClient) {
       tournament:tournaments(*),
       invitedBy:alts!tournament_invitations_invited_by_alt_id_fkey(
         id,
-        display_name,
         username,
         avatar_url
       )
@@ -1710,7 +1704,7 @@ export async function getTournamentInvitationsReceived(supabase: TypedClient) {
     invitedBy: inv.invitedBy
       ? {
           id: inv.invitedBy.id,
-          displayName: inv.invitedBy.display_name,
+          displayName: inv.invitedBy.username,
           username: inv.invitedBy.username,
           avatarUrl: inv.invitedBy.avatar_url,
         }
@@ -1841,7 +1835,7 @@ export async function getUnpairedCheckedInPlayers(
   // Fetch alt details for display
   const { data: alts, error: altErr } = await supabase
     .from("alts")
-    .select("id, username, display_name")
+    .select("id, username")
     .in("id", unpairedAltIds);
 
   if (altErr) throw altErr;
@@ -1856,7 +1850,7 @@ export async function getUnpairedCheckedInPlayers(
       return {
         altId: r.alt_id!,
         username: alt?.username ?? "Unknown",
-        displayName: alt?.display_name ?? null,
+        displayName: alt?.username ?? null,
         checkedInAt: r.checked_in_at,
       };
     });
@@ -1876,7 +1870,7 @@ export async function getUserTournamentHistory(supabase: TypedClient) {
   // Get all alts for this user
   const { data: alts } = await supabase
     .from("alts")
-    .select("id, username, display_name")
+    .select("id, username")
     .eq("user_id", user.id);
 
   if (!alts || alts.length === 0) return [];
@@ -2042,7 +2036,7 @@ export async function getUserTournamentHistory(supabase: TypedClient) {
             : null,
         altId: r.alt_id,
         altUsername: alt?.username ?? "",
-        altDisplayName: alt?.display_name ?? null,
+        altDisplayName: alt?.username ?? null,
         placement: standing?.rank ?? null,
         wins: standing?.wins ?? 0,
         losses: standing?.losses ?? 0,
