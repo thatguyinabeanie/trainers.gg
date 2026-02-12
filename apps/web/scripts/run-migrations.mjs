@@ -341,9 +341,16 @@ async function runMigrations() {
   console.log("\n🔗 Linking to Supabase project...");
   exec(`npx supabase link --project-ref ${projectRef}`, { env: cliEnv });
 
-  // Push migrations
-  console.log("\n📤 Applying migrations...");
-  exec("npx supabase db push --linked", { env: cliEnv });
+  // For preview environments, reset the database to ensure clean state
+  // This prevents schema drift errors from previous deployments
+  if (env.type === "preview" && !isProductionDb) {
+    console.log("\n🔄 Resetting preview database to clean state...");
+    exec("npx supabase db reset --linked", { env: cliEnv });
+  } else {
+    // For production, only push new migrations (never reset)
+    console.log("\n📤 Applying migrations...");
+    exec("npx supabase db push --linked", { env: cliEnv });
+  }
 
   // Run seed data for preview environments
   if (env.shouldSeed) {
