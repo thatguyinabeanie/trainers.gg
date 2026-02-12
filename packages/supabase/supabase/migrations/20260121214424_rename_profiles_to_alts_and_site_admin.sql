@@ -1,7 +1,7 @@
 -- =============================================================================
--- Migration: Rename profiles to alts + Add Site Admin System
+-- Migration: Rename profiles to alts + Add Site Admin System (Idempotent)
 -- =============================================================================
--- This migration:
+-- This migration (updated to be idempotent for preview branch compatibility):
 -- 1. Renames `profiles` table to `alts` (and all related columns)
 -- 2. Adds `scope` column to `roles` table ('site' | 'organization')
 -- 3. Creates `user_roles` table for site-scoped roles (links users.id to roles)
