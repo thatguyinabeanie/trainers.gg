@@ -330,6 +330,7 @@ describe("getCurrentUserProfile", () => {
 describe("updateProfile", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    process.env.NEXT_PUBLIC_SUPABASE_URL = "https://test.supabase.co";
     mockAuth.getUser.mockResolvedValue({
       data: { user: { id: "user-1" } },
       error: null,
