@@ -102,19 +102,46 @@ DROP TRIGGER IF EXISTS "update_profiles_updated_at" ON "public"."profiles";
 -- Drop the old function (we'll recreate it with new name)
 DROP FUNCTION IF EXISTS "public"."get_current_profile_id"();
 
--- Rename the table
-ALTER TABLE "public"."profiles" RENAME TO "alts";
+-- Rename the table (only if profiles exists and alts doesn't)
+DO $$
+BEGIN
+  IF EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename = 'profiles')
+     AND NOT EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename = 'alts') THEN
+    ALTER TABLE "public"."profiles" RENAME TO "alts";
+  END IF;
+END $$;
 
--- Rename the sequence
-ALTER SEQUENCE IF EXISTS "public"."profiles_id_seq" RENAME TO "alts_id_seq";
+-- Rename the sequence (only if profiles_id_seq exists and alts_id_seq doesn't)
+DO $$
+BEGIN
+  IF EXISTS (SELECT FROM pg_class WHERE relname = 'profiles_id_seq' AND relkind = 'S')
+     AND NOT EXISTS (SELECT FROM pg_class WHERE relname = 'alts_id_seq' AND relkind = 'S') THEN
+    ALTER SEQUENCE "public"."profiles_id_seq" RENAME TO "alts_id_seq";
+  END IF;
+END $$;
 
--- Rename indexes on the alts table
-ALTER INDEX IF EXISTS "profiles_pkey" RENAME TO "alts_pkey";
-ALTER INDEX IF EXISTS "profiles_username_key" RENAME TO "alts_username_key";
-ALTER INDEX IF EXISTS "idx_profiles_tier" RENAME TO "idx_alts_tier";
-ALTER INDEX IF EXISTS "idx_profiles_tier_expiry" RENAME TO "idx_alts_tier_expiry";
-ALTER INDEX IF EXISTS "idx_profiles_user" RENAME TO "idx_alts_user";
-ALTER INDEX IF EXISTS "idx_profiles_username" RENAME TO "idx_alts_username";
+-- Rename indexes on the alts table (only if they haven't been renamed yet)
+DO $$
+BEGIN
+  IF EXISTS (SELECT FROM pg_indexes WHERE indexname = 'profiles_pkey') THEN
+    ALTER INDEX "profiles_pkey" RENAME TO "alts_pkey";
+  END IF;
+  IF EXISTS (SELECT FROM pg_indexes WHERE indexname = 'profiles_username_key') THEN
+    ALTER INDEX "profiles_username_key" RENAME TO "alts_username_key";
+  END IF;
+  IF EXISTS (SELECT FROM pg_indexes WHERE indexname = 'idx_profiles_tier') THEN
+    ALTER INDEX "idx_profiles_tier" RENAME TO "idx_alts_tier";
+  END IF;
+  IF EXISTS (SELECT FROM pg_indexes WHERE indexname = 'idx_profiles_tier_expiry') THEN
+    ALTER INDEX "idx_profiles_tier_expiry" RENAME TO "idx_alts_tier_expiry";
+  END IF;
+  IF EXISTS (SELECT FROM pg_indexes WHERE indexname = 'idx_profiles_user') THEN
+    ALTER INDEX "idx_profiles_user" RENAME TO "idx_alts_user";
+  END IF;
+  IF EXISTS (SELECT FROM pg_indexes WHERE indexname = 'idx_profiles_username') THEN
+    ALTER INDEX "idx_profiles_username" RENAME TO "idx_alts_username";
+  END IF;
+END $$;
 
 -- Recreate the updated_at trigger with new table name
 CREATE OR REPLACE TRIGGER "update_alts_updated_at" 
@@ -125,15 +152,31 @@ CREATE OR REPLACE TRIGGER "update_alts_updated_at"
 -- STEP 5: Rename profile_group_roles table to alt_group_roles
 -- =============================================================================
 
-ALTER TABLE "public"."profile_group_roles" RENAME TO "alt_group_roles";
+DO $$
+BEGIN
+  -- Only rename if profile_group_roles exists and alt_group_roles doesn't
+  IF EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename = 'profile_group_roles')
+     AND NOT EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename = 'alt_group_roles') THEN
 
--- Rename the sequence
-ALTER SEQUENCE IF EXISTS "public"."profile_group_roles_id_seq" RENAME TO "alt_group_roles_id_seq";
+    ALTER TABLE "public"."profile_group_roles" RENAME TO "alt_group_roles";
 
--- Rename indexes
-ALTER INDEX IF EXISTS "profile_group_roles_pkey" RENAME TO "alt_group_roles_pkey";
-ALTER INDEX IF EXISTS "profile_group_roles_profile_id_group_role_id_key" RENAME TO "alt_group_roles_alt_id_group_role_id_key";
-ALTER INDEX IF EXISTS "idx_profile_group_roles_profile" RENAME TO "idx_alt_group_roles_alt";
+    -- Rename the sequence
+    IF EXISTS (SELECT FROM pg_class WHERE relname = 'profile_group_roles_id_seq' AND relkind = 'S') THEN
+      ALTER SEQUENCE "public"."profile_group_roles_id_seq" RENAME TO "alt_group_roles_id_seq";
+    END IF;
+
+    -- Rename indexes
+    IF EXISTS (SELECT FROM pg_indexes WHERE indexname = 'profile_group_roles_pkey') THEN
+      ALTER INDEX "profile_group_roles_pkey" RENAME TO "alt_group_roles_pkey";
+    END IF;
+    IF EXISTS (SELECT FROM pg_indexes WHERE indexname = 'profile_group_roles_profile_id_group_role_id_key') THEN
+      ALTER INDEX "profile_group_roles_profile_id_group_role_id_key" RENAME TO "alt_group_roles_alt_id_group_role_id_key";
+    END IF;
+    IF EXISTS (SELECT FROM pg_indexes WHERE indexname = 'idx_profile_group_roles_profile') THEN
+      ALTER INDEX "idx_profile_group_roles_profile" RENAME TO "idx_alt_group_roles_alt";
+    END IF;
+  END IF;
+END $$;
 
 -- Rename the profile_id column to alt_id
 ALTER TABLE "public"."alt_group_roles" RENAME COLUMN "profile_id" TO "alt_id";
