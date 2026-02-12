@@ -199,7 +199,11 @@ export function LinkedIdentitiesSection() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-8">
-        <span className="border-primary size-6 animate-spin rounded-full border-2 border-t-transparent" />
+        <span
+          role="status"
+          aria-label="Loading"
+          className="border-primary size-6 animate-spin rounded-full border-2 border-t-transparent"
+        />
       </div>
     );
   }
@@ -223,14 +227,14 @@ export function LinkedIdentitiesSection() {
               variant="outline"
               size="sm"
               onClick={() => handleUnlink("bluesky", "bluesky")}
-              disabled={unlinking === "bluesky"}
+              disabled={unlinking !== null}
             >
               {unlinking === "bluesky" ? "Disconnecting..." : "Disconnect"}
             </Button>
           ) : (
             <TooltipProvider>
               <Tooltip>
-                <TooltipTrigger>
+                <TooltipTrigger render={<span />}>
                   <Button variant="outline" size="sm" disabled>
                     Disconnect
                   </Button>
@@ -270,14 +274,14 @@ export function LinkedIdentitiesSection() {
                   variant="outline"
                   size="sm"
                   onClick={() => handleUnlink(identity.id, provider.name)}
-                  disabled={isUnlinking}
+                  disabled={unlinking !== null}
                 >
                   {isUnlinking ? "Disconnecting..." : "Disconnect"}
                 </Button>
               ) : (
                 <TooltipProvider>
                   <Tooltip>
-                    <TooltipTrigger>
+                    <TooltipTrigger render={<span />}>
                       <Button variant="outline" size="sm" disabled>
                         Disconnect
                       </Button>
