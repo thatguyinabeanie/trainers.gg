@@ -3,7 +3,7 @@
  * Verifies UI rendering, connect/disconnect functionality, and lockout protection
  */
 
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { toast } from "sonner";
 import { LinkedIdentitiesSection } from "../linked-identities-section";
@@ -321,7 +321,11 @@ describe("LinkedIdentitiesSection", () => {
         expect(screen.getByText("Bluesky")).toBeInTheDocument();
       });
 
-      const disconnectButton = screen.getByRole("button", {
+      // Find the Bluesky row container (go up from text to the flex justify-between div)
+      const blueskyRow = screen
+        .getByText("Bluesky")
+        .closest(".flex.items-center.justify-between") as HTMLElement;
+      const disconnectButton = within(blueskyRow).getByRole("button", {
         name: /disconnect/i,
       });
       await user.click(disconnectButton);
@@ -383,7 +387,9 @@ describe("LinkedIdentitiesSection", () => {
       render(<LinkedIdentitiesSection />);
 
       await waitFor(() => {
-        expect(screen.getAllByText(/connected/i)).toHaveLength(2); // Google + Bluesky
+        // Google shows "Connected", Bluesky shows the handle
+        expect(screen.getByText("Connected")).toBeInTheDocument();
+        expect(screen.getByText("@testuser.trainers.gg")).toBeInTheDocument();
       });
 
       const disconnectButtons = screen.getAllByRole("button", {
@@ -582,7 +588,11 @@ describe("LinkedIdentitiesSection", () => {
         expect(screen.getByText("Bluesky")).toBeInTheDocument();
       });
 
-      const disconnectButton = screen.getByRole("button", {
+      // Find the Bluesky row container (go up from text to the flex justify-between div)
+      const blueskyRow = screen
+        .getByText("Bluesky")
+        .closest(".flex.items-center.justify-between") as HTMLElement;
+      const disconnectButton = within(blueskyRow).getByRole("button", {
         name: /disconnect/i,
       });
       await user.click(disconnectButton);
