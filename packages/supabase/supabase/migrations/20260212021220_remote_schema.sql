@@ -39,7 +39,7 @@ DO $$ BEGIN
     END IF;
     -- Only change type if not already uuid
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'feature_usage' AND column_name = 'id' AND data_type = 'uuid') THEN
-      ALTER TABLE "public"."feature_usage" ALTER COLUMN "id" SET DATA TYPE uuid USING "id"::uuid;
+      ALTER TABLE "public"."feature_usage" ALTER COLUMN "id" SET DATA TYPE uuid USING gen_random_uuid();
     END IF;
     ALTER TABLE "public"."feature_usage" ALTER COLUMN "id" SET DEFAULT extensions.uuid_generate_v4();
   END IF;
@@ -164,7 +164,7 @@ DO $$ BEGIN
       ALTER TABLE "public"."rate_limits" ALTER COLUMN "id" DROP IDENTITY;
     END IF;
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'rate_limits' AND column_name = 'id' AND data_type = 'uuid') THEN
-      ALTER TABLE "public"."rate_limits" ALTER COLUMN "id" SET DATA TYPE uuid USING "id"::uuid;
+      ALTER TABLE "public"."rate_limits" ALTER COLUMN "id" SET DATA TYPE uuid USING gen_random_uuid();
     END IF;
     ALTER TABLE "public"."rate_limits" ALTER COLUMN "id" SET DEFAULT extensions.uuid_generate_v4();
   END IF;
@@ -205,7 +205,7 @@ DO $$ BEGIN
       ALTER TABLE "public"."subscriptions" ALTER COLUMN "id" DROP IDENTITY;
     END IF;
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'subscriptions' AND column_name = 'id' AND data_type = 'uuid') THEN
-      ALTER TABLE "public"."subscriptions" ALTER COLUMN "id" SET DATA TYPE uuid USING "id"::uuid;
+      ALTER TABLE "public"."subscriptions" ALTER COLUMN "id" SET DATA TYPE uuid USING gen_random_uuid();
     END IF;
     ALTER TABLE "public"."subscriptions" ALTER COLUMN "id" SET DEFAULT extensions.uuid_generate_v4();
   END IF;
@@ -335,11 +335,11 @@ DO $$ BEGIN
     END IF;
     ALTER TABLE "public"."tournament_player_stats" ALTER COLUMN "id" SET DEFAULT nextval('public.tournament_player_stats_id_seq'::regclass);
   END IF;
-  -- Handle opponent_history column type change
+  -- Handle opponent_history column type change (bigint[] -> uuid[])
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'tournament_player_stats' AND column_name = 'opponent_history' AND udt_name != '_uuid') THEN
+    ALTER TABLE "public"."tournament_player_stats" ALTER COLUMN "opponent_history" SET DATA TYPE uuid[] USING '{}'::uuid[];
+  END IF;
   IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'tournament_player_stats' AND column_name = 'opponent_history') THEN
-    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'tournament_player_stats' AND column_name = 'opponent_history' AND data_type = 'ARRAY') THEN
-      ALTER TABLE "public"."tournament_player_stats" ALTER COLUMN "opponent_history" SET DATA TYPE uuid[] USING "opponent_history"::uuid[];
-    END IF;
     ALTER TABLE "public"."tournament_player_stats" ALTER COLUMN "opponent_history" SET DEFAULT '{}'::uuid[];
   END IF;
 END $$;
@@ -440,11 +440,11 @@ DO $$ BEGIN
     END IF;
     ALTER TABLE "public"."tournaments" ALTER COLUMN "id" SET DEFAULT nextval('public.tournaments_id_seq'::regclass);
   END IF;
-  -- Handle participants column type change
+  -- Handle participants column type change (bigint[] -> uuid[])
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'tournaments' AND column_name = 'participants' AND udt_name != '_uuid') THEN
+    ALTER TABLE "public"."tournaments" ALTER COLUMN "participants" SET DATA TYPE uuid[] USING '{}'::uuid[];
+  END IF;
   IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'tournaments' AND column_name = 'participants') THEN
-    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'tournaments' AND column_name = 'participants' AND data_type = 'ARRAY') THEN
-      ALTER TABLE "public"."tournaments" ALTER COLUMN "participants" SET DATA TYPE uuid[] USING "participants"::uuid[];
-    END IF;
     ALTER TABLE "public"."tournaments" ALTER COLUMN "participants" SET DEFAULT '{}'::uuid[];
   END IF;
 END $$;
