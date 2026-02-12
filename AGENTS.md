@@ -225,6 +225,25 @@ Tests run in GitHub Actions (`.github/workflows/ci.yml`):
 
 **Never rename a migration file.** The version timestamp in the filename is recorded in the production database's migration history. Renaming a file creates a mismatch between the recorded version and the local filename, which breaks Supabase preview branches ("Remote migration versions not found in local migrations directory"). If you need a different ordering, create a new migration file with the correct timestamp instead.
 
+**All migrations must be idempotent.** Migrations may run multiple times across different environments (local, preview branches, production). Write migrations that can be safely re-run without errors:
+
+- Use `CREATE ... IF NOT EXISTS` for tables, indexes, and extensions
+- Use `DROP ... IF EXISTS` before `CREATE` when `IF NOT EXISTS` isn't available
+- Wrap `CREATE SEQUENCE` in DO blocks that check `pg_sequences`:
+  ```sql
+  DO $$ BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_sequences WHERE schemaname = 'public' AND sequencename = 'my_seq') THEN
+      CREATE SEQUENCE public.my_seq;
+    END IF;
+  END $$;
+  ```
+- Use `ALTER TABLE ... DROP CONSTRAINT IF EXISTS` before adding constraints
+- Wrap column modifications in DO blocks that check `information_schema.columns`
+- Use `CREATE OR REPLACE FUNCTION` for functions (inherently idempotent)
+- Use `DROP POLICY IF EXISTS` before `CREATE POLICY`
+
+Non-idempotent migrations break Supabase preview branches, which replay migrations from production on a fresh database.
+
 ### Edge Function Deployments
 
 **Never deploy edge functions manually via `supabase functions deploy`.** Edge functions deploy through the git workflow:
