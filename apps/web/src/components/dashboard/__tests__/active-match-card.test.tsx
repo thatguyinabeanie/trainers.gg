@@ -22,7 +22,7 @@ describe("ActiveMatchCard", () => {
     render(<ActiveMatchCard match={baseMatch} />);
 
     expect(screen.getByText("Active Match")).toBeInTheDocument();
-    expect(screen.getByText("In Progress")).toBeInTheDocument();
+    expect(screen.getByText("LIVE")).toBeInTheDocument();
     expect(screen.getByText("VGC Championship")).toBeInTheDocument();
     expect(screen.getByText(/Swiss.*Round 3/)).toBeInTheDocument();
     expect(screen.getByText("Player Two")).toBeInTheDocument();
@@ -40,7 +40,7 @@ describe("ActiveMatchCard", () => {
     render(<ActiveMatchCard match={pendingMatch} />);
 
     expect(screen.getByText("Ready")).toBeInTheDocument();
-    expect(screen.queryByText("In Progress")).not.toBeInTheDocument();
+    expect(screen.queryByText("LIVE")).not.toBeInTheDocument();
   });
 
   it("handles table number 0 correctly", () => {

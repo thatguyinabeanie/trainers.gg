@@ -52,13 +52,14 @@ jest.mock("@/lib/supabase/auth", () => ({
 }));
 
 // Mock toast
-const mockToast = {
-  success: jest.fn(),
-  error: jest.fn(),
-};
+const mockToastSuccess = jest.fn();
+const mockToastError = jest.fn();
 
 jest.mock("sonner", () => ({
-  toast: mockToast,
+  toast: {
+    success: mockToastSuccess,
+    error: mockToastError,
+  },
 }));
 
 // Mock window.location
@@ -256,7 +257,7 @@ describe("LinkedIdentitiesSection", () => {
       await user.click(disconnectButtons[0]);
 
       await waitFor(() => {
-        expect(mockToast.success).toHaveBeenCalledWith("Account disconnected");
+        expect(mockToastSuccess).toHaveBeenCalledWith("Account disconnected");
       });
     });
 
@@ -292,7 +293,7 @@ describe("LinkedIdentitiesSection", () => {
       await user.click(disconnectButtons[0]);
 
       await waitFor(() => {
-        expect(mockToast.error).toHaveBeenCalledWith("Failed to unlink");
+        expect(mockToastError).toHaveBeenCalledWith("Failed to unlink");
       });
     });
 
@@ -329,7 +330,7 @@ describe("LinkedIdentitiesSection", () => {
 
       await waitFor(() => {
         expect(mockUnlinkBlueskyAction).toHaveBeenCalled();
-        expect(mockToast.success).toHaveBeenCalledWith(
+        expect(mockToastSuccess).toHaveBeenCalledWith(
           "Bluesky account disconnected"
         );
       });
@@ -589,9 +590,7 @@ describe("LinkedIdentitiesSection", () => {
       await user.click(disconnectButton);
 
       await waitFor(() => {
-        expect(mockToast.error).toHaveBeenCalledWith(
-          "Failed to unlink Bluesky"
-        );
+        expect(mockToastError).toHaveBeenCalledWith("Failed to unlink Bluesky");
       });
     });
   });
