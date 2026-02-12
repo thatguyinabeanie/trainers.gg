@@ -50,11 +50,15 @@ const USER_EXISTS_CODES = new Set([
 ]);
 
 export async function POST(request: NextRequest) {
-  // Only allow in explicit non-production environments (default-deny)
-  if (
-    process.env.VERCEL_ENV !== "development" &&
-    process.env.VERCEL_ENV !== "preview"
-  ) {
+  // Only allow in explicit non-production environments (default-deny).
+  // When VERCEL_ENV is unset (local dev via `next dev`), fall back to NODE_ENV.
+  const vercelEnv = process.env.VERCEL_ENV;
+  const isAllowedEnvironment =
+    vercelEnv === "development" ||
+    vercelEnv === "preview" ||
+    (!vercelEnv && process.env.NODE_ENV === "development");
+
+  if (!isAllowedEnvironment) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
