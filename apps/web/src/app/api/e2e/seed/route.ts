@@ -42,9 +42,19 @@ const E2E_USERS = [
   },
 ] as const;
 
+// Error codes from @supabase/auth-js that indicate user already exists
+const USER_EXISTS_CODES = new Set([
+  "email_exists",
+  "user_already_exists",
+  "identity_already_exists",
+]);
+
 export async function POST(request: NextRequest) {
-  // Block in production
-  if (process.env.VERCEL_ENV === "production") {
+  // Only allow in explicit non-production environments (default-deny)
+  if (
+    process.env.VERCEL_ENV !== "development" &&
+    process.env.VERCEL_ENV !== "preview"
+  ) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
@@ -58,9 +68,10 @@ export async function POST(request: NextRequest) {
 
   const supabase = createServiceRoleClient();
   const results: Array<{ email: string; status: string; error?: string }> = [];
+  let hasErrors = false;
 
   // Ensure site_admin role exists (only in seeds, not migrations)
-  await supabase.from("roles").upsert(
+  const { error: roleUpsertError } = await supabase.from("roles").upsert(
     {
       name: "site_admin",
       description: "Full administrative access to the entire platform",
@@ -68,6 +79,16 @@ export async function POST(request: NextRequest) {
     },
     { onConflict: "name,scope" }
   );
+
+  if (roleUpsertError) {
+    return NextResponse.json(
+      {
+        success: false,
+        error: `Failed to upsert site_admin role: ${roleUpsertError.message}`,
+      },
+      { status: 500 }
+    );
+  }
 
   for (const user of E2E_USERS) {
     try {
@@ -86,13 +107,15 @@ export async function POST(request: NextRequest) {
       });
 
       if (error) {
-        if (error.message?.includes("already been registered")) {
+        // Check structured error code for "already exists" (stable across versions)
+        if (error.code && USER_EXISTS_CODES.has(error.code)) {
           results.push({ email: user.email, status: "already_exists" });
         } else {
+          hasErrors = true;
           results.push({
             email: user.email,
             status: "error",
-            error: error.message,
+            error: `[${error.code ?? error.status}] ${error.message}`,
           });
           continue;
         }
@@ -101,7 +124,7 @@ export async function POST(request: NextRequest) {
       }
 
       // Update public.users with PDS fields
-      await supabase
+      const { error: updateError } = await supabase
         .from("users")
         .update({
           did: `did:plc:${user.username}`,
@@ -110,25 +133,51 @@ export async function POST(request: NextRequest) {
         })
         .eq("id", user.id);
 
+      if (updateError) {
+        hasErrors = true;
+        results.push({
+          email: user.email,
+          status: "error",
+          error: `users.update failed: ${updateError.message}`,
+        });
+      }
+
       // Assign site_admin role to admin user
       if (user.isAdmin) {
-        const { data: roleData } = await supabase
+        const { data: roleData, error: roleFetchError } = await supabase
           .from("roles")
           .select("id")
           .eq("name", "site_admin")
           .eq("scope", "site")
           .maybeSingle();
 
-        if (roleData) {
-          await supabase
+        if (roleFetchError) {
+          hasErrors = true;
+          results.push({
+            email: user.email,
+            status: "error",
+            error: `roles.select failed: ${roleFetchError.message}`,
+          });
+        } else if (roleData) {
+          const { error: roleAssignError } = await supabase
             .from("user_roles")
             .upsert(
               { user_id: user.id, role_id: roleData.id },
               { onConflict: "user_id,role_id" }
             );
+
+          if (roleAssignError) {
+            hasErrors = true;
+            results.push({
+              email: user.email,
+              status: "error",
+              error: `user_roles.upsert failed: ${roleAssignError.message}`,
+            });
+          }
         }
       }
     } catch (err) {
+      hasErrors = true;
       results.push({
         email: user.email,
         status: "error",
@@ -137,5 +186,8 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  return NextResponse.json({ success: true, results });
+  return NextResponse.json(
+    { success: !hasErrors, results },
+    { status: hasErrors ? 207 : 200 }
+  );
 }
