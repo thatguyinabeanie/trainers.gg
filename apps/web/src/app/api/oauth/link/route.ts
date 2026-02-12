@@ -61,11 +61,13 @@ export async function POST(request: Request) {
     }
 
     // Link the DID to the current user
+    // Note: We only update `did`, not `pds_status`. The pds_status field tracks
+    // the status of the user's trainers.gg-managed PDS account (@username.trainers.gg),
+    // not external Bluesky accounts. Linking an external DID should not change PDS status.
     const { error: updateError } = await supabase
       .from("users")
       .update({
         did,
-        pds_status: "active",
       })
       .eq("id", user.id);
 
