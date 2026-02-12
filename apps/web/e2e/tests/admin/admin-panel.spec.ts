@@ -20,14 +20,6 @@ import { TEST_USERS, loginViaUI } from "../../fixtures/auth";
 // Tests that require admin access detect this and skip gracefully.
 // ────────────────────────────────────────────────────────────────
 
-/** Skip condition for Vercel preview deployments without seeded test users */
-function shouldSkipPreview(baseURL: string): boolean {
-  return (
-    baseURL.includes("vercel.app") &&
-    !baseURL.includes("trainers-gg.vercel.app")
-  );
-}
-
 /**
  * After navigating to an admin page, check whether the admin dashboard
  * rendered or the forbidden page appeared. Returns `true` if the admin
@@ -155,12 +147,6 @@ test.describe("Admin panel — admin user without sudo", () => {
   test("admin user without sudo is redirected to sudo-required", async ({
     page,
   }) => {
-    const baseURL = process.env.PLAYWRIGHT_BASE_URL || "";
-    test.skip(
-      shouldSkipPreview(baseURL),
-      "Test users not available in preview environments"
-    );
-
     // Log in as the admin user via UI
     await loginViaUI(page, TEST_USERS.admin);
 
@@ -232,11 +218,6 @@ test.describe("Admin panel — admin user with sudo mode", () => {
     page: Page,
     baseURL: string
   ): Promise<void> {
-    test.skip(
-      shouldSkipPreview(baseURL),
-      "Test users not available in preview environments"
-    );
-
     await loginAsAdminWithSudo(page, baseURL);
     await page.goto("/admin");
 
@@ -353,10 +334,6 @@ test.describe("Admin panel — admin user with sudo mode", () => {
 
   test("users page renders with search and table", async ({ page }) => {
     const baseURL = process.env.PLAYWRIGHT_BASE_URL || "";
-    test.skip(
-      shouldSkipPreview(baseURL),
-      "Test users not available in preview environments"
-    );
 
     await loginAsAdminWithSudo(page, baseURL);
     await page.goto("/admin/users");
@@ -389,10 +366,6 @@ test.describe("Admin panel — admin user with sudo mode", () => {
     page,
   }) => {
     const baseURL = process.env.PLAYWRIGHT_BASE_URL || "";
-    test.skip(
-      shouldSkipPreview(baseURL),
-      "Test users not available in preview environments"
-    );
 
     await loginAsAdminWithSudo(page, baseURL);
     await page.goto("/admin/organizations");
@@ -427,10 +400,6 @@ test.describe("Admin panel — admin user with sudo mode", () => {
     page,
   }) => {
     const baseURL = process.env.PLAYWRIGHT_BASE_URL || "";
-    test.skip(
-      shouldSkipPreview(baseURL),
-      "Test users not available in preview environments"
-    );
 
     await loginAsAdminWithSudo(page, baseURL);
     await page.goto("/admin/config");

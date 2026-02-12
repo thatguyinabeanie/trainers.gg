@@ -389,6 +389,26 @@ jobs:
           echo "TURBO_TOKEN=${{ secrets.TURBO_TOKEN }}" >> "$GITHUB_ENV"
           echo "TURBO_TEAM=${{ vars.TURBO_TEAM }}" >> "$GITHUB_ENV"
 
+      - name: Seed E2E test users on preview
+        if: needs.wait-for-preview.outputs.url != ''
+        env:
+          PLAYWRIGHT_BASE_URL: ${{ needs.wait-for-preview.outputs.url }}
+          VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
+        run: |
+          echo "Seeding E2E test users on $PLAYWRIGHT_BASE_URL..."
+          RESPONSE=$(curl -s --max-time 30 --connect-timeout 5 --retry 3 --retry-delay 2 --retry-connrefused -w "\n%{http_code}" -X POST \
+            -H "x-e2e-seed-secret: $VERCEL_AUTOMATION_BYPASS_SECRET" \
+            -H "x-vercel-protection-bypass: $VERCEL_AUTOMATION_BYPASS_SECRET" \
+            "$PLAYWRIGHT_BASE_URL/api/e2e/seed" || true)
+          HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+          BODY=$(echo "$RESPONSE" | sed '$d')
+          echo "Response (HTTP $HTTP_CODE): $BODY"
+          if [ -z "$HTTP_CODE" ] || ! [ "$HTTP_CODE" -eq "$HTTP_CODE" ] 2>/dev/null; then
+            echo "::warning::E2E seed request failed (curl error) — tests may fail if users don't exist"
+          elif [ "$HTTP_CODE" -lt 200 ] || [ "$HTTP_CODE" -ge 300 ] || [ "$HTTP_CODE" -eq 207 ]; then
+            echo "::warning::E2E seed returned HTTP $HTTP_CODE — tests may fail if users don't exist"
+          fi
+
       - name: Run E2E tests
         env:
           CI: true
