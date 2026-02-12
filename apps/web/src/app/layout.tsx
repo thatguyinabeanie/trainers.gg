@@ -41,6 +41,12 @@ export const viewport: Viewport = {
   themeColor: "#1db6a5",
 };
 
+/**
+ * Revalidate the layout data (announcements) every 60 seconds.
+ * This enables ISR for the announcement banner while keeping pages static.
+ */
+export const revalidate = 60;
+
 export default function RootLayout({
   children,
 }: Readonly<{
