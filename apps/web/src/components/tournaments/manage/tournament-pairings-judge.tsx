@@ -191,12 +191,12 @@ export function TournamentPairingsJudge({
                       <TableRow key={match.id}>
                         <TableCell>{match.table_number ?? "—"}</TableCell>
                         <TableCell>
-                          {(match.player1 as { display_name?: string })
-                            ?.display_name ?? "BYE"}
+                          {(match.player1 as { username?: string })?.username ??
+                            "BYE"}
                         </TableCell>
                         <TableCell>
-                          {(match.player2 as { display_name?: string })
-                            ?.display_name ?? "BYE"}
+                          {(match.player2 as { username?: string })?.username ??
+                            "BYE"}
                         </TableCell>
                         <TableCell>
                           <StatusBadge
@@ -240,12 +240,12 @@ export function TournamentPairingsJudge({
                       <TableRow key={match.id}>
                         <TableCell>{match.table_number ?? "—"}</TableCell>
                         <TableCell>
-                          {(match.player1 as { display_name?: string })
-                            ?.display_name ?? "BYE"}
+                          {(match.player1 as { username?: string })?.username ??
+                            "BYE"}
                         </TableCell>
                         <TableCell>
-                          {(match.player2 as { display_name?: string })
-                            ?.display_name ?? "BYE"}
+                          {(match.player2 as { username?: string })?.username ??
+                            "BYE"}
                         </TableCell>
                         <TableCell>
                           <StatusBadge

@@ -54,7 +54,6 @@ export async function listUsersAdmin(
       alts!profiles_user_id_fkey (
         id,
         username,
-        display_name,
         avatar_url
       ),
       user_roles (
@@ -109,10 +108,8 @@ export async function getUserAdminDetails(
       alts!profiles_user_id_fkey (
         id,
         username,
-        display_name,
         avatar_url,
         bio,
-        in_game_name,
         tier,
         created_at
       ),

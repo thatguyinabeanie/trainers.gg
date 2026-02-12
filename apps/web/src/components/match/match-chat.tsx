@@ -317,7 +317,7 @@ export function MatchChat({
                       )}
                     >
                       <span className="text-muted-foreground text-xs font-medium">
-                        {msgAlt?.display_name ?? msgAlt?.username ?? "Unknown"}
+                        {msgAlt?.username ?? msgAlt?.username ?? "Unknown"}
                       </span>
                       {isJudge && (
                         <Badge

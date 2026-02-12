@@ -1,212 +1,550 @@
-drop extension if exists "pg_net";
-
-create sequence "public"."alts_id_seq";
-
-create sequence "public"."group_roles_id_seq";
-
-create sequence "public"."groups_id_seq";
-
-create sequence "public"."organization_invitations_id_seq";
-
-create sequence "public"."organization_requests_id_seq";
-
-create sequence "public"."organization_staff_id_seq";
-
-create sequence "public"."organizations_id_seq";
-
-create sequence "public"."permissions_id_seq";
-
-create sequence "public"."pokemon_id_seq";
-
-create sequence "public"."role_permissions_id_seq";
-
-create sequence "public"."roles_id_seq";
-
-create sequence "public"."team_pokemon_id_seq";
-
-create sequence "public"."teams_id_seq";
-
-create sequence "public"."tournament_events_id_seq";
-
-create sequence "public"."tournament_invitations_id_seq";
-
-create sequence "public"."tournament_matches_id_seq";
-
-create sequence "public"."tournament_opponent_history_id_seq";
-
-create sequence "public"."tournament_pairings_id_seq";
-
-create sequence "public"."tournament_phases_id_seq";
-
-create sequence "public"."tournament_player_stats_id_seq";
-
-create sequence "public"."tournament_registration_pokemon_id_seq";
-
-create sequence "public"."tournament_registrations_id_seq";
-
-create sequence "public"."tournament_rounds_id_seq";
-
-create sequence "public"."tournament_standings_id_seq";
-
-create sequence "public"."tournament_template_phases_id_seq";
-
-create sequence "public"."tournament_templates_id_seq";
-
-create sequence "public"."tournaments_id_seq";
-
-create sequence "public"."user_group_roles_id_seq";
-
-alter table "public"."organization_requests" drop constraint "organization_requests_created_organization_id_fkey";
-
-alter table "public"."tournament_templates" drop constraint "tournament_templates_organization_id_fkey";
-
-alter table "public"."alts" alter column "id" set default nextval('public.alts_id_seq'::regclass);
-
-alter table "public"."alts" alter column "id" drop identity;
-
-alter table "public"."feature_usage" alter column "id" set default extensions.uuid_generate_v4();
-
-alter table "public"."feature_usage" alter column "id" drop identity;
-
-alter table "public"."feature_usage" alter column "id" set data type uuid using "id"::uuid;
-
-alter table "public"."group_roles" alter column "id" set default nextval('public.group_roles_id_seq'::regclass);
-
-alter table "public"."group_roles" alter column "id" drop identity;
-
-alter table "public"."groups" alter column "id" set default nextval('public.groups_id_seq'::regclass);
-
-alter table "public"."groups" alter column "id" drop identity;
-
-alter table "public"."organization_invitations" alter column "id" set default nextval('public.organization_invitations_id_seq'::regclass);
-
-alter table "public"."organization_invitations" alter column "id" drop identity;
-
-alter table "public"."organization_requests" alter column "id" set default nextval('public.organization_requests_id_seq'::regclass);
-
-alter table "public"."organization_requests" alter column "id" drop identity;
-
-alter table "public"."organization_staff" alter column "id" set default nextval('public.organization_staff_id_seq'::regclass);
-
-alter table "public"."organization_staff" alter column "id" drop identity;
-
-alter table "public"."organizations" alter column "id" set default nextval('public.organizations_id_seq'::regclass);
-
-alter table "public"."organizations" alter column "id" drop identity;
-
-alter table "public"."permissions" alter column "id" set default nextval('public.permissions_id_seq'::regclass);
-
-alter table "public"."permissions" alter column "id" drop identity;
-
-alter table "public"."pokemon" alter column "id" set default nextval('public.pokemon_id_seq'::regclass);
-
-alter table "public"."pokemon" alter column "id" drop identity;
-
-alter table "public"."rate_limits" alter column "id" set default extensions.uuid_generate_v4();
-
-alter table "public"."rate_limits" alter column "id" drop identity;
-
-alter table "public"."rate_limits" alter column "id" set data type uuid using "id"::uuid;
-
-alter table "public"."role_permissions" alter column "id" set default nextval('public.role_permissions_id_seq'::regclass);
-
-alter table "public"."role_permissions" alter column "id" drop identity;
-
-alter table "public"."roles" alter column "id" set default nextval('public.roles_id_seq'::regclass);
-
-alter table "public"."roles" alter column "id" drop identity;
-
-alter table "public"."subscriptions" alter column "id" set default extensions.uuid_generate_v4();
-
-alter table "public"."subscriptions" alter column "id" drop identity;
-
-alter table "public"."subscriptions" alter column "id" set data type uuid using "id"::uuid;
-
-alter table "public"."team_pokemon" alter column "id" set default nextval('public.team_pokemon_id_seq'::regclass);
-
-alter table "public"."team_pokemon" alter column "id" drop identity;
-
-alter table "public"."teams" alter column "id" set default nextval('public.teams_id_seq'::regclass);
-
-alter table "public"."teams" alter column "id" drop identity;
-
-alter table "public"."tournament_events" alter column "id" set default nextval('public.tournament_events_id_seq'::regclass);
-
-alter table "public"."tournament_events" alter column "id" drop identity;
-
-alter table "public"."tournament_invitations" alter column "id" set default nextval('public.tournament_invitations_id_seq'::regclass);
-
-alter table "public"."tournament_invitations" alter column "id" drop identity;
-
-alter table "public"."tournament_matches" alter column "id" set default nextval('public.tournament_matches_id_seq'::regclass);
-
-alter table "public"."tournament_matches" alter column "id" drop identity;
-
-alter table "public"."tournament_opponent_history" alter column "id" set default nextval('public.tournament_opponent_history_id_seq'::regclass);
-
-alter table "public"."tournament_opponent_history" alter column "id" drop identity;
-
-alter table "public"."tournament_pairings" alter column "id" set default nextval('public.tournament_pairings_id_seq'::regclass);
-
-alter table "public"."tournament_pairings" alter column "id" drop identity;
-
-alter table "public"."tournament_phases" alter column "id" set default nextval('public.tournament_phases_id_seq'::regclass);
-
-alter table "public"."tournament_phases" alter column "id" drop identity;
-
-alter table "public"."tournament_player_stats" alter column "id" set default nextval('public.tournament_player_stats_id_seq'::regclass);
-
-alter table "public"."tournament_player_stats" alter column "id" drop identity;
-
-alter table "public"."tournament_player_stats" alter column "opponent_history" set default '{}'::uuid[];
-
-alter table "public"."tournament_player_stats" alter column "opponent_history" set data type uuid[] using "opponent_history"::uuid[];
-
-alter table "public"."tournament_registration_pokemon" alter column "id" set default nextval('public.tournament_registration_pokemon_id_seq'::regclass);
-
-alter table "public"."tournament_registration_pokemon" alter column "id" drop identity;
-
-alter table "public"."tournament_registrations" alter column "id" set default nextval('public.tournament_registrations_id_seq'::regclass);
-
-alter table "public"."tournament_registrations" alter column "id" drop identity;
-
-alter table "public"."tournament_rounds" alter column "id" set default nextval('public.tournament_rounds_id_seq'::regclass);
-
-alter table "public"."tournament_rounds" alter column "id" drop identity;
-
-alter table "public"."tournament_standings" alter column "id" set default nextval('public.tournament_standings_id_seq'::regclass);
-
-alter table "public"."tournament_standings" alter column "id" drop identity;
-
-alter table "public"."tournament_template_phases" alter column "id" set default nextval('public.tournament_template_phases_id_seq'::regclass);
-
-alter table "public"."tournament_template_phases" alter column "id" drop identity;
-
-alter table "public"."tournament_templates" alter column "id" set default nextval('public.tournament_templates_id_seq'::regclass);
-
-alter table "public"."tournament_templates" alter column "id" drop identity;
-
-alter table "public"."tournaments" alter column "id" set default nextval('public.tournaments_id_seq'::regclass);
-
-alter table "public"."tournaments" alter column "id" drop identity;
-
-alter table "public"."tournaments" alter column "participants" set default '{}'::uuid[];
-
-alter table "public"."tournaments" alter column "participants" set data type uuid[] using "participants"::uuid[];
-
-alter table "public"."user_group_roles" alter column "id" set default nextval('public.user_group_roles_id_seq'::regclass);
-
-alter table "public"."user_group_roles" alter column "id" drop identity;
-
-alter table "public"."organization_requests" add constraint "organization_requests_created_organization_id_fkey" FOREIGN KEY (created_organization_id) REFERENCES public.organizations(id) ON DELETE SET NULL not valid;
-
-alter table "public"."organization_requests" validate constraint "organization_requests_created_organization_id_fkey";
-
-alter table "public"."tournament_templates" add constraint "tournament_templates_organization_id_fkey" FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE not valid;
-
-alter table "public"."tournament_templates" validate constraint "tournament_templates_organization_id_fkey";
-
-set check_function_bodies = off;
+-- Make sequences idempotent - only create if they don't exist
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_sequences WHERE schemaname = 'public' AND sequencename = 'alts_id_seq') THEN
+    CREATE SEQUENCE public.alts_id_seq;
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_sequences WHERE schemaname = 'public' AND sequencename = 'group_roles_id_seq') THEN
+    CREATE SEQUENCE public.group_roles_id_seq;
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_sequences WHERE schemaname = 'public' AND sequencename = 'groups_id_seq') THEN
+    CREATE SEQUENCE public.groups_id_seq;
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_sequences WHERE schemaname = 'public' AND sequencename = 'organization_invitations_id_seq') THEN
+    CREATE SEQUENCE public.organization_invitations_id_seq;
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_sequences WHERE schemaname = 'public' AND sequencename = 'organization_requests_id_seq') THEN
+    CREATE SEQUENCE public.organization_requests_id_seq;
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_sequences WHERE schemaname = 'public' AND sequencename = 'organization_staff_id_seq') THEN
+    CREATE SEQUENCE public.organization_staff_id_seq;
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_sequences WHERE schemaname = 'public' AND sequencename = 'organizations_id_seq') THEN
+    CREATE SEQUENCE public.organizations_id_seq;
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_sequences WHERE schemaname = 'public' AND sequencename = 'permissions_id_seq') THEN
+    CREATE SEQUENCE public.permissions_id_seq;
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_sequences WHERE schemaname = 'public' AND sequencename = 'pokemon_id_seq') THEN
+    CREATE SEQUENCE public.pokemon_id_seq;
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_sequences WHERE schemaname = 'public' AND sequencename = 'role_permissions_id_seq') THEN
+    CREATE SEQUENCE public.role_permissions_id_seq;
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_sequences WHERE schemaname = 'public' AND sequencename = 'roles_id_seq') THEN
+    CREATE SEQUENCE public.roles_id_seq;
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_sequences WHERE schemaname = 'public' AND sequencename = 'team_pokemon_id_seq') THEN
+    CREATE SEQUENCE public.team_pokemon_id_seq;
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_sequences WHERE schemaname = 'public' AND sequencename = 'teams_id_seq') THEN
+    CREATE SEQUENCE public.teams_id_seq;
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_sequences WHERE schemaname = 'public' AND sequencename = 'tournament_events_id_seq') THEN
+    CREATE SEQUENCE public.tournament_events_id_seq;
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_sequences WHERE schemaname = 'public' AND sequencename = 'tournament_invitations_id_seq') THEN
+    CREATE SEQUENCE public.tournament_invitations_id_seq;
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_sequences WHERE schemaname = 'public' AND sequencename = 'tournament_matches_id_seq') THEN
+    CREATE SEQUENCE public.tournament_matches_id_seq;
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_sequences WHERE schemaname = 'public' AND sequencename = 'tournament_opponent_history_id_seq') THEN
+    CREATE SEQUENCE public.tournament_opponent_history_id_seq;
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_sequences WHERE schemaname = 'public' AND sequencename = 'tournament_pairings_id_seq') THEN
+    CREATE SEQUENCE public.tournament_pairings_id_seq;
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_sequences WHERE schemaname = 'public' AND sequencename = 'tournament_phases_id_seq') THEN
+    CREATE SEQUENCE public.tournament_phases_id_seq;
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_sequences WHERE schemaname = 'public' AND sequencename = 'tournament_player_stats_id_seq') THEN
+    CREATE SEQUENCE public.tournament_player_stats_id_seq;
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_sequences WHERE schemaname = 'public' AND sequencename = 'tournament_registration_pokemon_id_seq') THEN
+    CREATE SEQUENCE public.tournament_registration_pokemon_id_seq;
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_sequences WHERE schemaname = 'public' AND sequencename = 'tournament_registrations_id_seq') THEN
+    CREATE SEQUENCE public.tournament_registrations_id_seq;
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_sequences WHERE schemaname = 'public' AND sequencename = 'tournament_rounds_id_seq') THEN
+    CREATE SEQUENCE public.tournament_rounds_id_seq;
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_sequences WHERE schemaname = 'public' AND sequencename = 'tournament_standings_id_seq') THEN
+    CREATE SEQUENCE public.tournament_standings_id_seq;
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_sequences WHERE schemaname = 'public' AND sequencename = 'tournament_template_phases_id_seq') THEN
+    CREATE SEQUENCE public.tournament_template_phases_id_seq;
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_sequences WHERE schemaname = 'public' AND sequencename = 'tournament_templates_id_seq') THEN
+    CREATE SEQUENCE public.tournament_templates_id_seq;
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_sequences WHERE schemaname = 'public' AND sequencename = 'tournaments_id_seq') THEN
+    CREATE SEQUENCE public.tournaments_id_seq;
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_sequences WHERE schemaname = 'public' AND sequencename = 'user_group_roles_id_seq') THEN
+    CREATE SEQUENCE public.user_group_roles_id_seq;
+  END IF;
+END $$;
+
+-- Drop pg_net extension if it exists (idempotent)
+DROP EXTENSION IF EXISTS "pg_net";
+
+-- Drop constraints if they exist (idempotent)
+ALTER TABLE IF EXISTS "public"."organization_requests"
+  DROP CONSTRAINT IF EXISTS "organization_requests_created_organization_id_fkey";
+
+ALTER TABLE IF EXISTS "public"."tournament_templates"
+  DROP CONSTRAINT IF EXISTS "tournament_templates_organization_id_fkey";
+
+-- Update column defaults and drop identity - wrapped in DO blocks for idempotency
+-- Note: These operations are idempotent because:
+-- - SET DEFAULT is idempotent (setting same default is a no-op)
+-- - DROP IDENTITY IF EXISTS handles the case where identity was already dropped
+
+DO $$ BEGIN
+  -- alts
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'alts' AND column_name = 'id') THEN
+    ALTER TABLE "public"."alts" ALTER COLUMN "id" SET DEFAULT nextval('public.alts_id_seq'::regclass);
+    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'alts' AND column_name = 'id' AND is_identity = 'YES') THEN
+      ALTER TABLE "public"."alts" ALTER COLUMN "id" DROP IDENTITY;
+    END IF;
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  -- feature_usage - convert to UUID
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'feature_usage' AND column_name = 'id') THEN
+    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'feature_usage' AND column_name = 'id' AND is_identity = 'YES') THEN
+      ALTER TABLE "public"."feature_usage" ALTER COLUMN "id" DROP IDENTITY;
+    END IF;
+    -- Only change type if not already uuid
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'feature_usage' AND column_name = 'id' AND data_type = 'uuid') THEN
+      ALTER TABLE "public"."feature_usage" ALTER COLUMN "id" SET DATA TYPE uuid USING "id"::uuid;
+    END IF;
+    ALTER TABLE "public"."feature_usage" ALTER COLUMN "id" SET DEFAULT extensions.uuid_generate_v4();
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  -- group_roles
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'group_roles' AND column_name = 'id') THEN
+    ALTER TABLE "public"."group_roles" ALTER COLUMN "id" SET DEFAULT nextval('public.group_roles_id_seq'::regclass);
+    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'group_roles' AND column_name = 'id' AND is_identity = 'YES') THEN
+      ALTER TABLE "public"."group_roles" ALTER COLUMN "id" DROP IDENTITY;
+    END IF;
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  -- groups
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'groups' AND column_name = 'id') THEN
+    ALTER TABLE "public"."groups" ALTER COLUMN "id" SET DEFAULT nextval('public.groups_id_seq'::regclass);
+    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'groups' AND column_name = 'id' AND is_identity = 'YES') THEN
+      ALTER TABLE "public"."groups" ALTER COLUMN "id" DROP IDENTITY;
+    END IF;
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  -- organization_invitations
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'organization_invitations' AND column_name = 'id') THEN
+    ALTER TABLE "public"."organization_invitations" ALTER COLUMN "id" SET DEFAULT nextval('public.organization_invitations_id_seq'::regclass);
+    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'organization_invitations' AND column_name = 'id' AND is_identity = 'YES') THEN
+      ALTER TABLE "public"."organization_invitations" ALTER COLUMN "id" DROP IDENTITY;
+    END IF;
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  -- organization_requests
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'organization_requests' AND column_name = 'id') THEN
+    ALTER TABLE "public"."organization_requests" ALTER COLUMN "id" SET DEFAULT nextval('public.organization_requests_id_seq'::regclass);
+    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'organization_requests' AND column_name = 'id' AND is_identity = 'YES') THEN
+      ALTER TABLE "public"."organization_requests" ALTER COLUMN "id" DROP IDENTITY;
+    END IF;
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  -- organization_staff
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'organization_staff' AND column_name = 'id') THEN
+    ALTER TABLE "public"."organization_staff" ALTER COLUMN "id" SET DEFAULT nextval('public.organization_staff_id_seq'::regclass);
+    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'organization_staff' AND column_name = 'id' AND is_identity = 'YES') THEN
+      ALTER TABLE "public"."organization_staff" ALTER COLUMN "id" DROP IDENTITY;
+    END IF;
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  -- organizations
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'organizations' AND column_name = 'id') THEN
+    ALTER TABLE "public"."organizations" ALTER COLUMN "id" SET DEFAULT nextval('public.organizations_id_seq'::regclass);
+    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'organizations' AND column_name = 'id' AND is_identity = 'YES') THEN
+      ALTER TABLE "public"."organizations" ALTER COLUMN "id" DROP IDENTITY;
+    END IF;
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  -- permissions
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'permissions' AND column_name = 'id') THEN
+    ALTER TABLE "public"."permissions" ALTER COLUMN "id" SET DEFAULT nextval('public.permissions_id_seq'::regclass);
+    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'permissions' AND column_name = 'id' AND is_identity = 'YES') THEN
+      ALTER TABLE "public"."permissions" ALTER COLUMN "id" DROP IDENTITY;
+    END IF;
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  -- pokemon
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'pokemon' AND column_name = 'id') THEN
+    ALTER TABLE "public"."pokemon" ALTER COLUMN "id" SET DEFAULT nextval('public.pokemon_id_seq'::regclass);
+    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'pokemon' AND column_name = 'id' AND is_identity = 'YES') THEN
+      ALTER TABLE "public"."pokemon" ALTER COLUMN "id" DROP IDENTITY;
+    END IF;
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  -- rate_limits - convert to UUID
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'rate_limits' AND column_name = 'id') THEN
+    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'rate_limits' AND column_name = 'id' AND is_identity = 'YES') THEN
+      ALTER TABLE "public"."rate_limits" ALTER COLUMN "id" DROP IDENTITY;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'rate_limits' AND column_name = 'id' AND data_type = 'uuid') THEN
+      ALTER TABLE "public"."rate_limits" ALTER COLUMN "id" SET DATA TYPE uuid USING "id"::uuid;
+    END IF;
+    ALTER TABLE "public"."rate_limits" ALTER COLUMN "id" SET DEFAULT extensions.uuid_generate_v4();
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  -- role_permissions
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'role_permissions' AND column_name = 'id') THEN
+    ALTER TABLE "public"."role_permissions" ALTER COLUMN "id" SET DEFAULT nextval('public.role_permissions_id_seq'::regclass);
+    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'role_permissions' AND column_name = 'id' AND is_identity = 'YES') THEN
+      ALTER TABLE "public"."role_permissions" ALTER COLUMN "id" DROP IDENTITY;
+    END IF;
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  -- roles
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'roles' AND column_name = 'id') THEN
+    ALTER TABLE "public"."roles" ALTER COLUMN "id" SET DEFAULT nextval('public.roles_id_seq'::regclass);
+    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'roles' AND column_name = 'id' AND is_identity = 'YES') THEN
+      ALTER TABLE "public"."roles" ALTER COLUMN "id" DROP IDENTITY;
+    END IF;
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  -- subscriptions - convert to UUID
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'subscriptions' AND column_name = 'id') THEN
+    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'subscriptions' AND column_name = 'id' AND is_identity = 'YES') THEN
+      ALTER TABLE "public"."subscriptions" ALTER COLUMN "id" DROP IDENTITY;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'subscriptions' AND column_name = 'id' AND data_type = 'uuid') THEN
+      ALTER TABLE "public"."subscriptions" ALTER COLUMN "id" SET DATA TYPE uuid USING "id"::uuid;
+    END IF;
+    ALTER TABLE "public"."subscriptions" ALTER COLUMN "id" SET DEFAULT extensions.uuid_generate_v4();
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  -- team_pokemon
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'team_pokemon' AND column_name = 'id') THEN
+    ALTER TABLE "public"."team_pokemon" ALTER COLUMN "id" SET DEFAULT nextval('public.team_pokemon_id_seq'::regclass);
+    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'team_pokemon' AND column_name = 'id' AND is_identity = 'YES') THEN
+      ALTER TABLE "public"."team_pokemon" ALTER COLUMN "id" DROP IDENTITY;
+    END IF;
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  -- teams
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'teams' AND column_name = 'id') THEN
+    ALTER TABLE "public"."teams" ALTER COLUMN "id" SET DEFAULT nextval('public.teams_id_seq'::regclass);
+    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'teams' AND column_name = 'id' AND is_identity = 'YES') THEN
+      ALTER TABLE "public"."teams" ALTER COLUMN "id" DROP IDENTITY;
+    END IF;
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  -- tournament_events
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'tournament_events' AND column_name = 'id') THEN
+    ALTER TABLE "public"."tournament_events" ALTER COLUMN "id" SET DEFAULT nextval('public.tournament_events_id_seq'::regclass);
+    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'tournament_events' AND column_name = 'id' AND is_identity = 'YES') THEN
+      ALTER TABLE "public"."tournament_events" ALTER COLUMN "id" DROP IDENTITY;
+    END IF;
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  -- tournament_invitations
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'tournament_invitations' AND column_name = 'id') THEN
+    ALTER TABLE "public"."tournament_invitations" ALTER COLUMN "id" SET DEFAULT nextval('public.tournament_invitations_id_seq'::regclass);
+    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'tournament_invitations' AND column_name = 'id' AND is_identity = 'YES') THEN
+      ALTER TABLE "public"."tournament_invitations" ALTER COLUMN "id" DROP IDENTITY;
+    END IF;
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  -- tournament_matches
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'tournament_matches' AND column_name = 'id') THEN
+    ALTER TABLE "public"."tournament_matches" ALTER COLUMN "id" SET DEFAULT nextval('public.tournament_matches_id_seq'::regclass);
+    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'tournament_matches' AND column_name = 'id' AND is_identity = 'YES') THEN
+      ALTER TABLE "public"."tournament_matches" ALTER COLUMN "id" DROP IDENTITY;
+    END IF;
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  -- tournament_opponent_history
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'tournament_opponent_history' AND column_name = 'id') THEN
+    ALTER TABLE "public"."tournament_opponent_history" ALTER COLUMN "id" SET DEFAULT nextval('public.tournament_opponent_history_id_seq'::regclass);
+    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'tournament_opponent_history' AND column_name = 'id' AND is_identity = 'YES') THEN
+      ALTER TABLE "public"."tournament_opponent_history" ALTER COLUMN "id" DROP IDENTITY;
+    END IF;
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  -- tournament_pairings
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'tournament_pairings' AND column_name = 'id') THEN
+    ALTER TABLE "public"."tournament_pairings" ALTER COLUMN "id" SET DEFAULT nextval('public.tournament_pairings_id_seq'::regclass);
+    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'tournament_pairings' AND column_name = 'id' AND is_identity = 'YES') THEN
+      ALTER TABLE "public"."tournament_pairings" ALTER COLUMN "id" DROP IDENTITY;
+    END IF;
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  -- tournament_phases
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'tournament_phases' AND column_name = 'id') THEN
+    ALTER TABLE "public"."tournament_phases" ALTER COLUMN "id" SET DEFAULT nextval('public.tournament_phases_id_seq'::regclass);
+    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'tournament_phases' AND column_name = 'id' AND is_identity = 'YES') THEN
+      ALTER TABLE "public"."tournament_phases" ALTER COLUMN "id" DROP IDENTITY;
+    END IF;
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  -- tournament_player_stats
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'tournament_player_stats' AND column_name = 'id') THEN
+    ALTER TABLE "public"."tournament_player_stats" ALTER COLUMN "id" SET DEFAULT nextval('public.tournament_player_stats_id_seq'::regclass);
+    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'tournament_player_stats' AND column_name = 'id' AND is_identity = 'YES') THEN
+      ALTER TABLE "public"."tournament_player_stats" ALTER COLUMN "id" DROP IDENTITY;
+    END IF;
+  END IF;
+  -- Handle opponent_history column type change
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'tournament_player_stats' AND column_name = 'opponent_history') THEN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'tournament_player_stats' AND column_name = 'opponent_history' AND data_type = 'ARRAY') THEN
+      ALTER TABLE "public"."tournament_player_stats" ALTER COLUMN "opponent_history" SET DATA TYPE uuid[] USING "opponent_history"::uuid[];
+    END IF;
+    ALTER TABLE "public"."tournament_player_stats" ALTER COLUMN "opponent_history" SET DEFAULT '{}'::uuid[];
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  -- tournament_registration_pokemon
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'tournament_registration_pokemon' AND column_name = 'id') THEN
+    ALTER TABLE "public"."tournament_registration_pokemon" ALTER COLUMN "id" SET DEFAULT nextval('public.tournament_registration_pokemon_id_seq'::regclass);
+    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'tournament_registration_pokemon' AND column_name = 'id' AND is_identity = 'YES') THEN
+      ALTER TABLE "public"."tournament_registration_pokemon" ALTER COLUMN "id" DROP IDENTITY;
+    END IF;
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  -- tournament_registrations
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'tournament_registrations' AND column_name = 'id') THEN
+    ALTER TABLE "public"."tournament_registrations" ALTER COLUMN "id" SET DEFAULT nextval('public.tournament_registrations_id_seq'::regclass);
+    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'tournament_registrations' AND column_name = 'id' AND is_identity = 'YES') THEN
+      ALTER TABLE "public"."tournament_registrations" ALTER COLUMN "id" DROP IDENTITY;
+    END IF;
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  -- tournament_rounds
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'tournament_rounds' AND column_name = 'id') THEN
+    ALTER TABLE "public"."tournament_rounds" ALTER COLUMN "id" SET DEFAULT nextval('public.tournament_rounds_id_seq'::regclass);
+    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'tournament_rounds' AND column_name = 'id' AND is_identity = 'YES') THEN
+      ALTER TABLE "public"."tournament_rounds" ALTER COLUMN "id" DROP IDENTITY;
+    END IF;
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  -- tournament_standings
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'tournament_standings' AND column_name = 'id') THEN
+    ALTER TABLE "public"."tournament_standings" ALTER COLUMN "id" SET DEFAULT nextval('public.tournament_standings_id_seq'::regclass);
+    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'tournament_standings' AND column_name = 'id' AND is_identity = 'YES') THEN
+      ALTER TABLE "public"."tournament_standings" ALTER COLUMN "id" DROP IDENTITY;
+    END IF;
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  -- tournament_template_phases
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'tournament_template_phases' AND column_name = 'id') THEN
+    ALTER TABLE "public"."tournament_template_phases" ALTER COLUMN "id" SET DEFAULT nextval('public.tournament_template_phases_id_seq'::regclass);
+    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'tournament_template_phases' AND column_name = 'id' AND is_identity = 'YES') THEN
+      ALTER TABLE "public"."tournament_template_phases" ALTER COLUMN "id" DROP IDENTITY;
+    END IF;
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  -- tournament_templates
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'tournament_templates' AND column_name = 'id') THEN
+    ALTER TABLE "public"."tournament_templates" ALTER COLUMN "id" SET DEFAULT nextval('public.tournament_templates_id_seq'::regclass);
+    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'tournament_templates' AND column_name = 'id' AND is_identity = 'YES') THEN
+      ALTER TABLE "public"."tournament_templates" ALTER COLUMN "id" DROP IDENTITY;
+    END IF;
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  -- tournaments
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'tournaments' AND column_name = 'id') THEN
+    ALTER TABLE "public"."tournaments" ALTER COLUMN "id" SET DEFAULT nextval('public.tournaments_id_seq'::regclass);
+    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'tournaments' AND column_name = 'id' AND is_identity = 'YES') THEN
+      ALTER TABLE "public"."tournaments" ALTER COLUMN "id" DROP IDENTITY;
+    END IF;
+  END IF;
+  -- Handle participants column type change
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'tournaments' AND column_name = 'participants') THEN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'tournaments' AND column_name = 'participants' AND data_type = 'ARRAY') THEN
+      ALTER TABLE "public"."tournaments" ALTER COLUMN "participants" SET DATA TYPE uuid[] USING "participants"::uuid[];
+    END IF;
+    ALTER TABLE "public"."tournaments" ALTER COLUMN "participants" SET DEFAULT '{}'::uuid[];
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  -- user_group_roles
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'user_group_roles' AND column_name = 'id') THEN
+    ALTER TABLE "public"."user_group_roles" ALTER COLUMN "id" SET DEFAULT nextval('public.user_group_roles_id_seq'::regclass);
+    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'user_group_roles' AND column_name = 'id' AND is_identity = 'YES') THEN
+      ALTER TABLE "public"."user_group_roles" ALTER COLUMN "id" DROP IDENTITY;
+    END IF;
+  END IF;
+END $$;
+
+-- Add foreign key constraints (idempotent - DROP IF EXISTS then ADD)
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'organization_requests') THEN
+    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'organization_requests' AND column_name = 'created_organization_id') THEN
+      ALTER TABLE "public"."organization_requests"
+        ADD CONSTRAINT "organization_requests_created_organization_id_fkey"
+        FOREIGN KEY (created_organization_id) REFERENCES public.organizations(id) ON DELETE SET NULL NOT VALID;
+      ALTER TABLE "public"."organization_requests" VALIDATE CONSTRAINT "organization_requests_created_organization_id_fkey";
+    END IF;
+  END IF;
+EXCEPTION WHEN duplicate_object THEN
+  NULL; -- Constraint already exists
+END $$;
+
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'tournament_templates') THEN
+    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'tournament_templates' AND column_name = 'organization_id') THEN
+      ALTER TABLE "public"."tournament_templates"
+        ADD CONSTRAINT "tournament_templates_organization_id_fkey"
+        FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE NOT VALID;
+      ALTER TABLE "public"."tournament_templates" VALIDATE CONSTRAINT "tournament_templates_organization_id_fkey";
+    END IF;
+  END IF;
+EXCEPTION WHEN duplicate_object THEN
+  NULL; -- Constraint already exists
+END $$;
+
+-- Functions (CREATE OR REPLACE is inherently idempotent)
+SET check_function_bodies = off;
 
 CREATE OR REPLACE FUNCTION public.custom_access_token_hook(event jsonb)
  RETURNS jsonb
@@ -233,8 +571,7 @@ AS $function$
 
     RETURN jsonb_set(event, '{claims}', claims);
   END;
-  $function$
-;
+$function$;
 
 CREATE OR REPLACE FUNCTION public.register_for_tournament_atomic(p_tournament_id bigint, p_alt_id bigint DEFAULT NULL::bigint, p_team_name text DEFAULT NULL::text, p_in_game_name text DEFAULT NULL::text, p_display_name_option text DEFAULT NULL::text, p_show_country_flag boolean DEFAULT NULL::boolean)
  RETURNS jsonb
@@ -386,7 +723,4 @@ EXCEPTION
       'error', 'Registration failed. Please try again or contact support if the issue persists.'
     );
 END;
-$function$
-;
-
-
+$function$;

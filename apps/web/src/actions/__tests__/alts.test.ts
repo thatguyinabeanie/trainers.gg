@@ -42,7 +42,6 @@ describe("createAltAction", () => {
     expect(result).toEqual({ success: true, data: { id: 101 } });
     expect(mockCreateAlt).toHaveBeenCalledWith(mockSupabaseClient, {
       username: "ash_ketchum",
-      inGameName: undefined,
     });
   });
 
@@ -82,25 +81,13 @@ describe("updateAltAction", () => {
     mockUpdateAlt.mockResolvedValue(undefined);
 
     const result = await updateAltAction(1, {
-      inGameName: "Player#1234",
+      battleTag: "Player#1234",
     });
 
     expect(result).toEqual({ success: true, data: { success: true } });
     expect(mockUpdateAlt).toHaveBeenCalledWith(mockSupabaseClient, 1, {
-      inGameName: "Player#1234",
+      battleTag: "Player#1234",
     });
-  });
-
-  it("returns a validation error when inGameName exceeds max length", async () => {
-    const longName = "A".repeat(51);
-
-    const result = await updateAltAction(1, { inGameName: longName });
-
-    expect(result.success).toBe(false);
-    if (!result.success) {
-      expect(result.error).toMatch(/50 characters/i);
-    }
-    expect(mockUpdateAlt).not.toHaveBeenCalled();
   });
 });
 

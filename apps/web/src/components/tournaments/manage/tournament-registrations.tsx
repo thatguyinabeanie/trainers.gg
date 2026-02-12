@@ -121,9 +121,7 @@ export function TournamentRegistrations({
   const filteredRegistrations =
     registrations?.filter(
       (reg) =>
-        reg.alt?.display_name
-          ?.toLowerCase()
-          .includes(searchTerm.toLowerCase()) ||
+        reg.alt?.username?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         reg.team_name?.toLowerCase().includes(searchTerm.toLowerCase())
     ) || [];
 
@@ -405,12 +403,12 @@ export function TournamentRegistrations({
                             src={registration.alt?.avatar_url ?? undefined}
                           />
                           <AvatarFallback>
-                            {registration.alt?.display_name?.charAt(0) || "?"}
+                            {registration.alt?.username?.charAt(0) || "?"}
                           </AvatarFallback>
                         </Avatar>
                         <div>
                           <div className="font-medium">
-                            {registration.alt?.display_name || "Unknown Player"}
+                            {registration.alt?.username || "Unknown Player"}
                           </div>
                           <div className="text-muted-foreground text-sm">
                             @{registration.alt?.username || "unknown"}

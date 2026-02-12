@@ -97,7 +97,7 @@ function PlayerCard({
 }) {
   if (!player) return null;
 
-  const displayName = player.display_name ?? player.username;
+  const displayName = player.username ?? player.username;
   const isRight = align === "right";
 
   return (
