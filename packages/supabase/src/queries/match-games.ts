@@ -48,7 +48,7 @@ export async function getMatchMessages(
     .select(
       `
       *,
-      alt:alts(id, display_name, username, avatar_url)
+      alt:alts(id, username, avatar_url)
     `
     )
     .eq("match_id", matchId)

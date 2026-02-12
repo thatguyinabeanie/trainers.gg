@@ -82,7 +82,7 @@ export function TournamentStandings({ tournament }: TournamentStandingsProps) {
   const standings = (playerStats ?? []).map((player) => ({
     rank: player.current_standing ?? 999,
     player: {
-      name: player.alt?.display_name ?? player.alt?.username ?? "Unknown",
+      name: player.alt?.username ?? player.alt?.username ?? "Unknown",
       username: player.alt?.username ?? "unknown",
       avatar: player.alt?.avatar_url ?? null,
     },

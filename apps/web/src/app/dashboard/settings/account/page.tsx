@@ -10,6 +10,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Mail, Lock } from "lucide-react";
+import { LinkedIdentitiesSection } from "@/components/settings/linked-identities-section";
 
 export default function AccountSettingsPage() {
   const { user } = useAuth();
@@ -50,6 +51,18 @@ export default function AccountSettingsPage() {
               Change Password
             </Button>
           </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Linked Accounts</CardTitle>
+          <CardDescription>
+            Manage your connected authentication providers
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <LinkedIdentitiesSection />
         </CardContent>
       </Card>
     </div>

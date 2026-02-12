@@ -29,18 +29,6 @@ const createAltSchema = z.object({
       /^[\p{L}\p{N}_-]+$/u,
       "Username can only contain letters, numbers, underscores, and hyphens"
     ),
-  inGameName: z
-    .string()
-    .max(50, "IGN must be 50 characters or fewer")
-    .optional(),
-});
-
-const updateAltSchema = z.object({
-  inGameName: z
-    .string()
-    .max(50, "IGN must be 50 characters or fewer")
-    .nullable()
-    .optional(),
 });
 
 const idSchema = z.number().int().positive();
@@ -50,14 +38,12 @@ const idSchema = z.number().int().positive();
  */
 export async function createAltAction(data: {
   username: string;
-  inGameName?: string;
 }): Promise<ActionResult<{ id: number }>> {
   return withAction(async () => {
     const validated = createAltSchema.parse(data);
     const supabase = await createClient();
     const alt = await createAlt(supabase, {
       username: validated.username,
-      inGameName: validated.inGameName,
     });
     return { id: alt.id };
   }, "Failed to create alt");
@@ -69,14 +55,13 @@ export async function createAltAction(data: {
 export async function updateAltAction(
   altId: number,
   updates: {
-    inGameName?: string | null;
+    avatarUrl?: string;
   }
 ): Promise<ActionResult<{ success: true }>> {
   return withAction(async () => {
     const validatedId = idSchema.parse(altId);
-    const validated = updateAltSchema.parse(updates);
     const supabase = await createClient();
-    await updateAlt(supabase, validatedId, validated);
+    await updateAlt(supabase, validatedId, updates);
     return { success: true as const };
   }, "Failed to update alt");
 }

@@ -57,14 +57,14 @@ export function transformPhaseData(
           participant1: p1
             ? {
                 id: String(p1.id),
-                name: p1.display_name ?? p1.username ?? "Player 1",
+                name: p1.username ?? p1.username ?? "Player 1",
                 record: match.player1Stats ?? undefined,
               }
             : null,
           participant2: p2
             ? {
                 id: String(p2.id),
-                name: p2.display_name ?? p2.username ?? "Player 2",
+                name: p2.username ?? p2.username ?? "Player 2",
                 record: match.player2Stats ?? undefined,
               }
             : null,

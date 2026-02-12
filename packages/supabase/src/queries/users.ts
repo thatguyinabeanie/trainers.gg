@@ -45,7 +45,7 @@ export async function getCurrentUser(supabase: TypedClient) {
     alt: alt
       ? {
           id: alt.id,
-          displayName: alt.display_name,
+          displayName: alt.username,
           username: alt.username,
           bio: alt.bio,
           avatarUrl: alt.avatar_url,
@@ -190,7 +190,7 @@ export async function searchAlts(
   const { data, error } = await supabase
     .from("alts")
     .select("*")
-    .or(`username.ilike.%${escapedQuery}%,display_name.ilike.%${escapedQuery}%`)
+    .ilike("username", `%${escapedQuery}%`)
     .limit(limit);
 
   if (error) throw error;
