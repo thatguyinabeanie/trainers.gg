@@ -11,9 +11,27 @@ const authFile = path.resolve(
 );
 const authDir = path.dirname(authFile);
 
-setup("authenticate as player", async ({ page }) => {
+setup("authenticate as player", async ({ page, request }) => {
   // Perform real UI login and save session
   mkdirSync(authDir, { recursive: true });
+
+  // Seed test users on Vercel preview deployments (fallback if CI step failed)
+  const baseURL = process.env.PLAYWRIGHT_BASE_URL || "http://localhost:3000";
+  const seedSecret = process.env.VERCEL_AUTOMATION_BYPASS_SECRET;
+
+  if (seedSecret && baseURL.includes("vercel.app")) {
+    try {
+      const response = await request.post(`${baseURL}/api/e2e/seed`, {
+        headers: {
+          "x-e2e-seed-secret": seedSecret,
+          "x-vercel-protection-bypass": seedSecret,
+        },
+      });
+      console.log(`E2E seed response: ${response.status()}`);
+    } catch (err) {
+      console.log(`E2E seed request failed (non-fatal): ${err}`);
+    }
+  }
 
   // Retry login to handle Supabase preview seeding timing issues
   // The preview branch may still be seeding when E2E tests start
