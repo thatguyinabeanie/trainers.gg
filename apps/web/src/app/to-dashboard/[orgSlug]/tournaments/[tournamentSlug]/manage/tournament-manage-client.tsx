@@ -16,12 +16,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   TournamentOverview,
   TournamentSettings,
-  TournamentPairings,
   TournamentRegistrations,
   TournamentStandings,
-  TournamentJudge,
   TournamentAuditLog,
 } from "@/components/tournaments";
+import { TournamentPairingsJudge } from "@/components/tournaments/manage/tournament-pairings-judge";
 import {
   ArrowLeft,
   Loader2,
@@ -33,7 +32,6 @@ import {
   Settings,
   LayoutList,
   Medal,
-  Gavel,
   ScrollText,
 } from "lucide-react";
 
@@ -47,7 +45,6 @@ const VALID_TABS = [
   "registrations",
   "pairings",
   "standings",
-  "judge",
   "audit",
   "settings",
 ] as const;
@@ -224,13 +221,6 @@ export function TournamentManageClient({
     rental_team_photos_enabled: tournament.rental_team_photos_enabled,
   };
 
-  const tournamentForPairings = {
-    id: tournament.id,
-    slug: tournament.slug,
-    status: tournament.status ?? "draft",
-    currentPhaseId: tournament.current_phase_id ?? null,
-  };
-
   const tournamentForStandings = {
     id: tournament.id,
     status: tournament.status ?? "draft",
@@ -312,10 +302,6 @@ export function TournamentManageClient({
                 <Medal className="h-4 w-4" />
                 <span className="hidden sm:inline">Standings</span>
               </TabsTrigger>
-              <TabsTrigger value="judge" className="gap-2">
-                <Gavel className="h-4 w-4" />
-                <span className="hidden sm:inline">Judge</span>
-              </TabsTrigger>
               <TabsTrigger value="audit" className="gap-2">
                 <ScrollText className="h-4 w-4" />
                 <span className="hidden sm:inline">Audit Log</span>
@@ -339,22 +325,16 @@ export function TournamentManageClient({
         </TabsContent>
 
         <TabsContent value="pairings">
-          <TournamentPairings tournament={tournamentForPairings} />
+          <TournamentPairingsJudge
+            tournament={{
+              id: tournament.id,
+              currentPhaseId: tournament.current_phase_id ?? null,
+            }}
+          />
         </TabsContent>
 
         <TabsContent value="standings">
           <TournamentStandings tournament={tournamentForStandings} />
-        </TabsContent>
-
-        <TabsContent value="judge">
-          <TournamentJudge
-            tournament={{
-              id: tournament.id,
-              slug: tournament.slug,
-              status: tournament.status ?? "draft",
-            }}
-            tournamentSlug={tournamentSlug}
-          />
         </TabsContent>
 
         <TabsContent value="audit">
