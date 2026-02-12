@@ -24,11 +24,13 @@ describe("ActiveMatchCard", () => {
     expect(screen.getByText("Active Match")).toBeInTheDocument();
     expect(screen.getByText("LIVE")).toBeInTheDocument();
     expect(screen.getByText("VGC Championship")).toBeInTheDocument();
-    expect(screen.getByText(/Swiss.*Round 3/)).toBeInTheDocument();
+    expect(screen.getByText("Swiss")).toBeInTheDocument();
+    expect(screen.getByText("Round 3")).toBeInTheDocument();
     expect(screen.getByText("Player Two")).toBeInTheDocument();
     expect(screen.getByText("@player2")).toBeInTheDocument();
-    expect(screen.getByText("Table 5")).toBeInTheDocument();
-    expect(screen.getByText("View Match")).toBeInTheDocument();
+    expect(screen.getByText("Table")).toBeInTheDocument();
+    expect(screen.getByText("5")).toBeInTheDocument();
+    expect(screen.getByText("Enter Battle")).toBeInTheDocument();
   });
 
   it("renders pending match with Ready status", () => {
@@ -39,7 +41,7 @@ describe("ActiveMatchCard", () => {
 
     render(<ActiveMatchCard match={pendingMatch} />);
 
-    expect(screen.getByText("Ready")).toBeInTheDocument();
+    expect(screen.getByText("READY")).toBeInTheDocument();
     expect(screen.queryByText("LIVE")).not.toBeInTheDocument();
   });
 
@@ -51,7 +53,8 @@ describe("ActiveMatchCard", () => {
 
     render(<ActiveMatchCard match={matchWithTableZero} />);
 
-    expect(screen.getByText("Table 0")).toBeInTheDocument();
+    expect(screen.getByText("Table")).toBeInTheDocument();
+    expect(screen.getByText("0")).toBeInTheDocument();
   });
 
   it("does not render table when table is null", () => {
@@ -96,6 +99,7 @@ describe("ActiveMatchCard", () => {
 
     render(<ActiveMatchCard match={match} />);
 
-    expect(screen.getByText(/Top Cut.*Round 1/)).toBeInTheDocument();
+    expect(screen.getByText("Top Cut")).toBeInTheDocument();
+    expect(screen.getByText("Round 1")).toBeInTheDocument();
   });
 });
