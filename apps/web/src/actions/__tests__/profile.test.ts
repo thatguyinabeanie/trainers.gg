@@ -716,14 +716,14 @@ describe("updateProfile", () => {
         })
       );
 
-      await updateProfile({ username: "user_name123" });
+      await updateProfile({ username: "my_user_name123" });
 
       // Should call update-pds-handle with sanitized username (underscores removed)
       expect(mockFetch).toHaveBeenCalledWith(
         expect.stringContaining("update-pds-handle"),
         expect.objectContaining({
           method: "POST",
-          body: expect.stringContaining("username123"),
+          body: expect.stringContaining("myusername123"),
         })
       );
     });
