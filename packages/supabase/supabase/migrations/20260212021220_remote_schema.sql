@@ -336,7 +336,9 @@ DO $$ BEGIN
     ALTER TABLE "public"."tournament_player_stats" ALTER COLUMN "id" SET DEFAULT nextval('public.tournament_player_stats_id_seq'::regclass);
   END IF;
   -- Handle opponent_history column type change (bigint[] -> uuid[])
+  -- Must drop default first because PostgreSQL can't auto-cast the default value
   IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'tournament_player_stats' AND column_name = 'opponent_history' AND udt_name != '_uuid') THEN
+    ALTER TABLE "public"."tournament_player_stats" ALTER COLUMN "opponent_history" DROP DEFAULT;
     ALTER TABLE "public"."tournament_player_stats" ALTER COLUMN "opponent_history" SET DATA TYPE uuid[] USING '{}'::uuid[];
   END IF;
   IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'tournament_player_stats' AND column_name = 'opponent_history') THEN
@@ -441,7 +443,9 @@ DO $$ BEGIN
     ALTER TABLE "public"."tournaments" ALTER COLUMN "id" SET DEFAULT nextval('public.tournaments_id_seq'::regclass);
   END IF;
   -- Handle participants column type change (bigint[] -> uuid[])
+  -- Must drop default first because PostgreSQL can't auto-cast the default value
   IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'tournaments' AND column_name = 'participants' AND udt_name != '_uuid') THEN
+    ALTER TABLE "public"."tournaments" ALTER COLUMN "participants" DROP DEFAULT;
     ALTER TABLE "public"."tournaments" ALTER COLUMN "participants" SET DATA TYPE uuid[] USING '{}'::uuid[];
   END IF;
   IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'tournaments' AND column_name = 'participants') THEN
