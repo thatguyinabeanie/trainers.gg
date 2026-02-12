@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { createStaticClient } from "@/lib/supabase/server";
 import { getActiveAnnouncements } from "@trainers/supabase";
 import { cn } from "@/lib/utils";
 import { Info, AlertTriangle, XCircle, CheckCircle2 } from "lucide-react";
@@ -29,12 +29,16 @@ const typeConfig = {
 /**
  * Server component that fetches and displays active announcements.
  * Placed in the root layout, above the main content.
+ *
+ * Uses createStaticClient() to avoid forcing all pages to be dynamic.
+ * Data is revalidated every 60 seconds via ISR for a balance of
+ * performance and freshness.
  */
 export async function AnnouncementBanner() {
   let announcements: Awaited<ReturnType<typeof getActiveAnnouncements>> = [];
 
   try {
-    const supabase = await createClient();
+    const supabase = createStaticClient();
     announcements = await getActiveAnnouncements(supabase);
   } catch (err) {
     console.error("[announcement-banner] Failed to fetch announcements:", err);
