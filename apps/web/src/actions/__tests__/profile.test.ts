@@ -405,11 +405,11 @@ describe("updateProfile", () => {
   });
 
   it("handles unique constraint violation on username", async () => {
-    // PDS status check
+    // PDS status check - use 'external' to skip PDS operations
     mockFrom.mockReturnValueOnce(
       createQueryBuilder({
         maybeSingle: jest.fn().mockResolvedValue({
-          data: { pds_status: "active" },
+          data: { pds_status: "external" },
           error: null,
         }),
       })
@@ -462,6 +462,23 @@ describe("updateProfile", () => {
         })
       );
 
+      // Get main_alt_id for alt update
+      mockFrom.mockReturnValueOnce(
+        createQueryBuilder({
+          maybeSingle: jest.fn().mockResolvedValue({
+            data: { main_alt_id: 1 },
+            error: null,
+          }),
+        })
+      );
+
+      // Update alts table
+      mockFrom.mockReturnValueOnce(
+        createQueryBuilder({
+          eq: jest.fn().mockResolvedValue({ error: null }),
+        })
+      );
+
       const result = await updateProfile({ username: "newusername" });
 
       expect(global.fetch).toHaveBeenCalledWith(
@@ -495,6 +512,23 @@ describe("updateProfile", () => {
       });
 
       // Update users table
+      mockFrom.mockReturnValueOnce(
+        createQueryBuilder({
+          eq: jest.fn().mockResolvedValue({ error: null }),
+        })
+      );
+
+      // Get main_alt_id for alt update
+      mockFrom.mockReturnValueOnce(
+        createQueryBuilder({
+          maybeSingle: jest.fn().mockResolvedValue({
+            data: { main_alt_id: 1 },
+            error: null,
+          }),
+        })
+      );
+
+      // Update alts table
       mockFrom.mockReturnValueOnce(
         createQueryBuilder({
           eq: jest.fn().mockResolvedValue({ error: null }),
@@ -535,6 +569,23 @@ describe("updateProfile", () => {
         eq: mockEq,
       });
 
+      // Get main_alt_id for alt update
+      mockFrom.mockReturnValueOnce(
+        createQueryBuilder({
+          maybeSingle: jest.fn().mockResolvedValue({
+            data: { main_alt_id: 1 },
+            error: null,
+          }),
+        })
+      );
+
+      // Update alts table
+      mockFrom.mockReturnValueOnce(
+        createQueryBuilder({
+          eq: jest.fn().mockResolvedValue({ error: null }),
+        })
+      );
+
       const result = await updateProfile({ username: "newusername" });
 
       // Should not call any PDS function
@@ -555,6 +606,8 @@ describe("updateProfile", () => {
 
       // Mock edge function failure (returns before database update)
       global.fetch = jest.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
         json: () =>
           Promise.resolve({
             success: false,
@@ -632,18 +685,35 @@ describe("updateProfile", () => {
 
       // Mock successful edge function call
       const mockFetch = jest.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
         json: () => Promise.resolve({ success: true }),
       });
       global.fetch = mockFetch;
 
-      const mockUpdate = jest.fn().mockReturnThis();
-      const mockEq = jest.fn().mockResolvedValue({ error: null });
-
       // Update users table
-      mockFrom.mockReturnValueOnce({
-        update: mockUpdate,
-        eq: mockEq,
-      });
+      mockFrom.mockReturnValueOnce(
+        createQueryBuilder({
+          eq: jest.fn().mockResolvedValue({ error: null }),
+        })
+      );
+
+      // Get main_alt_id for alt update
+      mockFrom.mockReturnValueOnce(
+        createQueryBuilder({
+          maybeSingle: jest.fn().mockResolvedValue({
+            data: { main_alt_id: 1 },
+            error: null,
+          }),
+        })
+      );
+
+      // Update alts table
+      mockFrom.mockReturnValueOnce(
+        createQueryBuilder({
+          eq: jest.fn().mockResolvedValue({ error: null }),
+        })
+      );
 
       await updateProfile({ username: "user_name123" });
 
