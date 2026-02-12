@@ -5,6 +5,7 @@
 
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { toast } from "sonner";
 import { LinkedIdentitiesSection } from "../linked-identities-section";
 
 // Mock dependencies
@@ -52,13 +53,10 @@ jest.mock("@/lib/supabase/auth", () => ({
 }));
 
 // Mock toast
-const mockToastSuccess = jest.fn();
-const mockToastError = jest.fn();
-
 jest.mock("sonner", () => ({
   toast: {
-    success: mockToastSuccess,
-    error: mockToastError,
+    success: jest.fn(),
+    error: jest.fn(),
   },
 }));
 
@@ -257,7 +255,7 @@ describe("LinkedIdentitiesSection", () => {
       await user.click(disconnectButtons[0]);
 
       await waitFor(() => {
-        expect(mockToastSuccess).toHaveBeenCalledWith("Account disconnected");
+        expect(toast.success).toHaveBeenCalledWith("Account disconnected");
       });
     });
 
@@ -293,7 +291,7 @@ describe("LinkedIdentitiesSection", () => {
       await user.click(disconnectButtons[0]);
 
       await waitFor(() => {
-        expect(mockToastError).toHaveBeenCalledWith("Failed to unlink");
+        expect(toast.error).toHaveBeenCalledWith("Failed to unlink");
       });
     });
 
@@ -330,7 +328,7 @@ describe("LinkedIdentitiesSection", () => {
 
       await waitFor(() => {
         expect(mockUnlinkBlueskyAction).toHaveBeenCalled();
-        expect(mockToastSuccess).toHaveBeenCalledWith(
+        expect(toast.success).toHaveBeenCalledWith(
           "Bluesky account disconnected"
         );
       });
@@ -590,7 +588,7 @@ describe("LinkedIdentitiesSection", () => {
       await user.click(disconnectButton);
 
       await waitFor(() => {
-        expect(mockToastError).toHaveBeenCalledWith("Failed to unlink Bluesky");
+        expect(toast.error).toHaveBeenCalledWith("Failed to unlink Bluesky");
       });
     });
   });

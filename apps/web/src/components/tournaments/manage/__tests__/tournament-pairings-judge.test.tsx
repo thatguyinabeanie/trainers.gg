@@ -137,8 +137,8 @@ describe("TournamentPairingsJudge", () => {
 
       expect(screen.getByText("playera")).toBeInTheDocument();
       expect(screen.getByText("playerb")).toBeInTheDocument();
-      expect(screen.getByText("Player C")).toBeInTheDocument();
-      expect(screen.getByText("Player D")).toBeInTheDocument();
+      expect(screen.getByText("playerc")).toBeInTheDocument();
+      expect(screen.getByText("playerd")).toBeInTheDocument();
     });
 
     it("should show match count in pairings tab", () => {
@@ -234,8 +234,8 @@ describe("TournamentPairingsJudge", () => {
       await user.click(judgeTab);
 
       await waitFor(() => {
-        expect(screen.getByText("Player C")).toBeInTheDocument();
-        expect(screen.getByText("Player E")).toBeInTheDocument();
+        expect(screen.getByText("playerc")).toBeInTheDocument();
+        expect(screen.getByText("playere")).toBeInTheDocument();
         // Player A and B should not be visible in judge queue
         expect(screen.queryByText("playera")).not.toBeInTheDocument();
       });
@@ -251,8 +251,8 @@ describe("TournamentPairingsJudge", () => {
           table_number: 1,
           status: "active",
           staff_requested: false,
-          player1: { display_name: "Player A" },
-          player2: { display_name: "Player B" },
+          player1: { username: "playera" },
+          player2: { username: "playerb" },
         },
       ];
 
@@ -372,7 +372,7 @@ describe("TournamentPairingsJudge", () => {
           status: "active",
           staff_requested: false,
           player1: null,
-          player2: { display_name: "Player B" },
+          player2: { username: "playerb" },
         },
       ];
 
@@ -380,8 +380,8 @@ describe("TournamentPairingsJudge", () => {
 
       render(<TournamentPairingsJudge tournament={mockTournament} />);
 
-      expect(screen.getByText("BYE")).toBeInTheDocument();
-      expect(screen.getByText("Player B")).toBeInTheDocument();
+      expect(screen.getAllByText("BYE")[0]).toBeInTheDocument();
+      expect(screen.getByText("playerb")).toBeInTheDocument();
     });
   });
 });
