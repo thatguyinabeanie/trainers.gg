@@ -1,6 +1,19 @@
 import type { Database } from "../../types";
 import { type TypedClient, getCurrentAlt } from "./helpers";
 
+export type SubmitTeamResult =
+  | {
+      success: true;
+      teamId: number;
+      pokemonCount: number;
+      teamName: string;
+      species: string[];
+    }
+  | {
+      success: false;
+      errors: string[];
+    };
+
 /**
  * Submit a team for a tournament registration.
  * Parses Showdown format text, validates, and stores structured data.
@@ -10,7 +23,7 @@ export async function submitTeam(
   supabase: TypedClient,
   tournamentId: number,
   rawText: string
-) {
+): Promise<SubmitTeamResult> {
   const alt = await getCurrentAlt(supabase);
   if (!alt) {
     throw new Error(
@@ -50,9 +63,11 @@ export async function submitTeam(
   const result = parseAndValidateTeam(rawText, tournament.game_format ?? "");
 
   if (!result.valid || result.team.length === 0) {
-    throw new Error(
-      `Team validation failed:\n${result.errors.map((e) => `• ${e.message}`).join("\n")}`
-    );
+    // Return structured errors instead of throwing
+    return {
+      success: false,
+      errors: result.errors.map((e) => e.message),
+    };
   }
 
   // 4. If replacing an existing team, delete old data
@@ -83,7 +98,7 @@ export async function submitTeam(
       created_by: alt.id,
       is_public: false,
     })
-    .select("id")
+    .select("id, name")
     .single();
 
   if (teamError || !newTeam) throw new Error("Failed to create team.");
@@ -156,19 +171,34 @@ export async function submitTeam(
     success: true,
     teamId: newTeam.id,
     pokemonCount: result.team.length,
+    teamName: newTeam.name ?? "Unnamed Team",
+    species: result.team.map((mon) => mon.species),
   };
 }
+
+export type SelectTeamResult =
+  | {
+      success: true;
+      teamId: number;
+      pokemonCount: number;
+      teamName: string;
+      species: string[];
+    }
+  | {
+      success: false;
+      errors: string[];
+    };
 
 /**
  * Select an existing team for a tournament registration.
  * Links a team already owned by the user's alt to their registration.
- * Unlike submitTeam, this does NOT parse/create a new team.
+ * Currently does not validate the team against the tournament format.
  */
 export async function selectTeamForTournament(
   supabase: TypedClient,
   tournamentId: number,
   teamId: number
-) {
+): Promise<SelectTeamResult> {
   const alt = await getCurrentAlt(supabase);
   if (!alt) {
     throw new Error(
@@ -194,30 +224,49 @@ export async function selectTeamForTournament(
     throw new Error("Teams are locked — the tournament has already started.");
   }
 
-  // 2. Verify the team belongs to this alt
+  // 2. Verify the team belongs to this alt and fetch its Pokemon
+  // Note: Tournament existence already validated via registration FK constraint.
+  // Future enhancement: validate team against tournament.game_format by implementing
+  // pokemonToShowdown utility to convert stored Pokemon back to Showdown format.
   const { data: team } = await supabase
     .from("teams")
-    .select("id, created_by")
+    .select(
+      `
+      id,
+      name,
+      created_by,
+      team_pokemon!inner (
+        team_position,
+        pokemon!inner (
+          species
+        )
+      )
+    `
+    )
     .eq("id", teamId)
+    .order("team_position", {
+      referencedTable: "team_pokemon",
+      ascending: true,
+    })
     .single();
 
   if (!team || team.created_by !== alt.id) {
     throw new Error("This team does not belong to your account.");
   }
 
-  // 3. Verify team has pokemon
-  const { count } = await supabase
-    .from("team_pokemon")
-    .select("*", { count: "exact", head: true })
-    .eq("team_id", teamId);
+  // Already sorted by team_position via query ordering
+  const teamPokemon = (team.team_pokemon ?? [])
+    .map((tp) => tp.pokemon)
+    .filter((p): p is NonNullable<typeof p> => p !== null);
 
-  if (!count || count === 0) {
-    throw new Error(
-      "This team has no Pokemon. Please select a team with Pokemon."
-    );
+  if (teamPokemon.length === 0) {
+    return {
+      success: false,
+      errors: ["This team has no Pokemon. Please select a team with Pokemon."],
+    };
   }
 
-  // 4. Update registration: set team_id, team_submitted_at
+  // 3. Update registration: set team_id, team_submitted_at
   const { error: regError } = await supabase
     .from("tournament_registrations")
     .update({
@@ -229,7 +278,10 @@ export async function selectTeamForTournament(
   if (regError) throw new Error("Failed to update registration with team.");
 
   return {
+    success: true,
     teamId,
-    pokemonCount: count,
+    pokemonCount: teamPokemon.length,
+    teamName: team.name ?? "Unnamed Team",
+    species: teamPokemon.map((mon) => mon.species ?? "Unknown"),
   };
 }

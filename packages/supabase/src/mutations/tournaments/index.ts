@@ -52,7 +52,12 @@ export {
 } from "./phases";
 
 // Teams
-export { submitTeam, selectTeamForTournament } from "./teams";
+export {
+  submitTeam,
+  selectTeamForTournament,
+  type SubmitTeamResult,
+  type SelectTeamResult,
+} from "./teams";
 
 // Tournament flow
 export {

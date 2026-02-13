@@ -16,6 +16,7 @@ import {
 import type { GameData } from "@/components/match/game-card";
 import { MatchChat } from "@/components/match/match-chat";
 import { MatchCheckIn } from "@/components/match/match-check-in";
+import { PostMatchSummary } from "@/components/match/post-match-summary";
 import { useMatchPresence } from "@/components/match/presence-indicator";
 import { TeamSheet, type TeamData } from "@/components/match/team-sheet";
 import { resolveHeaderPerspective } from "./match-perspective";
@@ -59,7 +60,7 @@ export interface MatchPageClientProps {
 export function MatchPageClient({
   matchId,
   tournamentId,
-  tournamentSlug: _tournamentSlug,
+  tournamentSlug,
   matchStatus: initialStatus,
   staffRequested: initialStaffRequested,
   player1CheckedIn: initialPlayer1CheckedIn,
@@ -102,9 +103,8 @@ export function MatchPageClient({
   const myPlayer = isParticipant ? (swapped ? player2 : player1) : null;
   const opponent = isParticipant ? (swapped ? player1 : player2) : null;
 
-  const myName = myPlayer?.display_name ?? myPlayer?.username ?? "You";
-  const opponentName =
-    opponent?.display_name ?? opponent?.username ?? "Opponent";
+  const myName = myPlayer?.username ?? myPlayer?.username ?? "You";
+  const opponentName = opponent?.username ?? opponent?.username ?? "Opponent";
 
   // Header layout: left = opponent, right = me (current user).
   const perspectiveArgs = { isParticipant, isPlayer1 };
@@ -132,10 +132,10 @@ export function MatchPageClient({
   });
   const headerOpponentName = isParticipant
     ? opponentName
-    : (player1?.display_name ?? player1?.username ?? "Player 1");
+    : (player1?.username ?? player1?.username ?? "Player 1");
   const headerMyName = isParticipant
     ? myName
-    : (player2?.display_name ?? player2?.username ?? "Player 2");
+    : (player2?.username ?? player2?.username ?? "Player 2");
 
   // ==========================================================================
   // Presence — use currentUser props so staff/judges also join the channel
@@ -330,10 +330,10 @@ export function MatchPageClient({
   // Use actual player names for non-participants instead of "You"/"Opponent"
   const opponentTeamLabel = isParticipant
     ? opponentName
-    : (player1?.display_name ?? player1?.username ?? "Player 1");
+    : (player1?.username ?? player1?.username ?? "Player 1");
   const myTeamLabel = isParticipant
     ? "Your Team"
-    : (player2?.display_name ?? player2?.username ?? "Player 2");
+    : (player2?.username ?? player2?.username ?? "Player 2");
 
   const teamToggle = hasTeams ? (
     <Tabs defaultValue={opponentTeam ? "opponent" : "mine"}>
@@ -392,6 +392,22 @@ export function MatchPageClient({
                 setPlayer2CheckedIn(true);
               }
             }}
+          />
+        </div>
+      )}
+
+      {/* Post-Match Summary (when match is completed) */}
+      {matchStatus === "completed" && isParticipant && (
+        <div className="shrink-0">
+          <PostMatchSummary
+            tournamentId={tournamentId}
+            tournamentSlug={tournamentSlug}
+            matchId={matchId}
+            userAltId={userAltId}
+            myWins={myWins}
+            opponentWins={opponentWins}
+            myName={headerMyName}
+            roundNumber={roundNumber}
           />
         </div>
       )}

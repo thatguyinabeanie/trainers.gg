@@ -1,16 +1,47 @@
 import { render, screen } from "@testing-library/react";
-import { TournamentRegistrations } from "../tournament-registrations";
 import { getTournamentRegistrations } from "@trainers/supabase";
 import { type TypedClient } from "@trainers/supabase";
 
-// Mock the Supabase query hook
+// Mock sonner toast
+jest.mock("sonner", () => ({
+  toast: {
+    success: jest.fn(),
+    error: jest.fn(),
+  },
+}));
+
+// Mock the Server Actions
+jest.mock("@/actions/tournaments", () => ({
+  forceCheckInPlayer: jest.fn(),
+  removePlayerFromTournament: jest.fn(),
+  bulkForceCheckIn: jest.fn(),
+  bulkRemovePlayers: jest.fn(),
+}));
+
+// Mock Supabase hooks
+const mockChannel = {
+  on: jest.fn().mockReturnThis(),
+  subscribe: jest.fn((callback) => {
+    if (typeof callback === "function") {
+      callback("SUBSCRIBED", null);
+    }
+    return mockChannel;
+  }),
+  unsubscribe: jest.fn(),
+};
+
+const mockSupabaseClient = {
+  channel: jest.fn(() => mockChannel),
+};
+
 jest.mock("@/lib/supabase", () => ({
   useSupabaseQuery: jest.fn((queryFn) => {
     // Call the query function with a mock supabase client
     const mockSupabase = {} as TypedClient;
     const result = queryFn(mockSupabase);
-    return { data: result };
+    return { data: result, refetch: jest.fn() };
   }),
+  useSupabase: jest.fn(() => mockSupabaseClient),
 }));
 
 // Mock the getTournamentRegistrations query
@@ -18,6 +49,9 @@ jest.mock("@/lib/supabase", () => ({
 jest.mock("@trainers/supabase", () => ({
   getTournamentRegistrations: jest.fn(),
 }));
+
+// Import the component AFTER setting up all mocks
+import { TournamentRegistrations } from "../tournament-registrations";
 
 type SyncRegistrationsFn = () => Awaited<
   ReturnType<typeof getTournamentRegistrations>

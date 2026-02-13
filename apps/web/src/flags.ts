@@ -49,3 +49,15 @@ export const openRegistration = flag<boolean>({
   ],
   adapter: supabaseAdapter,
 });
+
+export const dashboardStats = flag<boolean>({
+  key: "dashboard_stats",
+  defaultValue: false,
+  description:
+    "Enable Stats & History page (supports per-user allowlist via metadata.allowed_users)",
+  options: [
+    { label: "Disabled", value: false },
+    { label: "Enabled", value: true },
+  ],
+  adapter: supabaseAdapter,
+});

@@ -1,8 +1,5 @@
 import { getInvitationExpiryDate } from "../../constants";
-import {
-  checkRegistrationOpen,
-  checkCheckInOpen,
-} from "../../utils/registration";
+import { checkCheckInOpen } from "../../utils/registration";
 import type { Database } from "../../types";
 import {
   type TypedClient,
@@ -25,78 +22,38 @@ export async function registerForTournament(
     showCountryFlag?: boolean;
   }
 ) {
-  const alt = await getCurrentAlt(supabase, data?.altId);
-  if (!alt) {
+  // Call atomic registration RPC - handles all validation and prevents TOCTOU race conditions
+  const { data: result, error: rpcError } = await supabase.rpc(
+    "register_for_tournament_atomic",
+    {
+      p_tournament_id: tournamentId,
+      p_alt_id: data?.altId ?? undefined,
+      p_team_name: data?.teamName ?? undefined,
+      p_in_game_name: data?.inGameName ?? undefined,
+      p_display_name_option: data?.displayNameOption ?? undefined,
+      p_show_country_flag: data?.showCountryFlag ?? undefined,
+    }
+  );
+
+  if (rpcError) throw rpcError;
+
+  // RPC returns { success, registrationId, status } or { success: false, error }
+  const typedResult = result as
+    | { success: true; registrationId: number; status: string }
+    | { success: false; error: string }
+    | null;
+
+  if (!typedResult?.success) {
     throw new Error(
-      "Unable to load your account. Please try signing out and back in, or contact support."
+      (typedResult as { success: false; error: string } | null)?.error ??
+        "Registration failed"
     );
   }
 
-  // Check if already registered
-  const { data: existing } = await supabase
-    .from("tournament_registrations")
-    .select("id")
-    .eq("tournament_id", tournamentId)
-    .eq("alt_id", alt.id)
-    .single();
-
-  if (existing) {
-    throw new Error("Already registered for this tournament");
-  }
-
-  // Check tournament status
-  const { data: tournament } = await supabase
-    .from("tournaments")
-    .select("status, max_participants, allow_late_registration")
-    .eq("id", tournamentId)
-    .single();
-
-  if (!tournament) throw new Error("Tournament not found");
-  const { isOpen: isRegistrationOpen } = checkRegistrationOpen(tournament);
-  if (!isRegistrationOpen) {
-    throw new Error("Tournament is not open for registration");
-  }
-
-  // Check max participants and determine registration status
-  // NOTE: TOCTOU race condition — count and insert are not atomic.
-  // Two concurrent registrations at max_participants-1 could both get "registered".
-  // TODO: Move to a SECURITY DEFINER RPC for atomic count+insert.
-  let registrationStatus: "registered" | "waitlist" = "registered";
-  if (tournament.max_participants) {
-    const { count, error: countError } = await supabase
-      .from("tournament_registrations")
-      .select("*", { count: "exact", head: true })
-      .eq("tournament_id", tournamentId)
-      .eq("status", "registered");
-    if (countError) throw countError;
-
-    if ((count ?? 0) >= tournament.max_participants) {
-      // Tournament is full, add to waitlist instead of rejecting
-      registrationStatus = "waitlist";
-    }
-  }
-
-  // Create registration
-  const { data: registration, error } = await supabase
-    .from("tournament_registrations")
-    .insert({
-      tournament_id: tournamentId,
-      alt_id: alt.id,
-      status: registrationStatus,
-      registered_at: new Date().toISOString(),
-      team_name: data?.teamName,
-      in_game_name: data?.inGameName,
-      display_name_option: data?.displayNameOption,
-      show_country_flag: data?.showCountryFlag,
-    })
-    .select()
-    .single();
-
-  if (error) throw error;
   return {
     success: true,
-    registrationId: registration.id,
-    status: registrationStatus,
+    registrationId: typedResult.registrationId,
+    status: typedResult.status as "registered" | "waitlist",
   };
 }
 
@@ -224,7 +181,7 @@ export async function updateRegistrationStatus(
     .eq("id", registrationId);
 
   if (error) throw error;
-  return { success: true };
+  return { success: true, tournamentId: registration.tournament_id };
 }
 
 /**

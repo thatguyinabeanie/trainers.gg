@@ -363,7 +363,88 @@ export async function updateProfile(data: {
           // ALREADY_PROVISIONED is OK — continue with profile update
         }
       }
-      // If pds_status is 'active' or 'external', skip PDS provisioning
+      // If PDS is active, update the handle on existing PDS account
+      else if (pdsStatus === "active") {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+
+        if (!session?.access_token) {
+          return { success: false, error: "No active session" };
+        }
+
+        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+        if (!supabaseUrl) {
+          console.error("NEXT_PUBLIC_SUPABASE_URL is not configured");
+          return { success: false, error: "Server configuration error" };
+        }
+
+        // PDS handles must be ASCII — derive from username
+        const pdsUsername =
+          validated.username!.toLowerCase().replace(/[^a-z0-9-]/g, "") ||
+          `user-${user.id.slice(0, 8)}`;
+
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 30_000);
+
+        let updateResponse: Response;
+        try {
+          updateResponse = await fetch(
+            `${supabaseUrl}/functions/v1/update-pds-handle`,
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${session.access_token}`,
+              },
+              body: JSON.stringify({ username: pdsUsername }),
+              signal: controller.signal,
+            }
+          );
+        } catch (fetchError) {
+          if (fetchError instanceof Error && fetchError.name === "AbortError") {
+            return {
+              success: false,
+              error: "Request timed out. Please try again.",
+            };
+          }
+          console.error("Failed to call update-pds-handle:", fetchError);
+          return {
+            success: false,
+            error: "Failed to update Bluesky handle. Please try again.",
+          };
+        } finally {
+          clearTimeout(timeoutId);
+        }
+
+        let updateResult: { success?: boolean; code?: string; error?: string };
+        try {
+          updateResult = await updateResponse.json();
+        } catch {
+          console.error(
+            "Failed to parse update-pds-handle response:",
+            updateResponse.status
+          );
+          return {
+            success: false,
+            error: "Failed to update Bluesky handle. Please try again.",
+          };
+        }
+
+        if (!updateResult.success) {
+          if (updateResult.code === "HANDLE_TAKEN") {
+            return {
+              success: false,
+              error: "This handle is already registered on Bluesky",
+            };
+          }
+          return {
+            success: false,
+            error: updateResult.error || "Failed to update Bluesky handle",
+          };
+        }
+      }
+      // If pds_status is 'external', skip PDS operations (external Bluesky account)
     }
 
     // Update the users table

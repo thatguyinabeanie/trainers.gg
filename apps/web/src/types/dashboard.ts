@@ -4,6 +4,9 @@ export interface DashboardTournament {
   startDate?: number | null;
   status: string;
   hasTeam: boolean;
+  registrationStatus?: string | null;
+  checkInOpen?: boolean;
+  registrationId?: number | null;
 }
 
 export interface DashboardOrganization {

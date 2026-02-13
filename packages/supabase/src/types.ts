@@ -39,9 +39,7 @@ export type Database = {
           avatar_url: string | null
           bio: string | null
           created_at: string | null
-          display_name: string
           id: number
-          in_game_name: string | null
           tier: Database["public"]["Enums"]["user_tier"] | null
           tier_expires_at: string | null
           tier_started_at: string | null
@@ -53,9 +51,7 @@ export type Database = {
           avatar_url?: string | null
           bio?: string | null
           created_at?: string | null
-          display_name: string
           id?: never
-          in_game_name?: string | null
           tier?: Database["public"]["Enums"]["user_tier"] | null
           tier_expires_at?: string | null
           tier_started_at?: string | null
@@ -67,9 +63,7 @@ export type Database = {
           avatar_url?: string | null
           bio?: string | null
           created_at?: string | null
-          display_name?: string
           id?: never
-          in_game_name?: string | null
           tier?: Database["public"]["Enums"]["user_tier"] | null
           tier_expires_at?: string | null
           tier_started_at?: string | null
@@ -2895,6 +2889,17 @@ export type Database = {
       }
       is_site_admin: { Args: never; Returns: boolean }
       is_sudo_active: { Args: never; Returns: boolean }
+      register_for_tournament_atomic: {
+        Args: {
+          p_alt_id?: number
+          p_display_name_option?: string
+          p_in_game_name?: string
+          p_show_country_flag?: boolean
+          p_team_name?: string
+          p_tournament_id: number
+        }
+        Returns: Json
+      }
       report_match_result: {
         Args: {
           p_match_id: number

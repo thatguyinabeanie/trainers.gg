@@ -384,8 +384,7 @@ export function CompletedTournaments({
                 {tournament.winner && (
                   <p className="text-primary mt-1 flex items-center gap-1 text-xs font-medium">
                     <Trophy className="h-3 w-3" />
-                    {tournament.winner.display_name ||
-                      tournament.winner.username}
+                    {tournament.winner.username || tournament.winner.username}
                   </p>
                 )}
               </div>
@@ -450,7 +449,7 @@ export function CompletedTournaments({
                         <div className="text-primary flex items-center gap-1.5 font-medium">
                           <Trophy className="h-3.5 w-3.5" />
                           <span>
-                            {tournament.winner.display_name ||
+                            {tournament.winner.username ||
                               tournament.winner.username}
                           </span>
                         </div>

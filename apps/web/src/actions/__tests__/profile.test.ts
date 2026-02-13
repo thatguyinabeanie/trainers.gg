@@ -330,6 +330,7 @@ describe("getCurrentUserProfile", () => {
 describe("updateProfile", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    process.env.NEXT_PUBLIC_SUPABASE_URL = "https://test.supabase.co";
     mockAuth.getUser.mockResolvedValue({
       data: { user: { id: "user-1" } },
       error: null,
@@ -405,11 +406,11 @@ describe("updateProfile", () => {
   });
 
   it("handles unique constraint violation on username", async () => {
-    // PDS status check
+    // PDS status check - use 'external' to skip PDS operations
     mockFrom.mockReturnValueOnce(
       createQueryBuilder({
         maybeSingle: jest.fn().mockResolvedValue({
-          data: { pds_status: "active" },
+          data: { pds_status: "external" },
           error: null,
         }),
       })
@@ -428,5 +429,322 @@ describe("updateProfile", () => {
 
     expect(result.success).toBe(false);
     expect(result.error).toBe("Username is already taken");
+  });
+
+  describe("PDS handle updates", () => {
+    beforeEach(() => {
+      process.env.NEXT_PUBLIC_SUPABASE_URL = "https://test.supabase.co";
+    });
+
+    afterEach(() => {
+      delete process.env.NEXT_PUBLIC_SUPABASE_URL;
+    });
+
+    it("calls update-pds-handle edge function when pds_status is active", async () => {
+      // PDS status check — active
+      mockFrom.mockReturnValueOnce(
+        createQueryBuilder({
+          maybeSingle: jest.fn().mockResolvedValue({
+            data: { pds_status: "active" },
+            error: null,
+          }),
+        })
+      );
+
+      // Mock successful edge function call
+      global.fetch = jest.fn().mockResolvedValue({
+        json: () => Promise.resolve({ success: true }),
+      });
+
+      // Update users table
+      mockFrom.mockReturnValueOnce(
+        createQueryBuilder({
+          eq: jest.fn().mockResolvedValue({ error: null }),
+        })
+      );
+
+      // Get main_alt_id for alt update
+      mockFrom.mockReturnValueOnce(
+        createQueryBuilder({
+          maybeSingle: jest.fn().mockResolvedValue({
+            data: { main_alt_id: 1 },
+            error: null,
+          }),
+        })
+      );
+
+      // Update alts table
+      mockFrom.mockReturnValueOnce(
+        createQueryBuilder({
+          eq: jest.fn().mockResolvedValue({ error: null }),
+        })
+      );
+
+      const result = await updateProfile({ username: "newusername" });
+
+      expect(global.fetch).toHaveBeenCalledWith(
+        "https://test.supabase.co/functions/v1/update-pds-handle",
+        expect.objectContaining({
+          method: "POST",
+          headers: expect.objectContaining({
+            "Content-Type": "application/json",
+            Authorization: "Bearer token-123",
+          }),
+          body: expect.stringContaining("newusername"),
+        })
+      );
+      expect(result.success).toBe(true);
+    });
+
+    it("does not call update-pds-handle when pds_status is pending", async () => {
+      // PDS status check — pending
+      mockFrom.mockReturnValueOnce(
+        createQueryBuilder({
+          maybeSingle: jest.fn().mockResolvedValue({
+            data: { pds_status: "pending" },
+            error: null,
+          }),
+        })
+      );
+
+      // Mock provision-pds call
+      global.fetch = jest.fn().mockResolvedValue({
+        json: () => Promise.resolve({ success: true }),
+      });
+
+      // Update users table
+      mockFrom.mockReturnValueOnce(
+        createQueryBuilder({
+          eq: jest.fn().mockResolvedValue({ error: null }),
+        })
+      );
+
+      // Get main_alt_id for alt update
+      mockFrom.mockReturnValueOnce(
+        createQueryBuilder({
+          maybeSingle: jest.fn().mockResolvedValue({
+            data: { main_alt_id: 1 },
+            error: null,
+          }),
+        })
+      );
+
+      // Update alts table
+      mockFrom.mockReturnValueOnce(
+        createQueryBuilder({
+          eq: jest.fn().mockResolvedValue({ error: null }),
+        })
+      );
+
+      const result = await updateProfile({ username: "newusername" });
+
+      // Should call provision-pds, not update-pds-handle
+      expect(global.fetch).toHaveBeenCalledWith(
+        expect.stringContaining("provision-pds"),
+        expect.any(Object)
+      );
+      expect(global.fetch).not.toHaveBeenCalledWith(
+        expect.stringContaining("update-pds-handle"),
+        expect.any(Object)
+      );
+      expect(result.success).toBe(true);
+    });
+
+    it("does not call update-pds-handle when pds_status is external", async () => {
+      // PDS status check — external
+      mockFrom.mockReturnValueOnce(
+        createQueryBuilder({
+          maybeSingle: jest.fn().mockResolvedValue({
+            data: { pds_status: "external" },
+            error: null,
+          }),
+        })
+      );
+
+      const mockUpdate = jest.fn().mockReturnThis();
+      const mockEq = jest.fn().mockResolvedValue({ error: null });
+
+      // Update users table
+      mockFrom.mockReturnValueOnce({
+        update: mockUpdate,
+        eq: mockEq,
+      });
+
+      // Get main_alt_id for alt update
+      mockFrom.mockReturnValueOnce(
+        createQueryBuilder({
+          maybeSingle: jest.fn().mockResolvedValue({
+            data: { main_alt_id: 1 },
+            error: null,
+          }),
+        })
+      );
+
+      // Update alts table
+      mockFrom.mockReturnValueOnce(
+        createQueryBuilder({
+          eq: jest.fn().mockResolvedValue({ error: null }),
+        })
+      );
+
+      const result = await updateProfile({ username: "newusername" });
+
+      // Should not call any PDS function
+      expect(global.fetch).not.toHaveBeenCalled();
+      expect(result.success).toBe(true);
+    });
+
+    it("returns error when update-pds-handle fails with HANDLE_TAKEN", async () => {
+      // PDS status check — active
+      mockFrom.mockReturnValueOnce(
+        createQueryBuilder({
+          maybeSingle: jest.fn().mockResolvedValue({
+            data: { pds_status: "active" },
+            error: null,
+          }),
+        })
+      );
+
+      // Mock edge function failure (returns before database update)
+      global.fetch = jest.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: () =>
+          Promise.resolve({
+            success: false,
+            code: "HANDLE_TAKEN",
+            error: "Handle already taken",
+          }),
+      });
+
+      const result = await updateProfile({ username: "takenhandle" });
+
+      expect(result.success).toBe(false);
+      expect(result.error).toBe("This handle is already registered on Bluesky");
+    });
+
+    it("returns error when update-pds-handle request times out", async () => {
+      // PDS status check — active
+      mockFrom.mockReturnValueOnce(
+        createQueryBuilder({
+          maybeSingle: jest.fn().mockResolvedValue({
+            data: { pds_status: "active" },
+            error: null,
+          }),
+        })
+      );
+
+      // Mock fetch timeout
+      global.fetch = jest.fn().mockImplementation(() => {
+        const error = new Error("Timeout");
+        error.name = "AbortError";
+        return Promise.reject(error);
+      });
+
+      const result = await updateProfile({ username: "newusername" });
+
+      expect(result.success).toBe(false);
+      expect(result.error).toContain("timed out");
+    });
+
+    it("returns error when update-pds-handle fails with generic error", async () => {
+      // PDS status check — active
+      mockFrom.mockReturnValueOnce(
+        createQueryBuilder({
+          maybeSingle: jest.fn().mockResolvedValue({
+            data: { pds_status: "active" },
+            error: null,
+          }),
+        })
+      );
+
+      // Mock edge function failure
+      global.fetch = jest.fn().mockResolvedValue({
+        json: () =>
+          Promise.resolve({
+            success: false,
+            error: "PDS API error",
+          }),
+      });
+
+      const result = await updateProfile({ username: "newusername" });
+
+      expect(result.success).toBe(false);
+      expect(result.error).toBe("PDS API error");
+    });
+
+    it("sanitizes username for PDS handle (removes non-alphanumeric)", async () => {
+      // PDS status check — active
+      mockFrom.mockReturnValueOnce(
+        createQueryBuilder({
+          maybeSingle: jest.fn().mockResolvedValue({
+            data: { pds_status: "active" },
+            error: null,
+          }),
+        })
+      );
+
+      // Mock successful edge function call
+      const mockFetch = jest.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: () => Promise.resolve({ success: true }),
+      });
+      global.fetch = mockFetch;
+
+      // Update users table
+      mockFrom.mockReturnValueOnce(
+        createQueryBuilder({
+          eq: jest.fn().mockResolvedValue({ error: null }),
+        })
+      );
+
+      // Get main_alt_id for alt update
+      mockFrom.mockReturnValueOnce(
+        createQueryBuilder({
+          maybeSingle: jest.fn().mockResolvedValue({
+            data: { main_alt_id: 1 },
+            error: null,
+          }),
+        })
+      );
+
+      // Update alts table
+      mockFrom.mockReturnValueOnce(
+        createQueryBuilder({
+          eq: jest.fn().mockResolvedValue({ error: null }),
+        })
+      );
+
+      await updateProfile({ username: "my_user_name123" });
+
+      // Should call update-pds-handle with sanitized username (underscores removed)
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining("update-pds-handle"),
+        expect.objectContaining({
+          method: "POST",
+          body: expect.stringContaining("myusername123"),
+        })
+      );
+    });
+
+    it("returns error when NEXT_PUBLIC_SUPABASE_URL is not configured", async () => {
+      delete process.env.NEXT_PUBLIC_SUPABASE_URL;
+
+      // PDS status check — active
+      mockFrom.mockReturnValueOnce(
+        createQueryBuilder({
+          maybeSingle: jest.fn().mockResolvedValue({
+            data: { pds_status: "active" },
+            error: null,
+          }),
+        })
+      );
+
+      const result = await updateProfile({ username: "newusername" });
+
+      expect(result.success).toBe(false);
+      expect(result.error).toContain("configuration error");
+    });
   });
 });

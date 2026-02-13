@@ -558,7 +558,7 @@ export async function listOrganizationTournaments(
       `
       *,
       organization:organizations!inner(id, name, slug),
-      winner:alts(id, username, display_name)
+      winner:alts(id, username)
     `,
       { count: "exact" }
     )

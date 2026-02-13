@@ -56,7 +56,7 @@ export default async function MatchPage({ params }: PageProps) {
   if (user) {
     const { data: userAlts } = await supabase
       .from("alts")
-      .select("id, username, display_name")
+      .select("id, username")
       .eq("user_id", user.id);
 
     const userAltIds = new Set((userAlts ?? []).map((a) => a.id));
@@ -64,7 +64,7 @@ export default async function MatchPage({ params }: PageProps) {
     // Use the first alt's info for presence (works for both participants and staff)
     if (userAlts && userAlts.length > 0) {
       currentUserUsername = userAlts[0]!.username;
-      currentUserDisplayName = userAlts[0]!.display_name;
+      currentUserDisplayName = userAlts[0]!.username;
     }
 
     isPlayer1 =

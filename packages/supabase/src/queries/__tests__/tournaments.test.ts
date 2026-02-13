@@ -1,6 +1,7 @@
 import {
   getPhaseRoundsWithStats,
   listTournamentsGrouped,
+  getActiveMatch,
 } from "../tournaments";
 import type { TypedClient } from "../../client";
 
@@ -350,7 +351,6 @@ describe("listTournamentsGrouped", () => {
                 alt: {
                   id: 100,
                   username: "champion_player",
-                  display_name: "Champion Player",
                 },
               },
             ],
@@ -382,7 +382,6 @@ describe("listTournamentsGrouped", () => {
       winner: {
         id: 100,
         username: "champion_player",
-        display_name: "Champion Player",
       },
       registrationCount: 32,
     });
@@ -518,5 +517,264 @@ describe("listTournamentsGrouped", () => {
     );
 
     consoleErrorSpy.mockRestore();
+  });
+});
+
+describe("getActiveMatch", () => {
+  let mockClient: TypedClient;
+
+  beforeEach(() => {
+    mockClient = createMockClient();
+    jest.clearAllMocks();
+  });
+
+  it("should return active match with opponent and tournament details", async () => {
+    const altId = 10;
+    const matchData = {
+      id: 100,
+      status: "active",
+      alt1_id: altId,
+      alt2_id: 20,
+      table_number: 5,
+      updated_at: "2026-02-10T10:00:00Z",
+      player1: [{ id: altId, username: "player1" }],
+      player2: [{ id: 20, username: "player2" }],
+      round: {
+        id: 1,
+        round_number: 3,
+        phase: {
+          id: 1,
+          name: "Swiss",
+          tournament: {
+            id: 50,
+            name: "VGC Championship",
+            slug: "vgc-championship",
+          },
+        },
+      },
+    };
+
+    (mockClient.from as jest.Mock).mockReturnValue({
+      select: jest.fn().mockReturnThis(),
+      in: jest.fn().mockReturnThis(),
+      or: jest.fn().mockReturnThis(),
+      order: jest.fn().mockReturnThis(),
+      limit: jest.fn().mockReturnThis(),
+      maybeSingle: jest
+        .fn()
+        .mockResolvedValue({ data: matchData, error: null }),
+    });
+
+    const result = await getActiveMatch(mockClient, altId);
+
+    expect(result).toEqual({
+      id: 100,
+      status: "active",
+      tournamentId: 50,
+      tournamentName: "VGC Championship",
+      tournamentSlug: "vgc-championship",
+      roundNumber: 3,
+      phaseName: "Swiss",
+      opponent: {
+        id: 20,
+        displayName: "player2",
+        username: "player2",
+      },
+      table: 5,
+    });
+  });
+
+  it("should return pending match as player2", async () => {
+    const altId = 20;
+    const matchData = {
+      id: 101,
+      status: "pending",
+      alt1_id: 10,
+      alt2_id: altId,
+      table_number: 3,
+      updated_at: "2026-02-10T10:00:00Z",
+      player1: [{ id: 10, username: "player1" }],
+      player2: [{ id: altId, username: "player2" }],
+      round: {
+        id: 1,
+        round_number: 1,
+        phase: {
+          id: 1,
+          name: "Swiss",
+          tournament: {
+            id: 50,
+            name: "VGC Championship",
+            slug: "vgc-championship",
+          },
+        },
+      },
+    };
+
+    (mockClient.from as jest.Mock).mockReturnValue({
+      select: jest.fn().mockReturnThis(),
+      in: jest.fn().mockReturnThis(),
+      or: jest.fn().mockReturnThis(),
+      order: jest.fn().mockReturnThis(),
+      limit: jest.fn().mockReturnThis(),
+      maybeSingle: jest
+        .fn()
+        .mockResolvedValue({ data: matchData, error: null }),
+    });
+
+    const result = await getActiveMatch(mockClient, altId);
+
+    expect(result).toEqual({
+      id: 101,
+      status: "pending",
+      tournamentId: 50,
+      tournamentName: "VGC Championship",
+      tournamentSlug: "vgc-championship",
+      roundNumber: 1,
+      phaseName: "Swiss",
+      opponent: {
+        id: 10,
+        displayName: "player1",
+        username: "player1",
+      },
+      table: 3,
+    });
+  });
+
+  it("should handle match with table number 0", async () => {
+    const altId = 10;
+    const matchData = {
+      id: 102,
+      status: "active",
+      alt1_id: altId,
+      alt2_id: 20,
+      table_number: 0,
+      updated_at: "2026-02-10T10:00:00Z",
+      player1: [{ id: altId, username: "player1" }],
+      player2: [{ id: 20, username: "player2" }],
+      round: {
+        id: 1,
+        round_number: 1,
+        phase: {
+          id: 1,
+          name: "Swiss",
+          tournament: {
+            id: 50,
+            name: "VGC Championship",
+            slug: "vgc-championship",
+          },
+        },
+      },
+    };
+
+    (mockClient.from as jest.Mock).mockReturnValue({
+      select: jest.fn().mockReturnThis(),
+      in: jest.fn().mockReturnThis(),
+      or: jest.fn().mockReturnThis(),
+      order: jest.fn().mockReturnThis(),
+      limit: jest.fn().mockReturnThis(),
+      maybeSingle: jest
+        .fn()
+        .mockResolvedValue({ data: matchData, error: null }),
+    });
+
+    const result = await getActiveMatch(mockClient, altId);
+
+    expect(result?.table).toBe(0);
+  });
+
+  it("should return null when no match found", async () => {
+    (mockClient.from as jest.Mock).mockReturnValue({
+      select: jest.fn().mockReturnThis(),
+      in: jest.fn().mockReturnThis(),
+      or: jest.fn().mockReturnThis(),
+      order: jest.fn().mockReturnThis(),
+      limit: jest.fn().mockReturnThis(),
+      maybeSingle: jest.fn().mockResolvedValue({ data: null, error: null }),
+    });
+
+    const result = await getActiveMatch(mockClient, 10);
+
+    expect(result).toBeNull();
+  });
+
+  it("should return null when tournament data is missing", async () => {
+    const matchData = {
+      id: 103,
+      status: "active",
+      alt1_id: 10,
+      alt2_id: 20,
+      table_number: 5,
+      updated_at: "2026-02-10T10:00:00Z",
+      player1: [{ id: 10, username: "player1" }],
+      player2: [{ id: 20, username: "player2" }],
+      round: null, // Missing round data
+    };
+
+    (mockClient.from as jest.Mock).mockReturnValue({
+      select: jest.fn().mockReturnThis(),
+      in: jest.fn().mockReturnThis(),
+      or: jest.fn().mockReturnThis(),
+      order: jest.fn().mockReturnThis(),
+      limit: jest.fn().mockReturnThis(),
+      maybeSingle: jest
+        .fn()
+        .mockResolvedValue({ data: matchData, error: null }),
+    });
+
+    const result = await getActiveMatch(mockClient, 10);
+
+    expect(result).toBeNull();
+  });
+
+  it("should handle match with no opponent (bye)", async () => {
+    const altId = 10;
+    const matchData = {
+      id: 104,
+      status: "pending",
+      alt1_id: altId,
+      alt2_id: null,
+      table_number: null,
+      updated_at: "2026-02-10T10:00:00Z",
+      player1: [{ id: altId, username: "player1" }],
+      player2: null,
+      round: {
+        id: 1,
+        round_number: 2,
+        phase: {
+          id: 1,
+          name: "Swiss",
+          tournament: {
+            id: 50,
+            name: "VGC Championship",
+            slug: "vgc-championship",
+          },
+        },
+      },
+    };
+
+    (mockClient.from as jest.Mock).mockReturnValue({
+      select: jest.fn().mockReturnThis(),
+      in: jest.fn().mockReturnThis(),
+      or: jest.fn().mockReturnThis(),
+      order: jest.fn().mockReturnThis(),
+      limit: jest.fn().mockReturnThis(),
+      maybeSingle: jest
+        .fn()
+        .mockResolvedValue({ data: matchData, error: null }),
+    });
+
+    const result = await getActiveMatch(mockClient, altId);
+
+    expect(result).toEqual({
+      id: 104,
+      status: "pending",
+      tournamentId: 50,
+      tournamentName: "VGC Championship",
+      tournamentSlug: "vgc-championship",
+      roundNumber: 2,
+      phaseName: "Swiss",
+      opponent: null,
+      table: null,
+    });
   });
 });

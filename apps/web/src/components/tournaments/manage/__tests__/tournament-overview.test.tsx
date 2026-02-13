@@ -5,15 +5,32 @@ import {
   getPhaseRoundsWithStats,
 } from "@trainers/supabase";
 
-// Mock useSupabaseQuery hook - we'll control return values per test
+// Mock Supabase hooks
+const mockChannel = {
+  on: jest.fn().mockReturnThis(),
+  subscribe: jest.fn((callback) => {
+    if (typeof callback === "function") {
+      callback("SUBSCRIBED", null);
+    }
+    return mockChannel;
+  }),
+  unsubscribe: jest.fn(),
+};
+
+const mockSupabase = {
+  channel: jest.fn(() => mockChannel),
+};
+
 jest.mock("@/lib/supabase", () => ({
   useSupabaseQuery: jest.fn(),
+  useSupabase: jest.fn(),
 }));
 
-import { useSupabaseQuery } from "@/lib/supabase";
+import { useSupabaseQuery, useSupabase } from "@/lib/supabase";
 const mockUseSupabaseQuery = useSupabaseQuery as jest.MockedFunction<
   typeof useSupabaseQuery
 >;
+const mockUseSupabase = useSupabase as jest.MockedFunction<typeof useSupabase>;
 
 // Mock the queries
 jest.mock("@trainers/supabase", () => ({
@@ -50,6 +67,9 @@ describe("TournamentOverview", () => {
     jest.clearAllMocks();
     mockGetTournamentPhases.mockReturnValue([]);
     mockGetPhaseRoundsWithStats.mockReturnValue([]);
+    mockUseSupabase.mockReturnValue(
+      mockSupabase as ReturnType<typeof useSupabase>
+    );
   });
 
   describe("Registration Progress", () => {

@@ -10,7 +10,6 @@ export async function updateAlt(
   altId: number,
   updates: {
     avatarUrl?: string;
-    inGameName?: string | null;
   }
 ) {
   // Verify the user owns this alt
@@ -34,8 +33,6 @@ export async function updateAlt(
   const updateData: Database["public"]["Tables"]["alts"]["Update"] = {};
   if (updates.avatarUrl !== undefined)
     updateData.avatar_url = updates.avatarUrl;
-  if (updates.inGameName !== undefined)
-    updateData.in_game_name = updates.inGameName;
 
   const { error } = await supabase
     .from("alts")
@@ -173,7 +170,6 @@ export async function createAlt(
   data: {
     username: string;
     avatarUrl?: string;
-    inGameName?: string;
   }
 ) {
   const {
@@ -201,7 +197,6 @@ export async function createAlt(
       username: data.username,
       display_name: data.username,
       avatar_url: data.avatarUrl ?? null,
-      in_game_name: data.inGameName ?? null,
     })
     .select()
     .single();

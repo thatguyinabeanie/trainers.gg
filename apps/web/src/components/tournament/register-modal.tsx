@@ -148,6 +148,9 @@ export function RegisterModal({
   const [isLoadingData, setIsLoadingData] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [alts, setAlts] = useState<Alt[]>([]);
+  const [registrationSuccess, setRegistrationSuccess] = useState<{
+    status: "registered" | "waitlist";
+  } | null>(null);
 
   const form = useForm<RegistrationFormData>({
     resolver: zodResolver(registrationSchema),
@@ -240,6 +243,7 @@ export function RegisterModal({
       form.reset();
       setError(null);
       setAlts([]);
+      setRegistrationSuccess(null);
     }
   }, [open, form]);
 
@@ -274,7 +278,10 @@ export function RegisterModal({
       });
 
       if (result.success) {
-        onOpenChange(false);
+        // Show success confirmation instead of closing modal
+        setRegistrationSuccess({
+          status: result.data.status as "registered" | "waitlist",
+        });
         onSuccess?.();
       } else {
         // Redirect to login if not authenticated
@@ -313,7 +320,107 @@ export function RegisterModal({
           </DialogDescription>
         </DialogHeader>
 
-        {isLoadingData ? (
+        {/* Success Confirmation State */}
+        {registrationSuccess ? (
+          <div className="space-y-6 py-4">
+            <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/10 p-4">
+              <div className="flex items-start gap-3">
+                <div className="rounded-full bg-emerald-500/20 p-2 text-emerald-600 dark:text-emerald-400">
+                  <svg
+                    className="size-5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M5 13l4 4L19 7"
+                    />
+                  </svg>
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-semibold">
+                    {registrationSuccess.status === "waitlist"
+                      ? "Added to Waitlist"
+                      : "You're Registered!"}
+                  </h3>
+                  <p className="text-muted-foreground mt-1 text-sm">
+                    {registrationSuccess.status === "waitlist"
+                      ? "You've been added to the waitlist. You'll be notified if a spot opens up."
+                      : `You're registered for ${tournamentName}`}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Next Steps */}
+            <div className="space-y-3">
+              <h4 className="text-sm font-medium">Next Steps</h4>
+              <ul className="text-muted-foreground space-y-2 text-sm">
+                {registrationSuccess.status === "registered" ? (
+                  <>
+                    <li className="flex items-start gap-2">
+                      <span className="mt-0.5 text-emerald-500">•</span>
+                      <span>
+                        <strong className="text-foreground">
+                          Submit your team
+                        </strong>{" "}
+                        before the tournament starts
+                      </span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="mt-0.5 text-emerald-500">•</span>
+                      <span>
+                        <strong className="text-foreground">Check in</strong>{" "}
+                        when check-in opens (you&apos;ll be notified)
+                      </span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="mt-0.5 text-emerald-500">•</span>
+                      <span>
+                        Monitor the tournament page for updates and pairings
+                      </span>
+                    </li>
+                  </>
+                ) : (
+                  <>
+                    <li className="flex items-start gap-2">
+                      <span className="mt-0.5 text-amber-500">•</span>
+                      <span>
+                        You&apos;ll be automatically registered if a spot opens
+                      </span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="mt-0.5 text-amber-500">•</span>
+                      <span>
+                        We&apos;ll notify you immediately if you move off the
+                        waitlist
+                      </span>
+                    </li>
+                  </>
+                )}
+              </ul>
+            </div>
+
+            <DialogFooter>
+              <Button
+                onClick={() => {
+                  onOpenChange(false);
+                  if (registrationSuccess.status === "registered") {
+                    router.push(`/tournaments/${tournamentSlug}`);
+                  }
+                }}
+                className="w-full"
+              >
+                {registrationSuccess.status === "registered"
+                  ? "Go to Tournament"
+                  : "Close"}
+              </Button>
+            </DialogFooter>
+          </div>
+        ) : isLoadingData ? (
           <div className="flex items-center justify-center py-8">
             <Loader2 className="size-6 animate-spin" />
           </div>
@@ -347,7 +454,7 @@ export function RegisterModal({
                           <SelectTrigger className="w-full">
                             <SelectValue placeholder="Select profile">
                               {selectedAlt
-                                ? `${selectedAlt.display_name || selectedAlt.username} (@${selectedAlt.username})`
+                                ? `${selectedAlt.username || selectedAlt.username} (@${selectedAlt.username})`
                                 : "Select profile"}
                             </SelectValue>
                           </SelectTrigger>
@@ -355,7 +462,7 @@ export function RegisterModal({
                         <SelectContent>
                           {alts.map((alt) => (
                             <SelectItem key={alt.id} value={alt.id.toString()}>
-                              {alt.display_name || alt.username} (@
+                              {alt.username || alt.username} (@
                               {alt.username})
                             </SelectItem>
                           ))}

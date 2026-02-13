@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
-import { useSupabaseQuery } from "@/lib/supabase";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { useSupabase, useSupabaseQuery } from "@/lib/supabase";
 import { getTournamentRegistrations } from "@trainers/supabase";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Card,
   CardContent,
@@ -28,7 +29,25 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Search, MoreHorizontal, UserCheck, UserX, Mail } from "lucide-react";
+import {
+  Search,
+  MoreHorizontal,
+  UserCheck,
+  UserX,
+  Mail,
+  Loader2,
+} from "lucide-react";
+import { toast } from "sonner";
+import {
+  forceCheckInPlayer,
+  removePlayerFromTournament,
+  bulkForceCheckIn,
+  bulkRemovePlayers,
+} from "@/actions/tournaments";
+import {
+  RealtimeStatusBadge,
+  type RealtimeStatus,
+} from "./realtime-status-badge";
 
 interface TournamentRegistrationsProps {
   tournament: {
@@ -40,19 +59,69 @@ interface TournamentRegistrationsProps {
 export function TournamentRegistrations({
   tournament,
 }: TournamentRegistrationsProps) {
+  const supabase = useSupabase();
   const [searchTerm, setSearchTerm] = useState("");
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
+  const [realtimeStatus, setRealtimeStatus] =
+    useState<RealtimeStatus>("connected");
+  const refreshTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
 
-  const { data: registrations } = useSupabaseQuery(
+  // Debounced refresh trigger (500ms delay to batch bulk operations)
+  const triggerRefresh = useCallback(() => {
+    if (refreshTimeoutRef.current) {
+      clearTimeout(refreshTimeoutRef.current);
+    }
+    refreshTimeoutRef.current = setTimeout(() => {
+      setRefreshKey((k) => k + 1);
+    }, 500);
+  }, []);
+
+  // Real-time subscription to tournament_registrations
+  useEffect(() => {
+    const channel = supabase
+      .channel(`registrations-${tournament.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*", // INSERT, UPDATE, DELETE
+          schema: "public",
+          table: "tournament_registrations",
+          filter: `tournament_id=eq.${tournament.id}`,
+        },
+        () => {
+          triggerRefresh();
+        }
+      )
+      .subscribe((status, err) => {
+        if (status === "SUBSCRIBED") {
+          setRealtimeStatus("connected");
+        } else if (status === "CLOSED") {
+          setRealtimeStatus("disconnected");
+        } else if (err) {
+          console.error("[Realtime] registrations error:", err);
+          setRealtimeStatus("error");
+        }
+      });
+
+    return () => {
+      if (refreshTimeoutRef.current) {
+        clearTimeout(refreshTimeoutRef.current);
+      }
+      channel.unsubscribe();
+    };
+  }, [supabase, tournament.id, triggerRefresh]);
+
+  const { data: registrations, refetch } = useSupabaseQuery(
     (supabase) => getTournamentRegistrations(supabase, tournament.id),
-    [tournament.id]
+    [tournament.id, refreshKey]
   );
 
   const filteredRegistrations =
     registrations?.filter(
       (reg) =>
-        reg.alt?.display_name
-          ?.toLowerCase()
-          .includes(searchTerm.toLowerCase()) ||
+        reg.alt?.username?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         reg.team_name?.toLowerCase().includes(searchTerm.toLowerCase())
     ) || [];
 
@@ -66,6 +135,108 @@ export function TournamentRegistrations({
     });
   };
 
+  const toggleSelection = (registrationId: number) => {
+    const newSelected = new Set(selectedIds);
+    if (newSelected.has(registrationId)) {
+      newSelected.delete(registrationId);
+    } else {
+      newSelected.add(registrationId);
+    }
+    setSelectedIds(newSelected);
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedIds.size === filteredRegistrations.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(filteredRegistrations.map((r) => r.id)));
+    }
+  };
+
+  const handleForceCheckIn = async (registrationId: number) => {
+    setIsProcessing(true);
+    try {
+      const result = await forceCheckInPlayer(registrationId);
+      if (result.success) {
+        toast.success("Player checked in successfully");
+        refetch();
+      } else {
+        toast.error(result.error || "Failed to check in player");
+      }
+    } catch {
+      toast.error("An unexpected error occurred");
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleRemovePlayer = async (registrationId: number) => {
+    if (!confirm("Are you sure you want to remove this player?")) return;
+
+    setIsProcessing(true);
+    try {
+      const result = await removePlayerFromTournament(registrationId);
+      if (result.success) {
+        toast.success("Player removed successfully");
+        refetch();
+      } else {
+        toast.error(result.error || "Failed to remove player");
+      }
+    } catch {
+      toast.error("An unexpected error occurred");
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleBulkForceCheckIn = async () => {
+    if (selectedIds.size === 0) return;
+
+    setIsProcessing(true);
+    try {
+      const result = await bulkForceCheckIn(Array.from(selectedIds));
+      if (result.success) {
+        toast.success(
+          `${result.data.checkedIn} player(s) checked in${result.data.failed > 0 ? `, ${result.data.failed} failed` : ""}`
+        );
+        setSelectedIds(new Set());
+        refetch();
+      } else {
+        toast.error(result.error || "Failed to check in players");
+      }
+    } catch {
+      toast.error("An unexpected error occurred");
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleBulkRemove = async () => {
+    if (selectedIds.size === 0) return;
+    if (
+      !confirm(`Are you sure you want to remove ${selectedIds.size} player(s)?`)
+    )
+      return;
+
+    setIsProcessing(true);
+    try {
+      const result = await bulkRemovePlayers(Array.from(selectedIds));
+      if (result.success) {
+        toast.success(
+          `${result.data.removed} player(s) removed${result.data.failed > 0 ? `, ${result.data.failed} failed` : ""}`
+        );
+        setSelectedIds(new Set());
+        refetch();
+      } else {
+        toast.error(result.error || "Failed to remove players");
+      }
+    } catch {
+      toast.error("An unexpected error occurred");
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -77,6 +248,37 @@ export function TournamentRegistrations({
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <RealtimeStatusBadge status={realtimeStatus} />
+          {selectedIds.size > 0 && (
+            <>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleBulkForceCheckIn}
+                disabled={isProcessing}
+              >
+                {isProcessing ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <UserCheck className="mr-2 h-4 w-4" />
+                )}
+                Force Check-in ({selectedIds.size})
+              </Button>
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={handleBulkRemove}
+                disabled={isProcessing}
+              >
+                {isProcessing ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <UserX className="mr-2 h-4 w-4" />
+                )}
+                Remove ({selectedIds.size})
+              </Button>
+            </>
+          )}
           <div className="relative">
             <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
             <Input
@@ -168,6 +370,16 @@ export function TournamentRegistrations({
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead className="w-[50px]">
+                    <Checkbox
+                      checked={
+                        filteredRegistrations.length > 0 &&
+                        selectedIds.size === filteredRegistrations.length
+                      }
+                      onCheckedChange={toggleSelectAll}
+                      aria-label="Select all registrations"
+                    />
+                  </TableHead>
                   <TableHead>Player</TableHead>
                   <TableHead>Team Name</TableHead>
                   <TableHead>Status</TableHead>
@@ -179,18 +391,24 @@ export function TournamentRegistrations({
                 {filteredRegistrations.map((registration) => (
                   <TableRow key={registration.id}>
                     <TableCell>
+                      <Checkbox
+                        checked={selectedIds.has(registration.id)}
+                        onCheckedChange={() => toggleSelection(registration.id)}
+                      />
+                    </TableCell>
+                    <TableCell>
                       <div className="flex items-center gap-3">
                         <Avatar className="h-8 w-8">
                           <AvatarImage
                             src={registration.alt?.avatar_url ?? undefined}
                           />
                           <AvatarFallback>
-                            {registration.alt?.display_name?.charAt(0) || "?"}
+                            {registration.alt?.username?.charAt(0) || "?"}
                           </AvatarFallback>
                         </Avatar>
                         <div>
                           <div className="font-medium">
-                            {registration.alt?.display_name || "Unknown Player"}
+                            {registration.alt?.username || "Unknown Player"}
                           </div>
                           <div className="text-muted-foreground text-sm">
                             @{registration.alt?.username || "unknown"}
@@ -221,15 +439,25 @@ export function TournamentRegistrations({
                           <MoreHorizontal className="h-4 w-4" />
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => handleForceCheckIn(registration.id)}
+                            disabled={
+                              isProcessing ||
+                              registration.status === "checked_in"
+                            }
+                          >
                             <UserCheck className="mr-2 h-4 w-4" />
-                            Confirm Registration
+                            Force Check-in
                           </DropdownMenuItem>
                           <DropdownMenuItem>
                             <Mail className="mr-2 h-4 w-4" />
                             Send Message
                           </DropdownMenuItem>
-                          <DropdownMenuItem className="text-red-600">
+                          <DropdownMenuItem
+                            className="text-red-600"
+                            onClick={() => handleRemovePlayer(registration.id)}
+                            disabled={isProcessing}
+                          >
                             <UserX className="mr-2 h-4 w-4" />
                             Remove Player
                           </DropdownMenuItem>

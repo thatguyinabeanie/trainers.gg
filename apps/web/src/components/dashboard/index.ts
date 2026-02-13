@@ -4,3 +4,5 @@ export { UpcomingTournaments } from "./upcoming-tournaments";
 export { OrganizerAccess } from "./organizer-access";
 export { RecentActivity } from "./recent-activity";
 export { RecentAchievements } from "./recent-achievements";
+export { ActiveMatchCard } from "./active-match-card";
+export { WhatsNext } from "./whats-next";
