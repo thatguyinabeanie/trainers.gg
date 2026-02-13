@@ -3,7 +3,6 @@
  */
 
 import { POST } from "../route";
-import { NextResponse } from "next/server";
 
 // Mock dependencies
 const mockGetUser = jest.fn();
@@ -13,7 +12,6 @@ const mockMaybeSingle = jest.fn();
 const mockUpdate = jest.fn();
 const mockFrom = jest.fn();
 const mockDelete = jest.fn();
-const mockCookies = jest.fn();
 
 jest.mock("@/lib/supabase/server", () => ({
   createAtprotoClient: jest.fn(async () => ({
@@ -25,7 +23,7 @@ jest.mock("@/lib/supabase/server", () => ({
 }));
 
 jest.mock("next/headers", () => ({
-  cookies: mockCookies,
+  cookies: jest.fn(async () => ({ delete: mockDelete })),
 }));
 
 jest.mock("botid/server", () => ({
@@ -45,9 +43,6 @@ describe("POST /api/oauth/link", () => {
     // Setup default mock for update().eq()
     const mockUpdateEq = jest.fn().mockResolvedValue({ error: null });
     mockUpdate.mockReturnValue({ eq: mockUpdateEq });
-
-    // Setup default mock for cookies
-    mockCookies.mockResolvedValue({ delete: mockDelete });
 
     // Setup default authenticated user
     mockGetUser.mockResolvedValue({
