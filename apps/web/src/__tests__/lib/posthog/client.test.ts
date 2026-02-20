@@ -82,13 +82,20 @@ describe("initPostHog", () => {
     process.env = originalEnv;
   });
 
-  it("does nothing without env vars", () => {
+  it("warns in development and skips init without env vars", () => {
+    const warnSpy = jest.spyOn(console, "warn").mockImplementation();
     delete process.env.NEXT_PUBLIC_POSTHOG_KEY;
     delete process.env.NEXT_PUBLIC_POSTHOG_HOST;
+    process.env.NODE_ENV = "development";
 
     initPostHog();
 
     expect(posthog.init).not.toHaveBeenCalled();
+    expect(warnSpy).toHaveBeenCalledWith(
+      expect.stringContaining("Missing NEXT_PUBLIC_POSTHOG_KEY")
+    );
+
+    warnSpy.mockRestore();
   });
 
   it("initializes posthog with correct config", () => {

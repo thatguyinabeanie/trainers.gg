@@ -7,7 +7,14 @@ export function initPostHog() {
   const key = process.env.NEXT_PUBLIC_POSTHOG_KEY;
   const host = process.env.NEXT_PUBLIC_POSTHOG_HOST;
 
-  if (!key || !host) return;
+  if (!key || !host) {
+    if (process.env.NODE_ENV === "development") {
+      console.warn(
+        "[PostHog] Missing NEXT_PUBLIC_POSTHOG_KEY or NEXT_PUBLIC_POSTHOG_HOST — analytics disabled."
+      );
+    }
+    return;
+  }
 
   try {
     posthog.init(key, {

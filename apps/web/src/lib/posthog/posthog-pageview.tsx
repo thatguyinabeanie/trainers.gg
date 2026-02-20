@@ -18,12 +18,16 @@ export function PostHogPageview() {
 
   useEffect(() => {
     if (pathname && posthog) {
-      let url = window.origin + pathname;
-      const search = searchParams.toString();
-      if (search) {
-        url = url + "?" + search;
+      try {
+        let url = window.origin + pathname;
+        const search = searchParams.toString();
+        if (search) {
+          url = url + "?" + search;
+        }
+        posthog.capture("$pageview", { $current_url: url });
+      } catch (e) {
+        console.error("PostHog pageview capture failed:", e);
       }
-      posthog.capture("$pageview", { $current_url: url });
     }
   }, [pathname, searchParams, posthog]);
 
