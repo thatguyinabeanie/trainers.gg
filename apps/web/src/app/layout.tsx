@@ -9,6 +9,7 @@ import type { ReactNode } from "react";
 import "@/styles/globals.css";
 import { cn } from "@/lib/utils";
 import { Analytics } from "@vercel/analytics/next";
+import { isImpersonating as checkImpersonating } from "@/lib/impersonation/server";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 
@@ -47,11 +48,12 @@ export const viewport: Viewport = {
  */
 export const revalidate = 60;
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: ReactNode;
 }>) {
+  const impersonating = await checkImpersonating();
   return (
     <html lang="en" className={inter.variable} suppressHydrationWarning>
       <body
@@ -60,7 +62,7 @@ export default function RootLayout({
           "bg-background text-foreground flex min-h-screen flex-col antialiased"
         )}
       >
-        <Providers>
+        <Providers isImpersonating={impersonating}>
           <AnnouncementBanner />
           <TopNav />
           <main className="flex w-full flex-1 flex-col">{children}</main>
