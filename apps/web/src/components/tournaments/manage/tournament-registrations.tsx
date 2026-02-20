@@ -55,16 +55,23 @@ import {
   type RealtimeStatus,
 } from "./realtime-status-badge";
 
-// Map invitation statuses to valid StatusBadge Status values
-const invitationStatusToStatus = (status: string | null): Status => {
-  const map: Record<string, Status> = {
-    pending: "pending",
-    accepted: "registered",
-    declined: "declined",
-    expired: "cancelled",
-  };
-  return map[status ?? "pending"] ?? "pending";
+// Map invitation statuses to StatusBadge Status values + human-readable labels
+const defaultInvitationBadge = {
+  status: "pending" as Status,
+  label: "Pending",
 };
+const invitationStatusConfig: Record<
+  string,
+  { status: Status; label: string }
+> = {
+  pending: defaultInvitationBadge,
+  accepted: { status: "registered", label: "Accepted" },
+  declined: { status: "declined", label: "Declined" },
+  expired: { status: "cancelled", label: "Expired" },
+};
+
+const getInvitationBadge = (status: string | null) =>
+  invitationStatusConfig[status ?? "pending"] ?? defaultInvitationBadge;
 
 interface TournamentRegistrationsProps {
   tournament: {
@@ -668,7 +675,8 @@ export function TournamentRegistrations({
                         </TableCell>
                         <TableCell>
                           <StatusBadge
-                            status={invitationStatusToStatus(inv.status)}
+                            status={getInvitationBadge(inv.status).status}
+                            label={getInvitationBadge(inv.status).label}
                           />
                         </TableCell>
                         <TableCell>{formatDate(inv.expires_at)}</TableCell>
