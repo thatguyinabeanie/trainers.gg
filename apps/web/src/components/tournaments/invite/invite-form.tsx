@@ -109,14 +109,17 @@ export function InviteForm({
         message: data.message?.trim() || undefined,
       });
 
-      if (result.invitationsSent > 0) {
-        setSuccessCount(result.invitationsSent);
+      const invitationsSent = result.invitationsSent ?? 0;
+      const alreadyInvited = result.alreadyInvited ?? 0;
+
+      if (invitationsSent > 0) {
+        setSuccessCount(invitationsSent);
         toast.success(
-          `${result.invitationsSent} invitation${result.invitationsSent > 1 ? "s" : ""} sent`,
+          `${invitationsSent} invitation${invitationsSent > 1 ? "s" : ""} sent`,
           {
             description:
-              result.alreadyInvited > 0
-                ? `${result.alreadyInvited} player${result.alreadyInvited > 1 ? "s were" : " was"} already invited`
+              alreadyInvited > 0
+                ? `${alreadyInvited} player${alreadyInvited > 1 ? "s were" : " was"} already invited`
                 : undefined,
           }
         );
@@ -125,7 +128,7 @@ export function InviteForm({
         setSelectedPlayers([]);
         form.reset({ message: "", sendNotification: true });
         onSuccess?.();
-      } else if (result.alreadyInvited > 0) {
+      } else if (alreadyInvited > 0) {
         toast.info("All players already invited", {
           description:
             "The selected players have already been invited to this tournament",
