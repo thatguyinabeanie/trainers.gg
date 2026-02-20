@@ -162,6 +162,24 @@ Extract abstractions after 2–3 repetitions. See existing patterns before creat
 - Teal primary (OKLCH tokens from `@trainers/theme`): single accent across all interactive elements
 - `StatusBadge` for semantic status colors (emerald=active, blue=upcoming, amber=draft, gray=completed, red=cancelled)
 
+## Local Dev Test Accounts
+
+Seed data in `packages/supabase/supabase/seeds/03_users.sql`. All accounts use the same password.
+
+**Password**: `Password123!`
+
+| Email | Username | Role / Notes |
+| --- | --- | --- |
+| `admin@trainers.local` | admin_trainer | Site admin, VGC League org owner |
+| `player@trainers.local` | ash_ketchum | Player, Pallet Town org owner |
+| `champion@trainers.local` | cynthia | Player |
+| `gymleader@trainers.local` | brock | Player |
+| `elite@trainers.local` | karen | Player |
+| `casual@trainers.local` | red | Player |
+| `lance@trainers.local` | lance | Player |
+
+Additional generated users follow the pattern `<username>@trainers.local` (see seed file for full list).
+
 ## Project Management
 
 Linear for issue tracking (MCP server available). **Team**: `trainers-gg`. **Default Project**: `Private Beta MVP`.
