@@ -23,16 +23,54 @@ const outputDir = join(__dirname, "../../../design/tokens");
 const outputFile = join(outputDir, "tokens.json");
 
 type DtcgColorToken = { $value: string; $type: "color" };
-type DtcgGroup = Record<string, DtcgColorToken>;
 
 function toToken(color: OklchColor): DtcgColorToken {
   return { $value: oklchToHex(color), $type: "color" };
 }
 
-function paletteToGroup(palette: Record<string, OklchColor>): DtcgGroup {
+function paletteToGroup(
+  palette: Record<string, OklchColor>
+): Record<string, DtcgColorToken> {
   return Object.fromEntries(
     Object.entries(palette).map(([key, value]) => [key, toToken(value)])
   );
+}
+
+// Alpha overrides for dark mode tokens (match generate.ts special cases)
+const DARK_ALPHA_OVERRIDES: Record<string, number> = {
+  border: 10,
+  sidebarBorder: 10,
+  input: 15,
+};
+
+function semanticGroupToTokens(
+  tokens: Record<string, OklchColor>,
+  alphaOverrides?: Record<string, number>
+): Record<string, DtcgColorToken> {
+  return Object.fromEntries(
+    Object.entries(tokens).map(([key, color]) => {
+      const alpha = alphaOverrides?.[key];
+      if (alpha !== undefined) {
+        // oklchToHex drops alpha; use rgba format for alpha tokens
+        const [r, g, b] = hexToRgb(oklchToHex(color));
+        return [
+          key,
+          {
+            $value: `rgba(${r}, ${g}, ${b}, ${alpha / 100})`,
+            $type: "color" as const,
+          },
+        ];
+      }
+      return [key, toToken(color)];
+    })
+  );
+}
+
+function hexToRgb(hex: string): [number, number, number] {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return [r, g, b];
 }
 
 const output = {
@@ -43,7 +81,7 @@ const output = {
   },
   semantic: {
     light: paletteToGroup(semanticTokens.light),
-    dark: paletteToGroup(semanticTokens.dark),
+    dark: semanticGroupToTokens(semanticTokens.dark, DARK_ALPHA_OVERRIDES),
   },
 };
 
