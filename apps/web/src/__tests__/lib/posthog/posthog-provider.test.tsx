@@ -58,6 +58,7 @@ jest.mock("posthog-js/react", () => ({
 jest.mock("@/lib/posthog/client", () => ({
   initPostHog: jest.fn(),
   posthog: {
+    __loaded: true,
     opt_in_capturing: jest.fn(),
     opt_out_capturing: jest.fn(),
   },
@@ -132,7 +133,7 @@ describe("PostHogProvider", () => {
     expect(mockRegister).toHaveBeenCalledWith({ $impersonated: true });
   });
 
-  it("restarts session recording when impersonation ends", () => {
+  it("does not force-start session recording on initial mount", () => {
     render(
       <PostHogProvider isImpersonating={false}>
         <span>test</span>
@@ -140,7 +141,8 @@ describe("PostHogProvider", () => {
     );
 
     expect(mockUnregister).toHaveBeenCalledWith("$impersonated");
-    expect(mockStartSessionRecording).toHaveBeenCalled();
+    // Should NOT call startSessionRecording on mount — consent controls this
+    expect(mockStartSessionRecording).not.toHaveBeenCalled();
   });
 
   it("handles consent-change event", () => {

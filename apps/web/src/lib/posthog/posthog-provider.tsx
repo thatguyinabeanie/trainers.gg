@@ -1,7 +1,7 @@
 "use client";
 
 import { PostHogProvider as PHProvider, usePostHog } from "posthog-js/react";
-import { Suspense, useEffect, type ReactNode } from "react";
+import { Suspense, useEffect, useRef, type ReactNode } from "react";
 import { useAuthContext } from "@/components/auth/auth-provider";
 import { getConsentStatus } from "@/components/cookie-consent";
 import { initPostHog, posthog } from "@/lib/posthog/client";
@@ -10,6 +10,7 @@ import { PostHogPageview } from "@/lib/posthog/posthog-pageview";
 function PostHogAuthSync({ isImpersonating }: { isImpersonating: boolean }) {
   const { user, isAuthenticated } = useAuthContext();
   const ph = usePostHog();
+  const wasImpersonating = useRef(false);
 
   // Identify/reset user based on auth state
   useEffect(() => {
@@ -41,9 +42,15 @@ function PostHogAuthSync({ isImpersonating }: { isImpersonating: boolean }) {
       if (isImpersonating) {
         ph.stopSessionRecording();
         ph.register({ $impersonated: true });
+        wasImpersonating.current = true;
       } else {
         ph.unregister("$impersonated");
-        ph.startSessionRecording();
+        // Only restart recording on true→false transition,
+        // not on initial mount (consent controls recording otherwise)
+        if (wasImpersonating.current) {
+          ph.startSessionRecording();
+          wasImpersonating.current = false;
+        }
       }
     } catch (e) {
       console.error("PostHog impersonation sync failed:", e);
@@ -65,14 +72,17 @@ export function PostHogProvider({
   useEffect(() => {
     initPostHog();
 
-    // Apply initial consent state
-    const consent = getConsentStatus();
-    if (consent === "granted") {
-      posthog.opt_in_capturing();
+    // Apply initial consent state (only if init succeeded)
+    if (posthog.__loaded) {
+      const consent = getConsentStatus();
+      if (consent === "granted") {
+        posthog.opt_in_capturing();
+      }
     }
 
     // Listen for consent changes from the cookie banner
     function handleConsentChange(e: Event) {
+      if (!posthog.__loaded) return;
       const status = (e as CustomEvent<string>).detail;
       if (status === "granted") {
         posthog.opt_in_capturing();
