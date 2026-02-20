@@ -29,6 +29,14 @@ Import from `@trainers/supabase/mobile`. Session stored in SecureStore (not loca
 
 Tamagui components — not shadcn/ui (web only). Use theme tokens from `@trainers/theme` for colors. Platform-specific components only — no shared UI package between web and mobile.
 
+## Navigation
+
+Expo Router with file-based routing. Route groups: `(tabs)` for the main tab bar, `(auth)` for unauthenticated flows. See `src/app/_layout.tsx` for the root layout and auth redirect logic.
+
+## Environment Variables
+
+Mobile env vars must use the `EXPO_PUBLIC_` prefix to be accessible in client code. All env vars still live in root `.env.local`.
+
 ## AT Protocol
 
 Auth handled differently from web: mobile uses SecureStore for session persistence. Hooks in `src/lib/atproto/` wrap `@trainers/atproto` package.

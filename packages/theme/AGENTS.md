@@ -15,3 +15,7 @@ Web (Tailwind): tokens generate CSS custom properties consumed by the Tailwind c
 Mobile (Tamagui): tokens imported directly into Tamagui theme config.
 
 Always use theme tokens for colors — never hardcode hex values.
+
+## Penpot Export
+
+`pnpm --filter @trainers/theme export:penpot` regenerates `design/tokens/tokens.json` for import into the local Penpot instance. See `scripts/export-penpot.ts` for the export logic and `infra/penpot/AGENTS.md` for the Penpot setup.

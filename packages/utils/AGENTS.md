@@ -5,15 +5,15 @@ Pure TypeScript — no framework dependencies.
 
 ## Key Modules
 
-| Module              | Purpose                                                                      |
-| ------------------- | ---------------------------------------------------------------------------- |
-| `labels.ts`         | `getLabel()` — convert snake_case enum values to human-readable strings      |
-| `error-handling.ts` | `getErrorMessage()` — extract message from Error, Supabase error, or unknown |
-| `permissions.ts`    | Permission constants and role checks                                         |
-| `tiers.ts`          | User/org tier definitions and feature flags                                  |
-| `countries.ts`      | Country codes and display names                                              |
-| `format.ts`         | Date, number, and string formatters                                          |
-| `notifications.ts`  | Notification type helpers                                                    |
+| Module              | Purpose                                                                                              |
+| ------------------- | ---------------------------------------------------------------------------------------------------- |
+| `labels.ts`         | `getLabel()` — convert snake_case enum values to human-readable strings                              |
+| `error-handling.ts` | `getErrorMessage()` — extract message from Error, Supabase error, or unknown                         |
+| `permissions.ts`    | `PERMISSIONS` constants and `PermissionKey` type — security-critical, see file directly for all keys |
+| `tiers.ts`          | User/org tier definitions and feature flags                                                          |
+| `countries.ts`      | Country codes and display names                                                                      |
+| `format.ts`         | Date, number, and string formatters                                                                  |
+| `notifications.ts`  | Notification type helpers                                                                            |
 
 ## Non-obvious Usage
 

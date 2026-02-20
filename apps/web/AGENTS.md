@@ -59,6 +59,18 @@ export async function myAction(data: FormData) {
 | `src/hooks/use-auth.ts`                 | Client-side auth state                                                 |
 | `src/components/auth/auth-provider.tsx` | Auth context provider                                                  |
 
+## Data Fetching
+
+**Server Components** fetch data directly via the Supabase server client (`src/lib/supabase/server.ts`). No TanStack Query needed — data flows through RSC props.
+
+**Client Components** use TanStack Query for all server state. See root CLAUDE.md for general patterns (optimistic updates, invalidation, no `useState` mirroring). Query client setup is in `src/components/providers.tsx`.
+
+Query key factories are the target convention for new client-side features — define keys via factory functions for consistency. See `apps/mobile/src/lib/api/query-factory.ts` as the reference pattern.
+
+## Status Display
+
+Use `src/components/ui/status-badge.tsx` for semantic status colors (emerald=active, blue=upcoming, amber=draft, gray=completed, red=cancelled). Never render raw enum/DB values — always map through `getLabel()` from `@trainers/utils`.
+
 ## Feature Flags
 
 Feature gating via `src/lib/feature-flags/`. Check flags before building new gated features.

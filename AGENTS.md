@@ -19,6 +19,7 @@ Each workspace has its own `AGENTS.md` with domain-specific guidance. Read the r
 | `packages/theme` | [packages/theme/AGENTS.md](packages/theme/AGENTS.md) | OKLCH design tokens for web (Tailwind) and mobile (Tamagui) |
 | `infra/pds` | [infra/pds/AGENTS.md](infra/pds/AGENTS.md) | Self-hosted Bluesky PDS on Fly.io |
 | `infra/ngrok` | [infra/ngrok/AGENTS.md](infra/ngrok/AGENTS.md) | Local PDS tunnel for development |
+| `infra/penpot` | [infra/penpot/AGENTS.md](infra/penpot/AGENTS.md) | Local Penpot design environment with MCP support |
 
 ## Monorepo Structure
 
@@ -40,6 +41,7 @@ tooling/        # eslint, prettier, tailwind, typescript configs
 infra/
   pds/          # Bluesky PDS on Fly.io
   ngrok/        # Local dev tunnel
+  penpot/       # Local Penpot design environment
 ```
 
 ## Tech Stack
@@ -77,7 +79,9 @@ See `jest.config.ts` (root), `codecov.yml`, and `.github/workflows/ci.yml` for c
 
 **Use `it.each`** for multiple input/output pairs — parameterize instead of repeating `it()` blocks.
 
-**Use Rosie factories** for all test data. Factories in `src/__tests__/factories/` within the same package — never in a shared utilities package.
+**Use Rosie factories** for all test data. Factories in `src/__tests__/factories/` within the same package — never in a shared utilities package. Use existing factories before creating new ones. If no factory exists for the data you need, create one.
+
+**Prefer existing helpers over inline logic.** Check `@trainers/utils` and the package's own helpers before writing new code. Extract repeated test setup into shared helpers. Keep tests DRY and simple (KISS) — if a utility function exists, use it.
 
 Pre-commit: Husky runs lint-staged (Prettier auto-fix). Fix errors, re-stage, retry — never skip hooks.
 
@@ -131,6 +135,7 @@ TanStack Query v5 is the client state management layer for both web and mobile. 
 - **Mutations**: use `useMutation` with `onMutate` for optimistic updates where the UI should respond immediately (e.g., registration, check-in, roster changes)
 - **Invalidation**: invalidate related query keys in `onSettled` so the cache resyncs with the server regardless of mutation outcome
 - **No client-side state duplication**: if data comes from the server, it lives in the query cache — don't mirror it into `useState`
+- **Query key factories**: the target convention for new features — define query keys via factory functions for consistency and targeted invalidation. Mobile already follows this pattern (see `apps/mobile/src/lib/api/query-factory.ts`)
 
 ### Code Reuse
 

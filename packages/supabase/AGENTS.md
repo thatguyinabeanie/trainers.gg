@@ -27,6 +27,17 @@ AT Protocol session types are in `src/types-atproto.ts` (manually maintained).
 - Mutations return `{ success: boolean, error?: string }`
 - Use `single()` only when a missing record is a bug (throws 406 otherwise)
 
+## Directory Structure
+
+Queries and mutations are organized by domain:
+
+- `src/queries/` — read operations (tournaments, organizations, users, permissions, etc.)
+- `src/mutations/` — write operations (match-games, organizations, tournaments/, users, etc.)
+
+Check these directories for existing functions before writing new ones.
+
+For migration guidance, see root CLAUDE.md > Critical Rules > Database Migrations.
+
 ## Edge Functions
 
 All functions in `supabase/functions/<name>/index.ts`. Deno runtime — use Deno imports, not Node.
