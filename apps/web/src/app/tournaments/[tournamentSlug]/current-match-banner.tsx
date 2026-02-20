@@ -64,19 +64,18 @@ export function CurrentMatchBanner({
           alt1_id,
           alt2_id,
           table_number,
-          player1:alts!tournament_matches_alt1_id_fkey(id, username, display_name),
-          player2:alts!tournament_matches_alt2_id_fkey(id, username, display_name),
+          player1:alts!tournament_matches_alt1_id_fkey(id, username),
+          player2:alts!tournament_matches_alt2_id_fkey(id, username),
           round:tournament_rounds!inner(
             round_number,
-            phase:tournament_phases(name)
+            phase:tournament_phases!inner(name, tournament_id)
           )
         `
         )
-        .eq("tournament_id", tournamentId)
+        .eq("round.phase.tournament_id", tournamentId)
         .in("status", ["pending", "active"])
         .or(altIds.map((id) => `alt1_id.eq.${id},alt2_id.eq.${id}`).join(","))
         .order("status", { ascending: true })
-        .order("updated_at", { ascending: false })
         .limit(1)
         .maybeSingle();
 
@@ -99,7 +98,7 @@ export function CurrentMatchBanner({
         matchData.alt1_id != null && altIds.includes(matchData.alt1_id);
       const opponentRaw = isPlayer1 ? matchData.player2 : matchData.player1;
       const opponentArr = opponentRaw as
-        | { id: number; username: string; display_name: string | null }[]
+        | { id: number; username: string }[]
         | null;
       const opponentProfile = opponentArr?.[0] ?? null;
 
@@ -111,8 +110,7 @@ export function CurrentMatchBanner({
         table: matchData.table_number,
         opponent: opponentProfile
           ? {
-              displayName:
-                opponentProfile.display_name || opponentProfile.username,
+              displayName: opponentProfile.username,
               username: opponentProfile.username,
             }
           : null,

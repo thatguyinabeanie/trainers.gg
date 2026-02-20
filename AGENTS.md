@@ -37,6 +37,8 @@ tooling/
 | Edge Functions         | Supabase Edge Functions | Deno runtime                                                    |
 | Social/Identity        | AT Protocol (Bluesky)   | Decentralized identity and federation                           |
 | PDS                    | Fly.io                  | Self-hosted at pds.trainers.gg                                  |
+| React Compiler         | React Compiler          | Auto-memoization — do NOT manually use useMemo/useCallback/memo |
+| Client State (Web)     | TanStack Query v5       | Cache, mutations, optimistic updates, query invalidation        |
 | Web                    | Next.js 16              | React 19, App Router, Server Components                         |
 | Mobile                 | Expo 54                 | React Native with Tamagui                                       |
 | UI Components (Web)    | shadcn/ui + Base UI     | Base UI primitives (NOT Radix), no `asChild`                    |
@@ -212,6 +214,59 @@ Tests run in GitHub Actions (`.github/workflows/ci.yml`):
 - Regression tests for bug fixes (must fail without the fix)
 - Run `pnpm test` locally before committing to catch failures early
 - CI enforces 60% patch coverage — new code below this threshold blocks the PR
+
+### Test Quality — What NOT to Test
+
+**Do not write tests that only verify the behavior of the underlying language, framework, or library.** Tests should validate _our_ logic, not that React renders a string or that Array.filter works.
+
+**❌ Bad — testing framework/language behavior:**
+
+```tsx
+// Testing that React renders text (React's job, not ours)
+it("should render a div", () => {
+  render(<MyComponent />);
+  expect(screen.getByText("Hello")).toBeInTheDocument();
+});
+
+// Testing that Array.filter works
+it("should filter items", () => {
+  const result = [1, 2, 3].filter((x) => x > 1);
+  expect(result).toEqual([2, 3]);
+});
+
+// Testing that a prop is passed through unchanged
+it("should pass className to the wrapper", () => {
+  render(<Card className="foo" />);
+  expect(screen.getByTestId("card")).toHaveClass("foo");
+});
+```
+
+**✅ Good — testing our logic and behavior:**
+
+```tsx
+// Testing business logic: which matches need attention
+it("should classify staff_requested matches as needs-attention", () => {
+  const result = classifyMatch(matchWithStaffRequest);
+  expect(result).toBe("attention");
+});
+
+// Testing conditional rendering based on our domain rules
+it("should show BYE when player2 is null on a bye match", () => {
+  render(<MatchRow match={byeMatch} />);
+  expect(screen.getByText("BYE")).toBeInTheDocument();
+});
+
+// Testing user interaction flows
+it("should navigate to match page when Respond is clicked", async () => {
+  await user.click(respondButton);
+  expect(mockPush).toHaveBeenCalledWith("/tournaments/test/matches/42");
+});
+
+// Testing error handling specific to our app
+it("should show fallback when Supabase query fails", () => { ... });
+```
+
+**Rule of thumb:** If the test would still pass with the component's logic completely emptied out and replaced with hardcoded values, the test is not valuable. Test decisions, transformations, conditional behavior, and user interaction flows — not that JSX renders.
 
 ### Database Schema Changes
 
@@ -461,14 +516,39 @@ When adding new library code, consider whether it belongs in a shared package or
 - Use `"use client"` only at leaf nodes for interactivity
 - Use CSS-first animations via Tailwind utilities (not Motion/Framer Motion, which force client components)
 
+### React Compiler (Auto-Memoization)
+
+This project uses **React Compiler**, which automatically handles memoization at build time. Do NOT manually write:
+
+- `useMemo()` — the compiler detects and memoizes expensive computations
+- `useCallback()` — the compiler stabilizes callback references automatically
+- `React.memo()` — the compiler skips re-renders of unchanged components
+
+Writing manual memoization is redundant, adds noise, and can conflict with the compiler's optimizations. If you encounter existing `useMemo`/`useCallback`/`React.memo` in the codebase, leave them alone (they're harmless but unnecessary). Do not add new ones.
+
+### Client-Side State Management (TanStack Query)
+
+Use **TanStack Query v5** for all client-side server state. This includes:
+
+- **Data fetching in client components**: `useQuery` with query keys for cache management
+- **Mutations**: `useMutation` with `onSuccess` → `queryClient.invalidateQueries()` for cache invalidation
+- **Optimistic updates**: `useMutation` with `onMutate` for instant UI feedback, `onError` for rollback
+- **Polling / realtime fallback**: `refetchInterval` for periodic refresh when Supabase Realtime is not appropriate
+- **Dependent queries**: `enabled` option to conditionally fetch based on other data
+
+Do NOT use `useState` + `useEffect` + `fetch` for server data in client components — that pattern lacks caching, deduplication, and error/loading states that TanStack Query provides for free.
+
+For Supabase Realtime data (live match updates, round changes), use the realtime subscription pattern with a `refreshKey` state that triggers TanStack Query / `useSupabaseQuery` refetch via the dependency array.
+
 ### Data Fetching
 
-| Context                        | Tool                             |
-| ------------------------------ | -------------------------------- |
-| Server Components              | Direct Supabase calls            |
-| Form submissions               | Server Actions                   |
-| Client-side polling/pagination | TanStack Query                   |
-| Optimistic updates             | Client component + Server Action |
+| Context                        | Tool                                                         |
+| ------------------------------ | ------------------------------------------------------------ |
+| Server Components              | Direct Supabase calls                                        |
+| Form submissions               | Server Actions                                               |
+| Client-side data fetching      | TanStack Query (`useQuery` / `useMutation`)                  |
+| Optimistic updates             | TanStack Query `useMutation` with `onMutate` / `onError`    |
+| Realtime updates               | Supabase Realtime channels + refreshKey → query invalidation |
 
 ### Supabase Queries
 
