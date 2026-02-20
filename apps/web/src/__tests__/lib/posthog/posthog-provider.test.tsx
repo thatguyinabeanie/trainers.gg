@@ -64,8 +64,10 @@ jest.mock("@/lib/posthog/client", () => ({
   },
 }));
 
+let mockConsentStatus = "undecided";
+
 jest.mock("@/components/cookie-consent", () => ({
-  getConsentStatus: () => "undecided",
+  getConsentStatus: () => mockConsentStatus,
 }));
 
 jest.mock("next/navigation", () => ({
@@ -78,6 +80,7 @@ describe("PostHogProvider", () => {
     jest.clearAllMocks();
     mockUser = null;
     mockIsAuthenticated = false;
+    mockConsentStatus = "undecided";
   });
 
   it("renders children", () => {
@@ -143,6 +146,61 @@ describe("PostHogProvider", () => {
     expect(mockUnregister).toHaveBeenCalledWith("$impersonated");
     // Should NOT call startSessionRecording on mount — consent controls this
     expect(mockStartSessionRecording).not.toHaveBeenCalled();
+  });
+
+  it("opts in on mount when returning user already granted consent", () => {
+    mockConsentStatus = "granted";
+    const { posthog } = jest.requireMock("@/lib/posthog/client") as {
+      posthog: { opt_in_capturing: jest.Mock; opt_out_capturing: jest.Mock };
+    };
+
+    render(
+      <PostHogProvider>
+        <span>test</span>
+      </PostHogProvider>
+    );
+
+    expect(posthog.opt_in_capturing).toHaveBeenCalled();
+  });
+
+  it("does not opt in on mount when consent is undecided", () => {
+    const { posthog } = jest.requireMock("@/lib/posthog/client") as {
+      posthog: { opt_in_capturing: jest.Mock; opt_out_capturing: jest.Mock };
+    };
+
+    render(
+      <PostHogProvider>
+        <span>test</span>
+      </PostHogProvider>
+    );
+
+    expect(posthog.opt_in_capturing).not.toHaveBeenCalled();
+  });
+
+  it("catches and logs identify errors", () => {
+    const consoleSpy = jest.spyOn(console, "error").mockImplementation();
+    mockIdentify.mockImplementationOnce(() => {
+      throw new Error("identify failure");
+    });
+    mockUser = {
+      id: "user-123",
+      email: "ash@trainers.gg",
+      user_metadata: { username: "ash_ketchum", full_name: "Ash Ketchum" },
+    };
+    mockIsAuthenticated = true;
+
+    render(
+      <PostHogProvider>
+        <span>test</span>
+      </PostHogProvider>
+    );
+
+    expect(consoleSpy).toHaveBeenCalledWith(
+      "PostHog auth sync failed:",
+      expect.any(Error)
+    );
+
+    consoleSpy.mockRestore();
   });
 
   it("handles consent-change event", () => {

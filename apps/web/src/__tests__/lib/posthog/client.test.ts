@@ -98,6 +98,23 @@ describe("initPostHog", () => {
     warnSpy.mockRestore();
   });
 
+  it.each([
+    ["key only", "phk_test", undefined],
+    ["host only", undefined, "https://us.i.posthog.com"],
+  ] as const)("does nothing with %s", (_label, key, host) => {
+    const warnSpy = jest.spyOn(console, "warn").mockImplementation();
+    if (key) process.env.NEXT_PUBLIC_POSTHOG_KEY = key;
+    else delete process.env.NEXT_PUBLIC_POSTHOG_KEY;
+    if (host) process.env.NEXT_PUBLIC_POSTHOG_HOST = host;
+    else delete process.env.NEXT_PUBLIC_POSTHOG_HOST;
+    process.env.NODE_ENV = "development";
+
+    initPostHog();
+
+    expect(posthog.init).not.toHaveBeenCalled();
+    warnSpy.mockRestore();
+  });
+
   it("initializes posthog with correct config", () => {
     process.env.NEXT_PUBLIC_POSTHOG_KEY = "phk_test";
     process.env.NEXT_PUBLIC_POSTHOG_HOST = "https://us.i.posthog.com";

@@ -10,8 +10,10 @@ jest.mock("next/navigation", () => ({
   useSearchParams: () => mockSearchParams,
 }));
 
+let mockPostHog: { capture: jest.Mock } | null = { capture: mockCapture };
+
 jest.mock("posthog-js/react", () => ({
-  usePostHog: () => ({ capture: mockCapture }),
+  usePostHog: () => mockPostHog,
 }));
 
 describe("PostHogPageview", () => {
@@ -19,6 +21,7 @@ describe("PostHogPageview", () => {
     jest.clearAllMocks();
     mockPathname = "/tournaments";
     mockSearchParams = new URLSearchParams();
+    mockPostHog = { capture: mockCapture };
   });
 
   it("captures pageview with correct URL on mount", () => {
@@ -41,6 +44,14 @@ describe("PostHogPageview", () => {
 
   it("does not capture when pathname is empty", () => {
     mockPathname = "";
+
+    render(<PostHogPageview />);
+
+    expect(mockCapture).not.toHaveBeenCalled();
+  });
+
+  it("does not capture when posthog is null", () => {
+    mockPostHog = null;
 
     render(<PostHogPageview />);
 
