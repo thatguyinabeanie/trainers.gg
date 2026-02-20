@@ -12,7 +12,7 @@ services:
     image: penpotapp/frontend:latest
     restart: "no"
     ports:
-      - "9001:80"
+      - "9001:8080"
     depends_on:
       - penpot-backend
       - penpot-exporter
@@ -53,8 +53,10 @@ services:
   penpot-exporter:
     image: penpotapp/exporter:latest
     restart: "no"
+    depends_on:
+      - penpot-redis
     environment:
-      PENPOT_PUBLIC_URI: "http://penpot-frontend"
+      PENPOT_PUBLIC_URI: "http://penpot-frontend:8080"
       PENPOT_REDIS_URI: "redis://penpot-redis/0"
     networks:
       - penpot
