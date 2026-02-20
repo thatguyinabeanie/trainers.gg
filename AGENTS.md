@@ -105,7 +105,7 @@ Pre-commit: Husky runs lint-staged (Prettier auto-fix). Fix errors, re-stage, re
 
 ### React Compiler
 
-**Do NOT write `useMemo`, `useCallback`, or `React.memo`** — React Compiler handles memoization across all packages automatically. Manual memoization conflicts with compiler optimizations.
+**Do NOT write `useMemo`, `useCallback`, or `React.memo`** — React Compiler handles memoization across all packages automatically (web, mobile, and shared packages). Manual memoization conflicts with compiler optimizations.
 
 ### UI Components (Web)
 
@@ -122,6 +122,15 @@ Pre-commit: Husky runs lint-staged (Prettier auto-fix). Fix errors, re-stage, re
 **App directory** (`apps/*/src/lib/`): Framework-specific adapters, React hooks, Next.js/Expo infrastructure.
 
 If a module has zero framework imports and could be useful across apps, it belongs in a shared package.
+
+### Client State Management (TanStack Query)
+
+TanStack Query v5 is the client state management layer for both web and mobile. All server state flows through query keys, cached queries, and mutations — not local React state or context.
+
+- **Queries**: use query key factories to keep cache keys consistent and enable targeted invalidation
+- **Mutations**: use `useMutation` with `onMutate` for optimistic updates where the UI should respond immediately (e.g., registration, check-in, roster changes)
+- **Invalidation**: invalidate related query keys in `onSettled` so the cache resyncs with the server regardless of mutation outcome
+- **No client-side state duplication**: if data comes from the server, it lives in the query cache — don't mirror it into `useState`
 
 ### Code Reuse
 
