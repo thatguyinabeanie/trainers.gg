@@ -61,7 +61,8 @@
     "test:unit": "turbo run test",
     "test:watch": "turbo run test:watch",
     "// cleanup": "",
-    "clean": "turbo run clean && rm -rf node_modules .turbo"
+    "clean": "turbo run clean && rm -rf node_modules .turbo",
+    "turbo:update": "pnpm dlx @turbo/codemod@latest update"
   },
   "devDependencies": {
     "husky": "^9.1.7",
