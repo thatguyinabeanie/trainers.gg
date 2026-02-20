@@ -205,16 +205,6 @@ Tests run in GitHub Actions (`.github/workflows/ci.yml`):
 
 ## Critical Rules
 
-### Testing Requirements
-
-**Every new feature, bug fix, or behavioral change must include tests.** Do not merge code without adequate test coverage.
-
-- Unit tests for all business logic, utilities, and validators
-- E2E tests for new user-facing pages or workflows
-- Regression tests for bug fixes (must fail without the fix)
-- Run `pnpm test` locally before committing to catch failures early
-- CI enforces 60% patch coverage — new code below this threshold blocks the PR
-
 ### Test Quality — What NOT to Test
 
 **Do not write tests that only verify the behavior of the underlying language, framework, or library.** Tests should validate _our_ logic, not that React renders a string or that Array.filter works.
@@ -538,6 +528,17 @@ Use **TanStack Query v5** for all client-side server state. This includes:
 
 Do NOT use `useState` + `useEffect` + `fetch` for server data in client components — that pattern lacks caching, deduplication, and error/loading states that TanStack Query provides for free.
 
+**`useSupabaseQuery`** (`packages/supabase/src/hooks/use-supabase-query.ts`, re-exported via `apps/web/src/lib/supabase/hooks.ts`): A lightweight hook for simple Supabase queries that don't need TanStack Query's caching/deduplication. Returns `{ data, error, isLoading, refetch }`. The web wrapper auto-injects the Supabase client:
+
+```typescript
+const { data, isLoading } = useSupabaseQuery(
+  (supabase) => getPlatformOverview(supabase),
+  [dependency] // refetches when deps change
+);
+```
+
+Prefer TanStack Query for shared/cached data. Use `useSupabaseQuery` for isolated one-off fetches (admin pages, analytics).
+
 For Supabase Realtime data (live match updates, round changes), use the realtime subscription pattern with a `refreshKey` state that triggers TanStack Query / `useSupabaseQuery` refetch via the dependency array.
 
 ### Data Fetching
@@ -582,13 +583,30 @@ Key auth files:
 
 | File                                             | Purpose                                        |
 | ------------------------------------------------ | ---------------------------------------------- |
-| `apps/web/proxy.ts`                              | Request interception, session refresh, routing |
+| `apps/web/src/proxy.ts`                          | Request interception, session refresh, routing |
 | `apps/web/src/lib/supabase/server.ts`            | Server-side Supabase client                    |
 | `apps/web/src/lib/supabase/client.ts`            | Client-side Supabase client                    |
 | `apps/web/src/lib/supabase/middleware.ts`        | Session refresh utilities (used by proxy)      |
 | `apps/web/src/hooks/use-auth.ts`                 | Client-side auth hook                          |
 | `apps/web/src/components/auth/auth-provider.tsx` | Client-side auth state provider                |
 | `packages/supabase/supabase/functions/signup/`   | Unified signup edge function                   |
+
+### Edge Functions
+
+All edge functions live in `packages/supabase/supabase/functions/`:
+
+| Function             | Purpose                                       |
+| -------------------- | --------------------------------------------- |
+| `signup`             | Unified signup (Supabase Auth + PDS account)  |
+| `api-tournaments`    | Tournament CRUD API                           |
+| `api-matches`        | Match operations API                          |
+| `api-notifications`  | Notification delivery API                     |
+| `api-organizations`  | Organization management API                   |
+| `api-alts`           | Alt/player identity API                       |
+| `send-invite`        | Email invitation delivery                     |
+| `bluesky-auth`       | Bluesky OAuth flow                            |
+| `provision-pds`      | PDS account provisioning on Fly.io            |
+| `update-pds-handle`  | Handle updates on PDS after username change   |
 
 ---
 
@@ -618,6 +636,26 @@ Alternate player identities for tournaments. Users can have multiple alts.
 | display_name | text   | Public display name             |
 | battle_tag   | text   | In-game battle tag or player ID |
 
+### tournaments
+
+| Column                | Type              | Description                                     |
+| --------------------- | ----------------- | ----------------------------------------------- |
+| id                    | bigint            | Primary key                                     |
+| organization_id       | bigint            | FK to organizations                             |
+| name                  | text              | Tournament name                                 |
+| slug                  | text              | URL-friendly slug (unique per org)              |
+| status                | tournament_status | draft, active, completed, cancelled             |
+| format                | text              | Tournament format type                          |
+| tournament_format     | tournament_format | Swiss, double-elim, etc.                        |
+| swiss_rounds          | integer           | Number of Swiss rounds                          |
+| top_cut_size          | integer           | Number advancing to finals                      |
+| max_participants      | integer           | Max allowed players                             |
+| round_time_minutes    | integer           | Time per round (default: 50)                    |
+| current_phase_id      | bigint            | FK to tournament_phases                         |
+| current_round         | integer           | Current round number (default: 0)               |
+| participants          | bigint[]          | Array of participant alt IDs                    |
+| tournament_state      | jsonb             | Arbitrary tournament state blob                 |
+
 ### tournament_registrations
 
 | Column           | Type    | Description                                    |
@@ -628,6 +666,49 @@ Alternate player identities for tournaments. Users can have multiple alts.
 | status           | enum    | registered, checked_in, dropped, disqualified  |
 | team_locked      | boolean | Whether the team is locked at tournament start |
 | open_team_sheets | boolean | Whether the team sheet is publicly visible     |
+
+### tournament_rounds
+
+| Column                 | Type         | Description                          |
+| ---------------------- | ------------ | ------------------------------------ |
+| id                     | bigint       | Primary key                          |
+| phase_id               | bigint       | FK to tournament_phases              |
+| round_number           | integer      | Round sequence (1, 2, 3, ...)        |
+| status                 | phase_status | pending, active, completed           |
+| time_extension_minutes | integer      | Additional time granted (default: 0) |
+
+### tournament_matches
+
+| Column            | Type         | Description                                     |
+| ----------------- | ------------ | ----------------------------------------------- |
+| id                | bigint       | Primary key                                     |
+| round_id          | bigint       | FK to tournament_rounds                         |
+| alt1_id           | bigint       | FK to alts (player 1)                           |
+| alt2_id           | bigint       | FK to alts (player 2, null for byes)            |
+| winner_alt_id     | bigint       | FK to alts (set after match resolves)           |
+| game_wins1        | integer      | Game wins for player 1                          |
+| game_wins2        | integer      | Game wins for player 2                          |
+| is_bye            | boolean      | Whether this is a bye                           |
+| status            | phase_status | pending, active, completed                      |
+| table_number      | integer      | Table assignment                                |
+| staff_requested   | boolean      | Staff assistance requested                      |
+| staff_resolved_by | bigint       | FK to alts (judge who resolved)                 |
+
+### match_games
+
+Supports **blind scoring** — players submit selections independently, system auto-detects agreement or dispute.
+
+| Column           | Type              | Description                                                          |
+| ---------------- | ----------------- | -------------------------------------------------------------------- |
+| id               | bigint            | Primary key                                                          |
+| match_id         | bigint            | FK to tournament_matches                                             |
+| game_number      | smallint          | Game sequence (1-9)                                                  |
+| alt1_selection   | bigint            | Player 1's blind winner selection                                    |
+| alt2_selection   | bigint            | Player 2's blind winner selection                                    |
+| winner_alt_id    | bigint            | Resolved winner (after agreement or judge ruling)                    |
+| status           | match_game_status | pending, awaiting_both, awaiting_one, agreed, disputed, resolved, cancelled |
+| resolved_by      | bigint            | FK to alts (judge who resolved dispute)                              |
+| resolution_notes | text              | Judge's explanation of ruling                                        |
 
 ---
 
