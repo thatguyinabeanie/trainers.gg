@@ -142,7 +142,11 @@ export async function cancelRegistration(
 export async function updateRegistrationStatus(
   supabase: TypedClient,
   registrationId: number,
-  status: Database["public"]["Enums"]["registration_status"]
+  status: Database["public"]["Enums"]["registration_status"],
+  dropInfo?: {
+    dropCategory: Database["public"]["Enums"]["drop_category"];
+    dropNotes?: string;
+  }
 ) {
   const user = await getCurrentUser(supabase);
   if (!user) throw new Error("Not authenticated");
@@ -174,9 +178,21 @@ export async function updateRegistrationStatus(
     throw new Error("You don't have permission to update registrations");
   }
 
+  // Build update payload — include drop metadata when dropping a player
+  const updatePayload =
+    status === "dropped" && dropInfo
+      ? {
+          status,
+          drop_category: dropInfo.dropCategory,
+          drop_notes: dropInfo.dropNotes ?? null,
+          dropped_by: user.id,
+          dropped_at: new Date().toISOString(),
+        }
+      : { status };
+
   const { error } = await supabase
     .from("tournament_registrations")
-    .update({ status })
+    .update(updatePayload)
     .eq("id", registrationId);
 
   if (error) throw error;

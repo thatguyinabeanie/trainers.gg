@@ -465,6 +465,95 @@ describe("Tournament Registration Mutations", () => {
         updateRegistrationStatus(mockClient, registrationId, "checked_in")
       ).rejects.toThrow("You don't have permission to update registrations");
     });
+
+    it("passes drop fields when status is dropped", async () => {
+      const mockUpdate = jest.fn().mockReturnThis();
+      const fromSpy = jest.spyOn(mockClient, "from");
+
+      // First call: registration lookup
+      fromSpy.mockReturnValueOnce({
+        select: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockReturnThis(),
+        single: jest.fn().mockResolvedValue({
+          data: { tournament_id: 100 },
+          error: null,
+        }),
+      } as unknown as MockQueryBuilder);
+
+      // Second call: tournament lookup
+      fromSpy.mockReturnValueOnce({
+        select: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockReturnThis(),
+        single: jest.fn().mockResolvedValue({
+          data: { organization_id: 200 },
+          error: null,
+        }),
+      } as unknown as MockQueryBuilder);
+
+      // Third call: the update
+      fromSpy.mockReturnValueOnce({
+        update: mockUpdate,
+        eq: jest.fn().mockResolvedValue({ error: null }),
+      } as unknown as MockQueryBuilder);
+
+      const result = await updateRegistrationStatus(
+        mockClient,
+        registrationId,
+        "dropped",
+        { dropCategory: "no_show", dropNotes: "Did not appear for round 1" }
+      );
+
+      expect(result).toEqual({ success: true, tournamentId: 100 });
+      expect(mockUpdate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          status: "dropped",
+          drop_category: "no_show",
+          drop_notes: "Did not appear for round 1",
+          dropped_by: mockUser.id,
+          dropped_at: expect.any(String),
+        })
+      );
+    });
+
+    it("does not include drop fields for non-drop status", async () => {
+      const mockUpdate = jest.fn().mockReturnThis();
+      const fromSpy = jest.spyOn(mockClient, "from");
+
+      // First call: registration lookup
+      fromSpy.mockReturnValueOnce({
+        select: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockReturnThis(),
+        single: jest.fn().mockResolvedValue({
+          data: { tournament_id: 100 },
+          error: null,
+        }),
+      } as unknown as MockQueryBuilder);
+
+      // Second call: tournament lookup
+      fromSpy.mockReturnValueOnce({
+        select: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockReturnThis(),
+        single: jest.fn().mockResolvedValue({
+          data: { organization_id: 200 },
+          error: null,
+        }),
+      } as unknown as MockQueryBuilder);
+
+      // Third call: the update
+      fromSpy.mockReturnValueOnce({
+        update: mockUpdate,
+        eq: jest.fn().mockResolvedValue({ error: null }),
+      } as unknown as MockQueryBuilder);
+
+      const result = await updateRegistrationStatus(
+        mockClient,
+        registrationId,
+        "checked_in"
+      );
+
+      expect(result).toEqual({ success: true, tournamentId: 100 });
+      expect(mockUpdate).toHaveBeenCalledWith({ status: "checked_in" });
+    });
   });
 
   describe("checkIn", () => {
