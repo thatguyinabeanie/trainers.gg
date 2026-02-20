@@ -258,6 +258,50 @@ it("should show fallback when Supabase query fails", () => { ... });
 
 **Rule of thumb:** If the test would still pass with the component's logic completely emptied out and replaced with hardcoded values, the test is not valuable. Test decisions, transformations, conditional behavior, and user interaction flows — not that JSX renders.
 
+### Test Patterns
+
+**Use `it.each` to eliminate repetitive test blocks.** Parameterized tests are cleaner and easier to extend:
+
+```typescript
+// ❌ Bad — repeated test blocks
+it("returns true for active status", () => expect(isActive("active")).toBe(true));
+it("returns false for pending status", () => expect(isActive("pending")).toBe(false));
+
+// ✅ Good — parameterized
+it.each([
+  ["active", true],
+  ["pending", false],
+  ["completed", false],
+])("isActive(%s) returns %s", (status, expected) => {
+  expect(isActive(status)).toBe(expected);
+});
+```
+
+**Use Rosie factories for all test data construction.** Factories live in `src/__tests__/factories/` *within the same package* as the domain they represent — never in a shared test utilities package.
+
+```typescript
+// packages/tournaments/src/__tests__/factories/match.factory.ts
+import { Factory } from "rosie";
+import type { TournamentMatch } from "../../types";
+
+export const MatchFactory = new Factory<TournamentMatch>()
+  .attr("id", () => Math.floor(Math.random() * 10000))
+  .attr("status", "pending")
+  .attr("is_bye", false)
+  .attr("staff_requested", false);
+
+// In tests:
+const match = MatchFactory.build({ status: "active" });
+const matches = MatchFactory.buildList(5);
+```
+
+Factory location examples:
+- `packages/tournaments/src/__tests__/factories/` — match, round, tournament factories
+- `packages/pokemon/src/__tests__/factories/` — Pokemon, team factories
+- `packages/validators/src/__tests__/factories/` — schema input factories
+
+---
+
 ### Database Schema Changes
 
 **Never apply migrations directly via MCP tools or the Supabase dashboard.** All schema changes must go through migration files:
@@ -508,7 +552,7 @@ When adding new library code, consider whether it belongs in a shared package or
 
 ### React Compiler (Auto-Memoization)
 
-This project uses **React Compiler**, which automatically handles memoization at build time. Do NOT manually write:
+**React Compiler is enabled across all packages in the monorepo** — it automatically handles memoization at build time. Do NOT manually write:
 
 - `useMemo()` — the compiler detects and memoizes expensive computations
 - `useCallback()` — the compiler stabilizes callback references automatically
@@ -518,7 +562,7 @@ Writing manual memoization is redundant, adds noise, and can conflict with the c
 
 ### Client-Side State Management (TanStack Query)
 
-Use **TanStack Query v5** for all client-side server state. This includes:
+Use **TanStack Query v5** for all client-side server state. **TanStack Query is the state management architecture** — for any user-triggered data change, reach for `useMutation` with optimistic updates before considering local `useState`. This includes:
 
 - **Data fetching in client components**: `useQuery` with query keys for cache management
 - **Mutations**: `useMutation` with `onSuccess` → `queryClient.invalidateQueries()` for cache invalidation
