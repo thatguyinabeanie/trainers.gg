@@ -328,6 +328,7 @@ export function TournamentManageClient({
           <TournamentPairingsJudge
             tournament={{
               id: tournament.id,
+              slug: tournament.slug,
               currentPhaseId: tournament.current_phase_id ?? null,
             }}
           />

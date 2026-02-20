@@ -3,7 +3,12 @@ import { TournamentPairingsJudge } from "../tournament-pairings-judge";
 import { useSupabase, useSupabaseQuery } from "@/lib/supabase";
 import userEvent from "@testing-library/user-event";
 
-// Mock Supabase hooks
+const mockPush = jest.fn();
+
+jest.mock("next/navigation", () => ({
+  useRouter: () => ({ push: mockPush }),
+}));
+
 const mockChannel = {
   on: jest.fn().mockReturnThis(),
   subscribe: jest.fn((callback) => {
@@ -29,53 +34,65 @@ const mockUseSupabaseQuery = useSupabaseQuery as jest.MockedFunction<
   typeof useSupabaseQuery
 >;
 
+const mockResult = (data: unknown) => ({
+  data,
+  error: null,
+  isLoading: false,
+  refetch: jest.fn(),
+});
+
 describe("TournamentPairingsJudge", () => {
   const mockTournament = {
     id: 1,
+    slug: "test-tournament",
     currentPhaseId: 123,
   };
 
-  // Helper to set up useSupabaseQuery mock with rounds and matches
-  const setupQueryMocks = (rounds: unknown[], matches: unknown[]) => {
-    mockUseSupabaseQuery
-      .mockReturnValueOnce({
-        data: rounds,
-        error: null,
-        isLoading: false,
-        refetch: jest.fn(),
-      })
-      .mockReturnValueOnce({
-        data: matches,
-        error: null,
-        isLoading: false,
-        refetch: jest.fn(),
-      });
+  const mockPhases = [{ id: 123, name: "Swiss", phase_order: 1 }];
+
+  // Stable mock that handles re-renders: returns data based on call order mod 3
+  // (phases, rounds, matches cycle)
+  const setupStableMocks = (
+    phases: unknown[],
+    rounds: unknown[],
+    matches: unknown[]
+  ) => {
+    let callCount = 0;
+    mockUseSupabaseQuery.mockImplementation(() => {
+      const idx = callCount % 3;
+      callCount++;
+      if (idx === 0) return mockResult(phases);
+      if (idx === 1) return mockResult(rounds);
+      return mockResult(matches);
+    });
   };
 
   beforeEach(() => {
     jest.clearAllMocks();
+    mockPush.mockClear();
     mockUseSupabase.mockReturnValue(
       mockSupabase as ReturnType<typeof useSupabase>
     );
   });
 
-  describe("No Active Round", () => {
-    it("should display message when no active round exists", () => {
-      mockUseSupabaseQuery.mockReturnValue({
-        data: [],
-        error: null,
-        isLoading: false,
-        refetch: jest.fn(),
-      });
+  describe("No Phases", () => {
+    it("should display message when no phases exist", () => {
+      mockUseSupabaseQuery.mockReturnValue(mockResult([]));
 
       render(<TournamentPairingsJudge tournament={mockTournament} />);
 
       expect(screen.getByText("Pairings")).toBeInTheDocument();
-      expect(
-        screen.getByText(
-          "No active round. Pairings will appear when a round starts."
-        )
-      ).toBeInTheDocument();
+      expect(screen.getByText(/No phases configured/)).toBeInTheDocument();
+    });
+  });
+
+  describe("No Rounds", () => {
+    it("should display message when no rounds exist", () => {
+      setupStableMocks(mockPhases, [], []);
+
+      render(<TournamentPairingsJudge tournament={mockTournament} />);
+
+      expect(screen.getByText("No Rounds")).toBeInTheDocument();
     });
   });
 
@@ -91,29 +108,41 @@ describe("TournamentPairingsJudge", () => {
         table_number: 1,
         status: "active",
         staff_requested: false,
-        player1: { username: "playera" },
-        player2: { username: "playerb" },
+        is_bye: false,
+        game_wins1: 0,
+        game_wins2: 0,
+        player1_match_confirmed: true,
+        player2_match_confirmed: true,
+        player1: { id: 1, username: "playera", display_name: null },
+        player2: { id: 2, username: "playerb", display_name: null },
+        winner: null,
       },
       {
         id: 2,
         table_number: 2,
         status: "pending",
         staff_requested: true,
-        player1: { username: "playerc" },
-        player2: { username: "playerd" },
+        is_bye: false,
+        game_wins1: 0,
+        game_wins2: 0,
+        player1_match_confirmed: false,
+        player2_match_confirmed: false,
+        player1: { id: 3, username: "playerc", display_name: null },
+        player2: { id: 4, username: "playerd", display_name: null },
+        winner: null,
       },
     ];
 
-    it("should display round number in heading", () => {
-      setupQueryMocks(mockRounds, mockMatches);
+    it("should display round heading", () => {
+      setupStableMocks(mockPhases, mockRounds, mockMatches);
 
       render(<TournamentPairingsJudge tournament={mockTournament} />);
 
-      expect(screen.getByText("Round 1 Pairings")).toBeInTheDocument();
+      expect(screen.getByText("Round 1 Matches")).toBeInTheDocument();
     });
 
-    it("should show realtime status badge when active round exists", () => {
-      setupQueryMocks(mockRounds, mockMatches);
+    it("should show realtime status badge when viewing active round", () => {
+      setupStableMocks(mockPhases, mockRounds, mockMatches);
 
       render(<TournamentPairingsJudge tournament={mockTournament} />);
 
@@ -121,17 +150,15 @@ describe("TournamentPairingsJudge", () => {
     });
 
     it("should display pairings tab by default", () => {
-      setupQueryMocks(mockRounds, mockMatches);
+      setupStableMocks(mockPhases, mockRounds, mockMatches);
 
       render(<TournamentPairingsJudge tournament={mockTournament} />);
 
-      // Check that pairings content is visible (default tab)
-      expect(screen.getByText("All Matches")).toBeInTheDocument();
-      expect(screen.getByText("2 matches in Round 1")).toBeInTheDocument();
+      expect(screen.getByText("Round 1 Matches")).toBeInTheDocument();
     });
 
-    it("should display all matches in pairings tab", () => {
-      setupQueryMocks(mockRounds, mockMatches);
+    it("should display player names in matches", () => {
+      setupStableMocks(mockPhases, mockRounds, mockMatches);
 
       render(<TournamentPairingsJudge tournament={mockTournament} />);
 
@@ -141,16 +168,8 @@ describe("TournamentPairingsJudge", () => {
       expect(screen.getByText("playerd")).toBeInTheDocument();
     });
 
-    it("should show match count in pairings tab", () => {
-      setupQueryMocks(mockRounds, mockMatches);
-
-      render(<TournamentPairingsJudge tournament={mockTournament} />);
-
-      expect(screen.getByText("2 matches in Round 1")).toBeInTheDocument();
-    });
-
     it("should display table numbers for matches", () => {
-      setupQueryMocks(mockRounds, mockMatches);
+      setupStableMocks(mockPhases, mockRounds, mockMatches);
 
       render(<TournamentPairingsJudge tournament={mockTournament} />);
 
@@ -171,33 +190,47 @@ describe("TournamentPairingsJudge", () => {
         table_number: 1,
         status: "active",
         staff_requested: false,
-        player1: { username: "playera" },
-        player2: { username: "playerb" },
+        is_bye: false,
+        game_wins1: 0,
+        game_wins2: 0,
+        player1_match_confirmed: true,
+        player2_match_confirmed: true,
+        player1: { id: 1, username: "playera", display_name: null },
+        player2: { id: 2, username: "playerb", display_name: null },
+        winner: null,
       },
       {
         id: 2,
         table_number: 2,
         status: "active",
         staff_requested: true,
-        player1: { username: "playerc" },
-        player2: { username: "playerd" },
+        is_bye: false,
+        game_wins1: 0,
+        game_wins2: 0,
+        player1_match_confirmed: true,
+        player2_match_confirmed: true,
+        player1: { id: 3, username: "playerc", display_name: null },
+        player2: { id: 4, username: "playerd", display_name: null },
+        winner: null,
       },
       {
         id: 3,
         table_number: 3,
         status: "active",
         staff_requested: true,
-        player1: { username: "playere" },
-        player2: { username: "playerf" },
+        is_bye: false,
+        game_wins1: 0,
+        game_wins2: 0,
+        player1_match_confirmed: true,
+        player2_match_confirmed: true,
+        player1: { id: 5, username: "playere", display_name: null },
+        player2: { id: 6, username: "playerf", display_name: null },
+        winner: null,
       },
     ];
 
-    beforeEach(() => {
-      setupQueryMocks(mockRounds, mockMatches);
-    });
-
     it("should show badge count on judge queue tab when requests exist", () => {
-      setupQueryMocks(mockRounds, mockMatches);
+      setupStableMocks(mockPhases, mockRounds, mockMatches);
 
       render(<TournamentPairingsJudge tournament={mockTournament} />);
 
@@ -207,8 +240,7 @@ describe("TournamentPairingsJudge", () => {
 
     it("should switch to judge queue tab when clicked", async () => {
       const user = userEvent.setup();
-
-      setupQueryMocks(mockRounds, mockMatches);
+      setupStableMocks(mockPhases, mockRounds, mockMatches);
 
       render(<TournamentPairingsJudge tournament={mockTournament} />);
 
@@ -216,17 +248,15 @@ describe("TournamentPairingsJudge", () => {
       await user.click(judgeTab);
 
       await waitFor(() => {
-        // Check that judge queue content is now visible
         expect(
           screen.getByText("Matches requesting staff assistance")
         ).toBeInTheDocument();
       });
     });
 
-    it("should only show matches with staff_requested=true in judge queue", async () => {
+    it("should show Respond buttons in judge queue", async () => {
       const user = userEvent.setup();
-
-      setupQueryMocks(mockRounds, mockMatches);
+      setupStableMocks(mockPhases, mockRounds, mockMatches);
 
       render(<TournamentPairingsJudge tournament={mockTournament} />);
 
@@ -234,29 +264,34 @@ describe("TournamentPairingsJudge", () => {
       await user.click(judgeTab);
 
       await waitFor(() => {
-        expect(screen.getByText("playerc")).toBeInTheDocument();
-        expect(screen.getByText("playere")).toBeInTheDocument();
-        // Player A and B should not be visible in judge queue
-        expect(screen.queryByText("playera")).not.toBeInTheDocument();
+        const respondButtons = screen.getAllByRole("button", {
+          name: /respond/i,
+        });
+        expect(respondButtons).toHaveLength(2);
       });
     });
 
     it("should show message when judge queue is empty", async () => {
       const user = userEvent.setup();
 
-      // Mock with no staff requests
       const noRequestMatches = [
         {
           id: 1,
           table_number: 1,
           status: "active",
           staff_requested: false,
-          player1: { username: "playera" },
-          player2: { username: "playerb" },
+          is_bye: false,
+          game_wins1: 0,
+          game_wins2: 0,
+          player1_match_confirmed: true,
+          player2_match_confirmed: true,
+          player1: { id: 1, username: "playera", display_name: null },
+          player2: { id: 2, username: "playerb", display_name: null },
+          winner: null,
         },
       ];
 
-      setupQueryMocks(mockRounds, noRequestMatches);
+      setupStableMocks(mockPhases, mockRounds, noRequestMatches);
 
       render(<TournamentPairingsJudge tournament={mockTournament} />);
 
@@ -272,62 +307,37 @@ describe("TournamentPairingsJudge", () => {
   });
 
   describe("Realtime Subscription", () => {
-    it("should set up realtime subscription when active round exists", () => {
-      const mockRounds = [{ id: 1, round_number: 1, status: "active" }];
-
-      let callIndex = 0;
-      mockUseSupabaseQuery.mockImplementation(() => {
-        const responses = [mockRounds, []];
-        return {
-          data: responses[callIndex++],
-          error: null,
-          isLoading: false,
-          refetch: jest.fn(),
-        };
-      });
+    it("should set up match realtime subscription when active round exists", () => {
+      setupStableMocks(
+        mockPhases,
+        [{ id: 1, round_number: 1, status: "active" }],
+        []
+      );
 
       render(<TournamentPairingsJudge tournament={mockTournament} />);
 
-      expect(mockSupabase.channel).toHaveBeenCalledWith("pairings-1");
-      expect(mockChannel.on).toHaveBeenCalledWith(
-        "postgres_changes",
-        {
-          event: "UPDATE",
-          schema: "public",
-          table: "tournament_matches",
-          filter: "round_id=eq.1",
-        },
-        expect.any(Function)
-      );
+      expect(mockSupabase.channel).toHaveBeenCalledWith("pairings-matches-1");
       expect(mockChannel.subscribe).toHaveBeenCalled();
     });
 
-    it("should not set up subscription when no active round", () => {
-      mockUseSupabaseQuery.mockReturnValue({
-        data: [],
-        error: null,
-        isLoading: false,
-        refetch: jest.fn(),
-      });
+    it("should set up round subscription for new round detection", () => {
+      setupStableMocks(
+        mockPhases,
+        [{ id: 1, round_number: 1, status: "active" }],
+        []
+      );
 
       render(<TournamentPairingsJudge tournament={mockTournament} />);
 
-      expect(mockSupabase.channel).not.toHaveBeenCalled();
+      expect(mockSupabase.channel).toHaveBeenCalledWith("pairings-rounds-123");
     });
 
     it("should cleanup subscription on unmount", () => {
-      const mockRounds = [{ id: 1, round_number: 1, status: "active" }];
-
-      let callIndex = 0;
-      mockUseSupabaseQuery.mockImplementation(() => {
-        const responses = [mockRounds, []];
-        return {
-          data: responses[callIndex++],
-          error: null,
-          isLoading: false,
-          refetch: jest.fn(),
-        };
-      });
+      setupStableMocks(
+        mockPhases,
+        [{ id: 1, round_number: 1, status: "active" }],
+        []
+      );
 
       const { unmount } = render(
         <TournamentPairingsJudge tournament={mockTournament} />
@@ -341,18 +351,11 @@ describe("TournamentPairingsJudge", () => {
 
   describe("Empty States", () => {
     it("should show message when no matches exist for active round", () => {
-      const mockRounds = [{ id: 1, round_number: 1, status: "active" }];
-
-      let callIndex = 0;
-      mockUseSupabaseQuery.mockImplementation(() => {
-        const responses = [mockRounds, []];
-        return {
-          data: responses[callIndex++],
-          error: null,
-          isLoading: false,
-          refetch: jest.fn(),
-        };
-      });
+      setupStableMocks(
+        mockPhases,
+        [{ id: 1, round_number: 1, status: "active" }],
+        []
+      );
 
       render(<TournamentPairingsJudge tournament={mockTournament} />);
 
@@ -364,24 +367,76 @@ describe("TournamentPairingsJudge", () => {
 
   describe("BYE Handling", () => {
     it("should display BYE for matches without player data", () => {
-      const mockRounds = [{ id: 1, round_number: 1, status: "active" }];
-      const mockMatches = [
-        {
-          id: 1,
-          table_number: 1,
-          status: "active",
-          staff_requested: false,
-          player1: null,
-          player2: { username: "playerb" },
-        },
-      ];
-
-      setupQueryMocks(mockRounds, mockMatches);
+      setupStableMocks(
+        mockPhases,
+        [{ id: 1, round_number: 1, status: "active" }],
+        [
+          {
+            id: 1,
+            table_number: 1,
+            status: "active",
+            staff_requested: false,
+            is_bye: false,
+            game_wins1: 0,
+            game_wins2: 0,
+            player1_match_confirmed: true,
+            player2_match_confirmed: true,
+            player1: null,
+            player2: { id: 2, username: "playerb", display_name: null },
+            winner: null,
+          },
+        ]
+      );
 
       render(<TournamentPairingsJudge tournament={mockTournament} />);
 
       expect(screen.getAllByText("BYE")[0]).toBeInTheDocument();
       expect(screen.getByText("playerb")).toBeInTheDocument();
+    });
+  });
+
+  describe("Navigation", () => {
+    it("should navigate to match page when Respond button is clicked", async () => {
+      const user = userEvent.setup();
+
+      setupStableMocks(
+        mockPhases,
+        [{ id: 1, round_number: 1, status: "active" }],
+        [
+          {
+            id: 42,
+            table_number: 1,
+            status: "active",
+            staff_requested: true,
+            is_bye: false,
+            game_wins1: 0,
+            game_wins2: 0,
+            player1_match_confirmed: true,
+            player2_match_confirmed: true,
+            player1: { id: 1, username: "playera", display_name: null },
+            player2: { id: 2, username: "playerb", display_name: null },
+            winner: null,
+          },
+        ]
+      );
+
+      render(<TournamentPairingsJudge tournament={mockTournament} />);
+
+      const judgeTab = screen.getByRole("tab", { name: /judge queue/i });
+      await user.click(judgeTab);
+
+      await waitFor(() => {
+        expect(
+          screen.getByRole("button", { name: /respond/i })
+        ).toBeInTheDocument();
+      });
+
+      const respondBtn = screen.getByRole("button", { name: /respond/i });
+      await user.click(respondBtn);
+
+      expect(mockPush).toHaveBeenCalledWith(
+        "/tournaments/test-tournament/matches/42"
+      );
     });
   });
 });

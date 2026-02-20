@@ -86,7 +86,7 @@ describe("ActiveMatchCard", () => {
     const link = screen.getByRole("link");
     expect(link).toHaveAttribute(
       "href",
-      "/tournaments/vgc-championship/match/100"
+      "/tournaments/vgc-championship/matches/100"
     );
   });
 

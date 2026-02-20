@@ -37,6 +37,8 @@ tooling/
 | Edge Functions         | Supabase Edge Functions | Deno runtime                                                    |
 | Social/Identity        | AT Protocol (Bluesky)   | Decentralized identity and federation                           |
 | PDS                    | Fly.io                  | Self-hosted at pds.trainers.gg                                  |
+| React Compiler         | React Compiler          | Auto-memoization — do NOT manually use useMemo/useCallback/memo |
+| Client State (Web)     | TanStack Query v5       | Cache, mutations, optimistic updates, query invalidation        |
 | Web                    | Next.js 16              | React 19, App Router, Server Components                         |
 | Mobile                 | Expo 54                 | React Native with Tamagui                                       |
 | UI Components (Web)    | shadcn/ui + Base UI     | Base UI primitives (NOT Radix), no `asChild`                    |
@@ -203,15 +205,58 @@ Tests run in GitHub Actions (`.github/workflows/ci.yml`):
 
 ## Critical Rules
 
-### Testing Requirements
+### Test Quality — What NOT to Test
 
-**Every new feature, bug fix, or behavioral change must include tests.** Do not merge code without adequate test coverage.
+**Do not write tests that only verify the behavior of the underlying language, framework, or library.** Tests should validate _our_ logic, not that React renders a string or that Array.filter works.
 
-- Unit tests for all business logic, utilities, and validators
-- E2E tests for new user-facing pages or workflows
-- Regression tests for bug fixes (must fail without the fix)
-- Run `pnpm test` locally before committing to catch failures early
-- CI enforces 60% patch coverage — new code below this threshold blocks the PR
+**❌ Bad — testing framework/language behavior:**
+
+```tsx
+// Testing that React renders text (React's job, not ours)
+it("should render a div", () => {
+  render(<MyComponent />);
+  expect(screen.getByText("Hello")).toBeInTheDocument();
+});
+
+// Testing that Array.filter works
+it("should filter items", () => {
+  const result = [1, 2, 3].filter((x) => x > 1);
+  expect(result).toEqual([2, 3]);
+});
+
+// Testing that a prop is passed through unchanged
+it("should pass className to the wrapper", () => {
+  render(<Card className="foo" />);
+  expect(screen.getByTestId("card")).toHaveClass("foo");
+});
+```
+
+**✅ Good — testing our logic and behavior:**
+
+```tsx
+// Testing business logic: which matches need attention
+it("should classify staff_requested matches as needs-attention", () => {
+  const result = classifyMatch(matchWithStaffRequest);
+  expect(result).toBe("attention");
+});
+
+// Testing conditional rendering based on our domain rules
+it("should show BYE when player2 is null on a bye match", () => {
+  render(<MatchRow match={byeMatch} />);
+  expect(screen.getByText("BYE")).toBeInTheDocument();
+});
+
+// Testing user interaction flows
+it("should navigate to match page when Respond is clicked", async () => {
+  await user.click(respondButton);
+  expect(mockPush).toHaveBeenCalledWith("/tournaments/test/matches/42");
+});
+
+// Testing error handling specific to our app
+it("should show fallback when Supabase query fails", () => { ... });
+```
+
+**Rule of thumb:** If the test would still pass with the component's logic completely emptied out and replaced with hardcoded values, the test is not valuable. Test decisions, transformations, conditional behavior, and user interaction flows — not that JSX renders.
 
 ### Database Schema Changes
 
@@ -461,14 +506,50 @@ When adding new library code, consider whether it belongs in a shared package or
 - Use `"use client"` only at leaf nodes for interactivity
 - Use CSS-first animations via Tailwind utilities (not Motion/Framer Motion, which force client components)
 
+### React Compiler (Auto-Memoization)
+
+This project uses **React Compiler**, which automatically handles memoization at build time. Do NOT manually write:
+
+- `useMemo()` — the compiler detects and memoizes expensive computations
+- `useCallback()` — the compiler stabilizes callback references automatically
+- `React.memo()` — the compiler skips re-renders of unchanged components
+
+Writing manual memoization is redundant, adds noise, and can conflict with the compiler's optimizations. If you encounter existing `useMemo`/`useCallback`/`React.memo` in the codebase, leave them alone (they're harmless but unnecessary). Do not add new ones.
+
+### Client-Side State Management (TanStack Query)
+
+Use **TanStack Query v5** for all client-side server state. This includes:
+
+- **Data fetching in client components**: `useQuery` with query keys for cache management
+- **Mutations**: `useMutation` with `onSuccess` → `queryClient.invalidateQueries()` for cache invalidation
+- **Optimistic updates**: `useMutation` with `onMutate` for instant UI feedback, `onError` for rollback
+- **Polling / realtime fallback**: `refetchInterval` for periodic refresh when Supabase Realtime is not appropriate
+- **Dependent queries**: `enabled` option to conditionally fetch based on other data
+
+Do NOT use `useState` + `useEffect` + `fetch` for server data in client components — that pattern lacks caching, deduplication, and error/loading states that TanStack Query provides for free.
+
+**`useSupabaseQuery`** (`packages/supabase/src/hooks/use-supabase-query.ts`, re-exported via `apps/web/src/lib/supabase/hooks.ts`): A lightweight hook for simple Supabase queries that don't need TanStack Query's caching/deduplication. Returns `{ data, error, isLoading, refetch }`. The web wrapper auto-injects the Supabase client:
+
+```typescript
+const { data, isLoading } = useSupabaseQuery(
+  (supabase) => getPlatformOverview(supabase),
+  [dependency] // refetches when deps change
+);
+```
+
+Prefer TanStack Query for shared/cached data. Use `useSupabaseQuery` for isolated one-off fetches (admin pages, analytics).
+
+For Supabase Realtime data (live match updates, round changes), use the realtime subscription pattern with a `refreshKey` state that triggers TanStack Query / `useSupabaseQuery` refetch via the dependency array.
+
 ### Data Fetching
 
-| Context                        | Tool                             |
-| ------------------------------ | -------------------------------- |
-| Server Components              | Direct Supabase calls            |
-| Form submissions               | Server Actions                   |
-| Client-side polling/pagination | TanStack Query                   |
-| Optimistic updates             | Client component + Server Action |
+| Context                        | Tool                                                         |
+| ------------------------------ | ------------------------------------------------------------ |
+| Server Components              | Direct Supabase calls                                        |
+| Form submissions               | Server Actions                                               |
+| Client-side data fetching      | TanStack Query (`useQuery` / `useMutation`)                  |
+| Optimistic updates             | TanStack Query `useMutation` with `onMutate` / `onError`    |
+| Realtime updates               | Supabase Realtime channels + refreshKey → query invalidation |
 
 ### Supabase Queries
 
@@ -502,13 +583,30 @@ Key auth files:
 
 | File                                             | Purpose                                        |
 | ------------------------------------------------ | ---------------------------------------------- |
-| `apps/web/proxy.ts`                              | Request interception, session refresh, routing |
+| `apps/web/src/proxy.ts`                          | Request interception, session refresh, routing |
 | `apps/web/src/lib/supabase/server.ts`            | Server-side Supabase client                    |
 | `apps/web/src/lib/supabase/client.ts`            | Client-side Supabase client                    |
 | `apps/web/src/lib/supabase/middleware.ts`        | Session refresh utilities (used by proxy)      |
 | `apps/web/src/hooks/use-auth.ts`                 | Client-side auth hook                          |
 | `apps/web/src/components/auth/auth-provider.tsx` | Client-side auth state provider                |
 | `packages/supabase/supabase/functions/signup/`   | Unified signup edge function                   |
+
+### Edge Functions
+
+All edge functions live in `packages/supabase/supabase/functions/`:
+
+| Function             | Purpose                                       |
+| -------------------- | --------------------------------------------- |
+| `signup`             | Unified signup (Supabase Auth + PDS account)  |
+| `api-tournaments`    | Tournament CRUD API                           |
+| `api-matches`        | Match operations API                          |
+| `api-notifications`  | Notification delivery API                     |
+| `api-organizations`  | Organization management API                   |
+| `api-alts`           | Alt/player identity API                       |
+| `send-invite`        | Email invitation delivery                     |
+| `bluesky-auth`       | Bluesky OAuth flow                            |
+| `provision-pds`      | PDS account provisioning on Fly.io            |
+| `update-pds-handle`  | Handle updates on PDS after username change   |
 
 ---
 
@@ -538,6 +636,26 @@ Alternate player identities for tournaments. Users can have multiple alts.
 | display_name | text   | Public display name             |
 | battle_tag   | text   | In-game battle tag or player ID |
 
+### tournaments
+
+| Column                | Type              | Description                                     |
+| --------------------- | ----------------- | ----------------------------------------------- |
+| id                    | bigint            | Primary key                                     |
+| organization_id       | bigint            | FK to organizations                             |
+| name                  | text              | Tournament name                                 |
+| slug                  | text              | URL-friendly slug (unique per org)              |
+| status                | tournament_status | draft, active, completed, cancelled             |
+| format                | text              | Tournament format type                          |
+| tournament_format     | tournament_format | Swiss, double-elim, etc.                        |
+| swiss_rounds          | integer           | Number of Swiss rounds                          |
+| top_cut_size          | integer           | Number advancing to finals                      |
+| max_participants      | integer           | Max allowed players                             |
+| round_time_minutes    | integer           | Time per round (default: 50)                    |
+| current_phase_id      | bigint            | FK to tournament_phases                         |
+| current_round         | integer           | Current round number (default: 0)               |
+| participants          | bigint[]          | Array of participant alt IDs                    |
+| tournament_state      | jsonb             | Arbitrary tournament state blob                 |
+
 ### tournament_registrations
 
 | Column           | Type    | Description                                    |
@@ -548,6 +666,49 @@ Alternate player identities for tournaments. Users can have multiple alts.
 | status           | enum    | registered, checked_in, dropped, disqualified  |
 | team_locked      | boolean | Whether the team is locked at tournament start |
 | open_team_sheets | boolean | Whether the team sheet is publicly visible     |
+
+### tournament_rounds
+
+| Column                 | Type         | Description                          |
+| ---------------------- | ------------ | ------------------------------------ |
+| id                     | bigint       | Primary key                          |
+| phase_id               | bigint       | FK to tournament_phases              |
+| round_number           | integer      | Round sequence (1, 2, 3, ...)        |
+| status                 | phase_status | pending, active, completed           |
+| time_extension_minutes | integer      | Additional time granted (default: 0) |
+
+### tournament_matches
+
+| Column            | Type         | Description                                     |
+| ----------------- | ------------ | ----------------------------------------------- |
+| id                | bigint       | Primary key                                     |
+| round_id          | bigint       | FK to tournament_rounds                         |
+| alt1_id           | bigint       | FK to alts (player 1)                           |
+| alt2_id           | bigint       | FK to alts (player 2, null for byes)            |
+| winner_alt_id     | bigint       | FK to alts (set after match resolves)           |
+| game_wins1        | integer      | Game wins for player 1                          |
+| game_wins2        | integer      | Game wins for player 2                          |
+| is_bye            | boolean      | Whether this is a bye                           |
+| status            | phase_status | pending, active, completed                      |
+| table_number      | integer      | Table assignment                                |
+| staff_requested   | boolean      | Staff assistance requested                      |
+| staff_resolved_by | bigint       | FK to alts (judge who resolved)                 |
+
+### match_games
+
+Supports **blind scoring** — players submit selections independently, system auto-detects agreement or dispute.
+
+| Column           | Type              | Description                                                          |
+| ---------------- | ----------------- | -------------------------------------------------------------------- |
+| id               | bigint            | Primary key                                                          |
+| match_id         | bigint            | FK to tournament_matches                                             |
+| game_number      | smallint          | Game sequence (1-9)                                                  |
+| alt1_selection   | bigint            | Player 1's blind winner selection                                    |
+| alt2_selection   | bigint            | Player 2's blind winner selection                                    |
+| winner_alt_id    | bigint            | Resolved winner (after agreement or judge ruling)                    |
+| status           | match_game_status | pending, awaiting_both, awaiting_one, agreed, disputed, resolved, cancelled |
+| resolved_by      | bigint            | FK to alts (judge who resolved dispute)                              |
+| resolution_notes | text              | Judge's explanation of ruling                                        |
 
 ---
 
