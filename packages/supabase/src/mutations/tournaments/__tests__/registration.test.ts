@@ -515,6 +515,46 @@ describe("Tournament Registration Mutations", () => {
       );
     });
 
+    it("does not include drop fields when status is dropped but no dropInfo provided", async () => {
+      const mockUpdate = jest.fn().mockReturnThis();
+      const fromSpy = jest.spyOn(mockClient, "from");
+
+      // First call: registration lookup
+      fromSpy.mockReturnValueOnce({
+        select: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockReturnThis(),
+        single: jest.fn().mockResolvedValue({
+          data: { tournament_id: 100 },
+          error: null,
+        }),
+      } as unknown as MockQueryBuilder);
+
+      // Second call: tournament lookup
+      fromSpy.mockReturnValueOnce({
+        select: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockReturnThis(),
+        single: jest.fn().mockResolvedValue({
+          data: { organization_id: 200 },
+          error: null,
+        }),
+      } as unknown as MockQueryBuilder);
+
+      // Third call: the update
+      fromSpy.mockReturnValueOnce({
+        update: mockUpdate,
+        eq: jest.fn().mockResolvedValue({ error: null }),
+      } as unknown as MockQueryBuilder);
+
+      const result = await updateRegistrationStatus(
+        mockClient,
+        registrationId,
+        "dropped"
+      );
+
+      expect(result).toEqual({ success: true, tournamentId: 100 });
+      expect(mockUpdate).toHaveBeenCalledWith({ status: "dropped" });
+    });
+
     it("does not include drop fields for non-drop status", async () => {
       const mockUpdate = jest.fn().mockReturnThis();
       const fromSpy = jest.spyOn(mockClient, "from");

@@ -54,15 +54,11 @@ import {
   RealtimeStatusBadge,
   type RealtimeStatus,
 } from "./realtime-status-badge";
-import { DropPlayerDialog, type DropCategory } from "./drop-player-dialog";
-
-// Human-readable labels for drop categories
-const DROP_CATEGORY_LABELS: Record<string, string> = {
-  no_show: "No-Show",
-  conduct: "Conduct",
-  disqualification: "DQ",
-  other: "Other",
-};
+import {
+  DropPlayerDialog,
+  type DropCategory,
+  DROP_CATEGORY_LABELS,
+} from "./drop-player-dialog";
 
 // Map invitation statuses to StatusBadge Status values + human-readable labels
 const defaultInvitationBadge = {
@@ -317,9 +313,11 @@ export function TournamentRegistrations({
   };
 
   const handleDropConfirm = async (category: DropCategory, notes?: string) => {
+    if (!dropTarget) return;
+
     setIsProcessing(true);
     try {
-      if (dropTarget?.type === "single") {
+      if (dropTarget.type === "single") {
         const result = await removePlayerFromTournament(
           dropTarget.registrationId,
           category,
@@ -351,6 +349,7 @@ export function TournamentRegistrations({
       toast.error(getErrorMessage(error, "An unexpected error occurred"));
     } finally {
       setIsProcessing(false);
+      setDropDialogOpen(false);
       setDropTarget(null);
     }
   };

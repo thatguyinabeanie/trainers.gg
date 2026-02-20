@@ -15,9 +15,10 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Loader2 } from "lucide-react";
+import { type Database } from "@trainers/supabase";
 
-// Drop reason categories
-export type DropCategory = "no_show" | "conduct" | "disqualification" | "other";
+// Drop reason categories — sourced from database enum
+export type DropCategory = Database["public"]["Enums"]["drop_category"];
 
 interface DropPlayerDialogProps {
   open: boolean;
@@ -29,13 +30,18 @@ interface DropPlayerDialogProps {
   onConfirm: (category: DropCategory, notes?: string) => Promise<void>;
 }
 
+// Human-readable labels for drop categories (single source of truth)
+export const DROP_CATEGORY_LABELS: Record<DropCategory, string> = {
+  no_show: "No-Show",
+  conduct: "Conduct",
+  disqualification: "Disqualification",
+  other: "Other",
+};
+
 // Category options displayed in the radio group
-const CATEGORY_OPTIONS: { value: DropCategory; label: string }[] = [
-  { value: "no_show", label: "No-Show" },
-  { value: "conduct", label: "Conduct" },
-  { value: "disqualification", label: "Disqualification" },
-  { value: "other", label: "Other" },
-];
+const CATEGORY_OPTIONS: { value: DropCategory; label: string }[] = (
+  Object.entries(DROP_CATEGORY_LABELS) as [DropCategory, string][]
+).map(([value, label]) => ({ value, label }));
 
 // Categories that require notes
 const NOTES_REQUIRED_CATEGORIES: DropCategory[] = [

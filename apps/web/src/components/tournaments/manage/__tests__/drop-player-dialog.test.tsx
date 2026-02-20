@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, act } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { DropPlayerDialog } from "../drop-player-dialog";
 
@@ -100,5 +100,78 @@ describe("DropPlayerDialog", () => {
     );
 
     expect(screen.getByText("Drop 5 Players")).toBeInTheDocument();
+  });
+
+  it("resets form state when dialog closes and reopens", async () => {
+    const user = userEvent.setup();
+    const { rerender } = render(<DropPlayerDialog {...defaultProps} />);
+
+    // Select a category and type notes
+    const conductRadio = screen.getByLabelText("Conduct");
+    await user.click(conductRadio);
+
+    const textarea = screen.getByPlaceholderText(
+      "Provide additional context..."
+    );
+    await user.type(textarea, "Some misconduct notes");
+
+    // Close the dialog
+    rerender(<DropPlayerDialog {...defaultProps} open={false} />);
+
+    // Reopen the dialog
+    rerender(<DropPlayerDialog {...defaultProps} open={true} />);
+
+    // Verify the category is deselected (confirm button should be disabled)
+    const confirmButton = screen.getByRole("button", {
+      name: /confirm drop/i,
+    });
+    expect(confirmButton).toBeDisabled();
+
+    // Verify notes are empty
+    const newTextarea = screen.getByPlaceholderText(
+      "Provide additional context..."
+    );
+    expect(newTextarea).toHaveValue("");
+  });
+
+  it("re-enables confirm button after onConfirm settles", async () => {
+    const user = userEvent.setup();
+
+    // Use a deferred promise so we can observe the intermediate
+    // isSubmitting state. handleConfirm uses try/finally, so the
+    // finally block always resets isSubmitting regardless of outcome.
+    let resolveFn!: () => void;
+    const slowOnConfirm = jest.fn().mockImplementation(
+      () =>
+        new Promise<void>((resolve) => {
+          resolveFn = resolve;
+        })
+    );
+
+    render(<DropPlayerDialog {...defaultProps} onConfirm={slowOnConfirm} />);
+
+    // Select the No-Show radio option
+    const noShowRadio = screen.getByLabelText("No-Show");
+    await user.click(noShowRadio);
+
+    // Click confirm — starts the submission
+    const confirmButton = screen.getByRole("button", {
+      name: /confirm drop/i,
+    });
+    await user.click(confirmButton);
+
+    // Button should be disabled while onConfirm is pending
+    expect(confirmButton).toBeDisabled();
+    expect(slowOnConfirm).toHaveBeenCalledWith("no_show", undefined);
+
+    // Resolve the promise — the finally block resets isSubmitting
+    await act(async () => {
+      resolveFn();
+    });
+
+    // After settlement, the button should be re-enabled
+    await waitFor(() => {
+      expect(confirmButton).toBeEnabled();
+    });
   });
 });
