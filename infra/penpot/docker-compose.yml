@@ -1,0 +1,97 @@
+# Local Penpot Design Environment
+#
+# Penpot is an open-source Figma alternative with MCP support.
+# UI runs at http://localhost:9001
+# Email (mailcatcher) at http://localhost:1080
+#
+# PENPOT_SECRET_KEY must be set in root .env.local
+# Generate with: openssl rand -hex 32
+
+services:
+  penpot-frontend:
+    image: penpotapp/frontend:latest
+    restart: "no"
+    ports:
+      - "9001:80"
+    depends_on:
+      - penpot-backend
+      - penpot-exporter
+    environment:
+      PENPOT_FLAGS: "enable-login-with-password"
+    networks:
+      - penpot
+
+  penpot-backend:
+    image: penpotapp/backend:latest
+    restart: "no"
+    volumes:
+      - penpot-assets:/opt/data/assets
+    depends_on:
+      - penpot-postgres
+      - penpot-redis
+    environment:
+      PENPOT_FLAGS: "enable-login-with-password enable-smtp enable-prepl-server disable-email-verification"
+      PENPOT_SECRET_KEY: "${PENPOT_SECRET_KEY}"
+      PENPOT_PREPL_HOST: "0.0.0.0"
+      PENPOT_PUBLIC_URI: "http://localhost:9001"
+      PENPOT_DATABASE_URI: "postgresql://penpot-postgres/penpot"
+      PENPOT_DATABASE_USERNAME: "penpot"
+      PENPOT_DATABASE_PASSWORD: "penpot"
+      PENPOT_REDIS_URI: "redis://penpot-redis/0"
+      PENPOT_ASSETS_STORAGE_BACKEND: "assets-fs"
+      PENPOT_STORAGE_ASSETS_FS_DIRECTORY: "/opt/data/assets"
+      PENPOT_TELEMETRY_ENABLED: "false"
+      PENPOT_SMTP_DEFAULT_FROM: "no-reply@penpot.local"
+      PENPOT_SMTP_DEFAULT_REPLY_TO: "no-reply@penpot.local"
+      PENPOT_SMTP_HOST: "penpot-mailcatcher"
+      PENPOT_SMTP_PORT: "1025"
+      PENPOT_SMTP_TLS: "false"
+      PENPOT_SMTP_SSL: "false"
+    networks:
+      - penpot
+
+  penpot-exporter:
+    image: penpotapp/exporter:latest
+    restart: "no"
+    environment:
+      PENPOT_PUBLIC_URI: "http://penpot-frontend"
+      PENPOT_REDIS_URI: "redis://penpot-redis/0"
+    networks:
+      - penpot
+
+  penpot-postgres:
+    image: postgres:15
+    restart: "no"
+    volumes:
+      - penpot-postgres:/var/lib/postgresql/data
+    environment:
+      POSTGRES_INITDB_ARGS: "--data-checksums"
+      POSTGRES_DB: "penpot"
+      POSTGRES_USER: "penpot"
+      POSTGRES_PASSWORD: "penpot"
+    networks:
+      - penpot
+
+  penpot-redis:
+    image: redis:7
+    restart: "no"
+    networks:
+      - penpot
+
+  penpot-mailcatcher:
+    image: sj26/mailcatcher:latest
+    restart: "no"
+    ports:
+      - "1080:1080"
+    networks:
+      - penpot
+
+volumes:
+  penpot-postgres:
+    name: trainers-penpot-postgres
+  penpot-assets:
+    name: trainers-penpot-assets
+
+networks:
+  penpot:
+    name: trainers-penpot
