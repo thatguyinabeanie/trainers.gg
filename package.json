@@ -75,8 +75,6 @@
       "tar@<=7.5.3": ">=7.5.4",
       "@types/react": "~19.1.10"
     },
-    "ignoredBuiltDependencies": [
-      "@sentry/cli"
-    ]
+    "ignoredBuiltDependencies": []
   }
 }
