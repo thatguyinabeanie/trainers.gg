@@ -902,7 +902,9 @@ export async function forceCheckInPlayer(
  * Remove a player from tournament (tournament organizer action)
  */
 export async function removePlayerFromTournament(
-  registrationId: number
+  registrationId: number,
+  dropCategory: "no_show" | "conduct" | "disqualification" | "other",
+  dropNotes?: string
 ): Promise<ActionResult<{ success: true }>> {
   try {
     await rejectBots();
@@ -910,7 +912,8 @@ export async function removePlayerFromTournament(
     const result = await updateRegistrationStatusMutation(
       supabase,
       registrationId,
-      "dropped"
+      "dropped",
+      { dropCategory, dropNotes }
     );
     updateTag(CacheTags.tournament(result.tournamentId));
     return { success: true, data: { success: true } };
@@ -991,7 +994,9 @@ export async function bulkForceCheckIn(
  * Bulk remove multiple players (tournament organizer action)
  */
 export async function bulkRemovePlayers(
-  registrationIds: number[]
+  registrationIds: number[],
+  dropCategory: "no_show" | "conduct" | "disqualification" | "other",
+  dropNotes?: string
 ): Promise<ActionResult<{ removed: number; failed: number }>> {
   try {
     await rejectBots();
@@ -1027,10 +1032,19 @@ export async function bulkRemovePlayers(
 
     const tournamentId = tournamentIds[0]!;
 
+    // Get the current user for dropped_by tracking
+    const user = await supabase.auth.getUser();
+
     // Perform single bulk update
     const { data, error } = await supabase
       .from("tournament_registrations")
-      .update({ status: "dropped" })
+      .update({
+        status: "dropped" as const,
+        drop_category: dropCategory,
+        drop_notes: dropNotes ?? null,
+        dropped_by: user.data.user?.id ?? null,
+        dropped_at: new Date().toISOString(),
+      })
       .in("id", registrationIds)
       .eq("tournament_id", tournamentId)
       .select("id");

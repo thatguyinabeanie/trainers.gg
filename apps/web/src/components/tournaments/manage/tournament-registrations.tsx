@@ -273,7 +273,8 @@ export function TournamentRegistrations({
 
     setIsProcessing(true);
     try {
-      const result = await removePlayerFromTournament(registrationId);
+      // TODO: Replace with DropPlayerDialog (TGG-313 Task 6/7)
+      const result = await removePlayerFromTournament(registrationId, "other");
       if (result.success) {
         toast.success("Player removed successfully");
         refetch();
@@ -318,7 +319,8 @@ export function TournamentRegistrations({
 
     setIsProcessing(true);
     try {
-      const result = await bulkRemovePlayers(Array.from(selectedIds));
+      // TODO: Replace with DropPlayerDialog (TGG-313 Task 6/7)
+      const result = await bulkRemovePlayers(Array.from(selectedIds), "other");
       if (result.success) {
         toast.success(
           `${result.data.removed} player(s) removed${result.data.failed > 0 ? `, ${result.data.failed} failed` : ""}`
