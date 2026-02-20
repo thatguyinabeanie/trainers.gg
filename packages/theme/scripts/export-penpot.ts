@@ -67,6 +67,9 @@ function semanticGroupToTokens(
 }
 
 function hexToRgb(hex: string): [number, number, number] {
+  if (!/^#[0-9a-f]{6}$/i.test(hex)) {
+    throw new Error(`hexToRgb: expected #rrggbb, got "${hex}"`);
+  }
   const r = parseInt(hex.slice(1, 3), 16);
   const g = parseInt(hex.slice(3, 5), 16);
   const b = parseInt(hex.slice(5, 7), 16);
@@ -80,8 +83,13 @@ const output = {
     destructive: paletteToGroup(colors.destructive),
   },
   semantic: {
-    light: paletteToGroup(semanticTokens.light),
-    dark: semanticGroupToTokens(semanticTokens.dark, DARK_ALPHA_OVERRIDES),
+    light: paletteToGroup(
+      semanticTokens.light as unknown as Record<string, OklchColor>
+    ),
+    dark: semanticGroupToTokens(
+      semanticTokens.dark as unknown as Record<string, OklchColor>,
+      DARK_ALPHA_OVERRIDES
+    ),
   },
 };
 

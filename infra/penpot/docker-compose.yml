@@ -36,7 +36,7 @@ services:
       PENPOT_PUBLIC_URI: "http://localhost:9001"
       PENPOT_DATABASE_URI: "postgresql://penpot-postgres/penpot"
       PENPOT_DATABASE_USERNAME: "penpot"
-      PENPOT_DATABASE_PASSWORD: "penpot"
+      PENPOT_DATABASE_PASSWORD: "${PENPOT_DB_PASSWORD:-penpot}"
       PENPOT_REDIS_URI: "redis://penpot-redis/0"
       PENPOT_ASSETS_STORAGE_BACKEND: "assets-fs"
       PENPOT_STORAGE_ASSETS_FS_DIRECTORY: "/opt/data/assets"
@@ -70,7 +70,7 @@ services:
       POSTGRES_INITDB_ARGS: "--data-checksums"
       POSTGRES_DB: "penpot"
       POSTGRES_USER: "penpot"
-      POSTGRES_PASSWORD: "penpot"
+      POSTGRES_PASSWORD: "${PENPOT_DB_PASSWORD:-penpot}"
     networks:
       - penpot
 
