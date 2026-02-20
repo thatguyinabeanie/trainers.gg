@@ -2,6 +2,24 @@
 
 Pokemon community platform for competitive players. Monorepo: Next.js 16 web, Expo 54 mobile, Supabase backend, Bluesky PDS integration.
 
+## Workspace Index
+
+Each workspace has its own `AGENTS.md` with domain-specific guidance. Read the relevant one before working in that area.
+
+| Workspace | AGENTS.md | Purpose |
+| --- | --- | --- |
+| `apps/web` | [apps/web/AGENTS.md](apps/web/AGENTS.md) | Next.js 16 web app — routes, components, data fetching, auth |
+| `apps/mobile` | [apps/mobile/AGENTS.md](apps/mobile/AGENTS.md) | Expo 54 mobile app — Tamagui, query factory, SecureStore |
+| `packages/supabase` | [packages/supabase/AGENTS.md](packages/supabase/AGENTS.md) | DB clients, edge functions, schema notes, migrations |
+| `packages/tournaments` | [packages/tournaments/AGENTS.md](packages/tournaments/AGENTS.md) | Swiss pairings, standings, brackets — pure TS |
+| `packages/pokemon` | [packages/pokemon/AGENTS.md](packages/pokemon/AGENTS.md) | Team parsing, validation, type effectiveness |
+| `packages/validators` | [packages/validators/AGENTS.md](packages/validators/AGENTS.md) | Zod schemas, team parsing, action result type |
+| `packages/utils` | [packages/utils/AGENTS.md](packages/utils/AGENTS.md) | Labels, error handling, formatting, permissions |
+| `packages/atproto` | [packages/atproto/AGENTS.md](packages/atproto/AGENTS.md) | AT Protocol / Bluesky — platform-agnostic |
+| `packages/theme` | [packages/theme/AGENTS.md](packages/theme/AGENTS.md) | OKLCH design tokens for web (Tailwind) and mobile (Tamagui) |
+| `infra/pds` | [infra/pds/AGENTS.md](infra/pds/AGENTS.md) | Self-hosted Bluesky PDS on Fly.io |
+| `infra/ngrok` | [infra/ngrok/AGENTS.md](infra/ngrok/AGENTS.md) | Local PDS tunnel for development |
+
 ## Monorepo Structure
 
 ```
@@ -19,9 +37,10 @@ packages/
   validators/   # Zod schemas + team parsing
 
 tooling/        # eslint, prettier, tailwind, typescript configs
+infra/
+  pds/          # Bluesky PDS on Fly.io
+  ngrok/        # Local dev tunnel
 ```
-
-Each app and package has its own `AGENTS.md` (with `CLAUDE.md` symlinked to it) with domain-specific guidance.
 
 ## Tech Stack
 
