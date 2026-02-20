@@ -164,22 +164,19 @@ function classifyMatch(match: MatchData): MatchSection {
 
 const sectionConfig: Record<
   MatchSection,
-  { label: string; borderColor: string; emptyMessage: string }
+  { label: string; borderColor: string }
 > = {
   attention: {
     label: "Needs Attention",
     borderColor: "border-l-red-500",
-    emptyMessage: "",
   },
   active: {
     label: "Active",
     borderColor: "border-l-blue-500",
-    emptyMessage: "No active matches.",
   },
   completed: {
     label: "Completed",
     borderColor: "border-l-muted-foreground/30",
-    emptyMessage: "",
   },
 };
 
@@ -314,19 +311,27 @@ export function TournamentPairingsJudge({
     [selectedPhaseId, refreshKey]
   );
 
-  // Auto-select active round, or latest round
+  // Auto-select active round, or latest round (preserve manual selection if still valid)
   useEffect(() => {
     if (!rounds || rounds.length === 0) {
       setSelectedRoundId(null);
       return;
     }
+
+    if (
+      selectedRoundId != null &&
+      rounds.some((r) => r.id === selectedRoundId)
+    ) {
+      return;
+    }
+
     const active = rounds.find((r) => r.status === "active");
     if (active) {
       setSelectedRoundId(active.id);
     } else {
       setSelectedRoundId(rounds[rounds.length - 1]!.id);
     }
-  }, [rounds]);
+  }, [rounds, selectedRoundId]);
 
   const activeRound = rounds?.find((r) => r.status === "active");
   const isViewingActiveRound =

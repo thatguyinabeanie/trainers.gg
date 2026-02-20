@@ -72,13 +72,42 @@ export function OverviewClient() {
       .on(
         "postgres_changes",
         {
+          event: "INSERT",
+          schema: "public",
+          table: "tournament_matches",
+          filter: `alt1_id=eq.${profileId}`,
+        },
+        () => triggerRefresh()
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "tournament_matches",
+          filter: `alt2_id=eq.${profileId}`,
+        },
+        () => triggerRefresh()
+      )
+      .on(
+        "postgres_changes",
+        {
           event: "UPDATE",
           schema: "public",
           table: "tournament_matches",
+          filter: `alt1_id=eq.${profileId}`,
         },
-        () => {
-          triggerRefresh();
-        }
+        () => triggerRefresh()
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "tournament_matches",
+          filter: `alt2_id=eq.${profileId}`,
+        },
+        () => triggerRefresh()
       )
       .subscribe();
 

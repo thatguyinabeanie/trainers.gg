@@ -41,16 +41,21 @@ export function CurrentMatchBanner({
     let cancelled = false;
 
     async function fetchActiveMatch() {
-      const { data: alts } = await supabase
+      const { data: alts, error: altsError } = await supabase
         .from("alts")
         .select("id")
         .eq("user_id", userId!);
+
+      if (altsError) {
+        console.error("[CurrentMatchBanner] Failed to fetch alts:", altsError);
+        return;
+      }
 
       if (!alts || alts.length === 0 || cancelled) return;
 
       const altIds = alts.map((a) => a.id);
 
-      const { data: matchData } = await supabase
+      const { data: matchData, error: matchError } = await supabase
         .from("tournament_matches")
         .select(
           `
@@ -70,8 +75,18 @@ export function CurrentMatchBanner({
         .eq("tournament_id", tournamentId)
         .in("status", ["pending", "active"])
         .or(altIds.map((id) => `alt1_id.eq.${id},alt2_id.eq.${id}`).join(","))
+        .order("status", { ascending: true })
+        .order("updated_at", { ascending: false })
         .limit(1)
         .maybeSingle();
+
+      if (matchError) {
+        console.error(
+          "[CurrentMatchBanner] Failed to fetch match:",
+          matchError
+        );
+        return;
+      }
 
       if (cancelled || !matchData) return;
 
