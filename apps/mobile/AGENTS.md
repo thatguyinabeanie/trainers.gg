@@ -1,0 +1,34 @@
+# @trainers/mobile
+
+Expo 54 (React 19) React Native app. File-based routing via Expo Router.
+
+## Structure
+
+```
+src/
+  app/          # Expo Router screens (file-based routing)
+  components/   # Tamagui UI components
+  lib/
+    api/        # query-factory.ts — TanStack Query factory for all hooks
+    supabase/   # Mobile Supabase client (session in SecureStore)
+    atproto/    # AT Protocol hooks
+  hooks/        # useAuth, useColorScheme, etc.
+```
+
+## Data Fetching
+
+Use `createQuery` and `createMutation` from `src/lib/api/query-factory.ts` — do NOT repeat raw `useQuery` boilerplate. Each hook should be a one-liner using the factory.
+
+TanStack Query client configured in `src/lib/query-client.ts`.
+
+## Supabase
+
+Import from `@trainers/supabase/mobile`. Session stored in SecureStore (not localStorage). Use `useSupabaseQuery` from `src/lib/supabase/` for simple queries.
+
+## UI
+
+Tamagui components — not shadcn/ui (web only). Use theme tokens from `@trainers/theme` for colors. Platform-specific components only — no shared UI package between web and mobile.
+
+## AT Protocol
+
+Auth handled differently from web: mobile uses SecureStore for session persistence. Hooks in `src/lib/atproto/` wrap `@trainers/atproto` package.
