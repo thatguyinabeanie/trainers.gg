@@ -12,7 +12,6 @@ function PostHogAuthSync({ isImpersonating }: { isImpersonating: boolean }) {
   const ph = usePostHog();
   const wasImpersonating = useRef(false);
 
-  // Identify/reset user based on auth state
   useEffect(() => {
     if (!ph) return;
 
@@ -34,7 +33,7 @@ function PostHogAuthSync({ isImpersonating }: { isImpersonating: boolean }) {
     }
   }, [ph, user, isAuthenticated]);
 
-  // Disable session replay during impersonation
+  // During impersonation: stop session recording and tag events as impersonated
   useEffect(() => {
     if (!ph) return;
 

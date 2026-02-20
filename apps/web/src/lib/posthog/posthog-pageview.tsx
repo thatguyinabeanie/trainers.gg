@@ -9,7 +9,8 @@ import { usePostHog } from "posthog-js/react";
  * Next.js App Router doesn't trigger full page loads on navigation,
  * so we capture $pageview events manually when the URL changes.
  *
- * Must be rendered inside <PostHogProvider> and wrapped in <Suspense>.
+ * Must be rendered inside <PostHogProvider> and wrapped in <Suspense>
+ * because useSearchParams() suspends during static rendering.
  */
 export function PostHogPageview() {
   const pathname = usePathname();
