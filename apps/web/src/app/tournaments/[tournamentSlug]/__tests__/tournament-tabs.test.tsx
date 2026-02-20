@@ -23,6 +23,10 @@ jest.mock("@/components/tournaments/manage/tournament-standings", () => ({
   ),
 }));
 
+jest.mock("../current-match-banner", () => ({
+  CurrentMatchBanner: () => null,
+}));
+
 describe("TournamentTabs - Deep Linkable Tabs", () => {
   const mockRouter = {
     push: jest.fn(),

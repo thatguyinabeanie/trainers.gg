@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { useAuth } from "@/components/auth/auth-provider";
-import { useSupabaseQuery } from "@/lib/supabase";
+import { useSupabaseQuery, useSupabase } from "@/lib/supabase";
 import { getMyDashboardData, getActiveMatch } from "@trainers/supabase";
 import { toast } from "sonner";
 import {
@@ -51,6 +51,44 @@ export function OverviewClient() {
   const { user } = useAuth();
   const profileId = user?.profile?.id;
   const toastShown = useRef(false);
+  const supabase = useSupabase();
+  const [refreshKey, setRefreshKey] = useState(0);
+  const refreshTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
+
+  const triggerRefresh = useCallback(() => {
+    if (refreshTimeoutRef.current) {
+      clearTimeout(refreshTimeoutRef.current);
+    }
+    refreshTimeoutRef.current = setTimeout(() => {
+      setRefreshKey((k) => k + 1);
+    }, 500);
+  }, []);
+
+  useEffect(() => {
+    if (!profileId) return;
+
+    const channel = supabase
+      .channel(`dashboard-matches-${profileId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "tournament_matches",
+        },
+        () => {
+          triggerRefresh();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      if (refreshTimeoutRef.current) {
+        clearTimeout(refreshTimeoutRef.current);
+      }
+      channel.unsubscribe();
+    };
+  }, [supabase, profileId, triggerRefresh]);
 
   // Show welcome toast for users with placeholder usernames
   useEffect(() => {
@@ -97,6 +135,7 @@ export function OverviewClient() {
 
   const { data: activeMatch } = useSupabaseQuery(activeMatchQueryFn, [
     profileId,
+    refreshKey,
   ]);
 
   // Transform Supabase data to match expected component formats

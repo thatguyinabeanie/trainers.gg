@@ -116,7 +116,7 @@ export function ActiveMatchCard({ match }: ActiveMatchCardProps) {
 
         {/* Action button - prominent CTA */}
         <Link
-          href={`/tournaments/${match.tournamentSlug}/match/${match.id}`}
+          href={`/tournaments/${match.tournamentSlug}/matches/${match.id}`}
           className={cn(
             "group bg-primary text-primary-foreground hover:bg-primary/90 relative inline-flex h-11 w-full items-center justify-center gap-2 overflow-hidden rounded-lg px-4 text-sm font-bold tracking-wide uppercase transition-all"
           )}
