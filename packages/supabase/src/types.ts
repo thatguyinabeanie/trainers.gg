@@ -2781,6 +2781,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      accept_tournament_invitation_atomic: {
+        Args: { p_invitation_id: number }
+        Returns: Json
+      }
       advance_to_top_cut: {
         Args: { p_top_cut_size?: number; p_tournament_id: number }
         Returns: Json
@@ -2911,6 +2915,15 @@ export type Database = {
       }
       request_judge: { Args: { p_match_id: number }; Returns: undefined }
       reset_match: { Args: { p_match_id: number }; Returns: undefined }
+      send_tournament_invitations_atomic: {
+        Args: {
+          p_invited_alt_ids: number[]
+          p_invited_by_alt_id: number
+          p_message?: string
+          p_tournament_id: number
+        }
+        Returns: Json
+      }
       start_match: { Args: { p_match_id: number }; Returns: undefined }
       start_round: {
         Args: { p_best_of_override?: number; p_round_id: number }
