@@ -20,7 +20,10 @@ export default async function DashboardLayout({
   const supabase = await createClient();
   const [showStats, invitations] = await Promise.all([
     checkFeatureAccess("dashboard_stats", user.id),
-    getTournamentInvitationsReceived(supabase),
+    getTournamentInvitationsReceived(supabase).catch((error) => {
+      console.error("[DashboardLayout] Failed to load invitations:", error);
+      return [] as Awaited<ReturnType<typeof getTournamentInvitationsReceived>>;
+    }),
   ]);
 
   const now = new Date();

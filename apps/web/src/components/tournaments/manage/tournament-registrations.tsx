@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useSupabase, useSupabaseQuery } from "@/lib/supabase";
 import {
   getTournamentRegistrations,
   getTournamentInvitationsSent,
 } from "@trainers/supabase";
+import { getErrorMessage } from "@trainers/utils";
 import { InviteForm } from "@/components/tournaments/invite/invite-form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -54,6 +55,17 @@ import {
   type RealtimeStatus,
 } from "./realtime-status-badge";
 
+// Map invitation statuses to valid StatusBadge Status values
+const invitationStatusToStatus = (status: string | null): Status => {
+  const map: Record<string, Status> = {
+    pending: "pending",
+    accepted: "registered",
+    declined: "declined",
+    expired: "cancelled",
+  };
+  return map[status ?? "pending"] ?? "pending";
+};
+
 interface TournamentRegistrationsProps {
   tournament: {
     id: number;
@@ -77,23 +89,23 @@ export function TournamentRegistrations({
   const invRefreshTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
 
   // Debounced refresh trigger (500ms delay to batch bulk operations)
-  const triggerRefresh = useCallback(() => {
+  const triggerRefresh = () => {
     if (refreshTimeoutRef.current) {
       clearTimeout(refreshTimeoutRef.current);
     }
     refreshTimeoutRef.current = setTimeout(() => {
       setRefreshKey((k) => k + 1);
     }, 500);
-  }, []);
+  };
 
-  const triggerInvitationsRefresh = useCallback(() => {
+  const triggerInvitationsRefresh = () => {
     if (invRefreshTimeoutRef.current) {
       clearTimeout(invRefreshTimeoutRef.current);
     }
     invRefreshTimeoutRef.current = setTimeout(() => {
       setInvitationsRefreshKey((k) => k + 1);
     }, 500);
-  }, []);
+  };
 
   // Realtime: registrations
   useEffect(() => {
@@ -128,7 +140,7 @@ export function TournamentRegistrations({
       }
       channel.unsubscribe();
     };
-  }, [supabase, tournament.id, triggerRefresh]);
+  }, [supabase, tournament.id]);
 
   // Realtime: invitations (triggers both refreshes so capacity recalculates)
   useEffect(() => {
@@ -147,7 +159,12 @@ export function TournamentRegistrations({
           triggerInvitationsRefresh();
         }
       )
-      .subscribe();
+      .subscribe((status, err) => {
+        if (err) {
+          console.error("[Realtime] invitations error:", err);
+          setRealtimeStatus("error");
+        }
+      });
 
     return () => {
       if (invRefreshTimeoutRef.current) {
@@ -155,18 +172,25 @@ export function TournamentRegistrations({
       }
       channel.unsubscribe();
     };
-  }, [supabase, tournament.id, triggerRefresh, triggerInvitationsRefresh]);
+  }, [supabase, tournament.id]);
 
-  const { data: registrations, refetch } = useSupabaseQuery(
+  const {
+    data: registrations,
+    error: registrationsError,
+    refetch,
+  } = useSupabaseQuery(
     (supabase) => getTournamentRegistrations(supabase, tournament.id),
     [tournament.id, refreshKey]
   );
 
-  const { data: invitationsSent, refetch: refetchInvitations } =
-    useSupabaseQuery(
-      (supabase) => getTournamentInvitationsSent(supabase, tournament.id),
-      [tournament.id, invitationsRefreshKey]
-    );
+  const {
+    data: invitationsSent,
+    error: invitationsError,
+    refetch: refetchInvitations,
+  } = useSupabaseQuery(
+    (supabase) => getTournamentInvitationsSent(supabase, tournament.id),
+    [tournament.id, invitationsRefreshKey]
+  );
 
   const now = new Date();
   const registeredCount =
@@ -230,8 +254,8 @@ export function TournamentRegistrations({
       } else {
         toast.error(result.error || "Failed to check in player");
       }
-    } catch {
-      toast.error("An unexpected error occurred");
+    } catch (error) {
+      toast.error(getErrorMessage(error, "An unexpected error occurred"));
     } finally {
       setIsProcessing(false);
     }
@@ -249,8 +273,8 @@ export function TournamentRegistrations({
       } else {
         toast.error(result.error || "Failed to remove player");
       }
-    } catch {
-      toast.error("An unexpected error occurred");
+    } catch (error) {
+      toast.error(getErrorMessage(error, "An unexpected error occurred"));
     } finally {
       setIsProcessing(false);
     }
@@ -271,8 +295,8 @@ export function TournamentRegistrations({
       } else {
         toast.error(result.error || "Failed to check in players");
       }
-    } catch {
-      toast.error("An unexpected error occurred");
+    } catch (error) {
+      toast.error(getErrorMessage(error, "An unexpected error occurred"));
     } finally {
       setIsProcessing(false);
     }
@@ -297,8 +321,8 @@ export function TournamentRegistrations({
       } else {
         toast.error(result.error || "Failed to remove players");
       }
-    } catch {
-      toast.error("An unexpected error occurred");
+    } catch (error) {
+      toast.error(getErrorMessage(error, "An unexpected error occurred"));
     } finally {
       setIsProcessing(false);
     }
@@ -306,6 +330,12 @@ export function TournamentRegistrations({
 
   return (
     <div className="space-y-6">
+      {(registrationsError || invitationsError) && (
+        <div className="bg-destructive/10 text-destructive rounded-lg p-3 text-sm">
+          Failed to load data. Please refresh the page.
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -591,7 +621,7 @@ export function TournamentRegistrations({
           {/* Invite form */}
           <InviteForm
             tournamentId={tournament.id}
-            tournamentName=""
+            tournamentName="this tournament"
             maxInvitations={availableSpots ?? undefined}
             onSuccess={() => {
               refetchInvitations();
@@ -638,7 +668,7 @@ export function TournamentRegistrations({
                         </TableCell>
                         <TableCell>
                           <StatusBadge
-                            status={(inv.status ?? "pending") as Status}
+                            status={invitationStatusToStatus(inv.status)}
                           />
                         </TableCell>
                         <TableCell>{formatDate(inv.expires_at)}</TableCell>

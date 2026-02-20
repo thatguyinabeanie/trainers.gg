@@ -349,7 +349,11 @@ export async function sendTournamentInvitations(
   message?: string
 ) {
   const alt = await getCurrentAlt(supabase);
-  if (!alt) throw new Error("Not authenticated");
+  if (!alt) {
+    throw new Error(
+      "Unable to load your account. Please try signing out and back in, or contact support."
+    );
+  }
 
   const { data, error } = await supabase.rpc(
     "send_tournament_invitations_atomic",
@@ -357,7 +361,7 @@ export async function sendTournamentInvitations(
       p_tournament_id: tournamentId,
       p_invited_alt_ids: profileIds,
       p_invited_by_alt_id: alt.id,
-      p_message: (message ?? null) as string | undefined,
+      p_message: message || undefined,
     }
   );
 
@@ -369,9 +373,13 @@ export async function sendTournamentInvitations(
     invitationsSent?: number;
     alreadyInvited?: number;
     availableSpots?: number | null;
-  };
+  } | null;
 
-  if (!result.success) throw new Error(result.error);
+  if (!result?.success) {
+    throw new Error(
+      result?.error ?? "Failed to send invitations. Please try again."
+    );
+  }
 
   return {
     invitationsSent: result.invitationsSent,
@@ -435,8 +443,13 @@ export async function respondToTournamentInvitation(
     success: boolean;
     error?: string;
     registrationId?: number;
-  };
-  if (!result.success) throw new Error(result.error);
+  } | null;
+
+  if (!result?.success) {
+    throw new Error(
+      result?.error ?? "Failed to accept invitation. Please try again."
+    );
+  }
 
   return {
     success: true,

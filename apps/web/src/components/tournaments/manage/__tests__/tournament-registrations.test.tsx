@@ -466,7 +466,7 @@ describe("TournamentRegistrations — invitations sub-tab", () => {
       {
         id: 10,
         status: "pending",
-        expires_at: "2026-03-05T00:00:00Z",
+        expires_at: "2099-01-01T00:00:00Z",
         invited_at: null,
         invitedPlayer: { username: "inv1" },
         invitedByAlt: null,
@@ -474,7 +474,7 @@ describe("TournamentRegistrations — invitations sub-tab", () => {
       {
         id: 11,
         status: "pending",
-        expires_at: "2026-03-10T00:00:00Z",
+        expires_at: "2099-01-01T00:00:00Z",
         invited_at: null,
         invitedPlayer: { username: "inv2" },
         invitedByAlt: null,
@@ -511,7 +511,7 @@ describe("TournamentRegistrations — invitations sub-tab", () => {
       {
         id: 10,
         status: "pending",
-        expires_at: "2026-03-05T00:00:00Z",
+        expires_at: "2099-01-01T00:00:00Z",
         invited_at: null,
         invitedPlayer: { username: "inv1" },
         invitedByAlt: null,
@@ -519,7 +519,7 @@ describe("TournamentRegistrations — invitations sub-tab", () => {
       {
         id: 11,
         status: "pending",
-        expires_at: "2026-03-10T00:00:00Z",
+        expires_at: "2099-01-01T00:00:00Z",
         invited_at: null,
         invitedPlayer: { username: "inv2" },
         invitedByAlt: null,

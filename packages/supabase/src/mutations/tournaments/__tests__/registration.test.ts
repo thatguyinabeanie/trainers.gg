@@ -792,7 +792,7 @@ describe("Tournament Registration Mutations", () => {
           p_tournament_id: tournamentId,
           p_invited_alt_ids: profileIds,
           p_invited_by_alt_id: mockAlt.id,
-          p_message: null,
+          p_message: undefined,
         }
       );
       expect(result).toEqual({
@@ -851,6 +851,25 @@ describe("Tournament Registration Mutations", () => {
       await expect(
         sendTournamentInvitations(mockClient, tournamentId, profileIds)
       ).rejects.toThrow("You don't have permission to send invitations");
+    });
+
+    it("throws when user is not authenticated", async () => {
+      (getCurrentAlt as jest.Mock).mockResolvedValue(null);
+
+      await expect(
+        sendTournamentInvitations(mockClient, tournamentId, profileIds)
+      ).rejects.toThrow("Unable to load your account");
+    });
+
+    it("throws when RPC returns a transport error", async () => {
+      (mockClient.rpc as jest.Mock).mockResolvedValue({
+        data: null,
+        error: { message: "connection timeout", code: "PGRST301" },
+      });
+
+      await expect(
+        sendTournamentInvitations(mockClient, tournamentId, profileIds)
+      ).rejects.toMatchObject({ message: "connection timeout" });
     });
 
     it("should pass optional message to RPC", async () => {
@@ -916,6 +935,17 @@ describe("Tournament Registration Mutations", () => {
         await expect(
           respondToTournamentInvitation(mockClient, invitationId, "accept")
         ).rejects.toThrow("Invitation has expired");
+      });
+
+      it("throws when accept RPC returns a transport error", async () => {
+        (mockClient.rpc as jest.Mock).mockResolvedValue({
+          data: null,
+          error: { message: "database unavailable", code: "PGRST301" },
+        });
+
+        await expect(
+          respondToTournamentInvitation(mockClient, invitationId, "accept")
+        ).rejects.toMatchObject({ message: "database unavailable" });
       });
 
       it("should throw when RPC reports invitation already responded to", async () => {
