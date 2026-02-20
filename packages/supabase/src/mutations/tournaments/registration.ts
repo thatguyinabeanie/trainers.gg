@@ -1,4 +1,3 @@
-import { getInvitationExpiryDate } from "../../constants";
 import { checkCheckInOpen } from "../../utils/registration";
 import type { Database } from "../../types";
 import {
@@ -341,7 +340,7 @@ export async function withdrawFromTournament(
 }
 
 /**
- * Send tournament invitations to players
+ * Send tournament invitations to players (atomic — capacity-checked)
  */
 export async function sendTournamentInvitations(
   supabase: TypedClient,
@@ -349,70 +348,35 @@ export async function sendTournamentInvitations(
   profileIds: number[],
   message?: string
 ) {
-  const user = await getCurrentUser(supabase);
-  if (!user) throw new Error("Not authenticated");
-
-  // Get user's alt for recording who sent the invitation
   const alt = await getCurrentAlt(supabase);
-  if (!alt) throw new Error("Alt not found");
+  if (!alt) throw new Error("Not authenticated");
 
-  // Get tournament and verify permission
-  const { data: tournament } = await supabase
-    .from("tournaments")
-    .select("organization_id")
-    .eq("id", tournamentId)
-    .single();
-
-  if (!tournament) throw new Error("Tournament not found");
-
-  const hasPermission = await checkOrgPermission(
-    supabase,
-    tournament.organization_id,
-    "tournament.manage"
+  const { data, error } = await supabase.rpc(
+    "send_tournament_invitations_atomic",
+    {
+      p_tournament_id: tournamentId,
+      p_invited_alt_ids: profileIds,
+      p_invited_by_alt_id: alt.id,
+      p_message: (message ?? null) as string | undefined,
+    }
   );
-  if (!hasPermission) {
-    throw new Error("You don't have permission to send invitations");
-  }
-
-  // Check for existing invitations
-  const { data: existingInvitations } = await supabase
-    .from("tournament_invitations")
-    .select("invited_alt_id")
-    .eq("tournament_id", tournamentId)
-    .in("invited_alt_id", profileIds);
-
-  const existingIds = new Set(
-    existingInvitations?.map((inv) => inv.invited_alt_id) ?? []
-  );
-  const newProfileIds = profileIds.filter((id) => !existingIds.has(id));
-
-  if (newProfileIds.length === 0) {
-    return {
-      invitationsSent: 0,
-      alreadyInvited: profileIds.length,
-    };
-  }
-
-  // Create invitations
-  const invitations = newProfileIds.map((profileId) => ({
-    tournament_id: tournamentId,
-    invited_alt_id: profileId,
-    invited_by_alt_id: alt.id,
-    status: "pending" as const,
-    message: message ?? null,
-    invited_at: new Date().toISOString(),
-    expires_at: getInvitationExpiryDate(),
-  }));
-
-  const { error } = await supabase
-    .from("tournament_invitations")
-    .insert(invitations);
 
   if (error) throw error;
 
+  const result = data as {
+    success: boolean;
+    error?: string;
+    invitationsSent?: number;
+    alreadyInvited?: number;
+    availableSpots?: number | null;
+  };
+
+  if (!result.success) throw new Error(result.error);
+
   return {
-    invitationsSent: newProfileIds.length,
-    alreadyInvited: existingIds.size,
+    invitationsSent: result.invitationsSent,
+    alreadyInvited: result.alreadyInvited,
+    availableSpots: result.availableSpots,
   };
 }
 

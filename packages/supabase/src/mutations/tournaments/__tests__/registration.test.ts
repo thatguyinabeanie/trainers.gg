@@ -761,40 +761,24 @@ describe("Tournament Registration Mutations", () => {
   });
 
   describe("sendTournamentInvitations", () => {
-    const mockUser = { id: "user-123" };
     const mockAlt = { id: 10, username: "test-player", user_id: "user-123" };
     const tournamentId = 100;
     const profileIds = [20, 21, 22];
 
     beforeEach(() => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
       (getCurrentAlt as jest.Mock).mockResolvedValue(mockAlt);
-      (checkOrgPermission as jest.Mock).mockResolvedValue(true);
     });
 
-    it("should send invitations to new players", async () => {
-      const fromSpy = jest.spyOn(mockClient, "from");
-      fromSpy.mockReturnValueOnce({
-        select: jest.fn().mockReturnThis(),
-        eq: jest.fn().mockReturnThis(),
-        single: jest.fn().mockResolvedValue({
-          data: { organization_id: 200 },
-          error: null,
-        }),
-      } as unknown as MockQueryBuilder);
-
-      fromSpy.mockReturnValueOnce({
-        select: jest.fn().mockReturnThis(),
-        eq: jest.fn().mockReturnThis(),
-        in: jest.fn().mockResolvedValue({
-          data: [],
-          error: null,
-        }),
-      } as unknown as MockQueryBuilder);
-
-      fromSpy.mockReturnValueOnce({
-        insert: jest.fn().mockResolvedValue({ error: null }),
-      } as unknown as MockQueryBuilder);
+    it("should send invitations via atomic RPC and return counts", async () => {
+      (mockClient.rpc as jest.Mock).mockResolvedValue({
+        data: {
+          success: true,
+          invitationsSent: 3,
+          alreadyInvited: 0,
+          availableSpots: 7,
+        },
+        error: null,
+      });
 
       const result = await sendTournamentInvitations(
         mockClient,
@@ -802,35 +786,32 @@ describe("Tournament Registration Mutations", () => {
         profileIds
       );
 
+      expect(mockClient.rpc).toHaveBeenCalledWith(
+        "send_tournament_invitations_atomic",
+        {
+          p_tournament_id: tournamentId,
+          p_invited_alt_ids: profileIds,
+          p_invited_by_alt_id: mockAlt.id,
+          p_message: null,
+        }
+      );
       expect(result).toEqual({
         invitationsSent: 3,
         alreadyInvited: 0,
+        availableSpots: 7,
       });
     });
 
-    it("should skip already invited players", async () => {
-      const fromSpy = jest.spyOn(mockClient, "from");
-      fromSpy.mockReturnValueOnce({
-        select: jest.fn().mockReturnThis(),
-        eq: jest.fn().mockReturnThis(),
-        single: jest.fn().mockResolvedValue({
-          data: { organization_id: 200 },
-          error: null,
-        }),
-      } as unknown as MockQueryBuilder);
-
-      fromSpy.mockReturnValueOnce({
-        select: jest.fn().mockReturnThis(),
-        eq: jest.fn().mockReturnThis(),
-        in: jest.fn().mockResolvedValue({
-          data: [{ invited_alt_id: 20 }, { invited_alt_id: 21 }],
-          error: null,
-        }),
-      } as unknown as MockQueryBuilder);
-
-      fromSpy.mockReturnValueOnce({
-        insert: jest.fn().mockResolvedValue({ error: null }),
-      } as unknown as MockQueryBuilder);
+    it("should report already-invited players from RPC dedup", async () => {
+      (mockClient.rpc as jest.Mock).mockResolvedValue({
+        data: {
+          success: true,
+          invitationsSent: 1,
+          alreadyInvited: 2,
+          availableSpots: 9,
+        },
+        error: null,
+      });
 
       const result = await sendTournamentInvitations(
         mockClient,
@@ -838,63 +819,62 @@ describe("Tournament Registration Mutations", () => {
         profileIds
       );
 
-      expect(result).toEqual({
-        invitationsSent: 1,
-        alreadyInvited: 2,
-      });
+      expect(result.invitationsSent).toBe(1);
+      expect(result.alreadyInvited).toBe(2);
     });
 
-    it("should return early if all players already invited", async () => {
-      const fromSpy = jest.spyOn(mockClient, "from");
-      fromSpy.mockReturnValueOnce({
-        select: jest.fn().mockReturnThis(),
-        eq: jest.fn().mockReturnThis(),
-        single: jest.fn().mockResolvedValue({
-          data: { organization_id: 200 },
-          error: null,
-        }),
-      } as unknown as MockQueryBuilder);
-
-      fromSpy.mockReturnValueOnce({
-        select: jest.fn().mockReturnThis(),
-        eq: jest.fn().mockReturnThis(),
-        in: jest.fn().mockResolvedValue({
-          data: [
-            { invited_alt_id: 20 },
-            { invited_alt_id: 21 },
-            { invited_alt_id: 22 },
-          ],
-          error: null,
-        }),
-      } as unknown as MockQueryBuilder);
-
-      const result = await sendTournamentInvitations(
-        mockClient,
-        tournamentId,
-        profileIds
-      );
-
-      expect(result).toEqual({
-        invitationsSent: 0,
-        alreadyInvited: 3,
+    it("should throw error when capacity exceeded", async () => {
+      (mockClient.rpc as jest.Mock).mockResolvedValue({
+        data: {
+          success: false,
+          error:
+            "Not enough spots available. 2 spot(s) available, 3 requested.",
+          availableSpots: 2,
+        },
+        error: null,
       });
+
+      await expect(
+        sendTournamentInvitations(mockClient, tournamentId, profileIds)
+      ).rejects.toThrow("Not enough spots available");
     });
 
-    it("should throw error if user lacks permission", async () => {
-      (checkOrgPermission as jest.Mock).mockResolvedValue(false);
-
-      (mockClient.from as jest.Mock).mockReturnValue({
-        select: jest.fn().mockReturnThis(),
-        eq: jest.fn().mockReturnThis(),
-        single: jest.fn().mockResolvedValue({
-          data: { organization_id: 200 },
-          error: null,
-        }),
+    it("should throw error when caller lacks permission", async () => {
+      (mockClient.rpc as jest.Mock).mockResolvedValue({
+        data: {
+          success: false,
+          error: "You don't have permission to send invitations",
+        },
+        error: null,
       });
 
       await expect(
         sendTournamentInvitations(mockClient, tournamentId, profileIds)
       ).rejects.toThrow("You don't have permission to send invitations");
+    });
+
+    it("should pass optional message to RPC", async () => {
+      (mockClient.rpc as jest.Mock).mockResolvedValue({
+        data: {
+          success: true,
+          invitationsSent: 1,
+          alreadyInvited: 0,
+          availableSpots: 9,
+        },
+        error: null,
+      });
+
+      await sendTournamentInvitations(
+        mockClient,
+        tournamentId,
+        [20],
+        "Join us!"
+      );
+
+      expect(mockClient.rpc).toHaveBeenCalledWith(
+        "send_tournament_invitations_atomic",
+        expect.objectContaining({ p_message: "Join us!" })
+      );
     });
   });
 
