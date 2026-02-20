@@ -72,11 +72,17 @@ export function PostHogProvider({
   useEffect(() => {
     initPostHog();
 
-    // Apply initial consent state (only if init succeeded)
+    // Re-apply consent for returning users who already opted in.
+    // "denied" and "undecided" require no action because PostHog
+    // starts opted out by default (opt_out_capturing_by_default: true).
     if (posthog.__loaded) {
       const consent = getConsentStatus();
       if (consent === "granted") {
-        posthog.opt_in_capturing();
+        try {
+          posthog.opt_in_capturing();
+        } catch (e) {
+          console.error("PostHog opt-in failed:", e);
+        }
       }
     }
 
@@ -84,10 +90,14 @@ export function PostHogProvider({
     function handleConsentChange(e: Event) {
       if (!posthog.__loaded) return;
       const status = (e as CustomEvent<string>).detail;
-      if (status === "granted") {
-        posthog.opt_in_capturing();
-      } else {
-        posthog.opt_out_capturing();
+      try {
+        if (status === "granted") {
+          posthog.opt_in_capturing();
+        } else {
+          posthog.opt_out_capturing();
+        }
+      } catch (e) {
+        console.error("PostHog consent change failed:", e);
       }
     }
 

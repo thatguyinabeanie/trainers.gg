@@ -18,9 +18,10 @@ export function initPostHog() {
       // App Router: capture pageviews manually via PostHogPageview component
       capture_pageview: false,
       capture_pageleave: true,
-      // Capture clicks, inputs, and other DOM interactions
+      // Capture clicks, form submissions, and other DOM interactions
       autocapture: true,
-      // Session replay — controlled by consent opt-in
+      // Session replay is enabled here but does not start recording
+      // until the user opts in via the cookie consent banner
       disable_session_recording: false,
     });
   } catch (e) {
@@ -32,6 +33,9 @@ export function initPostHog() {
  * Capture a caught exception in PostHog.
  * Uses PostHog's built-in exception capture which formats
  * stack traces and error metadata automatically.
+ *
+ * No-op when called server-side or when PostHog has not initialized
+ * (e.g. missing env vars, init failure, or blocked by ad-blocker).
  */
 export function captureException(
   error: unknown,

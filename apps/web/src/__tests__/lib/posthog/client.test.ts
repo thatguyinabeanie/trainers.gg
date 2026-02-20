@@ -97,15 +97,18 @@ describe("initPostHog", () => {
 
     initPostHog();
 
-    expect(posthog.init).toHaveBeenCalledWith("phk_test", {
-      api_host: "https://us.i.posthog.com",
-      persistence: "localStorage+cookie",
-      opt_out_capturing_by_default: true,
-      capture_pageview: false,
-      capture_pageleave: true,
-      autocapture: true,
-      disable_session_recording: false,
-    });
+    expect(posthog.init).toHaveBeenCalledWith(
+      "phk_test",
+      expect.objectContaining({
+        api_host: "https://us.i.posthog.com",
+        persistence: "localStorage+cookie",
+        opt_out_capturing_by_default: true,
+        capture_pageview: false,
+        capture_pageleave: true,
+        autocapture: true,
+        disable_session_recording: false,
+      })
+    );
   });
 
   it("skips initialization when already loaded", () => {

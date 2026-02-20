@@ -10,6 +10,9 @@ export default function GlobalError({
   error: Error & { digest?: string };
 }) {
   useEffect(() => {
+    // Log to console as a fallback — PostHog may not be available
+    // in error boundary scenarios (e.g. init failure, ad-blocker)
+    console.error("Uncaught error:", error);
     captureException(error, { digest: error.digest });
   }, [error]);
 
