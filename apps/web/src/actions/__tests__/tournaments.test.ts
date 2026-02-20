@@ -7,7 +7,15 @@
 // ---------------------------------------------------------------------------
 
 // Sentinel object used as the mock Supabase client.
-const mockSupabase = { __mock: true };
+const mockSupabase: Record<string, unknown> = {
+  __mock: true,
+  auth: {
+    getUser: jest.fn().mockResolvedValue({
+      data: { user: { id: "user-123" } },
+      error: null,
+    }),
+  },
+};
 
 // @trainers/supabase mutation mocks
 const mockCreateTournament = jest.fn();
@@ -319,13 +327,14 @@ describe("removePlayerFromTournament", () => {
       tournamentId: 10,
     });
 
-    const result = await removePlayerFromTournament(42);
+    const result = await removePlayerFromTournament(42, "no_show");
 
     expect(result).toEqual({ success: true, data: { success: true } });
     expect(mockUpdateRegistrationStatus).toHaveBeenCalledWith(
       mockSupabase,
       42,
-      "dropped"
+      "dropped",
+      { dropCategory: "no_show", dropNotes: undefined }
     );
     expect(mockUpdateTag).toHaveBeenCalledWith("tournament:10");
   });
@@ -335,7 +344,11 @@ describe("removePlayerFromTournament", () => {
       new Error("permission denied")
     );
 
-    const result = await removePlayerFromTournament(42);
+    const result = await removePlayerFromTournament(
+      42,
+      "conduct",
+      "Bad behavior"
+    );
 
     expect(result).toEqual({
       success: false,
@@ -445,7 +458,7 @@ describe("bulkRemovePlayers", () => {
       }),
     });
 
-    const result = await bulkRemovePlayers([1, 2]);
+    const result = await bulkRemovePlayers([1, 2], "no_show");
 
     expect(result.success).toBe(true);
     expect(result.data).toEqual({ removed: 2, failed: 0 });
@@ -453,7 +466,7 @@ describe("bulkRemovePlayers", () => {
   });
 
   it("returns empty result for empty array", async () => {
-    const result = await bulkRemovePlayers([]);
+    const result = await bulkRemovePlayers([], "no_show");
 
     expect(result.success).toBe(true);
     expect(result.data).toEqual({ removed: 0, failed: 0 });
@@ -484,7 +497,11 @@ describe("bulkRemovePlayers", () => {
       }),
     });
 
-    const result = await bulkRemovePlayers([1, 2, 3]);
+    const result = await bulkRemovePlayers(
+      [1, 2, 3],
+      "conduct",
+      "Group violation"
+    );
 
     expect(result.success).toBe(true);
     expect(result.data).toEqual({ removed: 2, failed: 1 });
