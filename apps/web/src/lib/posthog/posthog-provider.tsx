@@ -15,17 +15,21 @@ function PostHogAuthSync({ isImpersonating }: { isImpersonating: boolean }) {
   useEffect(() => {
     if (!ph) return;
 
-    if (isAuthenticated && user) {
-      ph.identify(user.id, {
-        email: user.email,
-        username: user.user_metadata?.username as string | undefined,
-        name: user.user_metadata?.full_name as string | undefined,
-        bluesky_handle: user.user_metadata?.bluesky_handle as
-          | string
-          | undefined,
-      });
-    } else {
-      ph.reset();
+    try {
+      if (isAuthenticated && user) {
+        ph.identify(user.id, {
+          email: user.email,
+          username: user.user_metadata?.username as string | undefined,
+          name: user.user_metadata?.full_name as string | undefined,
+          bluesky_handle: user.user_metadata?.bluesky_handle as
+            | string
+            | undefined,
+        });
+      } else {
+        ph.reset();
+      }
+    } catch (e) {
+      console.error("PostHog auth sync failed:", e);
     }
   }, [ph, user, isAuthenticated]);
 
@@ -33,11 +37,16 @@ function PostHogAuthSync({ isImpersonating }: { isImpersonating: boolean }) {
   useEffect(() => {
     if (!ph) return;
 
-    if (isImpersonating) {
-      ph.stopSessionRecording();
-      ph.register({ $impersonated: true });
-    } else {
-      ph.unregister("$impersonated");
+    try {
+      if (isImpersonating) {
+        ph.stopSessionRecording();
+        ph.register({ $impersonated: true });
+      } else {
+        ph.unregister("$impersonated");
+        ph.startSessionRecording();
+      }
+    } catch (e) {
+      console.error("PostHog impersonation sync failed:", e);
     }
   }, [ph, isImpersonating]);
 

@@ -14,13 +14,10 @@ describe("cookie consent", () => {
       ["denied", "denied"],
       [null, "undecided"],
       ["invalid", "undecided"],
-    ] as const)(
-      "returns %s when localStorage value is %s",
-      (stored, expected) => {
-        if (stored) localStorage.setItem("cookie-consent", stored);
-        expect(getConsentStatus()).toBe(expected);
-      }
-    );
+    ] as const)("returns '%s' as '%s' consent status", (stored, expected) => {
+      if (stored) localStorage.setItem("cookie-consent", stored);
+      expect(getConsentStatus()).toBe(expected);
+    });
   });
 
   describe("setConsentStatus", () => {

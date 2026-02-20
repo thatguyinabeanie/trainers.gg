@@ -10,13 +10,21 @@ export type ConsentStatus = "granted" | "denied" | "undecided";
 
 export function getConsentStatus(): ConsentStatus {
   if (typeof window === "undefined") return "undecided";
-  const value = localStorage.getItem(CONSENT_KEY);
-  if (value === "granted" || value === "denied") return value;
+  try {
+    const value = localStorage.getItem(CONSENT_KEY);
+    if (value === "granted" || value === "denied") return value;
+  } catch {
+    // localStorage may be unavailable (e.g. Safari private browsing)
+  }
   return "undecided";
 }
 
 export function setConsentStatus(status: "granted" | "denied") {
-  localStorage.setItem(CONSENT_KEY, status);
+  try {
+    localStorage.setItem(CONSENT_KEY, status);
+  } catch {
+    // localStorage may be unavailable
+  }
   window.dispatchEvent(new CustomEvent("consent-change", { detail: status }));
 }
 

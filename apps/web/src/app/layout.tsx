@@ -53,7 +53,12 @@ export default async function RootLayout({
 }: Readonly<{
   children: ReactNode;
 }>) {
-  const impersonating = await checkImpersonating();
+  let impersonating = false;
+  try {
+    impersonating = await checkImpersonating();
+  } catch {
+    // Fail open — impersonation check should never crash the layout
+  }
   return (
     <html lang="en" className={inter.variable} suppressHydrationWarning>
       <body
