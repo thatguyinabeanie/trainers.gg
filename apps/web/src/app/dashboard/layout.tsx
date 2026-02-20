@@ -1,7 +1,8 @@
 import type { ReactNode } from "react";
 import { redirect } from "next/navigation";
-import { getUser } from "@/lib/supabase/server";
+import { createClient, getUser } from "@/lib/supabase/server";
 import { checkFeatureAccess } from "@/lib/feature-flags/check-flag";
+import { getTournamentInvitationsReceived } from "@trainers/supabase";
 import { PageContainer } from "@/components/layout/page-container";
 import { DashboardNav } from "./dashboard-nav";
 
@@ -16,7 +17,22 @@ export default async function DashboardLayout({
     redirect("/sign-in?redirect=/dashboard");
   }
 
-  const showStats = await checkFeatureAccess("dashboard_stats", user.id);
+  const supabase = await createClient();
+  const [showStats, invitations] = await Promise.all([
+    checkFeatureAccess("dashboard_stats", user.id),
+    getTournamentInvitationsReceived(supabase).catch((error) => {
+      console.error("[DashboardLayout] Failed to load invitations:", error);
+      return [] as Awaited<ReturnType<typeof getTournamentInvitationsReceived>>;
+    }),
+  ]);
+
+  const now = new Date();
+  const pendingInvitationsCount =
+    invitations?.filter(
+      (inv) =>
+        inv.status === "pending" &&
+        (!inv.expires_at || new Date(inv.expires_at) > now)
+    ).length ?? 0;
 
   return (
     <PageContainer variant="wide">
@@ -28,7 +44,10 @@ export default async function DashboardLayout({
           </p>
         </div>
       </div>
-      <DashboardNav showStats={showStats} />
+      <DashboardNav
+        showStats={showStats}
+        pendingInvitationsCount={pendingInvitationsCount}
+      />
       {children}
     </PageContainer>
   );

@@ -219,6 +219,7 @@ export function TournamentManageClient({
     id: tournament.id,
     status: tournament.status ?? "draft",
     rental_team_photos_enabled: tournament.rental_team_photos_enabled,
+    maxParticipants: tournament.max_participants ?? undefined,
   };
 
   const tournamentForStandings = {

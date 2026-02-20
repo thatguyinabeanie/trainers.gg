@@ -1,5 +1,8 @@
 import { render, screen } from "@testing-library/react";
-import { getTournamentRegistrations } from "@trainers/supabase";
+import {
+  getTournamentRegistrations,
+  getTournamentInvitationsSent,
+} from "@trainers/supabase";
 import { type TypedClient } from "@trainers/supabase";
 
 // Mock sonner toast
@@ -16,6 +19,11 @@ jest.mock("@/actions/tournaments", () => ({
   removePlayerFromTournament: jest.fn(),
   bulkForceCheckIn: jest.fn(),
   bulkRemovePlayers: jest.fn(),
+}));
+
+// Mock InviteForm to avoid pulling in its heavy dependencies
+jest.mock("@/components/tournaments/invite/invite-form", () => ({
+  InviteForm: jest.fn(() => <div data-testid="invite-form" />),
 }));
 
 // Mock Supabase hooks
@@ -41,6 +49,10 @@ jest.mock("@/lib/supabase", () => ({
     const result = queryFn(mockSupabase);
     return { data: result, refetch: jest.fn() };
   }),
+  useSupabaseMutation: jest.fn(() => ({
+    mutateAsync: jest.fn(),
+    isPending: false,
+  })),
   useSupabase: jest.fn(() => mockSupabaseClient),
 }));
 
@@ -48,6 +60,7 @@ jest.mock("@/lib/supabase", () => ({
 // In tests, we make it return data synchronously instead of a Promise
 jest.mock("@trainers/supabase", () => ({
   getTournamentRegistrations: jest.fn(),
+  getTournamentInvitationsSent: jest.fn(() => []),
 }));
 
 // Import the component AFTER setting up all mocks
@@ -390,5 +403,130 @@ describe("TournamentRegistrations", () => {
       expect(statsCards[3]).toHaveTextContent("Dropped");
       expect(statsCards[3]).toHaveTextContent("0");
     });
+  });
+});
+
+describe("TournamentRegistrations — invitations sub-tab", () => {
+  const tournament = { id: 1, status: "upcoming", maxParticipants: 10 };
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    // 6 registered players
+    mockGetTournamentRegistrations.mockReturnValue([
+      {
+        id: 1,
+        status: "registered",
+        alt: { username: "p1", avatar_url: null },
+        team_name: null,
+        registered_at: null,
+      },
+      {
+        id: 2,
+        status: "registered",
+        alt: { username: "p2", avatar_url: null },
+        team_name: null,
+        registered_at: null,
+      },
+      {
+        id: 3,
+        status: "registered",
+        alt: { username: "p3", avatar_url: null },
+        team_name: null,
+        registered_at: null,
+      },
+      {
+        id: 4,
+        status: "registered",
+        alt: { username: "p4", avatar_url: null },
+        team_name: null,
+        registered_at: null,
+      },
+      {
+        id: 5,
+        status: "registered",
+        alt: { username: "p5", avatar_url: null },
+        team_name: null,
+        registered_at: null,
+      },
+      {
+        id: 6,
+        status: "registered",
+        alt: { username: "p6", avatar_url: null },
+        team_name: null,
+        registered_at: null,
+      },
+    ] as unknown as Awaited<ReturnType<typeof getTournamentRegistrations>>);
+  });
+
+  it("shows available spots as maxParticipants minus registered minus pending non-expired", () => {
+    // 2 pending non-expired + 1 expired invitation
+    (
+      getTournamentInvitationsSent as jest.MockedFunction<() => unknown[]>
+    ).mockReturnValue([
+      {
+        id: 10,
+        status: "pending",
+        expires_at: "2099-01-01T00:00:00Z",
+        invited_at: null,
+        invitedPlayer: { username: "inv1" },
+        invitedByAlt: null,
+      },
+      {
+        id: 11,
+        status: "pending",
+        expires_at: "2099-01-01T00:00:00Z",
+        invited_at: null,
+        invitedPlayer: { username: "inv2" },
+        invitedByAlt: null,
+      },
+      {
+        id: 12,
+        status: "pending",
+        expires_at: "2024-01-01T00:00:00Z",
+        invited_at: null,
+        invitedPlayer: { username: "inv3_expired" },
+        invitedByAlt: null,
+      },
+    ]);
+
+    render(<TournamentRegistrations tournament={tournament} />);
+    // 10 max - 6 registered - 2 pending non-expired = 2 available
+    expect(screen.getByText(/2 spots? available/i)).toBeInTheDocument();
+  });
+
+  it("shows zero available spots when at capacity", () => {
+    // 8 registered + 2 pending = 10 = maxParticipants → 0 available
+    mockGetTournamentRegistrations.mockReturnValue(
+      Array.from({ length: 8 }, (_, i) => ({
+        id: i + 1,
+        status: "registered",
+        alt: { username: `p${i + 1}`, avatar_url: null },
+        team_name: null,
+        registered_at: null,
+      })) as unknown as Awaited<ReturnType<typeof getTournamentRegistrations>>
+    );
+    (
+      getTournamentInvitationsSent as jest.MockedFunction<() => unknown[]>
+    ).mockReturnValue([
+      {
+        id: 10,
+        status: "pending",
+        expires_at: "2099-01-01T00:00:00Z",
+        invited_at: null,
+        invitedPlayer: { username: "inv1" },
+        invitedByAlt: null,
+      },
+      {
+        id: 11,
+        status: "pending",
+        expires_at: "2099-01-01T00:00:00Z",
+        invited_at: null,
+        invitedPlayer: { username: "inv2" },
+        invitedByAlt: null,
+      },
+    ]);
+
+    render(<TournamentRegistrations tournament={tournament} />);
+    expect(screen.getByText(/0 spots? available/i)).toBeInTheDocument();
   });
 });

@@ -761,40 +761,24 @@ describe("Tournament Registration Mutations", () => {
   });
 
   describe("sendTournamentInvitations", () => {
-    const mockUser = { id: "user-123" };
     const mockAlt = { id: 10, username: "test-player", user_id: "user-123" };
     const tournamentId = 100;
     const profileIds = [20, 21, 22];
 
     beforeEach(() => {
-      (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
       (getCurrentAlt as jest.Mock).mockResolvedValue(mockAlt);
-      (checkOrgPermission as jest.Mock).mockResolvedValue(true);
     });
 
-    it("should send invitations to new players", async () => {
-      const fromSpy = jest.spyOn(mockClient, "from");
-      fromSpy.mockReturnValueOnce({
-        select: jest.fn().mockReturnThis(),
-        eq: jest.fn().mockReturnThis(),
-        single: jest.fn().mockResolvedValue({
-          data: { organization_id: 200 },
-          error: null,
-        }),
-      } as unknown as MockQueryBuilder);
-
-      fromSpy.mockReturnValueOnce({
-        select: jest.fn().mockReturnThis(),
-        eq: jest.fn().mockReturnThis(),
-        in: jest.fn().mockResolvedValue({
-          data: [],
-          error: null,
-        }),
-      } as unknown as MockQueryBuilder);
-
-      fromSpy.mockReturnValueOnce({
-        insert: jest.fn().mockResolvedValue({ error: null }),
-      } as unknown as MockQueryBuilder);
+    it("should send invitations via atomic RPC and return counts", async () => {
+      (mockClient.rpc as jest.Mock).mockResolvedValue({
+        data: {
+          success: true,
+          invitationsSent: 3,
+          alreadyInvited: 0,
+          availableSpots: 7,
+        },
+        error: null,
+      });
 
       const result = await sendTournamentInvitations(
         mockClient,
@@ -802,35 +786,32 @@ describe("Tournament Registration Mutations", () => {
         profileIds
       );
 
+      expect(mockClient.rpc).toHaveBeenCalledWith(
+        "send_tournament_invitations_atomic",
+        {
+          p_tournament_id: tournamentId,
+          p_invited_alt_ids: profileIds,
+          p_invited_by_alt_id: mockAlt.id,
+          p_message: undefined,
+        }
+      );
       expect(result).toEqual({
         invitationsSent: 3,
         alreadyInvited: 0,
+        availableSpots: 7,
       });
     });
 
-    it("should skip already invited players", async () => {
-      const fromSpy = jest.spyOn(mockClient, "from");
-      fromSpy.mockReturnValueOnce({
-        select: jest.fn().mockReturnThis(),
-        eq: jest.fn().mockReturnThis(),
-        single: jest.fn().mockResolvedValue({
-          data: { organization_id: 200 },
-          error: null,
-        }),
-      } as unknown as MockQueryBuilder);
-
-      fromSpy.mockReturnValueOnce({
-        select: jest.fn().mockReturnThis(),
-        eq: jest.fn().mockReturnThis(),
-        in: jest.fn().mockResolvedValue({
-          data: [{ invited_alt_id: 20 }, { invited_alt_id: 21 }],
-          error: null,
-        }),
-      } as unknown as MockQueryBuilder);
-
-      fromSpy.mockReturnValueOnce({
-        insert: jest.fn().mockResolvedValue({ error: null }),
-      } as unknown as MockQueryBuilder);
+    it("should report already-invited players from RPC dedup", async () => {
+      (mockClient.rpc as jest.Mock).mockResolvedValue({
+        data: {
+          success: true,
+          invitationsSent: 1,
+          alreadyInvited: 2,
+          availableSpots: 9,
+        },
+        error: null,
+      });
 
       const result = await sendTournamentInvitations(
         mockClient,
@@ -838,63 +819,81 @@ describe("Tournament Registration Mutations", () => {
         profileIds
       );
 
-      expect(result).toEqual({
-        invitationsSent: 1,
-        alreadyInvited: 2,
-      });
+      expect(result.invitationsSent).toBe(1);
+      expect(result.alreadyInvited).toBe(2);
     });
 
-    it("should return early if all players already invited", async () => {
-      const fromSpy = jest.spyOn(mockClient, "from");
-      fromSpy.mockReturnValueOnce({
-        select: jest.fn().mockReturnThis(),
-        eq: jest.fn().mockReturnThis(),
-        single: jest.fn().mockResolvedValue({
-          data: { organization_id: 200 },
-          error: null,
-        }),
-      } as unknown as MockQueryBuilder);
-
-      fromSpy.mockReturnValueOnce({
-        select: jest.fn().mockReturnThis(),
-        eq: jest.fn().mockReturnThis(),
-        in: jest.fn().mockResolvedValue({
-          data: [
-            { invited_alt_id: 20 },
-            { invited_alt_id: 21 },
-            { invited_alt_id: 22 },
-          ],
-          error: null,
-        }),
-      } as unknown as MockQueryBuilder);
-
-      const result = await sendTournamentInvitations(
-        mockClient,
-        tournamentId,
-        profileIds
-      );
-
-      expect(result).toEqual({
-        invitationsSent: 0,
-        alreadyInvited: 3,
+    it("should throw error when capacity exceeded", async () => {
+      (mockClient.rpc as jest.Mock).mockResolvedValue({
+        data: {
+          success: false,
+          error:
+            "Not enough spots available. 2 spot(s) available, 3 requested.",
+          availableSpots: 2,
+        },
+        error: null,
       });
+
+      await expect(
+        sendTournamentInvitations(mockClient, tournamentId, profileIds)
+      ).rejects.toThrow("Not enough spots available");
     });
 
-    it("should throw error if user lacks permission", async () => {
-      (checkOrgPermission as jest.Mock).mockResolvedValue(false);
-
-      (mockClient.from as jest.Mock).mockReturnValue({
-        select: jest.fn().mockReturnThis(),
-        eq: jest.fn().mockReturnThis(),
-        single: jest.fn().mockResolvedValue({
-          data: { organization_id: 200 },
-          error: null,
-        }),
+    it("should throw error when caller lacks permission", async () => {
+      (mockClient.rpc as jest.Mock).mockResolvedValue({
+        data: {
+          success: false,
+          error: "You don't have permission to send invitations",
+        },
+        error: null,
       });
 
       await expect(
         sendTournamentInvitations(mockClient, tournamentId, profileIds)
       ).rejects.toThrow("You don't have permission to send invitations");
+    });
+
+    it("throws when user is not authenticated", async () => {
+      (getCurrentAlt as jest.Mock).mockResolvedValue(null);
+
+      await expect(
+        sendTournamentInvitations(mockClient, tournamentId, profileIds)
+      ).rejects.toThrow("Unable to load your account");
+    });
+
+    it("throws when RPC returns a transport error", async () => {
+      (mockClient.rpc as jest.Mock).mockResolvedValue({
+        data: null,
+        error: { message: "connection timeout", code: "PGRST301" },
+      });
+
+      await expect(
+        sendTournamentInvitations(mockClient, tournamentId, profileIds)
+      ).rejects.toMatchObject({ message: "connection timeout" });
+    });
+
+    it("should pass optional message to RPC", async () => {
+      (mockClient.rpc as jest.Mock).mockResolvedValue({
+        data: {
+          success: true,
+          invitationsSent: 1,
+          alreadyInvited: 0,
+          availableSpots: 9,
+        },
+        error: null,
+      });
+
+      await sendTournamentInvitations(
+        mockClient,
+        tournamentId,
+        [20],
+        "Join us!"
+      );
+
+      expect(mockClient.rpc).toHaveBeenCalledWith(
+        "send_tournament_invitations_atomic",
+        expect.objectContaining({ p_message: "Join us!" })
+      );
     });
   });
 
@@ -906,140 +905,157 @@ describe("Tournament Registration Mutations", () => {
       (getCurrentAlt as jest.Mock).mockResolvedValue(mockAlt);
     });
 
-    it("should accept invitation and create registration", async () => {
-      const fromSpy = jest.spyOn(mockClient, "from");
-      fromSpy.mockReturnValueOnce({
-        select: jest.fn().mockReturnThis(),
-        eq: jest.fn().mockReturnThis(),
-        single: jest.fn().mockResolvedValue({
-          data: {
-            id: invitationId,
-            invited_alt_id: mockAlt.id,
-            tournament_id: 100,
-            status: "pending",
-            expires_at: "2026-03-05T00:00:00Z",
-          },
+    describe("accept path (uses atomic RPC)", () => {
+      it("should accept invitation via RPC and return registration", async () => {
+        (mockClient.rpc as jest.Mock).mockResolvedValue({
+          data: { success: true, registrationId: 700 },
           error: null,
-        }),
-      } as unknown as MockQueryBuilder);
+        });
 
-      fromSpy.mockReturnValueOnce({
-        update: jest.fn().mockReturnThis(),
-        eq: jest.fn().mockResolvedValue({ error: null }),
-      } as unknown as MockQueryBuilder);
+        const result = await respondToTournamentInvitation(
+          mockClient,
+          invitationId,
+          "accept"
+        );
 
-      fromSpy.mockReturnValueOnce({
-        insert: jest.fn().mockReturnThis(),
-        select: jest.fn().mockReturnThis(),
-        single: jest.fn().mockResolvedValue({
-          data: { id: 700 },
-          error: null,
-        }),
-      } as unknown as MockQueryBuilder);
-
-      const result = await respondToTournamentInvitation(
-        mockClient,
-        invitationId,
-        "accept"
-      );
-
-      expect(result.success).toBe(true);
-      expect(result.registration).toBeTruthy();
-    });
-
-    it("should decline invitation without creating registration", async () => {
-      const fromSpy = jest.spyOn(mockClient, "from");
-      fromSpy.mockReturnValueOnce({
-        select: jest.fn().mockReturnThis(),
-        eq: jest.fn().mockReturnThis(),
-        single: jest.fn().mockResolvedValue({
-          data: {
-            id: invitationId,
-            invited_alt_id: mockAlt.id,
-            tournament_id: 100,
-            status: "pending",
-            expires_at: "2026-03-05T00:00:00Z",
-          },
-          error: null,
-        }),
-      } as unknown as MockQueryBuilder);
-
-      fromSpy.mockReturnValueOnce({
-        update: jest.fn().mockReturnThis(),
-        eq: jest.fn().mockResolvedValue({ error: null }),
-      } as unknown as MockQueryBuilder);
-
-      const result = await respondToTournamentInvitation(
-        mockClient,
-        invitationId,
-        "decline"
-      );
-
-      expect(result.success).toBe(true);
-      expect(result.registration).toBeNull();
-    });
-
-    it("should throw error if invitation not for current user", async () => {
-      (mockClient.from as jest.Mock).mockReturnValue({
-        select: jest.fn().mockReturnThis(),
-        eq: jest.fn().mockReturnThis(),
-        single: jest.fn().mockResolvedValue({
-          data: {
-            id: invitationId,
-            invited_alt_id: 999,
-            tournament_id: 100,
-            status: "pending",
-            expires_at: "2026-03-05T00:00:00Z",
-          },
-          error: null,
-        }),
+        expect(mockClient.rpc).toHaveBeenCalledWith(
+          "accept_tournament_invitation_atomic",
+          { p_invitation_id: invitationId }
+        );
+        expect(result.success).toBe(true);
+        expect(result.registration).toBeTruthy();
       });
 
-      await expect(
-        respondToTournamentInvitation(mockClient, invitationId, "accept")
-      ).rejects.toThrow("This invitation is not for you");
-    });
-
-    it("should throw error if invitation already responded to", async () => {
-      (mockClient.from as jest.Mock).mockReturnValue({
-        select: jest.fn().mockReturnThis(),
-        eq: jest.fn().mockReturnThis(),
-        single: jest.fn().mockResolvedValue({
-          data: {
-            id: invitationId,
-            invited_alt_id: mockAlt.id,
-            tournament_id: 100,
-            status: "accepted",
-            expires_at: "2026-03-05T00:00:00Z",
-          },
+      it("should throw when RPC reports invitation has expired", async () => {
+        (mockClient.rpc as jest.Mock).mockResolvedValue({
+          data: { success: false, error: "Invitation has expired" },
           error: null,
-        }),
+        });
+
+        await expect(
+          respondToTournamentInvitation(mockClient, invitationId, "accept")
+        ).rejects.toThrow("Invitation has expired");
       });
 
-      await expect(
-        respondToTournamentInvitation(mockClient, invitationId, "accept")
-      ).rejects.toThrow("Invitation has already been responded to");
-    });
+      it("throws when accept RPC returns a transport error", async () => {
+        (mockClient.rpc as jest.Mock).mockResolvedValue({
+          data: null,
+          error: { message: "database unavailable", code: "PGRST301" },
+        });
 
-    it("should throw error if invitation has expired", async () => {
-      (mockClient.from as jest.Mock).mockReturnValue({
-        select: jest.fn().mockReturnThis(),
-        eq: jest.fn().mockReturnThis(),
-        single: jest.fn().mockResolvedValue({
-          data: {
-            id: invitationId,
-            invited_alt_id: mockAlt.id,
-            tournament_id: 100,
-            status: "pending",
-            expires_at: "2024-01-01T00:00:00Z",
-          },
-          error: null,
-        }),
+        await expect(
+          respondToTournamentInvitation(mockClient, invitationId, "accept")
+        ).rejects.toMatchObject({ message: "database unavailable" });
       });
 
-      await expect(
-        respondToTournamentInvitation(mockClient, invitationId, "accept")
-      ).rejects.toThrow("Invitation has expired");
+      it("should throw when RPC reports invitation already responded to", async () => {
+        (mockClient.rpc as jest.Mock).mockResolvedValue({
+          data: { success: false, error: "Invitation already responded to" },
+          error: null,
+        });
+
+        await expect(
+          respondToTournamentInvitation(mockClient, invitationId, "accept")
+        ).rejects.toThrow("Invitation already responded to");
+      });
+    });
+
+    describe("decline path (direct update)", () => {
+      it("should decline invitation without calling RPC", async () => {
+        const fromSpy = jest.spyOn(mockClient, "from");
+        fromSpy.mockReturnValueOnce({
+          select: jest.fn().mockReturnThis(),
+          eq: jest.fn().mockReturnThis(),
+          single: jest.fn().mockResolvedValue({
+            data: {
+              id: invitationId,
+              invited_alt_id: mockAlt.id,
+              tournament_id: 100,
+              status: "pending",
+              expires_at: "2026-03-05T00:00:00Z",
+            },
+            error: null,
+          }),
+        } as unknown as MockQueryBuilder);
+
+        fromSpy.mockReturnValueOnce({
+          update: jest.fn().mockReturnThis(),
+          eq: jest.fn().mockResolvedValue({ error: null }),
+        } as unknown as MockQueryBuilder);
+
+        const result = await respondToTournamentInvitation(
+          mockClient,
+          invitationId,
+          "decline"
+        );
+
+        expect(result.success).toBe(true);
+        expect(result.registration).toBeNull();
+        expect(mockClient.rpc).not.toHaveBeenCalled();
+      });
+
+      it("should throw error if invitation not for current user", async () => {
+        (mockClient.from as jest.Mock).mockReturnValue({
+          select: jest.fn().mockReturnThis(),
+          eq: jest.fn().mockReturnThis(),
+          single: jest.fn().mockResolvedValue({
+            data: {
+              id: invitationId,
+              invited_alt_id: 999,
+              tournament_id: 100,
+              status: "pending",
+              expires_at: "2026-03-05T00:00:00Z",
+            },
+            error: null,
+          }),
+        });
+
+        await expect(
+          respondToTournamentInvitation(mockClient, invitationId, "decline")
+        ).rejects.toThrow("This invitation is not for you");
+      });
+
+      it("should throw error if invitation already responded to", async () => {
+        (mockClient.from as jest.Mock).mockReturnValue({
+          select: jest.fn().mockReturnThis(),
+          eq: jest.fn().mockReturnThis(),
+          single: jest.fn().mockResolvedValue({
+            data: {
+              id: invitationId,
+              invited_alt_id: mockAlt.id,
+              tournament_id: 100,
+              status: "accepted",
+              expires_at: "2026-03-05T00:00:00Z",
+            },
+            error: null,
+          }),
+        });
+
+        await expect(
+          respondToTournamentInvitation(mockClient, invitationId, "decline")
+        ).rejects.toThrow("Invitation has already been responded to");
+      });
+
+      it("should throw error if invitation has expired", async () => {
+        (mockClient.from as jest.Mock).mockReturnValue({
+          select: jest.fn().mockReturnThis(),
+          eq: jest.fn().mockReturnThis(),
+          single: jest.fn().mockResolvedValue({
+            data: {
+              id: invitationId,
+              invited_alt_id: mockAlt.id,
+              tournament_id: 100,
+              status: "pending",
+              expires_at: "2024-01-01T00:00:00Z",
+            },
+            error: null,
+          }),
+        });
+
+        await expect(
+          respondToTournamentInvitation(mockClient, invitationId, "decline")
+        ).rejects.toThrow("Invitation has expired");
+      });
     });
   });
 });

@@ -17,6 +17,7 @@
   },
   "scripts": {
     "build": "tsx scripts/generate.ts",
+    "export:penpot": "tsx scripts/export-penpot.ts",
     "typecheck": "tsc --noEmit",
     "lint": "eslint . --max-warnings 0 --cache",
     "format": "prettier --write \"src/**/*.{ts,tsx,js,jsx,json,md}\" \"scripts/**/*.{ts,tsx,js,jsx,json,md}\"",
@@ -29,7 +30,8 @@
     "eslint": "catalog:",
     "prettier": "catalog:",
     "tsx": "catalog:",
-    "typescript": "catalog:"
+    "typescript": "catalog:",
+    "@types/node": "catalog:"
   },
   "prettier": "@trainers/prettier-config"
 }

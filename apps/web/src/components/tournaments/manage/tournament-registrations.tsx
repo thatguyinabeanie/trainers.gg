@@ -1,11 +1,17 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useSupabase, useSupabaseQuery } from "@/lib/supabase";
-import { getTournamentRegistrations } from "@trainers/supabase";
+import {
+  getTournamentRegistrations,
+  getTournamentInvitationsSent,
+} from "@trainers/supabase";
+import { getErrorMessage } from "@trainers/utils";
+import { InviteForm } from "@/components/tournaments/invite/invite-form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Card,
   CardContent,
@@ -49,10 +55,29 @@ import {
   type RealtimeStatus,
 } from "./realtime-status-badge";
 
+// Map invitation statuses to StatusBadge Status values + human-readable labels
+const defaultInvitationBadge = {
+  status: "pending" as Status,
+  label: "Pending",
+};
+const invitationStatusConfig: Record<
+  string,
+  { status: Status; label: string }
+> = {
+  pending: defaultInvitationBadge,
+  accepted: { status: "registered", label: "Accepted" },
+  declined: { status: "declined", label: "Declined" },
+  expired: { status: "cancelled", label: "Expired" },
+};
+
+const getInvitationBadge = (status: string | null) =>
+  invitationStatusConfig[status ?? "pending"] ?? defaultInvitationBadge;
+
 interface TournamentRegistrationsProps {
   tournament: {
     id: number;
     status: string;
+    maxParticipants?: number;
   };
 }
 
@@ -64,28 +89,39 @@ export function TournamentRegistrations({
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [isProcessing, setIsProcessing] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [invitationsRefreshKey, setInvitationsRefreshKey] = useState(0);
   const [realtimeStatus, setRealtimeStatus] =
     useState<RealtimeStatus>("connected");
   const refreshTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
+  const invRefreshTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
 
   // Debounced refresh trigger (500ms delay to batch bulk operations)
-  const triggerRefresh = useCallback(() => {
+  const triggerRefresh = () => {
     if (refreshTimeoutRef.current) {
       clearTimeout(refreshTimeoutRef.current);
     }
     refreshTimeoutRef.current = setTimeout(() => {
       setRefreshKey((k) => k + 1);
     }, 500);
-  }, []);
+  };
 
-  // Real-time subscription to tournament_registrations
+  const triggerInvitationsRefresh = () => {
+    if (invRefreshTimeoutRef.current) {
+      clearTimeout(invRefreshTimeoutRef.current);
+    }
+    invRefreshTimeoutRef.current = setTimeout(() => {
+      setInvitationsRefreshKey((k) => k + 1);
+    }, 500);
+  };
+
+  // Realtime: registrations
   useEffect(() => {
     const channel = supabase
       .channel(`registrations-${tournament.id}`)
       .on(
         "postgres_changes",
         {
-          event: "*", // INSERT, UPDATE, DELETE
+          event: "*",
           schema: "public",
           table: "tournament_registrations",
           filter: `tournament_id=eq.${tournament.id}`,
@@ -111,12 +147,74 @@ export function TournamentRegistrations({
       }
       channel.unsubscribe();
     };
-  }, [supabase, tournament.id, triggerRefresh]);
+  }, [supabase, tournament.id]);
 
-  const { data: registrations, refetch } = useSupabaseQuery(
+  // Realtime: invitations (triggers both refreshes so capacity recalculates)
+  useEffect(() => {
+    const channel = supabase
+      .channel(`invitations-${tournament.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "tournament_invitations",
+          filter: `tournament_id=eq.${tournament.id}`,
+        },
+        () => {
+          triggerRefresh();
+          triggerInvitationsRefresh();
+        }
+      )
+      .subscribe((status, err) => {
+        if (err) {
+          console.error("[Realtime] invitations error:", err);
+          setRealtimeStatus("error");
+        }
+      });
+
+    return () => {
+      if (invRefreshTimeoutRef.current) {
+        clearTimeout(invRefreshTimeoutRef.current);
+      }
+      channel.unsubscribe();
+    };
+  }, [supabase, tournament.id]);
+
+  const {
+    data: registrations,
+    error: registrationsError,
+    refetch,
+  } = useSupabaseQuery(
     (supabase) => getTournamentRegistrations(supabase, tournament.id),
     [tournament.id, refreshKey]
   );
+
+  const {
+    data: invitationsSent,
+    error: invitationsError,
+    refetch: refetchInvitations,
+  } = useSupabaseQuery(
+    (supabase) => getTournamentInvitationsSent(supabase, tournament.id),
+    [tournament.id, invitationsRefreshKey]
+  );
+
+  const now = new Date();
+  const registeredCount =
+    registrations?.filter((r) => r.status === "registered").length ?? 0;
+  const pendingNonExpiredCount =
+    invitationsSent?.filter(
+      (inv) =>
+        inv.status === "pending" &&
+        (!inv.expires_at || new Date(inv.expires_at) > now)
+    ).length ?? 0;
+  const availableSpots =
+    tournament.maxParticipants != null
+      ? Math.max(
+          tournament.maxParticipants - registeredCount - pendingNonExpiredCount,
+          0
+        )
+      : null;
 
   const filteredRegistrations =
     registrations?.filter(
@@ -163,8 +261,8 @@ export function TournamentRegistrations({
       } else {
         toast.error(result.error || "Failed to check in player");
       }
-    } catch {
-      toast.error("An unexpected error occurred");
+    } catch (error) {
+      toast.error(getErrorMessage(error, "An unexpected error occurred"));
     } finally {
       setIsProcessing(false);
     }
@@ -182,8 +280,8 @@ export function TournamentRegistrations({
       } else {
         toast.error(result.error || "Failed to remove player");
       }
-    } catch {
-      toast.error("An unexpected error occurred");
+    } catch (error) {
+      toast.error(getErrorMessage(error, "An unexpected error occurred"));
     } finally {
       setIsProcessing(false);
     }
@@ -204,8 +302,8 @@ export function TournamentRegistrations({
       } else {
         toast.error(result.error || "Failed to check in players");
       }
-    } catch {
-      toast.error("An unexpected error occurred");
+    } catch (error) {
+      toast.error(getErrorMessage(error, "An unexpected error occurred"));
     } finally {
       setIsProcessing(false);
     }
@@ -230,8 +328,8 @@ export function TournamentRegistrations({
       } else {
         toast.error(result.error || "Failed to remove players");
       }
-    } catch {
-      toast.error("An unexpected error occurred");
+    } catch (error) {
+      toast.error(getErrorMessage(error, "An unexpected error occurred"));
     } finally {
       setIsProcessing(false);
     }
@@ -239,56 +337,21 @@ export function TournamentRegistrations({
 
   return (
     <div className="space-y-6">
+      {(registrationsError || invitationsError) && (
+        <div className="bg-destructive/10 text-destructive rounded-lg p-3 text-sm">
+          Failed to load data. Please refresh the page.
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold">Registrations</h2>
           <p className="text-muted-foreground">
-            Manage player registrations for this tournament
+            Manage player registrations and invitations
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <RealtimeStatusBadge status={realtimeStatus} />
-          {selectedIds.size > 0 && (
-            <>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleBulkForceCheckIn}
-                disabled={isProcessing}
-              >
-                {isProcessing ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                ) : (
-                  <UserCheck className="mr-2 h-4 w-4" />
-                )}
-                Force Check-in ({selectedIds.size})
-              </Button>
-              <Button
-                variant="destructive"
-                size="sm"
-                onClick={handleBulkRemove}
-                disabled={isProcessing}
-              >
-                {isProcessing ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                ) : (
-                  <UserX className="mr-2 h-4 w-4" />
-                )}
-                Remove ({selectedIds.size})
-              </Button>
-            </>
-          )}
-          <div className="relative">
-            <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
-            <Input
-              placeholder="Search players..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-64 pl-9"
-            />
-          </div>
-        </div>
+        <RealtimeStatusBadge status={realtimeStatus} />
       </div>
 
       {/* Stats Cards */}
@@ -346,131 +409,287 @@ export function TournamentRegistrations({
         </Card>
       </div>
 
-      {/* Registrations Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Player Registrations</CardTitle>
-          <CardDescription>
-            {filteredRegistrations.length} of {registrations?.length || 0}{" "}
-            registrations
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {filteredRegistrations.length === 0 ? (
-            <div className="py-8 text-center">
-              <UserCheck className="text-muted-foreground mx-auto mb-4 h-12 w-12 opacity-50" />
-              <h3 className="mb-2 text-lg font-semibold">
-                No registrations yet
-              </h3>
-              <p className="text-muted-foreground">
-                Players will appear here once they register for the tournament.
-              </p>
-            </div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-[50px]">
-                    <Checkbox
-                      checked={
-                        filteredRegistrations.length > 0 &&
-                        selectedIds.size === filteredRegistrations.length
-                      }
-                      onCheckedChange={toggleSelectAll}
-                      aria-label="Select all registrations"
+      {/* Sub-tabs */}
+      <Tabs defaultValue="registered">
+        <TabsList>
+          <TabsTrigger value="registered">
+            Registered ({registrations?.length ?? 0})
+          </TabsTrigger>
+          <TabsTrigger value="invitations">
+            Invitations ({invitationsSent?.length ?? 0})
+          </TabsTrigger>
+        </TabsList>
+
+        {/* Registered tab */}
+        <TabsContent value="registered" className="mt-4">
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>Player Registrations</CardTitle>
+                  <CardDescription>
+                    {filteredRegistrations.length} of{" "}
+                    {registrations?.length || 0} registrations
+                  </CardDescription>
+                </div>
+                <div className="flex items-center gap-2">
+                  {selectedIds.size > 0 && (
+                    <>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleBulkForceCheckIn}
+                        disabled={isProcessing}
+                      >
+                        {isProcessing ? (
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        ) : (
+                          <UserCheck className="mr-2 h-4 w-4" />
+                        )}
+                        Force Check-in ({selectedIds.size})
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={handleBulkRemove}
+                        disabled={isProcessing}
+                      >
+                        {isProcessing ? (
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        ) : (
+                          <UserX className="mr-2 h-4 w-4" />
+                        )}
+                        Remove ({selectedIds.size})
+                      </Button>
+                    </>
+                  )}
+                  <div className="relative">
+                    <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
+                    <Input
+                      placeholder="Search players..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="w-64 pl-9"
                     />
-                  </TableHead>
-                  <TableHead>Player</TableHead>
-                  <TableHead>Team Name</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Registered</TableHead>
-                  <TableHead className="w-[50px]"></TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredRegistrations.map((registration) => (
-                  <TableRow key={registration.id}>
-                    <TableCell>
-                      <Checkbox
-                        checked={selectedIds.has(registration.id)}
-                        onCheckedChange={() => toggleSelection(registration.id)}
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-3">
-                        <Avatar className="h-8 w-8">
-                          <AvatarImage
-                            src={registration.alt?.avatar_url ?? undefined}
-                          />
-                          <AvatarFallback>
-                            {registration.alt?.username?.charAt(0) || "?"}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <div className="font-medium">
-                            {registration.alt?.username || "Unknown Player"}
-                          </div>
-                          <div className="text-muted-foreground text-sm">
-                            @{registration.alt?.username || "unknown"}
-                          </div>
-                        </div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      {registration.team_name || (
-                        <span className="text-muted-foreground italic">
-                          No team name
-                        </span>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <StatusBadge
-                        status={(registration.status ?? "pending") as Status}
-                      />
-                    </TableCell>
-                    <TableCell>
-                      {formatDate(registration.registered_at)}
-                    </TableCell>
-                    <TableCell>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger
-                          render={<Button variant="ghost" size="sm" />}
-                        >
-                          <MoreHorizontal className="h-4 w-4" />
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem
-                            onClick={() => handleForceCheckIn(registration.id)}
-                            disabled={
-                              isProcessing ||
-                              registration.status === "checked_in"
+                  </div>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {filteredRegistrations.length === 0 ? (
+                <div className="py-8 text-center">
+                  <UserCheck className="text-muted-foreground mx-auto mb-4 h-12 w-12 opacity-50" />
+                  <h3 className="mb-2 text-lg font-semibold">
+                    No registrations yet
+                  </h3>
+                  <p className="text-muted-foreground">
+                    Players will appear here once they register for the
+                    tournament.
+                  </p>
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-[50px]">
+                        <Checkbox
+                          checked={
+                            filteredRegistrations.length > 0 &&
+                            selectedIds.size === filteredRegistrations.length
+                          }
+                          onCheckedChange={toggleSelectAll}
+                          aria-label="Select all registrations"
+                        />
+                      </TableHead>
+                      <TableHead>Player</TableHead>
+                      <TableHead>Team Name</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Registered</TableHead>
+                      <TableHead className="w-[50px]"></TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredRegistrations.map((registration) => (
+                      <TableRow key={registration.id}>
+                        <TableCell>
+                          <Checkbox
+                            checked={selectedIds.has(registration.id)}
+                            onCheckedChange={() =>
+                              toggleSelection(registration.id)
                             }
-                          >
-                            <UserCheck className="mr-2 h-4 w-4" />
-                            Force Check-in
-                          </DropdownMenuItem>
-                          <DropdownMenuItem>
-                            <Mail className="mr-2 h-4 w-4" />
-                            Send Message
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            className="text-red-600"
-                            onClick={() => handleRemovePlayer(registration.id)}
-                            disabled={isProcessing}
-                          >
-                            <UserX className="mr-2 h-4 w-4" />
-                            Remove Player
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-3">
+                            <Avatar className="h-8 w-8">
+                              <AvatarImage
+                                src={registration.alt?.avatar_url ?? undefined}
+                              />
+                              <AvatarFallback>
+                                {registration.alt?.username?.charAt(0) || "?"}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div>
+                              <div className="font-medium">
+                                {registration.alt?.username || "Unknown Player"}
+                              </div>
+                              <div className="text-muted-foreground text-sm">
+                                @{registration.alt?.username || "unknown"}
+                              </div>
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          {registration.team_name || (
+                            <span className="text-muted-foreground italic">
+                              No team name
+                            </span>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          <StatusBadge
+                            status={
+                              (registration.status ?? "pending") as Status
+                            }
+                          />
+                        </TableCell>
+                        <TableCell>
+                          {formatDate(registration.registered_at)}
+                        </TableCell>
+                        <TableCell>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger
+                              render={<Button variant="ghost" size="sm" />}
+                            >
+                              <MoreHorizontal className="h-4 w-4" />
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem
+                                onClick={() =>
+                                  handleForceCheckIn(registration.id)
+                                }
+                                disabled={
+                                  isProcessing ||
+                                  registration.status === "checked_in"
+                                }
+                              >
+                                <UserCheck className="mr-2 h-4 w-4" />
+                                Force Check-in
+                              </DropdownMenuItem>
+                              <DropdownMenuItem>
+                                <Mail className="mr-2 h-4 w-4" />
+                                Send Message
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                className="text-red-600"
+                                onClick={() =>
+                                  handleRemovePlayer(registration.id)
+                                }
+                                disabled={isProcessing}
+                              >
+                                <UserX className="mr-2 h-4 w-4" />
+                                Remove Player
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Invitations tab */}
+        <TabsContent value="invitations" keepMounted className="mt-4 space-y-6">
+          {/* Capacity bar */}
+          {tournament.maxParticipants != null && (
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium">Capacity</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-muted-foreground text-sm">
+                  {registeredCount} of {tournament.maxParticipants} spots filled
+                  {pendingNonExpiredCount > 0 &&
+                    ` (${pendingNonExpiredCount} pending invitation${pendingNonExpiredCount !== 1 ? "s" : ""})`}
+                  {" · "}
+                  <span className="font-medium">
+                    {availableSpots} spot
+                    {availableSpots !== 1 ? "s" : ""} available
+                  </span>
+                </p>
+              </CardContent>
+            </Card>
           )}
-        </CardContent>
-      </Card>
+
+          {/* Invite form */}
+          <InviteForm
+            tournamentId={tournament.id}
+            tournamentName="this tournament"
+            maxInvitations={availableSpots ?? undefined}
+            onSuccess={() => {
+              refetchInvitations();
+              triggerRefresh();
+            }}
+          />
+
+          {/* Sent invitations table */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Sent Invitations</CardTitle>
+              <CardDescription>
+                {invitationsSent?.length ?? 0} invitation(s) sent
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {!invitationsSent || invitationsSent.length === 0 ? (
+                <div className="py-8 text-center">
+                  <Mail className="text-muted-foreground mx-auto mb-4 h-12 w-12 opacity-50" />
+                  <h3 className="mb-2 text-lg font-semibold">
+                    No invitations sent
+                  </h3>
+                  <p className="text-muted-foreground">
+                    Use the form above to invite players.
+                  </p>
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Player</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Expires</TableHead>
+                      <TableHead>Invited At</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {invitationsSent.map((inv) => (
+                      <TableRow key={inv.id}>
+                        <TableCell>
+                          <span className="font-medium">
+                            {inv.invitedPlayer?.username ?? "Unknown"}
+                          </span>
+                        </TableCell>
+                        <TableCell>
+                          <StatusBadge
+                            status={getInvitationBadge(inv.status).status}
+                            label={getInvitationBadge(inv.status).label}
+                          />
+                        </TableCell>
+                        <TableCell>{formatDate(inv.expires_at)}</TableCell>
+                        <TableCell>{formatDate(inv.invited_at)}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

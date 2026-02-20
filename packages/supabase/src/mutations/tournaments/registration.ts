@@ -1,4 +1,3 @@
-import { getInvitationExpiryDate } from "../../constants";
 import { checkCheckInOpen } from "../../utils/registration";
 import type { Database } from "../../types";
 import {
@@ -341,7 +340,7 @@ export async function withdrawFromTournament(
 }
 
 /**
- * Send tournament invitations to players
+ * Send tournament invitations to players (atomic — capacity-checked)
  */
 export async function sendTournamentInvitations(
   supabase: TypedClient,
@@ -349,75 +348,49 @@ export async function sendTournamentInvitations(
   profileIds: number[],
   message?: string
 ) {
-  const user = await getCurrentUser(supabase);
-  if (!user) throw new Error("Not authenticated");
-
-  // Get user's alt for recording who sent the invitation
   const alt = await getCurrentAlt(supabase);
-  if (!alt) throw new Error("Alt not found");
-
-  // Get tournament and verify permission
-  const { data: tournament } = await supabase
-    .from("tournaments")
-    .select("organization_id")
-    .eq("id", tournamentId)
-    .single();
-
-  if (!tournament) throw new Error("Tournament not found");
-
-  const hasPermission = await checkOrgPermission(
-    supabase,
-    tournament.organization_id,
-    "tournament.manage"
-  );
-  if (!hasPermission) {
-    throw new Error("You don't have permission to send invitations");
+  if (!alt) {
+    throw new Error(
+      "Unable to load your account. Please try signing out and back in, or contact support."
+    );
   }
 
-  // Check for existing invitations
-  const { data: existingInvitations } = await supabase
-    .from("tournament_invitations")
-    .select("invited_alt_id")
-    .eq("tournament_id", tournamentId)
-    .in("invited_alt_id", profileIds);
-
-  const existingIds = new Set(
-    existingInvitations?.map((inv) => inv.invited_alt_id) ?? []
+  const { data, error } = await supabase.rpc(
+    "send_tournament_invitations_atomic",
+    {
+      p_tournament_id: tournamentId,
+      p_invited_alt_ids: profileIds,
+      p_invited_by_alt_id: alt.id,
+      p_message: message || undefined,
+    }
   );
-  const newProfileIds = profileIds.filter((id) => !existingIds.has(id));
-
-  if (newProfileIds.length === 0) {
-    return {
-      invitationsSent: 0,
-      alreadyInvited: profileIds.length,
-    };
-  }
-
-  // Create invitations
-  const invitations = newProfileIds.map((profileId) => ({
-    tournament_id: tournamentId,
-    invited_alt_id: profileId,
-    invited_by_alt_id: alt.id,
-    status: "pending" as const,
-    message: message ?? null,
-    invited_at: new Date().toISOString(),
-    expires_at: getInvitationExpiryDate(),
-  }));
-
-  const { error } = await supabase
-    .from("tournament_invitations")
-    .insert(invitations);
 
   if (error) throw error;
 
+  const result = data as {
+    success: boolean;
+    error?: string;
+    invitationsSent?: number;
+    alreadyInvited?: number;
+    availableSpots?: number | null;
+  } | null;
+
+  if (!result?.success) {
+    throw new Error(
+      result?.error ?? "Failed to send invitations. Please try again."
+    );
+  }
+
   return {
-    invitationsSent: newProfileIds.length,
-    alreadyInvited: existingIds.size,
+    invitationsSent: result.invitationsSent,
+    alreadyInvited: result.alreadyInvited,
+    availableSpots: result.availableSpots,
   };
 }
 
 /**
- * Respond to a tournament invitation
+ * Respond to a tournament invitation.
+ * Accept uses an atomic RPC; decline uses a direct update.
  */
 export async function respondToTournamentInvitation(
   supabase: TypedClient,
@@ -431,59 +404,55 @@ export async function respondToTournamentInvitation(
     );
   }
 
-  // Get invitation
-  const { data: invitation } = await supabase
-    .from("tournament_invitations")
-    .select("*")
-    .eq("id", invitationId)
-    .single();
-
-  if (!invitation) throw new Error("Invitation not found");
-
-  if (invitation.invited_alt_id !== alt.id) {
-    throw new Error("This invitation is not for you");
-  }
-
-  if (invitation.status !== "pending") {
-    throw new Error("Invitation has already been responded to");
-  }
-
-  // Check expiration
-  if (invitation.expires_at && new Date(invitation.expires_at) < new Date()) {
-    throw new Error("Invitation has expired");
-  }
-
-  // Update invitation
-  const { error: updateError } = await supabase
-    .from("tournament_invitations")
-    .update({
-      status: response === "accept" ? "accepted" : "declined",
-      responded_at: new Date().toISOString(),
-    })
-    .eq("id", invitationId);
-
-  if (updateError) throw updateError;
-
-  // If accepted, create registration
-  let registrationResult: { message?: string } | null = null;
-  if (response === "accept") {
-    const { data: registration, error: regError } = await supabase
-      .from("tournament_registrations")
-      .insert({
-        tournament_id: invitation.tournament_id,
-        alt_id: alt.id,
-        status: "registered",
-        registered_at: new Date().toISOString(),
-      })
-      .select()
+  if (response === "decline") {
+    const { data: invitation } = await supabase
+      .from("tournament_invitations")
+      .select("*")
+      .eq("id", invitationId)
       .single();
 
-    if (regError) throw regError;
-    registrationResult = { message: `Registration ID: ${registration.id}` };
+    if (!invitation) throw new Error("Invitation not found");
+    if (invitation.invited_alt_id !== alt.id) {
+      throw new Error("This invitation is not for you");
+    }
+    if (invitation.status !== "pending") {
+      throw new Error("Invitation has already been responded to");
+    }
+    if (invitation.expires_at && new Date(invitation.expires_at) < new Date()) {
+      throw new Error("Invitation has expired");
+    }
+
+    const { error } = await supabase
+      .from("tournament_invitations")
+      .update({ status: "declined", responded_at: new Date().toISOString() })
+      .eq("id", invitationId);
+
+    if (error) throw error;
+    return { success: true, registration: null };
+  }
+
+  // Accept: atomic RPC handles ownership check, expiry, and registration insert
+  const { data, error } = await supabase.rpc(
+    "accept_tournament_invitation_atomic",
+    { p_invitation_id: invitationId }
+  );
+
+  if (error) throw error;
+
+  const result = data as {
+    success: boolean;
+    error?: string;
+    registrationId?: number;
+  } | null;
+
+  if (!result?.success) {
+    throw new Error(
+      result?.error ?? "Failed to accept invitation. Please try again."
+    );
   }
 
   return {
     success: true,
-    registration: registrationResult,
+    registration: { message: `Registration ID: ${result.registrationId}` },
   };
 }
