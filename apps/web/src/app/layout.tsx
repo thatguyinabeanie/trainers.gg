@@ -56,9 +56,9 @@ export default async function RootLayout({
   let impersonating = false;
   try {
     impersonating = await checkImpersonating();
-  } catch (e) {
-    // Fail open — impersonation check should never crash the layout
-    console.error("Impersonation check failed:", e);
+  } catch {
+    // Expected during static generation — cookies() unavailable.
+    // Fail open: impersonation defaults to false.
   }
   return (
     <html lang="en" className={inter.variable} suppressHydrationWarning>
