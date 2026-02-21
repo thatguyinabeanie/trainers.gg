@@ -329,7 +329,7 @@ COMMENT ON FUNCTION public.check_no_show_escalation() IS
 -- 4. Schedule pg_cron job (gracefully handle missing extension)
 -- =============================================================================
 
-DO $$
+DO $do$
 BEGIN
   -- Enable pg_cron extension if available
   CREATE EXTENSION IF NOT EXISTS pg_cron;
@@ -349,7 +349,7 @@ BEGIN
 EXCEPTION WHEN OTHERS THEN
   -- pg_cron not available (e.g. local dev) — log and continue
   RAISE NOTICE 'pg_cron not available, skipping no-show escalation schedule: %', SQLERRM;
-END $$;
+END $do$;
 
 -- =============================================================================
 -- 5. Update get_match_games_for_player to include is_no_show
