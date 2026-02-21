@@ -177,6 +177,7 @@ export function OverviewClient() {
       hasTeam: t.hasTeam,
       registrationStatus: t.registrationStatus,
       registrationId: t.registrationId,
+      lateCheckInMaxRound: t.lateCheckInMaxRound ?? null,
     })) || [];
 
   const transformedActivities =

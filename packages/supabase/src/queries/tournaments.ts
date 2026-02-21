@@ -1313,6 +1313,7 @@ export async function getMyDashboardData(supabase: TypedClient, altId: number) {
     hasTeam: boolean;
     registrationStatus: string;
     registrationId: number;
+    lateCheckInMaxRound: number | null;
   }[] = [];
   let activeTournamentsCount = 0;
 
@@ -1323,6 +1324,7 @@ export async function getMyDashboardData(supabase: TypedClient, altId: number) {
       start_date: string | null;
       status: string;
       archived_at: string | null;
+      late_check_in_max_round: number | null;
     } | null;
 
     if (tournament && !tournament.archived_at) {
@@ -1334,6 +1336,7 @@ export async function getMyDashboardData(supabase: TypedClient, altId: number) {
         hasTeam: reg.team_id != null,
         registrationStatus: reg.status ?? "registered",
         registrationId: reg.id,
+        lateCheckInMaxRound: tournament.late_check_in_max_round ?? null,
       });
 
       if (tournament.status === "active" || tournament.status === "upcoming") {

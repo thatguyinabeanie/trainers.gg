@@ -7,6 +7,7 @@ export interface DashboardTournament {
   registrationStatus?: string | null;
   checkInOpen?: boolean;
   registrationId?: number | null;
+  lateCheckInMaxRound?: number | null;
 }
 
 export interface DashboardOrganization {
