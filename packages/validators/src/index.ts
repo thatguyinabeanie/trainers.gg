@@ -83,6 +83,11 @@ export {
 
 // Organization validators
 export {
+  SOCIAL_LINK_PLATFORMS,
+  type SocialLinkPlatform,
+  organizationSocialLinkSchema,
+  organizationSocialLinksSchema,
+  type OrganizationSocialLink,
   createOrganizationSchema,
   updateOrganizationSchema,
   type CreateOrganizationInput,

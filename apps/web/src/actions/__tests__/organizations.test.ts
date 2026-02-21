@@ -142,17 +142,19 @@ describe("updateOrganization", () => {
     expect(mockUpdateTag).toHaveBeenCalledWith("organization:1");
   });
 
-  it("does not revalidate the list when only website changes", async () => {
+  it("does not revalidate the list when only socialLinks changes", async () => {
     mockUpdateOrganization.mockResolvedValue(undefined);
 
     const result = await updateOrganization(
       1,
-      { website: "https://example.com" },
+      {
+        socialLinks: [{ platform: "website", url: "https://example.com" }],
+      },
       "team-rocket"
     );
 
     expect(result.success).toBe(true);
-    // List should NOT be revalidated — website is not display data
+    // List should NOT be revalidated — socialLinks is not display data
     expect(mockUpdateTag).not.toHaveBeenCalledWith("organizations-list");
     // Individual org pages should still be revalidated
     expect(mockUpdateTag).toHaveBeenCalledWith("organization:team-rocket");

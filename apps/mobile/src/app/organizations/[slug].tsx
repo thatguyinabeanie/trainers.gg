@@ -1,10 +1,61 @@
 import { useLocalSearchParams } from "expo-router";
-import { RefreshControl, ActivityIndicator } from "react-native";
+import { RefreshControl, ActivityIndicator, Linking } from "react-native";
 import { useState } from "react";
 import { YStack, XStack, Text, ScrollView, useTheme } from "tamagui";
 import { Ionicons } from "@expo/vector-icons";
 import { Screen, Badge } from "@/components/ui";
 import { useOrganization } from "@/lib/supabase";
+import {
+  organizationSocialLinksSchema,
+  type OrganizationSocialLink,
+  type SocialLinkPlatform,
+} from "@trainers/validators";
+
+/** Map platform to Ionicons icon name. */
+const PLATFORM_ICONS: Record<SocialLinkPlatform, string> = {
+  discord: "logo-discord",
+  twitter: "logo-twitter",
+  youtube: "logo-youtube",
+  twitch: "logo-twitch",
+  tiktok: "logo-tiktok",
+  instagram: "logo-instagram",
+  facebook: "logo-facebook",
+  reddit: "logo-reddit",
+  github: "logo-github",
+  bluesky: "globe-outline",
+  threads: "globe-outline",
+  mastodon: "globe-outline",
+  linkedin: "logo-linkedin",
+  patreon: "heart-outline",
+  kofi: "cafe-outline",
+  website: "globe-outline",
+  custom: "link-outline",
+};
+
+const PLATFORM_LABELS: Record<SocialLinkPlatform, string> = {
+  discord: "Discord",
+  twitter: "Twitter",
+  youtube: "YouTube",
+  twitch: "Twitch",
+  tiktok: "TikTok",
+  instagram: "Instagram",
+  facebook: "Facebook",
+  reddit: "Reddit",
+  github: "GitHub",
+  bluesky: "Bluesky",
+  threads: "Threads",
+  mastodon: "Mastodon",
+  linkedin: "LinkedIn",
+  patreon: "Patreon",
+  kofi: "Ko-fi",
+  website: "Website",
+  custom: "Link",
+};
+
+function parseSocialLinks(raw: unknown): OrganizationSocialLink[] {
+  const result = organizationSocialLinksSchema.safeParse(raw);
+  return result.success ? result.data : [];
+}
 
 export default function OrganizationDetailScreen() {
   const { slug } = useLocalSearchParams<{ slug: string }>();
@@ -155,48 +206,35 @@ export default function OrganizationDetailScreen() {
           </XStack>
 
           {/* Social Links */}
-          {(organization.website_url ||
-            organization.discord_url ||
-            organization.twitter_url) && (
-            <XStack gap="$4" marginTop="$2">
-              {organization.website_url && (
-                <XStack alignItems="center" gap="$1">
-                  <Ionicons
-                    name="globe-outline"
-                    size={16}
-                    color={String(theme.primary.get())}
-                  />
-                  <Text fontSize="$3" color="$primary">
-                    Website
-                  </Text>
-                </XStack>
-              )}
-              {organization.discord_url && (
-                <XStack alignItems="center" gap="$1">
-                  <Ionicons
-                    name="logo-discord"
-                    size={16}
-                    color={String(theme.primary.get())}
-                  />
-                  <Text fontSize="$3" color="$primary">
-                    Discord
-                  </Text>
-                </XStack>
-              )}
-              {organization.twitter_url && (
-                <XStack alignItems="center" gap="$1">
-                  <Ionicons
-                    name="logo-twitter"
-                    size={16}
-                    color={String(theme.primary.get())}
-                  />
-                  <Text fontSize="$3" color="$primary">
-                    Twitter
-                  </Text>
-                </XStack>
-              )}
-            </XStack>
-          )}
+          {(() => {
+            const socialLinks = parseSocialLinks(organization.social_links);
+            if (socialLinks.length === 0) return null;
+            return (
+              <XStack gap="$4" marginTop="$2" flexWrap="wrap">
+                {socialLinks.map((link, i) => (
+                  <XStack
+                    key={`${link.platform}-${i}`}
+                    alignItems="center"
+                    gap="$1"
+                    onPress={() => Linking.openURL(link.url)}
+                  >
+                    <Ionicons
+                      name={
+                        PLATFORM_ICONS[
+                          link.platform
+                        ] as keyof typeof Ionicons.glyphMap
+                      }
+                      size={16}
+                      color={String(theme.primary.get())}
+                    />
+                    <Text fontSize="$3" color="$primary">
+                      {link.label || PLATFORM_LABELS[link.platform]}
+                    </Text>
+                  </XStack>
+                ))}
+              </XStack>
+            );
+          })()}
         </YStack>
 
         {/* Active Tournaments */}

@@ -608,6 +608,7 @@ export type Database = {
           created_at: string
           game_number: number
           id: number
+          is_no_show: boolean
           match_id: number
           resolution_notes: string | null
           resolved_at: string | null
@@ -624,6 +625,7 @@ export type Database = {
           created_at?: string
           game_number: number
           id?: never
+          is_no_show?: boolean
           match_id: number
           resolution_notes?: string | null
           resolved_at?: string | null
@@ -640,6 +642,7 @@ export type Database = {
           created_at?: string
           game_number?: number
           id?: never
+          is_no_show?: boolean
           match_id?: number
           resolution_notes?: string | null
           resolved_at?: string | null
@@ -980,7 +983,6 @@ export type Database = {
         Row: {
           created_at: string | null
           description: string | null
-          discord_url: string | null
           icon: string | null
           id: number
           logo_url: string | null
@@ -988,6 +990,7 @@ export type Database = {
           owner_user_id: string
           platform_fee_percentage: number | null
           slug: string
+          social_links: Json
           status: Database["public"]["Enums"]["organization_status"] | null
           subscription_expires_at: string | null
           subscription_started_at: string | null
@@ -995,14 +998,11 @@ export type Database = {
             | Database["public"]["Enums"]["organization_subscription_tier"]
             | null
           tier: Database["public"]["Enums"]["organization_tier"] | null
-          twitter_url: string | null
           updated_at: string | null
-          website_url: string | null
         }
         Insert: {
           created_at?: string | null
           description?: string | null
-          discord_url?: string | null
           icon?: string | null
           id?: never
           logo_url?: string | null
@@ -1010,6 +1010,7 @@ export type Database = {
           owner_user_id: string
           platform_fee_percentage?: number | null
           slug: string
+          social_links?: Json
           status?: Database["public"]["Enums"]["organization_status"] | null
           subscription_expires_at?: string | null
           subscription_started_at?: string | null
@@ -1017,14 +1018,11 @@ export type Database = {
             | Database["public"]["Enums"]["organization_subscription_tier"]
             | null
           tier?: Database["public"]["Enums"]["organization_tier"] | null
-          twitter_url?: string | null
           updated_at?: string | null
-          website_url?: string | null
         }
         Update: {
           created_at?: string | null
           description?: string | null
-          discord_url?: string | null
           icon?: string | null
           id?: never
           logo_url?: string | null
@@ -1032,6 +1030,7 @@ export type Database = {
           owner_user_id?: string
           platform_fee_percentage?: number | null
           slug?: string
+          social_links?: Json
           status?: Database["public"]["Enums"]["organization_status"] | null
           subscription_expires_at?: string | null
           subscription_started_at?: string | null
@@ -1039,9 +1038,7 @@ export type Database = {
             | Database["public"]["Enums"]["organization_subscription_tier"]
             | null
           tier?: Database["public"]["Enums"]["organization_tier"] | null
-          twitter_url?: string | null
           updated_at?: string | null
-          website_url?: string | null
         }
         Relationships: [
           {
@@ -2201,6 +2198,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "tournament_registrations_dropped_by_fkey"
+            columns: ["dropped_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "tournament_registrations_rental_team_photo_verified_by_fkey"
             columns: ["rental_team_photo_verified_by"]
             isOneToOne: false
@@ -2802,6 +2806,7 @@ export type Database = {
         Returns: Json
       }
       cancel_judge_request: { Args: { p_match_id: number }; Returns: undefined }
+      check_no_show_escalation: { Args: never; Returns: undefined }
       clear_judge_request: { Args: { p_match_id: number }; Returns: undefined }
       confirm_match_checkin: {
         Args: { p_alt_id?: number; p_match_id: number }
@@ -2845,6 +2850,7 @@ export type Database = {
           alt2_selection: number
           game_number: number
           id: number
+          is_no_show: boolean
           match_id: number
           my_selection: number
           my_submitted_at: string
@@ -3024,6 +3030,7 @@ export type Database = {
         | "tournament_start"
         | "tournament_round"
         | "tournament_complete"
+        | "match_no_show"
       org_request_status: "pending" | "approved" | "rejected"
       organization_status: "pending" | "active" | "rejected" | "suspended"
       organization_subscription_tier:
@@ -3260,6 +3267,7 @@ export const Constants = {
         "tournament_start",
         "tournament_round",
         "tournament_complete",
+        "match_no_show",
       ],
       org_request_status: ["pending", "approved", "rejected"],
       organization_status: ["pending", "active", "rejected", "suspended"],
