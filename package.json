@@ -65,6 +65,7 @@
     "turbo:update": "pnpm dlx @turbo/codemod@latest update ."
   },
   "devDependencies": {
+    "@trainers/prettier-config": "workspace:*",
     "husky": "^9.1.7",
     "lint-staged": "^16.2.7",
     "turbo": "^2.8.10"
