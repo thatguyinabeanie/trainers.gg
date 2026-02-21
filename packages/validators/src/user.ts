@@ -57,6 +57,18 @@ export const blueskyUserSchema = z.object({
   bio: z.string().optional(),
 });
 
+/**
+ * Sprite style preference for Pokemon display.
+ */
+export const spritePreferenceSchema = z.enum(["gen5", "gen5ani", "ani"]);
+
+/**
+ * Schema for updating sprite preference.
+ */
+export const updateSpritePreferenceSchema = z.object({
+  spritePreference: spritePreferenceSchema,
+});
+
 // Types
 export type SocialLinks = z.infer<typeof socialLinksSchema>;
 export type UserSettings = z.infer<typeof userSettingsSchema>;
@@ -64,3 +76,4 @@ export type GamePreferences = z.infer<typeof gamePreferencesSchema>;
 export type UpdateProfileInput = z.infer<typeof updateProfileSchema>;
 export type UpdateSettingsInput = z.infer<typeof updateSettingsSchema>;
 export type BlueskyUser = z.infer<typeof blueskyUserSchema>;
+export type SpritePreference = z.infer<typeof spritePreferenceSchema>;

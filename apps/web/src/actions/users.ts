@@ -7,20 +7,13 @@
 
 "use server";
 
-import { z } from "zod";
+import {
+  type ActionResult,
+  updateSpritePreferenceSchema,
+  type SpritePreference,
+} from "@trainers/validators";
 import { createClient } from "@/lib/supabase/server";
-import { type ActionResult } from "@trainers/validators";
 import { withAction } from "./utils";
-
-// --- Input Schemas ---
-
-const updateSpritePreferenceSchema = z.object({
-  spritePreference: z.enum(["gen5", "gen5ani", "ani"], {
-    errorMap: () => ({
-      message: "Sprite preference must be gen5, gen5ani, or ani",
-    }),
-  }),
-});
 
 // --- Actions ---
 
@@ -28,7 +21,7 @@ const updateSpritePreferenceSchema = z.object({
  * Update the authenticated user's sprite preference.
  */
 export async function updateSpritePreferenceAction(
-  spritePreference: "gen5" | "gen5ani" | "ani"
+  spritePreference: SpritePreference
 ): Promise<ActionResult<void>> {
   return withAction(async () => {
     const validated = updateSpritePreferenceSchema.parse({ spritePreference });

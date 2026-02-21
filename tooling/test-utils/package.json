@@ -1,0 +1,32 @@
+{
+  "name": "@trainers/test-utils",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./jest-config": {
+      "types": "./jest-config.d.ts",
+      "default": "./jest-config.cjs"
+    },
+    "./factories": "./src/factories/index.ts",
+    "./mocks": "./src/mocks/index.ts"
+  },
+  "scripts": {
+    "format": "prettier --write \"**/*.{ts,js,json}\"",
+    "format:check": "prettier --check \"**/*.{ts,js,json}\""
+  },
+  "dependencies": {
+    "fishery": "^2.2.2"
+  },
+  "devDependencies": {
+    "@atproto/api": "catalog:",
+    "@trainers/prettier-config": "workspace:*",
+    "@trainers/typescript-config": "workspace:*",
+    "@types/jest": "catalog:",
+    "jest": "catalog:",
+    "prettier": "catalog:",
+    "typescript": "catalog:"
+  },
+  "prettier": "@trainers/prettier-config"
+}

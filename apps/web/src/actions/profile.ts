@@ -1,10 +1,9 @@
 "use server";
 
-import { z } from "zod";
+import { z, usernameSchema, pdsStatusSchema } from "@trainers/validators";
 import { checkBotId } from "botid/server";
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
-import { usernameSchema } from "@trainers/validators";
 import { escapeLike } from "@trainers/utils";
 
 const PDS_HOST = process.env.PDS_HOST || "https://pds.trainers.gg";
@@ -264,7 +263,7 @@ export async function updateProfile(data: {
         return { success: false, error: "Failed to fetch user data" };
       }
 
-      const pdsStatus = userData.pds_status as string | null;
+      const pdsStatus = pdsStatusSchema.nullable().parse(userData.pds_status);
 
       // If PDS is pending, failed, or null — provision a new PDS account
       if (

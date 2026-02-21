@@ -9,6 +9,7 @@ import {
   confirmMatchCheckIn,
 } from "../match-games";
 import type { TypedClient } from "../../client";
+import { createMockClient } from "@trainers/test-utils/mocks";
 
 type MockQueryBuilder = {
   select: jest.Mock;
@@ -18,24 +19,11 @@ type MockQueryBuilder = {
   update: jest.Mock;
 };
 
-const createMockClient = () => {
-  const mockClient = {
-    from: jest.fn().mockReturnThis(),
-    select: jest.fn().mockReturnThis(),
-    eq: jest.fn().mockReturnThis(),
-    single: jest.fn(),
-    insert: jest.fn().mockReturnThis(),
-    update: jest.fn().mockReturnThis(),
-    rpc: jest.fn(),
-  };
-  return mockClient as unknown as TypedClient;
-};
-
 describe("Match Game Mutations", () => {
   let mockClient: TypedClient;
 
   beforeEach(() => {
-    mockClient = createMockClient();
+    mockClient = createMockClient() as unknown as TypedClient;
     jest.clearAllMocks();
   });
 

@@ -6,9 +6,20 @@
   },
   "imports": {
     "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@2.49.4",
+    "zod": "npm:zod@^3",
+    "obscenity": "npm:obscenity@^0.4.6",
     "@trainers/validators": "../../../validators/src/index.ts",
+    "@trainers/validators/common": "../../../validators/src/common.ts",
+    "@trainers/validators/match": "../../../validators/src/match.ts",
+    "@trainers/validators/auth": "../../../validators/src/auth.ts",
+    "@trainers/validators/tournament": "../../../validators/src/tournament.ts",
+    "@trainers/validators/alt": "../../../validators/src/alt.ts",
+    "@trainers/validators/organization": "../../../validators/src/organization.ts",
+    "@trainers/validators/admin": "../../../validators/src/admin.ts",
+    "@trainers/validators/action-result": "../../../validators/src/action-result.ts",
     "@trainers/supabase/mutations": "../../src/mutations/index.ts",
-    "@trainers/supabase/queries": "../../src/queries/index.ts"
+    "@trainers/supabase/queries": "../../src/queries/index.ts",
+    "@trainers/posthog": "../../../posthog/src/index.ts"
   },
   "lint": {
     "rules": {

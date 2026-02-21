@@ -2,7 +2,7 @@
  * Tests for AT Protocol Feed API
  */
 
-import type { Agent, AppBskyFeedDefs } from "@atproto/api";
+import type { AppBskyFeedDefs } from "@atproto/api";
 import {
   getTimeline,
   getAuthorFeed,
@@ -15,6 +15,11 @@ import {
 } from "../feed";
 import { getPublicAgent, withErrorHandling } from "../../agent";
 import { BlueskyApiError } from "../../errors";
+import {
+  createMockFeedAgent,
+  createMockPost,
+  createMockPostView,
+} from "@trainers/test-utils/mocks";
 
 // Mock dependencies
 jest.mock("../../agent");
@@ -33,66 +38,6 @@ const mockIsPokemonContent = isPokemonContent as jest.MockedFunction<
 const consoleErrorSpy = jest.spyOn(console, "error").mockImplementation();
 
 describe("feed API", () => {
-  // Helper to create mock Agent
-  const createMockAgent = (): Agent => {
-    return {
-      getTimeline: jest.fn(),
-      getAuthorFeed: jest.fn(),
-      getPosts: jest.fn(),
-      getPostThread: jest.fn(),
-      app: {
-        bsky: {
-          feed: {
-            getActorLikes: jest.fn(),
-            searchPosts: jest.fn(),
-          },
-        },
-      },
-    } as unknown as Agent;
-  };
-
-  // Helper to create mock post
-  const createMockPost = (
-    uri: string,
-    text: string,
-    cid = "cid123"
-  ): AppBskyFeedDefs.FeedViewPost => ({
-    post: {
-      uri,
-      cid,
-      author: {
-        did: "did:plc:test",
-        handle: "test.bsky.social",
-      },
-      record: {
-        $type: "app.bsky.feed.post",
-        text,
-        createdAt: new Date().toISOString(),
-      },
-      indexedAt: new Date().toISOString(),
-    } as AppBskyFeedDefs.PostView,
-  });
-
-  // Helper to create mock PostView
-  const createMockPostView = (
-    uri: string,
-    text: string,
-    cid = "cid123"
-  ): AppBskyFeedDefs.PostView => ({
-    uri,
-    cid,
-    author: {
-      did: "did:plc:test",
-      handle: "test.bsky.social",
-    },
-    record: {
-      $type: "app.bsky.feed.post",
-      text,
-      createdAt: new Date().toISOString(),
-    },
-    indexedAt: new Date().toISOString(),
-  });
-
   // Helper to create mock ThreadViewPost
   const createMockThreadViewPost = (
     uri: string,
@@ -113,7 +58,7 @@ describe("feed API", () => {
     );
 
     // Mock getPublicAgent
-    (getPublicAgent as jest.Mock).mockReturnValue(createMockAgent());
+    (getPublicAgent as jest.Mock).mockReturnValue(createMockFeedAgent());
   });
 
   afterAll(() => {
@@ -122,7 +67,7 @@ describe("feed API", () => {
 
   describe("getTimeline", () => {
     it("fetches timeline with default options", async () => {
-      const agent = createMockAgent();
+      const agent = createMockFeedAgent();
       const mockPosts = [
         createMockPost("at://did/post1", "Hello world"),
         createMockPost("at://did/post2", "Another post"),
@@ -149,7 +94,7 @@ describe("feed API", () => {
     });
 
     it("fetches timeline with custom limit and cursor", async () => {
-      const agent = createMockAgent();
+      const agent = createMockFeedAgent();
       const mockPosts = [createMockPost("at://did/post1", "Test")];
 
       (agent.getTimeline as jest.Mock).mockResolvedValue({
@@ -173,7 +118,7 @@ describe("feed API", () => {
     });
 
     it("filters to Pokemon content when pokemonOnly is true", async () => {
-      const agent = createMockAgent();
+      const agent = createMockFeedAgent();
       const mockPosts = [
         createMockPost("at://did/post1", "Check out this #pokemon"),
         createMockPost("at://did/post2", "Random post"),
@@ -201,7 +146,7 @@ describe("feed API", () => {
     });
 
     it("returns empty array when no Pokemon content found", async () => {
-      const agent = createMockAgent();
+      const agent = createMockFeedAgent();
       const mockPosts = [
         createMockPost("at://did/post1", "Random post"),
         createMockPost("at://did/post2", "Another random post"),
@@ -223,7 +168,7 @@ describe("feed API", () => {
     });
 
     it("handles posts without text in record", async () => {
-      const agent = createMockAgent();
+      const agent = createMockFeedAgent();
       const mockPosts = [
         {
           post: {
@@ -257,7 +202,7 @@ describe("feed API", () => {
     });
 
     it("sets hasMore to false when cursor is undefined", async () => {
-      const agent = createMockAgent();
+      const agent = createMockFeedAgent();
 
       (agent.getTimeline as jest.Mock).mockResolvedValue({
         data: {
@@ -274,7 +219,7 @@ describe("feed API", () => {
 
   describe("getAuthorFeed", () => {
     it("fetches author feed with default options", async () => {
-      const mockAgent = createMockAgent();
+      const mockAgent = createMockFeedAgent();
       (getPublicAgent as jest.Mock).mockReturnValue(mockAgent);
 
       const mockPosts = [
@@ -305,7 +250,7 @@ describe("feed API", () => {
     });
 
     it("uses custom agent when provided", async () => {
-      const customAgent = createMockAgent();
+      const customAgent = createMockFeedAgent();
       const mockPosts = [createMockPost("at://did/post1", "Test")];
 
       (customAgent.getAuthorFeed as jest.Mock).mockResolvedValue({
@@ -322,7 +267,7 @@ describe("feed API", () => {
     });
 
     it("supports filter options", async () => {
-      const mockAgent = createMockAgent();
+      const mockAgent = createMockFeedAgent();
       (getPublicAgent as jest.Mock).mockReturnValue(mockAgent);
 
       (mockAgent.getAuthorFeed as jest.Mock).mockResolvedValue({
@@ -346,7 +291,7 @@ describe("feed API", () => {
 
   describe("getActorLikes", () => {
     it("fetches actor likes with default options", async () => {
-      const mockAgent = createMockAgent();
+      const mockAgent = createMockFeedAgent();
       (getPublicAgent as jest.Mock).mockReturnValue(mockAgent);
 
       const mockPosts = [
@@ -376,7 +321,7 @@ describe("feed API", () => {
     });
 
     it("uses custom agent when provided", async () => {
-      const customAgent = createMockAgent();
+      const customAgent = createMockFeedAgent();
 
       (customAgent.app.bsky.feed.getActorLikes as jest.Mock).mockResolvedValue({
         data: { feed: [], cursor: undefined },
@@ -389,7 +334,7 @@ describe("feed API", () => {
     });
 
     it("supports custom limit and cursor", async () => {
-      const mockAgent = createMockAgent();
+      const mockAgent = createMockFeedAgent();
       (getPublicAgent as jest.Mock).mockReturnValue(mockAgent);
 
       (mockAgent.app.bsky.feed.getActorLikes as jest.Mock).mockResolvedValue({
@@ -408,7 +353,7 @@ describe("feed API", () => {
 
   describe("getPost", () => {
     it("fetches a single post by URI", async () => {
-      const mockAgent = createMockAgent();
+      const mockAgent = createMockFeedAgent();
       (getPublicAgent as jest.Mock).mockReturnValue(mockAgent);
 
       const mockPost = createMockPostView("at://did/post1", "Test post");
@@ -428,7 +373,7 @@ describe("feed API", () => {
     });
 
     it("returns null when post is not found", async () => {
-      const mockAgent = createMockAgent();
+      const mockAgent = createMockFeedAgent();
       (getPublicAgent as jest.Mock).mockReturnValue(mockAgent);
 
       (mockAgent.getPosts as jest.Mock).mockResolvedValue({
@@ -443,7 +388,7 @@ describe("feed API", () => {
     });
 
     it("uses custom agent when provided", async () => {
-      const customAgent = createMockAgent();
+      const customAgent = createMockFeedAgent();
 
       (customAgent.getPosts as jest.Mock).mockResolvedValue({
         data: { posts: [createMockPostView("at://did/post1", "Test")] },
@@ -465,7 +410,7 @@ describe("feed API", () => {
     });
 
     it("fetches posts in single request when URIs < 25", async () => {
-      const mockAgent = createMockAgent();
+      const mockAgent = createMockFeedAgent();
       (getPublicAgent as jest.Mock).mockReturnValue(mockAgent);
 
       const uris = Array.from({ length: 10 }, (_, i) => `at://did/post${i}`);
@@ -483,7 +428,7 @@ describe("feed API", () => {
     });
 
     it("fetches exactly 25 posts in single request", async () => {
-      const mockAgent = createMockAgent();
+      const mockAgent = createMockFeedAgent();
       (getPublicAgent as jest.Mock).mockReturnValue(mockAgent);
 
       const uris = Array.from({ length: 25 }, (_, i) => `at://did/post${i}`);
@@ -500,7 +445,7 @@ describe("feed API", () => {
     });
 
     it("fetches posts in chunks of 25 when URIs > 25", async () => {
-      const mockAgent = createMockAgent();
+      const mockAgent = createMockFeedAgent();
       (getPublicAgent as jest.Mock).mockReturnValue(mockAgent);
 
       const uris = Array.from({ length: 30 }, (_, i) => `at://did/post${i}`);
@@ -528,7 +473,7 @@ describe("feed API", () => {
     });
 
     it("fetches posts in multiple chunks when URIs = 50", async () => {
-      const mockAgent = createMockAgent();
+      const mockAgent = createMockFeedAgent();
       (getPublicAgent as jest.Mock).mockReturnValue(mockAgent);
 
       const uris = Array.from({ length: 50 }, (_, i) => `at://did/post${i}`);
@@ -550,7 +495,7 @@ describe("feed API", () => {
     });
 
     it("fetches posts in multiple chunks when URIs > 100", async () => {
-      const mockAgent = createMockAgent();
+      const mockAgent = createMockFeedAgent();
       (getPublicAgent as jest.Mock).mockReturnValue(mockAgent);
 
       const uris = Array.from({ length: 120 }, (_, i) => `at://did/post${i}`);
@@ -591,7 +536,7 @@ describe("feed API", () => {
     });
 
     it("preserves order of posts across chunks", async () => {
-      const mockAgent = createMockAgent();
+      const mockAgent = createMockFeedAgent();
       (getPublicAgent as jest.Mock).mockReturnValue(mockAgent);
 
       const uris = Array.from({ length: 30 }, (_, i) => `at://did/post${i}`);
@@ -615,7 +560,7 @@ describe("feed API", () => {
     });
 
     it("uses custom agent when provided", async () => {
-      const customAgent = createMockAgent();
+      const customAgent = createMockFeedAgent();
 
       (customAgent.getPosts as jest.Mock).mockResolvedValue({
         data: { posts: [] },
@@ -630,7 +575,7 @@ describe("feed API", () => {
 
   describe("getPostThread", () => {
     it("fetches post thread with default options", async () => {
-      const mockAgent = createMockAgent();
+      const mockAgent = createMockFeedAgent();
       (getPublicAgent as jest.Mock).mockReturnValue(mockAgent);
 
       const mockThread = createMockThreadViewPost("at://did/post1", "Thread");
@@ -652,7 +597,7 @@ describe("feed API", () => {
     });
 
     it("fetches post thread with custom depth and parentHeight", async () => {
-      const mockAgent = createMockAgent();
+      const mockAgent = createMockFeedAgent();
       (getPublicAgent as jest.Mock).mockReturnValue(mockAgent);
 
       const mockThread = createMockThreadViewPost("at://did/post1", "Thread");
@@ -672,7 +617,7 @@ describe("feed API", () => {
     });
 
     it("returns null when thread type is not threadViewPost", async () => {
-      const mockAgent = createMockAgent();
+      const mockAgent = createMockFeedAgent();
       (getPublicAgent as jest.Mock).mockReturnValue(mockAgent);
 
       (mockAgent.getPostThread as jest.Mock).mockResolvedValue({
@@ -689,7 +634,7 @@ describe("feed API", () => {
     });
 
     it("uses custom agent when provided", async () => {
-      const customAgent = createMockAgent();
+      const customAgent = createMockFeedAgent();
 
       const mockThread = createMockThreadViewPost("at://did/post1", "Thread");
 
@@ -706,7 +651,7 @@ describe("feed API", () => {
 
   describe("getPokemonFeed", () => {
     it("fetches Pokemon feed with default options", async () => {
-      const agent = createMockAgent();
+      const agent = createMockFeedAgent();
       const mockPosts = Array.from({ length: 25 }, (_, i) =>
         createMockPost(`at://did/post${i}`, `Pokemon post ${i}`)
       );
@@ -733,7 +678,7 @@ describe("feed API", () => {
     });
 
     it("fetches up to 100 posts when limit is large", async () => {
-      const agent = createMockAgent();
+      const agent = createMockFeedAgent();
       const mockPosts = Array.from({ length: 50 }, (_, i) =>
         createMockPost(`at://did/post${i}`, `Pokemon post ${i}`)
       );
@@ -758,7 +703,7 @@ describe("feed API", () => {
     });
 
     it("slices posts to requested limit", async () => {
-      const agent = createMockAgent();
+      const agent = createMockFeedAgent();
       const mockPosts = Array.from({ length: 60 }, (_, i) =>
         createMockPost(`at://did/post${i}`, `Pokemon post ${i}`)
       );
@@ -782,7 +727,7 @@ describe("feed API", () => {
     });
 
     it("sets hasMore to true when posts exceed limit", async () => {
-      const agent = createMockAgent();
+      const agent = createMockFeedAgent();
       const mockPosts = Array.from({ length: 30 }, (_, i) =>
         createMockPost(`at://did/post${i}`, `Pokemon post ${i}`)
       );
@@ -804,7 +749,7 @@ describe("feed API", () => {
     });
 
     it("handles empty results from filtering", async () => {
-      const agent = createMockAgent();
+      const agent = createMockFeedAgent();
       const mockPosts = [
         createMockPost("at://did/post1", "Non-Pokemon post 1"),
         createMockPost("at://did/post2", "Non-Pokemon post 2"),
@@ -826,7 +771,7 @@ describe("feed API", () => {
     });
 
     it("handles partial filtering results", async () => {
-      const agent = createMockAgent();
+      const agent = createMockFeedAgent();
       const mockPosts = Array.from({ length: 75 }, (_, i) =>
         createMockPost(`at://did/post${i}`, `Post ${i}`)
       );
@@ -851,7 +796,7 @@ describe("feed API", () => {
     });
 
     it("supports custom cursor for pagination", async () => {
-      const agent = createMockAgent();
+      const agent = createMockFeedAgent();
       const mockPosts = Array.from({ length: 25 }, (_, i) =>
         createMockPost(`at://did/post${i}`, `Pokemon post ${i}`)
       );
@@ -876,7 +821,7 @@ describe("feed API", () => {
 
   describe("searchPosts", () => {
     it("searches posts with default options", async () => {
-      const mockAgent = createMockAgent();
+      const mockAgent = createMockFeedAgent();
       (getPublicAgent as jest.Mock).mockReturnValue(mockAgent);
 
       const mockPosts = [
@@ -904,7 +849,7 @@ describe("feed API", () => {
     });
 
     it("converts PostView to FeedViewPost format", async () => {
-      const mockAgent = createMockAgent();
+      const mockAgent = createMockFeedAgent();
       (getPublicAgent as jest.Mock).mockReturnValue(mockAgent);
 
       const mockPosts = [createMockPostView("at://did/post1", "Test")];
@@ -923,7 +868,7 @@ describe("feed API", () => {
     });
 
     it("uses custom agent when provided", async () => {
-      const customAgent = createMockAgent();
+      const customAgent = createMockFeedAgent();
 
       (customAgent.app.bsky.feed.searchPosts as jest.Mock).mockResolvedValue({
         data: { posts: [], cursor: undefined },
@@ -936,7 +881,7 @@ describe("feed API", () => {
     });
 
     it("supports custom limit and cursor", async () => {
-      const mockAgent = createMockAgent();
+      const mockAgent = createMockFeedAgent();
       (getPublicAgent as jest.Mock).mockReturnValue(mockAgent);
 
       (mockAgent.app.bsky.feed.searchPosts as jest.Mock).mockResolvedValue({
@@ -953,7 +898,7 @@ describe("feed API", () => {
     });
 
     it("handles empty search results", async () => {
-      const mockAgent = createMockAgent();
+      const mockAgent = createMockFeedAgent();
       (getPublicAgent as jest.Mock).mockReturnValue(mockAgent);
 
       (mockAgent.app.bsky.feed.searchPosts as jest.Mock).mockResolvedValue({
@@ -972,7 +917,7 @@ describe("feed API", () => {
 
   describe("error handling", () => {
     it("throws error when getTimeline fails", async () => {
-      const agent = createMockAgent();
+      const agent = createMockFeedAgent();
 
       (withErrorHandling as jest.Mock).mockImplementation(async (fn) => {
         return fn();
@@ -986,7 +931,7 @@ describe("feed API", () => {
     });
 
     it("throws error when getPosts fails", async () => {
-      const mockAgent = createMockAgent();
+      const mockAgent = createMockFeedAgent();
       (getPublicAgent as jest.Mock).mockReturnValue(mockAgent);
 
       (withErrorHandling as jest.Mock).mockImplementation(async (fn) => {
@@ -1003,7 +948,7 @@ describe("feed API", () => {
     });
 
     it("throws error when searchPosts fails", async () => {
-      const mockAgent = createMockAgent();
+      const mockAgent = createMockFeedAgent();
       (getPublicAgent as jest.Mock).mockReturnValue(mockAgent);
 
       (withErrorHandling as jest.Mock).mockImplementation(async (fn) => {

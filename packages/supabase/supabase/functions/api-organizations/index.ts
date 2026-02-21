@@ -17,6 +17,12 @@ import { createClient } from "@supabase/supabase-js";
 import { getCorsHeaders } from "../_shared/cors.ts";
 import { getCacheHeaders, CACHE_TTL } from "../_shared/cache.ts";
 import type { ActionResult } from "@trainers/validators";
+import { positiveIntSchema } from "@trainers/validators/common";
+import {
+  createOrganizationSchema,
+  updateOrganizationSchema,
+} from "@trainers/validators/organization";
+import { z, ZodError } from "zod";
 import {
   listPublicOrganizations,
   getOrganizationBySlug,
@@ -147,8 +153,7 @@ Deno.serve(async (req) => {
     // POST /api-organizations → Create organization
     if (method === "POST" && pathParts.length === 1) {
       const body = await req.json();
-
-      // TODO: Add Zod validation for createOrganizationSchema
+      createOrganizationSchema.parse(body);
 
       const result = await createOrganizationMutation(supabase, body);
 
@@ -164,23 +169,10 @@ Deno.serve(async (req) => {
 
     // PATCH /api-organizations/:id → Update organization
     if (method === "PATCH" && pathParts.length === 2) {
-      const organizationId = parseInt(pathParts[1], 10);
-
-      if (isNaN(organizationId)) {
-        return jsonResponse(
-          {
-            success: false,
-            error: "Invalid organization ID",
-            code: "INVALID_ID",
-          },
-          400,
-          cors
-        );
-      }
+      const organizationId = positiveIntSchema.parse(pathParts[1]);
 
       const body = await req.json();
-
-      // TODO: Add Zod validation for updateOrganizationSchema
+      updateOrganizationSchema.parse(body);
 
       await updateOrganizationMutation(supabase, organizationId, body);
 
@@ -193,34 +185,15 @@ Deno.serve(async (req) => {
 
     // POST /api-organizations/:id/invite → Invite staff member
     if (method === "POST" && pathParts[2] === "invite") {
-      const organizationId = parseInt(pathParts[1], 10);
-
-      if (isNaN(organizationId)) {
-        return jsonResponse(
-          {
-            success: false,
-            error: "Invalid organization ID",
-            code: "INVALID_ID",
-          },
-          400,
-          cors
-        );
-      }
+      const organizationId = positiveIntSchema.parse(pathParts[1]);
 
       const body = await req.json();
-      const { email, role } = body;
-
-      if (!email || !role) {
-        return jsonResponse(
-          {
-            success: false,
-            error: "Email and role required",
-            code: "MISSING_FIELDS",
-          },
-          400,
-          cors
-        );
-      }
+      const { email, role } = z
+        .object({
+          email: z.string().min(1, "Email is required").email("Invalid email"),
+          role: z.string().min(1, "Role is required"),
+        })
+        .parse(body);
 
       await inviteToOrganizationMutation(supabase, organizationId, email, role);
 
@@ -237,19 +210,7 @@ Deno.serve(async (req) => {
       pathParts[2] === "invitations" &&
       pathParts[4] === "accept"
     ) {
-      const invitationId = parseInt(pathParts[3], 10);
-
-      if (isNaN(invitationId)) {
-        return jsonResponse(
-          {
-            success: false,
-            error: "Invalid invitation ID",
-            code: "INVALID_ID",
-          },
-          400,
-          cors
-        );
-      }
+      const invitationId = positiveIntSchema.parse(pathParts[3]);
 
       await acceptOrganizationInvitationMutation(supabase, invitationId);
 
@@ -266,19 +227,7 @@ Deno.serve(async (req) => {
       pathParts[2] === "invitations" &&
       pathParts[4] === "decline"
     ) {
-      const invitationId = parseInt(pathParts[3], 10);
-
-      if (isNaN(invitationId)) {
-        return jsonResponse(
-          {
-            success: false,
-            error: "Invalid invitation ID",
-            code: "INVALID_ID",
-          },
-          400,
-          cors
-        );
-      }
+      const invitationId = positiveIntSchema.parse(pathParts[3]);
 
       await declineOrganizationInvitationMutation(supabase, invitationId);
 
@@ -291,32 +240,8 @@ Deno.serve(async (req) => {
 
     // DELETE /api-organizations/:id/staff/:userId → Remove staff member
     if (method === "DELETE" && pathParts[2] === "staff") {
-      const organizationId = parseInt(pathParts[1], 10);
-      const userId = pathParts[3];
-
-      if (isNaN(organizationId)) {
-        return jsonResponse(
-          {
-            success: false,
-            error: "Invalid organization ID",
-            code: "INVALID_ID",
-          },
-          400,
-          cors
-        );
-      }
-
-      if (!userId) {
-        return jsonResponse(
-          {
-            success: false,
-            error: "User ID required",
-            code: "MISSING_FIELD",
-          },
-          400,
-          cors
-        );
-      }
+      const organizationId = positiveIntSchema.parse(pathParts[1]);
+      const userId = z.string().uuid("Invalid user ID").parse(pathParts[3]);
 
       await removeStaffMutation(supabase, organizationId, userId);
 
@@ -329,19 +254,7 @@ Deno.serve(async (req) => {
 
     // DELETE /api-organizations/:id/leave → Leave organization
     if (method === "DELETE" && pathParts[2] === "leave") {
-      const organizationId = parseInt(pathParts[1], 10);
-
-      if (isNaN(organizationId)) {
-        return jsonResponse(
-          {
-            success: false,
-            error: "Invalid organization ID",
-            code: "INVALID_ID",
-          },
-          400,
-          cors
-        );
-      }
+      const organizationId = positiveIntSchema.parse(pathParts[1]);
 
       await leaveOrganizationMutation(supabase, organizationId);
 
@@ -360,6 +273,18 @@ Deno.serve(async (req) => {
     );
   } catch (error) {
     console.error("[api-organizations]", error);
+
+    if (error instanceof ZodError) {
+      return jsonResponse(
+        {
+          success: false,
+          error: error.issues[0]?.message ?? "Invalid input",
+          code: "VALIDATION_ERROR",
+        },
+        400,
+        cors
+      );
+    }
 
     return jsonResponse(
       {

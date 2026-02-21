@@ -10,15 +10,15 @@
 
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import { getCorsHeaders } from "../_shared/cors.ts";
+import { captureEventWithRequest } from "../_shared/posthog.ts";
+import { BETA_INVITE_SENT } from "@trainers/posthog";
+import { emailSchema } from "@trainers/validators/auth";
+import { ZodError } from "zod";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
-
-interface SendInviteRequest {
-  email: string;
-}
 
 interface SendInviteResponse {
   success: boolean;
@@ -207,42 +207,9 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Parse request body
-    const body: SendInviteRequest = await req.json();
-    const { email } = body;
-
-    if (!email) {
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: "Email is required",
-          code: "MISSING_EMAIL",
-        } satisfies SendInviteResponse),
-        {
-          status: 400,
-          headers: { ...cors, "Content-Type": "application/json" },
-        }
-      );
-    }
-
-    // Normalize email before validation so regex operates on canonical form
-    const trimmedEmail = email.trim().toLowerCase();
-
-    // Validate email format
-    const emailRegex = /^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$/i;
-    if (!emailRegex.test(trimmedEmail)) {
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: "Invalid email address",
-          code: "INVALID_EMAIL",
-        } satisfies SendInviteResponse),
-        {
-          status: 400,
-          headers: { ...cors, "Content-Type": "application/json" },
-        }
-      );
-    }
+    // Parse and validate request body
+    const body = await req.json();
+    const trimmedEmail = emailSchema.parse(body.email).trim().toLowerCase();
 
     // Check if email already has an account
     const { data: existingUser } = await supabaseAdmin
@@ -356,6 +323,15 @@ Deno.serve(async (req) => {
       .update({ notified_at: new Date().toISOString() })
       .eq("email", trimmedEmail);
 
+    // Fire-and-forget analytics (domain only — no email addresses)
+    captureEventWithRequest(req, {
+      event: BETA_INVITE_SENT,
+      distinctId: callerUserId,
+      properties: {
+        invited_email_domain: trimmedEmail.split("@")[1],
+      },
+    });
+
     return new Response(
       JSON.stringify({
         success: true,
@@ -367,6 +343,24 @@ Deno.serve(async (req) => {
     );
   } catch (error) {
     console.error("Send invite error:", error);
+
+    if (error instanceof ZodError) {
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: error.issues[0]?.message ?? "Invalid email",
+          code: "INVALID_EMAIL",
+        } satisfies SendInviteResponse),
+        {
+          status: 400,
+          headers: {
+            ...getCorsHeaders(req),
+            "Content-Type": "application/json",
+          },
+        }
+      );
+    }
+
     return new Response(
       JSON.stringify({
         success: false,

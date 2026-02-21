@@ -109,17 +109,17 @@ describe("proxy-routes", () => {
     });
 
     it("should match dynamic tournament match patterns", () => {
-      expect(isProtectedRoute("/tournaments/abc/matches")).toBe(true);
-      expect(isProtectedRoute("/tournaments/abc/matches/1")).toBe(true);
-      expect(isProtectedRoute("/tournaments/summer-2025/matches/round-1")).toBe(
-        true
-      );
+      expect(isProtectedRoute("/tournaments/abc/r/1/t/1")).toBe(true);
+      expect(isProtectedRoute("/tournaments/abc/r/3/t/12")).toBe(true);
+      expect(isProtectedRoute("/tournaments/summer-2025/r/1/t/5")).toBe(true);
     });
 
-    it("should not match tournament routes without /matches", () => {
+    it("should not match tournament routes without /r/.../t/...", () => {
       expect(isProtectedRoute("/tournaments/abc")).toBe(false);
       expect(isProtectedRoute("/tournaments")).toBe(false);
       expect(isProtectedRoute("/tournaments/abc/standings")).toBe(false);
+      expect(isProtectedRoute("/tournaments/abc/matches")).toBe(false);
+      expect(isProtectedRoute("/tournaments/abc/matches/1")).toBe(false);
     });
 
     it("should not match public or admin routes", () => {

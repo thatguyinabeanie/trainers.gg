@@ -430,7 +430,7 @@ export function TournamentPairings({ tournament }: TournamentPairingsProps) {
                           className="cursor-pointer"
                           onClick={() =>
                             router.push(
-                              `/tournaments/${tournament.slug}/matches/${match.id}`
+                              `/tournaments/${tournament.slug}/r/${currentRound?.round_number ?? 0}/t/${match.table_number ?? 0}`
                             )
                           }
                         >

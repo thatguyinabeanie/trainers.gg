@@ -71,6 +71,7 @@ export {
   getCheckInStats,
   getUserTeams,
   getMatchDetails,
+  getMatchByRoundAndTable,
   getRegistrationStatus,
   getTournamentInvitationsSent,
   getTournamentInvitationsReceived,

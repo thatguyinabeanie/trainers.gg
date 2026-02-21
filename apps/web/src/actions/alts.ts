@@ -7,7 +7,7 @@
 
 "use server";
 
-import { z } from "zod";
+import { z } from "@trainers/validators";
 import { createClient } from "@/lib/supabase/server";
 import {
   createAlt,

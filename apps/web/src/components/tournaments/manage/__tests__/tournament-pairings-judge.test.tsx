@@ -435,7 +435,7 @@ describe("TournamentPairingsJudge", () => {
       await user.click(respondBtn);
 
       expect(mockPush).toHaveBeenCalledWith(
-        "/tournaments/test-tournament/matches/42"
+        "/tournaments/test-tournament/r/1/t/1"
       );
     });
   });

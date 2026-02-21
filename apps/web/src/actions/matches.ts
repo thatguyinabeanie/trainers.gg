@@ -7,7 +7,7 @@
 
 "use server";
 
-import { z } from "zod";
+import { z } from "@trainers/validators";
 import { updateTag } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import {

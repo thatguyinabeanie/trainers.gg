@@ -1,3 +1,6 @@
+// Re-export Zod for consumers — single entry point for all Zod usage
+export { z, ZodError } from "zod";
+
 // Action result type
 export { type ActionResult } from "./action-result";
 
@@ -10,15 +13,27 @@ export {
   CUSTOM_PATTERNS,
 } from "./profanity";
 
+// Common validators
+export {
+  positiveIntSchema,
+  uuidSchema,
+  pdsStatusSchema,
+  type PdsStatus,
+} from "./common";
+
 // Auth validators
 export {
   passwordSchema,
   usernameSchema,
   emailSchema,
   validatePassword,
+  loginIdentifierSchema,
+  waitlistEmailSchema,
+  signupRequestSchema,
   type Password,
   type Username,
   type Email,
+  type SignupRequestInput,
 } from "./auth";
 
 // User validators
@@ -29,12 +44,15 @@ export {
   updateProfileSchema,
   updateSettingsSchema,
   blueskyUserSchema,
+  spritePreferenceSchema,
+  updateSpritePreferenceSchema,
   type SocialLinks,
   type UserSettings,
   type GamePreferences,
   type UpdateProfileInput,
   type UpdateSettingsInput,
   type BlueskyUser,
+  type SpritePreference,
 } from "./user";
 
 // Post validators
@@ -86,6 +104,40 @@ export {
   tournamentSlugSchema,
   createTournamentSchema,
   updateTournamentSchema,
+  dropCategorySchema,
+  dropNotesSchema,
+  tournamentRegistrationSchema,
   type CreateTournamentInput,
   type UpdateTournamentInput,
+  type DropCategory,
+  type TournamentRegistrationInput,
 } from "./tournament";
+
+// Admin validators
+export {
+  announcementTypeSchema,
+  createFeatureFlagSchema,
+  updateFeatureFlagSchema,
+  createAnnouncementSchema,
+  updateAnnouncementSchema,
+  adminReasonSchema,
+  type AnnouncementType,
+  type CreateFeatureFlagInput,
+  type UpdateFeatureFlagInput,
+  type CreateAnnouncementInput,
+  type UpdateAnnouncementInput,
+} from "./admin";
+
+// Match validators
+export {
+  submitGameSelectionSchema,
+  sendMatchMessageSchema,
+  createMatchGamesSchema,
+  judgeOverrideSchema,
+  judgeResetSchema,
+  type SubmitGameSelectionInput,
+  type SendMatchMessageInput,
+  type CreateMatchGamesInput,
+  type JudgeOverrideInput,
+  type JudgeResetInput,
+} from "./match";

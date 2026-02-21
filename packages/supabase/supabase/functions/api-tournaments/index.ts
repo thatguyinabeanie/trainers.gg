@@ -23,7 +23,20 @@
 import { createClient } from "@supabase/supabase-js";
 import { getCorsHeaders } from "../_shared/cors.ts";
 import { getCacheHeaders, CACHE_TTL } from "../_shared/cache.ts";
+import { captureEventWithRequest } from "../_shared/posthog.ts";
+import {
+  TOURNAMENT_CREATED,
+  TOURNAMENT_STARTED,
+  TOURNAMENT_REGISTERED,
+} from "@trainers/posthog";
 import type { ActionResult } from "@trainers/validators";
+import { positiveIntSchema } from "@trainers/validators/common";
+import {
+  createTournamentSchema,
+  updateTournamentSchema,
+  tournamentRegistrationSchema,
+} from "@trainers/validators/tournament";
+import { z, ZodError } from "zod";
 import {
   listTournamentsGrouped,
   getTournamentById,
@@ -120,7 +133,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    const { supabase } = authResult;
+    const { user, supabase } = authResult;
 
     // Parse URL and route to handler
     const url = new URL(req.url);
@@ -143,19 +156,7 @@ Deno.serve(async (req) => {
 
     // GET /api-tournaments/:id → Get tournament details
     if (method === "GET" && pathParts.length === 2) {
-      const tournamentId = parseInt(pathParts[1], 10);
-
-      if (isNaN(tournamentId)) {
-        return jsonResponse(
-          {
-            success: false,
-            error: "Invalid tournament ID",
-            code: "INVALID_ID",
-          },
-          400,
-          cors
-        );
-      }
+      const tournamentId = positiveIntSchema.parse(pathParts[1]);
 
       const result = await getTournamentById(supabase, tournamentId);
 
@@ -182,10 +183,16 @@ Deno.serve(async (req) => {
     // POST /api-tournaments → Create tournament
     if (method === "POST" && pathParts.length === 1) {
       const body = await req.json();
-
-      // TODO: Add Zod validation for createTournamentSchema
+      createTournamentSchema.parse(body);
 
       const result = await createTournamentMutation(supabase, body);
+
+      // Fire-and-forget analytics
+      captureEventWithRequest(req, {
+        event: TOURNAMENT_CREATED,
+        distinctId: user.id,
+        properties: { tournament_id: result.id },
+      });
 
       // Note: Don't invalidate list yet - tournament is created as draft
       // Only invalidate when published (status → upcoming)
@@ -195,23 +202,10 @@ Deno.serve(async (req) => {
 
     // PATCH /api-tournaments/:id → Update tournament
     if (method === "PATCH" && pathParts.length === 2) {
-      const tournamentId = parseInt(pathParts[1], 10);
-
-      if (isNaN(tournamentId)) {
-        return jsonResponse(
-          {
-            success: false,
-            error: "Invalid tournament ID",
-            code: "INVALID_ID",
-          },
-          400,
-          cors
-        );
-      }
+      const tournamentId = positiveIntSchema.parse(pathParts[1]);
 
       const body = await req.json();
-
-      // TODO: Add Zod validation for updateTournamentSchema
+      updateTournamentSchema.parse(body);
 
       await updateTournamentMutation(supabase, tournamentId, body);
 
@@ -231,36 +225,19 @@ Deno.serve(async (req) => {
       pathParts.length === 3 &&
       pathParts[2] === "register"
     ) {
-      const tournamentId = parseInt(pathParts[1], 10);
-
-      if (isNaN(tournamentId)) {
-        return jsonResponse(
-          {
-            success: false,
-            error: "Invalid tournament ID",
-            code: "INVALID_ID",
-          },
-          400,
-          cors
-        );
-      }
+      const tournamentId = positiveIntSchema.parse(pathParts[1]);
 
       const body = await req.json();
-      const { altId } = body;
-
-      if (!altId) {
-        return jsonResponse(
-          {
-            success: false,
-            error: "Alt ID is required",
-            code: "MISSING_FIELD",
-          },
-          400,
-          cors
-        );
-      }
+      const { altId } = tournamentRegistrationSchema.parse(body);
 
       await registerForTournamentMutation(supabase, tournamentId, altId);
+
+      // Fire-and-forget analytics
+      captureEventWithRequest(req, {
+        event: TOURNAMENT_REGISTERED,
+        distinctId: user.id,
+        properties: { tournament_id: tournamentId },
+      });
 
       return jsonResponse(
         { success: true, data: { success: true } },
@@ -275,19 +252,7 @@ Deno.serve(async (req) => {
       pathParts.length === 3 &&
       pathParts[2] === "check-in"
     ) {
-      const tournamentId = parseInt(pathParts[1], 10);
-
-      if (isNaN(tournamentId)) {
-        return jsonResponse(
-          {
-            success: false,
-            error: "Invalid tournament ID",
-            code: "INVALID_ID",
-          },
-          400,
-          cors
-        );
-      }
+      const tournamentId = positiveIntSchema.parse(pathParts[1]);
 
       await checkInMutation(supabase, tournamentId);
 
@@ -304,19 +269,7 @@ Deno.serve(async (req) => {
       pathParts.length === 3 &&
       pathParts[2] === "registration"
     ) {
-      const tournamentId = parseInt(pathParts[1], 10);
-
-      if (isNaN(tournamentId)) {
-        return jsonResponse(
-          {
-            success: false,
-            error: "Invalid tournament ID",
-            code: "INVALID_ID",
-          },
-          400,
-          cors
-        );
-      }
+      const tournamentId = positiveIntSchema.parse(pathParts[1]);
 
       await cancelRegistrationMutation(supabase, tournamentId);
 
@@ -333,34 +286,14 @@ Deno.serve(async (req) => {
       pathParts.length === 3 &&
       pathParts[2] === "submit-team"
     ) {
-      const tournamentId = parseInt(pathParts[1], 10);
-
-      if (isNaN(tournamentId)) {
-        return jsonResponse(
-          {
-            success: false,
-            error: "Invalid tournament ID",
-            code: "INVALID_ID",
-          },
-          400,
-          cors
-        );
-      }
+      const tournamentId = positiveIntSchema.parse(pathParts[1]);
 
       const body = await req.json();
-      const { showdownText } = body;
-
-      if (!showdownText) {
-        return jsonResponse(
-          {
-            success: false,
-            error: "Showdown text is required",
-            code: "MISSING_FIELD",
-          },
-          400,
-          cors
-        );
-      }
+      const { showdownText } = z
+        .object({
+          showdownText: z.string().min(1, "Showdown text is required"),
+        })
+        .parse(body);
 
       const result = await submitTeamMutation(
         supabase,
@@ -377,21 +310,16 @@ Deno.serve(async (req) => {
       pathParts.length === 3 &&
       pathParts[2] === "start"
     ) {
-      const tournamentId = parseInt(pathParts[1], 10);
-
-      if (isNaN(tournamentId)) {
-        return jsonResponse(
-          {
-            success: false,
-            error: "Invalid tournament ID",
-            code: "INVALID_ID",
-          },
-          400,
-          cors
-        );
-      }
+      const tournamentId = positiveIntSchema.parse(pathParts[1]);
 
       await startTournamentEnhancedMutation(supabase, tournamentId);
+
+      // Fire-and-forget analytics
+      captureEventWithRequest(req, {
+        event: TOURNAMENT_STARTED,
+        distinctId: user.id,
+        properties: { tournament_id: tournamentId },
+      });
 
       return jsonResponse(
         { success: true, data: { success: true } },
@@ -406,19 +334,7 @@ Deno.serve(async (req) => {
       pathParts.length === 3 &&
       pathParts[2] === "rounds"
     ) {
-      const tournamentId = parseInt(pathParts[1], 10);
-
-      if (isNaN(tournamentId)) {
-        return jsonResponse(
-          {
-            success: false,
-            error: "Invalid tournament ID",
-            code: "INVALID_ID",
-          },
-          400,
-          cors
-        );
-      }
+      const tournamentId = positiveIntSchema.parse(pathParts[1]);
 
       const result = await createRoundMutation(supabase, tournamentId);
 
@@ -431,19 +347,7 @@ Deno.serve(async (req) => {
       pathParts.length === 3 &&
       pathParts[2] === "advance-top-cut"
     ) {
-      const tournamentId = parseInt(pathParts[1], 10);
-
-      if (isNaN(tournamentId)) {
-        return jsonResponse(
-          {
-            success: false,
-            error: "Invalid tournament ID",
-            code: "INVALID_ID",
-          },
-          400,
-          cors
-        );
-      }
+      const tournamentId = positiveIntSchema.parse(pathParts[1]);
 
       await advanceToTopCutMutation(supabase, tournamentId);
 
@@ -464,11 +368,11 @@ Deno.serve(async (req) => {
     console.error("[api-tournaments]", error);
 
     // Handle validation errors (Zod)
-    if (error instanceof Error && error.name === "ZodError") {
+    if (error instanceof ZodError) {
       return jsonResponse(
         {
           success: false,
-          error: "Invalid input",
+          error: error.issues[0]?.message ?? "Invalid input",
           code: "VALIDATION_ERROR",
         },
         400,

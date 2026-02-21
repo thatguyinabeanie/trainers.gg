@@ -21,7 +21,7 @@
   "devDependencies": {
     "@types/jest": "catalog:",
     "@trainers/eslint-config": "workspace:*",
-    "@trainers/jest-config": "workspace:*",
+    "@trainers/test-utils": "workspace:*",
     "@trainers/prettier-config": "workspace:*",
     "@trainers/typescript-config": "workspace:*",
     "@types/node": "catalog:",

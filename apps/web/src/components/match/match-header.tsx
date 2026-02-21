@@ -10,6 +10,7 @@ import { Separator } from "@/components/ui/separator";
 import { StatusBadge, type Status } from "@/components/ui/status-badge";
 import {
   AlertCircle,
+  Clock,
   Gavel,
   Loader2,
   Gamepad2,
@@ -17,6 +18,7 @@ import {
   ShieldAlert,
   Trophy,
   User,
+  UserX,
   X,
 } from "lucide-react";
 import Link from "next/link";
@@ -371,6 +373,12 @@ function GameNode({
     // For staff/judges: show winner's initial in a neutral teal circle
     const winnerName = game.winner_alt_id === myAltId ? myName : opponentName;
     const winnerInitial = winnerName.charAt(0).toUpperCase();
+    const isNoShow = game.is_no_show === true;
+
+    // No-show games use a distinct visual: UserX icon with amber ring
+    const noShowTitle = isNoShow
+      ? `Awarded to ${winnerName} — opponent no-show`
+      : undefined;
 
     return (
       <>
@@ -379,40 +387,52 @@ function GameNode({
             {game.game_number}
           </span>
           {!isParticipant ? (
-            // Staff view: neutral circle with winner's initial
+            // Staff view: neutral circle with winner's initial (or no-show icon)
             <div
               className={cn(
-                "bg-primary/15 text-primary relative flex h-7 w-7 cursor-default items-center justify-center rounded-full text-xs font-semibold transition-all duration-300",
-                game.status === "resolved" && "ring-1 ring-amber-500/30"
+                "relative flex h-7 w-7 cursor-default items-center justify-center rounded-full text-xs font-semibold transition-all duration-300",
+                isNoShow
+                  ? "bg-amber-500/15 text-amber-600 ring-1 ring-amber-500/30 dark:text-amber-400"
+                  : "bg-primary/15 text-primary",
+                !isNoShow &&
+                  game.status === "resolved" &&
+                  "ring-1 ring-amber-500/30"
               )}
-              title={`${winnerName} won`}
+              title={noShowTitle ?? `${winnerName} won`}
             >
-              {winnerInitial}
+              {isNoShow ? <UserX className="h-3.5 w-3.5" /> : winnerInitial}
             </div>
           ) : (
-            // Player view: trophy / X from their perspective
+            // Player view: trophy / X from their perspective (or no-show icon)
             <button
               type="button"
               onClick={isSelfCorrectable ? () => setIsEditing(true) : undefined}
               className={cn(
                 "relative flex h-7 w-7 items-center justify-center rounded-full transition-all duration-300",
-                state === "won"
-                  ? "bg-primary/15 text-primary"
-                  : "bg-muted text-muted-foreground",
+                isNoShow
+                  ? "bg-amber-500/15 text-amber-600 ring-1 ring-amber-500/30 dark:text-amber-400"
+                  : state === "won"
+                    ? "bg-primary/15 text-primary"
+                    : "bg-muted text-muted-foreground",
                 isSelfCorrectable &&
                   "hover:ring-foreground/10 cursor-pointer hover:ring-2",
                 !isSelfCorrectable && "cursor-default",
-                game.status === "resolved" && "ring-1 ring-amber-500/30"
+                !isNoShow &&
+                  game.status === "resolved" &&
+                  "ring-1 ring-amber-500/30"
               )}
               title={
-                isSelfCorrectable
+                noShowTitle ??
+                (isSelfCorrectable
                   ? "Click to change"
                   : game.status === "resolved"
                     ? "Resolved by judge"
-                    : undefined
+                    : undefined)
               }
             >
-              {state === "won" ? (
+              {isNoShow ? (
+                <UserX className="h-3.5 w-3.5" />
+              ) : state === "won" ? (
                 <Trophy className="h-3.5 w-3.5" />
               ) : (
                 <X className="h-3.5 w-3.5" />
@@ -871,6 +891,30 @@ function DisputeAlert({
 }
 
 // ============================================================================
+// No-Show Alert (shown below header when games were auto-awarded)
+// ============================================================================
+
+function NoShowAlert({ games }: { games: GameData[] }) {
+  const noShowGames = games.filter((g) => g.is_no_show === true);
+  if (noShowGames.length === 0) return null;
+
+  const gameNumbers = noShowGames
+    .map((g) => g.game_number)
+    .sort((a, b) => a - b);
+  const label =
+    gameNumbers.length === 1
+      ? `Game ${gameNumbers[0]} was`
+      : `Games ${gameNumbers.join(", ")} were`;
+
+  return (
+    <div className="flex items-center gap-1.5 rounded-lg bg-amber-500/10 px-3 py-2 text-xs text-amber-700 dark:text-amber-300">
+      <Clock className="h-3.5 w-3.5 shrink-0" />
+      <span>{label} awarded due to opponent no-show.</span>
+    </div>
+  );
+}
+
+// ============================================================================
 // Reset Match Button (staff only, two-click confirmation)
 // ============================================================================
 
@@ -1060,6 +1104,9 @@ export function MatchHeader({
       </Card>
 
       {/* Alerts below header card */}
+      {games && games.some((g) => g.is_no_show === true) && (
+        <NoShowAlert games={games} />
+      )}
       {games && games.some((g) => g.status === "disputed") && (
         <DisputeAlert
           games={games}

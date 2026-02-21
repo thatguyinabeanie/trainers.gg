@@ -23,3 +23,31 @@ Pass an authenticated `Agent` instance into API functions — don't manage sessi
 ## Public Agent
 
 `getPublicAgent()` — unauthenticated agent for reading public content (no session needed).
+
+## Exports
+
+| Import Path             | Target             | Purpose                                            |
+| ----------------------- | ------------------ | -------------------------------------------------- |
+| `@trainers/atproto`     | `src/index.ts`     | Main exports (agent, config, handle utils, errors) |
+| `@trainers/atproto/api` | `src/api/index.ts` | Feed, posts, interactions, social graph operations |
+
+## Commands
+
+```bash
+pnpm --filter @trainers/atproto test          # Run tests (--passWithNoTests)
+pnpm --filter @trainers/atproto test:watch    # Watch mode
+pnpm --filter @trainers/atproto typecheck     # Type checking
+```
+
+## Testing
+
+- **Test location**: `src/__tests__/`, `src/api/__tests__/`
+- **Note**: Test script uses `--passWithNoTests` — some areas may lack coverage
+
+## Error Handling
+
+Custom error classes for typed error handling:
+
+- `BlueskyAuthError` — authentication failures
+- `BlueskyApiError` — API call failures
+- `withErrorHandling(fn)` — wraps functions with typed error catching

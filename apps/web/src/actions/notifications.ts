@@ -4,17 +4,14 @@
 
 "use server";
 
-import { z } from "zod";
+import { positiveIntSchema, type ActionResult } from "@trainers/validators";
 import { createClient } from "@/lib/supabase/server";
 import {
   markNotificationRead,
   markAllNotificationsRead,
   deleteNotification,
 } from "@trainers/supabase";
-import { type ActionResult } from "@trainers/validators";
 import { withAction } from "./utils";
-
-const idSchema = z.number().int().positive();
 
 /**
  * Mark a single notification as read.
@@ -23,7 +20,7 @@ export async function markNotificationReadAction(
   notificationId: number
 ): Promise<ActionResult<{ success: true }>> {
   return withAction(async () => {
-    const id = idSchema.parse(notificationId);
+    const id = positiveIntSchema.parse(notificationId);
     const supabase = await createClient();
     await markNotificationRead(supabase, id);
     return { success: true as const };
@@ -50,7 +47,7 @@ export async function deleteNotificationAction(
   notificationId: number
 ): Promise<ActionResult<{ success: true }>> {
   return withAction(async () => {
-    const id = idSchema.parse(notificationId);
+    const id = positiveIntSchema.parse(notificationId);
     const supabase = await createClient();
     await deleteNotification(supabase, id);
     return { success: true as const };

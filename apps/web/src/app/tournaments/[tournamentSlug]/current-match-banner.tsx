@@ -131,7 +131,7 @@ export function CurrentMatchBanner({
   return (
     <div className="mb-6">
       <Link
-        href={`/tournaments/${tournamentSlug}/matches/${match.id}`}
+        href={`/tournaments/${tournamentSlug}/r/${match.roundNumber}/t/${match.table ?? 0}`}
         className={cn(
           "border-primary/30 from-primary/10 via-background to-background group relative flex items-center gap-4 overflow-hidden rounded-lg border bg-gradient-to-r p-4 transition-all hover:shadow-md",
           isActive && "border-primary/50"

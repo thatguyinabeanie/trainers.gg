@@ -6,7 +6,12 @@
 
 import { type NextRequest, NextResponse } from "next/server";
 import { getTournamentById, updateTournament } from "@trainers/supabase/server";
-import { type ActionResult } from "@trainers/validators";
+import {
+  positiveIntSchema,
+  updateTournamentSchema,
+  ZodError,
+  type ActionResult,
+} from "@trainers/validators";
 
 /**
  * GET /api/tournaments/:id
@@ -38,15 +43,7 @@ export async function GET(
     }
 
     const { id } = await params;
-    const tournamentId = parseInt(id, 10);
-
-    if (isNaN(tournamentId)) {
-      const result: ActionResult = {
-        success: false,
-        error: "Invalid tournament ID",
-      };
-      return NextResponse.json(result, { status: 400 });
-    }
+    const tournamentId = positiveIntSchema.parse(id);
 
     const tournament = await getTournamentById(tournamentId);
 
@@ -70,6 +67,14 @@ export async function GET(
       },
     });
   } catch (error) {
+    if (error instanceof ZodError) {
+      const result: ActionResult = {
+        success: false,
+        error: "Invalid tournament ID",
+      };
+      return NextResponse.json(result, { status: 400 });
+    }
+
     const result: ActionResult = {
       success: false,
       error:
@@ -110,20 +115,11 @@ export async function PATCH(
     }
 
     const { id } = await params;
-    const tournamentId = parseInt(id, 10);
-
-    if (isNaN(tournamentId)) {
-      const result: ActionResult = {
-        success: false,
-        error: "Invalid tournament ID",
-      };
-      return NextResponse.json(result, { status: 400 });
-    }
+    const tournamentId = positiveIntSchema.parse(id);
 
     const body = await request.json();
-
-    // TODO: Add Zod validation
-    await updateTournament(tournamentId, body);
+    const parsed = updateTournamentSchema.parse(body);
+    await updateTournament(tournamentId, parsed);
 
     const result: ActionResult<{ success: true }> = {
       success: true,
@@ -132,6 +128,14 @@ export async function PATCH(
 
     return NextResponse.json(result);
   } catch (error) {
+    if (error instanceof ZodError) {
+      const result: ActionResult = {
+        success: false,
+        error: error.issues[0]?.message ?? "Invalid input",
+      };
+      return NextResponse.json(result, { status: 400 });
+    }
+
     const result: ActionResult = {
       success: false,
       error:

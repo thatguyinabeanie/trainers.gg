@@ -48,12 +48,16 @@ import {
 } from "@trainers/supabase";
 import type { Database } from "@trainers/supabase";
 import { CacheTags } from "@/lib/cache";
-import { type ActionResult } from "@trainers/validators";
+import {
+  type ActionResult,
+  type DropCategory,
+  dropCategorySchema,
+  dropNotesSchema,
+} from "@trainers/validators";
 import { rejectBots } from "./utils";
 
 type TournamentFormat = Database["public"]["Enums"]["tournament_format"];
 type TournamentStatus = Database["public"]["Enums"]["tournament_status"];
-type DropCategory = Database["public"]["Enums"]["drop_category"];
 
 // =============================================================================
 // Tournament CRUD
@@ -911,16 +915,8 @@ export async function removePlayerFromTournament(
     await rejectBots();
 
     // Runtime validation
-    const validCategories = ["no_show", "conduct", "disqualification", "other"];
-    if (!validCategories.includes(dropCategory)) {
-      return { success: false, error: "Invalid drop category" };
-    }
-    if (dropNotes && dropNotes.length > 2000) {
-      return {
-        success: false,
-        error: "Drop notes must be under 2000 characters",
-      };
-    }
+    dropCategorySchema.parse(dropCategory);
+    dropNotesSchema.parse(dropNotes);
 
     const supabase = await createClient();
     const result = await updateRegistrationStatusMutation(
@@ -1016,16 +1012,8 @@ export async function bulkRemovePlayers(
     await rejectBots();
 
     // Runtime validation
-    const validCategories = ["no_show", "conduct", "disqualification", "other"];
-    if (!validCategories.includes(dropCategory)) {
-      return { success: false, error: "Invalid drop category" };
-    }
-    if (dropNotes && dropNotes.length > 2000) {
-      return {
-        success: false,
-        error: "Drop notes must be under 2000 characters",
-      };
-    }
+    dropCategorySchema.parse(dropCategory);
+    dropNotesSchema.parse(dropNotes);
 
     const supabase = await createClient();
 

@@ -33,7 +33,29 @@ const phaseConfig = toPhaseConfig(dbPhaseRow, dbRoundRows);
 - `matchHistory`: Set of `"altId1-altId2"` strings (prevents rematches)
 - Returns: array of `[alt1Id, alt2Id]` pairs + bye assignment (null alt2 = bye)
 
+## Exports
+
+| Import Path                      | Target            | Purpose                             |
+| -------------------------------- | ----------------- | ----------------------------------- |
+| `@trainers/tournaments`          | `src/index.ts`    | All tournament logic                |
+| `@trainers/tournaments/types`    | `src/types.ts`    | Domain types (use this for imports) |
+| `@trainers/tournaments/adapters` | `src/adapters.ts` | DB↔domain conversion                |
+
 ## Types
 
 Import domain types from `@trainers/tournaments/types`, not directly from the package root.
 DB↔domain conversion always goes through `@trainers/tournaments/adapters`.
+
+## Commands
+
+```bash
+pnpm --filter @trainers/tournaments test          # Run tests
+pnpm --filter @trainers/tournaments test:watch    # Watch mode
+pnpm --filter @trainers/tournaments typecheck     # Type checking
+```
+
+## Testing
+
+- **Test location**: `src/__tests__/`
+- **No external dependencies** — pure logic tests, fast execution
+- **Key test scenarios**: Swiss pairing correctness, standing calculations, bye assignment, drop validation

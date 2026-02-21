@@ -33,7 +33,7 @@ import {
  *
  * 3. Protected routes (auth required, always enforced):
  *    - /dashboard, /to-dashboard, /organizations/create, /feed
- *    - /tournaments/[slug]/matches/*
+ *    - /tournaments/[slug]/r/[round]/t/[table]
  *    - Unauthenticated users are redirected to /sign-in?redirect=<path>
  *
  * 4. Private beta / maintenance mode:

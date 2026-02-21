@@ -23,17 +23,14 @@
 
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import { getCorsHeaders } from "../_shared/cors.ts";
+import { captureEventWithRequest } from "../_shared/posthog.ts";
+import { USER_SIGNED_UP_BLUESKY } from "@trainers/posthog";
+import { z, ZodError } from "zod";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
 // -- Types --
-
-interface BlueskyAuthRequest {
-  did: string;
-  handle: string;
-  link?: boolean;
-}
 
 interface BlueskyAuthResponse {
   success: boolean;
@@ -174,21 +171,17 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const body: BlueskyAuthRequest = await req.json();
-    const { did, handle, link } = body;
-
-    // Validate required fields
-    if (!did || !handle) {
-      return jsonResponse(
-        {
-          success: false,
-          error: "Missing required fields: did, handle",
-          code: "MISSING_FIELDS",
-        },
-        400,
-        cors
-      );
-    }
+    const body = await req.json();
+    const { did, handle, link } = z
+      .object({
+        did: z
+          .string()
+          .min(1, "DID is required")
+          .startsWith("did:", "Invalid DID format"),
+        handle: z.string().min(1, "Handle is required"),
+        link: z.boolean().optional(),
+      })
+      .parse(body);
 
     // Step 1: Verify DID exists and handle matches
     const verification = await verifyDid(did, handle);
@@ -475,6 +468,13 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Fire-and-forget analytics
+    captureEventWithRequest(req, {
+      event: USER_SIGNED_UP_BLUESKY,
+      distinctId: userId!,
+      properties: { did, handle, is_new: isNew },
+    });
+
     return jsonResponse(
       {
         success: true,
@@ -492,6 +492,19 @@ Deno.serve(async (req) => {
     );
   } catch (error) {
     console.error("Bluesky auth error:", error);
+
+    if (error instanceof ZodError) {
+      return jsonResponse(
+        {
+          success: false,
+          error: error.issues[0]?.message ?? "Invalid input",
+          code: "VALIDATION_ERROR",
+        },
+        400,
+        cors
+      );
+    }
+
     return jsonResponse(
       {
         success: false,

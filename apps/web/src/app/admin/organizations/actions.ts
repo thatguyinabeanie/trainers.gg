@@ -1,6 +1,10 @@
 "use server";
 
-import { z } from "zod";
+import {
+  positiveIntSchema,
+  uuidSchema,
+  adminReasonSchema,
+} from "@trainers/validators";
 import {
   withAdminAction,
   type ActionResult,
@@ -13,16 +17,10 @@ import {
   transferOrgOwnership,
 } from "@trainers/supabase/queries";
 
-// -- Zod Schemas --
-
-const orgIdSchema = z.number().int().positive();
-const reasonSchema = z.string().trim().min(1).max(1000);
-const userIdSchema = z.string().uuid();
-
 // --- Approve ---
 
 export async function approveOrgAction(orgId: number): Promise<ActionResult> {
-  const parsedOrgId = orgIdSchema.safeParse(orgId);
+  const parsedOrgId = positiveIntSchema.safeParse(orgId);
   if (!parsedOrgId.success) {
     return {
       success: false,
@@ -42,14 +40,14 @@ export async function rejectOrgAction(
   orgId: number,
   reason: string
 ): Promise<ActionResult> {
-  const parsedOrgId = orgIdSchema.safeParse(orgId);
+  const parsedOrgId = positiveIntSchema.safeParse(orgId);
   if (!parsedOrgId.success) {
     return {
       success: false,
       error: `Invalid input: ${parsedOrgId.error.issues[0]?.message}`,
     };
   }
-  const parsedReason = reasonSchema.safeParse(reason);
+  const parsedReason = adminReasonSchema.safeParse(reason);
   if (!parsedReason.success) {
     return {
       success: false,
@@ -74,14 +72,14 @@ export async function suspendOrgAction(
   orgId: number,
   reason: string
 ): Promise<ActionResult> {
-  const parsedOrgId = orgIdSchema.safeParse(orgId);
+  const parsedOrgId = positiveIntSchema.safeParse(orgId);
   if (!parsedOrgId.success) {
     return {
       success: false,
       error: `Invalid input: ${parsedOrgId.error.issues[0]?.message}`,
     };
   }
-  const parsedReason = reasonSchema.safeParse(reason);
+  const parsedReason = adminReasonSchema.safeParse(reason);
   if (!parsedReason.success) {
     return {
       success: false,
@@ -103,7 +101,7 @@ export async function suspendOrgAction(
 // --- Unsuspend ---
 
 export async function unsuspendOrgAction(orgId: number): Promise<ActionResult> {
-  const parsedOrgId = orgIdSchema.safeParse(orgId);
+  const parsedOrgId = positiveIntSchema.safeParse(orgId);
   if (!parsedOrgId.success) {
     return {
       success: false,
@@ -123,14 +121,14 @@ export async function transferOwnershipAction(
   orgId: number,
   newOwnerUserId: string
 ): Promise<ActionResult> {
-  const parsedOrgId = orgIdSchema.safeParse(orgId);
+  const parsedOrgId = positiveIntSchema.safeParse(orgId);
   if (!parsedOrgId.success) {
     return {
       success: false,
       error: `Invalid input: ${parsedOrgId.error.issues[0]?.message}`,
     };
   }
-  const parsedUserId = userIdSchema.safeParse(newOwnerUserId);
+  const parsedUserId = uuidSchema.safeParse(newOwnerUserId);
   if (!parsedUserId.success) {
     return {
       success: false,

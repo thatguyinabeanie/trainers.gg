@@ -3,6 +3,9 @@ import {
   usernameSchema,
   emailSchema,
   validatePassword,
+  loginIdentifierSchema,
+  waitlistEmailSchema,
+  signupRequestSchema,
 } from "../auth";
 
 describe("passwordSchema", () => {
@@ -154,5 +157,74 @@ describe("validatePassword", () => {
     const result = validatePassword("Password1");
     expect(result.isValid).toBe(false);
     expect(result.errors).toEqual(["One symbol (!@#$%^&*...)"]);
+  });
+});
+
+describe("loginIdentifierSchema", () => {
+  it("trims whitespace", () => {
+    const result = loginIdentifierSchema.safeParse("  user@example.com  ");
+    expect(result.success).toBe(true);
+    if (result.success) expect(result.data).toBe("user@example.com");
+  });
+
+  it("rejects empty string", () => {
+    expect(loginIdentifierSchema.safeParse("").success).toBe(false);
+  });
+
+  it("rejects whitespace-only string", () => {
+    expect(loginIdentifierSchema.safeParse("   ").success).toBe(false);
+  });
+});
+
+describe("waitlistEmailSchema", () => {
+  it("trims and lowercases email", () => {
+    const result = waitlistEmailSchema.safeParse("  User@Example.COM  ");
+    expect(result.success).toBe(true);
+    if (result.success) expect(result.data).toBe("user@example.com");
+  });
+
+  it("rejects invalid email", () => {
+    expect(waitlistEmailSchema.safeParse("not-an-email").success).toBe(false);
+  });
+});
+
+describe("signupRequestSchema", () => {
+  const validSignup = {
+    email: "user@example.com",
+    username: "ash_ketchum",
+    password: "Password1!",
+  };
+
+  it("accepts valid signup with required fields only", () => {
+    expect(signupRequestSchema.safeParse(validSignup).success).toBe(true);
+  });
+
+  it("accepts valid signup with all optional fields", () => {
+    const result = signupRequestSchema.safeParse({
+      ...validSignup,
+      firstName: "Ash",
+      lastName: "Ketchum",
+      birthDate: "1997-04-01",
+      country: "JP",
+      inviteToken: "abc123",
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects missing email", () => {
+    const { email: _, ...noEmail } = validSignup;
+    expect(signupRequestSchema.safeParse(noEmail).success).toBe(false);
+  });
+
+  it("rejects missing username", () => {
+    const { username: _, ...noUsername } = validSignup;
+    expect(signupRequestSchema.safeParse(noUsername).success).toBe(false);
+  });
+
+  it("rejects weak password", () => {
+    expect(
+      signupRequestSchema.safeParse({ ...validSignup, password: "weak" })
+        .success
+    ).toBe(false);
   });
 });

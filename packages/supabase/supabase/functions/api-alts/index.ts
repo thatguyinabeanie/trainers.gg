@@ -14,6 +14,9 @@ import { createClient } from "@supabase/supabase-js";
 import { getCorsHeaders } from "../_shared/cors.ts";
 import { getCacheHeaders, CACHE_TTL } from "../_shared/cache.ts";
 import type { ActionResult } from "@trainers/validators";
+import { positiveIntSchema } from "@trainers/validators/common";
+import { createAltSchema, updateAltSchema } from "@trainers/validators/alt";
+import { ZodError } from "zod";
 import { getCurrentUserAlts, getAltById } from "@trainers/supabase/queries";
 import {
   createAlt,
@@ -111,15 +114,7 @@ Deno.serve(async (req) => {
 
     // GET /api-alts/:id → Get alt details
     if (method === "GET" && pathParts.length === 2) {
-      const altId = parseInt(pathParts[1], 10);
-
-      if (isNaN(altId)) {
-        return jsonResponse(
-          { success: false, error: "Invalid alt ID", code: "INVALID_ID" },
-          400,
-          cors
-        );
-      }
+      const altId = positiveIntSchema.parse(pathParts[1]);
 
       const result = await getAltById(supabase, altId);
 
@@ -142,23 +137,11 @@ Deno.serve(async (req) => {
     // POST /api-alts → Create new alt
     if (method === "POST" && pathParts.length === 1) {
       const body = await req.json();
-      const { username, inGameName } = body;
-
-      if (!username) {
-        return jsonResponse(
-          {
-            success: false,
-            error: "Username is required",
-            code: "MISSING_FIELDS",
-          },
-          400,
-          cors
-        );
-      }
+      const { username } = createAltSchema.parse(body);
 
       const alt = await createAlt(supabase, {
         username,
-        inGameName,
+        inGameName: body.inGameName,
       });
 
       return jsonResponse({ success: true, data: { id: alt.id } }, 201, cors);
@@ -166,19 +149,10 @@ Deno.serve(async (req) => {
 
     // PATCH /api-alts/:id → Update alt
     if (method === "PATCH" && pathParts.length === 2) {
-      const altId = parseInt(pathParts[1], 10);
-
-      if (isNaN(altId)) {
-        return jsonResponse(
-          { success: false, error: "Invalid alt ID", code: "INVALID_ID" },
-          400,
-          cors
-        );
-      }
+      const altId = positiveIntSchema.parse(pathParts[1]);
 
       const body = await req.json();
-
-      // TODO: Add Zod validation for updateAltSchema
+      updateAltSchema.parse(body);
 
       await updateAlt(supabase, altId, body);
 
@@ -191,15 +165,7 @@ Deno.serve(async (req) => {
 
     // DELETE /api-alts/:id → Delete alt
     if (method === "DELETE" && pathParts.length === 2) {
-      const altId = parseInt(pathParts[1], 10);
-
-      if (isNaN(altId)) {
-        return jsonResponse(
-          { success: false, error: "Invalid alt ID", code: "INVALID_ID" },
-          400,
-          cors
-        );
-      }
+      const altId = positiveIntSchema.parse(pathParts[1]);
 
       await deleteAlt(supabase, altId);
 
@@ -212,15 +178,7 @@ Deno.serve(async (req) => {
 
     // POST /api-alts/:id/set-main → Set as main alt
     if (method === "POST" && pathParts[2] === "set-main") {
-      const altId = parseInt(pathParts[1], 10);
-
-      if (isNaN(altId)) {
-        return jsonResponse(
-          { success: false, error: "Invalid alt ID", code: "INVALID_ID" },
-          400,
-          cors
-        );
-      }
+      const altId = positiveIntSchema.parse(pathParts[1]);
 
       await setMainAlt(supabase, altId);
 
@@ -239,6 +197,18 @@ Deno.serve(async (req) => {
     );
   } catch (error) {
     console.error("[api-alts]", error);
+
+    if (error instanceof ZodError) {
+      return jsonResponse(
+        {
+          success: false,
+          error: error.issues[0]?.message ?? "Invalid input",
+          code: "VALIDATION_ERROR",
+        },
+        400,
+        cors
+      );
+    }
 
     return jsonResponse(
       {

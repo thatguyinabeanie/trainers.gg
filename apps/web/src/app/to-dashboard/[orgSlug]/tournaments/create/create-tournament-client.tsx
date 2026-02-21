@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
+import { z } from "@trainers/validators";
 import { useSupabaseQuery, useSupabaseMutation } from "@/lib/supabase";
 import { getOrganizationBySlug, createTournament } from "@trainers/supabase";
 import { useCurrentUser } from "@/hooks/use-current-user";

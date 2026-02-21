@@ -1,5 +1,5 @@
 import type { Config } from "jest";
-import { createConfig } from "@trainers/jest-config";
+import { createConfig } from "@trainers/test-utils/jest-config";
 
 const config: Config = createConfig({
   displayName: "tournaments",

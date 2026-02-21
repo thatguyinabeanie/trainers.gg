@@ -17,7 +17,7 @@ export const PROTECTED_ROUTES = [
 
 // Dynamic route patterns that require authentication (checked via regex)
 export const PROTECTED_PATTERNS = [
-  /^\/tournaments\/[^/]+\/matches(\/|$)/, // Match pages contain chat, teams, game data
+  /^\/tournaments\/[^/]+\/r\/\d+\/t\/\d+(\/|$)/, // Match pages contain chat, teams, game data
 ];
 
 // Routes that are always accessible (even in maintenance mode)
