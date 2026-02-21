@@ -4,6 +4,7 @@
  * view mode toggle, report dialog, bye handling, unpaired players banner.
  */
 
+import type React from "react";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { TournamentPairings } from "../tournament-pairings";

@@ -3,11 +3,30 @@
  * Covers: rendering preset buttons, active preset detection, preset selection callback.
  */
 
+import type React from "react";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { PhaseConfig } from "@trainers/tournaments/types";
 import { TournamentPresetSelector } from "../tournament-preset-selector";
 import { TOURNAMENT_PRESETS } from "../tournament-presets";
+
+// ── Mocks ──────────────────────────────────────────────────────────────────
+
+jest.mock("@/components/ui/button", () => ({
+  Button: ({
+    children,
+    variant,
+    ...props
+  }: {
+    children: React.ReactNode;
+    variant?: string;
+    [key: string]: unknown;
+  }) => (
+    <button data-variant={variant ?? "default"} {...props}>
+      {children}
+    </button>
+  ),
+}));
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
@@ -106,10 +125,12 @@ describe("TournamentPresetSelector", () => {
     ];
     renderSelector({ phases });
 
-    // The "Competitive Tournament" button should have variant="default"
-    // while "Practice Tournament" should have variant="outline"
-    // We can't test variants directly, but we can verify both buttons render
-    expect(screen.getByText("Competitive Tournament")).toBeInTheDocument();
-    expect(screen.getByText("Practice Tournament")).toBeInTheDocument();
+    // The "Competitive Tournament" button should have variant="default" (active)
+    const activeBtn = screen.getByText("Competitive Tournament");
+    expect(activeBtn).toHaveAttribute("data-variant", "default");
+
+    // The "Practice Tournament" button should have variant="outline" (inactive)
+    const inactiveBtn = screen.getByText("Practice Tournament");
+    expect(inactiveBtn).toHaveAttribute("data-variant", "outline");
   });
 });

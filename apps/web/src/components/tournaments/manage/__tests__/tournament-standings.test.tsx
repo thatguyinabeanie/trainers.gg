@@ -4,6 +4,7 @@
  * sorting (dropped last), top 3 highlight, full table display.
  */
 
+import type React from "react";
 import { render, screen } from "@testing-library/react";
 import { TournamentStandings } from "../tournament-standings";
 

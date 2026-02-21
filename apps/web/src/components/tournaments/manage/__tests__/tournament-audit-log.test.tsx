@@ -3,6 +3,7 @@
  * Covers: loading state, empty state, log entry rendering, category filtering, refresh
  */
 
+import type React from "react";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { TournamentAuditLog } from "../tournament-audit-log";
@@ -224,10 +225,9 @@ describe("TournamentAuditLog", () => {
     const refreshBtn = buttons.find(
       (b) => !b.getAttribute("data-testid")?.startsWith("filter")
     );
-    if (refreshBtn) {
-      await user.click(refreshBtn);
-      expect(mockRefetch).toHaveBeenCalled();
-    }
+    expect(refreshBtn).toBeDefined();
+    await user.click(refreshBtn!);
+    expect(mockRefetch).toHaveBeenCalled();
   });
 
   it("renders description with actor and winner name highlights", () => {
