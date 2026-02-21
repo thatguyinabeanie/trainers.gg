@@ -55,13 +55,13 @@ export default function ProfileSettingsPage() {
   const [isAvatarUploading, startAvatarTransition] = useTransition();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [currentAvatarUrl, setCurrentAvatarUrl] = useState<string | null>(null);
+  const [altId, setAltId] = useState<number | null>(null);
 
   const displayName = user ? getUserDisplayName(user) : "";
   const avatarUrl =
     currentAvatarUrl ??
     user?.profile?.avatarUrl ??
     (user?.user_metadata?.avatar_url as string | undefined);
-  const altId = user?.profile?.id;
 
   // Load current profile data
   useEffect(() => {
@@ -74,6 +74,7 @@ export default function ProfileSettingsPage() {
         setOriginalBirthDate(profile.birthDate ?? "");
         setCountry(profile.country ?? "");
         setOriginalCountry(profile.country ?? "");
+        if (profile.mainAltId) setAltId(profile.mainAltId);
       }
       setIsLoading(false);
     }
