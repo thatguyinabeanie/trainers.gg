@@ -9,7 +9,7 @@
     "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY",
     "NEXT_PUBLIC_SITE_URL",
     "E2E_AUTH_BYPASS_SECRET",
-"SUPABASE_URL",
+    "SUPABASE_URL",
     "SUPABASE_PROJECT_REF",
     "SUPABASE_ACCESS_TOKEN",
     "SUPABASE_ANON_KEY",
@@ -50,7 +50,7 @@
         ".expo/**",
         "src/generated/**"
       ],
-      "env": []
+      "env": ["NEXT_PUBLIC_POSTHOG_KEY", "NEXT_PUBLIC_POSTHOG_HOST"]
     },
     "dev:setup": {
       "cache": false

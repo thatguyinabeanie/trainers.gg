@@ -4,6 +4,8 @@ import { AuthProvider } from "@/components/auth/auth-provider";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ThemeProvider } from "next-themes";
 import type { ReactNode } from "react";
+import { PostHogProvider } from "@/lib/posthog/posthog-provider";
+import { CookieConsent } from "@/components/cookie-consent";
 
 function makeQueryClient() {
   return new QueryClient({
@@ -33,20 +35,31 @@ function getQueryClient() {
   }
 }
 
-export function Providers({ children }: { children: ReactNode }) {
+interface ProvidersProps {
+  children: ReactNode;
+  isImpersonating?: boolean;
+}
+
+export function Providers({
+  children,
+  isImpersonating = false,
+}: ProvidersProps) {
   const queryClient = getQueryClient();
 
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="system"
-          enableSystem
-          disableTransitionOnChange
-        >
-          {children}
-        </ThemeProvider>
+        <PostHogProvider isImpersonating={isImpersonating}>
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="system"
+            enableSystem
+            disableTransitionOnChange
+          >
+            {children}
+            <CookieConsent />
+          </ThemeProvider>
+        </PostHogProvider>
       </AuthProvider>
     </QueryClientProvider>
   );
