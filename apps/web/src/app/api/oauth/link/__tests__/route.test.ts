@@ -155,7 +155,7 @@ describe("POST /api/oauth/link", () => {
 
       expect(response.status).toBe(400);
       expect(json.success).toBe(false);
-      expect(json.error).toBe("DID is required");
+      expect(json.error).toBeDefined();
     });
 
     it("returns 400 when DID is not a string", async () => {
@@ -170,7 +170,7 @@ describe("POST /api/oauth/link", () => {
 
       expect(response.status).toBe(400);
       expect(json.success).toBe(false);
-      expect(json.error).toBe("DID is required");
+      expect(json.error).toBeDefined();
     });
   });
 

@@ -4,6 +4,10 @@ import { checkBotId } from "botid/server";
 import { createClient } from "@/lib/supabase/server";
 import { getEmailByUsername } from "@trainers/supabase";
 import { escapeLike } from "@trainers/utils";
+import {
+  loginIdentifierSchema,
+  waitlistEmailSchema,
+} from "@trainers/validators";
 
 /**
  * Resolve a login identifier (email or username) to an email address.
@@ -13,7 +17,7 @@ import { escapeLike } from "@trainers/utils";
 export async function resolveLoginIdentifier(
   identifier: string
 ): Promise<{ email: string | null; error: string | null }> {
-  const trimmed = identifier.trim();
+  const trimmed = loginIdentifierSchema.parse(identifier);
 
   // If it looks like an email, return it directly (emails are case-insensitive)
   if (trimmed.includes("@")) {
@@ -46,7 +50,7 @@ export async function joinWaitlist(
   const { isBot } = await checkBotId();
   if (isBot) return { error: "Access denied" };
 
-  const trimmed = email.trim().toLowerCase();
+  const trimmed = waitlistEmailSchema.parse(email);
 
   try {
     const supabase = await createClient();
