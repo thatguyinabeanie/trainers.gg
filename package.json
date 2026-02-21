@@ -15,6 +15,7 @@
     "dev:mobile": "turbo run dev --filter=@trainers/mobile",
     "dev:backend": "turbo run dev --filter=@trainers/supabase",
     "dev:web+backend": "turbo run dev --filter=@trainers/web --filter=@trainers/supabase",
+    "dev:db-reset": "pnpm db:reset && pnpm dev",
     "// build": "",
     "build": "turbo run build",
     "build:web": "turbo run build --filter=@trainers/web",

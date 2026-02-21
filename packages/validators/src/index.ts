@@ -133,6 +133,15 @@ export {
   type UpdateAnnouncementInput,
 } from "./admin";
 
+// Upload validators
+export {
+  ALLOWED_IMAGE_TYPES,
+  type AllowedImageType,
+  MAX_IMAGE_SIZE,
+  imageUploadSchema,
+  type ImageUploadInput,
+} from "./upload";
+
 // Match validators
 export {
   submitGameSelectionSchema,

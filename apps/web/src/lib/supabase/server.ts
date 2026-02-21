@@ -137,6 +137,19 @@ export function createAtprotoServiceClient() {
 }
 
 /**
+ * Create a Supabase client for storage operations.
+ * Production: authenticated user's client (RLS enforced).
+ * Local dev: service role client (RLS policies can't be created locally
+ * due to a Supabase CLI limitation with storage.objects).
+ */
+export async function createStorageClient() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
+  const isLocal = url.includes("127.0.0.1") || url.includes("localhost");
+  if (isLocal) return createServiceRoleClient();
+  return createClient();
+}
+
+/**
  * Create a Supabase client with AT Protocol types using the user's session.
  * Use this for operations that need to access AT Protocol fields on the users table
  * while respecting RLS policies.

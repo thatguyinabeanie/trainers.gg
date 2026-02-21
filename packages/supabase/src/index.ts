@@ -40,6 +40,16 @@ export {
   type CheckInOpenResult,
 } from "./utils/registration";
 
+// Storage exports
+export {
+  STORAGE_BUCKETS,
+  getUploadPath,
+  getPublicUrl,
+  uploadFile,
+  deleteFile,
+  extractPathFromUrl,
+} from "./storage";
+
 // AT Protocol extended types
 export type {
   AtprotoDatabase,

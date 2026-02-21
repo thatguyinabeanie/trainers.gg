@@ -201,7 +201,7 @@ export default function ProfileSettingsPage() {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
-        {/* Avatar display */}
+        {/* Avatar display (sprite picker coming soon) */}
         <div className="flex items-center gap-4">
           <Avatar className="h-16 w-16">
             {avatarUrl && <AvatarImage src={avatarUrl} alt={displayName} />}

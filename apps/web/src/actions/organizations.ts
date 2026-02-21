@@ -73,7 +73,7 @@ export async function updateOrganization(
     name?: string;
     description?: string;
     socialLinks?: OrganizationSocialLink[];
-    logoUrl?: string;
+    logoUrl?: string | null;
   },
   slug?: string
 ): Promise<ActionResult<{ success: true }>> {
