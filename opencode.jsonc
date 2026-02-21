@@ -16,7 +16,7 @@
     },
     "vercel": {
       "type": "remote",
-      "url": "https://mcp.vercel.com/beanie-gg/trainers-gg",
+      "url": "https://mcp.vercel.com/trainers-gg/trainers-gg",
       "enabled": true,
     },
     "supabase": {
