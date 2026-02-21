@@ -26,6 +26,15 @@ import {
   judgeResetGame,
   resetMatch,
 } from "@trainers/supabase/mutations";
+import { positiveIntSchema } from "@trainers/validators/common";
+import {
+  submitGameSelectionSchema,
+  sendMatchMessageSchema,
+  createMatchGamesSchema,
+  judgeOverrideSchema,
+  judgeResetSchema,
+} from "@trainers/validators/match";
+import { ZodError } from "zod";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
@@ -104,15 +113,7 @@ Deno.serve(async (req) => {
 
     // GET /api-matches/:id → Get match details
     if (method === "GET" && pathParts.length === 2) {
-      const matchId = parseInt(pathParts[1], 10);
-
-      if (isNaN(matchId)) {
-        return jsonResponse(
-          { success: false, error: "Invalid match ID", code: "INVALID_ID" },
-          400,
-          cors
-        );
-      }
+      const matchId = positiveIntSchema.parse(pathParts[1]);
 
       const result = await getMatchById(supabase, matchId);
 
@@ -134,30 +135,11 @@ Deno.serve(async (req) => {
 
     // POST /api-matches/:id/games → Submit game selection
     if (method === "POST" && pathParts[2] === "games") {
-      const matchId = parseInt(pathParts[1], 10);
-
-      if (isNaN(matchId)) {
-        return jsonResponse(
-          { success: false, error: "Invalid match ID", code: "INVALID_ID" },
-          400,
-          cors
-        );
-      }
+      const matchId = positiveIntSchema.parse(pathParts[1]);
 
       const body = await req.json();
-      const { gameId, selectedWinnerAltId } = body;
-
-      if (!gameId || !selectedWinnerAltId) {
-        return jsonResponse(
-          {
-            success: false,
-            error: "Game ID and selected winner required",
-            code: "MISSING_FIELDS",
-          },
-          400,
-          cors
-        );
-      }
+      const { gameId, selectedWinnerAltId } =
+        submitGameSelectionSchema.parse(body);
 
       await submitGameSelection(supabase, gameId, selectedWinnerAltId);
 
@@ -177,30 +159,11 @@ Deno.serve(async (req) => {
 
     // POST /api-matches/:id/messages → Send match message
     if (method === "POST" && pathParts[2] === "messages") {
-      const matchId = parseInt(pathParts[1], 10);
-
-      if (isNaN(matchId)) {
-        return jsonResponse(
-          { success: false, error: "Invalid match ID", code: "INVALID_ID" },
-          400,
-          cors
-        );
-      }
+      const matchId = positiveIntSchema.parse(pathParts[1]);
 
       const body = await req.json();
-      const { altId, content, messageType = "player" } = body;
-
-      if (!altId || !content) {
-        return jsonResponse(
-          {
-            success: false,
-            error: "Alt ID and content required",
-            code: "MISSING_FIELDS",
-          },
-          400,
-          cors
-        );
-      }
+      const { altId, content, messageType } =
+        sendMatchMessageSchema.parse(body);
 
       const data = await sendMatchMessage(
         supabase,
@@ -215,30 +178,10 @@ Deno.serve(async (req) => {
 
     // POST /api-matches/:id/create-games → Create match games
     if (method === "POST" && pathParts[2] === "create-games") {
-      const matchId = parseInt(pathParts[1], 10);
-
-      if (isNaN(matchId)) {
-        return jsonResponse(
-          { success: false, error: "Invalid match ID", code: "INVALID_ID" },
-          400,
-          cors
-        );
-      }
+      const matchId = positiveIntSchema.parse(pathParts[1]);
 
       const body = await req.json();
-      const { numberOfGames } = body;
-
-      if (!numberOfGames || numberOfGames < 1 || numberOfGames > 9) {
-        return jsonResponse(
-          {
-            success: false,
-            error: "Number of games must be between 1 and 9",
-            code: "INVALID_INPUT",
-          },
-          400,
-          cors
-        );
-      }
+      const { numberOfGames } = createMatchGamesSchema.parse(body);
 
       await createMatchGames(supabase, matchId, numberOfGames);
 
@@ -251,30 +194,10 @@ Deno.serve(async (req) => {
 
     // POST /api-matches/:id/judge-override → Judge override game
     if (method === "POST" && pathParts[2] === "judge-override") {
-      const matchId = parseInt(pathParts[1], 10);
-
-      if (isNaN(matchId)) {
-        return jsonResponse(
-          { success: false, error: "Invalid match ID", code: "INVALID_ID" },
-          400,
-          cors
-        );
-      }
+      positiveIntSchema.parse(pathParts[1]);
 
       const body = await req.json();
-      const { gameId, winnerAltId } = body;
-
-      if (!gameId || !winnerAltId) {
-        return jsonResponse(
-          {
-            success: false,
-            error: "Game ID and winner required",
-            code: "MISSING_FIELDS",
-          },
-          400,
-          cors
-        );
-      }
+      const { gameId, winnerAltId } = judgeOverrideSchema.parse(body);
 
       await judgeOverrideGame(supabase, gameId, winnerAltId);
 
@@ -287,26 +210,10 @@ Deno.serve(async (req) => {
 
     // POST /api-matches/:id/judge-reset → Judge reset game
     if (method === "POST" && pathParts[2] === "judge-reset") {
-      const matchId = parseInt(pathParts[1], 10);
-
-      if (isNaN(matchId)) {
-        return jsonResponse(
-          { success: false, error: "Invalid match ID", code: "INVALID_ID" },
-          400,
-          cors
-        );
-      }
+      positiveIntSchema.parse(pathParts[1]);
 
       const body = await req.json();
-      const { gameId } = body;
-
-      if (!gameId) {
-        return jsonResponse(
-          { success: false, error: "Game ID required", code: "MISSING_FIELD" },
-          400,
-          cors
-        );
-      }
+      const { gameId } = judgeResetSchema.parse(body);
 
       await judgeResetGame(supabase, gameId);
 
@@ -319,15 +226,7 @@ Deno.serve(async (req) => {
 
     // POST /api-matches/:id/reset → Reset entire match
     if (method === "POST" && pathParts[2] === "reset") {
-      const matchId = parseInt(pathParts[1], 10);
-
-      if (isNaN(matchId)) {
-        return jsonResponse(
-          { success: false, error: "Invalid match ID", code: "INVALID_ID" },
-          400,
-          cors
-        );
-      }
+      const matchId = positiveIntSchema.parse(pathParts[1]);
 
       await resetMatch(supabase, matchId);
 
@@ -346,6 +245,18 @@ Deno.serve(async (req) => {
     );
   } catch (error) {
     console.error("[api-matches]", error);
+
+    if (error instanceof ZodError) {
+      return jsonResponse(
+        {
+          success: false,
+          error: error.issues[0]?.message ?? "Invalid input",
+          code: "VALIDATION_ERROR",
+        },
+        400,
+        cors
+      );
+    }
 
     return jsonResponse(
       {

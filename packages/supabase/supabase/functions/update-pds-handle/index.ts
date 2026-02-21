@@ -20,13 +20,10 @@ import {
   generateHandle,
   loginPdsAgent,
 } from "../_shared/pds.ts";
+import { z, ZodError } from "zod";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-
-interface UpdatePdsHandleRequest {
-  username: string;
-}
 
 interface UpdatePdsHandleResponse {
   success: boolean;
@@ -101,26 +98,20 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Parse request body
-    const body: UpdatePdsHandleRequest = await req.json();
-    const { username } = body;
-
-    // Validate username format
-    const usernameRegex = /^[a-zA-Z0-9_-]{3,20}$/;
-    if (!username || !usernameRegex.test(username)) {
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error:
-            "Username must be 3-20 characters, alphanumeric with underscores/hyphens only",
-          code: "INVALID_USERNAME",
-        } satisfies UpdatePdsHandleResponse),
-        {
-          status: 400,
-          headers: { ...cors, "Content-Type": "application/json" },
-        }
-      );
-    }
+    // Parse and validate request body
+    const body = await req.json();
+    const { username } = z
+      .object({
+        username: z
+          .string()
+          .min(3, "Username must be at least 3 characters")
+          .max(20, "Username must be at most 20 characters")
+          .regex(
+            /^[a-zA-Z0-9_-]+$/,
+            "Username can only contain letters, numbers, underscores, and hyphens"
+          ),
+      })
+      .parse(body);
 
     // Fetch user from database to check pds_status and DID
     const { data: userData, error: fetchError } = await supabaseAdmin
@@ -296,6 +287,21 @@ Deno.serve(async (req) => {
     );
   } catch (error) {
     console.error("Update PDS handle error:", error);
+
+    if (error instanceof ZodError) {
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: error.issues[0]?.message ?? "Invalid input",
+          code: "INVALID_USERNAME",
+        } satisfies UpdatePdsHandleResponse),
+        {
+          status: 400,
+          headers: { ...cors, "Content-Type": "application/json" },
+        }
+      );
+    }
+
     return new Response(
       JSON.stringify({
         success: false,

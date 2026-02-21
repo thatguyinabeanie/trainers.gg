@@ -20,20 +20,11 @@ import {
 } from "../_shared/pds.ts";
 import { captureEventWithRequest } from "../_shared/posthog.ts";
 import { USER_SIGNED_UP } from "@trainers/posthog";
+import { signupRequestSchema } from "@trainers/validators/auth";
+import { ZodError } from "zod";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-
-interface SignupRequest {
-  email: string;
-  username: string;
-  password: string;
-  firstName?: string;
-  lastName?: string;
-  birthDate?: string;
-  country?: string;
-  inviteToken?: string;
-}
 
 interface SignupResponse {
   success: boolean;
@@ -62,7 +53,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const body: SignupRequest = await req.json();
+    const body = await req.json();
     const {
       email,
       username,
@@ -72,91 +63,7 @@ Deno.serve(async (req) => {
       birthDate,
       country,
       inviteToken,
-    } = body;
-
-    // Validate required fields
-    if (!email || !username || !password) {
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: "Email, username, and password are required",
-          code: "MISSING_FIELDS",
-        } satisfies SignupResponse),
-        {
-          status: 400,
-          headers: { ...cors, "Content-Type": "application/json" },
-        }
-      );
-    }
-
-    // Validate username format (letters, numbers, underscores, hyphens)
-    const usernameRegex = /^[\p{L}\p{N}_-]+$/u;
-    if (
-      username.length < 3 ||
-      username.length > 20 ||
-      !usernameRegex.test(username)
-    ) {
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error:
-            "Username must be 3-20 characters: letters, numbers, underscores, and hyphens",
-          code: "INVALID_USERNAME",
-        } satisfies SignupResponse),
-        {
-          status: 400,
-          headers: { ...cors, "Content-Type": "application/json" },
-        }
-      );
-    }
-
-    // Reject placeholder usernames
-    if (username.startsWith("temp_") || username.startsWith("user_")) {
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: "Please choose a custom username",
-          code: "INVALID_USERNAME",
-        } satisfies SignupResponse),
-        {
-          status: 400,
-          headers: { ...cors, "Content-Type": "application/json" },
-        }
-      );
-    }
-
-    // Validate password strength (must match Supabase Auth settings)
-    // Requirements: 8+ chars, lowercase, uppercase, digit, symbol
-    const passwordErrors: string[] = [];
-    if (password.length < 8) {
-      passwordErrors.push("at least 8 characters");
-    }
-    if (!/[a-z]/.test(password)) {
-      passwordErrors.push("one lowercase letter");
-    }
-    if (!/[A-Z]/.test(password)) {
-      passwordErrors.push("one uppercase letter");
-    }
-    if (!/[0-9]/.test(password)) {
-      passwordErrors.push("one number");
-    }
-    if (!/[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(password)) {
-      passwordErrors.push("one symbol");
-    }
-
-    if (passwordErrors.length > 0) {
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: `Password must contain: ${passwordErrors.join(", ")}`,
-          code: "WEAK_PASSWORD",
-        } satisfies SignupResponse),
-        {
-          status: 400,
-          headers: { ...cors, "Content-Type": "application/json" },
-        }
-      );
-    }
+    } = signupRequestSchema.parse(body);
 
     // Create service role client for admin operations
     const supabaseAdmin = createClient(
@@ -477,6 +384,21 @@ Deno.serve(async (req) => {
     );
   } catch (error) {
     console.error("Signup error:", error);
+
+    if (error instanceof ZodError) {
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: error.issues[0]?.message ?? "Invalid input",
+          code: "VALIDATION_ERROR",
+        } satisfies SignupResponse),
+        {
+          status: 400,
+          headers: { ...cors, "Content-Type": "application/json" },
+        }
+      );
+    }
+
     return new Response(
       JSON.stringify({
         success: false,
