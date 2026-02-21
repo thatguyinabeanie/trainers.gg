@@ -9,6 +9,11 @@ import { checkBotId } from "botid/server";
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { createAtprotoClient } from "@/lib/supabase/server";
+import { z, ZodError } from "@trainers/validators";
+
+const linkDidSchema = z.object({
+  did: z.string().min(1, "DID is required").startsWith("did:", "Invalid DID"),
+});
 
 export async function POST(request: Request) {
   const verification = await checkBotId();
@@ -20,14 +25,8 @@ export async function POST(request: Request) {
   }
 
   try {
-    const { did } = await request.json();
-
-    if (!did || typeof did !== "string") {
-      return NextResponse.json(
-        { success: false, error: "DID is required" },
-        { status: 400 }
-      );
-    }
+    const body = await request.json();
+    const { did } = linkDidSchema.parse(body);
 
     // Get the current authenticated user
     const supabase = await createAtprotoClient();
@@ -85,6 +84,13 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ success: true });
   } catch (error) {
+    if (error instanceof ZodError) {
+      return NextResponse.json(
+        { success: false, error: error.issues[0]?.message ?? "Invalid input" },
+        { status: 400 }
+      );
+    }
+
     console.error("Link API error:", error);
     return NextResponse.json(
       { success: false, error: "Internal server error" },

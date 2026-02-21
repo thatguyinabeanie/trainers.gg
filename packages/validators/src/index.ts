@@ -1,5 +1,5 @@
 // Re-export Zod for consumers — single entry point for all Zod usage
-export { z } from "zod";
+export { z, ZodError } from "zod";
 
 // Action result type
 export { type ActionResult } from "./action-result";

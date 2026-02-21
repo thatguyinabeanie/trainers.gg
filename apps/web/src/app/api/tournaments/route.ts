@@ -10,7 +10,11 @@ import {
   listTournamentsGrouped,
   createTournament,
 } from "@trainers/supabase/server";
-import { type ActionResult } from "@trainers/validators";
+import {
+  createTournamentSchema,
+  ZodError,
+  type ActionResult,
+} from "@trainers/validators";
 
 /**
  * GET /api/tournaments
@@ -83,8 +87,8 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-
-    // TODO: Add Zod validation
+    // Validate name/slug/description via shared schema; pass full body to create
+    createTournamentSchema.parse(body);
     const tournament = await createTournament(body);
 
     const result: ActionResult<typeof tournament> = {
@@ -94,6 +98,14 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(result, { status: 201 });
   } catch (error) {
+    if (error instanceof ZodError) {
+      const result: ActionResult = {
+        success: false,
+        error: error.issues[0]?.message ?? "Invalid input",
+      };
+      return NextResponse.json(result, { status: 400 });
+    }
+
     const result: ActionResult = {
       success: false,
       error:

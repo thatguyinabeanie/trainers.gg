@@ -4,7 +4,12 @@
 
 import { type NextRequest, NextResponse } from "next/server";
 import { registerForTournament } from "@trainers/supabase/server";
-import { type ActionResult } from "@trainers/validators";
+import {
+  positiveIntSchema,
+  tournamentRegistrationSchema,
+  ZodError,
+  type ActionResult,
+} from "@trainers/validators";
 
 /**
  * POST /api/tournaments/:id/register
@@ -36,26 +41,10 @@ export async function POST(
     }
 
     const { id } = await params;
-    const tournamentId = parseInt(id, 10);
-
-    if (isNaN(tournamentId)) {
-      const result: ActionResult = {
-        success: false,
-        error: "Invalid tournament ID",
-      };
-      return NextResponse.json(result, { status: 400 });
-    }
+    const tournamentId = positiveIntSchema.parse(id);
 
     const body = await request.json();
-    const { altId } = body;
-
-    if (!altId) {
-      const result: ActionResult = {
-        success: false,
-        error: "Alt ID is required",
-      };
-      return NextResponse.json(result, { status: 400 });
-    }
+    const { altId } = tournamentRegistrationSchema.parse(body);
 
     await registerForTournament(tournamentId, { altId });
 
@@ -66,6 +55,14 @@ export async function POST(
 
     return NextResponse.json(result);
   } catch (error) {
+    if (error instanceof ZodError) {
+      const result: ActionResult = {
+        success: false,
+        error: error.issues[0]?.message ?? "Invalid input",
+      };
+      return NextResponse.json(result, { status: 400 });
+    }
+
     const result: ActionResult = {
       success: false,
       error:
