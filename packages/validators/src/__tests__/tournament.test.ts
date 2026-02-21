@@ -4,6 +4,9 @@ import {
   tournamentSlugSchema,
   createTournamentSchema,
   updateTournamentSchema,
+  dropCategorySchema,
+  dropNotesSchema,
+  tournamentRegistrationSchema,
 } from "../tournament";
 
 describe("tournamentNameSchema", () => {
@@ -200,5 +203,63 @@ describe("updateTournamentSchema", () => {
       description: "a".repeat(1001),
     });
     expect(result.success).toBe(false);
+  });
+});
+
+describe("dropCategorySchema", () => {
+  it.each(["no_show", "conduct", "disqualification", "other"])(
+    "accepts valid category %s",
+    (v) => {
+      expect(dropCategorySchema.safeParse(v).success).toBe(true);
+    }
+  );
+
+  it.each(["invalid", "", "NO_SHOW", "quit"])(
+    "rejects invalid category %s",
+    (v) => {
+      expect(dropCategorySchema.safeParse(v).success).toBe(false);
+    }
+  );
+});
+
+describe("dropNotesSchema", () => {
+  it("accepts a short note", () => {
+    expect(dropNotesSchema.safeParse("Player was absent").success).toBe(true);
+  });
+
+  it("accepts undefined", () => {
+    expect(dropNotesSchema.safeParse(undefined).success).toBe(true);
+  });
+
+  it("rejects notes exceeding 2000 characters", () => {
+    expect(dropNotesSchema.safeParse("a".repeat(2001)).success).toBe(false);
+  });
+
+  it("accepts exactly 2000 characters", () => {
+    expect(dropNotesSchema.safeParse("a".repeat(2000)).success).toBe(true);
+  });
+});
+
+describe("tournamentRegistrationSchema", () => {
+  it("accepts valid registration with numeric altId", () => {
+    expect(tournamentRegistrationSchema.safeParse({ altId: 42 }).success).toBe(
+      true
+    );
+  });
+
+  it("coerces string altId to number", () => {
+    const result = tournamentRegistrationSchema.safeParse({ altId: "42" });
+    expect(result.success).toBe(true);
+    if (result.success) expect(result.data.altId).toBe(42);
+  });
+
+  it("rejects missing altId", () => {
+    expect(tournamentRegistrationSchema.safeParse({}).success).toBe(false);
+  });
+
+  it("rejects zero altId", () => {
+    expect(tournamentRegistrationSchema.safeParse({ altId: 0 }).success).toBe(
+      false
+    );
   });
 });

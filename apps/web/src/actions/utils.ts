@@ -1,9 +1,8 @@
 "use server";
 
-import { z } from "zod";
+import { z, type ActionResult } from "@trainers/validators";
 import { checkBotId } from "botid/server";
 import { getErrorMessage } from "@trainers/utils";
-import type { ActionResult } from "@trainers/validators";
 
 /**
  * Reject requests classified as bots by Vercel BotID.

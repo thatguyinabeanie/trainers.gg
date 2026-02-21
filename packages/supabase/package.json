@@ -43,8 +43,7 @@
   "dependencies": {
     "@supabase/supabase-js": "catalog:",
     "@trainers/utils": "workspace:*",
-    "@trainers/validators": "workspace:*",
-    "zod": "catalog:"
+    "@trainers/validators": "workspace:*"
   },
   "peerDependencies": {
     "@supabase/ssr": "catalog:",

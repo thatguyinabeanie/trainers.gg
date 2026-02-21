@@ -84,7 +84,42 @@ export function validatePassword(password: string): {
   };
 }
 
+/**
+ * Login identifier — trims whitespace, then validates non-empty.
+ * Works for both email and username login flows.
+ */
+export const loginIdentifierSchema = z
+  .string()
+  .transform((v) => v.trim())
+  .pipe(z.string().min(1, "Email or username is required"));
+
+/**
+ * Waitlist email — trims and lowercases for consistent storage.
+ * Uses a pipeline: trim/lowercase first, then validate email format.
+ */
+export const waitlistEmailSchema = z
+  .string()
+  .min(1, "Email is required")
+  .transform((v) => v.trim().toLowerCase())
+  .pipe(emailSchema);
+
+/**
+ * Full signup request body validation.
+ * Replaces ~80 lines of manual validation in the signup edge function.
+ */
+export const signupRequestSchema = z.object({
+  email: emailSchema,
+  username: usernameSchema,
+  password: passwordSchema,
+  firstName: z.string().optional(),
+  lastName: z.string().optional(),
+  birthDate: z.string().optional(),
+  country: z.string().optional(),
+  inviteToken: z.string().optional(),
+});
+
 // Types
 export type Password = z.infer<typeof passwordSchema>;
 export type Username = z.infer<typeof usernameSchema>;
 export type Email = z.infer<typeof emailSchema>;
+export type SignupRequestInput = z.infer<typeof signupRequestSchema>;

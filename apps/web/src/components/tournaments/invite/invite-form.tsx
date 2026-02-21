@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
+import { z } from "@trainers/validators";
 import { useSupabaseMutation } from "@/lib/supabase";
 import { sendTournamentInvitations } from "@trainers/supabase";
 import type { SelectedPlayer } from "@trainers/tournaments/types";

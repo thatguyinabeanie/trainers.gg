@@ -4,23 +4,35 @@ Pokemon community platform for competitive players. Monorepo: Next.js 16 web, Ex
 
 ## Workspace Index
 
-Each workspace has its own `AGENTS.md` with domain-specific guidance. Read the relevant one before working in that area.
+Each workspace has its own `AGENTS.md` with domain-specific guidance. **Read the relevant one before working in that area.** Multiple files may apply — e.g., a web feature with validation touches `apps/web`, `packages/validators`, and possibly `packages/supabase`.
 
-| Workspace | AGENTS.md | Purpose |
-| --- | --- | --- |
-| `apps/web` | [apps/web/AGENTS.md](apps/web/AGENTS.md) | Next.js 16 web app — routes, components, data fetching, auth |
-| `apps/mobile` | [apps/mobile/AGENTS.md](apps/mobile/AGENTS.md) | Expo 54 mobile app — Tamagui, query factory, SecureStore |
-| `packages/supabase` | [packages/supabase/AGENTS.md](packages/supabase/AGENTS.md) | DB clients, edge functions, schema notes, migrations |
-| `packages/tournaments` | [packages/tournaments/AGENTS.md](packages/tournaments/AGENTS.md) | Swiss pairings, standings, brackets — pure TS |
-| `packages/pokemon` | [packages/pokemon/AGENTS.md](packages/pokemon/AGENTS.md) | Team parsing, validation, type effectiveness |
-| `packages/validators` | [packages/validators/AGENTS.md](packages/validators/AGENTS.md) | Zod schemas, team parsing, action result type |
-| `packages/utils` | [packages/utils/AGENTS.md](packages/utils/AGENTS.md) | Labels, error handling, formatting, permissions |
-| `packages/posthog` | [packages/posthog/AGENTS.md](packages/posthog/AGENTS.md) | Shared PostHog event name constants |
-| `packages/atproto` | [packages/atproto/AGENTS.md](packages/atproto/AGENTS.md) | AT Protocol / Bluesky — platform-agnostic |
-| `packages/theme` | [packages/theme/AGENTS.md](packages/theme/AGENTS.md) | OKLCH design tokens for web (Tailwind) and mobile (Tamagui) |
-| `infra/pds` | [infra/pds/AGENTS.md](infra/pds/AGENTS.md) | Self-hosted Bluesky PDS on Fly.io |
-| `infra/ngrok` | [infra/ngrok/AGENTS.md](infra/ngrok/AGENTS.md) | Local PDS tunnel for development |
-| `infra/penpot` | [infra/penpot/AGENTS.md](infra/penpot/AGENTS.md) | Local Penpot design environment with MCP support |
+### Apps
+
+| Workspace | AGENTS.md | When to Load | Key Guidance |
+| --- | --- | --- | --- |
+| `apps/web` | [apps/web/AGENTS.md](apps/web/AGENTS.md) | Building web routes, components, Server Actions, auth flows, feature flags | Route groups, component organization (`ui/`, `auth/`, `tournament/`), Server Components vs Client Components, `proxy.ts` patterns, `getLabel()` for enum display |
+| `apps/mobile` | [apps/mobile/AGENTS.md](apps/mobile/AGENTS.md) | Building mobile screens, Tamagui UI, mobile auth, SecureStore | Query factory pattern (reference for web too), Tamagui components (not shadcn), `EXPO_PUBLIC_` env vars, AT Protocol hooks |
+
+### Core Packages
+
+| Workspace | AGENTS.md | When to Load | Key Guidance |
+| --- | --- | --- | --- |
+| `packages/supabase` | [packages/supabase/AGENTS.md](packages/supabase/AGENTS.md) | Writing DB queries/mutations, choosing client type, Edge Functions | Three client types (server bypasses RLS, client enforces RLS), `maybeSingle()` vs `single()`, query/mutation file organization by domain |
+| `packages/validators` | [packages/validators/AGENTS.md](packages/validators/AGENTS.md) | Creating/updating Zod schemas, validating user input, Server Action error types | Schema + inferred type export pattern, `actionResult` type, team parsing integration, profanity filter |
+| `packages/tournaments` | [packages/tournaments/AGENTS.md](packages/tournaments/AGENTS.md) | Tournament pairing, standings, brackets, byes, drops | Domain model vs DB schema via `adapters.ts`, key algorithm modules, `generatePairings()` inputs |
+| `packages/pokemon` | [packages/pokemon/AGENTS.md](packages/pokemon/AGENTS.md) | Parsing Pokemon teams, validating legality, type effectiveness, sprites | Dual parser system (`parseTeam()` for new code), format-specific rules, `@pkmn` package dependencies |
+| `packages/utils` | [packages/utils/AGENTS.md](packages/utils/AGENTS.md) | Displaying labels, handling errors, checking permissions, formatting | `getLabel()` required for all enum/DB display, `getErrorMessage()` for error extraction, `PERMISSIONS` constants |
+| `packages/posthog` | [packages/posthog/AGENTS.md](packages/posthog/AGENTS.md) | Adding analytics events, tracking user actions | `SCREAMING_SNAKE_CASE` past-tense constants, surface distinguished by `$lib` not event name |
+| `packages/atproto` | [packages/atproto/AGENTS.md](packages/atproto/AGENTS.md) | Bluesky/AT Protocol integration, reading/posting, DID resolution | Typed error handling, `getPublicAgent()` for unauthenticated reads, auth sessions managed per-platform (not here) |
+| `packages/theme` | [packages/theme/AGENTS.md](packages/theme/AGENTS.md) | Styling with color tokens, adding design tokens, syncing to Penpot | OKLCH primitives, separate exports for web (`/css`) and mobile (`/mobile`), rebuild after changes |
+
+### Infrastructure
+
+| Workspace | AGENTS.md | When to Load | Key Guidance |
+| --- | --- | --- | --- |
+| `infra/pds` | [infra/pds/AGENTS.md](infra/pds/AGENTS.md) | PDS deployment, handle provisioning, AT Protocol identity | Fly.io deployment (not git-deployed), `@username.trainers.gg` handles, Docker+ngrok for local testing |
+| `infra/ngrok` | [infra/ngrok/AGENTS.md](infra/ngrok/AGENTS.md) | Local HTTPS tunnel for OAuth/PDS testing | Static domain config, auto-updates `NEXT_PUBLIC_SITE_URL`, required for AT Protocol OAuth locally |
+| `infra/penpot` | [infra/penpot/AGENTS.md](infra/penpot/AGENTS.md) | Design work, design token sync, MCP-based design access | Docker setup, tokens imported from `@trainers/theme`, MCP server for Claude Code integration |
 
 ## Monorepo Structure
 
@@ -55,6 +67,7 @@ infra/
 | Edge Functions | Supabase Edge Functions | Deno runtime |
 | Social/Identity | AT Protocol (Bluesky) | Decentralized identity and federation |
 | React Compiler | React Compiler | Auto-memoization — do NOT manually use useMemo/useCallback/memo |
+| Validation | Zod via `@trainers/validators` | Shared schemas for forms, Server Actions, edge functions |
 | Client State (Web) | TanStack Query v5 | Cache, mutations, optimistic updates |
 | Web | Next.js 16 | React 19, App Router, Server Components |
 | Mobile | Expo 54 | React Native with Tamagui |
@@ -182,6 +195,18 @@ TanStack Query v5 is the client state management layer for both web and mobile. 
 - **Invalidation**: invalidate related query keys in `onSettled` so the cache resyncs with the server regardless of mutation outcome
 - **No client-side state duplication**: if data comes from the server, it lives in the query cache — don't mirror it into `useState`
 - **Query key factories**: the target convention for new features — define query keys via factory functions for consistency and targeted invalidation. Mobile already follows this pattern (see `apps/mobile/src/lib/api/query-factory.ts`)
+
+### Validation (@trainers/validators)
+
+`@trainers/validators` is the shared validation layer for all user input — forms, Server Actions, and edge functions. All validation schemas live in this package, not in app code.
+
+- **Define schemas in `packages/validators/src/`** — one file per domain (e.g., `auth.ts`, `tournament.ts`, `match.ts`)
+- **Export Zod schema + inferred type** — e.g., `createTournamentSchema` + `type CreateTournamentInput = z.infer<typeof createTournamentSchema>`
+- **Use in forms**: parse client-side before submitting; pair with TanStack Query mutations for optimistic updates with validated data
+- **Use in Server Actions**: validate input at the boundary with `.safeParse()` before any database calls
+- **Naming**: `camelCaseSchema` suffix (e.g., `reportMatchResultSchema`)
+- **Re-export from `src/index.ts`** so consumers import via `@trainers/validators`
+- **Check existing schemas first** before creating new ones — the package likely already has what you need
 
 ### Code Reuse
 

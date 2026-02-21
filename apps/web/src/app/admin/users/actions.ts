@@ -1,6 +1,6 @@
 "use server";
 
-import { z } from "zod";
+import { positiveIntSchema, uuidSchema } from "@trainers/validators";
 import {
   withAdminAction,
   type ActionResult,
@@ -11,11 +11,10 @@ import {
   grantSiteRole,
   revokeSiteRole,
 } from "@trainers/supabase";
+import { z } from "@trainers/validators";
 
 // -- Zod Schemas --
 
-const userIdSchema = z.string().uuid();
-const roleIdSchema = z.number().int().positive();
 const reasonSchema = z.string().max(1000).optional();
 
 // ----------------------------------------------------------------
@@ -29,7 +28,7 @@ export async function suspendUserAction(
   userId: string,
   reason?: string
 ): Promise<ActionResult> {
-  const parsedUserId = userIdSchema.safeParse(userId);
+  const parsedUserId = uuidSchema.safeParse(userId);
   if (!parsedUserId.success) {
     return {
       success: false,
@@ -67,7 +66,7 @@ export async function suspendUserAction(
 export async function unsuspendUserAction(
   userId: string
 ): Promise<ActionResult> {
-  const parsedUserId = userIdSchema.safeParse(userId);
+  const parsedUserId = uuidSchema.safeParse(userId);
   if (!parsedUserId.success) {
     return {
       success: false,
@@ -92,14 +91,14 @@ export async function grantSiteRoleAction(
   userId: string,
   roleId: number
 ): Promise<ActionResult> {
-  const parsedUserId = userIdSchema.safeParse(userId);
+  const parsedUserId = uuidSchema.safeParse(userId);
   if (!parsedUserId.success) {
     return {
       success: false,
       error: `Invalid input: ${parsedUserId.error.issues[0]?.message}`,
     };
   }
-  const parsedRoleId = roleIdSchema.safeParse(roleId);
+  const parsedRoleId = positiveIntSchema.safeParse(roleId);
   if (!parsedRoleId.success) {
     return {
       success: false,
@@ -125,14 +124,14 @@ export async function revokeSiteRoleAction(
   userId: string,
   roleId: number
 ): Promise<ActionResult> {
-  const parsedUserId = userIdSchema.safeParse(userId);
+  const parsedUserId = uuidSchema.safeParse(userId);
   if (!parsedUserId.success) {
     return {
       success: false,
       error: `Invalid input: ${parsedUserId.error.issues[0]?.message}`,
     };
   }
-  const parsedRoleId = roleIdSchema.safeParse(roleId);
+  const parsedRoleId = positiveIntSchema.safeParse(roleId);
   if (!parsedRoleId.success) {
     return {
       success: false,

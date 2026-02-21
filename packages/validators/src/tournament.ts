@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { containsProfanity, PROFANITY_ERROR_MESSAGE } from "./profanity";
+import { positiveIntSchema } from "./common";
 
 /**
  * Schema for tournament name validation.
@@ -55,6 +56,33 @@ export const updateTournamentSchema = z.object({
   description: tournamentDescriptionSchema,
 });
 
+/**
+ * Drop category for removing players from tournaments.
+ * Replaces manual `validCategories.includes()` checks.
+ */
+export const dropCategorySchema = z.enum([
+  "no_show",
+  "conduct",
+  "disqualification",
+  "other",
+]);
+
+/**
+ * Optional notes when dropping a player.
+ */
+export const dropNotesSchema = z.string().max(2000).optional();
+
+/**
+ * Schema for tournament registration requests.
+ */
+export const tournamentRegistrationSchema = z.object({
+  altId: positiveIntSchema,
+});
+
 // Types
 export type CreateTournamentInput = z.infer<typeof createTournamentSchema>;
 export type UpdateTournamentInput = z.infer<typeof updateTournamentSchema>;
+export type DropCategory = z.infer<typeof dropCategorySchema>;
+export type TournamentRegistrationInput = z.infer<
+  typeof tournamentRegistrationSchema
+>;

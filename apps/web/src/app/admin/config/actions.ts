@@ -1,6 +1,12 @@
 "use server";
 
-import { z } from "zod";
+import {
+  positiveIntSchema,
+  createFeatureFlagSchema,
+  updateFeatureFlagSchema,
+  createAnnouncementSchema,
+  updateAnnouncementSchema,
+} from "@trainers/validators";
 import {
   withAdminAction,
   type ActionResult,
@@ -15,46 +21,6 @@ import {
 } from "@trainers/supabase";
 import type { Json } from "@trainers/supabase/types";
 
-// -- Zod Schemas --
-
-const flagIdSchema = z.number().int().positive();
-const announcementIdSchema = z.number().int().positive();
-const announcementTypeSchema = z.enum(["info", "warning", "error", "success"]);
-
-const createFlagSchema = z.object({
-  key: z
-    .string()
-    .regex(/^[a-z][a-z0-9_]*$/)
-    .max(100),
-  description: z.string().max(500).optional(),
-  enabled: z.boolean().optional(),
-  metadata: z.any().optional(),
-});
-
-const updateFlagDataSchema = z.object({
-  description: z.string().max(500).optional(),
-  enabled: z.boolean().optional(),
-  metadata: z.any().optional(),
-});
-
-const createAnnouncementSchema = z.object({
-  title: z.string().min(1).max(200),
-  message: z.string().min(1).max(2000),
-  type: announcementTypeSchema,
-  start_at: z.string().datetime().optional(),
-  end_at: z.string().datetime().optional(),
-  is_active: z.boolean().optional(),
-});
-
-const updateAnnouncementDataSchema = z.object({
-  title: z.string().min(1).max(200).optional(),
-  message: z.string().min(1).max(2000).optional(),
-  type: announcementTypeSchema.optional(),
-  start_at: z.string().datetime().optional(),
-  end_at: z.string().datetime().nullable().optional(),
-  is_active: z.boolean().optional(),
-});
-
 // --- Feature Flag Actions ---
 
 /**
@@ -67,7 +33,7 @@ export async function createFlagAction(data: {
   enabled?: boolean;
   metadata?: Json;
 }): Promise<ActionResult> {
-  const parsed = createFlagSchema.safeParse(data);
+  const parsed = createFeatureFlagSchema.safeParse(data);
   if (!parsed.success) {
     return {
       success: false,
@@ -93,14 +59,14 @@ export async function updateFlagAction(
     metadata?: Json;
   }
 ): Promise<ActionResult> {
-  const parsedId = flagIdSchema.safeParse(id);
+  const parsedId = positiveIntSchema.safeParse(id);
   if (!parsedId.success) {
     return {
       success: false,
       error: `Invalid input: ${parsedId.error.issues[0]?.message}`,
     };
   }
-  const parsedData = updateFlagDataSchema.safeParse(data);
+  const parsedData = updateFeatureFlagSchema.safeParse(data);
   if (!parsedData.success) {
     return {
       success: false,
@@ -124,7 +90,7 @@ export async function updateFlagAction(
  * Requires admin + sudo mode.
  */
 export async function deleteFlagAction(id: number): Promise<ActionResult> {
-  const parsedId = flagIdSchema.safeParse(id);
+  const parsedId = positiveIntSchema.safeParse(id);
   if (!parsedId.success) {
     return {
       success: false,
@@ -181,14 +147,14 @@ export async function updateAnnouncementAction(
     is_active?: boolean;
   }
 ): Promise<ActionResult> {
-  const parsedId = announcementIdSchema.safeParse(id);
+  const parsedId = positiveIntSchema.safeParse(id);
   if (!parsedId.success) {
     return {
       success: false,
       error: `Invalid input: ${parsedId.error.issues[0]?.message}`,
     };
   }
-  const parsedData = updateAnnouncementDataSchema.safeParse(data);
+  const parsedData = updateAnnouncementSchema.safeParse(data);
   if (!parsedData.success) {
     return {
       success: false,
@@ -214,7 +180,7 @@ export async function updateAnnouncementAction(
 export async function deleteAnnouncementAction(
   id: number
 ): Promise<ActionResult> {
-  const parsedId = announcementIdSchema.safeParse(id);
+  const parsedId = positiveIntSchema.safeParse(id);
   if (!parsedId.success) {
     return {
       success: false,

@@ -2,7 +2,7 @@
  * @jest-environment node
  */
 
-import { z } from "zod";
+import { z } from "@trainers/validators";
 
 // Mock botid/server
 const mockCheckBotId = jest.fn();
