@@ -2,7 +2,11 @@
 
 import { useState, useEffect, useCallback, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
-import { useSupabaseQuery, useSupabaseMutation } from "@/lib/supabase";
+import {
+  useSupabase,
+  useSupabaseQuery,
+  useSupabaseMutation,
+} from "@/lib/supabase";
 import {
   getRegistrationStatus,
   getCheckInStatus,
@@ -278,6 +282,37 @@ export function TournamentSidebarCard({
     (supabase) => getCheckInStats(supabase, tournamentId),
     [tournamentId]
   );
+
+  // ---- Realtime subscription for live registration count ----
+
+  const supabase = useSupabase();
+
+  useEffect(() => {
+    const channel = supabase
+      .channel(`registrations-${tournamentId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "tournament_registrations",
+          filter: `tournament_id=eq.${tournamentId}`,
+        },
+        () => {
+          // Refetch registration stats on any registration change
+          refetchRegistration();
+          refetchCheckInStats();
+        }
+      )
+      .subscribe((status, err) => {
+        if (err)
+          console.error("[registrations-realtime] subscribe error:", err);
+      });
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [supabase, tournamentId, refetchRegistration, refetchCheckInStats]);
 
   // ---- Mutations ----
 
@@ -1111,6 +1146,7 @@ export function TournamentSidebarCard({
           tournamentId={tournamentId}
           tournamentSlug={tournamentSlug}
           tournamentName={tournamentName}
+          startDate={tournament.startDate}
           isFull={isFull}
           mode="edit"
           onSuccess={() => {
@@ -1210,6 +1246,7 @@ export function TournamentSidebarCard({
           tournamentId={tournamentId}
           tournamentSlug={tournamentSlug}
           tournamentName={tournamentName}
+          startDate={tournament.startDate}
           isFull={isFull}
           mode="edit"
           onSuccess={() => {
@@ -1279,6 +1316,7 @@ export function TournamentSidebarCard({
           tournamentId={tournamentId}
           tournamentSlug={tournamentSlug}
           tournamentName={tournamentName}
+          startDate={tournament.startDate}
           isFull={isFull}
           mode="edit"
           onSuccess={() => {
@@ -1429,6 +1467,7 @@ export function TournamentSidebarCard({
           tournamentId={tournamentId}
           tournamentSlug={tournamentSlug}
           tournamentName={tournamentName}
+          startDate={tournament.startDate}
           isFull={isFull}
           mode="edit"
           onSuccess={() => {
@@ -1520,6 +1559,7 @@ export function TournamentSidebarCard({
         tournamentId={tournamentId}
         tournamentSlug={tournamentSlug}
         tournamentName={tournamentName}
+        startDate={tournament.startDate}
         isFull={isFull}
         onSuccess={() => {
           refetchRegistration();

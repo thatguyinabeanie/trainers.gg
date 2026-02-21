@@ -42,7 +42,13 @@ import {
   updateRegistrationAction,
 } from "@/actions/tournaments";
 import { useAuthContext } from "@/components/auth/auth-provider";
-import { Loader2 } from "lucide-react";
+import {
+  Calendar,
+  CheckCircle2,
+  ClipboardList,
+  Loader2,
+  Users,
+} from "lucide-react";
 
 // --------------------------------------------------------------------------
 // Types
@@ -64,6 +70,7 @@ export interface RegisterModalProps {
   tournamentId: number;
   tournamentSlug: string;
   tournamentName: string;
+  startDate?: string | null;
   isFull: boolean;
   mode?: "register" | "edit";
   onSuccess?: () => void;
@@ -115,6 +122,31 @@ function getDisplayName(
   }
 }
 
+/** Format a date string for display in the success view */
+function formatTournamentDate(dateStr: string): string {
+  const date = new Date(dateStr);
+  return date.toLocaleDateString(undefined, {
+    weekday: "long",
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
+/** Check if an error message indicates the tournament is full */
+export function isCapacityError(error: string): boolean {
+  const lower = error.toLowerCase();
+  return (
+    lower.includes("full") ||
+    lower.includes("capacity") ||
+    lower.includes("no spots") ||
+    lower.includes("no remaining spots") ||
+    lower.includes("maximum participants")
+  );
+}
+
 // --------------------------------------------------------------------------
 // Schema
 // --------------------------------------------------------------------------
@@ -138,6 +170,7 @@ export function RegisterModal({
   tournamentId,
   tournamentSlug,
   tournamentName,
+  startDate,
   isFull,
   mode = "register",
   onSuccess,
@@ -150,7 +183,9 @@ export function RegisterModal({
   const [alts, setAlts] = useState<Alt[]>([]);
   const [registrationSuccess, setRegistrationSuccess] = useState<{
     status: "registered" | "waitlist";
+    waitlistPosition?: number;
   } | null>(null);
+  const [tournamentFullError, setTournamentFullError] = useState(false);
 
   const form = useForm<RegistrationFormData>({
     resolver: zodResolver(registrationSchema),
@@ -244,6 +279,7 @@ export function RegisterModal({
       setError(null);
       setAlts([]);
       setRegistrationSuccess(null);
+      setTournamentFullError(false);
     }
   }, [open, form]);
 
@@ -290,6 +326,13 @@ export function RegisterModal({
           router.push(`/sign-in?redirect=/tournaments/${tournamentSlug}`);
           return;
         }
+
+        // Show dedicated "tournament full" state for capacity errors
+        if (isCapacityError(result.error)) {
+          setTournamentFullError(true);
+          return;
+        }
+
         setError(result.error);
       }
     }
@@ -320,37 +363,89 @@ export function RegisterModal({
           </DialogDescription>
         </DialogHeader>
 
-        {/* Success Confirmation State */}
-        {registrationSuccess ? (
+        {/* Tournament Full State (3b) */}
+        {tournamentFullError ? (
           <div className="space-y-6 py-4">
-            <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/10 p-4">
+            <div
+              className="rounded-lg border border-amber-500/20 bg-amber-500/10 p-5"
+              data-testid="tournament-full-state"
+            >
               <div className="flex items-start gap-3">
-                <div className="rounded-full bg-emerald-500/20 p-2 text-emerald-600 dark:text-emerald-400">
-                  <svg
-                    className="size-5"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M5 13l4 4L19 7"
-                    />
-                  </svg>
+                <div className="rounded-full bg-amber-500/20 p-2.5 text-amber-600 dark:text-amber-400">
+                  <Users className="size-6" />
                 </div>
                 <div className="flex-1">
-                  <h3 className="font-semibold">
+                  <h3 className="text-lg font-semibold">
+                    This tournament is full
+                  </h3>
+                  <p className="text-muted-foreground mt-1 text-sm">
+                    All spots have been filled. You can join the waitlist to be
+                    notified if a spot opens up.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <DialogFooter className="gap-2 sm:gap-0">
+              <Button
+                variant="outline"
+                onClick={() => onOpenChange(false)}
+                className="w-full sm:w-auto"
+              >
+                Close
+              </Button>
+            </DialogFooter>
+          </div>
+        ) : /* Success Confirmation State (3a) */
+        registrationSuccess ? (
+          <div className="space-y-6 py-4">
+            {/* Confirmation banner */}
+            <div
+              className={cn(
+                "rounded-lg border p-5",
+                registrationSuccess.status === "waitlist"
+                  ? "border-amber-500/20 bg-amber-500/10"
+                  : "border-emerald-500/20 bg-emerald-500/10"
+              )}
+              data-testid="registration-success-state"
+            >
+              <div className="flex items-start gap-3">
+                <div
+                  className={cn(
+                    "rounded-full p-2.5",
+                    registrationSuccess.status === "waitlist"
+                      ? "bg-amber-500/20 text-amber-600 dark:text-amber-400"
+                      : "bg-emerald-500/20 text-emerald-600 dark:text-emerald-400"
+                  )}
+                >
+                  <CheckCircle2 className="size-7" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-lg font-semibold">
                     {registrationSuccess.status === "waitlist"
                       ? "Added to Waitlist"
                       : "You're Registered!"}
                   </h3>
                   <p className="text-muted-foreground mt-1 text-sm">
-                    {registrationSuccess.status === "waitlist"
-                      ? "You've been added to the waitlist. You'll be notified if a spot opens up."
-                      : `You're registered for ${tournamentName}`}
+                    {registrationSuccess.status === "waitlist" ? (
+                      <>
+                        You&apos;ve been added to the waitlist
+                        {registrationSuccess.waitlistPosition
+                          ? ` at position #${registrationSuccess.waitlistPosition}`
+                          : ""}
+                        . You&apos;ll be notified if a spot opens up.
+                      </>
+                    ) : (
+                      `You're registered for ${tournamentName}`
+                    )}
                   </p>
+                  {/* Tournament date/time */}
+                  {startDate && (
+                    <p className="text-muted-foreground mt-2 flex items-center gap-1.5 text-xs">
+                      <Calendar className="size-3.5" />
+                      {formatTournamentDate(startDate)}
+                    </p>
+                  )}
                 </div>
               </div>
             </div>
@@ -404,7 +499,20 @@ export function RegisterModal({
               </ul>
             </div>
 
-            <DialogFooter>
+            <DialogFooter className="gap-2 sm:gap-0">
+              {registrationSuccess.status === "registered" && (
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    onOpenChange(false);
+                    router.push(`/tournaments/${tournamentSlug}#team`);
+                  }}
+                  className="w-full sm:w-auto"
+                >
+                  <ClipboardList className="mr-2 size-4" />
+                  Submit Your Team
+                </Button>
+              )}
               <Button
                 onClick={() => {
                   onOpenChange(false);
@@ -412,7 +520,7 @@ export function RegisterModal({
                     router.push(`/tournaments/${tournamentSlug}`);
                   }
                 }}
-                className="w-full"
+                className="w-full sm:w-auto"
               >
                 {registrationSuccess.status === "registered"
                   ? "Go to Tournament"
