@@ -1,9 +1,10 @@
 "use client";
 
 import { useState, useTransition, use } from "react";
-import { useSupabaseQuery, useSupabase } from "@/lib/supabase";
+import { useSupabaseQuery } from "@/lib/supabase";
 import { getOrganizationBySlug } from "@trainers/supabase";
 import type { TypedSupabaseClient } from "@trainers/supabase";
+import { updateOrganization } from "@/actions/organizations";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -80,7 +81,6 @@ interface OrgProfileFormProps {
 }
 
 function OrgProfileForm({ org, onSaved }: OrgProfileFormProps) {
-  const supabase = useSupabase();
   const [isPending, startTransition] = useTransition();
 
   const [name, setName] = useState(org.name);
@@ -94,20 +94,21 @@ function OrgProfileForm({ org, onSaved }: OrgProfileFormProps) {
     }
 
     startTransition(async () => {
-      const { error } = await supabase
-        .from("organizations")
-        .update({
+      const result = await updateOrganization(
+        org.id,
+        {
           name: name.trim(),
-          description: description.trim() || null,
-          website_url: websiteUrl.trim() || null,
-        })
-        .eq("id", org.id);
+          description: description.trim() || undefined,
+          website: websiteUrl.trim() || undefined,
+        },
+        org.slug
+      );
 
-      if (error) {
-        toast.error("Failed to update organization settings");
-      } else {
+      if (result.success) {
         toast.success("Organization settings updated");
         onSaved();
+      } else {
+        toast.error(result.error);
       }
     });
   };
