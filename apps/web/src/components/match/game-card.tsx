@@ -14,4 +14,6 @@ export interface GameData {
   alt1_selection?: number | null;
   alt2_selection?: number | null;
   resolved_by?: number | null;
+  // No-show auto-award indicator
+  is_no_show?: boolean;
 }

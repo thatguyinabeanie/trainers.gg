@@ -189,6 +189,7 @@ export function MatchPageClient({
         alt1_selection: (g.alt1_selection as number | null) ?? undefined,
         alt2_selection: (g.alt2_selection as number | null) ?? undefined,
         resolved_by: (g.resolved_by as number | null) ?? undefined,
+        is_no_show: (g.is_no_show as boolean) ?? undefined,
       }))
     : null;
 
