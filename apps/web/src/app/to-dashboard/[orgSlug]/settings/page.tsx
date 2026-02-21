@@ -32,30 +32,10 @@ import {
   type OrganizationSocialLink,
   type SocialLinkPlatform,
 } from "@trainers/validators";
-
-// ============================================================================
-// Platform display labels for the Select dropdown
-// ============================================================================
-
-const PLATFORM_LABELS: Record<SocialLinkPlatform, string> = {
-  discord: "Discord",
-  twitter: "X (Twitter)",
-  youtube: "YouTube",
-  twitch: "Twitch",
-  tiktok: "TikTok",
-  instagram: "Instagram",
-  facebook: "Facebook",
-  reddit: "Reddit",
-  github: "GitHub",
-  bluesky: "Bluesky",
-  threads: "Threads",
-  mastodon: "Mastodon",
-  linkedin: "LinkedIn",
-  patreon: "Patreon",
-  kofi: "Ko-fi",
-  website: "Website",
-  custom: "Custom",
-};
+import {
+  PlatformIcon,
+  SOCIAL_PLATFORM_LABELS,
+} from "@/components/organizations/social-link-icons";
 
 /** URL placeholder per platform. */
 const PLATFORM_PLACEHOLDERS: Partial<Record<SocialLinkPlatform, string>> = {
@@ -339,13 +319,19 @@ function SocialLinksEditor({
               if (val !== null) updateLink(index, "platform", val);
             }}
           >
-            <SelectTrigger className="w-40 shrink-0">
-              <SelectValue />
+            <SelectTrigger className="w-44 shrink-0">
+              <span className="flex items-center gap-2">
+                <PlatformIcon platform={link.platform} />
+                <SelectValue />
+              </span>
             </SelectTrigger>
             <SelectContent>
               {SOCIAL_LINK_PLATFORMS.map((platform) => (
                 <SelectItem key={platform} value={platform}>
-                  {PLATFORM_LABELS[platform]}
+                  <span className="flex items-center gap-2">
+                    <PlatformIcon platform={platform} />
+                    {SOCIAL_PLATFORM_LABELS[platform]}
+                  </span>
                 </SelectItem>
               ))}
             </SelectContent>
