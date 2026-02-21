@@ -33,18 +33,21 @@ describe("cookie consent", () => {
   });
 
   describe("setConsentStatus", () => {
-    it("stores the status in localStorage and dispatches event", () => {
-      const handler = jest.fn();
-      window.addEventListener("consent-change", handler);
+    it.each(["granted", "denied"] as const)(
+      "stores '%s' in localStorage and dispatches event",
+      (status) => {
+        const handler = jest.fn();
+        window.addEventListener("consent-change", handler);
 
-      setConsentStatus("granted");
+        setConsentStatus(status);
 
-      expect(localStorage.getItem("cookie-consent")).toBe("granted");
-      expect(handler).toHaveBeenCalledTimes(1);
-      expect((handler.mock.calls[0][0] as CustomEvent).detail).toBe("granted");
+        expect(localStorage.getItem("cookie-consent")).toBe(status);
+        expect(handler).toHaveBeenCalledTimes(1);
+        expect((handler.mock.calls[0][0] as CustomEvent).detail).toBe(status);
 
-      window.removeEventListener("consent-change", handler);
-    });
+        window.removeEventListener("consent-change", handler);
+      }
+    );
 
     it("still dispatches event when localStorage throws", () => {
       jest.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
@@ -65,8 +68,9 @@ describe("cookie consent", () => {
 
   describe("CookieConsent component", () => {
     it("renders banner when consent is undecided", () => {
-      const { getByText } = render(<CookieConsent />);
+      const { getByRole, getByText } = render(<CookieConsent />);
 
+      expect(getByRole("dialog", { name: "Cookie consent" })).toBeTruthy();
       expect(getByText("Accept")).toBeTruthy();
       expect(getByText("Decline")).toBeTruthy();
     });

@@ -86,17 +86,18 @@ export function PostHogProvider({
     }
 
     // Listen for consent changes from the cookie banner
-    function handleConsentChange(e: Event) {
+    function handleConsentChange(event: Event) {
       if (!posthog.__loaded) return;
-      const status = (e as CustomEvent<string>).detail;
+      const status = (event as CustomEvent<string>).detail;
+      if (status !== "granted" && status !== "denied") return;
       try {
         if (status === "granted") {
           posthog.opt_in_capturing();
         } else {
           posthog.opt_out_capturing();
         }
-      } catch (e) {
-        console.error("PostHog consent change failed:", e);
+      } catch (err) {
+        console.error("PostHog consent change failed:", err);
       }
     }
 

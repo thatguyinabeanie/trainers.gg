@@ -148,6 +148,26 @@ describe("PostHogProvider", () => {
     expect(mockStartSessionRecording).not.toHaveBeenCalled();
   });
 
+  it("restarts session recording on impersonation true→false transition", () => {
+    const { rerender } = render(
+      <PostHogProvider isImpersonating={true}>
+        <span>test</span>
+      </PostHogProvider>
+    );
+
+    expect(mockStopSessionRecording).toHaveBeenCalled();
+    jest.clearAllMocks();
+
+    rerender(
+      <PostHogProvider isImpersonating={false}>
+        <span>test</span>
+      </PostHogProvider>
+    );
+
+    expect(mockStartSessionRecording).toHaveBeenCalled();
+    expect(mockUnregister).toHaveBeenCalledWith("$impersonated");
+  });
+
   it("opts in on mount when returning user already granted consent", () => {
     mockConsentStatus = "granted";
     const { posthog } = jest.requireMock("@/lib/posthog/client") as {
