@@ -22,6 +22,11 @@ export type CutRule =
   | "top-32";
 
 /**
+ * Phase status — tracks whether a phase has started or completed
+ */
+export type PhaseStatus = "pending" | "active" | "completed";
+
+/**
  * Phase configuration for tournament creation
  */
 export interface PhaseConfig {
@@ -36,6 +41,8 @@ export interface PhaseConfig {
   plannedRounds?: number; // null = auto based on registrations
   // Elimination-specific settings (when preceded by Swiss)
   cutRule?: CutRule; // null for standalone phases
+  // Phase lifecycle — present when loaded from DB, absent for new phases
+  status?: PhaseStatus;
 }
 
 /**

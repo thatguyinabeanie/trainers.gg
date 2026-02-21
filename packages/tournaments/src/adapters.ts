@@ -5,7 +5,7 @@
  * frontend form format (camelCase, PhaseConfig[]).
  */
 
-import type { PhaseConfig, PhaseType, CutRule } from "./types";
+import type { PhaseConfig, PhaseType, PhaseStatus, CutRule } from "./types";
 
 /**
  * Database phase row type (from Supabase)
@@ -66,6 +66,18 @@ const VALID_CUT_RULES: CutRule[] = [
 ];
 
 /**
+ * Valid phase statuses for type narrowing
+ */
+const VALID_PHASE_STATUSES: PhaseStatus[] = ["pending", "active", "completed"];
+
+/**
+ * Type guard for PhaseStatus
+ */
+function isPhaseStatus(value: string | null): value is PhaseStatus {
+  return value !== null && VALID_PHASE_STATUSES.includes(value as PhaseStatus);
+}
+
+/**
  * Type guard for PhaseType
  */
 function isPhaseType(value: string): value is PhaseType {
@@ -115,6 +127,7 @@ export function dbPhasesToPhaseConfigs(dbPhases: DBPhase[]): PhaseConfig[] {
         checkInTimeMinutes: dbPhase.check_in_time_minutes ?? 5,
         plannedRounds: dbPhase.planned_rounds ?? undefined,
         cutRule: isCutRule(dbPhase.cut_rule) ? dbPhase.cut_rule : undefined,
+        status: isPhaseStatus(dbPhase.status) ? dbPhase.status : undefined,
       };
     });
 }

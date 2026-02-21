@@ -12,6 +12,7 @@
 // Types (canonical source for shared tournament types)
 export type {
   PhaseType,
+  PhaseStatus,
   CutRule,
   PhaseConfig,
   TournamentPreset,

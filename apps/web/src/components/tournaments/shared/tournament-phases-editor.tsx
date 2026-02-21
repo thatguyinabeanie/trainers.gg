@@ -26,7 +26,7 @@ import {
   getDefaultPhaseName,
   getDefaultRoundTime,
 } from "@trainers/tournaments/adapters";
-import { Plus, Trash2, HelpCircle } from "lucide-react";
+import { Plus, Trash2, HelpCircle, LockIcon } from "lucide-react";
 
 export interface TournamentPhasesEditorProps {
   phases: PhaseConfig[];
@@ -34,6 +34,8 @@ export interface TournamentPhasesEditorProps {
   mode: "create" | "edit";
   disabled?: boolean;
   canAddRemove?: boolean;
+  /** Phase IDs that are locked (active or completed) — their fields are disabled individually */
+  lockedPhaseIds?: Set<string>;
 }
 
 const phaseTypeOptions: { value: PhaseType; label: string }[] = [
@@ -91,6 +93,7 @@ export function TournamentPhasesEditor({
   mode: _mode,
   disabled = false,
   canAddRemove = true,
+  lockedPhaseIds,
 }: TournamentPhasesEditorProps) {
   const handleAddPhase = () => {
     // Default to single_elimination if there's already a swiss phase, otherwise swiss
@@ -190,6 +193,9 @@ export function TournamentPhasesEditor({
             phase.phaseType === "single_elimination" ||
             phase.phaseType === "double_elimination";
           const showCutRule = isElimination && isPrecededBySwiss(index);
+          // Per-phase locking: a phase is locked if globally disabled OR individually locked
+          const isLocked = disabled || !!lockedPhaseIds?.has(phase.id);
+          const canRemoveThisPhase = showRemoveButton && !isLocked;
 
           return (
             <div key={phase.id} className="flex items-start gap-3">
@@ -215,7 +221,7 @@ export function TournamentPhasesEditor({
                       }
                       className="h-10 flex-1 text-base font-medium"
                       placeholder="Phase name"
-                      disabled={disabled}
+                      disabled={isLocked}
                     />
                     <Select
                       value={phase.phaseType}
@@ -226,7 +232,7 @@ export function TournamentPhasesEditor({
                           });
                         }
                       }}
-                      disabled={disabled}
+                      disabled={isLocked}
                     >
                       <SelectTrigger className="h-10 w-40">
                         <SelectValue />
@@ -239,7 +245,7 @@ export function TournamentPhasesEditor({
                         ))}
                       </SelectContent>
                     </Select>
-                    {showRemoveButton && (
+                    {canRemoveThisPhase && (
                       <Button
                         variant="ghost"
                         size="icon"
@@ -248,6 +254,16 @@ export function TournamentPhasesEditor({
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
+                    )}
+                    {isLocked && !disabled && (
+                      <Tooltip>
+                        <TooltipTrigger className="text-muted-foreground flex h-10 w-10 shrink-0 items-center justify-center">
+                          <LockIcon className="h-4 w-4" />
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          This phase has started and can no longer be edited
+                        </TooltipContent>
+                      </Tooltip>
                     )}
                   </div>
 
@@ -269,7 +285,7 @@ export function TournamentPhasesEditor({
                         onChange={(value) =>
                           handleUpdatePhase(phase.id, { bestOf: value })
                         }
-                        disabled={disabled}
+                        disabled={isLocked}
                       />
                     </div>
 
@@ -300,7 +316,7 @@ export function TournamentPhasesEditor({
                           className="h-8 w-20 text-sm"
                           min={3}
                           max={15}
-                          disabled={disabled}
+                          disabled={isLocked}
                         />
                       </div>
                     )}
@@ -327,7 +343,7 @@ export function TournamentPhasesEditor({
                               });
                             }
                           }}
-                          disabled={disabled}
+                          disabled={isLocked}
                         >
                           <SelectTrigger className="h-8 w-24">
                             <SelectValue />
@@ -370,7 +386,7 @@ export function TournamentPhasesEditor({
                         className="h-8 w-16 text-sm"
                         min={0}
                         max={120}
-                        disabled={disabled}
+                        disabled={isLocked}
                       />
                       <span className="text-muted-foreground text-sm">min</span>
                     </div>
