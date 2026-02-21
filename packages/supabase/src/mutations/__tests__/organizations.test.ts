@@ -14,7 +14,9 @@ import {
 } from "../organizations";
 import type { TypedClient } from "../../client";
 import { createMockClient } from "@trainers/test-utils/mocks";
+import { organizationFactory } from "@trainers/test-utils/factories";
 import { getInvitationExpiryDate } from "../../constants";
+import type { OrganizationSocialLink } from "@trainers/validators";
 
 jest.mock("../../constants", () => ({
   getInvitationExpiryDate: jest.fn(),
@@ -52,19 +54,19 @@ describe("Organization Mutations", () => {
       name: "Test Org",
       slug: "test-org",
       description: "A test organization",
-      website: "https://test.org",
       logoUrl: "https://test.org/logo.png",
     };
 
-    beforeEach(() => {
-      (mockClient.auth.getUser as jest.Mock).mockResolvedValue({
-        data: { user: mockUser },
-      } as MockAuthResponse);
-    });
-
-    it("should create organization successfully", async () => {
-      const fromSpy = jest.spyOn(mockClient, "from");
-      const mockOrg = { id: 1, ...orgData, slug: "test-org" };
+    // Helper: mock a successful create flow (slug check + insert + staff insert)
+    function mockSuccessfulCreate(
+      fromSpy: jest.SpyInstance,
+      overrides?: Partial<ReturnType<typeof organizationFactory.build>>
+    ) {
+      const mockOrg = organizationFactory.build({
+        name: orgData.name,
+        slug: orgData.slug,
+        ...overrides,
+      });
 
       // Check slug uniqueness
       fromSpy.mockReturnValueOnce({
@@ -74,8 +76,9 @@ describe("Organization Mutations", () => {
       } as unknown as MockQueryBuilder);
 
       // Create organization
+      const insertMock = jest.fn().mockReturnThis();
       fromSpy.mockReturnValueOnce({
-        insert: jest.fn().mockReturnThis(),
+        insert: insertMock,
         select: jest.fn().mockReturnThis(),
         single: jest.fn().mockResolvedValue({ data: mockOrg, error: null }),
       } as unknown as MockQueryBuilder);
@@ -85,14 +88,89 @@ describe("Organization Mutations", () => {
         insert: jest.fn().mockResolvedValue({ error: null }),
       } as unknown as MockQueryBuilder);
 
+      return { mockOrg, insertMock };
+    }
+
+    beforeEach(() => {
+      (mockClient.auth.getUser as jest.Mock).mockResolvedValue({
+        data: { user: mockUser },
+      } as MockAuthResponse);
+    });
+
+    it("should create organization successfully", async () => {
+      const fromSpy = jest.spyOn(mockClient, "from");
+      const { mockOrg } = mockSuccessfulCreate(fromSpy);
+
       const result = await createOrganization(mockClient, orgData);
 
       expect(result).toEqual(mockOrg);
     });
 
+    it("should create organization with valid social links", async () => {
+      const fromSpy = jest.spyOn(mockClient, "from");
+      const socialLinks: OrganizationSocialLink[] = [
+        { platform: "discord", url: "https://discord.gg/test" },
+        { platform: "twitter", url: "https://x.com/test" },
+      ];
+      const { insertMock } = mockSuccessfulCreate(fromSpy);
+
+      await createOrganization(mockClient, { ...orgData, socialLinks });
+
+      expect(insertMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          social_links: socialLinks,
+        })
+      );
+    });
+
+    it("should create organization with empty social links array", async () => {
+      const fromSpy = jest.spyOn(mockClient, "from");
+      const { insertMock } = mockSuccessfulCreate(fromSpy);
+
+      await createOrganization(mockClient, { ...orgData, socialLinks: [] });
+
+      expect(insertMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          social_links: [],
+        })
+      );
+    });
+
+    it.each([
+      {
+        desc: "invalid URL",
+        links: [{ platform: "discord" as const, url: "not-a-url" }],
+      },
+      {
+        desc: "unknown platform",
+        links: [
+          { platform: "myspace" as unknown, url: "https://myspace.com/test" },
+        ],
+      },
+    ])(
+      "should throw error for invalid social links ($desc)",
+      async ({ links }) => {
+        const fromSpy = jest.spyOn(mockClient, "from");
+
+        // Check slug uniqueness
+        fromSpy.mockReturnValueOnce({
+          select: jest.fn().mockReturnThis(),
+          eq: jest.fn().mockReturnThis(),
+          single: jest.fn().mockResolvedValue({ data: null, error: null }),
+        } as unknown as MockQueryBuilder);
+
+        await expect(
+          createOrganization(mockClient, {
+            ...orgData,
+            socialLinks: links as OrganizationSocialLink[],
+          })
+        ).rejects.toThrow("Invalid social links");
+      }
+    );
+
     it("should lowercase the slug", async () => {
       const fromSpy = jest.spyOn(mockClient, "from");
-      const mockOrg = { id: 1, name: "Test", slug: "mixedcase" };
+      const mockOrg = organizationFactory.build({ slug: "mixedcase" });
 
       const eqMock = jest.fn().mockReturnThis();
       fromSpy.mockReturnValueOnce({
@@ -134,10 +212,11 @@ describe("Organization Mutations", () => {
     });
 
     it("should throw error if slug already taken", async () => {
+      const existingOrg = organizationFactory.build({ slug: orgData.slug });
       (mockClient.from as jest.Mock).mockReturnValue({
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
-        single: jest.fn().mockResolvedValue({ data: { id: 999 }, error: null }),
+        single: jest.fn().mockResolvedValue({ data: existingOrg, error: null }),
       });
 
       await expect(createOrganization(mockClient, orgData)).rejects.toThrow(
@@ -172,9 +251,39 @@ describe("Organization Mutations", () => {
     const updates = {
       name: "Updated Name",
       description: "Updated description",
-      website: "https://updated.org",
       logoUrl: "https://updated.org/logo.png",
     };
+
+    // Helper: mock ownership check returning a specific owner
+    function mockOwnershipCheck(
+      fromSpy: jest.SpyInstance,
+      ownerUserId: string
+    ) {
+      fromSpy.mockReturnValueOnce({
+        select: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockReturnThis(),
+        single: jest.fn().mockResolvedValue({
+          data: organizationFactory.build({
+            id: orgId,
+            owner_user_id: ownerUserId,
+          }),
+          error: null,
+        }),
+      } as unknown as MockQueryBuilder);
+    }
+
+    // Helper: mock a successful update flow (ownership check + update)
+    function mockSuccessfulUpdate(fromSpy: jest.SpyInstance) {
+      mockOwnershipCheck(fromSpy, mockUser.id);
+
+      const updateMock = jest.fn().mockReturnThis();
+      fromSpy.mockReturnValueOnce({
+        update: updateMock,
+        eq: jest.fn().mockResolvedValue({ error: null }),
+      } as unknown as MockQueryBuilder);
+
+      return { updateMock };
+    }
 
     beforeEach(() => {
       (mockClient.auth.getUser as jest.Mock).mockResolvedValue({
@@ -184,22 +293,7 @@ describe("Organization Mutations", () => {
 
     it("should update organization successfully", async () => {
       const fromSpy = jest.spyOn(mockClient, "from");
-
-      // Get organization to verify ownership
-      fromSpy.mockReturnValueOnce({
-        select: jest.fn().mockReturnThis(),
-        eq: jest.fn().mockReturnThis(),
-        single: jest.fn().mockResolvedValue({
-          data: { owner_user_id: mockUser.id },
-          error: null,
-        }),
-      } as unknown as MockQueryBuilder);
-
-      // Update organization
-      fromSpy.mockReturnValueOnce({
-        update: jest.fn().mockReturnThis(),
-        eq: jest.fn().mockResolvedValue({ error: null }),
-      } as unknown as MockQueryBuilder);
+      mockSuccessfulUpdate(fromSpy);
 
       const result = await updateOrganization(mockClient, orgId, updates);
 
@@ -208,26 +302,67 @@ describe("Organization Mutations", () => {
 
     it("should only update provided fields", async () => {
       const fromSpy = jest.spyOn(mockClient, "from");
-
-      fromSpy.mockReturnValueOnce({
-        select: jest.fn().mockReturnThis(),
-        eq: jest.fn().mockReturnThis(),
-        single: jest.fn().mockResolvedValue({
-          data: { owner_user_id: mockUser.id },
-          error: null,
-        }),
-      } as unknown as MockQueryBuilder);
-
-      const updateMock = jest.fn().mockReturnThis();
-      fromSpy.mockReturnValueOnce({
-        update: updateMock,
-        eq: jest.fn().mockResolvedValue({ error: null }),
-      } as unknown as MockQueryBuilder);
+      const { updateMock } = mockSuccessfulUpdate(fromSpy);
 
       await updateOrganization(mockClient, orgId, { name: "New Name" });
 
       expect(updateMock).toHaveBeenCalledWith({ name: "New Name" });
     });
+
+    it.each([
+      {
+        desc: "single social link",
+        links: [
+          { platform: "discord" as const, url: "https://discord.gg/test" },
+        ],
+      },
+      {
+        desc: "multiple social links",
+        links: [
+          { platform: "discord" as const, url: "https://discord.gg/test" },
+          { platform: "twitter" as const, url: "https://x.com/test" },
+          { platform: "youtube" as const, url: "https://youtube.com/c/test" },
+        ],
+      },
+      {
+        desc: "empty social links array",
+        links: [] as OrganizationSocialLink[],
+      },
+    ])("should update with valid social links ($desc)", async ({ links }) => {
+      const fromSpy = jest.spyOn(mockClient, "from");
+      const { updateMock } = mockSuccessfulUpdate(fromSpy);
+
+      await updateOrganization(mockClient, orgId, { socialLinks: links });
+
+      expect(updateMock).toHaveBeenCalledWith({
+        social_links: links,
+      });
+    });
+
+    it.each([
+      {
+        desc: "invalid URL",
+        links: [{ platform: "discord" as const, url: "not-a-url" }],
+      },
+      {
+        desc: "unknown platform",
+        links: [
+          { platform: "myspace" as unknown, url: "https://myspace.com/test" },
+        ],
+      },
+    ])(
+      "should throw error for invalid social links ($desc)",
+      async ({ links }) => {
+        const fromSpy = jest.spyOn(mockClient, "from");
+        mockOwnershipCheck(fromSpy, mockUser.id);
+
+        await expect(
+          updateOrganization(mockClient, orgId, {
+            socialLinks: links as OrganizationSocialLink[],
+          })
+        ).rejects.toThrow("Invalid social links");
+      }
+    );
 
     it("should throw error if not authenticated", async () => {
       (mockClient.auth.getUser as jest.Mock).mockResolvedValue({
@@ -256,7 +391,10 @@ describe("Organization Mutations", () => {
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
         single: jest.fn().mockResolvedValue({
-          data: { owner_user_id: "different-user" },
+          data: organizationFactory.build({
+            id: orgId,
+            owner_user_id: "different-user",
+          }),
           error: null,
         }),
       });
@@ -270,15 +408,7 @@ describe("Organization Mutations", () => {
 
     it("should propagate database errors", async () => {
       const fromSpy = jest.spyOn(mockClient, "from");
-
-      fromSpy.mockReturnValueOnce({
-        select: jest.fn().mockReturnThis(),
-        eq: jest.fn().mockReturnThis(),
-        single: jest.fn().mockResolvedValue({
-          data: { owner_user_id: mockUser.id },
-          error: null,
-        }),
-      } as unknown as MockQueryBuilder);
+      mockOwnershipCheck(fromSpy, mockUser.id);
 
       const dbError = new Error("Update failed");
       fromSpy.mockReturnValueOnce({
