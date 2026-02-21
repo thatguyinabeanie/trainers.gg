@@ -24,3 +24,25 @@ Use `parseTeam()` for new code. Uses `@pkmn/sets` for Showdown format compatibil
 ## Types
 
 Key types: `PokemonSet`, `TeamComposition`. Import from package root or `@trainers/pokemon/types`.
+
+## Exports
+
+| Import Path                 | Target           | Purpose                                         |
+| --------------------------- | ---------------- | ----------------------------------------------- |
+| `@trainers/pokemon`         | `src/index.ts`   | Main exports (parsers, validators, calculators) |
+| `@trainers/pokemon/types`   | `src/types.ts`   | Domain types (`PokemonSet`, `TeamComposition`)  |
+| `@trainers/pokemon/sprites` | `src/sprites.ts` | Sprite URL generation                           |
+
+## Commands
+
+```bash
+pnpm --filter @trainers/pokemon test          # Run tests
+pnpm --filter @trainers/pokemon test:watch    # Watch mode
+pnpm --filter @trainers/pokemon typecheck     # Type checking
+```
+
+## Testing
+
+- **Test location**: `src/__tests__/`
+- **Test data**: Inline Showdown paste strings (e.g., `PIKACHU_PASTE`, `TWO_POKEMON_PASTE`)
+- **Dependencies**: `@pkmn/data`, `@pkmn/dex`, `@pkmn/sim` — heavy packages, tests may be slow on first run

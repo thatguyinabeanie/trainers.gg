@@ -71,6 +71,36 @@ Query key factories are the target convention for new client-side features — d
 
 Use `src/components/ui/status-badge.tsx` for semantic status colors (emerald=active, blue=upcoming, amber=draft, gray=completed, red=cancelled). Never render raw enum/DB values — always map through `getLabel()` from `@trainers/utils`.
 
+## Commands
+
+```bash
+pnpm --filter @trainers/web dev           # Start dev server (Turbopack)
+pnpm --filter @trainers/web build         # Production build
+pnpm --filter @trainers/web test          # Run unit tests
+pnpm --filter @trainers/web test:watch    # Watch mode
+pnpm --filter @trainers/web test:e2e      # Playwright E2E tests
+pnpm --filter @trainers/web lint          # ESLint
+pnpm --filter @trainers/web typecheck     # TypeScript type checking
+```
+
+## Testing
+
+- **Test environment**: `jsdom` (browser-like)
+- **Test location**: `src/**/__tests__/**/*.test.{ts,tsx}`
+- **Setup file**: `src/test-setup.ts` (imports `@testing-library/jest-dom`)
+- **Coverage excludes**: `components/ui/**` (shadcn), `generated/**`, type files
+- **E2E**: Playwright (`test:e2e`) — separate from unit tests
+- **Module alias**: `@/` maps to `src/` in tests (same as app code)
+
+## Environment Variables
+
+Key env vars (all in root `.env.local`, symlinked):
+
+- `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` — client-side Supabase
+- `SUPABASE_SERVICE_ROLE_KEY` — server-side only (bypasses RLS)
+- `NEXT_PUBLIC_SITE_URL` — required for AT Protocol OAuth (must be tunnel URL, not localhost)
+- `ATPROTO_PRIVATE_KEY` — JWT signing for AT Protocol
+
 ## Feature Flags
 
 Feature gating via `src/lib/feature-flags/`. Check flags before building new gated features.

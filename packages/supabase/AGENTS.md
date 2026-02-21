@@ -58,7 +58,33 @@ Shared utilities in `supabase/functions/_shared/` — import with relative paths
 
 **Never deploy edge functions manually.** Changes deploy via git → merge to main.
 
-## Integration Tests
+## Exports
 
-`src/__tests__/integration/` runs against a real local Supabase instance. Requires `pnpm db:start` first.
-Unit tests in `src/__tests__/` mock the Supabase client.
+| Import Path                    | Target                   | Purpose                              |
+| ------------------------------ | ------------------------ | ------------------------------------ |
+| `@trainers/supabase`           | `src/index.ts`           | Main exports                         |
+| `@trainers/supabase/server`    | `src/clients/server.ts`  | Server client (service role, no RLS) |
+| `@trainers/supabase/client`    | `src/clients/client.ts`  | Browser client (RLS enforced)        |
+| `@trainers/supabase/mobile`    | `src/clients/mobile.ts`  | Expo client (SecureStore session)    |
+| `@trainers/supabase/queries`   | `src/queries/index.ts`   | All read operations                  |
+| `@trainers/supabase/mutations` | `src/mutations/index.ts` | All write operations                 |
+| `@trainers/supabase/types`     | `src/types.ts`           | Auto-generated DB types              |
+| `@trainers/supabase/hooks`     | `src/hooks/index.ts`     | React hooks                          |
+
+## Commands
+
+```bash
+pnpm --filter @trainers/supabase test          # Unit tests
+pnpm --filter @trainers/supabase test:watch    # Watch mode
+pnpm db:start                                  # Start local Supabase (required for integration tests)
+pnpm db:reset                                  # Reset DB + replay migrations + seed
+pnpm generate-types                            # Regenerate types.ts from schema
+```
+
+## Testing
+
+- **Unit tests**: `src/__tests__/` — mock the Supabase client
+- **Integration tests**: `src/__tests__/integration/` — require local Supabase running (`pnpm db:start`)
+- **Edge function tests**: `supabase/functions/_shared/__tests__/` — shared helpers (CORS, PostHog)
+- **Test helpers**: `src/__tests__/integration/test-helpers.ts` — factory functions for tournament testing (`createTestUser()`, `createTestTournament()`, `createTournamentScenario()`)
+- **Environment detection**: `isSupabaseRunning()` auto-skips integration tests when local Supabase is unavailable
