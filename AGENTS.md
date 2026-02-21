@@ -15,6 +15,7 @@ Each workspace has its own `AGENTS.md` with domain-specific guidance. Read the r
 | `packages/pokemon` | [packages/pokemon/AGENTS.md](packages/pokemon/AGENTS.md) | Team parsing, validation, type effectiveness |
 | `packages/validators` | [packages/validators/AGENTS.md](packages/validators/AGENTS.md) | Zod schemas, team parsing, action result type |
 | `packages/utils` | [packages/utils/AGENTS.md](packages/utils/AGENTS.md) | Labels, error handling, formatting, permissions |
+| `packages/posthog` | [packages/posthog/AGENTS.md](packages/posthog/AGENTS.md) | Shared PostHog event name constants |
 | `packages/atproto` | [packages/atproto/AGENTS.md](packages/atproto/AGENTS.md) | AT Protocol / Bluesky — platform-agnostic |
 | `packages/theme` | [packages/theme/AGENTS.md](packages/theme/AGENTS.md) | OKLCH design tokens for web (Tailwind) and mobile (Tamagui) |
 | `infra/pds` | [infra/pds/AGENTS.md](infra/pds/AGENTS.md) | Self-hosted Bluesky PDS on Fly.io |
@@ -30,6 +31,7 @@ apps/
 
 packages/
   pokemon/      # Pokemon data, validation, parsing
+  posthog/      # Shared PostHog event name constants
   tournaments/  # Tournament logic (pairings, standings, brackets)
   utils/        # Shared utilities (formatting, countries, tiers)
   supabase/     # Supabase client, queries, edge functions
@@ -62,7 +64,51 @@ infra/
 
 ## Commands
 
-See root `package.json` for all scripts. Key non-obvious gotchas:
+### Quick Reference
+
+```bash
+# Development
+pnpm dev                              # Start all apps (auto-configures local Supabase)
+pnpm dev:web                          # Web only
+pnpm dev:mobile                       # Mobile only
+pnpm dev:backend                      # Supabase only
+pnpm dev:web+backend                  # Web + Supabase
+SKIP_LOCAL_SUPABASE=1 pnpm dev        # Use remote Supabase instead of local
+
+# Database (always from repo root)
+pnpm db:start                         # Start local Supabase
+pnpm db:stop                          # Stop local Supabase
+pnpm db:reset                         # Reset DB + replay migrations + seed
+pnpm db:migrate                       # Apply pending migrations
+pnpm db:diff                          # Generate migration from schema changes
+pnpm db:seed                          # Run seed files
+pnpm generate-types                   # Regenerate TypeScript types from schema
+
+# Testing
+pnpm test                             # Run all tests (Turbo-cached)
+pnpm test:watch                       # Watch mode
+pnpm test:e2e                         # Playwright E2E tests (web)
+
+# Quality
+pnpm lint                             # ESLint across all packages
+pnpm typecheck                        # TypeScript type checking
+pnpm format                           # Prettier auto-fix
+pnpm format:check                     # Check formatting without fixing
+
+# Build
+pnpm build                            # Build all packages
+pnpm build:web                        # Build web app
+pnpm build:mobile                     # Export mobile app
+
+# Theme
+pnpm --filter @trainers/theme build         # Generate design tokens
+pnpm --filter @trainers/theme export:penpot # Sync tokens to Penpot
+
+# Edge Functions
+pnpm functions:serve                  # Serve edge functions locally
+```
+
+### Gotchas
 
 - **Always use `pnpm supabase`** from repo root — never `cd packages/supabase && supabase`
 - `pnpm dev` always reconfigures `.env.local` for local Supabase — set `SKIP_LOCAL_SUPABASE=1` to use remote instead
@@ -179,6 +225,10 @@ Seed data in `packages/supabase/supabase/seeds/03_users.sql`. All accounts use t
 | `lance@trainers.local` | lance | Player |
 
 Additional generated users follow the pattern `<username>@trainers.local` (see seed file for full list).
+
+## Pre-Release Notes (remove after first public release)
+
+- **Match URLs**: Use `/tournaments/[slug]/r/[round]/t/[table]` format (not `/matches/[matchId]`). No redirect from old format needed — app is pre-release with no existing links to maintain.
 
 ## Project Management
 

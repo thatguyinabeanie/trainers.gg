@@ -11,6 +11,7 @@
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import { getCorsHeaders } from "../_shared/cors.ts";
 import { captureEventWithRequest } from "../_shared/posthog.ts";
+import { BETA_INVITE_SENT } from "@trainers/posthog";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
@@ -359,7 +360,7 @@ Deno.serve(async (req) => {
 
     // Fire-and-forget analytics (domain only — no email addresses)
     captureEventWithRequest(req, {
-      event: "beta_invite_sent",
+      event: BETA_INVITE_SENT,
       distinctId: callerUserId,
       properties: {
         invited_email_domain: trimmedEmail.split("@")[1],

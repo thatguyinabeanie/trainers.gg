@@ -24,6 +24,11 @@ import { createClient } from "@supabase/supabase-js";
 import { getCorsHeaders } from "../_shared/cors.ts";
 import { getCacheHeaders, CACHE_TTL } from "../_shared/cache.ts";
 import { captureEventWithRequest } from "../_shared/posthog.ts";
+import {
+  TOURNAMENT_CREATED,
+  TOURNAMENT_STARTED,
+  TOURNAMENT_REGISTERED,
+} from "@trainers/posthog";
 import type { ActionResult } from "@trainers/validators";
 import {
   listTournamentsGrouped,
@@ -190,7 +195,7 @@ Deno.serve(async (req) => {
 
       // Fire-and-forget analytics
       captureEventWithRequest(req, {
-        event: "tournament_created",
+        event: TOURNAMENT_CREATED,
         distinctId: user.id,
         properties: { tournament_id: result.id },
       });
@@ -272,7 +277,7 @@ Deno.serve(async (req) => {
 
       // Fire-and-forget analytics
       captureEventWithRequest(req, {
-        event: "tournament_registered",
+        event: TOURNAMENT_REGISTERED,
         distinctId: user.id,
         properties: { tournament_id: tournamentId },
       });
@@ -410,7 +415,7 @@ Deno.serve(async (req) => {
 
       // Fire-and-forget analytics
       captureEventWithRequest(req, {
-        event: "tournament_started",
+        event: TOURNAMENT_STARTED,
         distinctId: user.id,
         properties: { tournament_id: tournamentId },
       });

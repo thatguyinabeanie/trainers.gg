@@ -19,6 +19,7 @@ import {
   PDS_CONFIG,
 } from "../_shared/pds.ts";
 import { captureEventWithRequest } from "../_shared/posthog.ts";
+import { USER_SIGNED_UP } from "@trainers/posthog";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -444,7 +445,7 @@ Deno.serve(async (req) => {
 
     // Fire-and-forget analytics
     captureEventWithRequest(req, {
-      event: "user_signed_up",
+      event: USER_SIGNED_UP,
       distinctId: userId,
       properties: {
         username,

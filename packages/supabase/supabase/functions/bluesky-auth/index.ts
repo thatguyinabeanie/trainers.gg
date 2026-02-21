@@ -24,6 +24,7 @@
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import { getCorsHeaders } from "../_shared/cors.ts";
 import { captureEventWithRequest } from "../_shared/posthog.ts";
+import { USER_SIGNED_UP_BLUESKY } from "@trainers/posthog";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -478,7 +479,7 @@ Deno.serve(async (req) => {
 
     // Fire-and-forget analytics
     captureEventWithRequest(req, {
-      event: "user_signed_up_bluesky",
+      event: USER_SIGNED_UP_BLUESKY,
       distinctId: userId!,
       properties: { did, handle, is_new: isNew },
     });

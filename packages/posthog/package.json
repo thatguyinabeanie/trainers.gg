@@ -1,0 +1,31 @@
+{
+  "name": "@trainers/posthog",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "lint": "eslint . --max-warnings 0 --cache",
+    "typecheck": "tsc --noEmit",
+    "format": "prettier --write \"src/**/*.{ts,tsx,js,jsx,json,md}\"",
+    "format:check": "prettier --check \"src/**/*.{ts,tsx,js,jsx,json,md}\""
+  },
+  "devDependencies": {
+    "@types/jest": "catalog:",
+    "@trainers/eslint-config": "workspace:*",
+    "@trainers/jest-config": "workspace:*",
+    "@trainers/prettier-config": "workspace:*",
+    "@trainers/typescript-config": "workspace:*",
+    "eslint": "catalog:",
+    "jest": "catalog:",
+    "jest-junit": "catalog:",
+    "prettier": "catalog:",
+    "ts-jest": "catalog:",
+    "typescript": "catalog:"
+  },
+  "prettier": "@trainers/prettier-config"
+}

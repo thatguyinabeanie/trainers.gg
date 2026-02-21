@@ -15,6 +15,7 @@ import { createClient } from "@supabase/supabase-js";
 import { getCorsHeaders } from "../_shared/cors.ts";
 import { getCacheHeaders, CACHE_TTL } from "../_shared/cache.ts";
 import { captureEventWithRequest } from "../_shared/posthog.ts";
+import { GAME_RESULT_SUBMITTED } from "@trainers/posthog";
 import type { ActionResult } from "@trainers/validators";
 import { getMatchById } from "@trainers/supabase/queries";
 import {
@@ -162,7 +163,7 @@ Deno.serve(async (req) => {
 
       // Fire-and-forget analytics
       captureEventWithRequest(req, {
-        event: "game_result_submitted",
+        event: GAME_RESULT_SUBMITTED,
         distinctId: user.id,
         properties: { match_id: matchId },
       });
