@@ -11,14 +11,6 @@
     "memory": {
       "command": "npx",
       "args": ["-y", "@modelcontextprotocol/server-memory"]
-    },
-    "penpot": {
-      "command": "npx",
-      "args": ["-y", "@penpot/mcp@latest"],
-      "env": {
-        "PENPOT_BASEURL": "http://localhost:9001",
-        "PENPOT_ACCESS_TOKEN": "${PENPOT_ACCESS_TOKEN}"
-      }
     }
   }
 }

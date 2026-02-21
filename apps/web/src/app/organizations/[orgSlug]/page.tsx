@@ -14,8 +14,61 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Trophy, Users, Calendar, Settings } from "lucide-react";
+import { Trophy, Users, Calendar, Settings, Globe } from "lucide-react";
+import {
+  organizationSocialLinksSchema,
+  type OrganizationSocialLink,
+} from "@trainers/validators";
+import { socialSvgPaths, socialPlatformLabels } from "@trainers/utils";
 import { OrganizationTabs } from "./organization-tabs";
+
+// ==========================================================================
+// Social Link Helpers
+// ==========================================================================
+
+/**
+ * Parse the raw JSONB social_links field into typed array.
+ * Returns empty array if parsing fails (defensive for bad data).
+ */
+function parseSocialLinks(raw: unknown): OrganizationSocialLink[] {
+  const result = organizationSocialLinksSchema.safeParse(raw);
+  return result.success ? result.data : [];
+}
+
+function SocialLinkIcon({ link }: { link: OrganizationSocialLink }) {
+  const svgPath = socialSvgPaths[link.platform];
+  const label = link.label || socialPlatformLabels[link.platform] || "Link";
+
+  // Platforms with custom SVG paths
+  if (svgPath) {
+    return (
+      <a
+        href={link.url}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="text-muted-foreground hover:text-foreground transition-colors"
+        aria-label={label}
+      >
+        <svg viewBox="0 0 24 24" className="h-5 w-5" aria-hidden="true">
+          <path fill="currentColor" d={svgPath} />
+        </svg>
+      </a>
+    );
+  }
+
+  // Fallback: Globe icon for website/custom/unknown
+  return (
+    <a
+      href={link.url}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="text-muted-foreground hover:text-foreground transition-colors"
+      aria-label={label}
+    >
+      <Globe className="h-5 w-5" />
+    </a>
+  );
+}
 
 // On-demand revalidation only (no time-based)
 export const revalidate = false;
@@ -103,6 +156,17 @@ function OrganizationHeader({
               {organization.description}
             </p>
           )}
+          {(() => {
+            const socialLinks = parseSocialLinks(organization.social_links);
+            if (socialLinks.length === 0) return null;
+            return (
+              <div className="mt-3 flex items-center gap-3">
+                {socialLinks.map((link, i) => (
+                  <SocialLinkIcon key={`${link.platform}-${i}`} link={link} />
+                ))}
+              </div>
+            );
+          })()}
         </div>
       </div>
 

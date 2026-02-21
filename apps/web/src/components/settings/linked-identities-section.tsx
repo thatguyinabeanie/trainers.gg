@@ -211,18 +211,22 @@ export function LinkedIdentitiesSection() {
   return (
     <div className="space-y-3">
       {/* Bluesky */}
-      {blueskyDid && (
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <BlueskyIcon className="size-5" />
-            <div>
-              <p className="text-sm font-medium">Bluesky</p>
-              <p className="text-muted-foreground text-xs">
-                {blueskyHandle ? `@${blueskyHandle}` : "Connected"}
-              </p>
-            </div>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <BlueskyIcon className="size-5" />
+          <div>
+            <p className="text-sm font-medium">Bluesky</p>
+            <p className="text-muted-foreground text-xs">
+              {blueskyDid
+                ? blueskyHandle
+                  ? `@${blueskyHandle}`
+                  : "Connected"
+                : "Not connected"}
+            </p>
           </div>
-          {canUnlink ? (
+        </div>
+        {blueskyDid ? (
+          canUnlink ? (
             <Button
               variant="outline"
               size="sm"
@@ -244,9 +248,17 @@ export function LinkedIdentitiesSection() {
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
-          )}
-        </div>
-      )}
+          )
+        ) : (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => handleLink("bluesky")}
+          >
+            Connect
+          </Button>
+        )}
+      </div>
 
       {/* Standard OAuth providers */}
       {oauthProviders.map((provider) => {

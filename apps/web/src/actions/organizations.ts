@@ -19,6 +19,7 @@ import {
   leaveOrganization as leaveOrganizationMutation,
   removeStaff as removeStaffMutation,
 } from "@trainers/supabase";
+import { type OrganizationSocialLink } from "@trainers/validators";
 import { CacheTags } from "@/lib/cache";
 
 /**
@@ -40,7 +41,7 @@ export async function createOrganization(data: {
   name: string;
   slug: string;
   description?: string;
-  website?: string;
+  socialLinks?: OrganizationSocialLink[];
   logoUrl?: string;
 }): Promise<ActionResult<{ id: number; slug: string; name: string }>> {
   try {
@@ -71,7 +72,7 @@ export async function updateOrganization(
   updates: {
     name?: string;
     description?: string;
-    website?: string;
+    socialLinks?: OrganizationSocialLink[];
     logoUrl?: string;
   },
   slug?: string

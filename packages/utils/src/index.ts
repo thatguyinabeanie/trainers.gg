@@ -52,5 +52,8 @@ export { getErrorMessage } from "./error-handling";
 // notifications.ts — notification type checking
 export { isMatchNotification } from "./notifications";
 
+// social-links.ts — social platform display labels and SVG icon paths
+export { socialPlatformLabels, socialSvgPaths } from "./social-links";
+
 // sql.ts — SQL/PostgREST helpers
 export { escapeLike } from "./sql";

@@ -104,7 +104,8 @@ describe("LinkedIdentitiesSection", () => {
 
       await waitFor(() => {
         const notConnected = screen.getAllByText("Not connected");
-        expect(notConnected).toHaveLength(4); // All 4 OAuth providers
+        // 4 OAuth providers + Bluesky
+        expect(notConnected).toHaveLength(5);
       });
     });
 
@@ -145,7 +146,7 @@ describe("LinkedIdentitiesSection", () => {
       });
     });
 
-    it("does not render Bluesky when user has no DID", async () => {
+    it("shows Bluesky as 'Not connected' when user has no DID", async () => {
       mockGetBlueskyStatus.mockResolvedValue({
         success: true,
         data: { did: null, pdsStatus: null, handle: null },
@@ -154,8 +155,17 @@ describe("LinkedIdentitiesSection", () => {
       render(<LinkedIdentitiesSection />);
 
       await waitFor(() => {
-        expect(screen.queryByText("Bluesky")).not.toBeInTheDocument();
+        expect(screen.getByText("Bluesky")).toBeInTheDocument();
       });
+
+      // Find the Bluesky row and verify it shows "Not connected" with a Connect button
+      const blueskyRow = screen
+        .getByText("Bluesky")
+        .closest(".flex.items-center.justify-between") as HTMLElement;
+      expect(within(blueskyRow).getByText("Not connected")).toBeInTheDocument();
+      expect(
+        within(blueskyRow).getByRole("button", { name: /connect/i })
+      ).toBeInTheDocument();
     });
   });
 
@@ -168,10 +178,14 @@ describe("LinkedIdentitiesSection", () => {
         expect(screen.getByText("Google")).toBeInTheDocument();
       });
 
-      const connectButtons = screen.getAllByRole("button", {
+      // Find the Google row specifically and click its Connect button
+      const googleRow = screen
+        .getByText("Google")
+        .closest(".flex.items-center.justify-between") as HTMLElement;
+      const connectButton = within(googleRow).getByRole("button", {
         name: /connect/i,
       });
-      await user.click(connectButtons[0]); // Click first Connect button (Google)
+      await user.click(connectButton);
 
       expect(mockSignInWithOAuth).toHaveBeenCalledWith(
         "google",
@@ -179,9 +193,26 @@ describe("LinkedIdentitiesSection", () => {
       );
     });
 
-    it("redirects to Bluesky OAuth for Bluesky connect", async () => {
-      // Currently doesn't show Bluesky connect button in the UI
-      // This test is for future enhancement when we add ability to link Bluesky separately
+    it("redirects to Bluesky OAuth when clicking Connect for Bluesky", async () => {
+      const user = userEvent.setup();
+      render(<LinkedIdentitiesSection />);
+
+      await waitFor(() => {
+        expect(screen.getByText("Bluesky")).toBeInTheDocument();
+      });
+
+      // Find the Bluesky row and click Connect
+      const blueskyRow = screen
+        .getByText("Bluesky")
+        .closest(".flex.items-center.justify-between") as HTMLElement;
+      const connectButton = within(blueskyRow).getByRole("button", {
+        name: /connect/i,
+      });
+      await user.click(connectButton);
+
+      expect(window.location.href).toBe(
+        "/api/oauth/login?returnUrl=%2Fdashboard%2Fsettings%2Faccount"
+      );
     });
   });
 
@@ -554,9 +585,14 @@ describe("LinkedIdentitiesSection", () => {
       await waitFor(() => {
         // Should still render OAuth providers
         expect(screen.getByText("Google")).toBeInTheDocument();
-        // Should not render Bluesky section
-        expect(screen.queryByText("Bluesky")).not.toBeInTheDocument();
+        // Bluesky row still renders but shows "Not connected"
+        expect(screen.getByText("Bluesky")).toBeInTheDocument();
       });
+
+      const blueskyRow = screen
+        .getByText("Bluesky")
+        .closest(".flex.items-center.justify-between") as HTMLElement;
+      expect(within(blueskyRow).getByText("Not connected")).toBeInTheDocument();
     });
 
     it("shows error toast when unlinkBlueskyAction fails", async () => {

@@ -186,6 +186,28 @@ describe("dbPhasesToPhaseConfigs", () => {
       expect(configs[0]!.phaseType).toBe(type);
     }
   });
+
+  it("threads valid phase status through to PhaseConfig", () => {
+    const validStatuses = ["pending", "active", "completed"] as const;
+
+    for (const status of validStatuses) {
+      const dbPhases = [createDBPhase({ status })];
+      const configs = dbPhasesToPhaseConfigs(dbPhases);
+      expect(configs[0]!.status).toBe(status);
+    }
+  });
+
+  it("sets status to undefined for invalid status values", () => {
+    const dbPhases = [createDBPhase({ status: "invalid_status" })];
+    const configs = dbPhasesToPhaseConfigs(dbPhases);
+    expect(configs[0]!.status).toBeUndefined();
+  });
+
+  it("sets status to undefined when status is null", () => {
+    const dbPhases = [createDBPhase({ status: null })];
+    const configs = dbPhasesToPhaseConfigs(dbPhases);
+    expect(configs[0]!.status).toBeUndefined();
+  });
 });
 
 describe("phaseConfigToDbUpdate", () => {

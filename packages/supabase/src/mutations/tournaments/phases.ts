@@ -61,9 +61,14 @@ export async function updatePhase(
     throw new Error("You don't have permission to update this phase");
   }
 
-  // Only allow editing phases when tournament is draft or upcoming
+  // Allow editing phases when tournament is draft/upcoming (any phase),
+  // or when tournament is active but the specific phase is still pending
   if (tournament.status !== "draft" && tournament.status !== "upcoming") {
-    throw new Error("Cannot edit phases after tournament has started");
+    if (phase.status !== "pending") {
+      throw new Error(
+        "Cannot edit a phase that has already started or completed"
+      );
+    }
   }
 
   // Build update object
@@ -145,9 +150,14 @@ export async function createPhase(
     );
   }
 
-  // Only allow adding phases when tournament is draft or upcoming
-  if (tournament.status !== "draft" && tournament.status !== "upcoming") {
-    throw new Error("Cannot add phases after tournament has started");
+  // Allow adding phases when draft, upcoming, or active
+  // (new phases always start as "pending")
+  if (
+    tournament.status !== "draft" &&
+    tournament.status !== "upcoming" &&
+    tournament.status !== "active"
+  ) {
+    throw new Error("Cannot add phases after tournament has finished");
   }
 
   // Get the current max phase_order to append new phase at the end
@@ -197,6 +207,7 @@ export async function deletePhase(supabase: TypedClient, phaseId: number) {
     .select(
       `
       id,
+      status,
       phase_order,
       tournament_id,
       tournaments!tournament_phases_tournament_id_fkey!inner (
@@ -229,9 +240,14 @@ export async function deletePhase(supabase: TypedClient, phaseId: number) {
     throw new Error("You don't have permission to delete this phase");
   }
 
-  // Only allow deleting phases when tournament is draft or upcoming
+  // Allow deleting phases when draft/upcoming (any phase),
+  // or when active but the specific phase is still pending
   if (tournament.status !== "draft" && tournament.status !== "upcoming") {
-    throw new Error("Cannot delete phases after tournament has started");
+    if (phase.status !== "pending") {
+      throw new Error(
+        "Cannot delete a phase that has already started or completed"
+      );
+    }
   }
 
   // Check if this is the last phase - don't allow deleting if it's the only one
@@ -333,9 +349,14 @@ export async function saveTournamentPhases(
     );
   }
 
-  // Only allow modifying phases when tournament is draft or upcoming
-  if (tournament.status !== "draft" && tournament.status !== "upcoming") {
-    throw new Error("Cannot modify phases after tournament has started");
+  // Allow modifying phases when draft, upcoming, or active
+  // (active tournaments have per-phase restrictions enforced below)
+  if (
+    tournament.status !== "draft" &&
+    tournament.status !== "upcoming" &&
+    tournament.status !== "active"
+  ) {
+    throw new Error("Cannot modify phases after tournament has finished");
   }
 
   // Validate that we have at least one phase
@@ -343,13 +364,16 @@ export async function saveTournamentPhases(
     throw new Error("Tournament must have at least one phase");
   }
 
-  // Get existing phases
+  // Get existing phases (with status for per-phase locking)
   const { data: existingPhases } = await supabase
     .from("tournament_phases")
-    .select("id")
+    .select("id, status")
     .eq("tournament_id", tournamentId);
 
-  const existingPhaseIds = new Set(existingPhases?.map((p) => p.id) ?? []);
+  const existingPhaseMap = new Map(
+    existingPhases?.map((p) => [p.id, p.status]) ?? []
+  );
+  const existingPhaseIds = new Set(existingPhaseMap.keys());
   const inputPhaseIds = new Set(
     phases.filter((p) => p.id !== undefined).map((p) => p.id!)
   );
@@ -361,6 +385,26 @@ export async function saveTournamentPhases(
   );
   const toCreate = phases.filter((p) => p.id === undefined);
 
+  // For active tournaments, enforce per-phase restrictions
+  if (tournament.status === "active") {
+    // Cannot delete active or completed phases
+    for (const id of toDelete) {
+      const status = existingPhaseMap.get(id);
+      if (status !== "pending") {
+        throw new Error(
+          "Cannot remove a phase that has already started or completed"
+        );
+      }
+    }
+  }
+
+  // Filter out non-pending phases from updates in active tournaments
+  // (they are re-sent for ordering but their data shouldn't change)
+  const updatablePhases =
+    tournament.status === "active"
+      ? toUpdate.filter((p) => existingPhaseMap.get(p.id!) === "pending")
+      : toUpdate;
+
   // Delete phases that are no longer in the list
   if (toDelete.length > 0) {
     const { error: deleteError } = await supabase
@@ -371,27 +415,42 @@ export async function saveTournamentPhases(
     if (deleteError) throw deleteError;
   }
 
-  // Update existing phases
+  // Build a set of updatable phase IDs for quick lookup
+  const updatablePhaseIds = new Set(updatablePhases.map((p) => p.id!));
+
+  // Update existing phases (only updatable ones get data changes;
+  // non-updatable phases still get their phase_order updated for ordering)
   for (let i = 0; i < phases.length; i++) {
     const phase = phases[i];
     if (!phase) continue;
 
     if (phase.id !== undefined && existingPhaseIds.has(phase.id)) {
-      const { error: updateError } = await supabase
-        .from("tournament_phases")
-        .update({
-          name: phase.name,
-          phase_type: phase.phaseType,
-          phase_order: i + 1,
-          best_of: phase.bestOf,
-          round_time_minutes: phase.roundTimeMinutes,
-          check_in_time_minutes: phase.checkInTimeMinutes,
-          planned_rounds: phase.plannedRounds ?? null,
-          cut_rule: phase.cutRule ?? null,
-        })
-        .eq("id", phase.id);
+      if (updatablePhaseIds.has(phase.id)) {
+        // Pending phase — full update
+        const { error: updateError } = await supabase
+          .from("tournament_phases")
+          .update({
+            name: phase.name,
+            phase_type: phase.phaseType,
+            phase_order: i + 1,
+            best_of: phase.bestOf,
+            round_time_minutes: phase.roundTimeMinutes,
+            check_in_time_minutes: phase.checkInTimeMinutes,
+            planned_rounds: phase.plannedRounds ?? null,
+            cut_rule: phase.cutRule ?? null,
+          })
+          .eq("id", phase.id);
 
-      if (updateError) throw updateError;
+        if (updateError) throw updateError;
+      } else {
+        // Active/completed phase — only update ordering
+        const { error: orderError } = await supabase
+          .from("tournament_phases")
+          .update({ phase_order: i + 1 })
+          .eq("id", phase.id);
+
+        if (orderError) throw orderError;
+      }
     }
   }
 

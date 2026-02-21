@@ -1,5 +1,9 @@
 # Build output
 .expo/
+dist/
 
 # Node modules
 node_modules/
+
+# Test coverage output
+coverage/

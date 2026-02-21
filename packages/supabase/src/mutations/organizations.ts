@@ -1,6 +1,10 @@
 import type { Database } from "../types";
 import type { TypedClient } from "../client";
 import { getInvitationExpiryDate } from "../constants";
+import {
+  organizationSocialLinksSchema,
+  type OrganizationSocialLink,
+} from "@trainers/validators";
 
 /**
  * Helper to get current user
@@ -78,7 +82,7 @@ export async function createOrganization(
     name: string;
     slug: string;
     description?: string;
-    website?: string;
+    socialLinks?: OrganizationSocialLink[];
     logoUrl?: string;
   }
 ) {
@@ -96,6 +100,18 @@ export async function createOrganization(
     throw new Error("Organization slug is already taken");
   }
 
+  // Validate social links if provided
+  let validatedLinks: OrganizationSocialLink[] = [];
+  if (data.socialLinks) {
+    const parsed = organizationSocialLinksSchema.safeParse(data.socialLinks);
+    if (!parsed.success) {
+      throw new Error(
+        `Invalid social links: ${parsed.error.issues.map((i) => i.message).join(", ")}`
+      );
+    }
+    validatedLinks = parsed.data;
+  }
+
   // Create organization with user as owner
   const { data: org, error } = await supabase
     .from("organizations")
@@ -103,7 +119,7 @@ export async function createOrganization(
       name: data.name,
       slug: data.slug.toLowerCase(),
       description: data.description,
-      website_url: data.website,
+      social_links: validatedLinks,
       logo_url: data.logoUrl,
       owner_user_id: user.id,
     })
@@ -132,7 +148,7 @@ export async function updateOrganization(
   updates: {
     name?: string;
     description?: string;
-    website?: string;
+    socialLinks?: OrganizationSocialLink[];
     logoUrl?: string;
   }
 ) {
@@ -157,7 +173,16 @@ export async function updateOrganization(
   if (updates.name !== undefined) updateData.name = updates.name;
   if (updates.description !== undefined)
     updateData.description = updates.description;
-  if (updates.website !== undefined) updateData.website_url = updates.website;
+  if (updates.socialLinks !== undefined) {
+    // Validate social links through Zod before writing to JSONB
+    const parsed = organizationSocialLinksSchema.safeParse(updates.socialLinks);
+    if (!parsed.success) {
+      throw new Error(
+        `Invalid social links: ${parsed.error.issues.map((i) => i.message).join(", ")}`
+      );
+    }
+    updateData.social_links = parsed.data;
+  }
   if (updates.logoUrl !== undefined) updateData.logo_url = updates.logoUrl;
 
   const { error } = await supabase

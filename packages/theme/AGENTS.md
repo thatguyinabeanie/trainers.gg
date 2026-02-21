@@ -32,7 +32,6 @@ Always use theme tokens for colors — never hardcode hex values.
 
 ```bash
 pnpm --filter @trainers/theme build           # Generate all tokens (src/generated/)
-pnpm --filter @trainers/theme export:penpot   # Sync tokens to Penpot
 pnpm --filter @trainers/theme typecheck       # Type checking
 ```
 
@@ -45,7 +44,3 @@ pnpm --filter @trainers/theme typecheck       # Type checking
 - `src/generated/colors.hex.ts` — Hex color values
 
 Rebuild after changing any token values — generated files are not auto-updated.
-
-## Penpot Export
-
-`pnpm --filter @trainers/theme export:penpot` regenerates `design/tokens/tokens.json` for import into the local Penpot instance. See `scripts/export-penpot.ts` for the export logic and `infra/penpot/AGENTS.md` for the Penpot setup.

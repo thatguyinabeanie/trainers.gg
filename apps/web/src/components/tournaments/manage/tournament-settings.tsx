@@ -447,10 +447,24 @@ export function TournamentSettings({
     setPhaseConfigs(newPhases);
   };
 
-  const canEdit =
+  const isDraftOrUpcoming =
     tournament.status === "draft" || tournament.status === "upcoming";
+  const isActive = tournament.status === "active";
+  // Allow editing when draft/upcoming (full edit) or active (partial edit)
+  const canEdit = isDraftOrUpcoming || isActive;
+  // Locked sections: basic info and game settings are locked once tournament is active
+  const canEditLockedSections = isDraftOrUpcoming;
   const canDelete = tournament.status === "draft";
-  // Allow adding/removing phases only when actively editing
+
+  // Compute which phases are locked (active or completed — not pending)
+  const lockedPhaseIds = new Set(
+    phaseConfigs
+      .filter((p) => p.status === "active" || p.status === "completed")
+      .map((p) => p.id)
+  );
+
+  // Allow adding/removing phases when editing — new phases are always pending
+  // For active tournaments, removing is gated per-phase via lockedPhaseIds
   const canAddRemovePhases = isEditing && canEdit;
 
   return (
@@ -490,8 +504,19 @@ export function TournamentSettings({
         <Alert>
           <AlertTriangle className="h-4 w-4" />
           <AlertDescription>
-            Tournament settings can only be edited when the tournament is in
-            draft or upcoming status.
+            Tournament settings cannot be edited after the tournament has
+            finished.
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {isActive && (
+        <Alert>
+          <AlertTriangle className="h-4 w-4" />
+          <AlertDescription>
+            This tournament is active. Basic information, game settings, and
+            in-progress phases are locked. Registration, scheduling, and pending
+            phases can still be edited.
           </AlertDescription>
         </Alert>
       )}
@@ -511,7 +536,7 @@ export function TournamentSettings({
               onChange={(e) =>
                 setFormData((prev) => ({ ...prev, name: e.target.value }))
               }
-              disabled={!isEditing}
+              disabled={!isEditing || !canEditLockedSections}
             />
           </div>
 
@@ -526,7 +551,7 @@ export function TournamentSettings({
                   description: e.target.value,
                 }))
               }
-              disabled={!isEditing}
+              disabled={!isEditing || !canEditLockedSections}
               rows={3}
             />
           </div>
@@ -559,7 +584,7 @@ export function TournamentSettings({
             onBattleFormatChange={(battleFormat) =>
               setFormData((prev) => ({ ...prev, battleFormat }))
             }
-            disabled={!isEditing}
+            disabled={!isEditing || !canEditLockedSections}
           />
         </CardContent>
       </Card>
@@ -799,6 +824,7 @@ export function TournamentSettings({
             mode="edit"
             disabled={!isEditing}
             canAddRemove={canAddRemovePhases}
+            lockedPhaseIds={isEditing ? lockedPhaseIds : undefined}
           />
         </CardContent>
       </Card>
