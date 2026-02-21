@@ -26,6 +26,12 @@ Each workspace has its own `AGENTS.md` with domain-specific guidance. **Read the
 | `packages/atproto` | [packages/atproto/AGENTS.md](packages/atproto/AGENTS.md) | Bluesky/AT Protocol integration, reading/posting, DID resolution | Typed error handling, `getPublicAgent()` for unauthenticated reads, auth sessions managed per-platform (not here) |
 | `packages/theme` | [packages/theme/AGENTS.md](packages/theme/AGENTS.md) | Styling with color tokens, adding design tokens, syncing to Penpot | OKLCH primitives, separate exports for web (`/css`) and mobile (`/mobile`), rebuild after changes |
 
+### Tooling
+
+| Workspace | AGENTS.md | When to Load | Key Guidance |
+| --- | --- | --- | --- |
+| `tooling/test-utils` | [tooling/test-utils/AGENTS.md](tooling/test-utils/AGENTS.md) | Writing tests, creating test data, mocking Supabase/AT Protocol | Fishery factories for DB rows + domain types, shared `createMockClient()`, AT Protocol mock builders |
+
 ### Infrastructure
 
 | Workspace | AGENTS.md | When to Load | Key Guidance |
@@ -51,7 +57,7 @@ packages/
   theme/        # Shared OKLCH color tokens
   validators/   # Zod schemas + team parsing
 
-tooling/        # eslint, prettier, tailwind, typescript configs
+tooling/        # eslint, prettier, tailwind, typescript, test-utils configs
 infra/
   pds/          # Bluesky PDS on Fly.io
   ngrok/        # Local dev tunnel
@@ -138,7 +144,7 @@ See `jest.config.ts` (root), `codecov.yml`, and `.github/workflows/ci.yml` for c
 
 **Use `it.each`** for multiple input/output pairs — parameterize instead of repeating `it()` blocks.
 
-**Use Rosie factories** for all test data. Factories in `src/__tests__/factories/` within the same package — never in a shared utilities package. Use existing factories before creating new ones. If no factory exists for the data you need, create one.
+**Use Fishery factories from `@trainers/test-utils`** for all test data — never inline object literals for DB rows or domain types. Import from `@trainers/test-utils/factories` (e.g., `userFactory.build({ username: "ash" })`). Check [tooling/test-utils/AGENTS.md](tooling/test-utils/AGENTS.md) for the full list of available factories. If no factory exists for the data you need, **create one** in `tooling/test-utils/src/factories/` rather than inlining data in the test. Use shared mock builders from `@trainers/test-utils/mocks` for Supabase client and AT Protocol agent mocks.
 
 **Prefer existing helpers over inline logic.** Check `@trainers/utils` and the package's own helpers before writing new code. Extract repeated test setup into shared helpers. Keep tests DRY and simple (KISS) — if a utility function exists, use it.
 

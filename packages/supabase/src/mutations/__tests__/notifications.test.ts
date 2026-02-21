@@ -4,6 +4,7 @@ import {
   deleteNotification,
 } from "../notifications";
 import type { TypedClient } from "../../client";
+import { createMockClient } from "@trainers/test-utils/mocks";
 
 type MockQueryBuilder = {
   update: jest.Mock;
@@ -12,22 +13,11 @@ type MockQueryBuilder = {
   is: jest.Mock;
 };
 
-const createMockClient = () => {
-  const mockClient = {
-    from: jest.fn().mockReturnThis(),
-    update: jest.fn().mockReturnThis(),
-    delete: jest.fn().mockReturnThis(),
-    eq: jest.fn().mockReturnThis(),
-    is: jest.fn().mockReturnThis(),
-  };
-  return mockClient as unknown as TypedClient;
-};
-
 describe("Notification Mutations", () => {
   let mockClient: TypedClient;
 
   beforeEach(() => {
-    mockClient = createMockClient();
+    mockClient = createMockClient() as unknown as TypedClient;
     jest.clearAllMocks();
   });
 
@@ -294,7 +284,7 @@ describe("Notification Mutations", () => {
       const testIds = [1, 999, 123456];
 
       for (const id of testIds) {
-        const testClient = createMockClient();
+        const testClient = createMockClient() as unknown as TypedClient;
         const fromSpy = jest.spyOn(testClient, "from");
         const eqMock = jest.fn().mockResolvedValue({ error: null });
 

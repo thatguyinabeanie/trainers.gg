@@ -7,6 +7,7 @@ import {
   setMainAlt,
 } from "../users";
 import type { TypedClient } from "../../client";
+import { createMockClient } from "@trainers/test-utils/mocks";
 
 type MockQueryBuilder = {
   select: jest.Mock;
@@ -25,32 +26,12 @@ type MockAuthResponse = {
   data: { user: { id: string; email?: string } | null };
 };
 
-const createMockClient = () => {
-  const mockClient = {
-    from: jest.fn().mockReturnThis(),
-    select: jest.fn().mockReturnThis(),
-    eq: jest.fn().mockReturnThis(),
-    neq: jest.fn().mockReturnThis(),
-    ilike: jest.fn().mockReturnThis(),
-    single: jest.fn(),
-    maybeSingle: jest.fn(),
-    update: jest.fn().mockReturnThis(),
-    insert: jest.fn().mockReturnThis(),
-    delete: jest.fn().mockReturnThis(),
-    in: jest.fn().mockReturnThis(),
-    auth: {
-      getUser: jest.fn(),
-    },
-  };
-  return mockClient as unknown as TypedClient;
-};
-
 describe("User Mutations", () => {
   let mockClient: TypedClient;
   const mockUser = { id: "user-123", email: "test@example.com" };
 
   beforeEach(() => {
-    mockClient = createMockClient();
+    mockClient = createMockClient() as unknown as TypedClient;
     jest.clearAllMocks();
   });
 

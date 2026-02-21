@@ -13,6 +13,7 @@ import {
   removeStaffCompletely,
 } from "../organizations";
 import type { TypedClient } from "../../client";
+import { createMockClient } from "@trainers/test-utils/mocks";
 import { getInvitationExpiryDate } from "../../constants";
 
 jest.mock("../../constants", () => ({
@@ -35,33 +36,13 @@ type MockAuthResponse = {
   data: { user: { id: string; email?: string } | null };
 };
 
-const createMockClient = () => {
-  const mockClient = {
-    from: jest.fn().mockReturnThis(),
-    select: jest.fn().mockReturnThis(),
-    eq: jest.fn().mockReturnThis(),
-    neq: jest.fn().mockReturnThis(),
-    single: jest.fn(),
-    maybeSingle: jest.fn(),
-    update: jest.fn().mockReturnThis(),
-    insert: jest.fn().mockReturnThis(),
-    delete: jest.fn().mockReturnThis(),
-    in: jest.fn().mockReturnThis(),
-    rpc: jest.fn(),
-    auth: {
-      getUser: jest.fn(),
-    },
-  };
-  return mockClient as unknown as TypedClient;
-};
-
 describe("Organization Mutations", () => {
   let mockClient: TypedClient;
   const mockUser = { id: "user-123", email: "test@example.com" };
   const mockExpiryDate = "2026-03-01T00:00:00.000Z";
 
   beforeEach(() => {
-    mockClient = createMockClient();
+    mockClient = createMockClient() as unknown as TypedClient;
     jest.clearAllMocks();
     (getInvitationExpiryDate as jest.Mock).mockReturnValue(mockExpiryDate);
   });

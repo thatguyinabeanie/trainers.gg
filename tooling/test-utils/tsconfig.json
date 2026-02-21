@@ -1,0 +1,18 @@
+{
+  "extends": "@trainers/typescript-config/library.json",
+  "compilerOptions": {
+    "composite": true,
+    "outDir": "dist",
+    "rootDir": "src",
+    "paths": {
+      "@trainers/supabase/types": [
+        "../../packages/supabase/src/types.ts"
+      ],
+      "@trainers/tournaments": [
+        "../../packages/tournaments/src/index.ts"
+      ]
+    }
+  },
+  "include": ["src/**/*.ts"],
+  "exclude": ["node_modules", "dist"]
+}

@@ -2,8 +2,6 @@
  * Tests for AT Protocol Social Graph API
  */
 
-import type { Agent } from "@atproto/api";
-import type { AppBskyActorDefs } from "@atproto/api";
 import {
   follow,
   unfollow,
@@ -19,6 +17,11 @@ import {
   getSuggestedFollows,
 } from "../social-graph";
 import { getPublicAgent } from "../../agent";
+import {
+  createMockAgent,
+  createMockProfileView,
+  createMockProfileViewDetailed,
+} from "@trainers/test-utils/mocks";
 
 // Mock dependencies
 jest.mock("../../agent", () => ({
@@ -30,74 +33,6 @@ jest.mock("../../agent", () => ({
 const consoleErrorSpy = jest.spyOn(console, "error").mockImplementation();
 
 describe("social-graph", () => {
-  // Helper to create mock Agent
-  const createMockAgent = (overrides?: Partial<Agent>): Agent => {
-    return {
-      did: "did:plc:test123",
-      follow: jest.fn(),
-      deleteFollow: jest.fn(),
-      getProfile: jest.fn(),
-      getProfiles: jest.fn(),
-      getFollowers: jest.fn(),
-      getFollows: jest.fn(),
-      mute: jest.fn(),
-      unmute: jest.fn(),
-      getSuggestions: jest.fn(),
-      searchActors: jest.fn(),
-      app: {
-        bsky: {
-          graph: {
-            block: {
-              create: jest.fn(),
-              delete: jest.fn(),
-            },
-          },
-        },
-      },
-      ...overrides,
-    } as unknown as Agent;
-  };
-
-  // Helper to create mock ProfileView
-  const createMockProfileView = (
-    overrides?: Partial<AppBskyActorDefs.ProfileView>
-  ): AppBskyActorDefs.ProfileView => {
-    return {
-      did: "did:plc:user123",
-      handle: "user.bsky.social",
-      displayName: "Test User",
-      description: "Test description",
-      avatar: "https://example.com/avatar.jpg",
-      viewer: {
-        muted: false,
-        blockedBy: false,
-      },
-      ...overrides,
-    } as AppBskyActorDefs.ProfileView;
-  };
-
-  // Helper to create mock ProfileViewDetailed
-  const createMockProfileViewDetailed = (
-    overrides?: Partial<AppBskyActorDefs.ProfileViewDetailed>
-  ): AppBskyActorDefs.ProfileViewDetailed => {
-    return {
-      did: "did:plc:user123",
-      handle: "user.bsky.social",
-      displayName: "Test User",
-      description: "Test description",
-      avatar: "https://example.com/avatar.jpg",
-      banner: "https://example.com/banner.jpg",
-      followersCount: 100,
-      followsCount: 50,
-      postsCount: 200,
-      viewer: {
-        muted: false,
-        blockedBy: false,
-      },
-      ...overrides,
-    } as AppBskyActorDefs.ProfileViewDetailed;
-  };
-
   afterEach(() => {
     jest.clearAllMocks();
     consoleErrorSpy.mockClear();

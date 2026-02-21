@@ -65,7 +65,7 @@
     "@babel/core": "^7.26.0",
     "@testing-library/react-native": "^13.3.3",
     "@trainers/eslint-config": "workspace:*",
-    "@trainers/jest-config": "workspace:*",
+    "@trainers/test-utils": "workspace:*",
     "@trainers/prettier-config": "workspace:*",
     "@trainers/typescript-config": "workspace:*",
     "@types/jest": "catalog:",

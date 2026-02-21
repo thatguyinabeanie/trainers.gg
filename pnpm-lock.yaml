@@ -236,12 +236,12 @@ importers:
       '@trainers/eslint-config':
         specifier: workspace:*
         version: link:../../tooling/eslint
-      '@trainers/jest-config':
-        specifier: workspace:*
-        version: link:../../tooling/jest
       '@trainers/prettier-config':
         specifier: workspace:*
         version: link:../../tooling/prettier
+      '@trainers/test-utils':
+        specifier: workspace:*
+        version: link:../../tooling/test-utils
       '@trainers/typescript-config':
         specifier: workspace:*
         version: link:../../tooling/typescript
@@ -447,15 +447,15 @@ importers:
       '@trainers/eslint-config':
         specifier: workspace:*
         version: link:../../tooling/eslint
-      '@trainers/jest-config':
-        specifier: workspace:*
-        version: link:../../tooling/jest
       '@trainers/prettier-config':
         specifier: workspace:*
         version: link:../../tooling/prettier
       '@trainers/tailwind-config':
         specifier: workspace:*
         version: link:../../tooling/tailwind
+      '@trainers/test-utils':
+        specifier: workspace:*
+        version: link:../../tooling/test-utils
       '@trainers/typescript-config':
         specifier: workspace:*
         version: link:../../tooling/typescript
@@ -533,12 +533,12 @@ importers:
       '@trainers/eslint-config':
         specifier: workspace:*
         version: link:../../tooling/eslint
-      '@trainers/jest-config':
-        specifier: workspace:*
-        version: link:../../tooling/jest
       '@trainers/prettier-config':
         specifier: workspace:*
         version: link:../../tooling/prettier
+      '@trainers/test-utils':
+        specifier: workspace:*
+        version: link:../../tooling/test-utils
       '@trainers/typescript-config':
         specifier: workspace:*
         version: link:../../tooling/typescript
@@ -585,12 +585,12 @@ importers:
       '@trainers/eslint-config':
         specifier: workspace:*
         version: link:../../tooling/eslint
-      '@trainers/jest-config':
-        specifier: workspace:*
-        version: link:../../tooling/jest
       '@trainers/prettier-config':
         specifier: workspace:*
         version: link:../../tooling/prettier
+      '@trainers/test-utils':
+        specifier: workspace:*
+        version: link:../../tooling/test-utils
       '@trainers/typescript-config':
         specifier: workspace:*
         version: link:../../tooling/typescript
@@ -621,12 +621,12 @@ importers:
       '@trainers/eslint-config':
         specifier: workspace:*
         version: link:../../tooling/eslint
-      '@trainers/jest-config':
-        specifier: workspace:*
-        version: link:../../tooling/jest
       '@trainers/prettier-config':
         specifier: workspace:*
         version: link:../../tooling/prettier
+      '@trainers/test-utils':
+        specifier: workspace:*
+        version: link:../../tooling/test-utils
       '@trainers/typescript-config':
         specifier: workspace:*
         version: link:../../tooling/typescript
@@ -688,12 +688,12 @@ importers:
       '@trainers/eslint-config':
         specifier: workspace:*
         version: link:../../tooling/eslint
-      '@trainers/jest-config':
-        specifier: workspace:*
-        version: link:../../tooling/jest
       '@trainers/prettier-config':
         specifier: workspace:*
         version: link:../../tooling/prettier
+      '@trainers/test-utils':
+        specifier: workspace:*
+        version: link:../../tooling/test-utils
       '@trainers/typescript-config':
         specifier: workspace:*
         version: link:../../tooling/typescript
@@ -763,12 +763,12 @@ importers:
       '@trainers/eslint-config':
         specifier: workspace:*
         version: link:../../tooling/eslint
-      '@trainers/jest-config':
-        specifier: workspace:*
-        version: link:../../tooling/jest
       '@trainers/prettier-config':
         specifier: workspace:*
         version: link:../../tooling/prettier
+      '@trainers/test-utils':
+        specifier: workspace:*
+        version: link:../../tooling/test-utils
       '@trainers/typescript-config':
         specifier: workspace:*
         version: link:../../tooling/typescript
@@ -799,12 +799,12 @@ importers:
       '@trainers/eslint-config':
         specifier: workspace:*
         version: link:../../tooling/eslint
-      '@trainers/jest-config':
-        specifier: workspace:*
-        version: link:../../tooling/jest
       '@trainers/prettier-config':
         specifier: workspace:*
         version: link:../../tooling/prettier
+      '@trainers/test-utils':
+        specifier: workspace:*
+        version: link:../../tooling/test-utils
       '@trainers/typescript-config':
         specifier: workspace:*
         version: link:../../tooling/typescript
@@ -854,12 +854,12 @@ importers:
       '@trainers/eslint-config':
         specifier: workspace:*
         version: link:../../tooling/eslint
-      '@trainers/jest-config':
-        specifier: workspace:*
-        version: link:../../tooling/jest
       '@trainers/prettier-config':
         specifier: workspace:*
         version: link:../../tooling/prettier
+      '@trainers/test-utils':
+        specifier: workspace:*
+        version: link:../../tooling/test-utils
       '@trainers/typescript-config':
         specifier: workspace:*
         version: link:../../tooling/typescript
@@ -922,21 +922,6 @@ importers:
         specifier: 'catalog:'
         version: 3.8.1
 
-  tooling/jest:
-    devDependencies:
-      '@trainers/prettier-config':
-        specifier: workspace:*
-        version: link:../prettier
-      '@types/jest':
-        specifier: 'catalog:'
-        version: 29.5.14
-      jest:
-        specifier: 'catalog:'
-        version: 29.7.0(@types/node@25.2.0)(babel-plugin-macros@3.1.0)(ts-node@10.9.2(@types/node@25.2.0)(typescript@5.9.3))
-      prettier:
-        specifier: 'catalog:'
-        version: 3.8.1
-
   tooling/prettier:
     dependencies:
       prettier:
@@ -957,6 +942,34 @@ importers:
       tailwindcss:
         specifier: 'catalog:'
         version: 4.1.18
+
+  tooling/test-utils:
+    dependencies:
+      fishery:
+        specifier: ^2.2.2
+        version: 2.4.0
+    devDependencies:
+      '@atproto/api':
+        specifier: 'catalog:'
+        version: 0.18.17
+      '@trainers/prettier-config':
+        specifier: workspace:*
+        version: link:../prettier
+      '@trainers/typescript-config':
+        specifier: workspace:*
+        version: link:../typescript
+      '@types/jest':
+        specifier: 'catalog:'
+        version: 29.5.14
+      jest:
+        specifier: 'catalog:'
+        version: 29.7.0(@types/node@25.2.0)(babel-plugin-macros@3.1.0)(ts-node@10.9.2(@types/node@25.2.0)(typescript@5.9.3))
+      prettier:
+        specifier: 'catalog:'
+        version: 3.8.1
+      typescript:
+        specifier: 'catalog:'
+        version: 5.9.3
 
   tooling/typescript:
     devDependencies:
@@ -5347,6 +5360,9 @@ packages:
     resolution: {integrity: sha512-78/PXT1wlLLDgTzDs7sjq9hzz0vXD+zn+7wypEe4fXQxCmdmqfGsEPQxmiCSQI3ajFV91bVSsvNtrJRiW6nGng==}
     engines: {node: '>=10'}
 
+  fishery@2.4.0:
+    resolution: {integrity: sha512-QgeTlvgNhVGuMztrfAhlSIBs3rD3l9RMjl9I15yb/lnrx3njrOhvegr2L3LWdqvXwYfQjdQGpglyAfHH2J8DRA==}
+
   flags@4.0.2:
     resolution: {integrity: sha512-qNMPc10TKe/5pA0evWxS0vDm3AMpicB7uf6e/+828chNAWUoVziRJfyOcBWwadl4zBhmTfPz+hxTVpNKF7+/PA==}
     peerDependencies:
@@ -6428,6 +6444,9 @@ packages:
 
   lodash.merge@4.6.2:
     resolution: {integrity: sha512-0KpjqXRVvrYyCsX1swR/XTK0va6VQkQM6MNo7PqW77ByjAhoARA8EfrP1N4+KlKj8YS0ZUCtRT/YUuhyYDujIQ==}
+
+  lodash.mergewith@4.6.2:
+    resolution: {integrity: sha512-GK3g5RPZWTRSeLSpgP8Xhra+pnjBC56q9FZYe1d5RN3TJ35dbkGy3YqBSMbyCrlbi+CM9Z3Jk5yTL7RCsqboyQ==}
 
   lodash.throttle@4.1.1:
     resolution: {integrity: sha512-wIkUCfVKpVsWo3JSZlc+8MB5it+2AN5W8J7YVMST30UrvcQNZ1Okbj+rbVniijTWE6FGYy4XJq/rHkas8qJMLQ==}
@@ -15376,6 +15395,10 @@ snapshots:
       locate-path: 6.0.0
       path-exists: 4.0.0
 
+  fishery@2.4.0:
+    dependencies:
+      lodash.mergewith: 4.6.2
+
   flags@4.0.2(@opentelemetry/api@1.9.0)(next@16.1.6(@babel/core@7.29.0)(@opentelemetry/api@1.9.0)(@playwright/test@1.58.1)(babel-plugin-macros@3.1.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(react-dom@19.1.0(react@19.1.0))(react@19.1.0):
     dependencies:
       '@edge-runtime/cookies': 5.0.2
@@ -16752,6 +16775,8 @@ snapshots:
   lodash.memoize@4.1.2: {}
 
   lodash.merge@4.6.2: {}
+
+  lodash.mergewith@4.6.2: {}
 
   lodash.throttle@4.1.1: {}
 
