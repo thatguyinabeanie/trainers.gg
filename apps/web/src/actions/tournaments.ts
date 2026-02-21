@@ -53,6 +53,7 @@ import { rejectBots } from "./utils";
 
 type TournamentFormat = Database["public"]["Enums"]["tournament_format"];
 type TournamentStatus = Database["public"]["Enums"]["tournament_status"];
+type DropCategory = Database["public"]["Enums"]["drop_category"];
 
 // =============================================================================
 // Tournament CRUD
@@ -902,15 +903,31 @@ export async function forceCheckInPlayer(
  * Remove a player from tournament (tournament organizer action)
  */
 export async function removePlayerFromTournament(
-  registrationId: number
+  registrationId: number,
+  dropCategory: DropCategory,
+  dropNotes?: string
 ): Promise<ActionResult<{ success: true }>> {
   try {
     await rejectBots();
+
+    // Runtime validation
+    const validCategories = ["no_show", "conduct", "disqualification", "other"];
+    if (!validCategories.includes(dropCategory)) {
+      return { success: false, error: "Invalid drop category" };
+    }
+    if (dropNotes && dropNotes.length > 2000) {
+      return {
+        success: false,
+        error: "Drop notes must be under 2000 characters",
+      };
+    }
+
     const supabase = await createClient();
     const result = await updateRegistrationStatusMutation(
       supabase,
       registrationId,
-      "dropped"
+      "dropped",
+      { dropCategory, dropNotes }
     );
     updateTag(CacheTags.tournament(result.tournamentId));
     return { success: true, data: { success: true } };
@@ -991,10 +1008,25 @@ export async function bulkForceCheckIn(
  * Bulk remove multiple players (tournament organizer action)
  */
 export async function bulkRemovePlayers(
-  registrationIds: number[]
+  registrationIds: number[],
+  dropCategory: DropCategory,
+  dropNotes?: string
 ): Promise<ActionResult<{ removed: number; failed: number }>> {
   try {
     await rejectBots();
+
+    // Runtime validation
+    const validCategories = ["no_show", "conduct", "disqualification", "other"];
+    if (!validCategories.includes(dropCategory)) {
+      return { success: false, error: "Invalid drop category" };
+    }
+    if (dropNotes && dropNotes.length > 2000) {
+      return {
+        success: false,
+        error: "Drop notes must be under 2000 characters",
+      };
+    }
+
     const supabase = await createClient();
 
     // Short-circuit if nothing to update
@@ -1027,10 +1059,41 @@ export async function bulkRemovePlayers(
 
     const tournamentId = tournamentIds[0]!;
 
+    // Verify the caller is authenticated
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
+    if (authError || !user) {
+      throw new Error("Not authenticated");
+    }
+
+    // Verify the caller has permission to manage this tournament
+    const { data: tournament } = await supabase
+      .from("tournaments")
+      .select("organization_id")
+      .eq("id", tournamentId)
+      .single();
+    if (!tournament) throw new Error("Tournament not found");
+
+    const { data: hasPermission } = await supabase.rpc("has_org_permission", {
+      org_id: tournament.organization_id,
+      permission_key: "tournament.manage",
+    });
+    if (!hasPermission) {
+      throw new Error("You don't have permission to manage this tournament");
+    }
+
     // Perform single bulk update
     const { data, error } = await supabase
       .from("tournament_registrations")
-      .update({ status: "dropped" })
+      .update({
+        status: "dropped" as const,
+        drop_category: dropCategory,
+        drop_notes: dropNotes ?? null,
+        dropped_by: user.id,
+        dropped_at: new Date().toISOString(),
+      })
       .in("id", registrationIds)
       .eq("tournament_id", tournamentId)
       .select("id");

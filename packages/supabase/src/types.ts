@@ -2119,6 +2119,10 @@ export type Database = {
           checked_in_at: string | null
           created_at: string | null
           display_name_option: string | null
+          drop_category: Database["public"]["Enums"]["drop_category"] | null
+          drop_notes: string | null
+          dropped_at: string | null
+          dropped_by: string | null
           id: number
           in_game_name: string | null
           registered_at: string | null
@@ -2141,6 +2145,10 @@ export type Database = {
           checked_in_at?: string | null
           created_at?: string | null
           display_name_option?: string | null
+          drop_category?: Database["public"]["Enums"]["drop_category"] | null
+          drop_notes?: string | null
+          dropped_at?: string | null
+          dropped_by?: string | null
           id?: never
           in_game_name?: string | null
           registered_at?: string | null
@@ -2163,6 +2171,10 @@ export type Database = {
           checked_in_at?: string | null
           created_at?: string | null
           display_name_option?: string | null
+          drop_category?: Database["public"]["Enums"]["drop_category"] | null
+          drop_notes?: string | null
+          dropped_at?: string | null
+          dropped_by?: string | null
           id?: never
           in_game_name?: string | null
           registered_at?: string | null
@@ -2991,6 +3003,7 @@ export type Database = {
         | "admin.announcement_updated"
         | "admin.announcement_deleted"
       billing_interval: "monthly" | "annual"
+      drop_category: "no_show" | "conduct" | "disqualification" | "other"
       entity_type: "profile" | "organization" | "alt"
       invitation_status: "pending" | "accepted" | "declined" | "expired"
       match_game_status:
@@ -3225,6 +3238,7 @@ export const Constants = {
         "admin.announcement_deleted",
       ],
       billing_interval: ["monthly", "annual"],
+      drop_category: ["no_show", "conduct", "disqualification", "other"],
       entity_type: ["profile", "organization", "alt"],
       invitation_status: ["pending", "accepted", "declined", "expired"],
       match_game_status: [

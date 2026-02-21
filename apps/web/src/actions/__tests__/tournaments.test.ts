@@ -7,7 +7,15 @@
 // ---------------------------------------------------------------------------
 
 // Sentinel object used as the mock Supabase client.
-const mockSupabase = { __mock: true };
+const mockSupabase: Record<string, unknown> = {
+  __mock: true,
+  auth: {
+    getUser: jest.fn().mockResolvedValue({
+      data: { user: { id: "user-123" } },
+      error: null,
+    }),
+  },
+};
 
 // @trainers/supabase mutation mocks
 const mockCreateTournament = jest.fn();
@@ -319,13 +327,14 @@ describe("removePlayerFromTournament", () => {
       tournamentId: 10,
     });
 
-    const result = await removePlayerFromTournament(42);
+    const result = await removePlayerFromTournament(42, "no_show");
 
     expect(result).toEqual({ success: true, data: { success: true } });
     expect(mockUpdateRegistrationStatus).toHaveBeenCalledWith(
       mockSupabase,
       42,
-      "dropped"
+      "dropped",
+      { dropCategory: "no_show", dropNotes: undefined }
     );
     expect(mockUpdateTag).toHaveBeenCalledWith("tournament:10");
   });
@@ -335,7 +344,11 @@ describe("removePlayerFromTournament", () => {
       new Error("permission denied")
     );
 
-    const result = await removePlayerFromTournament(42);
+    const result = await removePlayerFromTournament(
+      42,
+      "conduct",
+      "Bad behavior"
+    );
 
     expect(result).toEqual({
       success: false,
@@ -421,7 +434,9 @@ describe("bulkForceCheckIn", () => {
 // ── bulkRemovePlayers ──────────────────────────────────────────────────────
 
 describe("bulkRemovePlayers", () => {
-  it("performs bulk update and returns counts", async () => {
+  it("performs bulk update with drop fields and returns counts", async () => {
+    const mockUpdate = jest.fn().mockReturnThis();
+
     // First call: select registrations
     (mockSupabase.from as jest.Mock) = jest.fn().mockReturnValueOnce({
       select: jest.fn().mockReturnThis(),
@@ -434,9 +449,19 @@ describe("bulkRemovePlayers", () => {
       }),
     });
 
-    // Second call: bulk update
+    // Second call: tournament lookup for permission check
     (mockSupabase.from as jest.Mock).mockReturnValueOnce({
-      update: jest.fn().mockReturnThis(),
+      select: jest.fn().mockReturnThis(),
+      eq: jest.fn().mockReturnThis(),
+      single: jest.fn().mockResolvedValue({
+        data: { organization_id: 1 },
+        error: null,
+      }),
+    });
+
+    // Third call: bulk update
+    (mockSupabase.from as jest.Mock).mockReturnValueOnce({
+      update: mockUpdate,
       in: jest.fn().mockReturnThis(),
       eq: jest.fn().mockReturnThis(),
       select: jest.fn().mockResolvedValue({
@@ -445,21 +470,37 @@ describe("bulkRemovePlayers", () => {
       }),
     });
 
-    const result = await bulkRemovePlayers([1, 2]);
+    // Mock rpc for permission check
+    mockSupabase.rpc = jest.fn().mockResolvedValue({ data: true });
+
+    const result = await bulkRemovePlayers([1, 2], "no_show");
 
     expect(result.success).toBe(true);
     expect(result.data).toEqual({ removed: 2, failed: 0 });
     expect(mockUpdateTag).toHaveBeenCalledWith("tournament:10");
+
+    // Verify the update payload includes drop metadata
+    expect(mockUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        status: "dropped",
+        drop_category: "no_show",
+        drop_notes: null,
+        dropped_by: "user-123",
+        dropped_at: expect.any(String),
+      })
+    );
   });
 
   it("returns empty result for empty array", async () => {
-    const result = await bulkRemovePlayers([]);
+    const result = await bulkRemovePlayers([], "no_show");
 
     expect(result.success).toBe(true);
     expect(result.data).toEqual({ removed: 0, failed: 0 });
   });
 
-  it("handles partial update failures", async () => {
+  it("handles partial update failures and passes drop notes", async () => {
+    const mockUpdate = jest.fn().mockReturnThis();
+
     // Select returns 3 registrations
     (mockSupabase.from as jest.Mock) = jest.fn().mockReturnValueOnce({
       select: jest.fn().mockReturnThis(),
@@ -473,9 +514,19 @@ describe("bulkRemovePlayers", () => {
       }),
     });
 
+    // Tournament lookup for permission check
+    (mockSupabase.from as jest.Mock).mockReturnValueOnce({
+      select: jest.fn().mockReturnThis(),
+      eq: jest.fn().mockReturnThis(),
+      single: jest.fn().mockResolvedValue({
+        data: { organization_id: 1 },
+        error: null,
+      }),
+    });
+
     // Update only succeeds for 2 of them
     (mockSupabase.from as jest.Mock).mockReturnValueOnce({
-      update: jest.fn().mockReturnThis(),
+      update: mockUpdate,
       in: jest.fn().mockReturnThis(),
       eq: jest.fn().mockReturnThis(),
       select: jest.fn().mockResolvedValue({
@@ -484,10 +535,28 @@ describe("bulkRemovePlayers", () => {
       }),
     });
 
-    const result = await bulkRemovePlayers([1, 2, 3]);
+    // Mock rpc for permission check
+    mockSupabase.rpc = jest.fn().mockResolvedValue({ data: true });
+
+    const result = await bulkRemovePlayers(
+      [1, 2, 3],
+      "conduct",
+      "Group violation"
+    );
 
     expect(result.success).toBe(true);
     expect(result.data).toEqual({ removed: 2, failed: 1 });
     expect(mockUpdateTag).toHaveBeenCalledWith("tournament:10");
+
+    // Verify the update payload includes drop metadata with notes
+    expect(mockUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        status: "dropped",
+        drop_category: "conduct",
+        drop_notes: "Group violation",
+        dropped_by: "user-123",
+        dropped_at: expect.any(String),
+      })
+    );
   });
 });

@@ -54,6 +54,11 @@ import {
   RealtimeStatusBadge,
   type RealtimeStatus,
 } from "./realtime-status-badge";
+import {
+  DropPlayerDialog,
+  type DropCategory,
+  DROP_CATEGORY_LABELS,
+} from "./drop-player-dialog";
 
 // Map invitation statuses to StatusBadge Status values + human-readable labels
 const defaultInvitationBadge = {
@@ -88,6 +93,12 @@ export function TournamentRegistrations({
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [isProcessing, setIsProcessing] = useState(false);
+  const [dropDialogOpen, setDropDialogOpen] = useState(false);
+  const [dropTarget, setDropTarget] = useState<
+    | { type: "single"; registrationId: number; playerName: string }
+    | { type: "bulk" }
+    | null
+  >(null);
   const [refreshKey, setRefreshKey] = useState(0);
   const [invitationsRefreshKey, setInvitationsRefreshKey] = useState(0);
   const [realtimeStatus, setRealtimeStatus] =
@@ -268,23 +279,9 @@ export function TournamentRegistrations({
     }
   };
 
-  const handleRemovePlayer = async (registrationId: number) => {
-    if (!confirm("Are you sure you want to remove this player?")) return;
-
-    setIsProcessing(true);
-    try {
-      const result = await removePlayerFromTournament(registrationId);
-      if (result.success) {
-        toast.success("Player removed successfully");
-        refetch();
-      } else {
-        toast.error(result.error || "Failed to remove player");
-      }
-    } catch (error) {
-      toast.error(getErrorMessage(error, "An unexpected error occurred"));
-    } finally {
-      setIsProcessing(false);
-    }
+  const handleRemovePlayer = (registrationId: number, playerName: string) => {
+    setDropTarget({ type: "single", registrationId, playerName });
+    setDropDialogOpen(true);
   };
 
   const handleBulkForceCheckIn = async () => {
@@ -309,29 +306,51 @@ export function TournamentRegistrations({
     }
   };
 
-  const handleBulkRemove = async () => {
+  const handleBulkRemove = () => {
     if (selectedIds.size === 0) return;
-    if (
-      !confirm(`Are you sure you want to remove ${selectedIds.size} player(s)?`)
-    )
-      return;
+    setDropTarget({ type: "bulk" });
+    setDropDialogOpen(true);
+  };
+
+  const handleDropConfirm = async (category: DropCategory, notes?: string) => {
+    if (!dropTarget) return;
 
     setIsProcessing(true);
     try {
-      const result = await bulkRemovePlayers(Array.from(selectedIds));
-      if (result.success) {
-        toast.success(
-          `${result.data.removed} player(s) removed${result.data.failed > 0 ? `, ${result.data.failed} failed` : ""}`
+      if (dropTarget.type === "single") {
+        const result = await removePlayerFromTournament(
+          dropTarget.registrationId,
+          category,
+          notes
         );
-        setSelectedIds(new Set());
-        refetch();
+        if (result.success) {
+          toast.success("Player dropped successfully");
+          refetch();
+        } else {
+          toast.error(result.error || "Failed to drop player");
+        }
       } else {
-        toast.error(result.error || "Failed to remove players");
+        const result = await bulkRemovePlayers(
+          Array.from(selectedIds),
+          category,
+          notes
+        );
+        if (result.success) {
+          toast.success(
+            `${result.data.removed} player(s) dropped${result.data.failed > 0 ? `, ${result.data.failed} failed` : ""}`
+          );
+          setSelectedIds(new Set());
+          refetch();
+        } else {
+          toast.error(result.error || "Failed to drop players");
+        }
       }
     } catch (error) {
       toast.error(getErrorMessage(error, "An unexpected error occurred"));
     } finally {
       setIsProcessing(false);
+      setDropDialogOpen(false);
+      setDropTarget(null);
     }
   };
 
@@ -551,6 +570,12 @@ export function TournamentRegistrations({
                             status={
                               (registration.status ?? "pending") as Status
                             }
+                            label={
+                              registration.status === "dropped" &&
+                              registration.drop_category
+                                ? `Dropped - ${DROP_CATEGORY_LABELS[registration.drop_category] ?? registration.drop_category}`
+                                : undefined
+                            }
                           />
                         </TableCell>
                         <TableCell>
@@ -576,19 +601,19 @@ export function TournamentRegistrations({
                                 <UserCheck className="mr-2 h-4 w-4" />
                                 Force Check-in
                               </DropdownMenuItem>
-                              <DropdownMenuItem>
-                                <Mail className="mr-2 h-4 w-4" />
-                                Send Message
-                              </DropdownMenuItem>
                               <DropdownMenuItem
                                 className="text-red-600"
                                 onClick={() =>
-                                  handleRemovePlayer(registration.id)
+                                  handleRemovePlayer(
+                                    registration.id,
+                                    registration.alt?.username ||
+                                      "Unknown Player"
+                                  )
                                 }
                                 disabled={isProcessing}
                               >
                                 <UserX className="mr-2 h-4 w-4" />
-                                Remove Player
+                                Drop Player
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
@@ -690,6 +715,16 @@ export function TournamentRegistrations({
           </Card>
         </TabsContent>
       </Tabs>
+
+      <DropPlayerDialog
+        open={dropDialogOpen}
+        onOpenChange={setDropDialogOpen}
+        playerName={
+          dropTarget?.type === "single" ? dropTarget.playerName : undefined
+        }
+        playerCount={dropTarget?.type === "bulk" ? selectedIds.size : undefined}
+        onConfirm={handleDropConfirm}
+      />
     </div>
   );
 }
