@@ -23,6 +23,7 @@
 import { createClient } from "@supabase/supabase-js";
 import { getCorsHeaders } from "../_shared/cors.ts";
 import { getCacheHeaders, CACHE_TTL } from "../_shared/cache.ts";
+import { captureEventWithRequest } from "../_shared/posthog.ts";
 import type { ActionResult } from "@trainers/validators";
 import {
   listTournamentsGrouped,
@@ -120,7 +121,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    const { supabase } = authResult;
+    const { user, supabase } = authResult;
 
     // Parse URL and route to handler
     const url = new URL(req.url);
@@ -186,6 +187,13 @@ Deno.serve(async (req) => {
       // TODO: Add Zod validation for createTournamentSchema
 
       const result = await createTournamentMutation(supabase, body);
+
+      // Fire-and-forget analytics
+      captureEventWithRequest(req, {
+        event: "tournament_created",
+        distinctId: user.id,
+        properties: { tournament_id: result.id },
+      });
 
       // Note: Don't invalidate list yet - tournament is created as draft
       // Only invalidate when published (status → upcoming)
@@ -261,6 +269,13 @@ Deno.serve(async (req) => {
       }
 
       await registerForTournamentMutation(supabase, tournamentId, altId);
+
+      // Fire-and-forget analytics
+      captureEventWithRequest(req, {
+        event: "tournament_registered",
+        distinctId: user.id,
+        properties: { tournament_id: tournamentId },
+      });
 
       return jsonResponse(
         { success: true, data: { success: true } },
@@ -392,6 +407,13 @@ Deno.serve(async (req) => {
       }
 
       await startTournamentEnhancedMutation(supabase, tournamentId);
+
+      // Fire-and-forget analytics
+      captureEventWithRequest(req, {
+        event: "tournament_started",
+        distinctId: user.id,
+        properties: { tournament_id: tournamentId },
+      });
 
       return jsonResponse(
         { success: true, data: { success: true } },

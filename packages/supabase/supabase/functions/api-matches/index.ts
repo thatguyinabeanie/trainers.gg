@@ -14,6 +14,7 @@
 import { createClient } from "@supabase/supabase-js";
 import { getCorsHeaders } from "../_shared/cors.ts";
 import { getCacheHeaders, CACHE_TTL } from "../_shared/cache.ts";
+import { captureEventWithRequest } from "../_shared/posthog.ts";
 import type { ActionResult } from "@trainers/validators";
 import { getMatchById } from "@trainers/supabase/queries";
 import {
@@ -94,7 +95,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    const { supabase } = authResult;
+    const { user, supabase } = authResult;
 
     const url = new URL(req.url);
     const pathParts = url.pathname.split("/").filter(Boolean);
@@ -158,6 +159,13 @@ Deno.serve(async (req) => {
       }
 
       await submitGameSelection(supabase, gameId, selectedWinnerAltId);
+
+      // Fire-and-forget analytics
+      captureEventWithRequest(req, {
+        event: "game_result_submitted",
+        distinctId: user.id,
+        properties: { match_id: matchId },
+      });
 
       return jsonResponse(
         { success: true, data: { success: true } },

@@ -18,6 +18,7 @@ import {
   generateHandle,
   PDS_CONFIG,
 } from "../_shared/pds.ts";
+import { captureEventWithRequest } from "../_shared/posthog.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -440,6 +441,18 @@ Deno.serve(async (req) => {
         .update({ converted_user_id: userId })
         .eq("email", email);
     }
+
+    // Fire-and-forget analytics
+    captureEventWithRequest(req, {
+      event: "user_signed_up",
+      distinctId: userId,
+      properties: {
+        username,
+        has_invite: !!inviteToken,
+        pds_status: pdsStatus,
+        country,
+      },
+    });
 
     // For now, we'll return success and let the client sign in
     // In production, you'd want to return actual session tokens

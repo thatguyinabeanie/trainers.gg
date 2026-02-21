@@ -38,7 +38,9 @@
     "ATPROTO_PRIVATE_KEY",
     "NGROK_STATIC_DOMAIN",
     "PDS_HANDLE_DOMAIN",
-    "RESEND_API_KEY"
+    "RESEND_API_KEY",
+    "EXPO_PUBLIC_POSTHOG_KEY",
+    "EXPO_PUBLIC_POSTHOG_HOST"
   ],
   "tasks": {
     "build": {
@@ -50,7 +52,12 @@
         ".expo/**",
         "src/generated/**"
       ],
-      "env": ["NEXT_PUBLIC_POSTHOG_KEY", "NEXT_PUBLIC_POSTHOG_HOST"]
+      "env": [
+        "NEXT_PUBLIC_POSTHOG_KEY",
+        "NEXT_PUBLIC_POSTHOG_HOST",
+        "EXPO_PUBLIC_POSTHOG_KEY",
+        "EXPO_PUBLIC_POSTHOG_HOST"
+      ]
     },
     "dev:setup": {
       "cache": false
