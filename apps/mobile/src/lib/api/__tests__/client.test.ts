@@ -1,10 +1,23 @@
-import { apiCall } from "../client";
-import { getSupabase } from "../../supabase";
+// Mock expo-constants before importing client (which reads config at module scope)
+jest.mock("expo-constants", () => ({
+  __esModule: true,
+  default: {
+    expoConfig: {
+      extra: {
+        supabaseUrl: "https://test.supabase.co",
+        supabaseAnonKey: "test-anon-key",
+      },
+    },
+  },
+}));
 
 // Mock supabase
 jest.mock("../../supabase", () => ({
   getSupabase: jest.fn(),
 }));
+
+import { apiCall } from "../client";
+import { getSupabase } from "../../supabase";
 
 const mockGetSupabase = getSupabase as jest.MockedFunction<typeof getSupabase>;
 
