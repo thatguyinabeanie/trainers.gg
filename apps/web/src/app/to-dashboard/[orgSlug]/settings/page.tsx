@@ -32,10 +32,8 @@ import {
   type OrganizationSocialLink,
   type SocialLinkPlatform,
 } from "@trainers/validators";
-import {
-  PlatformIcon,
-  SOCIAL_PLATFORM_LABELS,
-} from "@/components/organizations/social-link-icons";
+import { PlatformIcon } from "@/components/organizations/social-link-icons";
+import { socialPlatformLabels } from "@trainers/utils";
 
 /** URL placeholder per platform. */
 const PLATFORM_PLACEHOLDERS: Partial<Record<SocialLinkPlatform, string>> = {
@@ -323,7 +321,7 @@ function SocialLinksEditor({
                 <SelectItem key={platform} value={platform}>
                   <span className="flex items-center gap-2">
                     <PlatformIcon platform={platform} />
-                    {SOCIAL_PLATFORM_LABELS[platform]}
+                    {socialPlatformLabels[platform]}
                   </span>
                 </SelectItem>
               ))}

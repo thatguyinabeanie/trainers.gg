@@ -10,6 +10,7 @@ import {
   type OrganizationSocialLink,
   type SocialLinkPlatform,
 } from "@trainers/validators";
+import { socialPlatformLabels } from "@trainers/utils";
 
 /** Map platform to Ionicons icon name. */
 const PLATFORM_ICONS: Record<SocialLinkPlatform, string> = {
@@ -30,26 +31,6 @@ const PLATFORM_ICONS: Record<SocialLinkPlatform, string> = {
   kofi: "cafe-outline",
   website: "globe-outline",
   custom: "link-outline",
-};
-
-const PLATFORM_LABELS: Record<SocialLinkPlatform, string> = {
-  discord: "Discord",
-  twitter: "Twitter",
-  youtube: "YouTube",
-  twitch: "Twitch",
-  tiktok: "TikTok",
-  instagram: "Instagram",
-  facebook: "Facebook",
-  reddit: "Reddit",
-  github: "GitHub",
-  bluesky: "Bluesky",
-  threads: "Threads",
-  mastodon: "Mastodon",
-  linkedin: "LinkedIn",
-  patreon: "Patreon",
-  kofi: "Ko-fi",
-  website: "Website",
-  custom: "Link",
 };
 
 function parseSocialLinks(raw: unknown): OrganizationSocialLink[] {
@@ -220,7 +201,7 @@ export default function OrganizationDetailScreen() {
                     accessible={true}
                     accessibilityRole="link"
                     accessibilityLabel={
-                      link.label || PLATFORM_LABELS[link.platform]
+                      link.label || socialPlatformLabels[link.platform]
                     }
                   >
                     <Ionicons
@@ -233,7 +214,7 @@ export default function OrganizationDetailScreen() {
                       color={String(theme.primary.get())}
                     />
                     <Text fontSize="$3" color="$primary">
-                      {link.label || PLATFORM_LABELS[link.platform]}
+                      {link.label || socialPlatformLabels[link.platform]}
                     </Text>
                   </XStack>
                 ))}

@@ -37,6 +37,7 @@
     "@tamagui/web": "^1.144.3",
     "@tanstack/react-query": "catalog:",
     "@trainers/supabase": "workspace:*",
+    "@trainers/utils": "workspace:*",
     "@trainers/theme": "workspace:*",
     "@trainers/validators": "workspace:*",
     "expo": "~54.0.33",

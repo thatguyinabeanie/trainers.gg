@@ -19,10 +19,7 @@ import {
   organizationSocialLinksSchema,
   type OrganizationSocialLink,
 } from "@trainers/validators";
-import {
-  SOCIAL_SVG_PATHS,
-  SOCIAL_PLATFORM_LABELS,
-} from "@/components/organizations/social-link-icons";
+import { socialSvgPaths, socialPlatformLabels } from "@trainers/utils";
 import { OrganizationTabs } from "./organization-tabs";
 
 // ==========================================================================
@@ -39,8 +36,8 @@ function parseSocialLinks(raw: unknown): OrganizationSocialLink[] {
 }
 
 function SocialLinkIcon({ link }: { link: OrganizationSocialLink }) {
-  const svgPath = SOCIAL_SVG_PATHS[link.platform];
-  const label = link.label || SOCIAL_PLATFORM_LABELS[link.platform] || "Link";
+  const svgPath = socialSvgPaths[link.platform];
+  const label = link.label || socialPlatformLabels[link.platform] || "Link";
 
   // Platforms with custom SVG paths
   if (svgPath) {
