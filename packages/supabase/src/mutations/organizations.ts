@@ -149,7 +149,7 @@ export async function updateOrganization(
     name?: string;
     description?: string;
     socialLinks?: OrganizationSocialLink[];
-    logoUrl?: string;
+    logoUrl?: string | null;
   }
 ) {
   const user = await getCurrentUser(supabase);

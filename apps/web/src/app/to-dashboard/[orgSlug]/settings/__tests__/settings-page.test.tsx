@@ -23,6 +23,11 @@ jest.mock("@/actions/organizations", () => ({
   updateOrganization: (...args: unknown[]) => mockUpdateOrganization(...args),
 }));
 
+jest.mock("@/actions/organization-logo", () => ({
+  uploadOrgLogo: jest.fn(),
+  removeOrgLogo: jest.fn(),
+}));
+
 jest.mock("sonner", () => ({
   toast: {
     success: jest.fn(),

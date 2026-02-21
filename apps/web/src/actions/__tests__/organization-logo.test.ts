@@ -7,40 +7,42 @@ jest.mock("next/cache", () => ({
   revalidatePath: jest.fn(),
 }));
 
-// Mock Supabase client
+// Mock Supabase clients
 const mockFrom = jest.fn();
 const mockGetUser = jest.fn();
-const mockStorageFrom = jest.fn();
 const mockSupabaseClient = {
   auth: { getUser: mockGetUser },
   from: mockFrom,
+};
+
+const mockStorageFrom = jest.fn();
+const mockStorageClient = {
   storage: { from: mockStorageFrom },
 };
 
 jest.mock("@/lib/supabase/server", () => ({
   createClient: jest.fn(async () => mockSupabaseClient),
+  createStorageClient: jest.fn(async () => mockStorageClient),
 }));
 
-// Mock @trainers/supabase mutations
-const mockUpdateAlt = jest.fn();
+// Mock @trainers/supabase storage utilities
 jest.mock("@trainers/supabase", () => ({
-  updateAlt: (...args: unknown[]) => mockUpdateAlt(...args),
-  STORAGE_BUCKETS: { AVATARS: "avatars" },
-  getAvatarPath: jest.fn(() => "user-123/1234-abc.jpg"),
+  STORAGE_BUCKETS: { UPLOADS: "uploads" },
+  getUploadPath: jest.fn(() => "user-123/1234-abc.jpg"),
   uploadFile: jest.fn(
     async () =>
-      "https://abc.supabase.co/storage/v1/object/public/avatars/user-123/1234-abc.jpg"
+      "https://abc.supabase.co/storage/v1/object/public/uploads/user-123/org-logos/1/1234-abc.jpg"
   ),
   deleteFile: jest.fn(async () => undefined),
   extractPathFromUrl: jest.fn((url: string) => {
-    if (url.includes("/storage/v1/object/public/avatars/")) {
-      return url.split("/storage/v1/object/public/avatars/")[1] ?? null;
+    if (url.includes("/storage/v1/object/public/uploads/")) {
+      return url.split("/storage/v1/object/public/uploads/")[1] ?? null;
     }
     return null;
   }),
 }));
 
-import { uploadAltAvatar, removeAltAvatar } from "../avatar";
+import { uploadOrgLogo, removeOrgLogo } from "../organization-logo";
 
 // Helper to create a test File
 function createTestFile(
@@ -52,8 +54,8 @@ function createTestFile(
   return new File([buffer], name, { type });
 }
 
-// Helper to set up authenticated user who owns the alt
-function setupAuthenticatedOwner(options?: { avatarUrl?: string | null }) {
+// Helper to set up authenticated user who owns the org
+function setupAuthenticatedOwner(options?: { logoUrl?: string | null }) {
   mockGetUser.mockResolvedValue({
     data: { user: { id: "user-123" } },
   });
@@ -62,8 +64,8 @@ function setupAuthenticatedOwner(options?: { avatarUrl?: string | null }) {
       eq: jest.fn().mockReturnValue({
         single: jest.fn().mockResolvedValue({
           data: {
-            user_id: "user-123",
-            avatar_url: options?.avatarUrl ?? null,
+            owner_user_id: "user-123",
+            logo_url: options?.logoUrl ?? null,
           },
         }),
       }),
@@ -74,23 +76,22 @@ function setupAuthenticatedOwner(options?: { avatarUrl?: string | null }) {
   });
 }
 
-describe("uploadAltAvatar", () => {
+describe("uploadOrgLogo", () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });
 
-  it("uploads a valid file and returns the avatar URL", async () => {
+  it("uploads a valid file and returns the logo URL", async () => {
     setupAuthenticatedOwner();
-    mockUpdateAlt.mockResolvedValue({ success: true });
 
     const formData = new FormData();
     formData.append("file", createTestFile());
 
-    const result = await uploadAltAvatar(1, formData);
+    const result = await uploadOrgLogo(1, formData);
 
     expect(result.success).toBe(true);
     if (result.success) {
-      expect(result.data.avatarUrl).toContain("avatars");
+      expect(result.data.logoUrl).toContain("uploads");
     }
   });
 
@@ -100,7 +101,7 @@ describe("uploadAltAvatar", () => {
     const formData = new FormData();
     formData.append("file", createTestFile());
 
-    const result = await uploadAltAvatar(1, formData);
+    const result = await uploadOrgLogo(1, formData);
 
     expect(result.success).toBe(false);
     if (!result.success) {
@@ -108,7 +109,7 @@ describe("uploadAltAvatar", () => {
     }
   });
 
-  it("returns an error when user does not own the alt", async () => {
+  it("returns an error when user does not own the org", async () => {
     mockGetUser.mockResolvedValue({
       data: { user: { id: "user-123" } },
     });
@@ -116,7 +117,7 @@ describe("uploadAltAvatar", () => {
       select: jest.fn().mockReturnValue({
         eq: jest.fn().mockReturnValue({
           single: jest.fn().mockResolvedValue({
-            data: { user_id: "other-user", avatar_url: null },
+            data: { owner_user_id: "other-user", logo_url: null },
           }),
         }),
       }),
@@ -125,18 +126,18 @@ describe("uploadAltAvatar", () => {
     const formData = new FormData();
     formData.append("file", createTestFile());
 
-    const result = await uploadAltAvatar(1, formData);
+    const result = await uploadOrgLogo(1, formData);
 
     expect(result.success).toBe(false);
     if (!result.success) {
-      expect(result.error).toMatch(/own alt/i);
+      expect(result.error).toMatch(/own organization/i);
     }
   });
 
   it("returns an error when no file is provided", async () => {
     const formData = new FormData();
 
-    const result = await uploadAltAvatar(1, formData);
+    const result = await uploadOrgLogo(1, formData);
 
     expect(result.success).toBe(false);
     if (!result.success) {
@@ -144,20 +145,19 @@ describe("uploadAltAvatar", () => {
     }
   });
 
-  it("rejects an invalid alt ID", async () => {
+  it("rejects an invalid org ID", async () => {
     const formData = new FormData();
     formData.append("file", createTestFile());
 
-    const result = await uploadAltAvatar(-1, formData);
+    const result = await uploadOrgLogo(-1, formData);
 
     expect(result.success).toBe(false);
   });
 
-  it("cleans up old avatar when replacing", async () => {
+  it("cleans up old logo when replacing", async () => {
     const oldUrl =
-      "https://abc.supabase.co/storage/v1/object/public/avatars/user-123/old-file.jpg";
-    setupAuthenticatedOwner({ avatarUrl: oldUrl });
-    mockUpdateAlt.mockResolvedValue({ success: true });
+      "https://abc.supabase.co/storage/v1/object/public/uploads/user-123/org-logos/1/old-file.jpg";
+    setupAuthenticatedOwner({ logoUrl: oldUrl });
 
     const { deleteFile } = jest.requireMock("@trainers/supabase") as {
       deleteFile: jest.Mock;
@@ -166,29 +166,29 @@ describe("uploadAltAvatar", () => {
     const formData = new FormData();
     formData.append("file", createTestFile());
 
-    const result = await uploadAltAvatar(1, formData);
+    const result = await uploadOrgLogo(1, formData);
 
     expect(result.success).toBe(true);
     expect(deleteFile).toHaveBeenCalledWith(
-      mockSupabaseClient,
-      "avatars",
-      "user-123/old-file.jpg"
+      mockStorageClient,
+      "uploads",
+      "user-123/org-logos/1/old-file.jpg"
     );
   });
 });
 
-describe("removeAltAvatar", () => {
+describe("removeOrgLogo", () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });
 
-  it("removes the avatar successfully", async () => {
+  it("removes the logo successfully", async () => {
     setupAuthenticatedOwner({
-      avatarUrl:
-        "https://abc.supabase.co/storage/v1/object/public/avatars/user-123/file.jpg",
+      logoUrl:
+        "https://abc.supabase.co/storage/v1/object/public/uploads/user-123/org-logos/1/file.jpg",
     });
 
-    const result = await removeAltAvatar(1);
+    const result = await removeOrgLogo(1);
 
     expect(result.success).toBe(true);
   });
@@ -196,7 +196,7 @@ describe("removeAltAvatar", () => {
   it("returns an error when not authenticated", async () => {
     mockGetUser.mockResolvedValue({ data: { user: null } });
 
-    const result = await removeAltAvatar(1);
+    const result = await removeOrgLogo(1);
 
     expect(result.success).toBe(false);
     if (!result.success) {
@@ -204,7 +204,7 @@ describe("removeAltAvatar", () => {
     }
   });
 
-  it("returns an error when user does not own the alt", async () => {
+  it("returns an error when user does not own the org", async () => {
     mockGetUser.mockResolvedValue({
       data: { user: { id: "user-123" } },
     });
@@ -212,22 +212,22 @@ describe("removeAltAvatar", () => {
       select: jest.fn().mockReturnValue({
         eq: jest.fn().mockReturnValue({
           single: jest.fn().mockResolvedValue({
-            data: { user_id: "other-user", avatar_url: null },
+            data: { owner_user_id: "other-user", logo_url: null },
           }),
         }),
       }),
     });
 
-    const result = await removeAltAvatar(1);
+    const result = await removeOrgLogo(1);
 
     expect(result.success).toBe(false);
     if (!result.success) {
-      expect(result.error).toMatch(/own alt/i);
+      expect(result.error).toMatch(/own organization/i);
     }
   });
 
-  it("rejects an invalid alt ID", async () => {
-    const result = await removeAltAvatar(0);
+  it("rejects an invalid org ID", async () => {
+    const result = await removeOrgLogo(0);
 
     expect(result.success).toBe(false);
   });

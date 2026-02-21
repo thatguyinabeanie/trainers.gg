@@ -43,7 +43,7 @@ export {
 // Storage exports
 export {
   STORAGE_BUCKETS,
-  getAvatarPath,
+  getUploadPath,
   getPublicUrl,
   uploadFile,
   deleteFile,

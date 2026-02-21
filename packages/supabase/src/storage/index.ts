@@ -2,14 +2,14 @@ import type { TypedClient } from "../client";
 
 /** Bucket name constants for type-safe storage access */
 export const STORAGE_BUCKETS = {
-  AVATARS: "avatars",
+  UPLOADS: "uploads",
 } as const;
 
 /**
- * Generate a unique storage path for an avatar file.
+ * Generate a unique storage path for a file upload.
  * Format: {userId}/{timestamp}-{randomSuffix}.{ext}
  */
-export function getAvatarPath(userId: string, fileName: string): string {
+export function getUploadPath(userId: string, fileName: string): string {
   const dotIndex = fileName.lastIndexOf(".");
   const ext = dotIndex > 0 ? fileName.slice(dotIndex + 1).toLowerCase() : "jpg";
   const timestamp = Date.now();
@@ -67,7 +67,7 @@ export async function deleteFile(
  * Extract the storage path from a Supabase public URL.
  * Returns null if the URL doesn't match the expected bucket pattern.
  *
- * Example URL: https://xxx.supabase.co/storage/v1/object/public/avatars/user-id/file.jpg
+ * Example URL: https://xxx.supabase.co/storage/v1/object/public/uploads/user-id/file.jpg
  * Returns: "user-id/file.jpg"
  */
 export function extractPathFromUrl(url: string, bucket: string): string | null {
