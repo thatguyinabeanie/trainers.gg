@@ -146,6 +146,10 @@ Pre-commit: Husky runs lint-staged (Prettier auto-fix). Fix errors, re-stage, re
 
 ## Critical Rules
 
+### Parallel Work & Unexpected Changes
+
+Multiple agents and humans may work on this codebase simultaneously. If you encounter code changes, new files, or modified files that you did not make — they were either made manually by the developer or by another parallel agent. **Never delete, revert, overwrite, or undo changes you did not make.** Treat unfamiliar changes as intentional. If they conflict with your work, stop and ask rather than discarding them.
+
 ### Database Migrations
 
 **Never apply migrations via MCP tools or the Supabase dashboard.** All schema changes via migration files:
