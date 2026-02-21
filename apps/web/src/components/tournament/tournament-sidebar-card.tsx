@@ -107,17 +107,19 @@ function StatusBanner({
   icon: ReactNode;
   title: string;
   subtitle?: string;
-  variant?: "success" | "warning" | "muted";
+  variant?: "success" | "warning" | "danger" | "muted";
 }) {
   const variantStyles = {
     success: "bg-primary/10",
     warning: "bg-amber-500/10",
+    danger: "bg-red-500/10",
     muted: "bg-muted",
   };
 
   const titleStyles = {
     success: "text-primary",
     warning: "text-amber-600",
+    danger: "text-red-600",
     muted: "text-muted-foreground",
   };
 
@@ -1190,21 +1192,30 @@ export function TournamentSidebarCard({
             <div className="space-y-3">
               <p className="text-sm font-medium">Check-In</p>
 
-              {/* Countdown timer for upcoming tournaments */}
+              {/* Check-in closing info */}
               {tournament.status === "upcoming" && tournament.startDate && (
                 <div className="rounded-lg bg-amber-500/10 p-2.5">
                   <p className="text-muted-foreground mb-1.5 text-xs">
-                    Closes when tournament starts
+                    Check-in closes when tournament starts
                   </p>
                   <CountdownTimer targetDate={tournament.startDate} />
                 </div>
               )}
-
-              {/* Late check-in info for active tournaments */}
               {tournament.status === "active" && lateMaxRound && (
-                <p className="text-muted-foreground text-xs">
-                  Open until Round {lateMaxRound} starts
-                </p>
+                <StatusBanner
+                  icon={<AlertTriangle className="h-5 w-5 text-amber-600" />}
+                  title="Late check-in open"
+                  subtitle={`Closes after Round ${lateMaxRound} starts`}
+                  variant="warning"
+                />
+              )}
+              {tournament.status === "active" && !lateMaxRound && (
+                <StatusBanner
+                  icon={<AlertTriangle className="h-5 w-5 text-red-600" />}
+                  title="Check in now"
+                  subtitle="Check-in may close at any time"
+                  variant="danger"
+                />
               )}
 
               {/* Check-in progress */}
@@ -1385,21 +1396,30 @@ export function TournamentSidebarCard({
                 <Separator />
                 <p className="text-sm font-medium">Check-In</p>
 
-                {/* Countdown timer for upcoming tournaments */}
+                {/* Check-in closing info */}
                 {tournament.status === "upcoming" && tournament.startDate && (
                   <div className="rounded-lg bg-amber-500/10 p-2.5">
                     <p className="text-muted-foreground mb-1.5 text-xs">
-                      Closes when tournament starts
+                      Check-in closes when tournament starts
                     </p>
                     <CountdownTimer targetDate={tournament.startDate} />
                   </div>
                 )}
-
-                {/* Late check-in info for active tournaments */}
                 {tournament.status === "active" && lateMaxRound && (
-                  <p className="text-muted-foreground text-xs">
-                    Open until Round {lateMaxRound} starts
-                  </p>
+                  <StatusBanner
+                    icon={<AlertTriangle className="h-5 w-5 text-amber-600" />}
+                    title="Late check-in open"
+                    subtitle={`Closes after Round ${lateMaxRound} starts`}
+                    variant="warning"
+                  />
+                )}
+                {tournament.status === "active" && !lateMaxRound && (
+                  <StatusBanner
+                    icon={<AlertTriangle className="h-5 w-5 text-red-600" />}
+                    title="Check in now"
+                    subtitle="Check-in may close at any time"
+                    variant="danger"
+                  />
                 )}
 
                 {/* Check-in progress */}

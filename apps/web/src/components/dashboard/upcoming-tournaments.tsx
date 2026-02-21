@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { cn } from "@/lib/utils";
 import {
   Card,
   CardContent,
@@ -61,6 +62,9 @@ export function UpcomingTournaments({
     // Check if checked in
     const isCheckedIn = tournament.registrationStatus === "checked_in";
 
+    // Check if tournament is active (in progress)
+    const isActive = tournament.status === "active";
+
     // Check if needs team
     if (!tournament.hasTeam) {
       return {
@@ -70,6 +74,23 @@ export function UpcomingTournaments({
         color: "text-amber-600 dark:text-amber-400",
         bgColor: "bg-amber-500/10",
         isUrgent,
+        subtitle: null as string | null,
+      };
+    }
+
+    // Active tournament + not checked in = urgent check-in needed
+    if (isActive && tournament.hasTeam && !isCheckedIn) {
+      const lateRound = tournament.lateCheckInMaxRound;
+      return {
+        icon: AlertCircle,
+        label: "Check in now!",
+        variant: "urgent" as const,
+        color: "text-red-600 dark:text-red-400",
+        bgColor: "bg-red-500/10",
+        isUrgent: true,
+        subtitle: lateRound
+          ? `Late check-in closes after Round ${lateRound}`
+          : null,
       };
     }
 
@@ -82,6 +103,7 @@ export function UpcomingTournaments({
         color: "text-blue-600 dark:text-blue-400",
         bgColor: "bg-blue-500/10",
         isUrgent: false,
+        subtitle: null as string | null,
       };
     }
 
@@ -93,6 +115,7 @@ export function UpcomingTournaments({
       color: "text-emerald-600 dark:text-emerald-400",
       bgColor: "bg-emerald-500/10",
       isUrgent: false,
+      subtitle: null as string | null,
     };
   };
 
@@ -327,6 +350,7 @@ function TournamentCard({
     color: string;
     bgColor: string;
     isUrgent: boolean;
+    subtitle: string | null;
   };
   handleCheckIn: (tournamentId: number) => void;
   checkingInId: number | null;
@@ -342,7 +366,15 @@ function TournamentCard({
     <div className="group bg-card hover:border-primary/50 relative overflow-hidden rounded-lg border transition-all hover:shadow-md">
       {/* Accent line for urgent items */}
       {statusInfo.isUrgent && (
-        <div className="absolute top-0 left-0 h-full w-1 bg-amber-500" />
+        <div
+          className={cn(
+            "absolute top-0 left-0 h-full w-1",
+            statusInfo.variant === "urgent" &&
+              statusInfo.label === "Check in now!"
+              ? "bg-red-500"
+              : "bg-amber-500"
+          )}
+        />
       )}
 
       <div className="flex items-start justify-between gap-4 p-4">
@@ -373,13 +405,18 @@ function TournamentCard({
             </div>
 
             {/* Status indicator */}
-            <div className="flex items-center gap-2 pl-13">
+            <div className="space-y-0.5 pl-13">
               <div
                 className={`flex items-center gap-1.5 text-xs font-medium ${statusInfo.color}`}
               >
                 <StatusIcon className="size-3.5" />
                 <span>{statusInfo.label}</span>
               </div>
+              {statusInfo.subtitle && (
+                <p className="text-muted-foreground text-xs">
+                  {statusInfo.subtitle}
+                </p>
+              )}
             </div>
           </div>
         </Link>
