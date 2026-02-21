@@ -113,7 +113,7 @@ BEGIN
 
     -- Get the confirmed player's name and user_id
     SELECT
-      COALESCE(a.display_name, a.username),
+      a.username,
       a.user_id
     INTO v_confirmed_player_name, v_confirmed_user_id
     FROM public.alts a
