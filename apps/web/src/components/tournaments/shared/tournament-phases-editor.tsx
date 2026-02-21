@@ -251,13 +251,17 @@ export function TournamentPhasesEditor({
                         size="icon"
                         className="text-muted-foreground hover:text-destructive h-10 w-10 shrink-0"
                         onClick={() => handleRemovePhase(phase.id)}
+                        aria-label={`Remove ${phase.name}`}
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     )}
                     {isLocked && !disabled && (
                       <Tooltip>
-                        <TooltipTrigger className="text-muted-foreground flex h-10 w-10 shrink-0 items-center justify-center">
+                        <TooltipTrigger
+                          className="text-muted-foreground flex h-10 w-10 shrink-0 items-center justify-center"
+                          aria-label="Phase is locked because it has already started"
+                        >
                           <LockIcon className="h-4 w-4" />
                         </TooltipTrigger>
                         <TooltipContent>

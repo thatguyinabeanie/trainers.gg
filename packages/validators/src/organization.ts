@@ -34,16 +34,21 @@ export type SocialLinkPlatform = (typeof SOCIAL_LINK_PLATFORMS)[number];
 export const organizationSocialLinkSchema = z.object({
   platform: z.enum(SOCIAL_LINK_PLATFORMS),
   url: z.string().url("Must be a valid URL"),
-  label: z.string().max(50).optional(),
+  label: z
+    .string()
+    .max(50)
+    .refine((val) => !containsProfanity(val), {
+      message: PROFANITY_ERROR_MESSAGE,
+    })
+    .optional(),
 });
 
 /**
  * Schema for an array of social links.
- * Max 10 links per organization to prevent abuse.
  */
-export const organizationSocialLinksSchema = z
-  .array(organizationSocialLinkSchema)
-  .max(10, "Maximum 10 social links allowed");
+export const organizationSocialLinksSchema = z.array(
+  organizationSocialLinkSchema
+);
 
 /**
  * Schema for creating an organization.

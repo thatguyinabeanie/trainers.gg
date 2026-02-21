@@ -217,6 +217,11 @@ export default function OrganizationDetailScreen() {
                     alignItems="center"
                     gap="$1"
                     onPress={() => Linking.openURL(link.url)}
+                    accessible={true}
+                    accessibilityRole="link"
+                    accessibilityLabel={
+                      link.label || PLATFORM_LABELS[link.platform]
+                    }
                   >
                     <Ionicons
                       name={

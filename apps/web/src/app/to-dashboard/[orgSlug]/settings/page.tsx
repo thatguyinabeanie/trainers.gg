@@ -150,8 +150,10 @@ function OrgProfileForm({ org, onSaved }: OrgProfileFormProps) {
       return;
     }
 
-    // Validate social links before submitting
-    const validLinks = socialLinks.filter((link) => link.url.trim() !== "");
+    // Validate social links before submitting (trim URLs and drop empties)
+    const validLinks = socialLinks
+      .filter((link) => link.url.trim())
+      .map((link) => ({ ...link, url: link.url.trim() }));
     const parseResult = organizationSocialLinksSchema.safeParse(validLinks);
     if (!parseResult.success) {
       const firstError = parseResult.error.issues[0];
@@ -253,8 +255,6 @@ function OrgProfileForm({ org, onSaved }: OrgProfileFormProps) {
 // Social Links Editor
 // ============================================================================
 
-const MAX_SOCIAL_LINKS = 10;
-
 function SocialLinksEditor({
   links,
   onChange,
@@ -263,10 +263,6 @@ function SocialLinksEditor({
   onChange: (links: OrganizationSocialLink[]) => void;
 }) {
   const addLink = () => {
-    if (links.length >= MAX_SOCIAL_LINKS) {
-      toast.error(`Maximum ${MAX_SOCIAL_LINKS} social links allowed`);
-      return;
-    }
     onChange([...links, { platform: "website", url: "" }]);
   };
 
@@ -299,9 +295,6 @@ function SocialLinksEditor({
     <div className="space-y-3">
       <div className="flex items-center justify-between">
         <Label>Social Links</Label>
-        <span className="text-muted-foreground text-xs">
-          {links.length}/{MAX_SOCIAL_LINKS}
-        </span>
       </div>
 
       {links.length === 0 && (
@@ -372,18 +365,16 @@ function SocialLinksEditor({
         </div>
       ))}
 
-      {links.length < MAX_SOCIAL_LINKS && (
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={addLink}
-          className="w-full"
-        >
-          <Plus className="mr-2 h-4 w-4" />
-          Add Social Link
-        </Button>
-      )}
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        onClick={addLink}
+        className="w-full"
+      >
+        <Plus className="mr-2 h-4 w-4" />
+        Add Social Link
+      </Button>
     </div>
   );
 }

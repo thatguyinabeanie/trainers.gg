@@ -240,27 +240,8 @@ describe("organizationSocialLinksSchema", () => {
         validLink({ platform: "youtube", url: "https://youtube.com/@test" }),
       ],
     },
-    {
-      desc: "exactly 10 links (maximum)",
-      input: Array.from({ length: 10 }, (_, i) =>
-        validLink({ platform: "website", url: `https://example${i}.com` })
-      ),
-    },
   ])("accepts $desc", ({ input }) => {
     expect(organizationSocialLinksSchema.safeParse(input).success).toBe(true);
-  });
-
-  it("rejects more than 10 links", () => {
-    const links = Array.from({ length: 11 }, (_, i) =>
-      validLink({ platform: "website", url: `https://example${i}.com` })
-    );
-    const result = organizationSocialLinksSchema.safeParse(links);
-    expect(result.success).toBe(false);
-    if (!result.success) {
-      expect(result.error.issues[0]?.message).toBe(
-        "Maximum 10 social links allowed"
-      );
-    }
   });
 
   it("rejects array containing an invalid link", () => {
