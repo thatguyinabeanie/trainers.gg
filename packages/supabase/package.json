@@ -11,6 +11,7 @@
     "./hooks": "./src/hooks/index.ts",
     "./queries": "./src/queries/index.ts",
     "./mutations": "./src/mutations/index.ts",
+    "./storage": "./src/storage/index.ts",
     "./types": "./src/types.ts"
   },
   "scripts": {

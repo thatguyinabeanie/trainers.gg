@@ -121,12 +121,11 @@ file_size_limit = "50MiB"
 allowed_mime_types = ["image/*", "video/*"]
 # objects_path = "./seed/storage/pds-blobs"  # Optional: for seeding local dev with test files
 
-# Example: other storage buckets
-# [storage.buckets.images]
-# public = false
-# file_size_limit = "50MiB"
-# allowed_mime_types = ["image/png", "image/jpeg"]
-# objects_path = "./images"
+# Avatar storage bucket (profile images — public, served without auth)
+[storage.buckets.avatars]
+public = true
+file_size_limit = "2MiB"
+allowed_mime_types = ["image/jpeg", "image/png", "image/webp", "image/gif"]
 
 # Allow connections via S3 compatible clients
 [storage.s3_protocol]
