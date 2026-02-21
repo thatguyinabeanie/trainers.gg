@@ -31,6 +31,7 @@ export function PostMatchSummary({
   const [nextMatch, setNextMatch] = useState<{
     id: number;
     roundNumber: number;
+    tableNumber: number;
   } | null>(null);
   const [roundStatus, setRoundStatus] = useState<"active" | "completed" | null>(
     null
@@ -98,6 +99,7 @@ export function PostMatchSummary({
           setNextMatch({
             id: nextPendingMatch.id,
             roundNumber: round?.round_number ?? 0,
+            tableNumber: nextPendingMatch.table_number ?? 0,
           });
         } else {
           setNextMatch(null);
@@ -196,7 +198,7 @@ export function PostMatchSummary({
 
         {!isLoading && nextMatch && (
           <Link
-            href={`/tournaments/${tournamentSlug}/matches/${nextMatch.id}`}
+            href={`/tournaments/${tournamentSlug}/r/${nextMatch.roundNumber}/t/${nextMatch.tableNumber}`}
             className="bg-primary text-primary-foreground hover:bg-primary/90 ring-offset-background focus-visible:ring-ring inline-flex h-10 flex-1 items-center justify-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50"
           >
             Next Match (Round {nextMatch.roundNumber})

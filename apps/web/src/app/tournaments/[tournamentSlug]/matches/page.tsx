@@ -180,7 +180,7 @@ export default async function MatchesPage({ params }: PageProps) {
                           return (
                             <Link
                               key={match.id}
-                              href={`/tournaments/${tournamentSlug}/matches/${match.id}`}
+                              href={`/tournaments/${tournamentSlug}/r/${round.round_number}/t/${match.table_number ?? 0}`}
                               className="bg-muted/30 hover:bg-muted/60 flex items-center justify-between rounded-lg p-3 transition-colors"
                             >
                               <div className="flex items-center gap-4">

@@ -126,14 +126,14 @@ describe("proxy", () => {
       createMockSupabaseClient({ user: null });
 
       const result = await proxy(
-        createRequest("/tournaments/summer-2025/matches/round-1")
+        createRequest("/tournaments/summer-2025/r/1/t/5")
       );
 
       expect(result.status).toBe(307);
       const location = new URL(result.headers.get("location")!);
       expect(location.pathname).toBe("/sign-in");
       expect(location.searchParams.get("redirect")).toBe(
-        "/tournaments/summer-2025/matches/round-1"
+        "/tournaments/summer-2025/r/1/t/5"
       );
     });
   });

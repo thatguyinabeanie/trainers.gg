@@ -1,27 +1,29 @@
 import { notFound, redirect } from "next/navigation";
 import { createClientReadOnly } from "@/lib/supabase/server";
 import {
-  getMatchDetails,
+  getMatchByRoundAndTable,
   getPlayerTournamentStats,
   getTeamForRegistration,
 } from "@trainers/supabase";
 import { getUser } from "@/lib/supabase/server";
-import { MatchPageClient } from "./match-page-client";
+import { MatchPageClient } from "@/components/match/match-page-client";
 import { PageContainer } from "@/components/layout/page-container";
 import Link from "next/link";
 
 interface PageProps {
   params: Promise<{
     tournamentSlug: string;
-    matchId: string;
+    round: string;
+    table: string;
   }>;
 }
 
 export default async function MatchPage({ params }: PageProps) {
-  const { tournamentSlug, matchId } = await params;
-  const matchIdNum = parseInt(matchId, 10);
+  const { tournamentSlug, round, table } = await params;
+  const roundNumber = parseInt(round, 10);
+  const tableNumber = parseInt(table, 10);
 
-  if (isNaN(matchIdNum)) {
+  if (isNaN(roundNumber) || isNaN(tableNumber)) {
     notFound();
   }
 
@@ -30,14 +32,14 @@ export default async function MatchPage({ params }: PageProps) {
     getUser().catch(() => null),
   ]);
 
-  const matchData = await getMatchDetails(supabase, matchIdNum);
+  const matchData = await getMatchByRoundAndTable(
+    supabase,
+    tournamentSlug,
+    roundNumber,
+    tableNumber
+  );
 
   if (!matchData || !matchData.tournament) {
-    notFound();
-  }
-
-  // Verify the match belongs to this tournament slug
-  if (matchData.tournament.slug !== tournamentSlug) {
     notFound();
   }
 
@@ -103,7 +105,7 @@ export default async function MatchPage({ params }: PageProps) {
   // Access control: only match players, org staff, and org owners can view
   if (!user) {
     redirect(
-      `/sign-in?redirect=/tournaments/${tournamentSlug}/matches/${matchId}`
+      `/sign-in?redirect=/tournaments/${tournamentSlug}/r/${roundNumber}/t/${tableNumber}`
     );
   }
   if (!isParticipant && !isStaff) {
@@ -151,7 +153,7 @@ export default async function MatchPage({ params }: PageProps) {
     ? { ...player2Raw, handle: handleMap[player2Raw.user_id] ?? null }
     : null;
 
-  const round = matchData.round as {
+  const matchRound = matchData.round as {
     id: number;
     round_number: number;
     phase_id: number;
@@ -284,12 +286,12 @@ export default async function MatchPage({ params }: PageProps) {
         </Link>
         <span>/</span>
         <span className="text-foreground shrink-0">
-          Round {round?.round_number ?? "?"}
+          Round {matchRound?.round_number ?? "?"}
         </span>
       </div>
 
       <MatchPageClient
-        matchId={matchIdNum}
+        matchId={matchData.match.id}
         tournamentId={tournamentId}
         tournamentSlug={tournamentSlug}
         matchStatus={matchData.match.status ?? "pending"}
@@ -300,7 +302,7 @@ export default async function MatchPage({ params }: PageProps) {
         player2={player2}
         alt1Id={matchData.match.alt1_id}
         alt2Id={matchData.match.alt2_id}
-        roundNumber={round?.round_number ?? null}
+        roundNumber={matchRound?.round_number ?? null}
         tableNumber={matchData.match.table_number ?? null}
         bestOf={matchData.phase?.best_of ?? 3}
         userAltId={userAltId}

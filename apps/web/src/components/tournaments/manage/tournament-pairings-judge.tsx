@@ -183,11 +183,13 @@ const sectionConfig: Record<
 function MatchTable({
   matches,
   section,
+  roundNumber,
   onNavigate,
 }: {
   matches: MatchData[];
   section: MatchSection;
-  onNavigate: (matchId: number) => void;
+  roundNumber: number;
+  onNavigate: (roundNumber: number, tableNumber: number) => void;
 }) {
   const config = sectionConfig[section];
 
@@ -221,7 +223,7 @@ function MatchTable({
                   "hover:bg-muted/50 cursor-pointer transition-colors",
                   match.staff_requested && "bg-red-50/50 dark:bg-red-950/20"
                 )}
-                onClick={() => onNavigate(match.id)}
+                onClick={() => onNavigate(roundNumber, match.table_number ?? 0)}
               >
                 <TableCell className="font-mono tabular-nums">
                   {match.table_number ?? "—"}
@@ -242,7 +244,7 @@ function MatchTable({
                     className="size-7"
                     onClick={(e) => {
                       e.stopPropagation();
-                      onNavigate(match.id);
+                      onNavigate(roundNumber, match.table_number ?? 0);
                     }}
                   >
                     <ExternalLink className="size-3.5" />
@@ -283,8 +285,10 @@ export function TournamentPairingsJudge({
   }, []);
 
   const navigateToMatch = useCallback(
-    (matchId: number) => {
-      router.push(`/tournaments/${tournament.slug}/matches/${matchId}`);
+    (roundNumber: number, tableNumber: number) => {
+      router.push(
+        `/tournaments/${tournament.slug}/r/${roundNumber}/t/${tableNumber}`
+      );
     },
     [router, tournament.slug]
   );
@@ -548,16 +552,19 @@ export function TournamentPairingsJudge({
                     <MatchTable
                       matches={attentionMatches}
                       section="attention"
+                      roundNumber={currentRound.round_number}
                       onNavigate={navigateToMatch}
                     />
                     <MatchTable
                       matches={activeMatches}
                       section="active"
+                      roundNumber={currentRound.round_number}
                       onNavigate={navigateToMatch}
                     />
                     <MatchTable
                       matches={completedMatches}
                       section="completed"
+                      roundNumber={currentRound.round_number}
                       onNavigate={navigateToMatch}
                     />
                   </>
@@ -598,7 +605,12 @@ export function TournamentPairingsJudge({
                           <TableRow
                             key={match.id}
                             className="cursor-pointer bg-red-50/50 transition-colors hover:bg-red-50 dark:bg-red-950/20 dark:hover:bg-red-950/30"
-                            onClick={() => navigateToMatch(match.id)}
+                            onClick={() =>
+                              navigateToMatch(
+                                currentRound.round_number,
+                                match.table_number ?? 0
+                              )
+                            }
                           >
                             <TableCell className="font-mono tabular-nums">
                               {match.table_number ?? "—"}
@@ -619,7 +631,10 @@ export function TournamentPairingsJudge({
                                 className="h-7 text-xs"
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  navigateToMatch(match.id);
+                                  navigateToMatch(
+                                    currentRound.round_number,
+                                    match.table_number ?? 0
+                                  );
                                 }}
                               >
                                 Respond

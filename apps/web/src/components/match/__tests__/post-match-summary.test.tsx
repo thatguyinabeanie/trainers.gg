@@ -122,6 +122,7 @@ describe("PostMatchSummary", () => {
       {
         id: 101,
         status: "pending",
+        table_number: 7,
         round: { round_number: 4 },
       },
     ]);
@@ -134,7 +135,7 @@ describe("PostMatchSummary", () => {
       const nextMatchLink = nextMatchButton.closest("a");
       expect(nextMatchLink).toHaveAttribute(
         "href",
-        "/tournaments/test-tournament/matches/101"
+        "/tournaments/test-tournament/r/4/t/7"
       );
     });
   });

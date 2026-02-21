@@ -120,8 +120,20 @@ export function PublicPairings({
   );
 
   // Navigate to match detail page on click
+  // Look up the round number and table number from loaded data
   const handleMatchClick = (matchId: string) => {
-    router.push(`/tournaments/${tournamentSlug}/matches/${matchId}`);
+    if (!allPhaseRounds) return;
+    for (const phaseRounds of allPhaseRounds) {
+      for (const round of phaseRounds) {
+        const match = round.matches.find((m) => String(m.id) === matchId);
+        if (match) {
+          router.push(
+            `/tournaments/${tournamentSlug}/r/${round.round_number}/t/${match.table_number ?? 0}`
+          );
+          return;
+        }
+      }
+    }
   };
 
   // Loading state

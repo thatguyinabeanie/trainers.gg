@@ -1096,6 +1096,81 @@ export async function getMatchDetails(supabase: TypedClient, matchId: number) {
 }
 
 /**
+ * Get match details by tournament slug, round number, and table number.
+ *
+ * Looks up the tournament by slug, then finds the match through the
+ * phase/round chain using round_number and table_number. Returns the
+ * same shape as getMatchDetails().
+ */
+export async function getMatchByRoundAndTable(
+  supabase: TypedClient,
+  tournamentSlug: string,
+  roundNumber: number,
+  tableNumber: number
+) {
+  // Step 1: Look up tournament by slug
+  const { data: tournament } = await supabase
+    .from("tournaments")
+    .select("*")
+    .eq("slug", tournamentSlug)
+    .maybeSingle();
+
+  if (!tournament) return null;
+
+  // Step 2: Get all phase IDs for this tournament
+  const { data: phases } = await supabase
+    .from("tournament_phases")
+    .select("id")
+    .eq("tournament_id", tournament.id);
+
+  if (!phases?.length) return null;
+
+  const phaseIds = phases.map((p) => p.id);
+
+  // Step 3: Find the round by round_number within this tournament's phases
+  const { data: round } = await supabase
+    .from("tournament_rounds")
+    .select("*")
+    .in("phase_id", phaseIds)
+    .eq("round_number", roundNumber)
+    .maybeSingle();
+
+  if (!round) return null;
+
+  // Step 4: Find the match by table_number within this round
+  const { data: match } = await supabase
+    .from("tournament_matches")
+    .select(
+      `
+      *,
+      player1:alts!tournament_matches_alt1_id_fkey(*),
+      player2:alts!tournament_matches_alt2_id_fkey(*)
+    `
+    )
+    .eq("round_id", round.id)
+    .eq("table_number", tableNumber)
+    .maybeSingle();
+
+  if (!match) return null;
+
+  // Step 5: Get the phase with tournament info
+  const { data: phase } = await supabase
+    .from("tournament_phases")
+    .select("*, tournament:tournaments!tournament_phases_tournament_id_fkey(*)")
+    .eq("id", round.phase_id)
+    .single();
+
+  return {
+    match,
+    player1: match.player1,
+    player2: match.player2,
+    round,
+    phase,
+    tournament: phase?.tournament,
+  };
+}
+
+/**
  * Get all matches for a player in a tournament
  */
 export async function getPlayerMatches(
