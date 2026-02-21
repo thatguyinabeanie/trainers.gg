@@ -15,9 +15,6 @@ jest.mock("expo-router", () => ({
   usePathname: () => "/",
 }));
 
-// Silence the warning: Animated: `useNativeDriver` is not supported
-jest.mock("react-native/Libraries/Animated/NativeAnimatedHelper");
-
 // Mock expo-constants for tests
 jest.mock("expo-constants", () => ({
   default: {
@@ -28,4 +25,11 @@ jest.mock("expo-constants", () => ({
       },
     },
   },
+}));
+
+// Mock expo-secure-store
+jest.mock("expo-secure-store", () => ({
+  getItemAsync: jest.fn(),
+  setItemAsync: jest.fn(),
+  deleteItemAsync: jest.fn(),
 }));
