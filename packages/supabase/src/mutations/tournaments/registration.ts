@@ -178,17 +178,21 @@ export async function updateRegistrationStatus(
     throw new Error("You don't have permission to update registrations");
   }
 
+  // Dropping requires a category
+  if (status === "dropped" && !dropInfo) {
+    throw new Error("Drop info (category) is required when dropping a player");
+  }
+
   // Build update payload — include drop metadata when dropping a player
-  const updatePayload =
-    status === "dropped" && dropInfo
-      ? {
-          status,
-          drop_category: dropInfo.dropCategory,
-          drop_notes: dropInfo.dropNotes ?? null,
-          dropped_by: user.id,
-          dropped_at: new Date().toISOString(),
-        }
-      : { status };
+  const updatePayload = dropInfo
+    ? {
+        status,
+        drop_category: dropInfo.dropCategory,
+        drop_notes: dropInfo.dropNotes ?? null,
+        dropped_by: user.id,
+        dropped_at: new Date().toISOString(),
+      }
+    : { status };
 
   const { error } = await supabase
     .from("tournament_registrations")

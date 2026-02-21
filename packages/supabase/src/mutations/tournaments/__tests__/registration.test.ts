@@ -515,8 +515,7 @@ describe("Tournament Registration Mutations", () => {
       );
     });
 
-    it("does not include drop fields when status is dropped but no dropInfo provided", async () => {
-      const mockUpdate = jest.fn().mockReturnThis();
+    it("throws when status is dropped but no dropInfo provided", async () => {
       const fromSpy = jest.spyOn(mockClient, "from");
 
       // First call: registration lookup
@@ -539,20 +538,11 @@ describe("Tournament Registration Mutations", () => {
         }),
       } as unknown as MockQueryBuilder);
 
-      // Third call: the update
-      fromSpy.mockReturnValueOnce({
-        update: mockUpdate,
-        eq: jest.fn().mockResolvedValue({ error: null }),
-      } as unknown as MockQueryBuilder);
-
-      const result = await updateRegistrationStatus(
-        mockClient,
-        registrationId,
-        "dropped"
+      await expect(
+        updateRegistrationStatus(mockClient, registrationId, "dropped")
+      ).rejects.toThrow(
+        "Drop info (category) is required when dropping a player"
       );
-
-      expect(result).toEqual({ success: true, tournamentId: 100 });
-      expect(mockUpdate).toHaveBeenCalledWith({ status: "dropped" });
     });
 
     it("does not include drop fields for non-drop status", async () => {
