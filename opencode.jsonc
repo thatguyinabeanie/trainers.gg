@@ -9,8 +9,7 @@
         "-y",
         "@playwright/mcp@latest",
         "--browser",
-        "chrome",
-        "--extension",
+        "chrome"
       ],
       "enabled": true,
     },

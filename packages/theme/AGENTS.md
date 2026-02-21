@@ -48,4 +48,4 @@ Rebuild after changing any token values — generated files are not auto-updated
 
 ## Penpot Export
 
-`pnpm --filter @trainers/theme export:penpot` regenerates `design/tokens/tokens.json` for import into the local Penpot instance. See `scripts/export-penpot.ts` for the export logic and `infra/penpot/AGENTS.md` for the Penpot setup.
+`pnpm --filter @trainers/theme export:penpot` regenerates `design/tokens/tokens.json` for import into Penpot Cloud. See `scripts/export-penpot.ts` for the export logic.

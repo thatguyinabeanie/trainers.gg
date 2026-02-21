@@ -24,7 +24,7 @@ Each workspace has its own `AGENTS.md` with domain-specific guidance. **Read the
 | `packages/utils` | [packages/utils/AGENTS.md](packages/utils/AGENTS.md) | Displaying labels, handling errors, checking permissions, formatting | `getLabel()` required for all enum/DB display, `getErrorMessage()` for error extraction, `PERMISSIONS` constants |
 | `packages/posthog` | [packages/posthog/AGENTS.md](packages/posthog/AGENTS.md) | Adding analytics events, tracking user actions | `SCREAMING_SNAKE_CASE` past-tense constants, surface distinguished by `$lib` not event name |
 | `packages/atproto` | [packages/atproto/AGENTS.md](packages/atproto/AGENTS.md) | Bluesky/AT Protocol integration, reading/posting, DID resolution | Typed error handling, `getPublicAgent()` for unauthenticated reads, auth sessions managed per-platform (not here) |
-| `packages/theme` | [packages/theme/AGENTS.md](packages/theme/AGENTS.md) | Styling with color tokens, adding design tokens, syncing to Penpot | OKLCH primitives, separate exports for web (`/css`) and mobile (`/mobile`), rebuild after changes |
+| `packages/theme` | [packages/theme/AGENTS.md](packages/theme/AGENTS.md) | Styling with color tokens, adding design tokens | OKLCH primitives, separate exports for web (`/css`) and mobile (`/mobile`), rebuild after changes |
 
 ### Tooling
 
@@ -38,7 +38,7 @@ Each workspace has its own `AGENTS.md` with domain-specific guidance. **Read the
 | --- | --- | --- | --- |
 | `infra/pds` | [infra/pds/AGENTS.md](infra/pds/AGENTS.md) | PDS deployment, handle provisioning, AT Protocol identity | Fly.io deployment (not git-deployed), `@username.trainers.gg` handles, Docker+ngrok for local testing |
 | `infra/ngrok` | [infra/ngrok/AGENTS.md](infra/ngrok/AGENTS.md) | Local HTTPS tunnel for OAuth/PDS testing | Static domain config, auto-updates `NEXT_PUBLIC_SITE_URL`, required for AT Protocol OAuth locally |
-| `infra/penpot` | [infra/penpot/AGENTS.md](infra/penpot/AGENTS.md) | Design work, design token sync, MCP-based design access | Docker setup, tokens imported from `@trainers/theme`, MCP server for Claude Code integration |
+
 
 ## Monorepo Structure
 
@@ -61,7 +61,6 @@ tooling/        # eslint, prettier, tailwind, typescript, test-utils configs
 infra/
   pds/          # Bluesky PDS on Fly.io
   ngrok/        # Local dev tunnel
-  penpot/       # Local Penpot design environment
 ```
 
 ## Tech Stack
@@ -121,7 +120,6 @@ pnpm build:mobile                     # Export mobile app
 
 # Theme
 pnpm --filter @trainers/theme build         # Generate design tokens
-pnpm --filter @trainers/theme export:penpot # Sync tokens to Penpot
 
 # Edge Functions
 pnpm functions:serve                  # Serve edge functions locally
