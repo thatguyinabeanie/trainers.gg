@@ -1,14 +1,9 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import {
-  getAllSpeciesNames,
-  FEATURED_POKEMON,
-  ALL_TYPES,
-} from "@trainers/pokemon";
+import { getAllSpeciesNames, FEATURED_POKEMON } from "@trainers/pokemon";
 import {
   getPokemonSprite,
-  getShowdownTypeIconUrl,
   FEATURED_TRAINERS,
   getTrainerSpriteUrl,
 } from "@trainers/pokemon/sprites";
@@ -77,30 +72,27 @@ export function SpritePicker({
 
   return (
     <div className="flex w-72 flex-col gap-2">
-      {/* Search — hidden for Types tab (small fixed set, no need to filter) */}
-      {tab !== "types" && (
-        <div className="relative">
-          <Search className="text-muted-foreground pointer-events-none absolute top-1/2 left-2 size-3.5 -translate-y-1/2" />
-          <Input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder={
-              tab === "pokemon" ? "Search Pokemon..." : "Search trainers..."
-            }
-            className="h-8 pr-7 pl-7 text-sm"
-            disabled={isPending}
-          />
-          {search && (
-            <button
-              type="button"
-              onClick={() => setSearch("")}
-              className="text-muted-foreground hover:text-foreground absolute top-1/2 right-2 -translate-y-1/2"
-            >
-              <X className="size-3.5" />
-            </button>
-          )}
-        </div>
-      )}
+      <div className="relative">
+        <Search className="text-muted-foreground pointer-events-none absolute top-1/2 left-2 size-3.5 -translate-y-1/2" />
+        <Input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder={
+            tab === "pokemon" ? "Search Pokemon..." : "Search trainers..."
+          }
+          className="h-8 pr-7 pl-7 text-sm"
+          disabled={isPending}
+        />
+        {search && (
+          <button
+            type="button"
+            onClick={() => setSearch("")}
+            className="text-muted-foreground hover:text-foreground absolute top-1/2 right-2 -translate-y-1/2"
+          >
+            <X className="size-3.5" />
+          </button>
+        )}
+      </div>
 
       <Tabs
         value={tab}
@@ -112,7 +104,6 @@ export function SpritePicker({
         <TabsList className="w-full">
           <TabsTrigger value="pokemon">Pokemon</TabsTrigger>
           <TabsTrigger value="trainers">Trainers</TabsTrigger>
-          <TabsTrigger value="types">Types</TabsTrigger>
         </TabsList>
 
         {/* Pokemon Grid */}
@@ -192,36 +183,6 @@ export function SpritePicker({
                 No trainers found
               </p>
             )}
-          </div>
-        </TabsContent>
-
-        {/* Type Grid */}
-        <TabsContent value="types">
-          <div className="grid grid-cols-3 gap-1.5">
-            {[...ALL_TYPES, "Stellar" as const].map((type) => {
-              const url = getShowdownTypeIconUrl(type);
-              return (
-                <button
-                  key={type}
-                  type="button"
-                  title={type}
-                  onClick={() => handleSelectSprite(url)}
-                  disabled={isPending}
-                  className={cn(
-                    "hover:bg-muted flex items-center justify-center rounded-md p-1.5 transition-colors disabled:opacity-50",
-                    currentAvatarUrl === url &&
-                      "ring-primary bg-primary/10 ring-2"
-                  )}
-                >
-                  <img
-                    src={url}
-                    alt={type}
-                    className="h-4 w-auto"
-                    loading="lazy"
-                  />
-                </button>
-              );
-            })}
           </div>
         </TabsContent>
       </Tabs>
