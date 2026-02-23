@@ -112,3 +112,6 @@ export {
   SUPPORTED_FORMATS,
   AdvancedTeamValidator,
 } from "./team-validator";
+
+// Featured Pokemon for avatar picker
+export { FEATURED_POKEMON } from "./featured-pokemon";
