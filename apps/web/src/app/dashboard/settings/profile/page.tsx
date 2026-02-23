@@ -19,8 +19,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Loader2, Save, Check, X } from "lucide-react";
+import { SpritePicker } from "@/components/profile/sprite-picker";
 import { toast } from "sonner";
 import { COUNTRIES } from "@trainers/utils";
 import {
@@ -48,10 +48,10 @@ export default function ProfileSettingsPage() {
   const [originalBirthDate, setOriginalBirthDate] = useState("");
   const [originalCountry, setOriginalCountry] = useState("");
 
+  const [altId, setAltId] = useState<number | null>(null);
+  const [altAvatarUrl, setAltAvatarUrl] = useState<string | null>(null);
+
   const displayName = user ? getUserDisplayName(user) : "";
-  const avatarUrl =
-    user?.profile?.avatarUrl ??
-    (user?.user_metadata?.avatar_url as string | undefined);
 
   // Load current profile data
   useEffect(() => {
@@ -64,6 +64,8 @@ export default function ProfileSettingsPage() {
         setOriginalBirthDate(profile.birthDate ?? "");
         setCountry(profile.country ?? "");
         setOriginalCountry(profile.country ?? "");
+        setAltId(profile.mainAltId);
+        setAltAvatarUrl(profile.altAvatarUrl);
       }
       setIsLoading(false);
     }
@@ -201,19 +203,19 @@ export default function ProfileSettingsPage() {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
-        {/* Avatar display (sprite picker coming soon) */}
-        <div className="flex items-center gap-4">
-          <Avatar className="h-16 w-16">
-            {avatarUrl && <AvatarImage src={avatarUrl} alt={displayName} />}
-            <AvatarFallback className="bg-primary/10 text-primary text-lg font-semibold">
-              {displayName.charAt(0).toUpperCase()}
-            </AvatarFallback>
-          </Avatar>
+        {/* Avatar sprite picker */}
+        {altId ? (
+          <SpritePicker
+            altId={altId}
+            currentAvatarUrl={altAvatarUrl}
+            onAvatarChange={setAltAvatarUrl}
+          />
+        ) : (
           <div>
             <p className="font-medium">{displayName}</p>
             <p className="text-muted-foreground text-sm">@{originalUsername}</p>
           </div>
-        </div>
+        )}
 
         {/* Username field */}
         <div className="space-y-2">

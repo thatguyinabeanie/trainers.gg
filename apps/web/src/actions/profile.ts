@@ -189,6 +189,17 @@ export async function getCurrentUserProfile() {
 
     if (!userData) return null;
 
+    // Fetch main alt's avatar URL if a main alt exists
+    let altAvatarUrl: string | null = null;
+    if (userData.main_alt_id) {
+      const { data: altData } = await supabase
+        .from("alts")
+        .select("avatar_url")
+        .eq("id", userData.main_alt_id)
+        .maybeSingle();
+      altAvatarUrl = altData?.avatar_url ?? null;
+    }
+
     return {
       id: userData.id,
       username: userData.username,
@@ -204,6 +215,7 @@ export async function getCurrentUserProfile() {
       birthDate: userData.birth_date,
       country: userData.country,
       mainAltId: userData.main_alt_id,
+      altAvatarUrl,
     };
   } catch (error) {
     console.error("Error in getCurrentUserProfile:", error);

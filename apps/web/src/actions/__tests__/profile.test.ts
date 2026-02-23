@@ -288,6 +288,7 @@ describe("getCurrentUserProfile", () => {
             did: "did:plc:abc123",
             birth_date: "2000-01-15",
             country: "US",
+            main_alt_id: null,
           },
           error: null,
         }),
@@ -304,6 +305,8 @@ describe("getCurrentUserProfile", () => {
       did: "did:plc:abc123",
       birthDate: "2000-01-15",
       country: "US",
+      mainAltId: null,
+      altAvatarUrl: null,
     });
   });
 

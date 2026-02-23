@@ -6,11 +6,11 @@ Expand the avatar SpritePicker from Pokemon-only to support Pokemon, Trainers, a
 
 ## Categories
 
-| Category | Source | Count | URL Pattern |
-|----------|--------|-------|-------------|
-| Pokemon | `@pkmn/img` via `getPokemonSprite()` | ~1,200 species | `play.pokemonshowdown.com/sprites/gen5/...` |
-| Trainers | Showdown CDN | ~2,800 sprites | `play.pokemonshowdown.com/sprites/trainers/{name}.png` |
-| Types | Showdown CDN | 19 (18 + Stellar) | `play.pokemonshowdown.com/sprites/types/{Type}.png` |
+| Category | Source                               | Count             | URL Pattern                                            |
+| -------- | ------------------------------------ | ----------------- | ------------------------------------------------------ |
+| Pokemon  | `@pkmn/img` via `getPokemonSprite()` | ~1,200 species    | `play.pokemonshowdown.com/sprites/gen5/...`            |
+| Trainers | Showdown CDN                         | ~2,800 sprites    | `play.pokemonshowdown.com/sprites/trainers/{name}.png` |
+| Types    | Showdown CDN                         | 19 (18 + Stellar) | `play.pokemonshowdown.com/sprites/types/{Type}.png`    |
 
 Items (spritesheet, not standalone URLs) are deferred.
 
@@ -40,9 +40,11 @@ SpritePicker (props: altId, currentAvatarUrl, onAvatarChange)
 ## Featured Sets (Curated)
 
 ### Pokemon (~50)
+
 Gen 1 starters + evolutions, Pikachu, Eevee + eeveelutions, popular legendaries (Mewtwo, Rayquaza, Giratina, Arceus), popular competitive mons (Incineroar, Rillaboom, Flutter Mane, Iron Hands), fan favorites.
 
 ### Trainers (~60)
+
 Champions (Cynthia, Red, Leon, Steven, Iris), gym leaders (Brock, Misty, Elesa, Raihan), protagonists (Red, Leaf, Ethan, Dawn), iconic NPCs (Professor Oak, N, Team Rocket).
 
 ## File Changes
@@ -61,8 +63,8 @@ Champions (Cynthia, Red, Leon, Steven, Iris), gym leaders (Brock, Misty, Elesa, 
 
 ### Modified Files
 
-3. **`packages/pokemon/src/sprites.ts`** — Re-export trainer utilities
-4. **`apps/web/src/components/profile/sprite-picker.tsx`** — Complete rewrite as tabbed grid picker
+1. **`packages/pokemon/src/sprites.ts`** — Re-export trainer utilities
+2. **`apps/web/src/components/profile/sprite-picker.tsx`** — Complete rewrite as tabbed grid picker
 
 ### Unchanged
 
