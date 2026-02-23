@@ -7,12 +7,18 @@ import { getCurrentUserAlts } from "@trainers/supabase";
 import type { TypedSupabaseClient } from "@trainers/supabase";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import {
+  Popover,
+  PopoverTrigger,
+  PopoverContent,
+} from "@/components/ui/popover";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import {
   Loader2,
+  Pencil,
   Plus,
   Trash2,
   Star,
@@ -23,6 +29,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { createAltAction, deleteAltAction } from "@/actions/alts";
+import { SpritePicker } from "@/components/profile/sprite-picker";
 
 export default function AltsPage() {
   const { user } = useAuth();
@@ -161,15 +168,39 @@ export default function AltsPage() {
                   key={alt.id}
                   className="hover:bg-muted/50 flex items-center gap-3 p-4 transition-colors"
                 >
-                  {/* Avatar */}
-                  <Avatar className="ring-primary/10 size-11 ring-2">
-                    {alt.avatar_url && (
-                      <AvatarImage src={alt.avatar_url} alt={alt.username} />
-                    )}
-                    <AvatarFallback className="bg-primary/10 text-primary font-bold">
-                      {alt.username.charAt(0).toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
+                  {/* Avatar (clickable) */}
+                  <Popover key={`mobile-${alt.id}-${refreshKey}`}>
+                    <PopoverTrigger
+                      title="Change avatar"
+                      className="group/avatar relative shrink-0 cursor-pointer"
+                    >
+                      <div className="relative overflow-hidden rounded-full">
+                        <Avatar className="ring-primary/10 size-11 ring-2">
+                          {alt.avatar_url && (
+                            <AvatarImage
+                              src={alt.avatar_url}
+                              alt={alt.username}
+                            />
+                          )}
+                          <AvatarFallback className="bg-primary/10 text-primary font-bold">
+                            {alt.username.charAt(0).toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="absolute inset-0 flex items-center justify-center bg-black/0 transition-colors group-hover/avatar:bg-black/40">
+                          <Pencil className="size-4 text-white opacity-0 drop-shadow-md transition-opacity group-hover/avatar:opacity-100" />
+                        </div>
+                      </div>
+                    </PopoverTrigger>
+                    <PopoverContent align="start" className="w-auto p-2">
+                      <SpritePicker
+                        altId={alt.id}
+                        currentAvatarUrl={alt.avatar_url}
+                        onAvatarChange={() => {
+                          setRefreshKey((k) => k + 1);
+                        }}
+                      />
+                    </PopoverContent>
+                  </Popover>
 
                   {/* Info */}
                   <div className="min-w-0 flex-1">
@@ -237,17 +268,41 @@ export default function AltsPage() {
                         {/* Alt Column */}
                         <td className="px-4 py-3 align-middle">
                           <div className="flex items-center gap-3">
-                            <Avatar className="ring-primary/10 size-11 ring-2">
-                              {alt.avatar_url && (
-                                <AvatarImage
-                                  src={alt.avatar_url}
-                                  alt={alt.username}
+                            <Popover key={`desktop-${alt.id}-${refreshKey}`}>
+                              <PopoverTrigger
+                                title="Change avatar"
+                                className="group/avatar relative shrink-0 cursor-pointer"
+                              >
+                                <div className="relative overflow-hidden rounded-full">
+                                  <Avatar className="ring-primary/10 size-11 ring-2">
+                                    {alt.avatar_url && (
+                                      <AvatarImage
+                                        src={alt.avatar_url}
+                                        alt={alt.username}
+                                      />
+                                    )}
+                                    <AvatarFallback className="bg-primary/10 text-primary font-bold">
+                                      {alt.username.charAt(0).toUpperCase()}
+                                    </AvatarFallback>
+                                  </Avatar>
+                                  <div className="absolute inset-0 flex items-center justify-center bg-black/0 transition-colors group-hover/avatar:bg-black/40">
+                                    <Pencil className="size-4 text-white opacity-0 drop-shadow-md transition-opacity group-hover/avatar:opacity-100" />
+                                  </div>
+                                </div>
+                              </PopoverTrigger>
+                              <PopoverContent
+                                align="start"
+                                className="w-auto p-2"
+                              >
+                                <SpritePicker
+                                  altId={alt.id}
+                                  currentAvatarUrl={alt.avatar_url}
+                                  onAvatarChange={() => {
+                                    setRefreshKey((k) => k + 1);
+                                  }}
                                 />
-                              )}
-                              <AvatarFallback className="bg-primary/10 text-primary font-bold">
-                                {alt.username.charAt(0).toUpperCase()}
-                              </AvatarFallback>
-                            </Avatar>
+                              </PopoverContent>
+                            </Popover>
                             <div className="flex min-w-0 items-center gap-2">
                               <p className="truncate font-mono text-[15px] font-semibold">
                                 @{alt.username}
