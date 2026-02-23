@@ -58,6 +58,7 @@ export {
 // Type effectiveness
 export {
   type PokemonType,
+  ALL_TYPES,
   POKEMON_TYPES,
   getTypeEffectiveness,
   getDefensiveMatchups,
@@ -100,6 +101,7 @@ export {
   isValidSpecies,
   isValidMove,
   getLearnableMoves,
+  getAllSpeciesNames,
 } from "./validation";
 
 // Team validator (using @pkmn/sim)
