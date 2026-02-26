@@ -34,6 +34,7 @@ import {
   isAuthenticated,
   getUserId,
   createServiceRoleClient,
+  createStorageClient,
 } from "../server";
 
 describe("supabase/server", () => {
@@ -204,6 +205,64 @@ describe("supabase/server", () => {
       expect(() => createServiceRoleClient()).toThrow(
         "Missing SUPABASE_SERVICE_ROLE_KEY environment variable for service role client"
       );
+    });
+  });
+
+  // ── createStorageClient ──────────────────────────────────────────────
+
+  describe("createStorageClient", () => {
+    it("returns service role client for 127.0.0.1 URL", async () => {
+      // Arrange: local dev URL using 127.0.0.1
+      process.env.NEXT_PUBLIC_SUPABASE_URL = "http://127.0.0.1:54321";
+      process.env.SUPABASE_SERVICE_ROLE_KEY = "test-service-role-key";
+
+      // Act
+      await createStorageClient();
+
+      // Assert: service role path uses @supabase/supabase-js createClient
+      expect(mockCreateSupabaseClient).toHaveBeenCalledWith(
+        "http://127.0.0.1:54321",
+        "test-service-role-key",
+        expect.objectContaining({
+          auth: { autoRefreshToken: false, persistSession: false },
+        })
+      );
+    });
+
+    it("returns service role client for localhost URL", async () => {
+      // Arrange: local dev URL using localhost
+      process.env.NEXT_PUBLIC_SUPABASE_URL = "http://localhost:54321";
+      process.env.SUPABASE_SERVICE_ROLE_KEY = "test-service-role-key";
+
+      // Act
+      await createStorageClient();
+
+      // Assert: same service role path
+      expect(mockCreateSupabaseClient).toHaveBeenCalledWith(
+        "http://localhost:54321",
+        "test-service-role-key",
+        expect.objectContaining({
+          auth: { autoRefreshToken: false, persistSession: false },
+        })
+      );
+    });
+
+    it("returns authenticated client for production URL", async () => {
+      // Arrange: production Supabase URL
+      process.env.NEXT_PUBLIC_SUPABASE_URL = "https://abc.supabase.co";
+
+      // Import the mock to check it was called
+      const { createServerClient } = await import("@supabase/ssr");
+
+      // Clear to isolate this test's call
+      (createServerClient as jest.Mock).mockClear();
+
+      // Act
+      await createStorageClient();
+
+      // Assert: production path uses @supabase/ssr createServerClient (authenticated)
+      expect(createServerClient).toHaveBeenCalled();
+      expect(mockCreateSupabaseClient).not.toHaveBeenCalled();
     });
   });
 });

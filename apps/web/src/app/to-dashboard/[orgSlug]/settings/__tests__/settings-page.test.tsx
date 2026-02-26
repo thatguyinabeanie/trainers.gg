@@ -8,6 +8,7 @@ import { render, screen, waitFor, act } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { toast } from "sonner";
 import { organizationFactory } from "@trainers/test-utils/factories";
+import { MAX_IMAGE_SIZE } from "@trainers/validators";
 
 // ── Mocks ──────────────────────────────────────────────────────────────────
 
@@ -475,6 +476,106 @@ describe("OrgSettingsPage", () => {
           }),
           org.slug
         );
+      });
+    });
+  });
+
+  describe("logo upload validation", () => {
+    /**
+     * Helper to get the hidden file input used for logo upload.
+     * The input has accept="image/jpeg,image/png,image/webp,image/gif".
+     */
+    function getFileInput(): HTMLInputElement {
+      const input = document.querySelector(
+        'input[type="file"][accept*="image"]'
+      );
+      if (!input) throw new Error("File input not found");
+      return input as HTMLInputElement;
+    }
+
+    /** Helper to create a File with a given type and size. */
+    function createTestFile(
+      name: string,
+      type: string,
+      sizeBytes: number
+    ): File {
+      const content = new Uint8Array(sizeBytes);
+      return new File([content], name, { type });
+    }
+
+    /** Simulate selecting a file via the hidden input. */
+    async function selectFile(input: HTMLInputElement, file: File) {
+      // fireEvent.change lets us set the files property
+      const { fireEvent } = await import("@testing-library/react");
+      Object.defineProperty(input, "files", {
+        value: [file],
+        writable: false,
+        configurable: true,
+      });
+      fireEvent.change(input);
+    }
+
+    it("shows error toast for empty file", async () => {
+      await renderPage(buildOrg());
+
+      const input = getFileInput();
+      const emptyFile = createTestFile("empty.png", "image/png", 0);
+
+      await selectFile(input, emptyFile);
+
+      expect(toast.error).toHaveBeenCalledWith("File is empty");
+    });
+
+    it("shows error toast for oversized file", async () => {
+      await renderPage(buildOrg());
+
+      const input = getFileInput();
+      const bigFile = createTestFile(
+        "huge.png",
+        "image/png",
+        MAX_IMAGE_SIZE + 1
+      );
+
+      await selectFile(input, bigFile);
+
+      expect(toast.error).toHaveBeenCalledWith(
+        "File must be smaller than 2 MB"
+      );
+    });
+
+    it("shows error toast for invalid file type", async () => {
+      await renderPage(buildOrg());
+
+      const input = getFileInput();
+      const textFile = createTestFile("readme.txt", "text/plain", 100);
+
+      await selectFile(input, textFile);
+
+      expect(toast.error).toHaveBeenCalledWith(
+        "File must be a JPEG, PNG, WebP, or GIF image"
+      );
+    });
+
+    it("calls uploadOrgLogo for valid file", async () => {
+      const { uploadOrgLogo } = jest.requireMock(
+        "@/actions/organization-logo"
+      ) as { uploadOrgLogo: jest.Mock };
+      uploadOrgLogo.mockResolvedValue({
+        success: true,
+        data: { logoUrl: "https://storage.example.com/logo.jpg" },
+      });
+
+      const org = buildOrg({ id: 42 });
+      await renderPage(org);
+
+      const input = getFileInput();
+      const validFile = createTestFile("logo.jpg", "image/jpeg", 1024);
+
+      await selectFile(input, validFile);
+
+      // uploadOrgLogo is called inside a React transition — wait for it
+      await waitFor(() => {
+        expect(uploadOrgLogo).toHaveBeenCalledWith(42, expect.any(FormData));
       });
     });
   });
