@@ -103,6 +103,26 @@ describe("setAltAvatar", () => {
     }
   });
 
+  it("returns error when alt not found", async () => {
+    mockGetUser.mockResolvedValue({
+      data: { user: { id: "user-123" } },
+    });
+    mockFrom.mockReturnValue({
+      select: jest.fn().mockReturnValue({
+        eq: jest.fn().mockReturnValue({
+          single: jest.fn().mockResolvedValue({ data: null }),
+        }),
+      }),
+    });
+
+    const result = await setAltAvatar(1, VALID_SPRITE_URL);
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error).toMatch(/not found/i);
+    }
+  });
+
   it("rejects invalid alt ID", async () => {
     const result = await setAltAvatar(-1, VALID_SPRITE_URL);
 
@@ -159,6 +179,26 @@ describe("removeAltAvatar", () => {
     expect(result.success).toBe(false);
     if (!result.success) {
       expect(result.error).toMatch(/own/i);
+    }
+  });
+
+  it("returns error when alt not found", async () => {
+    mockGetUser.mockResolvedValue({
+      data: { user: { id: "user-123" } },
+    });
+    mockFrom.mockReturnValue({
+      select: jest.fn().mockReturnValue({
+        eq: jest.fn().mockReturnValue({
+          single: jest.fn().mockResolvedValue({ data: null }),
+        }),
+      }),
+    });
+
+    const result = await removeAltAvatar(1);
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error).toMatch(/not found/i);
     }
   });
 

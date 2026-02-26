@@ -154,6 +154,60 @@ describe("uploadOrgLogo", () => {
     expect(result.success).toBe(false);
   });
 
+  it("returns error when org not found", async () => {
+    mockGetUser.mockResolvedValue({
+      data: { user: { id: "user-123" } },
+    });
+    mockFrom.mockReturnValue({
+      select: jest.fn().mockReturnValue({
+        eq: jest.fn().mockReturnValue({
+          single: jest.fn().mockResolvedValue({ data: null }),
+        }),
+      }),
+    });
+
+    const formData = new FormData();
+    formData.append("file", createTestFile());
+
+    const result = await uploadOrgLogo(1, formData);
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error).toMatch(/not found/i);
+    }
+  });
+
+  it("returns error when DB update fails", async () => {
+    setupAuthenticatedOwner();
+    // Override mockFrom to return an error on update
+    const selectChain = {
+      eq: jest.fn().mockReturnValue({
+        single: jest.fn().mockResolvedValue({
+          data: { owner_user_id: "user-123", logo_url: null },
+        }),
+      }),
+    };
+    const updateChain = {
+      eq: jest.fn().mockResolvedValue({
+        error: { message: "DB update error" },
+      }),
+    };
+    mockFrom.mockReturnValue({
+      select: jest.fn().mockReturnValue(selectChain),
+      update: jest.fn().mockReturnValue(updateChain),
+    });
+
+    const formData = new FormData();
+    formData.append("file", createTestFile());
+
+    const result = await uploadOrgLogo(1, formData);
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error).toMatch(/DB update error/i);
+    }
+  });
+
   it("cleans up old logo when replacing", async () => {
     const oldUrl =
       "https://abc.supabase.co/storage/v1/object/public/uploads/user-123/org-logos/1/old-file.jpg";
@@ -223,6 +277,59 @@ describe("removeOrgLogo", () => {
     expect(result.success).toBe(false);
     if (!result.success) {
       expect(result.error).toMatch(/own organization/i);
+    }
+  });
+
+  it("returns error when org not found", async () => {
+    mockGetUser.mockResolvedValue({
+      data: { user: { id: "user-123" } },
+    });
+    mockFrom.mockReturnValue({
+      select: jest.fn().mockReturnValue({
+        eq: jest.fn().mockReturnValue({
+          single: jest.fn().mockResolvedValue({ data: null }),
+        }),
+      }),
+    });
+
+    const result = await removeOrgLogo(1);
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error).toMatch(/not found/i);
+    }
+  });
+
+  it("returns error when DB update fails", async () => {
+    const selectChain = {
+      eq: jest.fn().mockReturnValue({
+        single: jest.fn().mockResolvedValue({
+          data: {
+            owner_user_id: "user-123",
+            logo_url:
+              "https://abc.supabase.co/storage/v1/object/public/uploads/user-123/org-logos/1/file.jpg",
+          },
+        }),
+      }),
+    };
+    const updateChain = {
+      eq: jest.fn().mockResolvedValue({
+        error: { message: "DB update error" },
+      }),
+    };
+    mockGetUser.mockResolvedValue({
+      data: { user: { id: "user-123" } },
+    });
+    mockFrom.mockReturnValue({
+      select: jest.fn().mockReturnValue(selectChain),
+      update: jest.fn().mockReturnValue(updateChain),
+    });
+
+    const result = await removeOrgLogo(1);
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error).toMatch(/DB update error/i);
     }
   });
 

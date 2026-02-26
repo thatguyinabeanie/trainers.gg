@@ -1,4 +1,43 @@
-import { getUploadPath, extractPathFromUrl, STORAGE_BUCKETS } from "../storage";
+import {
+  getUploadPath,
+  extractPathFromUrl,
+  getPublicUrl,
+  uploadFile,
+  deleteFile,
+  STORAGE_BUCKETS,
+} from "../storage";
+import { type TypedClient } from "../client";
+
+// Helper to create a mock Supabase client with storage methods
+function createMockStorageClient(overrides?: {
+  upload?: jest.Mock;
+  getPublicUrl?: jest.Mock;
+  remove?: jest.Mock;
+}) {
+  const upload =
+    overrides?.upload ??
+    jest.fn().mockResolvedValue({ data: { path: "test" }, error: null });
+  const getPublicUrlMock =
+    overrides?.getPublicUrl ??
+    jest.fn().mockReturnValue({
+      data: {
+        publicUrl:
+          "https://abc.supabase.co/storage/v1/object/public/uploads/user-123/file.jpg",
+      },
+    });
+  const remove =
+    overrides?.remove ?? jest.fn().mockResolvedValue({ data: [], error: null });
+
+  return {
+    storage: {
+      from: jest.fn().mockReturnValue({
+        upload,
+        getPublicUrl: getPublicUrlMock,
+        remove,
+      }),
+    },
+  } as unknown as TypedClient;
+}
 
 describe("getUploadPath", () => {
   it("generates a path in the user's folder", () => {
@@ -57,5 +96,97 @@ describe("extractPathFromUrl", () => {
 describe("STORAGE_BUCKETS", () => {
   it("has an UPLOADS constant", () => {
     expect(STORAGE_BUCKETS.UPLOADS).toBe("uploads");
+  });
+});
+
+describe("getPublicUrl", () => {
+  it("returns the public URL from the storage client", () => {
+    const expectedUrl =
+      "https://abc.supabase.co/storage/v1/object/public/uploads/user-123/file.jpg";
+    const client = createMockStorageClient({
+      getPublicUrl: jest.fn().mockReturnValue({
+        data: { publicUrl: expectedUrl },
+      }),
+    });
+
+    const url = getPublicUrl(client, "uploads", "user-123/file.jpg");
+
+    expect(url).toBe(expectedUrl);
+    expect(client.storage.from).toHaveBeenCalledWith("uploads");
+  });
+});
+
+describe("uploadFile", () => {
+  const testFile = new File(["test"], "photo.png", { type: "image/png" });
+
+  it("uploads file and returns public URL", async () => {
+    const expectedUrl =
+      "https://abc.supabase.co/storage/v1/object/public/uploads/user-123/file.jpg";
+    const client = createMockStorageClient({
+      upload: jest
+        .fn()
+        .mockResolvedValue({ data: { path: "test" }, error: null }),
+      getPublicUrl: jest.fn().mockReturnValue({
+        data: { publicUrl: expectedUrl },
+      }),
+    });
+
+    const url = await uploadFile(
+      client,
+      "uploads",
+      "user-123/file.jpg",
+      testFile
+    );
+
+    expect(url).toBe(expectedUrl);
+    const fromMock = client.storage.from as jest.Mock;
+    expect(fromMock).toHaveBeenCalledWith("uploads");
+    const bucket = fromMock.mock.results[0]!.value;
+    expect(bucket.upload).toHaveBeenCalledWith("user-123/file.jpg", testFile, {
+      upsert: false,
+      contentType: "image/png",
+    });
+  });
+
+  it("throws when upload fails", async () => {
+    const uploadError = new Error("upload failed");
+    const client = createMockStorageClient({
+      upload: jest.fn().mockResolvedValue({ data: null, error: uploadError }),
+    });
+
+    await expect(
+      uploadFile(client, "uploads", "user-123/file.jpg", testFile)
+    ).rejects.toThrow("upload failed");
+  });
+});
+
+describe("deleteFile", () => {
+  it("deletes file without throwing", async () => {
+    const client = createMockStorageClient({
+      remove: jest.fn().mockResolvedValue({ data: [], error: null }),
+    });
+
+    await expect(
+      deleteFile(client, "uploads", "user-123/file.jpg")
+    ).resolves.toBeUndefined();
+  });
+
+  it("logs error but does not throw when deletion fails", async () => {
+    const consoleSpy = jest.spyOn(console, "error").mockImplementation();
+    const client = createMockStorageClient({
+      remove: jest
+        .fn()
+        .mockResolvedValue({ data: null, error: new Error("delete failed") }),
+    });
+
+    await expect(
+      deleteFile(client, "uploads", "user-123/file.jpg")
+    ).resolves.toBeUndefined();
+
+    expect(consoleSpy).toHaveBeenCalledWith(
+      "[storage] Failed to delete uploads/user-123/file.jpg:",
+      expect.any(Error)
+    );
+    consoleSpy.mockRestore();
   });
 });
