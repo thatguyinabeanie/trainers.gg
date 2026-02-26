@@ -278,6 +278,20 @@ export function isValidMove(moveName: string): boolean {
 }
 
 /**
+ * Get all valid species names from the current generation.
+ * Returns an array of species names (e.g., "Pikachu", "Charizard").
+ */
+export function getAllSpeciesNames(): string[] {
+  const names: string[] = [];
+  for (const species of currentGen.species) {
+    if (species.exists && !species.isNonstandard) {
+      names.push(species.name);
+    }
+  }
+  return names;
+}
+
+/**
  * Get moves that a Pokemon can learn
  */
 export function getLearnableMoves(speciesName: string): string[] {

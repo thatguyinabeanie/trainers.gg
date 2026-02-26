@@ -288,6 +288,7 @@ describe("getCurrentUserProfile", () => {
             did: "did:plc:abc123",
             birth_date: "2000-01-15",
             country: "US",
+            main_alt_id: null,
           },
           error: null,
         }),
@@ -304,7 +305,106 @@ describe("getCurrentUserProfile", () => {
       did: "did:plc:abc123",
       birthDate: "2000-01-15",
       country: "US",
+      mainAltId: null,
+      altAvatarUrl: null,
     });
+  });
+
+  it("returns altAvatarUrl when main_alt_id exists and alt has avatar", async () => {
+    mockAuth.getUser.mockResolvedValue({
+      data: { user: { id: "user-1" } },
+    });
+
+    // First call: users table
+    mockFrom.mockReturnValueOnce(
+      createQueryBuilder({
+        maybeSingle: jest.fn().mockResolvedValue({
+          data: {
+            id: "user-1",
+            username: "cynthia",
+            pds_status: null,
+            pds_handle: null,
+            did: null,
+            birth_date: null,
+            country: "JP",
+            main_alt_id: 42,
+          },
+          error: null,
+        }),
+      })
+    );
+
+    // Second call: alts table for avatar_url
+    mockFrom.mockReturnValueOnce(
+      createQueryBuilder({
+        maybeSingle: jest.fn().mockResolvedValue({
+          data: {
+            avatar_url:
+              "https://play.pokemonshowdown.com/sprites/gen5/garchomp.png",
+          },
+          error: null,
+        }),
+      })
+    );
+
+    const result = await getCurrentUserProfile();
+
+    expect(result).toEqual({
+      id: "user-1",
+      username: "cynthia",
+      pdsStatus: null,
+      pdsHandle: null,
+      did: null,
+      birthDate: null,
+      country: "JP",
+      mainAltId: 42,
+      altAvatarUrl:
+        "https://play.pokemonshowdown.com/sprites/gen5/garchomp.png",
+    });
+  });
+
+  it("returns altAvatarUrl as null when main_alt_id exists but alt has no avatar", async () => {
+    mockAuth.getUser.mockResolvedValue({
+      data: { user: { id: "user-1" } },
+    });
+
+    // First call: users table
+    mockFrom.mockReturnValueOnce(
+      createQueryBuilder({
+        maybeSingle: jest.fn().mockResolvedValue({
+          data: {
+            id: "user-1",
+            username: "cynthia",
+            pds_status: null,
+            pds_handle: null,
+            did: null,
+            birth_date: null,
+            country: "JP",
+            main_alt_id: 42,
+          },
+          error: null,
+        }),
+      })
+    );
+
+    // Second call: alts table — no avatar
+    mockFrom.mockReturnValueOnce(
+      createQueryBuilder({
+        maybeSingle: jest.fn().mockResolvedValue({
+          data: { avatar_url: null },
+          error: null,
+        }),
+      })
+    );
+
+    const result = await getCurrentUserProfile();
+
+    expect(result).toEqual(
+      expect.objectContaining({
+        mainAltId: 42,
+        altAvatarUrl: null,
+      })
+    );
   });
 
   it("returns null on database error", async () => {

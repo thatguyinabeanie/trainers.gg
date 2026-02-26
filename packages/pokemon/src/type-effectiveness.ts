@@ -22,6 +22,28 @@ export type PokemonType =
   | "Steel"
   | "Fairy";
 
+/** All 18 standard Pokemon types. */
+export const ALL_TYPES: PokemonType[] = [
+  "Normal",
+  "Fire",
+  "Water",
+  "Electric",
+  "Grass",
+  "Ice",
+  "Fighting",
+  "Poison",
+  "Ground",
+  "Flying",
+  "Psychic",
+  "Bug",
+  "Rock",
+  "Ghost",
+  "Dragon",
+  "Dark",
+  "Steel",
+  "Fairy",
+];
+
 // Type effectiveness chart (attacking type -> defending type -> multiplier)
 const TYPE_CHART: Record<PokemonType, Partial<Record<PokemonType, number>>> = {
   Normal: { Rock: 0.5, Ghost: 0, Steel: 0.5 },

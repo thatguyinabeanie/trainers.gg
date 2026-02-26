@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useTransition, use } from "react";
+import { useState, useTransition, useRef, use } from "react";
 import { useSupabaseQuery } from "@/lib/supabase";
 import { getOrganizationBySlug } from "@trainers/supabase";
 import type { TypedSupabaseClient } from "@trainers/supabase";
 import { updateOrganization } from "@/actions/organizations";
+import { uploadOrgLogo, removeOrgLogo } from "@/actions/organization-logo";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -17,6 +18,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   Select,
   SelectContent,
@@ -24,8 +26,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Building2, Loader2, Save, Plus, Trash2 } from "lucide-react";
+import { Building2, Loader2, Save, Plus, Trash2, Camera } from "lucide-react";
 import { toast } from "sonner";
+import { ALLOWED_IMAGE_TYPES, MAX_IMAGE_SIZE } from "@trainers/validators";
 import {
   SOCIAL_LINK_PLATFORMS,
   organizationSocialLinksSchema,
@@ -34,6 +37,7 @@ import {
 } from "@trainers/validators";
 import { PlatformIcon } from "@/components/organizations/social-link-icons";
 import { socialPlatformLabels } from "@trainers/utils";
+import { cn } from "@/lib/utils";
 
 /** URL placeholder per platform. */
 const PLATFORM_PLACEHOLDERS: Partial<Record<SocialLinkPlatform, string>> = {
@@ -135,12 +139,68 @@ interface OrgProfileFormProps {
 
 function OrgProfileForm({ org, onSaved }: OrgProfileFormProps) {
   const [isPending, startTransition] = useTransition();
+  const [isLogoUploading, startLogoTransition] = useTransition();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [currentLogoUrl, setCurrentLogoUrl] = useState<string | null>(
+    org.logo_url
+  );
 
   const [name, setName] = useState(org.name);
   const [description, setDescription] = useState(org.description ?? "");
   const [socialLinks, setSocialLinks] = useState<OrganizationSocialLink[]>(() =>
     parseSocialLinks(org.social_links)
   );
+
+  const logoUrl = currentLogoUrl;
+
+  const handleLogoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Client-side validation
+    if (file.size === 0) {
+      toast.error("File is empty");
+      return;
+    }
+    if (file.size > MAX_IMAGE_SIZE) {
+      toast.error("File must be smaller than 2 MB");
+      return;
+    }
+    if (!(ALLOWED_IMAGE_TYPES as readonly string[]).includes(file.type)) {
+      toast.error("File must be a JPEG, PNG, WebP, or GIF image");
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append("file", file);
+
+    startLogoTransition(async () => {
+      const result = await uploadOrgLogo(org.id, formData);
+      if (result.success) {
+        setCurrentLogoUrl(result.data.logoUrl);
+        toast.success("Logo updated");
+        onSaved();
+      } else {
+        toast.error(result.error);
+      }
+    });
+
+    // Reset input so the same file can be re-selected
+    e.target.value = "";
+  };
+
+  const handleLogoRemove = () => {
+    startLogoTransition(async () => {
+      const result = await removeOrgLogo(org.id);
+      if (result.success) {
+        setCurrentLogoUrl(null);
+        toast.success("Logo removed");
+        onSaved();
+      } else {
+        toast.error(result.error);
+      }
+    });
+  };
 
   const handleSave = () => {
     if (!name.trim()) {
@@ -192,6 +252,64 @@ function OrgProfileForm({ org, onSaved }: OrgProfileFormProps) {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
+          {/* Logo upload */}
+          <div className="space-y-2">
+            <Label>Logo</Label>
+            <div className="flex items-center gap-4">
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isLogoUploading}
+                  className="group relative cursor-pointer disabled:cursor-not-allowed"
+                >
+                  <Avatar className="h-16 w-16">
+                    {logoUrl && <AvatarImage src={logoUrl} alt={org.name} />}
+                    <AvatarFallback className="bg-primary/10 text-primary text-lg font-semibold">
+                      {org.name.charAt(0).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div
+                    className={cn(
+                      "absolute inset-0 flex items-center justify-center rounded-full transition-opacity",
+                      "bg-black/50 opacity-0 group-hover:opacity-100",
+                      isLogoUploading && "opacity-100"
+                    )}
+                  >
+                    {isLogoUploading ? (
+                      <Loader2 className="h-5 w-5 animate-spin text-white" />
+                    ) : (
+                      <Camera className="h-5 w-5 text-white" />
+                    )}
+                  </div>
+                </button>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp,image/gif"
+                  onChange={handleLogoSelect}
+                  className="hidden"
+                />
+              </div>
+              <div>
+                <p className="text-muted-foreground text-sm">
+                  Click to upload a logo. JPEG, PNG, WebP, or GIF up to 2 MB.
+                </p>
+                {logoUrl && (
+                  <button
+                    type="button"
+                    onClick={handleLogoRemove}
+                    disabled={isLogoUploading}
+                    className="text-muted-foreground hover:text-destructive mt-1 flex items-center gap-1 text-xs transition-colors disabled:opacity-50"
+                  >
+                    <Trash2 className="h-3 w-3" />
+                    Remove logo
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+
           {/* Name */}
           <div className="space-y-2">
             <Label htmlFor="orgName">Organization Name</Label>

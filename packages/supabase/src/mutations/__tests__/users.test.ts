@@ -108,6 +108,32 @@ describe("User Mutations", () => {
       ).rejects.toThrow("You can only update your own alt");
     });
 
+    it("should successfully update alt avatar to null", async () => {
+      const fromSpy = jest.spyOn(mockClient, "from");
+
+      // Mock: Get alt to verify ownership
+      fromSpy.mockReturnValueOnce({
+        select: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockReturnThis(),
+        single: jest.fn().mockResolvedValue({
+          data: mockAlt,
+          error: null,
+        }),
+      } as unknown as MockQueryBuilder);
+
+      // Mock: Update alt
+      fromSpy.mockReturnValueOnce({
+        update: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockResolvedValue({ error: null }),
+      } as unknown as MockQueryBuilder);
+
+      const result = await updateAlt(mockClient, altId, {
+        avatarUrl: null,
+      });
+
+      expect(result).toEqual({ success: true });
+    });
+
     it("should propagate database errors", async () => {
       const fromSpy = jest.spyOn(mockClient, "from");
 

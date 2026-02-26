@@ -72,3 +72,10 @@ export function getShowdownTypeIconUrl(type: string): string {
 export function getShowdownTeraTypeIconUrl(type: string): string {
   return `https://play.pokemonshowdown.com/sprites/types/Tera${type}.png`;
 }
+
+// Trainer sprites
+export {
+  type TrainerSprite,
+  FEATURED_TRAINERS,
+  getTrainerSpriteUrl,
+} from "./trainers";

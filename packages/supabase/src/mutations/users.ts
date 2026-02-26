@@ -9,7 +9,7 @@ export async function updateAlt(
   supabase: TypedClient,
   altId: number,
   updates: {
-    avatarUrl?: string;
+    avatarUrl?: string | null;
   }
 ) {
   // Verify the user owns this alt
