@@ -307,6 +307,7 @@ describe("getCurrentUserProfile", () => {
       country: "US",
       mainAltId: null,
       altAvatarUrl: null,
+      bio: null,
     });
   });
 
@@ -360,6 +361,7 @@ describe("getCurrentUserProfile", () => {
       mainAltId: 42,
       altAvatarUrl:
         "https://play.pokemonshowdown.com/sprites/gen5/garchomp.png",
+      bio: null,
     });
   });
 
