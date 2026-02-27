@@ -17,6 +17,7 @@ export {
   getAltsByUserId,
   getCurrentUserAlts,
   getUserSpritePreference,
+  getPlayerProfileByHandle,
 } from "./users";
 
 // Organization queries
@@ -80,9 +81,15 @@ export {
   getTournamentMatchesForStaff,
   getUnpairedCheckedInPlayers,
   getUserTournamentHistory,
+  getPlayerTournamentHistory,
+  getPlayerLifetimeStats,
 } from "./tournaments";
 
-export type { TournamentWithOrg, GroupedTournaments } from "./tournaments";
+export type {
+  TournamentWithOrg,
+  GroupedTournaments,
+  PlayerLifetimeStats,
+} from "./tournaments";
 export type { OrganizationWithCounts } from "./organizations";
 
 // Permission queries
