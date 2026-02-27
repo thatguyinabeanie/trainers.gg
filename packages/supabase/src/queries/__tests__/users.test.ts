@@ -18,25 +18,70 @@ describe("getPlayerProfileByHandle", () => {
     mockClient = createMockClient();
   });
 
-  it("returns alt with user data when username matches", async () => {
-    const mockAlt = {
-      id: 1,
+  it("resolves user by users.username and returns profile with all alts", async () => {
+    const mockUser = {
+      id: "user-123",
       username: "ash_ketchum",
-      bio: "Gotta catch em all",
-      avatar_url: "https://example.com/avatar.png",
-      user_id: "user-123",
-      user: {
-        id: "user-123",
-        username: "ash_ketchum",
-        country: "US",
-        did: "did:plc:abc123",
-        pds_handle: "ash.trainers.gg",
-      },
+      country: "US",
+      did: "did:plc:abc123",
+      pds_handle: "ash.trainers.gg",
+      main_alt_id: 1,
+      created_at: "2026-01-01T00:00:00Z",
     };
 
-    mockClient.maybeSingle.mockResolvedValue({
-      data: mockAlt,
-      error: null,
+    const mockAlts = [
+      {
+        id: 1,
+        username: "ash_ketchum",
+        bio: "Gotta catch em all",
+        avatar_url: "https://example.com/pikachu.png",
+        tier: null,
+        tier_expires_at: null,
+      },
+      {
+        id: 2,
+        username: "satoshi",
+        bio: null,
+        avatar_url: null,
+        tier: null,
+        tier_expires_at: null,
+      },
+    ];
+
+    let fromCallCount = 0;
+    mockClient.from.mockImplementation((table: string) => {
+      fromCallCount++;
+      if (table === "users" && fromCallCount === 1) {
+        return {
+          select: jest.fn().mockReturnValue({
+            eq: jest.fn().mockReturnValue({
+              maybeSingle: jest
+                .fn()
+                .mockResolvedValue({ data: mockUser, error: null }),
+            }),
+          }),
+        };
+      }
+      if (table === "alts") {
+        return {
+          select: jest.fn().mockReturnValue({
+            eq: jest.fn().mockReturnValue({
+              order: jest
+                .fn()
+                .mockResolvedValue({ data: mockAlts, error: null }),
+            }),
+          }),
+        };
+      }
+      return {
+        select: jest.fn().mockReturnValue({
+          eq: jest.fn().mockReturnValue({
+            maybeSingle: jest
+              .fn()
+              .mockResolvedValue({ data: null, error: null }),
+          }),
+        }),
+      };
     });
 
     const result = await getPlayerProfileByHandle(
@@ -44,52 +89,122 @@ describe("getPlayerProfileByHandle", () => {
       "ash_ketchum"
     );
 
-    // Verify the correct table was queried
-    expect(mockClient.from).toHaveBeenCalledWith("alts");
-
-    // Verify the select includes specific user fields via join
-    expect(mockClient.select).toHaveBeenCalledWith(
-      "*, user:users(id, username, country, did, pds_handle)"
-    );
-
-    // Verify exact match on username (not ilike)
-    expect(mockClient.eq).toHaveBeenCalledWith("username", "ash_ketchum");
-
-    // Verify maybeSingle was called (not single)
-    expect(mockClient.maybeSingle).toHaveBeenCalled();
-
-    // Verify the returned data
-    expect(result).toEqual(mockAlt);
+    expect(result).not.toBeNull();
+    expect(result?.userId).toBe("user-123");
+    expect(result?.username).toBe("ash_ketchum");
+    expect(result?.country).toBe("US");
+    expect(result?.mainAlt?.username).toBe("ash_ketchum");
+    expect(result?.alts).toHaveLength(2);
+    expect(result?.altIds).toEqual([1, 2]);
   });
 
-  it("returns null when no alt matches the handle", async () => {
-    mockClient.maybeSingle.mockResolvedValue({
-      data: null,
-      error: null,
+  it("falls back to alts.username when users.username does not match", async () => {
+    const mockUser = {
+      id: "user-123",
+      username: "ash_ketchum",
+      country: "US",
+      did: null,
+      pds_handle: null,
+      main_alt_id: 1,
+      created_at: "2026-01-01T00:00:00Z",
+    };
+
+    const mockAlts = [
+      {
+        id: 1,
+        username: "satoshi",
+        bio: null,
+        avatar_url: null,
+        tier: null,
+        tier_expires_at: null,
+      },
+    ];
+
+    let fromCallCount = 0;
+    mockClient.from.mockImplementation((table: string) => {
+      fromCallCount++;
+      // First call: users.username lookup — no match
+      if (table === "users" && fromCallCount === 1) {
+        return {
+          select: jest.fn().mockReturnValue({
+            eq: jest.fn().mockReturnValue({
+              maybeSingle: jest
+                .fn()
+                .mockResolvedValue({ data: null, error: null }),
+            }),
+          }),
+        };
+      }
+      // Second call: alts.username lookup — match
+      if (table === "alts" && fromCallCount === 2) {
+        return {
+          select: jest.fn().mockReturnValue({
+            eq: jest.fn().mockReturnValue({
+              maybeSingle: jest.fn().mockResolvedValue({
+                data: { user_id: "user-123" },
+                error: null,
+              }),
+            }),
+          }),
+        };
+      }
+      // Third call: fetch all alts for the user
+      if (table === "alts" && fromCallCount === 3) {
+        return {
+          select: jest.fn().mockReturnValue({
+            eq: jest.fn().mockReturnValue({
+              order: jest
+                .fn()
+                .mockResolvedValue({ data: mockAlts, error: null }),
+            }),
+          }),
+        };
+      }
+      // Fourth call: re-fetch user by ID
+      if (table === "users" && fromCallCount === 4) {
+        return {
+          select: jest.fn().mockReturnValue({
+            eq: jest.fn().mockReturnValue({
+              maybeSingle: jest
+                .fn()
+                .mockResolvedValue({ data: mockUser, error: null }),
+            }),
+          }),
+        };
+      }
+      return {
+        select: jest.fn().mockReturnValue({
+          eq: jest.fn().mockReturnValue({
+            maybeSingle: jest
+              .fn()
+              .mockResolvedValue({ data: null, error: null }),
+          }),
+        }),
+      };
     });
 
     const result = await getPlayerProfileByHandle(
       mockClient as unknown as TypedClient,
-      "nonexistent_player"
+      "satoshi"
     );
 
-    expect(mockClient.from).toHaveBeenCalledWith("alts");
-    expect(mockClient.eq).toHaveBeenCalledWith(
-      "username",
-      "nonexistent_player"
-    );
-    expect(result).toBeNull();
+    expect(result).not.toBeNull();
+    expect(result?.userId).toBe("user-123");
+    expect(result?.altIds).toEqual([1]);
   });
 
-  it("returns null when a database error occurs", async () => {
-    mockClient.maybeSingle.mockResolvedValue({
-      data: null,
-      error: { message: "Database error", code: "PGRST116" },
-    });
+  it("returns null when neither users nor alts match the handle", async () => {
+    mockClient.from.mockImplementation(() => ({
+      select: jest.fn().mockReturnValue({
+        eq: jest.fn().mockReturnValue({
+          maybeSingle: jest.fn().mockResolvedValue({ data: null, error: null }),
+        }),
+      }),
+    }));
 
     const result = await getPlayerProfileByHandle(
       mockClient as unknown as TypedClient,
-      "ash_ketchum"
+      "nonexistent_player"
     );
 
     expect(result).toBeNull();

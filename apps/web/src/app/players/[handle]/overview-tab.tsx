@@ -11,7 +11,6 @@ import type { PlayerLifetimeStats } from "@trainers/supabase/queries";
 // Types
 // ============================================================================
 
-/** Shape returned by the tournament history API route */
 interface TournamentHistoryEntry {
   id: number;
   tournamentId: number;
@@ -34,35 +33,38 @@ interface TournamentHistoryEntry {
 
 const playerKeys = {
   all: (handle: string) => ["player", handle] as const,
-  stats: (altId: number, handle: string) =>
-    [...playerKeys.all(handle), "stats", altId] as const,
-  tournaments: (altId: number, handle: string) =>
-    [...playerKeys.all(handle), "tournaments", altId] as const,
+  stats: (handle: string) => [...playerKeys.all(handle), "stats"] as const,
+  tournaments: (handle: string) =>
+    [...playerKeys.all(handle), "tournaments"] as const,
 };
 
 // ============================================================================
 // Data fetching hooks
 // ============================================================================
 
-function usePlayerStats(altId: number, handle: string) {
+function usePlayerStats(altIds: number[], handle: string) {
   return useQuery<PlayerLifetimeStats>({
-    queryKey: playerKeys.stats(altId, handle),
+    queryKey: playerKeys.stats(handle),
     queryFn: async () => {
-      const res = await fetch(`/api/players/${altId}/stats`);
+      const res = await fetch(`/api/players/stats?altIds=${altIds.join(",")}`);
       if (!res.ok) throw new Error("Failed to fetch player stats");
       return res.json();
     },
+    enabled: altIds.length > 0,
   });
 }
 
-function usePlayerTournaments(altId: number, handle: string) {
+function usePlayerTournaments(altIds: number[], handle: string) {
   return useQuery<TournamentHistoryEntry[]>({
-    queryKey: playerKeys.tournaments(altId, handle),
+    queryKey: playerKeys.tournaments(handle),
     queryFn: async () => {
-      const res = await fetch(`/api/players/${altId}/tournaments`);
+      const res = await fetch(
+        `/api/players/tournaments?altIds=${altIds.join(",")}`
+      );
       if (!res.ok) throw new Error("Failed to fetch tournament history");
       return res.json();
     },
+    enabled: altIds.length > 0,
   });
 }
 
@@ -70,9 +72,6 @@ function usePlayerTournaments(altId: number, handle: string) {
 // Helpers
 // ============================================================================
 
-/**
- * Format a placement number with an ordinal suffix (1st, 2nd, 3rd, etc.)
- */
 function formatPlacement(rank: number): string {
   const suffixes = ["th", "st", "nd", "rd"];
   const remainder = rank % 100;
@@ -81,9 +80,6 @@ function formatPlacement(rank: number): string {
   return `${rank}${suffix}`;
 }
 
-/**
- * Format a date string into a readable short format.
- */
 function formatDate(dateStr: string): string {
   const date = new Date(dateStr);
   return date.toLocaleDateString("en-US", {
@@ -98,12 +94,12 @@ function formatDate(dateStr: string): string {
 // ============================================================================
 
 interface OverviewTabProps {
-  altId: number;
+  altIds: number[];
   handle: string;
 }
 
-function StatsCards({ altId, handle }: OverviewTabProps) {
-  const { data: stats, isLoading } = usePlayerStats(altId, handle);
+function StatsCards({ altIds, handle }: OverviewTabProps) {
+  const { data: stats, isLoading } = usePlayerStats(altIds, handle);
 
   if (isLoading) {
     return (
@@ -125,12 +121,10 @@ function StatsCards({ altId, handle }: OverviewTabProps) {
 
   if (!stats) return null;
 
-  // Determine main format — show the first one, or a dash if none
   const mainFormat = stats.formats.length > 0 ? (stats.formats[0] ?? "-") : "-";
 
   return (
     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-      {/* Tournaments */}
       <Card>
         <CardContent className="flex items-center gap-4 pt-6">
           <div className="bg-primary/10 rounded-full p-3">
@@ -143,7 +137,6 @@ function StatsCards({ altId, handle }: OverviewTabProps) {
         </CardContent>
       </Card>
 
-      {/* Win Rate */}
       <Card>
         <CardContent className="flex items-center gap-4 pt-6">
           <div className="bg-primary/10 rounded-full p-3">
@@ -158,7 +151,6 @@ function StatsCards({ altId, handle }: OverviewTabProps) {
         </CardContent>
       </Card>
 
-      {/* Best Placement */}
       <Card>
         <CardContent className="flex items-center gap-4 pt-6">
           <div className="bg-primary/10 rounded-full p-3">
@@ -175,7 +167,6 @@ function StatsCards({ altId, handle }: OverviewTabProps) {
         </CardContent>
       </Card>
 
-      {/* Main Format */}
       <Card>
         <CardContent className="flex items-center gap-4 pt-6">
           <div className="bg-primary/10 rounded-full p-3">
@@ -193,8 +184,8 @@ function StatsCards({ altId, handle }: OverviewTabProps) {
   );
 }
 
-function RecentTournaments({ altId, handle }: OverviewTabProps) {
-  const { data: tournaments, isLoading } = usePlayerTournaments(altId, handle);
+function RecentTournaments({ altIds, handle }: OverviewTabProps) {
+  const { data: tournaments, isLoading } = usePlayerTournaments(altIds, handle);
 
   if (isLoading) {
     return (
@@ -216,7 +207,6 @@ function RecentTournaments({ altId, handle }: OverviewTabProps) {
     );
   }
 
-  // Show up to 5 most recent completed tournaments
   const recent = (tournaments ?? []).slice(0, 5);
 
   if (recent.length === 0) {
@@ -236,7 +226,6 @@ function RecentTournaments({ altId, handle }: OverviewTabProps) {
       {recent.map((entry) => (
         <Card key={entry.id}>
           <CardContent className="flex flex-col gap-3 pt-6 sm:flex-row sm:items-center sm:justify-between">
-            {/* Tournament info */}
             <div className="flex items-start gap-3">
               <div className="bg-primary/10 mt-0.5 rounded-full p-2">
                 <Trophy className="text-primary h-4 w-4" />
@@ -267,7 +256,6 @@ function RecentTournaments({ altId, handle }: OverviewTabProps) {
               </div>
             </div>
 
-            {/* Placement and record */}
             <div className="flex items-center gap-4 text-sm sm:text-right">
               <div>
                 <span className="text-muted-foreground">Record: </span>
@@ -292,15 +280,11 @@ function RecentTournaments({ altId, handle }: OverviewTabProps) {
 // Main component
 // ============================================================================
 
-/**
- * Overview tab for the player profile.
- * Shows stats at a glance and recent tournament history.
- */
-export function OverviewTab({ altId, handle }: OverviewTabProps) {
+export function OverviewTab({ altIds, handle }: OverviewTabProps) {
   return (
     <div className="space-y-8">
-      <StatsCards altId={altId} handle={handle} />
-      <RecentTournaments altId={altId} handle={handle} />
+      <StatsCards altIds={altIds} handle={handle} />
+      <RecentTournaments altIds={altIds} handle={handle} />
     </div>
   );
 }

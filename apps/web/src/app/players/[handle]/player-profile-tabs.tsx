@@ -7,9 +7,9 @@ import { OverviewTab } from "./overview-tab";
 type PlayerTab = "overview" | "tournaments";
 
 interface PlayerProfileTabsProps {
-  /** The alt's database ID, used for API data fetching */
-  altId: number;
-  /** The alt's username handle, used for cache keys */
+  /** All alt IDs for this user (stats aggregate across all alts) */
+  altIds: number[];
+  /** The user's handle, used for cache keys */
   handle: string;
 }
 
@@ -17,7 +17,7 @@ interface PlayerProfileTabsProps {
  * Tab switcher for the player profile page.
  * Renders "Overview" and "Tournaments" tabs using the line variant.
  */
-export function PlayerProfileTabs({ altId, handle }: PlayerProfileTabsProps) {
+export function PlayerProfileTabs({ altIds, handle }: PlayerProfileTabsProps) {
   const [activeTab, setActiveTab] = useState<PlayerTab>("overview");
 
   return (
@@ -51,7 +51,7 @@ export function PlayerProfileTabs({ altId, handle }: PlayerProfileTabsProps) {
 
       {/* Tab content */}
       {activeTab === "overview" ? (
-        <OverviewTab altId={altId} handle={handle} />
+        <OverviewTab altIds={altIds} handle={handle} />
       ) : (
         <div className="text-muted-foreground py-12 text-center text-sm">
           Full tournament history coming soon.

@@ -198,21 +198,78 @@ export async function searchAlts(
 }
 
 /**
- * Get a player's public profile by alt username (handle).
- * Returns the alt record with joined user data, or null if not found.
+ * Get a player's public profile by username (handle).
+ * Resolves to a user with all their alts — one profile per user, not per alt.
+ * Checks users.username first, then falls back to alts.username.
+ * Returns user record with all alts, or null if not found.
  */
 export async function getPlayerProfileByHandle(
   supabase: TypedClient,
   handle: string
 ) {
-  const { data, error } = await supabase
-    .from("alts")
-    .select("*, user:users(id, username, country, did, pds_handle)")
+  // Try users.username first (exact match)
+  const { data: user, error: userError } = await supabase
+    .from("users")
+    .select("id, username, country, did, pds_handle, main_alt_id, created_at")
     .eq("username", handle)
     .maybeSingle();
 
-  if (error) return null;
-  return data;
+  if (userError) return null;
+
+  let userId: string | null = user?.id ?? null;
+
+  // Fallback: check alts.username and resolve to user
+  if (!userId) {
+    const { data: alt, error: altError } = await supabase
+      .from("alts")
+      .select("user_id")
+      .eq("username", handle)
+      .maybeSingle();
+
+    if (altError || !alt) return null;
+    userId = alt.user_id;
+  }
+
+  // Fetch all alts for this user
+  const { data: alts, error: altsError } = await supabase
+    .from("alts")
+    .select("id, username, bio, avatar_url, tier, tier_expires_at")
+    .eq("user_id", userId)
+    .order("id", { ascending: true });
+
+  if (altsError) return null;
+
+  // Re-fetch user if we only had it from alt lookup
+  const userData =
+    user ??
+    (await (async () => {
+      const { data } = await supabase
+        .from("users")
+        .select(
+          "id, username, country, did, pds_handle, main_alt_id, created_at"
+        )
+        .eq("id", userId!)
+        .maybeSingle();
+      return data;
+    })());
+
+  if (!userData) return null;
+
+  // Find the main alt (or first alt as fallback)
+  const mainAlt =
+    alts?.find((a) => a.id === userData.main_alt_id) ?? alts?.[0] ?? null;
+
+  return {
+    userId: userData.id,
+    username: userData.username,
+    country: userData.country,
+    did: userData.did,
+    pdsHandle: userData.pds_handle,
+    createdAt: userData.created_at,
+    mainAlt,
+    alts: alts ?? [],
+    altIds: (alts ?? []).map((a) => a.id),
+  };
 }
 
 /**

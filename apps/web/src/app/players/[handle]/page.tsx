@@ -70,9 +70,10 @@ export async function generateMetadata({
     return { title: "Player Not Found" };
   }
 
-  const displayName = profile.username;
-  const description = profile.bio
-    ? profile.bio.slice(0, 160)
+  const displayName = profile.mainAlt?.username ?? profile.username ?? handle;
+  const bio = profile.mainAlt?.bio;
+  const description = bio
+    ? bio.slice(0, 160)
     : `${displayName}'s player profile on trainers.gg`;
 
   return {
@@ -82,7 +83,9 @@ export async function generateMetadata({
       title: `${displayName} - Player Profile`,
       description,
       type: "profile",
-      ...(profile.avatar_url ? { images: [{ url: profile.avatar_url }] } : {}),
+      ...(profile.mainAlt?.avatar_url
+        ? { images: [{ url: profile.mainAlt.avatar_url }] }
+        : {}),
     },
   };
 }
@@ -108,6 +111,10 @@ function countryCodeToFlag(code: string): string {
 // Server Components
 // ============================================================================
 
+type PlayerProfile = NonNullable<
+  Awaited<ReturnType<typeof getPlayerProfileByHandle>>
+>;
+
 function Breadcrumb({ username }: { username: string }) {
   return (
     <div className="text-muted-foreground mb-4 flex items-center gap-2 text-sm">
@@ -120,10 +127,6 @@ function Breadcrumb({ username }: { username: string }) {
   );
 }
 
-type PlayerProfile = NonNullable<
-  Awaited<ReturnType<typeof getPlayerProfileByHandle>>
->;
-
 function PlayerHeader({
   profile,
   canEdit,
@@ -131,27 +134,27 @@ function PlayerHeader({
   profile: PlayerProfile;
   canEdit: boolean;
 }) {
-  // Resolve country from the joined user record
-  const user = profile.user as { id: string; country: string | null } | null;
-  const countryCode = user?.country ?? null;
+  const mainAlt = profile.mainAlt;
+  const countryCode = profile.country;
   const countryName = countryCode ? getCountryName(countryCode) : null;
 
   return (
     <div className="mb-8 flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
       <div className="flex items-start gap-4">
-        {/* Avatar */}
         <Avatar className="h-16 w-16">
-          <AvatarImage src={profile.avatar_url ?? undefined} />
+          <AvatarImage src={mainAlt?.avatar_url ?? undefined} />
           <AvatarFallback className="text-xl">
-            {profile.username.slice(0, 2).toUpperCase()}
+            {(mainAlt?.username ?? profile.username ?? "?")
+              .slice(0, 2)
+              .toUpperCase()}
           </AvatarFallback>
         </Avatar>
 
         <div>
-          {/* Username */}
-          <h1 className="text-3xl font-bold">{profile.username}</h1>
+          <h1 className="text-3xl font-bold">
+            {mainAlt?.username ?? profile.username}
+          </h1>
 
-          {/* Country */}
           {countryCode && countryName && (
             <p className="text-muted-foreground mt-1 flex items-center gap-1.5 text-sm">
               <span>{countryCodeToFlag(countryCode)}</span>
@@ -159,16 +162,14 @@ function PlayerHeader({
             </p>
           )}
 
-          {/* Bio */}
-          {profile.bio && (
+          {mainAlt?.bio && (
             <p className="text-muted-foreground mt-2 max-w-xl whitespace-pre-wrap">
-              {profile.bio}
+              {mainAlt.bio}
             </p>
           )}
         </div>
       </div>
 
-      {/* Edit profile button (only for the profile owner) */}
       <div className="flex gap-2">
         {canEdit && (
           <Link href="/dashboard/settings/profile">
@@ -200,15 +201,15 @@ export default async function PlayerPage({ params }: PlayerPageProps) {
     notFound();
   }
 
-  // Check if the current user owns this profile
-  const user = profile.user as { id: string } | null;
-  const canEdit = currentUserId != null && user?.id === currentUserId;
+  const canEdit = currentUserId != null && profile.userId === currentUserId;
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <Breadcrumb username={profile.username} />
+      <Breadcrumb
+        username={profile.mainAlt?.username ?? profile.username ?? handle}
+      />
       <PlayerHeader profile={profile} canEdit={canEdit} />
-      <PlayerProfileTabs altId={profile.id} handle={handle} />
+      <PlayerProfileTabs altIds={profile.altIds} handle={handle} />
     </div>
   );
 }
