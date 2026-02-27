@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -36,6 +37,7 @@ export default function ProfileSettingsPage() {
 
   // Form state
   const [username, setUsername] = useState("");
+  const [bio, setBio] = useState("");
   const [birthDate, setBirthDate] = useState("");
   const [country, setCountry] = useState("");
 
@@ -45,6 +47,7 @@ export default function ProfileSettingsPage() {
   >("idle");
   const [usernameError, setUsernameError] = useState<string | null>(null);
   const [originalUsername, setOriginalUsername] = useState("");
+  const [originalBio, setOriginalBio] = useState("");
   const [originalBirthDate, setOriginalBirthDate] = useState("");
   const [originalCountry, setOriginalCountry] = useState("");
 
@@ -60,6 +63,8 @@ export default function ProfileSettingsPage() {
       if (profile) {
         setUsername(profile.username ?? "");
         setOriginalUsername(profile.username ?? "");
+        setBio(profile.bio ?? "");
+        setOriginalBio(profile.bio ?? "");
         setBirthDate(profile.birthDate ?? "");
         setOriginalBirthDate(profile.birthDate ?? "");
         setCountry(profile.country ?? "");
@@ -133,10 +138,14 @@ export default function ProfileSettingsPage() {
   const hasUsernameChanged =
     username.toLowerCase() !== originalUsername.toLowerCase() &&
     username.length > 0;
+  const hasBioChanged = bio !== originalBio;
   const hasBirthDateChanged = birthDate !== originalBirthDate;
   const hasCountryChanged = country !== originalCountry;
   const hasAnyChange =
-    hasUsernameChanged || hasBirthDateChanged || hasCountryChanged;
+    hasUsernameChanged ||
+    hasBioChanged ||
+    hasBirthDateChanged ||
+    hasCountryChanged;
 
   const canSave =
     !isPending &&
@@ -148,12 +157,17 @@ export default function ProfileSettingsPage() {
     startTransition(async () => {
       const updates: {
         username?: string;
+        bio?: string;
         birthDate?: string;
         country?: string;
       } = {};
 
       if (hasUsernameChanged) {
         updates.username = username;
+      }
+
+      if (hasBioChanged) {
+        updates.bio = bio;
       }
 
       // Always send birthDate and country if they have values
@@ -175,6 +189,7 @@ export default function ProfileSettingsPage() {
       if (result.success) {
         toast.success("Profile updated");
         setOriginalUsername(username);
+        setOriginalBio(bio);
         setOriginalBirthDate(birthDate);
         setOriginalCountry(country);
         setUsernameStatus("idle");
@@ -254,6 +269,22 @@ export default function ProfileSettingsPage() {
           <p className="text-muted-foreground text-xs">
             3-20 characters. Letters, numbers, underscores, and hyphens. Casing
             is preserved but uniqueness is case-insensitive.
+          </p>
+        </div>
+
+        {/* Bio field */}
+        <div className="space-y-2">
+          <Label htmlFor="bio">Bio</Label>
+          <Textarea
+            id="bio"
+            value={bio}
+            onChange={(e) => setBio(e.target.value)}
+            placeholder="Tell people about yourself"
+            maxLength={160}
+            rows={3}
+          />
+          <p className="text-muted-foreground text-xs">
+            {bio.length}/160 characters
           </p>
         </div>
 

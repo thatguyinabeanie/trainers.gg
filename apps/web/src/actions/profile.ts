@@ -65,6 +65,7 @@ const updateProfileSchema = z.object({
     .string()
     .length(2, "Country must be a 2-letter ISO code")
     .optional(),
+  bio: z.string().max(160, "Bio must be 160 characters or less").optional(),
 });
 
 // --- Actions ---
@@ -189,15 +190,17 @@ export async function getCurrentUserProfile() {
 
     if (!userData) return null;
 
-    // Fetch main alt's avatar URL if a main alt exists
+    // Fetch main alt's avatar URL and bio if a main alt exists
     let altAvatarUrl: string | null = null;
+    let bio: string | null = null;
     if (userData.main_alt_id) {
       const { data: altData } = await supabase
         .from("alts")
-        .select("avatar_url")
+        .select("avatar_url, bio")
         .eq("id", userData.main_alt_id)
         .maybeSingle();
       altAvatarUrl = altData?.avatar_url ?? null;
+      bio = altData?.bio ?? null;
     }
 
     return {
@@ -216,6 +219,7 @@ export async function getCurrentUserProfile() {
       country: userData.country,
       mainAltId: userData.main_alt_id,
       altAvatarUrl,
+      bio,
     };
   } catch (error) {
     console.error("Error in getCurrentUserProfile:", error);
@@ -231,6 +235,7 @@ export async function updateProfile(data: {
   username?: string;
   birthDate?: string;
   country?: string;
+  bio?: string;
 }) {
   const { isBot } = await checkBotId();
   if (isBot) return { success: false, error: "Access denied" };
@@ -520,6 +525,28 @@ export async function updateProfile(data: {
       if (authUpdateError) {
         console.error("Error updating auth metadata:", authUpdateError);
         return { success: false, error: "Failed to update auth metadata" };
+      }
+    }
+
+    // If bio changed, update the main alt's bio
+    if (validated.bio !== undefined) {
+      // Get main alt ID if we haven't already
+      const { data: userForAlt } = await supabase
+        .from("users")
+        .select("main_alt_id")
+        .eq("id", user.id)
+        .maybeSingle();
+
+      if (userForAlt?.main_alt_id) {
+        const { error: bioError } = await supabase
+          .from("alts")
+          .update({ bio: validated.bio || null })
+          .eq("id", userForAlt.main_alt_id);
+
+        if (bioError) {
+          console.error("Error updating bio:", bioError);
+          return { success: false, error: "Failed to update bio" };
+        }
       }
     }
 
