@@ -49,4 +49,7 @@ export const CacheTags = {
   /** Tag for tournament team submissions (open teamsheet public view) */
   tournamentTeams: (idOrSlug: string | number) =>
     `tournament-teams:${idOrSlug}`,
+
+  /** Tag for a specific player profile */
+  player: (handle: string) => `player:${handle}`,
 } as const;
