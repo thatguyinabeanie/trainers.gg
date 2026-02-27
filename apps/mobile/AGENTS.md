@@ -40,3 +40,22 @@ Mobile env vars must use the `EXPO_PUBLIC_` prefix to be accessible in client co
 ## AT Protocol
 
 Auth handled differently from web: mobile uses SecureStore for session persistence. Hooks in `src/lib/atproto/` wrap `@trainers/atproto` package.
+
+## Commands
+
+```bash
+pnpm --filter @trainers/mobile dev            # Start Expo dev server
+pnpm --filter @trainers/mobile test           # Run unit tests
+pnpm --filter @trainers/mobile test:watch     # Watch mode
+pnpm --filter @trainers/mobile lint           # ESLint
+pnpm --filter @trainers/mobile typecheck      # TypeScript type checking
+pnpm --filter @trainers/mobile prebuild       # Generate native projects
+pnpm --filter @trainers/mobile prebuild:clean # Clean + regenerate native projects
+```
+
+## Testing
+
+- **Test environment**: `jest-expo` preset (React Native)
+- **Test location**: `src/**/__tests__/**/*.test.{ts,tsx}`
+- **Setup file**: `test-setup.ts`
+- **Module alias**: Uses Expo's module resolution
