@@ -198,6 +198,24 @@ export async function searchAlts(
 }
 
 /**
+ * Get a player's public profile by alt username (handle).
+ * Returns the alt record with joined user data, or null if not found.
+ */
+export async function getPlayerProfileByHandle(
+  supabase: TypedClient,
+  handle: string
+) {
+  const { data, error } = await supabase
+    .from("alts")
+    .select("*, user:users(id, username, country, did, pds_handle)")
+    .eq("username", handle)
+    .maybeSingle();
+
+  if (error) return null;
+  return data;
+}
+
+/**
  * Get user email by username (checks both users.username and alts.username)
  * Used for login with username support
  */
