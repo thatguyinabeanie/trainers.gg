@@ -76,8 +76,10 @@ function exec(command, options = {}) {
 /**
  * Production Supabase project ref - NEVER seed this database
  * Even if VERCEL_ENV=preview, if we're connected to production Supabase, skip seeding
+ *
+ * Set via SUPABASE_PRODUCTION_PROJECT_REF env var.
  */
-const PRODUCTION_PROJECT_REF = "shsijtmbiibknwygcdtc";
+const PRODUCTION_PROJECT_REF = process.env.SUPABASE_PRODUCTION_PROJECT_REF;
 
 /**
  * Check if we're in a Vercel environment
