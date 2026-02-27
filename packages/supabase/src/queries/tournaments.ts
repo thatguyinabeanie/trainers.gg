@@ -2300,3 +2300,87 @@ export async function getPlayerTournamentHistory(
     };
   });
 }
+
+// Return type for getPlayerLifetimeStats
+export type PlayerLifetimeStats = {
+  tournamentCount: number;
+  totalWins: number;
+  totalLosses: number;
+  winRate: number;
+  bestPlacement: number | null;
+  formats: string[];
+};
+
+const EMPTY_LIFETIME_STATS: PlayerLifetimeStats = {
+  tournamentCount: 0,
+  totalWins: 0,
+  totalLosses: 0,
+  winRate: 0,
+  bestPlacement: null,
+  formats: [],
+};
+
+/**
+ * Aggregate lifetime stats across all tournament_player_stats rows for the given alt IDs.
+ * Returns total wins, losses, win rate, best placement, and unique formats.
+ */
+export async function getPlayerLifetimeStats(
+  supabase: TypedClient,
+  altIds: number[]
+): Promise<PlayerLifetimeStats> {
+  // Return empty stats immediately if no alt IDs provided
+  if (altIds.length === 0) {
+    return EMPTY_LIFETIME_STATS;
+  }
+
+  const { data, error } = await supabase
+    .from("tournament_player_stats")
+    .select(
+      "tournament_id, alt_id, match_wins, match_losses, final_ranking, tournament:tournaments!tournament_player_stats_tournament_id_fkey(format)"
+    )
+    .in("alt_id", altIds);
+
+  if (error) throw error;
+
+  const rows = data ?? [];
+
+  if (rows.length === 0) {
+    return EMPTY_LIFETIME_STATS;
+  }
+
+  // Aggregate across all rows
+  let totalWins = 0;
+  let totalLosses = 0;
+  let bestPlacement: number | null = null;
+  const formatSet = new Set<string>();
+
+  for (const row of rows) {
+    totalWins += row.match_wins ?? 0;
+    totalLosses += row.match_losses ?? 0;
+
+    // Track best (lowest) non-null final_ranking
+    if (row.final_ranking != null) {
+      if (bestPlacement === null || row.final_ranking < bestPlacement) {
+        bestPlacement = row.final_ranking;
+      }
+    }
+
+    // Collect unique formats from the joined tournament
+    const tournament = row.tournament as { format: string | null } | null;
+    if (tournament && tournament.format) {
+      formatSet.add(tournament.format);
+    }
+  }
+
+  const totalMatches = totalWins + totalLosses;
+  const winRate = totalMatches > 0 ? (totalWins / totalMatches) * 100 : 0;
+
+  return {
+    tournamentCount: rows.length,
+    totalWins,
+    totalLosses,
+    winRate,
+    bestPlacement,
+    formats: Array.from(formatSet),
+  };
+}
