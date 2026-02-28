@@ -1165,6 +1165,15 @@ export async function prepareRound(
     await rejectBots();
     const supabase = await createClient();
 
+    // Look up the phase type to determine which pairing algorithm to use
+    const { data: phaseData } = await supabase
+      .from("tournament_phases")
+      .select("phase_type")
+      .eq("id", phaseId)
+      .single();
+
+    const isElimination = phaseData?.phase_type === "single_elimination";
+
     // Determine next round number from existing rounds in phase
     const existingRounds = await getPhaseRoundsWithStats(supabase, phaseId);
     const nextRoundNumber = existingRounds.length + 1;
@@ -1177,11 +1186,10 @@ export async function prepareRound(
     );
     const roundId = createResult.round.id;
 
-    // Generate pairings
-    const pairingsResult = await generateRoundPairingsMutation(
-      supabase,
-      roundId
-    );
+    // Generate pairings — use elimination pairings for elimination phases
+    const pairingsResult = isElimination
+      ? await generateEliminationPairingsMutation(supabase, roundId)
+      : await generateRoundPairingsMutation(supabase, roundId);
 
     // Fetch the generated matches with player names for preview
     const matchesWithStats = await getRoundMatchesWithStats(
