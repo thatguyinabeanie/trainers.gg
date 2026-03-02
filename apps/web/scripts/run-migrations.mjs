@@ -10,7 +10,7 @@
  * Environment variables (provided by Supabase Vercel Integration):
  * - SUPABASE_URL: Project URL (contains project ref)
  *   Format: https://<project-ref>.supabase.co
- * - SUPABASE_POSTGRES_PASSWORD: Database password
+ * - POSTGRES_PASSWORD: Database password
  *
  * Required (add manually to Vercel for both Production and Preview):
  * - SUPABASE_ACCESS_TOKEN: Personal access token
@@ -49,7 +49,7 @@ const SEED_FILES = [
 function exec(command, options = {}) {
   // Mask sensitive values in logged command
   let logCommand = command;
-  const sensitiveVars = ["SUPABASE_ACCESS_TOKEN", "SUPABASE_DB_PASSWORD"];
+  const sensitiveVars = ["SUPABASE_DB_PASSWORD"];
   for (const varName of sensitiveVars) {
     if (options.env?.[varName]) {
       logCommand = logCommand.replace(options.env[varName], "[REDACTED]");
@@ -159,9 +159,9 @@ function validateEnv() {
   }
 
   // Database password (provided by integration)
-  if (!process.env.SUPABASE_POSTGRES_PASSWORD) {
+  if (!process.env.POSTGRES_PASSWORD) {
     errors.push(
-      "SUPABASE_POSTGRES_PASSWORD - Should be provided by Supabase Vercel Integration"
+      "POSTGRES_PASSWORD - Should be provided by Supabase Vercel Integration"
     );
   }
 
@@ -209,7 +209,7 @@ function getDatabaseUrl(projectRef) {
   }
 
   // Build direct connection URL (port 5432, not pooler)
-  const password = process.env.SUPABASE_POSTGRES_PASSWORD;
+  const password = process.env.POSTGRES_PASSWORD;
   if (!password) {
     return null;
   }
@@ -334,9 +334,10 @@ async function runMigrations() {
   );
 
   // Build environment for Supabase CLI
+  // SUPABASE_ACCESS_TOKEN passes through from process.env automatically.
+  // SUPABASE_DB_PASSWORD is the env var the CLI expects for the database password.
   const cliEnv = {
-    SUPABASE_ACCESS_TOKEN: process.env.SUPABASE_ACCESS_TOKEN,
-    SUPABASE_DB_PASSWORD: process.env.SUPABASE_POSTGRES_PASSWORD,
+    SUPABASE_DB_PASSWORD: process.env.POSTGRES_PASSWORD,
   };
 
   // For preview environments, skip migrations - Supabase applies them automatically
