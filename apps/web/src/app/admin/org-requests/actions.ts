@@ -25,6 +25,16 @@ export async function approveOrgRequestAction(
 
   return withAdminAction(async (supabase, adminUserId) => {
     await approveOrganizationRequest(supabase, parsed.data, adminUserId);
+
+    // Fire-and-forget email notification
+    supabase.functions
+      .invoke("send-org-request-notification", {
+        body: { requestId: parsed.data, action: "approved" },
+      })
+      .catch((err: unknown) =>
+        console.error("Failed to send approval email:", err)
+      );
+
     return { success: true };
   }, "Failed to approve organization request");
 }
@@ -57,6 +67,16 @@ export async function rejectOrgRequestAction(
       adminUserId,
       parsedReason.data
     );
+
+    // Fire-and-forget email notification
+    supabase.functions
+      .invoke("send-org-request-notification", {
+        body: { requestId: parsedId.data, action: "rejected" },
+      })
+      .catch((err: unknown) =>
+        console.error("Failed to send rejection email:", err)
+      );
+
     return { success: true };
   }, "Failed to reject organization request");
 }
