@@ -20,3 +20,8 @@ export const TOURNAMENT_REGISTERED = "tournament_registered" as const;
 
 // Match events
 export const GAME_RESULT_SUBMITTED = "game_result_submitted" as const;
+
+// Organization request events
+export const ORG_REQUEST_SUBMITTED = "org_request_submitted" as const;
+export const ORG_REQUEST_APPROVED = "org_request_approved" as const;
+export const ORG_REQUEST_REJECTED = "org_request_rejected" as const;
