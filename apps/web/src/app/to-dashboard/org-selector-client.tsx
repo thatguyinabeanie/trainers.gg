@@ -50,7 +50,7 @@ export function OrgSelectorClient({ organizations }: OrgSelectorClientProps) {
             <Link href="/organizations/create">
               <Button>
                 <Plus className="mr-2 h-4 w-4" />
-                Create Organization
+                Request an Organization
               </Button>
             </Link>
           </CardContent>
@@ -76,7 +76,7 @@ export function OrgSelectorClient({ organizations }: OrgSelectorClientProps) {
         <Link href="/organizations/create" className="w-full sm:w-auto">
           <Button className="w-full sm:w-auto">
             <Plus className="mr-2 h-4 w-4" />
-            New Organization
+            Request Organization
           </Button>
         </Link>
       </div>
