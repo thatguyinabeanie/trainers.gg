@@ -52,4 +52,7 @@ export const CacheTags = {
 
   /** Tag for a specific player profile */
   player: (handle: string) => `player:${handle}`,
+
+  /** Tag for admin org requests list */
+  ORG_REQUESTS_LIST: "org-requests-list",
 } as const;

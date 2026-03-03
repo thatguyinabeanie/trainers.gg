@@ -67,6 +67,8 @@ const notificationIcons: Record<string, typeof Swords> = {
   tournament_start: CirclePlay,
   tournament_round: Trophy,
   tournament_complete: Trophy,
+  org_request_approved: Building2,
+  org_request_rejected: Building2,
 };
 
 export function NotificationBell({ userId }: NotificationBellProps) {

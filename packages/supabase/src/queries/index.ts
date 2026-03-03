@@ -133,6 +133,13 @@ export {
   endSudoSession,
 } from "./sudo-mode";
 
+// Organization request queries
+export {
+  getMyOrganizationRequest,
+  listOrgRequestsAdmin,
+  type ListOrgRequestsAdminOptions,
+} from "./organization-requests";
+
 // Admin organization queries
 export {
   listOrganizationsAdmin,

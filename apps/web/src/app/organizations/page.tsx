@@ -1,10 +1,12 @@
 import { unstable_cache } from "next/cache";
-import { createStaticClient } from "@/lib/supabase/server";
+import { createStaticClient, getUser } from "@/lib/supabase/server";
 import { listPublicOrganizations } from "@trainers/supabase";
 import { type OrganizationWithCounts } from "@trainers/supabase";
 import { Suspense } from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import { Building2 } from "lucide-react";
+import { Building2, Plus } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import Link from "next/link";
 import { OrganizationSearch } from "./organization-search";
 import { CacheTags } from "@/lib/cache";
 import { PageContainer } from "@/components/layout/page-container";
@@ -68,7 +70,10 @@ export default async function OrganizationsPage({
   searchParams: Promise<{ q?: string }>;
 }) {
   const { q: searchQuery } = await searchParams;
-  const allOrganizations = await getCachedOrganizations();
+  const [allOrganizations, user] = await Promise.all([
+    getCachedOrganizations(),
+    getUser(),
+  ]);
 
   // Filter on the server
   const organizations = searchQuery
@@ -96,9 +101,19 @@ export default async function OrganizationsPage({
           </p>
         </div>
 
-        <Suspense fallback={<div className="h-10 w-64" />}>
-          <OrganizationSearch />
-        </Suspense>
+        <div className="flex items-center gap-3">
+          <Suspense fallback={<div className="h-10 w-64" />}>
+            <OrganizationSearch />
+          </Suspense>
+          {user && (
+            <Link href="/organizations/create">
+              <Button>
+                <Plus className="mr-2 h-4 w-4" />
+                Request an Organization
+              </Button>
+            </Link>
+          )}
+        </div>
       </div>
 
       {/* Empty State */}
