@@ -94,6 +94,12 @@ export {
   type UpdateOrganizationInput,
 } from "./organization";
 
+// Organization request validators
+export {
+  submitOrganizationRequestSchema,
+  type SubmitOrganizationRequestInput,
+} from "./organization-request";
+
 // Alt validators
 export {
   createAltSchema,
