@@ -88,3 +88,4 @@ apps/web/public/oauth/jwks.json
 
 # Claude Code local overrides
 .claude.local.md
+!docs
