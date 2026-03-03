@@ -11,7 +11,6 @@ import { updateTag } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { getErrorMessage } from "@/lib/utils";
 import {
-  createOrganization as createOrganizationMutation,
   updateOrganization as updateOrganizationMutation,
   inviteToOrganization as inviteToOrganizationMutation,
   acceptOrganizationInvitation as acceptOrganizationInvitationMutation,
@@ -32,36 +31,6 @@ export type ActionResult<T = void> =
 // =============================================================================
 // Organization CRUD
 // =============================================================================
-
-/**
- * Create a new organization
- * Revalidates: organizations list
- */
-export async function createOrganization(data: {
-  name: string;
-  slug: string;
-  description?: string;
-  socialLinks?: OrganizationSocialLink[];
-  logoUrl?: string;
-}): Promise<ActionResult<{ id: number; slug: string; name: string }>> {
-  try {
-    const supabase = await createClient();
-    const result = await createOrganizationMutation(supabase, data);
-
-    // New organization is visible on the public list
-    updateTag(CacheTags.ORGANIZATIONS_LIST);
-
-    return {
-      success: true,
-      data: { id: result.id, slug: result.slug, name: result.name },
-    };
-  } catch (error) {
-    return {
-      success: false,
-      error: getErrorMessage(error, "Failed to create organization"),
-    };
-  }
-}
 
 /**
  * Update organization details
