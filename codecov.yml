@@ -68,3 +68,6 @@ ignore:
   - "tooling/**"
   - "infra/**"
   - "*.config.*"
+  # Edge functions run in Deno — not testable with Jest.
+  # Shared helpers (_shared/) have their own tests.
+  - "packages/supabase/supabase/functions/*/index.ts"
