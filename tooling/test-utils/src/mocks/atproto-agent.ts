@@ -2,10 +2,10 @@
  * Shared AT Protocol mock builders for tests.
  *
  * Provides mock Agent and data type builders used across
- * social-graph and feed test suites.
+ * social-graph test suites.
  */
 
-import type { Agent, AppBskyActorDefs, AppBskyFeedDefs } from "@atproto/api";
+import type { Agent, AppBskyActorDefs } from "@atproto/api";
 
 /**
  * Create a mock Agent with social-graph methods (follow, block, mute, etc.)
@@ -34,26 +34,6 @@ export const createMockAgent = (overrides?: Partial<Agent>): Agent => {
       },
     },
     ...overrides,
-  } as unknown as Agent;
-};
-
-/**
- * Create a mock Agent with feed methods (timeline, author feed, likes, etc.)
- */
-export const createMockFeedAgent = (): Agent => {
-  return {
-    getTimeline: jest.fn(),
-    getAuthorFeed: jest.fn(),
-    getPosts: jest.fn(),
-    getPostThread: jest.fn(),
-    app: {
-      bsky: {
-        feed: {
-          getActorLikes: jest.fn(),
-          searchPosts: jest.fn(),
-        },
-      },
-    },
   } as unknown as Agent;
 };
 
@@ -100,49 +80,3 @@ export const createMockProfileViewDetailed = (
     ...overrides,
   } as AppBskyActorDefs.ProfileViewDetailed;
 };
-
-/**
- * Create a mock FeedViewPost (post in a feed)
- */
-export const createMockPost = (
-  uri: string,
-  text: string,
-  cid = "cid123"
-): AppBskyFeedDefs.FeedViewPost => ({
-  post: {
-    uri,
-    cid,
-    author: {
-      did: "did:plc:test",
-      handle: "test.bsky.social",
-    },
-    record: {
-      $type: "app.bsky.feed.post",
-      text,
-      createdAt: new Date().toISOString(),
-    },
-    indexedAt: new Date().toISOString(),
-  } as AppBskyFeedDefs.PostView,
-});
-
-/**
- * Create a mock PostView (standalone post)
- */
-export const createMockPostView = (
-  uri: string,
-  text: string,
-  cid = "cid123"
-): AppBskyFeedDefs.PostView => ({
-  uri,
-  cid,
-  author: {
-    did: "did:plc:test",
-    handle: "test.bsky.social",
-  },
-  record: {
-    $type: "app.bsky.feed.post",
-    text,
-    createdAt: new Date().toISOString(),
-  },
-  indexedAt: new Date().toISOString(),
-});

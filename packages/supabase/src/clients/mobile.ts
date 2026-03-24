@@ -9,10 +9,40 @@
  */
 
 import { createMobileSupabaseClient } from "./base/mobile-client";
+import { getPlatformOverview as getPlatformOverview_core } from "../queries/admin-analytics";
+import { getUserGrowthStats as getUserGrowthStats_core } from "../queries/admin-analytics";
+import { getActiveUserStats as getActiveUserStats_core } from "../queries/admin-analytics";
+import { getTournamentStats as getTournamentStats_core } from "../queries/admin-analytics";
+import { getOrganizationStats as getOrganizationStats_core } from "../queries/admin-analytics";
+import { getInviteConversionStats as getInviteConversionStats_core } from "../queries/admin-analytics";
+import { listOrganizationsAdmin as listOrganizationsAdmin_core } from "../queries/admin-organizations";
+import { getOrganizationAdminDetails as getOrganizationAdminDetails_core } from "../queries/admin-organizations";
+import { approveOrganization as approveOrganization_core } from "../queries/admin-organizations";
+import { rejectOrganization as rejectOrganization_core } from "../queries/admin-organizations";
+import { suspendOrganization as suspendOrganization_core } from "../queries/admin-organizations";
+import { unsuspendOrganization as unsuspendOrganization_core } from "../queries/admin-organizations";
+import { transferOrgOwnership as transferOrgOwnership_core } from "../queries/admin-organizations";
+import { listUsersAdmin as listUsersAdmin_core } from "../queries/admin-users";
+import { getUserAdminDetails as getUserAdminDetails_core } from "../queries/admin-users";
+import { suspendUser as suspendUser_core } from "../queries/admin-users";
+import { unsuspendUser as unsuspendUser_core } from "../queries/admin-users";
+import { startImpersonation as startImpersonation_core } from "../queries/admin-users";
+import { endImpersonation as endImpersonation_core } from "../queries/admin-users";
+import { listAnnouncements as listAnnouncements_core } from "../queries/announcements";
+import { getActiveAnnouncements as getActiveAnnouncements_core } from "../queries/announcements";
+import { createAnnouncement as createAnnouncement_core } from "../queries/announcements";
+import { updateAnnouncement as updateAnnouncement_core } from "../queries/announcements";
+import { deleteAnnouncement as deleteAnnouncement_core } from "../queries/announcements";
 import { getTournamentAuditLog as getTournamentAuditLog_core } from "../queries/audit-log";
 import { getMatchAuditLog as getMatchAuditLog_core } from "../queries/audit-log";
 import { getAuditLog as getAuditLog_core } from "../queries/audit-log";
 import { getAuditLogStats as getAuditLogStats_core } from "../queries/audit-log";
+import { listFeatureFlags as listFeatureFlags_core } from "../queries/feature-flags";
+import { getFeatureFlag as getFeatureFlag_core } from "../queries/feature-flags";
+import { isFeatureEnabled as isFeatureEnabled_core } from "../queries/feature-flags";
+import { createFeatureFlag as createFeatureFlag_core } from "../queries/feature-flags";
+import { updateFeatureFlag as updateFeatureFlag_core } from "../queries/feature-flags";
+import { deleteFeatureFlag as deleteFeatureFlag_core } from "../queries/feature-flags";
 import { getMatchGames as getMatchGames_core } from "../queries/match-games";
 import { getMatchGamesForPlayer as getMatchGamesForPlayer_core } from "../queries/match-games";
 import { getMatchMessages as getMatchMessages_core } from "../queries/match-games";
@@ -20,6 +50,8 @@ import { getMatchGame as getMatchGame_core } from "../queries/match-games";
 import { getNotifications as getNotifications_core } from "../queries/notifications";
 import { getUnreadNotificationCount as getUnreadNotificationCount_core } from "../queries/notifications";
 import { getActiveMatchNotifications as getActiveMatchNotifications_core } from "../queries/notifications";
+import { getMyOrganizationRequest as getMyOrganizationRequest_core } from "../queries/organization-requests";
+import { listOrgRequestsAdmin as listOrgRequestsAdmin_core } from "../queries/organization-requests";
 import { listPublicOrganizations as listPublicOrganizations_core } from "../queries/organizations";
 import { listOrganizations as listOrganizations_core } from "../queries/organizations";
 import { getOrganizationBySlug as getOrganizationBySlug_core } from "../queries/organizations";
@@ -39,10 +71,6 @@ import { searchUsersForInvite as searchUsersForInvite_core } from "../queries/or
 import { hasOrgPermission as hasOrgPermission_core } from "../queries/organizations";
 import { getUserPermissions as getUserPermissions_core } from "../queries/permissions";
 import { hasPermission as hasPermission_core } from "../queries/permissions";
-import { getFeedPosts as getFeedPosts_core } from "../queries/posts";
-import { getFollowingFeedPosts as getFollowingFeedPosts_core } from "../queries/posts";
-import { getPostWithReplies as getPostWithReplies_core } from "../queries/posts";
-import { getUserPosts as getUserPosts_core } from "../queries/posts";
 import { isSiteAdmin as isSiteAdmin_core } from "../queries/site-roles";
 import { getSiteRoles as getSiteRoles_core } from "../queries/site-roles";
 import { getSiteAdmins as getSiteAdmins_core } from "../queries/site-roles";
@@ -78,8 +106,10 @@ import { getCheckInStatus as getCheckInStatus_core } from "../queries/tournament
 import { getCheckInStats as getCheckInStats_core } from "../queries/tournaments";
 import { getUserTeams as getUserTeams_core } from "../queries/tournaments";
 import { getMatchDetails as getMatchDetails_core } from "../queries/tournaments";
+import { getMatchByRoundAndTable as getMatchByRoundAndTable_core } from "../queries/tournaments";
 import { getPlayerMatches as getPlayerMatches_core } from "../queries/tournaments";
 import { getTournamentMatchesForStaff as getTournamentMatchesForStaff_core } from "../queries/tournaments";
+import { getActiveMatch as getActiveMatch_core } from "../queries/tournaments";
 import { getMyDashboardData as getMyDashboardData_core } from "../queries/tournaments";
 import { getRegistrationStatus as getRegistrationStatus_core } from "../queries/tournaments";
 import { getTournamentInvitationsSent as getTournamentInvitationsSent_core } from "../queries/tournaments";
@@ -87,6 +117,8 @@ import { getTournamentInvitationsReceived as getTournamentInvitationsReceived_co
 import { getTeamForRegistration as getTeamForRegistration_core } from "../queries/tournaments";
 import { getUnpairedCheckedInPlayers as getUnpairedCheckedInPlayers_core } from "../queries/tournaments";
 import { getUserTournamentHistory as getUserTournamentHistory_core } from "../queries/tournaments";
+import { getPlayerTournamentHistory as getPlayerTournamentHistory_core } from "../queries/tournaments";
+import { getPlayerLifetimeStats as getPlayerLifetimeStats_core } from "../queries/tournaments";
 import { getUserCount as getUserCount_core } from "../queries/users";
 import { getCurrentUser as getCurrentUser_core } from "../queries/users";
 import { getUserSpritePreference as getUserSpritePreference_core } from "../queries/users";
@@ -97,6 +129,7 @@ import { getAltByUserId as getAltByUserId_core } from "../queries/users";
 import { getAltsByUserId as getAltsByUserId_core } from "../queries/users";
 import { getCurrentUserAlts as getCurrentUserAlts_core } from "../queries/users";
 import { searchAlts as searchAlts_core } from "../queries/users";
+import { getPlayerProfileByHandle as getPlayerProfileByHandle_core } from "../queries/users";
 import { getEmailByUsername as getEmailByUsername_core } from "../queries/users";
 import { submitGameSelection as submitGameSelection_core } from "../mutations/match-games";
 import { sendMatchMessage as sendMatchMessage_core } from "../mutations/match-games";
@@ -109,6 +142,9 @@ import { confirmMatchCheckIn as confirmMatchCheckIn_core } from "../mutations/ma
 import { markNotificationRead as markNotificationRead_core } from "../mutations/notifications";
 import { markAllNotificationsRead as markAllNotificationsRead_core } from "../mutations/notifications";
 import { deleteNotification as deleteNotification_core } from "../mutations/notifications";
+import { submitOrganizationRequest as submitOrganizationRequest_core } from "../mutations/organization-requests";
+import { approveOrganizationRequest as approveOrganizationRequest_core } from "../mutations/organization-requests";
+import { rejectOrganizationRequest as rejectOrganizationRequest_core } from "../mutations/organization-requests";
 import { createOrganization as createOrganization_core } from "../mutations/organizations";
 import { updateOrganization as updateOrganization_core } from "../mutations/organizations";
 import { inviteToOrganization as inviteToOrganization_core } from "../mutations/organizations";
@@ -159,6 +195,366 @@ import { startTournamentEnhanced as startTournamentEnhanced_core } from "../muta
 import { advanceToTopCut as advanceToTopCut_core } from "../mutations/tournaments/tournament-flow";
 import { generateEliminationPairings as generateEliminationPairings_core } from "../mutations/tournaments/tournament-flow";
 import { completeTournament as completeTournament_core } from "../mutations/tournaments/tournament-flow";
+
+/**
+ * getPlatformOverview (auto-injected with mobile client)
+ */
+export async function getPlatformOverview(
+  ...args: Parameters<typeof getPlatformOverview_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof getPlatformOverview_core>>> {
+  const client = createMobileSupabaseClient();
+  return getPlatformOverview_core(client, ...args);
+}
+
+/**
+ * getUserGrowthStats (auto-injected with mobile client)
+ */
+export async function getUserGrowthStats(
+  ...args: Parameters<typeof getUserGrowthStats_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof getUserGrowthStats_core>>> {
+  const client = createMobileSupabaseClient();
+  return getUserGrowthStats_core(client, ...args);
+}
+
+/**
+ * getActiveUserStats (auto-injected with mobile client)
+ */
+export async function getActiveUserStats(
+  ...args: Parameters<typeof getActiveUserStats_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof getActiveUserStats_core>>> {
+  const client = createMobileSupabaseClient();
+  return getActiveUserStats_core(client, ...args);
+}
+
+/**
+ * getTournamentStats (auto-injected with mobile client)
+ */
+export async function getTournamentStats(
+  ...args: Parameters<typeof getTournamentStats_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof getTournamentStats_core>>> {
+  const client = createMobileSupabaseClient();
+  return getTournamentStats_core(client, ...args);
+}
+
+/**
+ * getOrganizationStats (auto-injected with mobile client)
+ */
+export async function getOrganizationStats(
+  ...args: Parameters<typeof getOrganizationStats_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof getOrganizationStats_core>>> {
+  const client = createMobileSupabaseClient();
+  return getOrganizationStats_core(client, ...args);
+}
+
+/**
+ * getInviteConversionStats (auto-injected with mobile client)
+ */
+export async function getInviteConversionStats(
+  ...args: Parameters<typeof getInviteConversionStats_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof getInviteConversionStats_core>>> {
+  const client = createMobileSupabaseClient();
+  return getInviteConversionStats_core(client, ...args);
+}
+
+/**
+ * listOrganizationsAdmin (auto-injected with mobile client)
+ */
+export async function listOrganizationsAdmin(
+  ...args: Parameters<typeof listOrganizationsAdmin_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof listOrganizationsAdmin_core>>> {
+  const client = createMobileSupabaseClient();
+  return listOrganizationsAdmin_core(client, ...args);
+}
+
+/**
+ * getOrganizationAdminDetails (auto-injected with mobile client)
+ */
+export async function getOrganizationAdminDetails(
+  ...args: Parameters<typeof getOrganizationAdminDetails_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof getOrganizationAdminDetails_core>>> {
+  const client = createMobileSupabaseClient();
+  return getOrganizationAdminDetails_core(client, ...args);
+}
+
+/**
+ * approveOrganization (auto-injected with mobile client)
+ */
+export async function approveOrganization(
+  ...args: Parameters<typeof approveOrganization_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof approveOrganization_core>>> {
+  const client = createMobileSupabaseClient();
+  return approveOrganization_core(client, ...args);
+}
+
+/**
+ * rejectOrganization (auto-injected with mobile client)
+ */
+export async function rejectOrganization(
+  ...args: Parameters<typeof rejectOrganization_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof rejectOrganization_core>>> {
+  const client = createMobileSupabaseClient();
+  return rejectOrganization_core(client, ...args);
+}
+
+/**
+ * suspendOrganization (auto-injected with mobile client)
+ */
+export async function suspendOrganization(
+  ...args: Parameters<typeof suspendOrganization_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof suspendOrganization_core>>> {
+  const client = createMobileSupabaseClient();
+  return suspendOrganization_core(client, ...args);
+}
+
+/**
+ * unsuspendOrganization (auto-injected with mobile client)
+ */
+export async function unsuspendOrganization(
+  ...args: Parameters<typeof unsuspendOrganization_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof unsuspendOrganization_core>>> {
+  const client = createMobileSupabaseClient();
+  return unsuspendOrganization_core(client, ...args);
+}
+
+/**
+ * transferOrgOwnership (auto-injected with mobile client)
+ */
+export async function transferOrgOwnership(
+  ...args: Parameters<typeof transferOrgOwnership_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof transferOrgOwnership_core>>> {
+  const client = createMobileSupabaseClient();
+  return transferOrgOwnership_core(client, ...args);
+}
+
+/**
+ * listUsersAdmin (auto-injected with mobile client)
+ */
+export async function listUsersAdmin(
+  ...args: Parameters<typeof listUsersAdmin_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof listUsersAdmin_core>>> {
+  const client = createMobileSupabaseClient();
+  return listUsersAdmin_core(client, ...args);
+}
+
+/**
+ * getUserAdminDetails (auto-injected with mobile client)
+ */
+export async function getUserAdminDetails(
+  ...args: Parameters<typeof getUserAdminDetails_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof getUserAdminDetails_core>>> {
+  const client = createMobileSupabaseClient();
+  return getUserAdminDetails_core(client, ...args);
+}
+
+/**
+ * suspendUser (auto-injected with mobile client)
+ */
+export async function suspendUser(
+  ...args: Parameters<typeof suspendUser_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof suspendUser_core>>> {
+  const client = createMobileSupabaseClient();
+  return suspendUser_core(client, ...args);
+}
+
+/**
+ * unsuspendUser (auto-injected with mobile client)
+ */
+export async function unsuspendUser(
+  ...args: Parameters<typeof unsuspendUser_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof unsuspendUser_core>>> {
+  const client = createMobileSupabaseClient();
+  return unsuspendUser_core(client, ...args);
+}
+
+/**
+ * startImpersonation (auto-injected with mobile client)
+ */
+export async function startImpersonation(
+  ...args: Parameters<typeof startImpersonation_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof startImpersonation_core>>> {
+  const client = createMobileSupabaseClient();
+  return startImpersonation_core(client, ...args);
+}
+
+/**
+ * endImpersonation (auto-injected with mobile client)
+ */
+export async function endImpersonation(
+  ...args: Parameters<typeof endImpersonation_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof endImpersonation_core>>> {
+  const client = createMobileSupabaseClient();
+  return endImpersonation_core(client, ...args);
+}
+
+/**
+ * listAnnouncements (auto-injected with mobile client)
+ */
+export async function listAnnouncements(
+  ...args: Parameters<typeof listAnnouncements_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof listAnnouncements_core>>> {
+  const client = createMobileSupabaseClient();
+  return listAnnouncements_core(client, ...args);
+}
+
+/**
+ * getActiveAnnouncements (auto-injected with mobile client)
+ */
+export async function getActiveAnnouncements(
+  ...args: Parameters<typeof getActiveAnnouncements_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof getActiveAnnouncements_core>>> {
+  const client = createMobileSupabaseClient();
+  return getActiveAnnouncements_core(client, ...args);
+}
+
+/**
+ * createAnnouncement (auto-injected with mobile client)
+ */
+export async function createAnnouncement(
+  ...args: Parameters<typeof createAnnouncement_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof createAnnouncement_core>>> {
+  const client = createMobileSupabaseClient();
+  return createAnnouncement_core(client, ...args);
+}
+
+/**
+ * updateAnnouncement (auto-injected with mobile client)
+ */
+export async function updateAnnouncement(
+  ...args: Parameters<typeof updateAnnouncement_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof updateAnnouncement_core>>> {
+  const client = createMobileSupabaseClient();
+  return updateAnnouncement_core(client, ...args);
+}
+
+/**
+ * deleteAnnouncement (auto-injected with mobile client)
+ */
+export async function deleteAnnouncement(
+  ...args: Parameters<typeof deleteAnnouncement_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof deleteAnnouncement_core>>> {
+  const client = createMobileSupabaseClient();
+  return deleteAnnouncement_core(client, ...args);
+}
 
 /**
  * getTournamentAuditLog (auto-injected with mobile client)
@@ -218,6 +614,96 @@ export async function getAuditLogStats(
 ): Promise<Awaited<ReturnType<typeof getAuditLogStats_core>>> {
   const client = createMobileSupabaseClient();
   return getAuditLogStats_core(client, ...args);
+}
+
+/**
+ * listFeatureFlags (auto-injected with mobile client)
+ */
+export async function listFeatureFlags(
+  ...args: Parameters<typeof listFeatureFlags_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof listFeatureFlags_core>>> {
+  const client = createMobileSupabaseClient();
+  return listFeatureFlags_core(client, ...args);
+}
+
+/**
+ * getFeatureFlag (auto-injected with mobile client)
+ */
+export async function getFeatureFlag(
+  ...args: Parameters<typeof getFeatureFlag_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof getFeatureFlag_core>>> {
+  const client = createMobileSupabaseClient();
+  return getFeatureFlag_core(client, ...args);
+}
+
+/**
+ * isFeatureEnabled (auto-injected with mobile client)
+ */
+export async function isFeatureEnabled(
+  ...args: Parameters<typeof isFeatureEnabled_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof isFeatureEnabled_core>>> {
+  const client = createMobileSupabaseClient();
+  return isFeatureEnabled_core(client, ...args);
+}
+
+/**
+ * createFeatureFlag (auto-injected with mobile client)
+ */
+export async function createFeatureFlag(
+  ...args: Parameters<typeof createFeatureFlag_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof createFeatureFlag_core>>> {
+  const client = createMobileSupabaseClient();
+  return createFeatureFlag_core(client, ...args);
+}
+
+/**
+ * updateFeatureFlag (auto-injected with mobile client)
+ */
+export async function updateFeatureFlag(
+  ...args: Parameters<typeof updateFeatureFlag_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof updateFeatureFlag_core>>> {
+  const client = createMobileSupabaseClient();
+  return updateFeatureFlag_core(client, ...args);
+}
+
+/**
+ * deleteFeatureFlag (auto-injected with mobile client)
+ */
+export async function deleteFeatureFlag(
+  ...args: Parameters<typeof deleteFeatureFlag_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof deleteFeatureFlag_core>>> {
+  const client = createMobileSupabaseClient();
+  return deleteFeatureFlag_core(client, ...args);
 }
 
 /**
@@ -323,6 +809,36 @@ export async function getActiveMatchNotifications(
 ): Promise<Awaited<ReturnType<typeof getActiveMatchNotifications_core>>> {
   const client = createMobileSupabaseClient();
   return getActiveMatchNotifications_core(client, ...args);
+}
+
+/**
+ * getMyOrganizationRequest (auto-injected with mobile client)
+ */
+export async function getMyOrganizationRequest(
+  ...args: Parameters<typeof getMyOrganizationRequest_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof getMyOrganizationRequest_core>>> {
+  const client = createMobileSupabaseClient();
+  return getMyOrganizationRequest_core(client, ...args);
+}
+
+/**
+ * listOrgRequestsAdmin (auto-injected with mobile client)
+ */
+export async function listOrgRequestsAdmin(
+  ...args: Parameters<typeof listOrgRequestsAdmin_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof listOrgRequestsAdmin_core>>> {
+  const client = createMobileSupabaseClient();
+  return listOrgRequestsAdmin_core(client, ...args);
 }
 
 /**
@@ -610,66 +1126,6 @@ export async function hasPermission(
 ): Promise<Awaited<ReturnType<typeof hasPermission_core>>> {
   const client = createMobileSupabaseClient();
   return hasPermission_core(client, ...args);
-}
-
-/**
- * getFeedPosts (auto-injected with mobile client)
- */
-export async function getFeedPosts(
-  ...args: Parameters<typeof getFeedPosts_core> extends [
-    first: infer _F,
-    ...rest: infer R,
-  ]
-    ? R
-    : never
-): Promise<Awaited<ReturnType<typeof getFeedPosts_core>>> {
-  const client = createMobileSupabaseClient();
-  return getFeedPosts_core(client, ...args);
-}
-
-/**
- * getFollowingFeedPosts (auto-injected with mobile client)
- */
-export async function getFollowingFeedPosts(
-  ...args: Parameters<typeof getFollowingFeedPosts_core> extends [
-    first: infer _F,
-    ...rest: infer R,
-  ]
-    ? R
-    : never
-): Promise<Awaited<ReturnType<typeof getFollowingFeedPosts_core>>> {
-  const client = createMobileSupabaseClient();
-  return getFollowingFeedPosts_core(client, ...args);
-}
-
-/**
- * getPostWithReplies (auto-injected with mobile client)
- */
-export async function getPostWithReplies(
-  ...args: Parameters<typeof getPostWithReplies_core> extends [
-    first: infer _F,
-    ...rest: infer R,
-  ]
-    ? R
-    : never
-): Promise<Awaited<ReturnType<typeof getPostWithReplies_core>>> {
-  const client = createMobileSupabaseClient();
-  return getPostWithReplies_core(client, ...args);
-}
-
-/**
- * getUserPosts (auto-injected with mobile client)
- */
-export async function getUserPosts(
-  ...args: Parameters<typeof getUserPosts_core> extends [
-    first: infer _F,
-    ...rest: infer R,
-  ]
-    ? R
-    : never
-): Promise<Awaited<ReturnType<typeof getUserPosts_core>>> {
-  const client = createMobileSupabaseClient();
-  return getUserPosts_core(client, ...args);
 }
 
 /**
@@ -1199,6 +1655,21 @@ export async function getMatchDetails(
 }
 
 /**
+ * getMatchByRoundAndTable (auto-injected with mobile client)
+ */
+export async function getMatchByRoundAndTable(
+  ...args: Parameters<typeof getMatchByRoundAndTable_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof getMatchByRoundAndTable_core>>> {
+  const client = createMobileSupabaseClient();
+  return getMatchByRoundAndTable_core(client, ...args);
+}
+
+/**
  * getPlayerMatches (auto-injected with mobile client)
  */
 export async function getPlayerMatches(
@@ -1226,6 +1697,21 @@ export async function getTournamentMatchesForStaff(
 ): Promise<Awaited<ReturnType<typeof getTournamentMatchesForStaff_core>>> {
   const client = createMobileSupabaseClient();
   return getTournamentMatchesForStaff_core(client, ...args);
+}
+
+/**
+ * getActiveMatch (auto-injected with mobile client)
+ */
+export async function getActiveMatch(
+  ...args: Parameters<typeof getActiveMatch_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof getActiveMatch_core>>> {
+  const client = createMobileSupabaseClient();
+  return getActiveMatch_core(client, ...args);
 }
 
 /**
@@ -1331,6 +1817,36 @@ export async function getUserTournamentHistory(
 ): Promise<Awaited<ReturnType<typeof getUserTournamentHistory_core>>> {
   const client = createMobileSupabaseClient();
   return getUserTournamentHistory_core(client, ...args);
+}
+
+/**
+ * getPlayerTournamentHistory (auto-injected with mobile client)
+ */
+export async function getPlayerTournamentHistory(
+  ...args: Parameters<typeof getPlayerTournamentHistory_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof getPlayerTournamentHistory_core>>> {
+  const client = createMobileSupabaseClient();
+  return getPlayerTournamentHistory_core(client, ...args);
+}
+
+/**
+ * getPlayerLifetimeStats (auto-injected with mobile client)
+ */
+export async function getPlayerLifetimeStats(
+  ...args: Parameters<typeof getPlayerLifetimeStats_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof getPlayerLifetimeStats_core>>> {
+  const client = createMobileSupabaseClient();
+  return getPlayerLifetimeStats_core(client, ...args);
 }
 
 /**
@@ -1481,6 +1997,21 @@ export async function searchAlts(
 ): Promise<Awaited<ReturnType<typeof searchAlts_core>>> {
   const client = createMobileSupabaseClient();
   return searchAlts_core(client, ...args);
+}
+
+/**
+ * getPlayerProfileByHandle (auto-injected with mobile client)
+ */
+export async function getPlayerProfileByHandle(
+  ...args: Parameters<typeof getPlayerProfileByHandle_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof getPlayerProfileByHandle_core>>> {
+  const client = createMobileSupabaseClient();
+  return getPlayerProfileByHandle_core(client, ...args);
 }
 
 /**
@@ -1661,6 +2192,51 @@ export async function deleteNotification(
 ): Promise<Awaited<ReturnType<typeof deleteNotification_core>>> {
   const client = createMobileSupabaseClient();
   return deleteNotification_core(client, ...args);
+}
+
+/**
+ * submitOrganizationRequest (auto-injected with mobile client)
+ */
+export async function submitOrganizationRequest(
+  ...args: Parameters<typeof submitOrganizationRequest_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof submitOrganizationRequest_core>>> {
+  const client = createMobileSupabaseClient();
+  return submitOrganizationRequest_core(client, ...args);
+}
+
+/**
+ * approveOrganizationRequest (auto-injected with mobile client)
+ */
+export async function approveOrganizationRequest(
+  ...args: Parameters<typeof approveOrganizationRequest_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof approveOrganizationRequest_core>>> {
+  const client = createMobileSupabaseClient();
+  return approveOrganizationRequest_core(client, ...args);
+}
+
+/**
+ * rejectOrganizationRequest (auto-injected with mobile client)
+ */
+export async function rejectOrganizationRequest(
+  ...args: Parameters<typeof rejectOrganizationRequest_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof rejectOrganizationRequest_core>>> {
+  const client = createMobileSupabaseClient();
+  return rejectOrganizationRequest_core(client, ...args);
 }
 
 /**

@@ -19,10 +19,9 @@
  *
  * // Import API functions
  * import {
- *   getTimeline,
- *   createPost,
- *   likePost,
  *   follow,
+ *   getProfile,
+ *   getFollowers,
  * } from "@trainers/atproto/api";
  * ```
  *
@@ -46,12 +45,7 @@ export {
 } from "./config";
 
 // Utilities
-export {
-  MAX_POST_LENGTH,
-  getGraphemeLength,
-  isPostTooLong,
-  parseAtUri,
-} from "./utils";
+export { parseAtUri } from "./utils";
 
 // Handle utilities
 export { extractUsernameFromHandle } from "./handle-utils";
@@ -65,18 +59,8 @@ export { getPublicAgent, withErrorHandling } from "./agent";
 // Types
 export type {
   Agent,
-  AppBskyFeedDefs,
   AppBskyActorDefs,
-  BlobRef,
-  FeedCursor,
-  FeedResult,
-  TimelineOptions,
-  AuthorFeedOptions,
   ProfileView,
-  CreatePostResult,
-  CreatePostOptions,
-  LikeResult,
-  RepostResult,
   FollowResult,
 } from "./types";
 export { mapProfile } from "./types";

@@ -68,6 +68,10 @@ ignore:
   - "tooling/**"
   - "infra/**"
   - "*.config.*"
+  # Auto-generated Supabase client wrappers (pnpm generate-clients)
+  - "packages/supabase/src/clients/client.ts"
+  - "packages/supabase/src/clients/server.ts"
+  - "packages/supabase/src/clients/mobile.ts"
   # Edge functions run in Deno — not testable with Jest.
   # Shared helpers (_shared/) have their own tests.
   - "packages/supabase/supabase/functions/*/index.ts"
