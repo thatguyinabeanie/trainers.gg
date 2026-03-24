@@ -68,7 +68,6 @@ describe("proxy-routes", () => {
       expect(isPublicRoute("/admin")).toBe(false);
       expect(isPublicRoute("/")).toBe(false);
       expect(isPublicRoute("/dashboard/settings")).toBe(false);
-      expect(isPublicRoute("/feed")).toBe(false);
     });
 
     it("should cover all declared public routes", () => {
@@ -100,7 +99,6 @@ describe("proxy-routes", () => {
       expect(isProtectedRoute("/dashboard")).toBe(true);
       expect(isProtectedRoute("/to-dashboard")).toBe(true);
       expect(isProtectedRoute("/organizations/create")).toBe(true);
-      expect(isProtectedRoute("/feed")).toBe(true);
     });
 
     it("should match protected route prefixes", () => {

@@ -12,7 +12,6 @@ export const PROTECTED_ROUTES = [
   "/dashboard",
   "/to-dashboard",
   "/organizations/create",
-  "/feed",
 ];
 
 // Dynamic route patterns that require authentication (checked via regex)

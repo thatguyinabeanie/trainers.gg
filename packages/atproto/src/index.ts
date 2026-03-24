@@ -19,10 +19,9 @@
  *
  * // Import API functions
  * import {
- *   getTimeline,
- *   createPost,
- *   likePost,
  *   follow,
+ *   getProfile,
+ *   getFollowers,
  * } from "@trainers/atproto/api";
  * ```
  *
