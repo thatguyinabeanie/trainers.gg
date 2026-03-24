@@ -68,7 +68,10 @@ export async function getUser(): Promise<User | null> {
     error,
   } = await supabase.auth.getUser();
   if (error) {
-    console.error("Error getting user:", error);
+    // AuthSessionMissingError is expected for unauthenticated visitors
+    if (error.name !== "AuthSessionMissingError") {
+      console.error("Error getting user:", error);
+    }
     return null;
   }
   return user;
