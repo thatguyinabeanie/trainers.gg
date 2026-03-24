@@ -77,3 +77,4 @@ ignore:
   - "apps/web/src/app/**/loading.tsx"
   - "apps/web/src/app/**/layout.tsx"
   - "apps/web/src/app/**/error.tsx"
+  - "apps/web/src/app/**/columns.tsx"

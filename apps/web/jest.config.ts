@@ -15,12 +15,15 @@ const config: Config = createConfig({
     "!src/**/test-setup.ts",
     "!src/components/ui/**",
     "!src/generated/**",
-    // Next.js App Router files — presentational React components.
+    // Next.js App Router route files — presentational React components.
     // Business logic is tested via actions/, lib/, and shared packages.
     "!src/app/**/page.tsx",
     "!src/app/**/loading.tsx",
     "!src/app/**/layout.tsx",
     "!src/app/**/error.tsx",
+    // Route-colocated UI components — JSX composition with shared primitives.
+    // Interactive logic (mutations, validation) is tested in actions/ and packages/.
+    "!src/app/**/columns.tsx",
   ],
 });
 
