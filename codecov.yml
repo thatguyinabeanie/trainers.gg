@@ -71,3 +71,9 @@ ignore:
   # Edge functions run in Deno — not testable with Jest.
   # Shared helpers (_shared/) have their own tests.
   - "packages/supabase/supabase/functions/*/index.ts"
+  # Next.js App Router files are presentational React components.
+  # Business logic is tested via actions, mutations, queries, and validators.
+  - "apps/web/src/app/**/page.tsx"
+  - "apps/web/src/app/**/loading.tsx"
+  - "apps/web/src/app/**/layout.tsx"
+  - "apps/web/src/app/**/error.tsx"
