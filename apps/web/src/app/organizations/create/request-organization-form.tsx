@@ -24,7 +24,7 @@ import { submitOrganizationRequestAction } from "@/actions/organization-requests
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
-function generateSlug(name: string): string {
+export function generateSlug(name: string): string {
   return name
     .toLowerCase()
     .trim()

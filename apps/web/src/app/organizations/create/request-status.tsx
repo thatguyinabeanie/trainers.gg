@@ -9,14 +9,14 @@ interface RequestStatusProps {
   request: Tables<"organization_requests">;
 }
 
-function isCooldownExpired(reviewedAt: string | null): boolean {
+export function isCooldownExpired(reviewedAt: string | null): boolean {
   if (!reviewedAt) return true;
   const cooldownEnd = new Date(reviewedAt);
   cooldownEnd.setDate(cooldownEnd.getDate() + COOLDOWN_DAYS);
   return new Date() >= cooldownEnd;
 }
 
-function getCooldownEndDate(reviewedAt: string): string {
+export function getCooldownEndDate(reviewedAt: string): string {
   const cooldownEnd = new Date(reviewedAt);
   cooldownEnd.setDate(cooldownEnd.getDate() + COOLDOWN_DAYS);
   return cooldownEnd.toLocaleDateString("en-US", {
