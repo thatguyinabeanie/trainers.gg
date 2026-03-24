@@ -51,17 +51,16 @@ export function RequestStatus({ request }: RequestStatusProps) {
                 </span>{" "}
                 &middot; trainers.gg/organizations/{request.slug}
               </p>
-              <p>
-                Submitted{" "}
-                {new Date(request.created_at ?? "").toLocaleDateString(
-                  "en-US",
-                  {
+              {request.created_at && (
+                <p>
+                  Submitted{" "}
+                  {new Date(request.created_at).toLocaleDateString("en-US", {
                     month: "short",
                     day: "numeric",
                     year: "numeric",
-                  }
-                )}
-              </p>
+                  })}
+                </p>
+              )}
             </div>
             <p className="text-muted-foreground mt-4 text-sm">
               We&apos;ll notify you when it&apos;s reviewed.

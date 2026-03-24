@@ -29,7 +29,7 @@ function generateSlug(name: string): string {
     .toLowerCase()
     .trim()
     .replace(/[^\w\s-]/g, "")
-    .replace(/\s+/g, "-")
+    .replace(/[_\s]+/g, "-")
     .replace(/-+/g, "-")
     .replace(/^-|-$/g, "");
 }

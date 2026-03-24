@@ -145,31 +145,47 @@ export async function approveOrganizationRequest(
   if (orgError) throw orgError;
 
   // Add requester as staff
-  await supabase.from("organization_staff").insert({
-    organization_id: org.id,
-    user_id: request.user_id,
-  });
+  const { error: staffError } = await supabase
+    .from("organization_staff")
+    .insert({
+      organization_id: org.id,
+      user_id: request.user_id,
+    });
+
+  if (staffError) throw staffError;
 
   // Update request status
-  const { error: updateError } = await supabase
+  const { data: updatedRequest, error: updateError } = await supabase
     .from("organization_requests")
     .update({
       status: "approved" as const,
       reviewed_by: adminUserId,
       reviewed_at: new Date().toISOString(),
     })
-    .eq("id", requestId);
+    .eq("id", requestId)
+    .select()
+    .single();
 
   if (updateError) throw updateError;
 
   // Create in-app notification
-  await supabase.from("notifications").insert({
-    user_id: request.user_id,
-    type: "org_request_approved" as const,
-    title: "Organization request approved",
-    body: `Your organization "${request.name}" has been approved!`,
-    action_url: `/organizations/${request.slug}`,
-  });
+  const { error: notificationError } = await supabase
+    .from("notifications")
+    .insert({
+      user_id: request.user_id,
+      type: "org_request_approved" as const,
+      title: "Organization request approved",
+      body: `Your organization "${request.name}" has been approved!`,
+      action_url: `/organizations/${request.slug}`,
+    });
+
+  if (notificationError) {
+    console.error("Failed to create org_request_approved notification", {
+      requestId,
+      userId: request.user_id,
+      error: notificationError,
+    });
+  }
 
   // Audit log
   await supabase.from("audit_log").insert({
@@ -183,7 +199,7 @@ export async function approveOrganizationRequest(
     },
   });
 
-  return { request, organization: org };
+  return { request: updatedRequest, organization: org };
 }
 
 /**
@@ -222,13 +238,23 @@ export async function rejectOrganizationRequest(
   if (updateError) throw updateError;
 
   // Create in-app notification
-  await supabase.from("notifications").insert({
-    user_id: request.user_id,
-    type: "org_request_rejected" as const,
-    title: "Organization request update",
-    body: `Your request for "${request.name}" was not approved.`,
-    action_url: "/organizations/create",
-  });
+  const { error: notificationError } = await supabase
+    .from("notifications")
+    .insert({
+      user_id: request.user_id,
+      type: "org_request_rejected" as const,
+      title: "Organization request update",
+      body: `Your request for "${request.name}" was not approved.`,
+      action_url: "/organizations/create",
+    });
+
+  if (notificationError) {
+    console.error("Failed to create org_request_rejected notification", {
+      requestId,
+      userId: request.user_id,
+      error: notificationError,
+    });
+  }
 
   // Audit log
   await supabase.from("audit_log").insert({

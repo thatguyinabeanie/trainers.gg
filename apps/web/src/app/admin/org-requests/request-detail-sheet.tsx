@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   Sheet,
@@ -66,6 +66,12 @@ export function RequestDetailSheet({
   const [confirmAction, setConfirmAction] = useState<ConfirmAction | null>(
     null
   );
+
+  // Reset state when request changes
+  useEffect(() => {
+    setRejectReason("");
+    setConfirmAction(null);
+  }, [request?.id]);
 
   if (!request) return null;
 

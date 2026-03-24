@@ -149,6 +149,98 @@ describe("Organization Request Mutations", () => {
       ).rejects.toThrow("You already have a pending organization request");
     });
 
+    it("throws when within cooldown period after rejection", async () => {
+      (mockClient.auth.getUser as jest.Mock).mockResolvedValue({
+        data: { user: mockUser },
+      } as MockAuthResponse);
+
+      // Recent rejection — 2 days ago (within 7 day cooldown)
+      const twoDaysAgo = new Date();
+      twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
+
+      let orgRequestCallCount = 0;
+      const fromSpy = jest.spyOn(mockClient, "from");
+      fromSpy.mockImplementation((table: string) => {
+        const builder: MockQueryBuilder = {
+          select: jest.fn().mockReturnThis(),
+          eq: jest.fn().mockReturnThis(),
+          neq: jest.fn().mockReturnThis(),
+          single: jest.fn(),
+          maybeSingle: jest.fn(),
+          update: jest.fn().mockReturnThis(),
+          insert: jest.fn().mockReturnThis(),
+          delete: jest.fn().mockReturnThis(),
+          order: jest.fn().mockReturnThis(),
+          limit: jest.fn().mockReturnThis(),
+        };
+
+        if (table === "organization_requests") {
+          orgRequestCallCount++;
+          if (orgRequestCallCount === 1) {
+            // No pending request
+            builder.maybeSingle.mockResolvedValue({ data: null });
+          } else if (orgRequestCallCount === 2) {
+            // Recent rejection within cooldown
+            builder.maybeSingle.mockResolvedValue({
+              data: { reviewed_at: twoDaysAgo.toISOString() },
+            });
+          }
+        }
+
+        return builder;
+      });
+
+      await expect(
+        submitOrganizationRequest(mockClient, requestData)
+      ).rejects.toThrow("You can submit a new request after");
+    });
+
+    it("throws when slug is already pending by another user", async () => {
+      (mockClient.auth.getUser as jest.Mock).mockResolvedValue({
+        data: { user: mockUser },
+      } as MockAuthResponse);
+
+      let orgRequestCallCount = 0;
+      const fromSpy = jest.spyOn(mockClient, "from");
+      fromSpy.mockImplementation((table: string) => {
+        const builder: MockQueryBuilder = {
+          select: jest.fn().mockReturnThis(),
+          eq: jest.fn().mockReturnThis(),
+          neq: jest.fn().mockReturnThis(),
+          single: jest.fn(),
+          maybeSingle: jest.fn(),
+          update: jest.fn().mockReturnThis(),
+          insert: jest.fn().mockReturnThis(),
+          delete: jest.fn().mockReturnThis(),
+          order: jest.fn().mockReturnThis(),
+          limit: jest.fn().mockReturnThis(),
+        };
+
+        if (table === "organization_requests") {
+          orgRequestCallCount++;
+          if (orgRequestCallCount === 1) {
+            // No pending request
+            builder.maybeSingle.mockResolvedValue({ data: null });
+          } else if (orgRequestCallCount === 2) {
+            // No recent rejection
+            builder.maybeSingle.mockResolvedValue({ data: null });
+          } else if (orgRequestCallCount === 3) {
+            // Slug already pending
+            builder.maybeSingle.mockResolvedValue({ data: { id: 99 } });
+          }
+        } else if (table === "organizations") {
+          // Slug not taken by existing org
+          builder.maybeSingle.mockResolvedValue({ data: null });
+        }
+
+        return builder;
+      });
+
+      await expect(
+        submitOrganizationRequest(mockClient, requestData)
+      ).rejects.toThrow("This URL slug is already requested by another user");
+    });
+
     it("throws when slug is taken by an existing organization", async () => {
       (mockClient.auth.getUser as jest.Mock).mockResolvedValue({
         data: { user: mockUser },
@@ -255,6 +347,236 @@ describe("Organization Request Mutations", () => {
         approveOrganizationRequest(mockClient, request.id, ADMIN_USER_ID)
       ).rejects.toThrow("Request is no longer pending");
     });
+
+    it("creates org, staff, notification, audit log and returns updated request", async () => {
+      const request = organizationRequestFactory.build({
+        status: "pending",
+        user_id: "requester-789",
+      });
+      const org = { id: "org-1", name: request.name, slug: request.slug };
+      const updatedRequest = { ...request, status: "approved" };
+
+      let callCount = 0;
+      const fromSpy = jest.spyOn(mockClient, "from");
+      fromSpy.mockImplementation((table: string) => {
+        const builder: MockQueryBuilder = {
+          select: jest.fn().mockReturnThis(),
+          eq: jest.fn().mockReturnThis(),
+          neq: jest.fn().mockReturnThis(),
+          single: jest.fn(),
+          maybeSingle: jest.fn(),
+          update: jest.fn().mockReturnThis(),
+          insert: jest.fn().mockReturnThis(),
+          delete: jest.fn().mockReturnThis(),
+          order: jest.fn().mockReturnThis(),
+          limit: jest.fn().mockReturnThis(),
+        };
+
+        if (table === "organization_requests") {
+          callCount++;
+          if (callCount === 1) {
+            // Fetch request
+            builder.single.mockResolvedValue({
+              data: request,
+              error: null,
+            });
+          } else {
+            // Update request status — returns updated row
+            builder.single.mockResolvedValue({
+              data: updatedRequest,
+              error: null,
+            });
+          }
+        } else if (table === "organizations") {
+          // First call: slug check (maybeSingle), second call: insert (single)
+          builder.maybeSingle.mockResolvedValue({ data: null });
+          builder.single.mockResolvedValue({ data: org, error: null });
+        } else if (table === "organization_staff") {
+          builder.insert.mockReturnValue({ error: null });
+        } else if (table === "notifications") {
+          builder.insert.mockReturnValue({ error: null });
+        } else if (table === "audit_log") {
+          builder.insert.mockReturnValue({ error: null });
+        }
+
+        return builder;
+      });
+
+      const result = await approveOrganizationRequest(
+        mockClient,
+        request.id,
+        ADMIN_USER_ID
+      );
+
+      expect(result.organization).toEqual(org);
+      expect(result.request).toEqual(updatedRequest);
+      // Verify all tables were touched
+      expect(fromSpy).toHaveBeenCalledWith("organizations");
+      expect(fromSpy).toHaveBeenCalledWith("organization_staff");
+      expect(fromSpy).toHaveBeenCalledWith("notifications");
+      expect(fromSpy).toHaveBeenCalledWith("audit_log");
+    });
+
+    it("throws when slug is taken at approval time", async () => {
+      const request = organizationRequestFactory.build({
+        status: "pending",
+      });
+
+      let orgRequestCallCount = 0;
+      const fromSpy = jest.spyOn(mockClient, "from");
+      fromSpy.mockImplementation((table: string) => {
+        const builder: MockQueryBuilder = {
+          select: jest.fn().mockReturnThis(),
+          eq: jest.fn().mockReturnThis(),
+          neq: jest.fn().mockReturnThis(),
+          single: jest.fn(),
+          maybeSingle: jest.fn(),
+          update: jest.fn().mockReturnThis(),
+          insert: jest.fn().mockReturnThis(),
+          delete: jest.fn().mockReturnThis(),
+          order: jest.fn().mockReturnThis(),
+          limit: jest.fn().mockReturnThis(),
+        };
+
+        if (table === "organization_requests") {
+          orgRequestCallCount++;
+          if (orgRequestCallCount === 1) {
+            builder.single.mockResolvedValue({
+              data: request,
+              error: null,
+            });
+          }
+        } else if (table === "organizations") {
+          // Slug now taken
+          builder.maybeSingle.mockResolvedValue({ data: { id: 1 } });
+        }
+
+        return builder;
+      });
+
+      await expect(
+        approveOrganizationRequest(mockClient, request.id, ADMIN_USER_ID)
+      ).rejects.toThrow("is now taken by an existing organization");
+    });
+
+    it("throws when staff insert fails", async () => {
+      const request = organizationRequestFactory.build({
+        status: "pending",
+      });
+      const org = { id: "org-1", name: request.name, slug: request.slug };
+      const staffError = new Error("duplicate staff");
+
+      let callIndex = 0;
+      const fromSpy = jest.spyOn(mockClient, "from");
+      fromSpy.mockImplementation((table: string) => {
+        const builder: MockQueryBuilder = {
+          select: jest.fn().mockReturnThis(),
+          eq: jest.fn().mockReturnThis(),
+          neq: jest.fn().mockReturnThis(),
+          single: jest.fn(),
+          maybeSingle: jest.fn(),
+          update: jest.fn().mockReturnThis(),
+          insert: jest.fn(),
+          delete: jest.fn().mockReturnThis(),
+          order: jest.fn().mockReturnThis(),
+          limit: jest.fn().mockReturnThis(),
+        };
+
+        if (table === "organization_requests") {
+          builder.single.mockResolvedValue({ data: request, error: null });
+        } else if (table === "organizations") {
+          callIndex++;
+          if (callIndex === 1) {
+            // Slug check
+            builder.maybeSingle.mockResolvedValue({ data: null });
+          } else {
+            // Org insert
+            builder.insert.mockReturnThis();
+            builder.single.mockResolvedValue({ data: org, error: null });
+          }
+        } else if (table === "organization_staff") {
+          builder.insert.mockResolvedValue({ error: staffError });
+        }
+
+        return builder;
+      });
+
+      await expect(
+        approveOrganizationRequest(mockClient, request.id, ADMIN_USER_ID)
+      ).rejects.toThrow("duplicate staff");
+    });
+
+    it("logs but does not throw when notification insert fails", async () => {
+      const consoleSpy = jest.spyOn(console, "error").mockImplementation();
+      const request = organizationRequestFactory.build({
+        status: "pending",
+      });
+      const org = { id: "org-1", name: request.name, slug: request.slug };
+      const updatedRequest = { ...request, status: "approved" };
+
+      let orgRequestCallCount = 0;
+      const fromSpy = jest.spyOn(mockClient, "from");
+      fromSpy.mockImplementation((table: string) => {
+        const builder: MockQueryBuilder = {
+          select: jest.fn().mockReturnThis(),
+          eq: jest.fn().mockReturnThis(),
+          neq: jest.fn().mockReturnThis(),
+          single: jest.fn(),
+          maybeSingle: jest.fn(),
+          update: jest.fn().mockReturnThis(),
+          insert: jest.fn().mockReturnThis(),
+          delete: jest.fn().mockReturnThis(),
+          order: jest.fn().mockReturnThis(),
+          limit: jest.fn().mockReturnThis(),
+        };
+
+        if (table === "organization_requests") {
+          orgRequestCallCount++;
+          if (orgRequestCallCount === 1) {
+            builder.single.mockResolvedValue({ data: request, error: null });
+          } else {
+            builder.single.mockResolvedValue({
+              data: updatedRequest,
+              error: null,
+            });
+          }
+        } else if (table === "organizations") {
+          builder.maybeSingle.mockResolvedValue({ data: null });
+          builder.single.mockResolvedValue({ data: org, error: null });
+        } else if (table === "organization_staff") {
+          return {
+            insert: jest.fn().mockReturnValue({ error: null }),
+          } as unknown as MockQueryBuilder;
+        } else if (table === "notifications") {
+          // Notification fails
+          return {
+            insert: jest
+              .fn()
+              .mockReturnValue({ error: { message: "insert failed" } }),
+          } as unknown as MockQueryBuilder;
+        } else if (table === "audit_log") {
+          return {
+            insert: jest.fn().mockReturnValue({ error: null }),
+          } as unknown as MockQueryBuilder;
+        }
+
+        return builder;
+      });
+
+      // Should not throw despite notification failure
+      const result = await approveOrganizationRequest(
+        mockClient,
+        request.id,
+        ADMIN_USER_ID
+      );
+
+      expect(result.organization).toEqual(org);
+      expect(consoleSpy).toHaveBeenCalledWith(
+        "Failed to create org_request_approved notification",
+        expect.objectContaining({ requestId: request.id })
+      );
+      consoleSpy.mockRestore();
+    });
   });
 
   // ---------------------------------------------------------------------------
@@ -262,6 +584,121 @@ describe("Organization Request Mutations", () => {
   // ---------------------------------------------------------------------------
 
   describe("rejectOrganizationRequest", () => {
+    it("updates status, creates notification and audit log", async () => {
+      const request = organizationRequestFactory.build({
+        status: "pending",
+        user_id: "requester-789",
+      });
+
+      let orgRequestCallCount = 0;
+      const fromSpy = jest.spyOn(mockClient, "from");
+      fromSpy.mockImplementation((table: string) => {
+        const builder: MockQueryBuilder = {
+          select: jest.fn().mockReturnThis(),
+          eq: jest.fn().mockReturnThis(),
+          neq: jest.fn().mockReturnThis(),
+          single: jest.fn(),
+          maybeSingle: jest.fn(),
+          update: jest.fn().mockReturnThis(),
+          insert: jest.fn().mockReturnThis(),
+          delete: jest.fn().mockReturnThis(),
+          order: jest.fn().mockReturnThis(),
+          limit: jest.fn().mockReturnThis(),
+        };
+
+        if (table === "organization_requests") {
+          orgRequestCallCount++;
+          if (orgRequestCallCount === 1) {
+            // Fetch
+            builder.single.mockResolvedValue({ data: request, error: null });
+          } else {
+            // Update — returns no error
+            builder.eq.mockReturnValue({ error: null });
+          }
+        } else if (table === "notifications") {
+          return {
+            insert: jest.fn().mockReturnValue({ error: null }),
+          } as unknown as MockQueryBuilder;
+        } else if (table === "audit_log") {
+          return {
+            insert: jest.fn().mockReturnValue({ error: null }),
+          } as unknown as MockQueryBuilder;
+        }
+
+        return builder;
+      });
+
+      const result = await rejectOrganizationRequest(
+        mockClient,
+        request.id,
+        ADMIN_USER_ID,
+        "Not suitable"
+      );
+
+      expect(result).toEqual(request);
+      expect(fromSpy).toHaveBeenCalledWith("notifications");
+      expect(fromSpy).toHaveBeenCalledWith("audit_log");
+    });
+
+    it("logs but does not throw when notification insert fails", async () => {
+      const consoleSpy = jest.spyOn(console, "error").mockImplementation();
+      const request = organizationRequestFactory.build({
+        status: "pending",
+      });
+
+      let orgRequestCallCount = 0;
+      const fromSpy = jest.spyOn(mockClient, "from");
+      fromSpy.mockImplementation((table: string) => {
+        const builder: MockQueryBuilder = {
+          select: jest.fn().mockReturnThis(),
+          eq: jest.fn().mockReturnThis(),
+          neq: jest.fn().mockReturnThis(),
+          single: jest.fn(),
+          maybeSingle: jest.fn(),
+          update: jest.fn().mockReturnThis(),
+          insert: jest.fn().mockReturnThis(),
+          delete: jest.fn().mockReturnThis(),
+          order: jest.fn().mockReturnThis(),
+          limit: jest.fn().mockReturnThis(),
+        };
+
+        if (table === "organization_requests") {
+          orgRequestCallCount++;
+          if (orgRequestCallCount === 1) {
+            builder.single.mockResolvedValue({ data: request, error: null });
+          } else {
+            builder.eq.mockReturnValue({ error: null });
+          }
+        } else if (table === "notifications") {
+          return {
+            insert: jest
+              .fn()
+              .mockReturnValue({ error: { message: "insert failed" } }),
+          } as unknown as MockQueryBuilder;
+        } else if (table === "audit_log") {
+          return {
+            insert: jest.fn().mockReturnValue({ error: null }),
+          } as unknown as MockQueryBuilder;
+        }
+
+        return builder;
+      });
+
+      const result = await rejectOrganizationRequest(
+        mockClient,
+        request.id,
+        ADMIN_USER_ID,
+        "Spam"
+      );
+
+      expect(result).toEqual(request);
+      expect(consoleSpy).toHaveBeenCalledWith(
+        "Failed to create org_request_rejected notification",
+        expect.objectContaining({ requestId: request.id })
+      );
+      consoleSpy.mockRestore();
+    });
+
     it("throws when request is not found", async () => {
       const fromSpy = jest.spyOn(mockClient, "from");
       fromSpy.mockImplementation(() => {

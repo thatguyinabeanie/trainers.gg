@@ -75,8 +75,12 @@ export async function listOrgRequestsAdmin(
     .order("created_at", { ascending: false });
 
   if (search) {
-    const escaped = escapeLike(search);
-    query = query.or(`name.ilike.%${escaped}%,slug.ilike.%${escaped}%`);
+    // Strip characters that break PostgREST .or() syntax
+    const sanitized = search.replace(/[(),]/g, "");
+    if (sanitized) {
+      const escaped = escapeLike(sanitized);
+      query = query.or(`name.ilike.%${escaped}%,slug.ilike.%${escaped}%`);
+    }
   }
 
   if (status) {

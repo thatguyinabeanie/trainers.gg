@@ -39,7 +39,7 @@ ALTER TABLE public.organization_requests
 
 ALTER TABLE public.organization_requests
   ADD CONSTRAINT organization_requests_reviewed_by_fkey
-    FOREIGN KEY (reviewed_by) REFERENCES auth.users(id) ON DELETE SET NULL;
+    FOREIGN KEY (reviewed_by) REFERENCES public.users(id) ON DELETE SET NULL;
 
 -- Step 6: Drop old RLS policies that depend on old columns (must happen before column drops)
 DROP POLICY IF EXISTS "Org requests viewable by requester or site admin" ON public.organization_requests;
