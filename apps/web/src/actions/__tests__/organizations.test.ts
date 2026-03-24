@@ -31,7 +31,6 @@ jest.mock("@/lib/utils", () => ({
 }));
 
 // Mock @trainers/supabase mutations
-const mockCreateOrganization = jest.fn();
 const mockUpdateOrganization = jest.fn();
 const mockInviteToOrganization = jest.fn();
 const mockAcceptOrganizationInvitation = jest.fn();
@@ -39,7 +38,6 @@ const mockDeclineOrganizationInvitation = jest.fn();
 const mockLeaveOrganization = jest.fn();
 const mockRemoveStaff = jest.fn();
 jest.mock("@trainers/supabase", () => ({
-  createOrganization: (...args: unknown[]) => mockCreateOrganization(...args),
   updateOrganization: (...args: unknown[]) => mockUpdateOrganization(...args),
   inviteToOrganization: (...args: unknown[]) =>
     mockInviteToOrganization(...args),
@@ -52,62 +50,12 @@ jest.mock("@trainers/supabase", () => ({
 }));
 
 import {
-  createOrganization,
   updateOrganization,
   inviteToOrganization,
   acceptOrganizationInvitation,
   leaveOrganization,
   removeStaff,
 } from "../organizations";
-
-// =============================================================================
-// createOrganization
-// =============================================================================
-
-describe("createOrganization", () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
-  });
-
-  it("creates an organization and revalidates the organizations list", async () => {
-    mockCreateOrganization.mockResolvedValue({
-      id: 1,
-      slug: "team-rocket",
-      name: "Team Rocket",
-    });
-
-    const result = await createOrganization({
-      name: "Team Rocket",
-      slug: "team-rocket",
-      description: "Prepare for trouble",
-    });
-
-    expect(result).toEqual({
-      success: true,
-      data: { id: 1, slug: "team-rocket", name: "Team Rocket" },
-    });
-    expect(mockCreateOrganization).toHaveBeenCalledWith(mockSupabase, {
-      name: "Team Rocket",
-      slug: "team-rocket",
-      description: "Prepare for trouble",
-    });
-    expect(mockUpdateTag).toHaveBeenCalledWith("organizations-list");
-  });
-
-  it("returns an error when the mutation throws", async () => {
-    mockCreateOrganization.mockRejectedValue(new Error("Slug already taken"));
-
-    const result = await createOrganization({
-      name: "Team Rocket",
-      slug: "team-rocket",
-    });
-
-    expect(result.success).toBe(false);
-    if (!result.success) {
-      expect(result.error).toBe("Failed to create organization");
-    }
-  });
-});
 
 // =============================================================================
 // updateOrganization

@@ -71,6 +71,13 @@ export {
   completeTournament,
 } from "./tournaments";
 
+// Organization request mutations
+export {
+  submitOrganizationRequest,
+  approveOrganizationRequest,
+  rejectOrganizationRequest,
+} from "./organization-requests";
+
 // Match game mutations
 export {
   submitGameSelection,

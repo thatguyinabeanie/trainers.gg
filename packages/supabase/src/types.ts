@@ -881,64 +881,50 @@ export type Database = {
       }
       organization_requests: {
         Row: {
+          admin_notes: string | null
           created_at: string | null
-          created_organization_id: number | null
           description: string | null
           id: number
           name: string
-          rejection_reason: string | null
-          requested_by_alt_id: number
           reviewed_at: string | null
-          reviewed_by_alt_id: number | null
+          reviewed_by: string | null
           slug: string
-          status: Database["public"]["Enums"]["org_request_status"] | null
+          status: Database["public"]["Enums"]["org_request_status"]
+          updated_at: string
+          user_id: string
         }
         Insert: {
+          admin_notes?: string | null
           created_at?: string | null
-          created_organization_id?: number | null
           description?: string | null
           id?: never
           name: string
-          rejection_reason?: string | null
-          requested_by_alt_id: number
           reviewed_at?: string | null
-          reviewed_by_alt_id?: number | null
+          reviewed_by?: string | null
           slug: string
-          status?: Database["public"]["Enums"]["org_request_status"] | null
+          status?: Database["public"]["Enums"]["org_request_status"]
+          updated_at?: string
+          user_id: string
         }
         Update: {
+          admin_notes?: string | null
           created_at?: string | null
-          created_organization_id?: number | null
           description?: string | null
           id?: never
           name?: string
-          rejection_reason?: string | null
-          requested_by_alt_id?: number
           reviewed_at?: string | null
-          reviewed_by_alt_id?: number | null
+          reviewed_by?: string | null
           slug?: string
-          status?: Database["public"]["Enums"]["org_request_status"] | null
+          status?: Database["public"]["Enums"]["org_request_status"]
+          updated_at?: string
+          user_id?: string
         }
         Relationships: [
           {
-            foreignKeyName: "organization_requests_created_organization_id_fkey"
-            columns: ["created_organization_id"]
+            foreignKeyName: "organization_requests_user_id_fkey"
+            columns: ["user_id"]
             isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "organization_requests_requested_by_alt_id_fkey"
-            columns: ["requested_by_alt_id"]
-            isOneToOne: false
-            referencedRelation: "alts"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "organization_requests_reviewed_by_alt_id_fkey"
-            columns: ["reviewed_by_alt_id"]
-            isOneToOne: false
-            referencedRelation: "alts"
+            referencedRelation: "users"
             referencedColumns: ["id"]
           },
         ]
@@ -3008,6 +2994,8 @@ export type Database = {
         | "admin.announcement_created"
         | "admin.announcement_updated"
         | "admin.announcement_deleted"
+        | "admin.org_request_approved"
+        | "admin.org_request_rejected"
       billing_interval: "monthly" | "annual"
       drop_category: "no_show" | "conduct" | "disqualification" | "other"
       entity_type: "profile" | "organization" | "alt"
@@ -3031,6 +3019,8 @@ export type Database = {
         | "tournament_round"
         | "tournament_complete"
         | "match_no_show"
+        | "org_request_approved"
+        | "org_request_rejected"
       org_request_status: "pending" | "approved" | "rejected"
       organization_status: "pending" | "active" | "rejected" | "suspended"
       organization_subscription_tier:
@@ -3243,6 +3233,8 @@ export const Constants = {
         "admin.announcement_created",
         "admin.announcement_updated",
         "admin.announcement_deleted",
+        "admin.org_request_approved",
+        "admin.org_request_rejected",
       ],
       billing_interval: ["monthly", "annual"],
       drop_category: ["no_show", "conduct", "disqualification", "other"],
@@ -3268,6 +3260,8 @@ export const Constants = {
         "tournament_round",
         "tournament_complete",
         "match_no_show",
+        "org_request_approved",
+        "org_request_rejected",
       ],
       org_request_status: ["pending", "approved", "rejected"],
       organization_status: ["pending", "active", "rejected", "suspended"],

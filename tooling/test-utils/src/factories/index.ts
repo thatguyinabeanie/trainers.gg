@@ -5,3 +5,4 @@ export { tournamentFactory } from "./tournament";
 export { notificationFactory } from "./notification";
 export { tournamentMatchFactory, matchGameFactory } from "./match";
 export { playerRecordFactory, bracketPlayerFactory } from "./tournament-domain";
+export { organizationRequestFactory } from "./organization-request";
