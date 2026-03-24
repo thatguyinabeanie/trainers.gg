@@ -16,10 +16,20 @@ import { test, expect } from "@playwright/test";
 import { TEST_USERS, loginViaUI } from "../../fixtures/auth";
 import { TournamentSimulator } from "../../fixtures/tournament-simulator";
 
+// Skip entire suite when Supabase admin env vars are missing (e.g. CI without secrets)
+const hasSupabaseAdmin =
+  !!process.env.NEXT_PUBLIC_SUPABASE_URL &&
+  !!process.env.SUPABASE_SERVICE_ROLE_KEY;
+
 // Use empty storage state — we'll log in explicitly as the TO
 test.use({ storageState: { cookies: [], origins: [] } });
 
 test.describe("Full Tournament Simulation", () => {
+  test.skip(
+    !hasSupabaseAdmin,
+    "Requires NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY"
+  );
+
   let sim: TournamentSimulator;
 
   test.beforeAll(async () => {
