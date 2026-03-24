@@ -7,9 +7,4 @@
  */
 
 // Re-export everything from the shared package
-export {
-  MAX_POST_LENGTH,
-  getGraphemeLength,
-  isPostTooLong,
-  parseAtUri,
-} from "@trainers/atproto";
+export { parseAtUri } from "@trainers/atproto";
