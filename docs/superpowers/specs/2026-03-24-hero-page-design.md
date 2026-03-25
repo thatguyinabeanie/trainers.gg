@@ -29,7 +29,7 @@ Full-width, generous vertical padding, centered content.
 - **CTAs (side by side):**
   - Primary (teal, filled): "Get Started" → `/sign-up`
   - Secondary (outline): "Browse Tournaments" → `/tournaments`
-- **Authenticated users:** Swap CTAs to "Go to Dashboard" + "Browse Tournaments"
+- **Authenticated users:** Swap CTAs to "Go to Dashboard" (→ `/dashboard`) + "Browse Tournaments"
 - **Visual treatment:** Soft teal-to-transparent gradient background or subtle pattern. No hero image — typographic and clean. The teal primary carries the warmth.
 
 ### Section 2: Feature Cards Grid
@@ -51,9 +51,10 @@ Three cards in a row (desktop), stacked (mobile).
 3. **Analytics**
    - Icon: BarChart3 (Lucide)
    - Copy: "See your match history, win rates, and trends. Understand how you're improving over time."
-   - Link: "View Analytics" → `/analytics`
+   - Link (authenticated): "View Analytics" → `/analytics`
+   - Link (unauthenticated): "Sign up to track your stats" → `/sign-up`
 
-**Card style:** Existing `Card` component. Subtle background differentiation (neutral-50 light / neutral-900 dark), no heavy borders. Minimal flat design. Icon, title, 1-2 sentences, text link at bottom.
+**Card style:** Existing `Card` component with its default subtle ring (acceptable as minimal flat). Subtle background differentiation (neutral-50 light / neutral-900 dark). Icon, title, 1-2 sentences, text link at bottom.
 
 ### Section 3: Live Upcoming Tournaments
 
@@ -78,12 +79,12 @@ Two smaller cards side by side (desktop), stacked (mobile).
 1. **Team Builder**
    - Icon: Swords or Puzzle (Lucide)
    - Copy: "Build, share, and analyze your Pokemon teams."
-   - Badge: "Coming Soon" (StatusBadge, muted/amber style)
+   - Badge: `<StatusBadge status="draft" label="Coming Soon" />` (renders amber)
 
 2. **Coaching**
    - Icon: GraduationCap (Lucide)
    - Copy: "Get guidance from experienced competitive players."
-   - Badge: "Coming Soon" (StatusBadge, muted/amber style)
+   - Badge: `<StatusBadge status="draft" label="Coming Soon" />` (renders amber)
 
 **Card style:** Same `Card` component but visually muted (lower opacity or subtler background) to read as "not yet" compared to active feature cards. No links.
 
@@ -93,19 +94,23 @@ Simple call-to-action block bookending the page.
 
 - **Copy:** Warm closing line (e.g. "Ready to start your journey?")
 - **CTAs:** Same dual CTAs as hero — "Get Started" + "Browse Tournaments"
-- **Authenticated users:** "Go to Dashboard" + "Browse Tournaments"
+- **Authenticated users:** "Go to Dashboard" (→ `/dashboard`) + "Browse Tournaments"
 - **Visual treatment:** Subtle background tint (similar to hero) for bookend effect.
 
 ## Technical Notes
 
 - **Route:** Replace redirect in `apps/web/src/app/page.tsx` with the hero page
-- **Components:** Use existing `Card`, `Button`, `StatusBadge` from `apps/web/src/components/ui/`
+- **Components:** Use existing `Card`, `Button`, `StatusBadge`, `Skeleton` from `apps/web/src/components/ui/`
 - **Icons:** Lucide icons (already a project dependency)
 - **Styling:** Tailwind CSS 4, `cn()` for dynamic classes, OKLCH theme tokens
-- **Auth-aware CTAs:** Use existing auth context to determine signed-in state
-- **Live data:** Server Component fetching upcoming tournaments from Supabase
+- **Auth-aware CTAs:** The CTA sections (hero + closing) are client components using `useAuthContext()`. The rest of the page is server-rendered. This avoids making the whole page dynamic from `cookies()` usage.
+- **Live data:** Server Component fetching upcoming tournaments from Supabase. Wrap in a `Suspense` boundary with `Skeleton` fallback so the hero/features/coming-soon render immediately while tournament data streams in.
+- **Caching:** The page itself can be static/ISR since auth-aware CTAs are client components reading auth state client-side. Tournament data uses the existing query patterns from the tournaments page.
 - **Responsive:** Mobile-first, cards stack on small screens, row on desktop
 - **Dark mode:** Supported via existing theme token system
+- **Layout:** Hero and closing CTA sections are full-width (for background color/gradient), inner content constrained by container. Feature cards and tournament sections use the standard container.
+- **Heading hierarchy:** Hero headline is `h1`, section headings ("Everything you need to compete", "Upcoming Tournaments", "More on the way", "Ready to start your journey?") are `h2`.
+- **SEO/Metadata:** Export static `metadata` from the page with title "trainers.gg — Your home for competitive Pokemon", description, and Open Graph tags.
 
 ## Design Principles (from project)
 
