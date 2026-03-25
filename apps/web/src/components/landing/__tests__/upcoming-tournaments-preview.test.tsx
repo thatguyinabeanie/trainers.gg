@@ -87,6 +87,17 @@ describe("UpcomingTournamentsPreview", () => {
     expect(viewAllLink).toHaveAttribute("href", "/tournaments");
   });
 
+  it("returns empty state when query throws (build-time error)", async () => {
+    mockListTournamentsGrouped.mockRejectedValue(new Error("DB unavailable"));
+
+    const Component = await UpcomingTournamentsPreview();
+    render(Component);
+
+    expect(
+      screen.getByText("No upcoming tournaments right now. Check back soon!")
+    ).toBeInTheDocument();
+  });
+
   it("limits to 5 tournaments", async () => {
     const tournaments = Array.from({ length: 8 }, (_, i) => ({
       id: i + 1,

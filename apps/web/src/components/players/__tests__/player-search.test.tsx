@@ -1,4 +1,5 @@
 import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { PlayerSearch, playerDirectoryKeys } from "../player-search";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
@@ -108,6 +109,79 @@ describe("PlayerSearch", () => {
     });
 
     expect(screen.getByText("All Countries")).toBeInTheDocument();
+  });
+});
+
+describe("fetchPlayerSearch (via PlayerSearch)", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    jest.useFakeTimers();
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
+  it("calls search API with query params when user types", async () => {
+    const searchResults = {
+      players: [
+        {
+          userId: "u2",
+          username: "cynthia",
+          avatarUrl: null,
+          country: null,
+          tournamentCount: 20,
+          winRate: 90,
+          totalWins: 18,
+          totalLosses: 2,
+        },
+      ],
+      totalCount: 1,
+      page: 1,
+    };
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve(searchResults),
+    });
+
+    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+    render(<PlayerSearch initialData={initialData} />, {
+      wrapper: createWrapper(),
+    });
+
+    const input = screen.getByPlaceholderText("Search players by username...");
+    await user.type(input, "cyn");
+
+    // Advance debounce timer
+    jest.advanceTimersByTime(300);
+
+    await screen.findByText("cynthia");
+    expect(mockFetch).toHaveBeenCalledWith(
+      expect.stringContaining("/api/players/search?")
+    );
+    expect(mockFetch).toHaveBeenCalledWith(expect.stringContaining("q=cyn"));
+  });
+
+  it("includes country filter in search URL when set", async () => {
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ players: [], totalCount: 0, page: 1 }),
+    });
+
+    // Simulate being on page 2 (isClientSearch = true without needing debounce)
+    const dataWithPage2 = { ...initialData, page: 2 };
+    render(<PlayerSearch initialData={dataWithPage2} />, {
+      wrapper: createWrapper(),
+    });
+
+    // Trigger a query by typing and advancing debounce
+    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+    const input = screen.getByPlaceholderText("Search players by username...");
+    await user.type(input, "ash");
+    jest.advanceTimersByTime(300);
+
+    await screen.findByText("No players found");
+    expect(mockFetch).toHaveBeenCalledWith(expect.stringContaining("page=1"));
   });
 });
 

@@ -74,4 +74,11 @@ describe("PlayerCard", () => {
     // Fallback should show first 2 chars uppercased
     expect(screen.getByText("AS")).toBeInTheDocument();
   });
+
+  it("uses raw country code as fallback when country name is unknown", () => {
+    // "ZZ" is not a valid ISO country code so getCountryName returns null
+    render(<PlayerCard {...defaultProps} country="ZZ" />);
+    const flag = screen.getByRole("img");
+    expect(flag).toHaveAttribute("aria-label", "ZZ");
+  });
 });
