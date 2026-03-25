@@ -9,11 +9,16 @@ export const revalidate = false;
 
 const getCachedUpcoming = unstable_cache(
   async () => {
-    const supabase = createStaticClient();
-    const grouped = await listTournamentsGrouped(supabase, {
-      completedLimit: 0,
-    });
-    return grouped.upcoming.slice(0, 5);
+    try {
+      const supabase = createStaticClient();
+      const grouped = await listTournamentsGrouped(supabase, {
+        completedLimit: 0,
+      });
+      return grouped.upcoming.slice(0, 5);
+    } catch {
+      // Gracefully handle build-time failures (e.g., no Supabase connection in CI)
+      return [];
+    }
   },
   ["hero-upcoming-tournaments"],
   { tags: [CacheTags.TOURNAMENTS_LIST] }
