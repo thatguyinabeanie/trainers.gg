@@ -28,6 +28,8 @@ export const PUBLIC_ROUTES = [
   "/invite", // Invite acceptance (unauthenticated users need access)
   "/tournaments", // Browse tournaments (public directory)
   "/organizations", // Browse organizations (public directory)
+  "/players", // Player directory (public)
+  "/u", // Player profiles (public)
   "/auth",
   "/api",
   "/oauth", // OAuth JWKS and well-known files (AT Protocol requires no redirects)

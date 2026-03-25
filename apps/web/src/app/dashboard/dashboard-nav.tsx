@@ -8,6 +8,7 @@ const allTabs = [
   { href: "/dashboard/overview", label: "Overview" },
   { href: "/dashboard/alts", label: "Alts" },
   { href: "/dashboard/invitations", label: "Invitations" },
+  { href: "/dashboard/notifications", label: "Notifications" },
   { href: "/dashboard/stats", label: "Stats", requiresFlag: true },
   { href: "/dashboard/settings", label: "Settings" },
 ];

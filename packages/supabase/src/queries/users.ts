@@ -230,10 +230,10 @@ export async function getPlayerProfileByHandle(
     userId = alt.user_id;
   }
 
-  // Fetch all alts for this user
+  // Fetch all alts for this user (include is_public for profile visibility)
   const { data: alts, error: altsError } = await supabase
     .from("alts")
-    .select("id, username, bio, avatar_url, tier, tier_expires_at")
+    .select("id, username, bio, avatar_url, tier, tier_expires_at, is_public")
     .eq("user_id", userId)
     .order("id", { ascending: true });
 
@@ -311,4 +311,252 @@ export async function getEmailByUsername(
   // Type assertion since we know the structure
   const altUser = alt?.user as { email: string | null } | null;
   return altUser?.email ?? null;
+}
+
+/**
+ * Get the number of followers for a user.
+ * Counts rows where following_user_id = userId (people following this user).
+ */
+export async function getFollowerCount(
+  supabase: TypedClient,
+  userId: string
+): Promise<number> {
+  const { count, error } = await supabase
+    .from("follows")
+    .select("*", { count: "exact", head: true })
+    .eq("following_user_id", userId);
+
+  if (error) return 0;
+  return count ?? 0;
+}
+
+/**
+ * Get the number of users this user is following.
+ * Counts rows where follower_user_id = userId (people this user follows).
+ */
+export async function getFollowingCount(
+  supabase: TypedClient,
+  userId: string
+): Promise<number> {
+  const { count, error } = await supabase
+    .from("follows")
+    .select("*", { count: "exact", head: true })
+    .eq("follower_user_id", userId);
+
+  if (error) return 0;
+  return count ?? 0;
+}
+
+/**
+ * Full paginated tournament history for a player's alts.
+ * Supports filtering by format, year, and status.
+ * Returns all tournaments (not just completed) with pagination.
+ */
+export async function getPlayerTournamentHistoryFull(
+  supabase: TypedClient,
+  altIds: number[],
+  filters?: {
+    format?: string;
+    year?: number;
+    status?: string;
+  },
+  page = 1,
+  pageSize = 20
+) {
+  if (altIds.length === 0) return { data: [], totalCount: 0, page };
+
+  // Get registrations with tournament info
+  let query = supabase
+    .from("tournament_registrations")
+    .select(
+      `
+      id,
+      alt_id,
+      status,
+      registered_at,
+      tournament:tournaments!tournament_registrations_tournament_id_fkey (
+        id,
+        name,
+        slug,
+        start_date,
+        status,
+        format,
+        organization:organizations!tournaments_organization_id_fkey (
+          id,
+          name,
+          slug
+        )
+      )
+    `,
+      { count: "exact" }
+    )
+    .in("alt_id", altIds)
+    .order("registered_at", { ascending: false });
+
+  // Apply filters at the SQL level (before pagination)
+  if (filters?.format) {
+    query = query.eq("tournament.format" as string, filters.format);
+  }
+  if (filters?.status) {
+    query = query.eq("tournament.status" as string, filters.status);
+  }
+  if (filters?.year) {
+    // Filter by year using date range
+    const yearStart = `${filters.year}-01-01`;
+    const yearEnd = `${filters.year}-12-31`;
+    query = query.gte("tournament.start_date" as string, yearStart);
+    query = query.lte("tournament.start_date" as string, yearEnd);
+  }
+
+  // Apply pagination after filters
+  const from = (page - 1) * pageSize;
+  const to = from + pageSize - 1;
+  query = query.range(from, to);
+
+  const { data: registrations, error, count } = await query;
+
+  if (error) throw error;
+  if (!registrations) return { data: [], totalCount: 0, page };
+
+  // Get tournament IDs to fetch stats
+  const tournamentIds = registrations
+    .map((r) => {
+      const t = r.tournament as { id: number } | null;
+      return t?.id;
+    })
+    .filter((id): id is number => id != null);
+
+  // Fetch player stats for these tournaments
+  let statsMap = new Map<
+    string,
+    { wins: number; losses: number; placement: number | null }
+  >();
+  if (tournamentIds.length > 0) {
+    const { data: stats } = await supabase
+      .from("tournament_player_stats")
+      .select("tournament_id, alt_id, match_wins, match_losses, final_ranking")
+      .in("alt_id", altIds)
+      .in("tournament_id", tournamentIds);
+
+    if (stats) {
+      for (const s of stats) {
+        const key = `${s.tournament_id}-${s.alt_id}`;
+        statsMap.set(key, {
+          wins: s.match_wins ?? 0,
+          losses: s.match_losses ?? 0,
+          placement: s.final_ranking,
+        });
+      }
+    }
+  }
+
+  // Transform results
+  const results = registrations
+    .map((r) => {
+      const t = r.tournament as {
+        id: number;
+        name: string;
+        slug: string;
+        start_date: string | null;
+        status: string;
+        format: string | null;
+        organization: { id: number; name: string; slug: string } | null;
+      } | null;
+
+      if (!t) return null;
+
+      const statsKey = `${t.id}-${r.alt_id}`;
+      const stat = statsMap.get(statsKey);
+
+      return {
+        id: r.id,
+        tournamentId: t.id,
+        tournamentName: t.name,
+        tournamentSlug: t.slug,
+        startDate: t.start_date,
+        status: t.status,
+        format: t.format,
+        organizationName: t.organization?.name ?? null,
+        organizationSlug: t.organization?.slug ?? null,
+        placement: stat?.placement ?? null,
+        wins: stat?.wins ?? 0,
+        losses: stat?.losses ?? 0,
+      };
+    })
+    .filter((r): r is NonNullable<typeof r> => r !== null);
+
+  return { data: results, totalCount: count ?? 0, page };
+}
+
+/**
+ * Get public team sheets from completed tournaments for a player's alts.
+ * Returns team data parsed from tournament registrations that have team submissions.
+ */
+export async function getPlayerPublicTeams(
+  supabase: TypedClient,
+  altIds: number[]
+) {
+  if (altIds.length === 0) return [];
+
+  const { data, error } = await supabase
+    .from("tournament_registrations")
+    .select(
+      `
+      id,
+      alt_id,
+      team_id,
+      registered_at,
+      tournament:tournaments!tournament_registrations_tournament_id_fkey (
+        id,
+        name,
+        slug,
+        start_date,
+        status,
+        format
+      ),
+      team:teams!tournament_registrations_team_fk (
+        id,
+        pokemon_data,
+        pokepaste_url
+      )
+    `
+    )
+    .in("alt_id", altIds)
+    .not("team_id", "is", null)
+    .order("registered_at", { ascending: false });
+
+  if (error) throw error;
+  if (!data) return [];
+
+  // Only return teams from completed tournaments
+  return data
+    .filter((r) => {
+      const t = r.tournament as { status: string } | null;
+      return t?.status === "completed";
+    })
+    .map((r) => {
+      const t = r.tournament as {
+        id: number;
+        name: string;
+        slug: string;
+        start_date: string | null;
+        format: string | null;
+      };
+      const team = r.team as {
+        id: number;
+        pokemon_data: unknown;
+        pokepaste_url: string | null;
+      } | null;
+
+      return {
+        registrationId: r.id,
+        tournamentName: t.name,
+        tournamentSlug: t.slug,
+        startDate: t.start_date,
+        format: t.format,
+        teamId: team?.id ?? null,
+        pokemonData: team?.pokemon_data ?? null,
+        pokepasteUrl: team?.pokepaste_url ?? null,
+      };
+    });
 }

@@ -6,12 +6,6 @@ import {
   Loader2,
   AlertCircle,
   CheckCheck,
-  Swords,
-  Trophy,
-  ShieldAlert,
-  Gavel,
-  CirclePlay,
-  Flag,
   Building2,
   Check,
   X,
@@ -36,7 +30,10 @@ import {
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import type { RealtimeChannel } from "@supabase/supabase-js";
+import { formatTimeAgo } from "@trainers/utils";
+import { notificationIcons, isSafeRelativeUrl } from "@/lib/notification-utils";
 import {
   acceptOrganizationInvitation,
   declineOrganizationInvitation,
@@ -45,31 +42,6 @@ import {
 interface NotificationBellProps {
   userId?: string;
 }
-
-function isSafeRelativeUrl(url: string | null | undefined): url is string {
-  if (!url) return false;
-  let decoded: string;
-  try {
-    decoded = decodeURIComponent(url.trim());
-  } catch {
-    return false;
-  }
-  // Must start with / and the second char must not be / or \
-  return /^\/[^/\\]/.test(decoded);
-}
-
-const notificationIcons: Record<string, typeof Swords> = {
-  match_ready: Swords,
-  match_result: Flag,
-  match_disputed: AlertCircle,
-  judge_call: ShieldAlert,
-  judge_resolved: Gavel,
-  tournament_start: CirclePlay,
-  tournament_round: Trophy,
-  tournament_complete: Trophy,
-  org_request_approved: Building2,
-  org_request_rejected: Building2,
-};
 
 export function NotificationBell({ userId }: NotificationBellProps) {
   const supabase = useSupabase();
@@ -428,25 +400,18 @@ export function NotificationBell({ userId }: NotificationBellProps) {
             </>
           )}
         </div>
+
+        {/* View all link */}
+        <div className="border-t px-4 py-2">
+          <Link
+            href="/dashboard/notifications"
+            className="text-primary block text-center text-sm font-medium hover:underline"
+            onClick={() => setOpen(false)}
+          >
+            View all notifications
+          </Link>
+        </div>
       </PopoverContent>
     </Popover>
   );
-}
-
-function formatTimeAgo(dateStr: string): string {
-  const date = new Date(dateStr);
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffMins = Math.floor(diffMs / 60000);
-
-  if (diffMins < 1) return "Just now";
-  if (diffMins < 60) return `${diffMins}m ago`;
-
-  const diffHours = Math.floor(diffMins / 60);
-  if (diffHours < 24) return `${diffHours}h ago`;
-
-  const diffDays = Math.floor(diffHours / 24);
-  if (diffDays < 7) return `${diffDays}d ago`;
-
-  return date.toLocaleDateString();
 }

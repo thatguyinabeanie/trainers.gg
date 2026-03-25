@@ -8,6 +8,7 @@ export const altFactory = Factory.define<Tables<"alts">>(({ sequence }) => ({
   avatar_url: null,
   bio: null,
   created_at: new Date().toISOString(),
+  is_public: false,
   tier: null,
   tier_expires_at: null,
   tier_started_at: null,

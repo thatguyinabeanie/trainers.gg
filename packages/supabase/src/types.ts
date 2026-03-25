@@ -40,6 +40,7 @@ export type Database = {
           bio: string | null
           created_at: string | null
           id: number
+          is_public: boolean
           tier: Database["public"]["Enums"]["user_tier"] | null
           tier_expires_at: string | null
           tier_started_at: string | null
@@ -52,6 +53,7 @@ export type Database = {
           bio?: string | null
           created_at?: string | null
           id?: never
+          is_public?: boolean
           tier?: Database["public"]["Enums"]["user_tier"] | null
           tier_expires_at?: string | null
           tier_started_at?: string | null
@@ -64,6 +66,7 @@ export type Database = {
           bio?: string | null
           created_at?: string | null
           id?: never
+          is_public?: boolean
           tier?: Database["public"]["Enums"]["user_tier"] | null
           tier_expires_at?: string | null
           tier_started_at?: string | null
@@ -727,6 +730,38 @@ export type Database = {
             columns: ["match_id"]
             isOneToOne: false
             referencedRelation: "tournament_matches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notification_preferences: {
+        Row: {
+          created_at: string
+          id: number
+          preferences: Json
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: never
+          preferences?: Json
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: never
+          preferences?: Json
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_preferences_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "users"
             referencedColumns: ["id"]
           },
         ]

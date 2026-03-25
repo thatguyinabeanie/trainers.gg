@@ -55,4 +55,16 @@ export const CacheTags = {
 
   /** Tag for admin org requests list */
   ORG_REQUESTS_LIST: "org-requests-list",
+
+  /** Tag for /players directory page (initial grid data) */
+  PLAYERS_DIRECTORY: "players-directory",
+
+  /** Tag for players leaderboard sidebar */
+  PLAYERS_LEADERBOARD: "players-leaderboard",
+
+  /** Tag for recently active players sidebar */
+  PLAYERS_RECENT: "players-recent",
+
+  /** Tag for new members sidebar */
+  PLAYERS_NEW: "players-new",
 } as const;
