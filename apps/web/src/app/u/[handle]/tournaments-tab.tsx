@@ -70,7 +70,7 @@ interface TournamentsTabProps {
 }
 
 export function TournamentsTab({ altIds, handle }: TournamentsTabProps) {
-  const [format, setFormat] = useState("all");
+  const format = "all";
   const [year, setYear] = useState("all");
   const [status, setStatus] = useState("all");
   const [page, setPage] = useState(1);
@@ -105,26 +105,6 @@ export function TournamentsTab({ altIds, handle }: TournamentsTabProps) {
     <div className="space-y-4">
       {/* Filters */}
       <div className="flex flex-wrap gap-3">
-        <Select
-          value={format}
-          onValueChange={(v) => {
-            if (v) setFormat(v);
-            setPage(1);
-          }}
-        >
-          <SelectTrigger className="w-[160px]">
-            <SelectValue placeholder="Format" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Formats</SelectItem>
-            <SelectItem value="vgc">VGC</SelectItem>
-            <SelectItem value="bss">BSS</SelectItem>
-            <SelectItem value="smogon_ou">Smogon OU</SelectItem>
-            <SelectItem value="smogon_uu">Smogon UU</SelectItem>
-            <SelectItem value="other">Other</SelectItem>
-          </SelectContent>
-        </Select>
-
         <Select
           value={year}
           onValueChange={(v) => {

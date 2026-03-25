@@ -58,7 +58,8 @@ CREATE POLICY "Users can update own preferences"
   ON public.notification_preferences
   FOR UPDATE
   TO authenticated
-  USING (user_id = (SELECT auth.uid()));
+  USING (user_id = (SELECT auth.uid()))
+  WITH CHECK (user_id = (SELECT auth.uid()));
 
 -- =============================================================================
 -- FUNCTION: updated_at trigger for notification_preferences

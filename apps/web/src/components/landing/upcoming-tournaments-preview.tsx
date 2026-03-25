@@ -5,8 +5,6 @@ import { listTournamentsGrouped } from "@trainers/supabase";
 import { CacheTags } from "@/lib/cache";
 import { UpcomingTournaments } from "@/components/tournaments/tournament-list";
 
-export const revalidate = false;
-
 const getCachedUpcoming = unstable_cache(
   async () => {
     try {

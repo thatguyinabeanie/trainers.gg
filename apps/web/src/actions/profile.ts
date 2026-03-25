@@ -606,6 +606,17 @@ export async function updateAltVisibilityAction(
     }
 
     revalidatePath("/dashboard/alts");
+
+    // Invalidate the user's profile cache so /u/[handle] reflects the change
+    const { data: userData } = await supabase
+      .from("users")
+      .select("username")
+      .eq("id", user.id)
+      .maybeSingle();
+    if (userData?.username) {
+      revalidatePath(`/u/${userData.username}`);
+    }
+
     return { success: true };
   } catch (error) {
     console.error("Error in updateAltVisibility:", error);

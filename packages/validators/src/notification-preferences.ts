@@ -24,15 +24,10 @@ export type NotificationType = (typeof NOTIFICATION_TYPES)[number];
  * Schema for notification preferences — a record of notification type to boolean.
  * Each key must be a valid notification type, and each value must be a boolean.
  */
-export const notificationPreferencesSchema = z
-  .record(z.enum(NOTIFICATION_TYPES), z.boolean())
-  .refine(
-    (obj) =>
-      Object.keys(obj).every((key) =>
-        (NOTIFICATION_TYPES as readonly string[]).includes(key)
-      ),
-    { message: "Invalid notification type key" }
-  );
+export const notificationPreferencesSchema = z.record(
+  z.enum(NOTIFICATION_TYPES),
+  z.boolean()
+);
 
 export type NotificationPreferences = z.infer<
   typeof notificationPreferencesSchema
