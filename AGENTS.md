@@ -2,42 +2,29 @@
 
 Pokemon community platform for competitive players. Monorepo: Next.js 16 web, Expo 54 mobile, Supabase backend, Bluesky PDS integration.
 
-## Workspace Index
+## Workspace Skills
 
-Each workspace has its own `AGENTS.md` with domain-specific guidance. **Read the relevant one before working in that area.** Multiple files may apply — e.g., a web feature with validation touches `apps/web`, `packages/validators`, and possibly `packages/supabase`.
+Domain-specific guidance lives in `.claude/skills/`. Invoke the relevant skill before working in an area.
 
-### Apps
-
-| Workspace | AGENTS.md | When to Load | Key Guidance |
-| --- | --- | --- | --- |
-| `apps/web` | [apps/web/AGENTS.md](apps/web/AGENTS.md) | Building web routes, components, Server Actions, auth flows, feature flags | Route groups, component organization (`ui/`, `auth/`, `tournament/`), Server Components vs Client Components, `proxy.ts` patterns, `getLabel()` for enum display |
-| `apps/mobile` | [apps/mobile/AGENTS.md](apps/mobile/AGENTS.md) | Building mobile screens, Tamagui UI, mobile auth, SecureStore | Query factory pattern (reference for web too), Tamagui components (not shadcn), `EXPO_PUBLIC_` env vars, AT Protocol hooks |
-
-### Core Packages
-
-| Workspace | AGENTS.md | When to Load | Key Guidance |
-| --- | --- | --- | --- |
-| `packages/supabase` | [packages/supabase/AGENTS.md](packages/supabase/AGENTS.md) | Writing DB queries/mutations, choosing client type, Edge Functions | Three client types (server bypasses RLS, client enforces RLS), `maybeSingle()` vs `single()`, query/mutation file organization by domain |
-| `packages/validators` | [packages/validators/AGENTS.md](packages/validators/AGENTS.md) | Creating/updating Zod schemas, validating user input, Server Action error types | Schema + inferred type export pattern, `actionResult` type, team parsing integration, profanity filter |
-| `packages/tournaments` | [packages/tournaments/AGENTS.md](packages/tournaments/AGENTS.md) | Tournament pairing, standings, brackets, byes, drops | Domain model vs DB schema via `adapters.ts`, key algorithm modules, `generatePairings()` inputs |
-| `packages/pokemon` | [packages/pokemon/AGENTS.md](packages/pokemon/AGENTS.md) | Parsing Pokemon teams, validating legality, type effectiveness, sprites | Dual parser system (`parseTeam()` for new code), format-specific rules, `@pkmn` package dependencies |
-| `packages/utils` | [packages/utils/AGENTS.md](packages/utils/AGENTS.md) | Displaying labels, handling errors, checking permissions, formatting | `getLabel()` required for all enum/DB display, `getErrorMessage()` for error extraction, `PERMISSIONS` constants |
-| `packages/posthog` | [packages/posthog/AGENTS.md](packages/posthog/AGENTS.md) | Adding analytics events, tracking user actions | `SCREAMING_SNAKE_CASE` past-tense constants, surface distinguished by `$lib` not event name |
-| `packages/atproto` | [packages/atproto/AGENTS.md](packages/atproto/AGENTS.md) | Bluesky/AT Protocol integration, reading/posting, DID resolution | Typed error handling, `getPublicAgent()` for unauthenticated reads, auth sessions managed per-platform (not here) |
-| `packages/theme` | [packages/theme/AGENTS.md](packages/theme/AGENTS.md) | Styling with color tokens, adding design tokens | OKLCH primitives, separate exports for web (`/css`) and mobile (`/mobile`), rebuild after changes |
-
-### Tooling
-
-| Workspace | AGENTS.md | When to Load | Key Guidance |
-| --- | --- | --- | --- |
-| `tooling/test-utils` | [tooling/test-utils/AGENTS.md](tooling/test-utils/AGENTS.md) | Writing tests, creating test data, mocking Supabase/AT Protocol | Fishery factories for DB rows + domain types, shared `createMockClient()`, AT Protocol mock builders |
+| Skill | When to Use |
+| --- | --- |
+| `trainers-web` | Web routes, components, Server Actions, data fetching, proxy.ts |
+| `trainers-mobile` | Mobile screens, Tamagui UI, Expo Router, SecureStore |
+| `trainers-supabase` | DB queries/mutations, client selection, Edge Functions |
+| `trainers-validators` | Zod schemas, Server Action return types, profanity filter |
+| `trainers-tournaments` | Swiss pairings, standings, brackets, adapters |
+| `trainers-pokemon` | Team parsing, legality validation, type effectiveness |
+| `trainers-utils` | `getLabel()`, `getErrorMessage()`, permissions, formatting |
+| `trainers-posthog` | Analytics event constants, adding new events |
+| `trainers-atproto` | Bluesky/AT Protocol, DID resolution, public agent |
+| `trainers-theme` | OKLCH tokens, design tokens, web/mobile theme exports |
+| `trainers-test-utils` | Fishery factories, Supabase/AT Protocol mocks, Jest config |
 
 ### Infrastructure
 
-| Workspace | AGENTS.md | When to Load | Key Guidance |
-| --- | --- | --- | --- |
-| `infra/pds` | [infra/pds/AGENTS.md](infra/pds/AGENTS.md) | PDS deployment, handle provisioning, AT Protocol identity | Fly.io deployment (not git-deployed), `@username.trainers.gg` handles, Docker+ngrok for local testing |
-| `infra/ngrok` | [infra/ngrok/AGENTS.md](infra/ngrok/AGENTS.md) | Local HTTPS tunnel for OAuth/PDS testing | Static domain config, auto-updates `NEXT_PUBLIC_SITE_URL`, required for AT Protocol OAuth locally |
+**PDS** (`infra/pds/`): Self-hosted Bluesky PDS on Fly.io at `pds.trainers.gg`. Handles `@username.trainers.gg` handles. Deploy via `deploy.sh` or Fly.io dashboard — not git-deployed. Use `docker-compose.yml` + `local-dev.sh` for local testing.
+
+**ngrok** (`infra/ngrok/`): Tunnels port 3000 to a public HTTPS URL. Starts automatically with `pnpm dev`. Configure via `NGROK_STATIC_DOMAIN` in `.env.ngrok`. Auto-updates `NEXT_PUBLIC_SITE_URL` — required for AT Protocol OAuth locally.
 
 
 ## Monorepo Structure
