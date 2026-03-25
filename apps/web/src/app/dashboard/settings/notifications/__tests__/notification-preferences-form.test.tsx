@@ -50,7 +50,7 @@ describe("NotificationPreferencesForm", () => {
     );
 
     // All switches should be checked by default
-    const switches = screen.getAllByRole("checkbox");
+    const switches = screen.getAllByRole("switch");
     for (const switchEl of switches) {
       expect(switchEl).toBeChecked();
     }
