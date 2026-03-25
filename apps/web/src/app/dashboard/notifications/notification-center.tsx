@@ -2,19 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import {
-  Bell,
-  Loader2,
-  AlertCircle,
-  CheckCheck,
-  Swords,
-  Trophy,
-  ShieldAlert,
-  Gavel,
-  CirclePlay,
-  Flag,
-  Building2,
-} from "lucide-react";
+import { Bell, Loader2, CheckCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useSupabase, useSupabaseQuery } from "@/lib/supabase";
 import {
@@ -30,6 +18,8 @@ import {
 } from "@/actions/notifications";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { formatTimeAgo } from "@trainers/utils";
+import { notificationIcons, isSafeRelativeUrl } from "@/lib/notification-utils";
 
 // -- Type filter tabs --
 
@@ -54,55 +44,6 @@ const FILTER_TABS = [
 ] as const;
 
 type FilterTab = (typeof FILTER_TABS)[number]["key"];
-
-// -- Icon mapping (matching notification-bell.tsx) --
-
-const notificationIcons: Record<string, typeof Swords> = {
-  match_ready: Swords,
-  match_result: Flag,
-  match_disputed: AlertCircle,
-  match_no_show: AlertCircle,
-  judge_call: ShieldAlert,
-  judge_resolved: Gavel,
-  tournament_start: CirclePlay,
-  tournament_round: Trophy,
-  tournament_complete: Trophy,
-  org_request_approved: Building2,
-  org_request_rejected: Building2,
-};
-
-// -- Safe URL check (same as notification-bell.tsx) --
-
-function isSafeRelativeUrl(url: string | null | undefined): url is string {
-  if (!url) return false;
-  let decoded: string;
-  try {
-    decoded = decodeURIComponent(url.trim());
-  } catch {
-    return false;
-  }
-  return /^\/[^/\\]/.test(decoded);
-}
-
-// -- Time formatting --
-
-function formatTimeAgo(dateStr: string): string {
-  const date = new Date(dateStr);
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffMins = Math.floor(diffMs / 60000);
-
-  if (diffMins < 1) return "Just now";
-  if (diffMins < 60) return `${diffMins}m ago`;
-
-  const diffHours = Math.floor(diffMins / 60);
-  if (diffHours < 24) return `${diffHours}h ago`;
-
-  const diffDays = Math.floor(diffHours / 24);
-  if (diffDays < 7) return `${diffDays}d ago`;
-
-  return date.toLocaleDateString();
-}
 
 // -- Constants --
 

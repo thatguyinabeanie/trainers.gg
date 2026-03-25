@@ -5,6 +5,7 @@ import { checkBotId } from "botid/server";
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { escapeLike } from "@trainers/utils";
+import { withAction } from "./utils";
 
 const PDS_HOST = process.env.PDS_HOST || "https://pds.trainers.gg";
 
@@ -571,43 +572,34 @@ export async function updateProfile(data: {
 export async function updateAltVisibilityAction(
   altId: number,
   isPublic: boolean
-): Promise<{ success: boolean; error?: string }> {
-  try {
+) {
+  return withAction(async () => {
     const supabase = await createClient();
     const {
       data: { user },
     } = await supabase.auth.getUser();
-    if (!user) {
-      return { success: false, error: "Not authenticated" };
-    }
+    if (!user) throw new Error("Not authenticated");
 
-    // Verify the alt belongs to the current user
     const { data: alt, error: altError } = await supabase
       .from("alts")
       .select("id, user_id")
       .eq("id", altId)
       .maybeSingle();
 
-    if (altError || !alt) {
-      return { success: false, error: "Alt not found" };
-    }
-
-    if (alt.user_id !== user.id) {
-      return { success: false, error: "You can only update your own alts" };
-    }
+    if (altError || !alt) throw new Error("Alt not found");
+    if (alt.user_id !== user.id)
+      throw new Error("You can only update your own alts");
 
     const { error: updateError } = await supabase
       .from("alts")
       .update({ is_public: isPublic })
       .eq("id", altId);
 
-    if (updateError) {
-      return { success: false, error: "Failed to update alt visibility" };
-    }
+    if (updateError) throw updateError;
 
     revalidatePath("/dashboard/alts");
 
-    // Invalidate the user's profile cache so /u/[handle] reflects the change
+    // Invalidate the public profile cache so /u/[handle] reflects the change
     const { data: userData } = await supabase
       .from("users")
       .select("username")
@@ -616,10 +608,5 @@ export async function updateAltVisibilityAction(
     if (userData?.username) {
       revalidatePath(`/u/${userData.username}`);
     }
-
-    return { success: true };
-  } catch (error) {
-    console.error("Error in updateAltVisibility:", error);
-    return { success: false, error: "An unexpected error occurred" };
-  }
+  }, "Failed to update alt visibility");
 }
