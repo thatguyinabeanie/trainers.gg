@@ -23,8 +23,12 @@ export const revalidate = false;
  */
 const getCachedPlayers = unstable_cache(
   async () => {
-    const supabase = createStaticClient();
-    return searchPlayers(supabase, { sort: "tournaments" }, 1);
+    try {
+      const supabase = createStaticClient();
+      return await searchPlayers(supabase, { sort: "tournaments" }, 1);
+    } catch {
+      return { players: [], totalCount: 0, page: 1 };
+    }
   },
   ["players-directory"],
   { tags: [CacheTags.PLAYERS_DIRECTORY] }
@@ -35,8 +39,12 @@ const getCachedPlayers = unstable_cache(
  */
 const getCachedLeaderboard = unstable_cache(
   async () => {
-    const supabase = createStaticClient();
-    return getLeaderboard(supabase, 5);
+    try {
+      const supabase = createStaticClient();
+      return await getLeaderboard(supabase, 5);
+    } catch {
+      return [];
+    }
   },
   ["players-leaderboard"],
   { tags: [CacheTags.PLAYERS_LEADERBOARD] }
@@ -47,8 +55,12 @@ const getCachedLeaderboard = unstable_cache(
  */
 const getCachedRecentlyActive = unstable_cache(
   async () => {
-    const supabase = createStaticClient();
-    return getRecentlyActivePlayers(supabase, 5);
+    try {
+      const supabase = createStaticClient();
+      return await getRecentlyActivePlayers(supabase, 5);
+    } catch {
+      return [];
+    }
   },
   ["players-recent"],
   { tags: [CacheTags.PLAYERS_RECENT] }
@@ -59,8 +71,12 @@ const getCachedRecentlyActive = unstable_cache(
  */
 const getCachedNewMembers = unstable_cache(
   async () => {
-    const supabase = createStaticClient();
-    return getNewMembers(supabase, 5);
+    try {
+      const supabase = createStaticClient();
+      return await getNewMembers(supabase, 5);
+    } catch {
+      return [];
+    }
   },
   ["players-new"],
   { tags: [CacheTags.PLAYERS_NEW] }
