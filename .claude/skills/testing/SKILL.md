@@ -1,5 +1,5 @@
 ---
-name: trainers-test-utils
+name: testing
 description: Use when writing tests, creating test data, mocking Supabase or AT Protocol, or configuring Jest
 ---
 

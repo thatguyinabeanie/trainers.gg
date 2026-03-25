@@ -1,5 +1,5 @@
 ---
-name: trainers-mobile
+name: mobile-app
 description: Use when building mobile screens, navigation, Tamagui UI, or any feature in apps/mobile
 ---
 

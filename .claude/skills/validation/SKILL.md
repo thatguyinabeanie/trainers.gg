@@ -1,5 +1,5 @@
 ---
-name: trainers-validators
+name: validation
 description: Use when creating Zod schemas, adding input validation, working with Server Action return types, or the validators package
 ---
 

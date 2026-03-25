@@ -1,5 +1,5 @@
 ---
-name: trainers-web
+name: web-app
 description: Use when building web routes, components, Server Actions, data fetching, or any feature in apps/web
 ---
 

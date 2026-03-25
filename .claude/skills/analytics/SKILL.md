@@ -1,5 +1,5 @@
 ---
-name: trainers-posthog
+name: analytics
 description: Use when adding PostHog analytics events, tracking user actions, or working with the posthog package
 ---
 

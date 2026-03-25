@@ -1,5 +1,5 @@
 ---
-name: trainers-theme
+name: theme
 description: Use when adding design tokens, OKLCH color primitives, or building the theme package for web or mobile
 ---
 

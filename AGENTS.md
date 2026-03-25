@@ -8,17 +8,17 @@ Domain-specific guidance lives in `.claude/skills/`. Invoke the relevant skill b
 
 | Skill | When to Use |
 | --- | --- |
-| `trainers-web` | Web routes, components, Server Actions, data fetching, proxy.ts |
-| `trainers-mobile` | Mobile screens, Tamagui UI, Expo Router, SecureStore |
-| `trainers-supabase` | DB queries/mutations, client selection, Edge Functions |
-| `trainers-validators` | Zod schemas, Server Action return types, profanity filter |
-| `trainers-tournaments` | Swiss pairings, standings, brackets, adapters |
-| `trainers-pokemon` | Team parsing, legality validation, type effectiveness |
-| `trainers-utils` | `getLabel()`, `getErrorMessage()`, permissions, formatting |
-| `trainers-posthog` | Analytics event constants, adding new events |
-| `trainers-atproto` | Bluesky/AT Protocol, DID resolution, public agent |
-| `trainers-theme` | OKLCH tokens, design tokens, web/mobile theme exports |
-| `trainers-test-utils` | Fishery factories, Supabase/AT Protocol mocks, Jest config |
+| `web-app` | Web routes, components, Server Actions, data fetching, proxy.ts |
+| `mobile-app` | Mobile screens, Tamagui UI, Expo Router, SecureStore |
+| `database` | DB queries/mutations, client selection, Edge Functions |
+| `validation` | Zod schemas, Server Action return types, profanity filter |
+| `tournaments` | Swiss pairings, standings, brackets, adapters |
+| `pokemon` | Team parsing, legality validation, type effectiveness |
+| `utils` | `getLabel()`, `getErrorMessage()`, permissions, formatting |
+| `analytics` | PostHog event constants, adding new events |
+| `atproto` | Bluesky/AT Protocol, DID resolution, public agent |
+| `theme` | OKLCH tokens, design tokens, web/mobile theme exports |
+| `testing` | Fishery factories, Supabase/AT Protocol mocks, Jest config |
 
 ### Infrastructure
 

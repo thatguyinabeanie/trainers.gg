@@ -1,5 +1,5 @@
 ---
-name: trainers-atproto
+name: atproto
 description: Use when integrating AT Protocol, Bluesky feeds, DID resolution, handles, or working with the atproto package
 ---
 
