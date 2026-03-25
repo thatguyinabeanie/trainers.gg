@@ -3,6 +3,7 @@ import {
   getNotifications,
   getUnreadNotificationCount,
   getActiveMatchNotifications,
+  getNotificationCount,
 } from "../notifications";
 import type { TypedClient } from "../../client";
 
@@ -342,6 +343,140 @@ describe("notifications queries", () => {
       await getActiveMatchNotifications(mockClient);
 
       expect(mockClient._queryBuilder.is).toHaveBeenCalledWith("read_at", null);
+    });
+  });
+
+  describe("getNotifications with types filter", () => {
+    it("should filter by notification types when provided", async () => {
+      const mockClient = createMockClient();
+
+      await getNotifications(mockClient, {
+        types: ["match_ready", "match_result"],
+      });
+
+      expect(mockClient._queryBuilder.in).toHaveBeenCalledWith("type", [
+        "match_ready",
+        "match_result",
+      ]);
+    });
+
+    it("should not filter by types when types is undefined", async () => {
+      const mockClient = createMockClient();
+
+      await getNotifications(mockClient);
+
+      expect(mockClient._queryBuilder.in).not.toHaveBeenCalled();
+    });
+
+    it("should not filter by types when types is an empty array", async () => {
+      const mockClient = createMockClient();
+
+      await getNotifications(mockClient, { types: [] });
+
+      expect(mockClient._queryBuilder.in).not.toHaveBeenCalled();
+    });
+
+    it("should combine types filter with unreadOnly filter", async () => {
+      const mockClient = createMockClient();
+
+      await getNotifications(mockClient, {
+        unreadOnly: true,
+        types: ["tournament_start", "tournament_round"],
+      });
+
+      expect(mockClient._queryBuilder.is).toHaveBeenCalledWith("read_at", null);
+      expect(mockClient._queryBuilder.in).toHaveBeenCalledWith("type", [
+        "tournament_start",
+        "tournament_round",
+      ]);
+    });
+  });
+
+  describe("getNotificationCount", () => {
+    it("should return total count of notifications", async () => {
+      const mockClient = createMockClient();
+      mockClient._queryBuilder.then = jest.fn((resolve) => {
+        return Promise.resolve({
+          data: null,
+          error: null,
+          count: 42,
+        }).then(resolve);
+      });
+
+      const result = await getNotificationCount(mockClient);
+
+      expect(result).toBe(42);
+      expect(mockClient.from).toHaveBeenCalledWith("notifications");
+      expect(mockClient._queryBuilder.select).toHaveBeenCalledWith("*", {
+        count: "exact",
+        head: true,
+      });
+    });
+
+    it("should return 0 when count is null", async () => {
+      const mockClient = createMockClient();
+      mockClient._queryBuilder.then = jest.fn((resolve) => {
+        return Promise.resolve({
+          data: null,
+          error: null,
+          count: null,
+        }).then(resolve);
+      });
+
+      const result = await getNotificationCount(mockClient);
+
+      expect(result).toBe(0);
+    });
+
+    it("should filter by unreadOnly when specified", async () => {
+      const mockClient = createMockClient();
+      mockClient._queryBuilder.then = jest.fn((resolve) => {
+        return Promise.resolve({
+          data: null,
+          error: null,
+          count: 5,
+        }).then(resolve);
+      });
+
+      await getNotificationCount(mockClient, { unreadOnly: true });
+
+      expect(mockClient._queryBuilder.is).toHaveBeenCalledWith("read_at", null);
+    });
+
+    it("should filter by types when specified", async () => {
+      const mockClient = createMockClient();
+      mockClient._queryBuilder.then = jest.fn((resolve) => {
+        return Promise.resolve({
+          data: null,
+          error: null,
+          count: 3,
+        }).then(resolve);
+      });
+
+      await getNotificationCount(mockClient, {
+        types: ["match_ready", "match_result"],
+      });
+
+      expect(mockClient._queryBuilder.in).toHaveBeenCalledWith("type", [
+        "match_ready",
+        "match_result",
+      ]);
+    });
+
+    it("should throw error on database failure", async () => {
+      const mockClient = createMockClient();
+      const dbError = new Error("Database error");
+      mockClient._queryBuilder.then = jest.fn((resolve) => {
+        return Promise.resolve({
+          data: null,
+          error: dbError,
+          count: null,
+        }).then(resolve);
+      });
+
+      await expect(getNotificationCount(mockClient)).rejects.toThrow(
+        "Database error"
+      );
     });
   });
 });

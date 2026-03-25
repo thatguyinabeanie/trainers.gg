@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition, useCallback } from "react";
+import { useState, useTransition } from "react";
 import { useAuth } from "@/components/auth/auth-provider";
 import { useSupabaseQuery } from "@/lib/supabase";
 import { getCurrentUserAlts } from "@trainers/supabase";
@@ -29,7 +29,9 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { createAltAction, deleteAltAction } from "@/actions/alts";
+import { updateAltVisibilityAction } from "@/actions/profile";
 import { SpritePicker } from "@/components/profile/sprite-picker";
+import { Switch } from "@/components/ui/switch";
 
 export default function AltsPage() {
   const { user } = useAuth();
@@ -37,10 +39,8 @@ export default function AltsPage() {
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
 
-  const altsQueryFn = useCallback(
-    (client: TypedSupabaseClient) => getCurrentUserAlts(client),
-    []
-  );
+  const altsQueryFn = (client: TypedSupabaseClient) =>
+    getCurrentUserAlts(client);
   const {
     data: alts,
     isLoading,
@@ -48,18 +48,15 @@ export default function AltsPage() {
   } = useSupabaseQuery(altsQueryFn, ["alts", refreshKey]);
 
   // Get user's main_alt_id
-  const mainAltQueryFn = useCallback(
-    async (client: TypedSupabaseClient) => {
-      if (!user) return null;
-      const { data } = await client
-        .from("users")
-        .select("main_alt_id")
-        .eq("id", user.id)
-        .single();
-      return data?.main_alt_id ?? null;
-    },
-    [user]
-  );
+  const mainAltQueryFn = async (client: TypedSupabaseClient) => {
+    if (!user) return null;
+    const { data } = await client
+      .from("users")
+      .select("main_alt_id")
+      .eq("id", user.id)
+      .single();
+    return data?.main_alt_id ?? null;
+  };
   const { data: mainAltId } = useSupabaseQuery(mainAltQueryFn, [
     "mainAlt",
     user?.id,
@@ -251,6 +248,9 @@ export default function AltsPage() {
                     <th className="text-muted-foreground hidden h-12 px-4 text-left align-middle text-xs font-medium tracking-wider uppercase sm:table-cell">
                       Stats
                     </th>
+                    <th className="text-muted-foreground h-12 px-4 text-center align-middle text-xs font-medium tracking-wider uppercase">
+                      Public
+                    </th>
                     <th className="text-muted-foreground h-12 px-4 text-right align-middle text-xs font-medium tracking-wider uppercase">
                       Actions
                     </th>
@@ -330,6 +330,32 @@ export default function AltsPage() {
                             <span>•</span>
                             <span className="font-mono">0-0</span>
                           </div>
+                        </td>
+
+                        {/* Public Visibility Column */}
+                        <td className="px-4 py-3 text-center align-middle">
+                          <Switch
+                            size="sm"
+                            checked={alt.is_public}
+                            onCheckedChange={(checked) => {
+                              startTransition(async () => {
+                                const result = await updateAltVisibilityAction(
+                                  alt.id,
+                                  checked
+                                );
+                                if (result.success) {
+                                  refetch();
+                                } else {
+                                  toast.error(
+                                    result.error ??
+                                      "Failed to update visibility"
+                                  );
+                                }
+                              });
+                            }}
+                            disabled={isPending}
+                            aria-label={`Make ${alt.username} public`}
+                          />
                         </td>
 
                         {/* Actions Column */}

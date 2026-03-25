@@ -563,3 +563,52 @@ export async function updateProfile(data: {
     return { success: false, error: "An unexpected error occurred" };
   }
 }
+
+/**
+ * Toggle the `is_public` visibility of an alt.
+ * Validates that the alt belongs to the current user.
+ */
+export async function updateAltVisibilityAction(
+  altId: number,
+  isPublic: boolean
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) {
+      return { success: false, error: "Not authenticated" };
+    }
+
+    // Verify the alt belongs to the current user
+    const { data: alt, error: altError } = await supabase
+      .from("alts")
+      .select("id, user_id")
+      .eq("id", altId)
+      .maybeSingle();
+
+    if (altError || !alt) {
+      return { success: false, error: "Alt not found" };
+    }
+
+    if (alt.user_id !== user.id) {
+      return { success: false, error: "You can only update your own alts" };
+    }
+
+    const { error: updateError } = await supabase
+      .from("alts")
+      .update({ is_public: isPublic })
+      .eq("id", altId);
+
+    if (updateError) {
+      return { success: false, error: "Failed to update alt visibility" };
+    }
+
+    revalidatePath("/dashboard/alts");
+    return { success: true };
+  } catch (error) {
+    console.error("Error in updateAltVisibility:", error);
+    return { success: false, error: "An unexpected error occurred" };
+  }
+}

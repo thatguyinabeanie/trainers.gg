@@ -4,12 +4,17 @@ import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { User, Shield, Palette } from "lucide-react";
+import { User, Shield, Palette, Bell } from "lucide-react";
 
 const tabs = [
   { href: "/dashboard/settings/profile", label: "Profile", icon: User },
   { href: "/dashboard/settings/account", label: "Account", icon: Shield },
   { href: "/dashboard/settings/display", label: "Display", icon: Palette },
+  {
+    href: "/dashboard/settings/notifications",
+    label: "Notifications",
+    icon: Bell,
+  },
 ];
 
 export default function SettingsLayout({
@@ -31,7 +36,7 @@ export default function SettingsLayout({
       <div className="border-b">
         <nav className="flex gap-0">
           {tabs.map((tab) => {
-            const isActive = pathname === tab.href;
+            const isActive = pathname.startsWith(tab.href);
             const Icon = tab.icon;
 
             return (

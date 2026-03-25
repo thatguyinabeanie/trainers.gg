@@ -36,6 +36,7 @@ import {
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import type { RealtimeChannel } from "@supabase/supabase-js";
 import {
   acceptOrganizationInvitation,
@@ -427,6 +428,17 @@ export function NotificationBell({ userId }: NotificationBellProps) {
               })}
             </>
           )}
+        </div>
+
+        {/* View all link */}
+        <div className="border-t px-4 py-2">
+          <Link
+            href="/dashboard/notifications"
+            className="text-primary block text-center text-sm font-medium hover:underline"
+            onClick={() => setOpen(false)}
+          >
+            View all notifications
+          </Link>
         </div>
       </PopoverContent>
     </Popover>

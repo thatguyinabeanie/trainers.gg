@@ -21,6 +21,7 @@ import {
   ChevronRight,
   Shield,
   ShieldAlert,
+  User,
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -171,6 +172,17 @@ export function TopNavAuthSection() {
               <span>Dashboard</span>
             </Link>
           </DropdownMenuItem>
+          {user.user_metadata?.username && (
+            <DropdownMenuItem>
+              <Link
+                href={`/u/${user.user_metadata.username}`}
+                className="flex items-center gap-1.5"
+              >
+                <User className="mr-2 h-4 w-4" />
+                <span>My Profile</span>
+              </Link>
+            </DropdownMenuItem>
+          )}
 
           {/* My Organizations Section - Only show if user has orgs */}
           {hasOrganizations && (

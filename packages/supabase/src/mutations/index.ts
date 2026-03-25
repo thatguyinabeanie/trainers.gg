@@ -96,3 +96,6 @@ export {
   markAllNotificationsRead,
   deleteNotification,
 } from "./notifications";
+
+// Notification preference mutations
+export { upsertNotificationPreferences } from "./notification-preferences";

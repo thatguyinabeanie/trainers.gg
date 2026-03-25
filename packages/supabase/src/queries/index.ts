@@ -18,6 +18,10 @@ export {
   getCurrentUserAlts,
   getUserSpritePreference,
   getPlayerProfileByHandle,
+  getFollowerCount,
+  getFollowingCount,
+  getPlayerTournamentHistoryFull,
+  getPlayerPublicTeams,
 } from "./users";
 
 // Organization queries
@@ -114,7 +118,15 @@ export {
 } from "./match-games";
 
 // Notification queries
-export { getNotifications, getUnreadNotificationCount } from "./notifications";
+export {
+  getNotifications,
+  getUnreadNotificationCount,
+  getNotificationCount,
+  getActiveMatchNotifications,
+} from "./notifications";
+
+// Notification preference queries
+export { getNotificationPreferences } from "./notification-preferences";
 
 // Audit log queries
 export {
@@ -192,6 +204,24 @@ export {
   updateFeatureFlag,
   deleteFeatureFlag,
 } from "./feature-flags";
+
+// Player directory queries
+export {
+  searchPlayers,
+  getLeaderboard,
+  getRecentlyActivePlayers,
+  getNewMembers,
+} from "./players";
+
+export type {
+  PlayerDirectoryEntry,
+  SearchPlayersResult,
+  PlayerSortOption,
+  PlayerSearchFilters,
+  LeaderboardEntry,
+  RecentlyActivePlayer,
+  NewMemberEntry,
+} from "./players";
 
 // Announcement queries
 export {
