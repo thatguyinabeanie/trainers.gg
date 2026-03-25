@@ -1,5 +1,5 @@
 ---
-name: tournaments
+name: tournament-logic
 description: Use when working with tournament logic, Swiss pairings, standings, brackets, drops, byes, or the tournaments package
 ---
 

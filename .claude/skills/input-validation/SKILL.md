@@ -1,5 +1,5 @@
 ---
-name: validation
+name: input-validation
 description: Use when creating Zod schemas, adding input validation, working with Server Action return types, or the validators package
 ---
 

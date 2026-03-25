@@ -1,5 +1,5 @@
 ---
-name: atproto
+name: atproto-bluesky
 description: Use when integrating AT Protocol, Bluesky feeds, DID resolution, handles, or working with the atproto package
 ---
 

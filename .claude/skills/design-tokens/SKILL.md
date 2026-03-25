@@ -1,5 +1,5 @@
 ---
-name: theme
+name: design-tokens
 description: Use when adding design tokens, OKLCH color primitives, or building the theme package for web or mobile
 ---
 

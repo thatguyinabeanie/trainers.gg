@@ -1,5 +1,5 @@
 ---
-name: mobile-app
+name: building-mobile-app
 description: Use when building mobile screens, navigation, Tamagui UI, or any feature in apps/mobile
 ---
 

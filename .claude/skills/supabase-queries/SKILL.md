@@ -1,5 +1,5 @@
 ---
-name: database
+name: supabase-queries
 description: Use when writing database queries, mutations, choosing a Supabase client, or working with Edge Functions
 ---
 

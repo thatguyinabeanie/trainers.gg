@@ -1,5 +1,5 @@
 ---
-name: testing
+name: writing-tests
 description: Use when writing tests, creating test data, mocking Supabase or AT Protocol, or configuring Jest
 ---
 
