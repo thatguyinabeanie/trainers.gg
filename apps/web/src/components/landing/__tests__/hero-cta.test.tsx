@@ -2,17 +2,22 @@ import { render, screen } from "@testing-library/react";
 import { HeroCTA } from "../hero-cta";
 
 // Mock Next.js Link to render a plain anchor so href is accessible in tests
-jest.mock("next/link", () => {
-  return function MockLink({
+jest.mock("next/link", () => ({
+  __esModule: true,
+  default: ({
     href,
     children,
+    ...props
   }: {
     href: string;
     children: React.ReactNode;
-  }) {
-    return <a href={href}>{children}</a>;
-  };
-});
+    [key: string]: unknown;
+  }) => (
+    <a href={href} {...props}>
+      {children}
+    </a>
+  ),
+}));
 
 // Mock the auth provider so we can control auth state per test
 jest.mock("@/components/auth/auth-provider", () => ({

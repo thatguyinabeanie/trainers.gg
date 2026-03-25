@@ -149,35 +149,39 @@ export async function searchPlayers(
 
   // Step 3: If filtering by format, get user IDs that have played that format
   if (format) {
-    // Find alt IDs that have stats in tournaments with this format
-    const { data: formatAlts } = await supabase
-      .from("tournament_player_stats")
-      .select(
-        "alt_id, tournament:tournaments!tournament_player_stats_tournament_id_fkey(format)"
-      );
+    // First get tournament IDs for this format (server-side filter)
+    const { data: formatTournaments } = await supabase
+      .from("tournaments")
+      .select("id")
+      .ilike("format", format);
 
-    const formatUserIds = new Set<string>();
-    for (const row of formatAlts ?? []) {
-      const tournament = row.tournament as { format: string | null } | null;
-      if (tournament?.format === format) {
-        // We need to resolve alt_id to user_id
-        // Collect alt IDs first, then batch resolve
-        formatUserIds.add(String(row.alt_id));
-      }
+    const tournamentIds = (formatTournaments ?? []).map((t) => t.id);
+
+    if (tournamentIds.length === 0) {
+      return { players: [], totalCount: 0, page };
     }
 
-    if (formatUserIds.size === 0) {
+    // Then get alt IDs that have stats in those tournaments
+    const { data: formatStats } = await supabase
+      .from("tournament_player_stats")
+      .select("alt_id")
+      .in("tournament_id", tournamentIds);
+
+    const altIds = [...new Set((formatStats ?? []).map((s) => s.alt_id))];
+
+    if (altIds.length === 0) {
       return { players: [], totalCount: 0, page };
     }
 
     // Resolve alt IDs to user IDs
-    const altIdNumbers = Array.from(formatUserIds).map(Number);
     const { data: altUsers } = await supabase
       .from("alts")
       .select("user_id")
-      .in("id", altIdNumbers);
+      .in("id", altIds);
 
-    const resolvedUserIds = (altUsers ?? []).map((a) => a.user_id);
+    const resolvedUserIds = [
+      ...new Set((altUsers ?? []).map((a) => a.user_id)),
+    ];
 
     if (resolvedUserIds.length === 0) {
       return { players: [], totalCount: 0, page };
@@ -362,10 +366,12 @@ export async function getLeaderboard(
   supabase: TypedClient,
   limit = 5
 ): Promise<LeaderboardEntry[]> {
-  // Get all tournament_player_stats with alt info
+  // Get tournament_player_stats — limited to recent data to avoid loading
+  // entire history. A materialized view would be ideal for larger datasets.
   const { data: stats, error } = await supabase
     .from("tournament_player_stats")
-    .select("alt_id, tournament_id, match_wins, match_losses");
+    .select("alt_id, tournament_id, match_wins, match_losses")
+    .limit(5000);
 
   if (error) throw error;
 
