@@ -28,7 +28,6 @@ export {
   emailSchema,
   validatePassword,
   loginIdentifierSchema,
-  waitlistEmailSchema,
   signupRequestSchema,
   type Password,
   type Username,

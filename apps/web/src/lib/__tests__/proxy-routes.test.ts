@@ -6,7 +6,6 @@ import { describe, it, expect } from "@jest/globals";
 import {
   isStaticFile,
   isPublicRoute,
-  isPublicRouteDuringMaintenance,
   isProtectedRoute,
   isAdminRoute,
   isNextInternal,
@@ -45,7 +44,6 @@ describe("proxy-routes", () => {
       expect(isPublicRoute("/sign-up")).toBe(true);
       expect(isPublicRoute("/forgot-password")).toBe(true);
       expect(isPublicRoute("/reset-password")).toBe(true);
-      expect(isPublicRoute("/waitlist")).toBe(true);
       expect(isPublicRoute("/invite")).toBe(true);
       expect(isPublicRoute("/tournaments")).toBe(true);
       expect(isPublicRoute("/organizations")).toBe(true);
@@ -75,22 +73,6 @@ describe("proxy-routes", () => {
         expect(isPublicRoute(route)).toBe(true);
         expect(isPublicRoute(`${route}/sub`)).toBe(true);
       }
-    });
-  });
-
-  describe("isPublicRouteDuringMaintenance", () => {
-    it("should treat home page as public during maintenance", () => {
-      expect(isPublicRouteDuringMaintenance("/")).toBe(true);
-    });
-
-    it("should include all regular public routes", () => {
-      expect(isPublicRouteDuringMaintenance("/sign-in")).toBe(true);
-      expect(isPublicRouteDuringMaintenance("/waitlist")).toBe(true);
-    });
-
-    it("should not include protected routes", () => {
-      expect(isPublicRouteDuringMaintenance("/dashboard")).toBe(false);
-      expect(isPublicRouteDuringMaintenance("/admin")).toBe(false);
     });
   });
 

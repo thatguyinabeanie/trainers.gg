@@ -1,11 +1,8 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/middleware";
 import { cookies } from "next/headers";
-import { isMaintenanceModeEnabled } from "@/lib/maintenance";
-import { isMaintenanceModeEnabledAsync } from "@/lib/maintenance-server";
 import {
   isStaticFile,
-  isPublicRouteDuringMaintenance,
   isProtectedRoute,
   isAdminRoute,
   isNextInternal,
@@ -14,7 +11,7 @@ import {
 /**
  * Proxy (Next.js 16 request interception)
  *
- * Four layers of route protection:
+ * Three layers of route protection:
  *
  * 1. Admin routes (role-based + sudo mode):
  *    - /admin/* requires BOTH:
@@ -32,14 +29,9 @@ import {
  *    - Impersonation requires an active sudo session
  *
  * 3. Protected routes (auth required, always enforced):
- *    - /dashboard, /to-dashboard, /organizations/create, /feed
+ *    - /dashboard, /to-dashboard, /organizations/create
  *    - /tournaments/[slug]/r/[round]/t/[table]
  *    - Unauthenticated users are redirected to /sign-in?redirect=<path>
- *
- * 4. Private beta / maintenance mode:
- *    - Checks NEXT_PUBLIC_MAINTENANCE_MODE env var (sync, fast)
- *    - Also checks `maintenance_mode` feature flag in Supabase (async)
- *    - Unauthenticated users on non-public routes redirected to /waitlist
  */
 
 export default async function proxy(request: NextRequest) {
@@ -49,9 +41,6 @@ export default async function proxy(request: NextRequest) {
   if (isStaticFile(pathname) || isNextInternal(pathname)) {
     return NextResponse.next();
   }
-
-  // Fast sync check for maintenance mode (env var override)
-  let maintenanceMode = isMaintenanceModeEnabled();
 
   // Create Supabase client and refresh session
   const { supabase, response } = createClient(request);
@@ -72,15 +61,6 @@ export default async function proxy(request: NextRequest) {
     }
   } catch (err) {
     console.error("Exception in proxy getUser():", err);
-  }
-
-  // If env var didn't activate maintenance mode, check the DB feature flag
-  if (!maintenanceMode) {
-    try {
-      maintenanceMode = await isMaintenanceModeEnabledAsync();
-    } catch (err) {
-      console.error("[proxy] Failed to check maintenance mode flag:", err);
-    }
   }
 
   // Admin routes require site_admin role in JWT AND active sudo mode
@@ -170,24 +150,11 @@ export default async function proxy(request: NextRequest) {
     }
   }
 
-  // Protected routes always require authentication (redirect to sign-in)
-  // In maintenance mode, unauthenticated users on protected routes go to /waitlist instead
+  // Protected routes always require authentication
   if (!user && isProtectedRoute(pathname)) {
-    if (maintenanceMode) {
-      const waitlistUrl = new URL("/waitlist", request.url);
-      return NextResponse.redirect(waitlistUrl);
-    }
     const signInUrl = new URL("/sign-in", request.url);
     signInUrl.searchParams.set("redirect", pathname);
     return NextResponse.redirect(signInUrl);
-  }
-
-  // === PRIVATE BETA / MAINTENANCE MODE ===
-  // Redirect unauthenticated users on non-public routes to /waitlist
-  // During maintenance mode, home page (/) is treated as public to display waitlist
-  if (maintenanceMode && !user && !isPublicRouteDuringMaintenance(pathname)) {
-    const waitlistUrl = new URL("/waitlist", request.url);
-    return NextResponse.redirect(waitlistUrl);
   }
 
   return response;
@@ -203,7 +170,6 @@ export const config = {
      * - Static assets (svg, png, jpg, json, etc.)
      *
      * Note: /api routes are included so Supabase session refresh runs.
-     * Maintenance mode exclusions are handled in the proxy function.
      */
     "/((?!_next/static|_next/image|favicon.ico|sitemap.xml|robots.txt|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|json)$).*)",
   ],

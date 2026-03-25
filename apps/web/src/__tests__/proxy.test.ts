@@ -22,11 +22,6 @@ jest.mock("next/headers", () => ({
   cookies: jest.fn(() => mockCookies),
 }));
 
-const mockIsMaintenanceModeEnabled = jest.fn();
-jest.mock("@/lib/maintenance", () => ({
-  isMaintenanceModeEnabled: () => mockIsMaintenanceModeEnabled(),
-}));
-
 // Use actual proxy-routes (pure functions, no mocking needed)
 jest.mock("@/lib/proxy-routes", () => jest.requireActual("@/lib/proxy-routes"));
 
@@ -81,7 +76,6 @@ function createMockSupabaseClient(options: {
 describe("proxy", () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    mockIsMaintenanceModeEnabled.mockReturnValue(false);
   });
 
   // ── Static files / Next.js internals ──────────────────────
@@ -109,17 +103,6 @@ describe("proxy", () => {
       const location = new URL(result.headers.get("location")!);
       expect(location.pathname).toBe("/sign-in");
       expect(location.searchParams.get("redirect")).toBe("/dashboard");
-    });
-
-    it("should redirect to /waitlist in maintenance mode", async () => {
-      mockIsMaintenanceModeEnabled.mockReturnValue(true);
-      createMockSupabaseClient({ user: null });
-
-      const result = await proxy(createRequest("/dashboard"));
-
-      expect(result.status).toBe(307);
-      const location = new URL(result.headers.get("location")!);
-      expect(location.pathname).toBe("/waitlist");
     });
 
     it("should redirect for dynamic tournament match routes", async () => {
@@ -222,44 +205,12 @@ describe("proxy", () => {
     });
   });
 
-  // ── Maintenance mode ──────────────────────────────────────
-  describe("maintenance mode", () => {
-    beforeEach(() => {
-      mockIsMaintenanceModeEnabled.mockReturnValue(true);
-    });
-
-    it("should redirect unauthenticated users on non-public routes to /waitlist", async () => {
-      createMockSupabaseClient({ user: null });
-
-      const result = await proxy(createRequest("/some-page"));
-
-      expect(result.status).toBe(307);
-      const location = new URL(result.headers.get("location")!);
-      expect(location.pathname).toBe("/waitlist");
-    });
-
-    it("should pass through public routes", async () => {
+  // ── Public routes ─────────────────────────────────────────
+  describe("public routes", () => {
+    it("should pass through public routes for unauthenticated users", async () => {
       createMockSupabaseClient({ user: null });
 
       const result = await proxy(createRequest("/sign-in"));
-
-      expect(result.headers.get("location")).toBeNull();
-    });
-
-    it("should treat home page (/) as public", async () => {
-      createMockSupabaseClient({ user: null });
-
-      const result = await proxy(createRequest("/"));
-
-      expect(result.headers.get("location")).toBeNull();
-    });
-
-    it("should pass through for authenticated users", async () => {
-      createMockSupabaseClient({
-        user: { id: "user-123", email: "test@test.com" },
-      });
-
-      const result = await proxy(createRequest("/some-page"));
 
       expect(result.headers.get("location")).toBeNull();
     });

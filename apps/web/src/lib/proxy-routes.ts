@@ -7,7 +7,7 @@
 // Admin routes — require site_admin JWT role (checked separately from PROTECTED_ROUTES)
 export const ADMIN_ROUTES = ["/admin"];
 
-// Routes that require authentication (enforced regardless of maintenance mode)
+// Routes that require authentication
 export const PROTECTED_ROUTES = [
   "/dashboard",
   "/to-dashboard",
@@ -19,14 +19,13 @@ export const PROTECTED_PATTERNS = [
   /^\/tournaments\/[^/]+\/r\/\d+\/t\/\d+(\/|$)/, // Match pages contain chat, teams, game data
 ];
 
-// Routes that are always accessible (even in maintenance mode)
+// Routes that are always accessible without authentication
 export const PUBLIC_ROUTES = [
   "/sign-in",
   "/sign-up",
   "/forgot-password",
   "/reset-password",
-  "/waitlist",
-  "/invite", // Beta invite acceptance (unauthenticated users need access)
+  "/invite", // Invite acceptance (unauthenticated users need access)
   "/tournaments", // Browse tournaments (public directory)
   "/organizations", // Browse organizations (public directory)
   "/auth",
@@ -61,16 +60,6 @@ export function isPublicRoute(pathname: string): boolean {
   return PUBLIC_ROUTES.some(
     (route) => pathname === route || pathname.startsWith(`${route}/`)
   );
-}
-
-/**
- * Check if a route is public during maintenance mode
- *
- * During maintenance mode, the home page (/) is treated as a public route
- * so it can render and display the waitlist form for unauthenticated users.
- */
-export function isPublicRouteDuringMaintenance(pathname: string): boolean {
-  return pathname === "/" || isPublicRoute(pathname);
 }
 
 export function isProtectedRoute(pathname: string): boolean {

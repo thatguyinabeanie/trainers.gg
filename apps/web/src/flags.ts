@@ -9,7 +9,7 @@ import { supabaseAdapter } from "@/lib/feature-flags/adapter";
  * in the database.
  *
  * Usage in Server Components:
- *   const enabled = await maintenanceMode();
+ *   const enabled = await openRegistration();
  *
  * Usage with Vercel Toolbar:
  *   Flags defined here appear in the Vercel Toolbar Flag Explorer
@@ -27,17 +27,6 @@ import { supabaseAdapter } from "@/lib/feature-flags/adapter";
  *   Set FLAGS_SECRET in .env.local for Vercel Toolbar encryption.
  *   Generate with: node -e "console.log(crypto.randomBytes(32).toString('base64url'))"
  */
-
-export const maintenanceMode = flag<boolean>({
-  key: "maintenance_mode",
-  defaultValue: false,
-  description: "Redirect unauthenticated users to the waitlist page",
-  options: [
-    { label: "Off", value: false },
-    { label: "On", value: true },
-  ],
-  adapter: supabaseAdapter,
-});
 
 export const openRegistration = flag<boolean>({
   key: "open_registration",

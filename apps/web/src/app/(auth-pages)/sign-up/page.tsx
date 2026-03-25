@@ -6,17 +6,11 @@ import { Trophy } from "lucide-react";
 import Link from "next/link";
 import { SocialAuthButtons } from "@/components/auth/social-auth-buttons";
 import { SignInForm } from "@/components/auth/sign-in-form";
-import { WaitlistForm } from "@/components/auth/waitlist-form";
 import { getRedirectParam } from "@/app/(auth-pages)/utils";
 
 export default function SignUpPage() {
   const searchParams = useSearchParams();
-  const maintenanceMode = process.env.NEXT_PUBLIC_MAINTENANCE_MODE === "true";
   const [showEmailForm, setShowEmailForm] = useState(false);
-
-  if (maintenanceMode) {
-    return <WaitlistForm />;
-  }
 
   if (showEmailForm) {
     return (

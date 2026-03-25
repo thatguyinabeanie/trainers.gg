@@ -1,13 +1,9 @@
 "use server";
 
-import { checkBotId } from "botid/server";
 import { createClient } from "@/lib/supabase/server";
 import { getEmailByUsername } from "@trainers/supabase";
 import { escapeLike } from "@trainers/utils";
-import {
-  loginIdentifierSchema,
-  waitlistEmailSchema,
-} from "@trainers/validators";
+import { loginIdentifierSchema } from "@trainers/validators";
 
 /**
  * Resolve a login identifier (email or username) to an email address.
@@ -37,42 +33,6 @@ export async function resolveLoginIdentifier(
   } catch (err) {
     console.error("Error resolving username:", err);
     return { email: null, error: "An error occurred. Please try again." };
-  }
-}
-
-/**
- * Add an email to the waitlist for early access.
- * Note: waitlist table types will be available after the migration runs and types are regenerated.
- */
-export async function joinWaitlist(
-  email: string
-): Promise<{ success?: boolean; error?: string }> {
-  const { isBot } = await checkBotId();
-  if (isBot) return { error: "Access denied" };
-
-  const trimmed = waitlistEmailSchema.parse(email);
-
-  try {
-    const supabase = await createClient();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error } = await (supabase as any)
-      .from("waitlist")
-      .insert({ email: trimmed });
-
-    if (error?.code === "23505") {
-      // Unique constraint violation - email already exists
-      return { error: "This email is already on the waitlist" };
-    }
-
-    if (error) {
-      console.error("Error joining waitlist:", error);
-      return { error: "Failed to join waitlist. Please try again." };
-    }
-
-    return { success: true };
-  } catch (err) {
-    console.error("Error joining waitlist:", err);
-    return { error: "An error occurred. Please try again." };
   }
 }
 
