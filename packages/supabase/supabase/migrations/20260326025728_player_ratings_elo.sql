@@ -140,7 +140,7 @@ BEGIN
     JOIN public.tournament_phases    tp ON tp.id = tr.phase_id
     WHERE tp.tournament_id  = p_tournament_id
       AND tm.status         = 'completed'
-      AND tm.is_bye         = false
+      AND tm.is_bye         IS NOT TRUE
       AND tm.alt1_id        IS NOT NULL
       AND tm.alt2_id        IS NOT NULL
       AND tm.winner_alt_id  IS NOT NULL

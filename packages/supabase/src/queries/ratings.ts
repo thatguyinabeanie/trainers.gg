@@ -21,7 +21,7 @@ export type PlayerRating = {
 
 /**
  * Fetch the rating for a specific alt and format.
- * Returns null if no rating record exists yet (player hasn't completed a tournament).
+ * Returns null if no rating record exists yet or if the player has no rated games.
  */
 export async function getPlayerRating(
   supabase: TypedClient,
@@ -37,11 +37,12 @@ export async function getPlayerRating(
 
   if (error || !data) return null;
 
-  // Compute global rank: number of players with a strictly higher rating + 1
+  // Compute global rank: number of rated players (games_played > 0) with a strictly higher rating + 1
   const { count, error: countError } = await supabase
     .from("player_ratings")
     .select("*", { count: "exact", head: true })
     .eq("format", format)
+    .gt("games_played", 0)
     .gt("rating", data.rating);
 
   if (countError) return null;

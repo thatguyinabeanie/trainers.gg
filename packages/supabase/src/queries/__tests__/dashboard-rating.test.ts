@@ -1,3 +1,4 @@
+import { describe, it, expect, jest } from "@jest/globals";
 import { getMyDashboardData } from "../tournaments";
 import type { TypedClient } from "../../client";
 
