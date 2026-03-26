@@ -157,6 +157,16 @@ Multiple agents and humans may work on this codebase simultaneously. If you enco
 
 **Never deploy edge functions via `supabase functions deploy`.** Deploy via git → merge to main only. This applies to both new functions and updates.
 
+**Every edge function must be declared in `config.toml`.** The Supabase GitHub integration only deploys functions listed in `packages/supabase/supabase/config.toml`. If you create a new function directory under `supabase/functions/` without adding a `[functions.<name>]` entry to `config.toml`, it will not be deployed.
+
+```toml
+# Example: adding a new edge function
+[functions.my-new-function]
+verify_jwt = true
+```
+
+Set `verify_jwt = true` for functions that require an authenticated user (gateway rejects unauthenticated requests before the function runs). Set `verify_jwt = false` only for public functions where no JWT exists yet (e.g., `signup`, `bluesky-auth`).
+
 ### Request Interception: proxy.ts
 
 **Next.js 16 uses `proxy.ts`** — `middleware.ts` is deprecated. Must be at `src/proxy.ts` (not project root). Export a function named `proxy`. Verify it's loading by checking for `proxy.ts: XXms` in dev server output.
