@@ -250,6 +250,10 @@ Additional generated users follow the pattern `<username>@trainers.local` (see s
 
 - **Match URLs**: Use `/tournaments/[slug]/r/[round]/t/[table]` format (not `/matches/[matchId]`). No redirect from old format needed — app is pre-release with no existing links to maintain.
 
+## Development Workflow
+
+When executing implementation plans, always use **subagent-driven development** (`superpowers:subagent-driven-development`). Do not use inline execution unless explicitly asked.
+
 ## Project Management
 
 Linear for issue tracking (MCP server available). **Team**: `trainers-gg`. **Default Project**: `Private Beta MVP`.
