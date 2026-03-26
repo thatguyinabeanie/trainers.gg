@@ -67,4 +67,7 @@ export const CacheTags = {
 
   /** Tag for new members sidebar */
   PLAYERS_NEW: "players-new",
+
+  /** Tag for hero page platform overview stats (players, tournaments, matches) */
+  PLATFORM_OVERVIEW: "platform-overview",
 } as const;

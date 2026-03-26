@@ -1,8 +1,7 @@
 import { type Metadata } from "next";
 import { HeroCTA } from "@/components/landing/hero-cta";
+import { HeroStats } from "@/components/landing/hero-stats";
 import { JourneySteps } from "@/components/landing/journey-steps";
-
-export const revalidate = false;
 
 export const metadata: Metadata = {
   title: "trainers.gg — Your home for competitive Pokemon",
@@ -32,6 +31,9 @@ export default function HomePage() {
           <HeroCTA />
         </div>
       </section>
+
+      {/* Stats strip */}
+      <HeroStats />
 
       {/* Journey Steps */}
       <JourneySteps />
