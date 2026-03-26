@@ -354,12 +354,15 @@ async function runMigrations() {
     console.log("   Unmerged migrations must not be applied to production.");
     console.log("   Migrations will run when the branch is merged to main.\n");
   } else {
-    // Production deploy from main — push new migrations
+    // Production deploy from main — push new migrations and deploy edge functions
     console.log("\n🔗 Linking to Supabase project...");
     exec(`npx supabase link --project-ref ${projectRef}`, { env: cliEnv });
 
     console.log("\n📤 Applying migrations...");
     exec("npx supabase db push --linked", { env: cliEnv });
+
+    console.log("\n🚀 Deploying edge functions...");
+    exec("npx supabase functions deploy --linked", { env: cliEnv });
   }
 
   // Run seed data for preview environments

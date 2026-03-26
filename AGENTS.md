@@ -155,7 +155,7 @@ Multiple agents and humans may work on this codebase simultaneously. If you enco
 
 ### Edge Function Deployments
 
-**Never deploy edge functions via `supabase functions deploy`.** Deploy via git → merge to main only. This applies to both new functions and updates.
+**Never deploy edge functions manually via `supabase functions deploy`.** Edge functions are deployed automatically during the Vercel production build (`run-migrations.mjs`). Push to `main` to deploy. This applies to both new functions and updates.
 
 **Every edge function must be declared in `config.toml`.** The Supabase GitHub integration only deploys functions listed in `packages/supabase/supabase/config.toml`. If you create a new function directory under `supabase/functions/` without adding a `[functions.<name>]` entry to `config.toml`, it will not be deployed.
 
