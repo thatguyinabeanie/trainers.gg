@@ -9,8 +9,7 @@ interface SidebarLeaderboardProps {
 }
 
 /**
- * Sidebar widget showing the top 5 players by win rate.
- * Only includes players with 5+ tournament participations.
+ * Sidebar widget showing the top 5 players by ELO rating.
  */
 export function SidebarLeaderboard({ entries }: SidebarLeaderboardProps) {
   if (entries.length === 0) {
@@ -51,8 +50,9 @@ export function SidebarLeaderboard({ entries }: SidebarLeaderboardProps) {
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-medium">{entry.username}</p>
               <p className="text-muted-foreground text-xs">
-                {entry.winRate.toFixed(1)}% WR · {entry.tournamentCount}{" "}
-                tournaments
+                {entry.rating.toLocaleString()} pts ·{" "}
+                {entry.skillBracket.charAt(0).toUpperCase() +
+                  entry.skillBracket.slice(1)}
               </p>
             </div>
           </Link>
