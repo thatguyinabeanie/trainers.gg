@@ -346,12 +346,18 @@ async function runMigrations() {
     console.log("\n⏭️  Skipping migrations for preview branch");
     console.log("   Supabase automatically applies migrations when creating preview branches.");
     console.log("   Running migrations again would cause duplicate schema objects.");
+  } else if (env.type === "preview" && isProductionDb) {
+    // SAFETY: Never push unmerged branch migrations to production.
+    // This happens when Supabase branching falls back to the production URL
+    // (e.g., branch push before PR creation, or branching not enabled).
+    console.log("\n⛔ Skipping migrations — preview deploy connected to production DB");
+    console.log("   Unmerged migrations must not be applied to production.");
+    console.log("   Migrations will run when the branch is merged to main.\n");
   } else {
-    // Link to project (only needed for production)
+    // Production deploy from main — push new migrations
     console.log("\n🔗 Linking to Supabase project...");
     exec(`npx supabase link --project-ref ${projectRef}`, { env: cliEnv });
 
-    // For production, only push new migrations (never reset)
     console.log("\n📤 Applying migrations...");
     exec("npx supabase db push --linked", { env: cliEnv });
   }
