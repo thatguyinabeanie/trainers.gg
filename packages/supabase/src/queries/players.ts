@@ -39,13 +39,14 @@ export type PlayerSearchFilters = {
   sort?: PlayerSortOption;
 };
 
-/** Leaderboard entry (top players by win rate) */
+/** Leaderboard entry (top players by ELO rating) */
 export type LeaderboardEntry = {
   userId: string;
   username: string;
   avatarUrl: string | null;
-  winRate: number;
-  tournamentCount: number;
+  rating: number;
+  skillBracket: "beginner" | "intermediate" | "advanced" | "expert";
+  gamesPlayed: number;
 };
 
 /** Recently active player entry */
@@ -69,9 +70,6 @@ export type NewMemberEntry = {
 // ============================================================================
 
 const PAGE_SIZE = 24;
-
-// Minimum tournaments to qualify for the leaderboard
-const LEADERBOARD_MIN_TOURNAMENTS = 5;
 
 // ============================================================================
 // Queries
@@ -359,72 +357,26 @@ export async function searchPlayers(
 }
 
 /**
- * Get the top players by win rate for the leaderboard.
- * Only includes players with at least LEADERBOARD_MIN_TOURNAMENTS tournaments.
+ * Get the top players by ELO rating for the leaderboard.
+ * Only includes players who have played at least one rated match.
  */
 export async function getLeaderboard(
   supabase: TypedClient,
   limit = 5
 ): Promise<LeaderboardEntry[]> {
-  // Get tournament_player_stats — limited to recent data to avoid loading
-  // entire history. A materialized view would be ideal for larger datasets.
-  const { data: stats, error } = await supabase
-    .from("tournament_player_stats")
-    .select("alt_id, tournament_id, match_wins, match_losses")
-    .limit(5000);
+  const { data: ratings, error } = await supabase
+    .from("player_ratings")
+    .select("alt_id, rating, skill_bracket, games_played")
+    .eq("format", "overall")
+    .gt("games_played", 0)
+    .order("rating", { ascending: false })
+    .limit(limit);
 
   if (error) throw error;
-
-  // Aggregate by alt_id
-  const altStats = new Map<
-    number,
-    {
-      tournaments: Set<number>;
-      totalWins: number;
-      totalLosses: number;
-    }
-  >();
-
-  for (const row of stats ?? []) {
-    const current = altStats.get(row.alt_id) ?? {
-      tournaments: new Set<number>(),
-      totalWins: 0,
-      totalLosses: 0,
-    };
-    current.tournaments.add(row.tournament_id);
-    current.totalWins += row.match_wins ?? 0;
-    current.totalLosses += row.match_losses ?? 0;
-    altStats.set(row.alt_id, current);
-  }
-
-  // Filter to alts with minimum tournaments and calculate win rate
-  const qualifiedAlts: Array<{
-    altId: number;
-    tournamentCount: number;
-    winRate: number;
-  }> = [];
-
-  for (const [altId, data] of altStats) {
-    const tournamentCount = data.tournaments.size;
-    if (tournamentCount < LEADERBOARD_MIN_TOURNAMENTS) continue;
-
-    const totalMatches = data.totalWins + data.totalLosses;
-    if (totalMatches === 0) continue;
-
-    const winRate = (data.totalWins / totalMatches) * 100;
-    qualifiedAlts.push({ altId, tournamentCount, winRate });
-  }
-
-  // Sort by win rate descending
-  qualifiedAlts.sort((a, b) => b.winRate - a.winRate);
-
-  // Take top N
-  const topAlts = qualifiedAlts.slice(0, limit);
-
-  if (topAlts.length === 0) return [];
+  if (!ratings || ratings.length === 0) return [];
 
   // Resolve alt IDs to user info
-  const altIds = topAlts.map((a) => a.altId);
+  const altIds = ratings.map((r) => r.alt_id);
   const { data: alts } = await supabase
     .from("alts")
     .select("id, user_id, username, avatar_url")
@@ -442,16 +394,17 @@ export async function getLeaderboard(
     });
   }
 
-  return topAlts
-    .map((entry) => {
-      const altInfo = altInfoMap.get(entry.altId);
+  return ratings
+    .map((r) => {
+      const altInfo = altInfoMap.get(r.alt_id);
       if (!altInfo) return null;
       return {
         userId: altInfo.userId,
         username: altInfo.username,
         avatarUrl: altInfo.avatarUrl,
-        winRate: Math.round(entry.winRate * 10) / 10,
-        tournamentCount: entry.tournamentCount,
+        rating: Math.round(Number(r.rating)),
+        skillBracket: r.skill_bracket as LeaderboardEntry["skillBracket"],
+        gamesPlayed: r.games_played,
       };
     })
     .filter((entry): entry is LeaderboardEntry => entry !== null);

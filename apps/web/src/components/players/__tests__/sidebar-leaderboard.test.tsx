@@ -17,8 +17,9 @@ const makeEntries = (count: number) =>
     userId: `u${i}`,
     username: `player${i}`,
     avatarUrl: null as string | null,
-    winRate: 80 - i * 5,
-    tournamentCount: 10 - i,
+    rating: 1600 - i * 50,
+    skillBracket: "advanced" as const,
+    gamesPlayed: 10 - i,
   }));
 
 describe("SidebarLeaderboard", () => {
@@ -53,9 +54,9 @@ describe("SidebarLeaderboard", () => {
     expect(screen.getByText("3")).toBeInTheDocument();
   });
 
-  it("displays win rate and tournament count for each entry", () => {
+  it("displays rating and skill bracket for each entry", () => {
     render(<SidebarLeaderboard entries={makeEntries(1)} />);
-    expect(screen.getByText(/80\.0% WR · 10 tournaments/)).toBeInTheDocument();
+    expect(screen.getByText(/1,600 pts · Advanced/)).toBeInTheDocument();
   });
 
   it("renders avatar fallback initials", () => {
