@@ -22,7 +22,9 @@ digraph post_pr {
     "Check Copilot review" [shape=box];
     "Copilot reviewed?" [shape=diamond];
     "Copilot has actionable comments?" [shape=diamond];
-    "Review each comment with user 1-by-1" [shape=box];
+    "Review ALL comments with user 1-by-1\n(decisions only, no code yet)" [shape=box];
+    "User ready to implement?" [shape=diamond];
+    "Dispatch parallel subagents\n(one per approved fix)" [shape=box];
     "Address comments + push" [shape=box];
     "Wait ~60s" [shape=box];
     "Done" [shape=doublecircle];
@@ -38,8 +40,11 @@ digraph post_pr {
     "Check Copilot review" -> "Copilot reviewed?";
     "Copilot reviewed?" -> "Copilot has actionable comments?" [label="yes"];
     "Copilot reviewed?" -> "Wait ~60s" [label="no"];
-    "Copilot has actionable comments?" -> "Review each comment with user 1-by-1" [label="yes"];
-    "Review each comment with user 1-by-1" -> "Address comments + push";
+    "Copilot has actionable comments?" -> "Review ALL comments with user 1-by-1\n(decisions only, no code yet)" [label="yes"];
+    "Review ALL comments with user 1-by-1\n(decisions only, no code yet)" -> "User ready to implement?" [label="all reviewed"];
+    "User ready to implement?" -> "Dispatch parallel subagents\n(one per approved fix)" [label="yes"];
+    "User ready to implement?" -> "Review ALL comments with user 1-by-1\n(decisions only, no code yet)" [label="no, revisit"];
+    "Dispatch parallel subagents\n(one per approved fix)" -> "Address comments + push";
     "Copilot has actionable comments?" -> "Done" [label="no / approved"];
     "Address comments + push" -> "Check CI checks";
 }
@@ -84,20 +89,31 @@ gh api repos/{owner}/{repo}/pulls/{pr-number}/comments \
 
 ## Addressing Copilot Comments
 
-**Never silently fix Copilot comments on your own.** Review them with the user one at a time.
+**Never silently fix Copilot comments on your own.** Walk through every comment with the user first — no code changes until all comments have been reviewed and decisions recorded.
 
-For each comment:
+### Phase 1: Review (decisions only — no code)
+
+**Before presenting comments, group similar ones.** If multiple comments flag the same issue (e.g. three instances of "remove border from callout") or the same root cause, present them as a single batched item — one decision covers all of them. Don't make the user answer the same question three times.
+
+For each comment (or batch of similar comments):
 
 1. **Present it to the user** — show the file, line, and the full comment text
 2. **Explain what Copilot is asking for** in plain language — what the concern is and why it might matter
 3. **Give your read** — is this a valid concern, a false positive, or a style preference?
-4. **Wait for the user's decision** before touching any code
-5. Act on their decision:
-   - **Fix it** → make the change, show what changed, then ask: "Ready to move on to the next comment, or is there anything else you want to go over for this one?"
-   - **Skip it** → note it as acknowledged, then ask the same question
+4. **Wait for the user's decision**: fix or skip
+5. **Record the decision** and move to the next comment
 6. Only move to the next comment once the user confirms they're ready
 
-Do not batch comments or jump ahead. One comment, one conversation, one decision at a time. Always explicitly ask before advancing.
+Do not touch any code during Phase 1. One comment, one conversation, one decision at a time.
+
+### Phase 2: Implementation (after all comments reviewed)
+
+Once every comment has a decision, ask: **"Ready to implement all the fixes?"**
+
+- If yes → dispatch **parallel subagents** (one per approved fix) so all changes land in a single push
+- If the user wants to revisit any comment → go back to Phase 1 for that comment
+
+**Why parallel subagents:** Independent fixes on different lines/files can be implemented concurrently without conflicts, and a single push keeps CI clean.
 
 ## Timing
 

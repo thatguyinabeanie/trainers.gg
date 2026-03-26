@@ -1,5 +1,6 @@
 // apps/web/src/components/landing/journey-steps.tsx
 import { type ReactNode } from "react";
+import { cn } from "@/lib/utils";
 import { StatusBadge } from "@/components/ui/status-badge";
 
 // ---------------------------------------------------------------------------
@@ -33,7 +34,7 @@ function JourneyStep({
         {stepLabel} — {label}
         {comingSoon && <StatusBadge status="draft" label="Coming Soon" />}
       </p>
-      <h3 className="mb-3 text-xl font-semibold">{headline}</h3>
+      <h2 className="mb-3 text-xl font-semibold">{headline}</h2>
       <p className="text-muted-foreground text-sm leading-relaxed">
         {description}
       </p>
@@ -45,7 +46,7 @@ function JourneyStep({
   );
 
   return (
-    <section className="border-b py-16">
+    <section className={cn("py-16", number % 2 === 0 && "bg-muted/30")}>
       <div className="mx-auto grid max-w-screen-xl grid-cols-1 items-center gap-12 px-4 md:grid-cols-2">
         {reverse ? (
           <>
@@ -157,7 +158,7 @@ function MetaPreview() {
           </div>
         </div>
       ))}
-      <div className="mt-2 rounded border border-amber-500/20 bg-amber-500/10 px-3 py-2 text-xs text-amber-500">
+      <div className="mt-2 rounded bg-amber-500/10 px-3 py-2 text-xs text-amber-500">
         🔜 Regionals data integration coming soon
       </div>
     </div>
@@ -291,7 +292,7 @@ function CommunityPreview() {
           </div>
         ))}
       </div>
-      <div className="rounded border border-amber-500/20 bg-amber-500/10 px-3 py-2 text-xs">
+      <div className="rounded bg-amber-500/10 px-3 py-2 text-xs">
         <p className="font-semibold text-amber-500">🔜 Discord Server Index</p>
         <p className="text-muted-foreground mt-0.5">
           Find competitive Pokémon communities — all in one place
