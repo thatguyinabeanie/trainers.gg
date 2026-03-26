@@ -28,10 +28,10 @@ function CTAButtons({ authenticated }: { authenticated: boolean }) {
         </Link>
       )}
       <Link
-        href="/tournaments"
+        href="/players"
         className={cn(buttonVariants({ variant: "outline", size: "lg" }))}
       >
-        Browse Tournaments
+        Explore Players
       </Link>
     </div>
   );
