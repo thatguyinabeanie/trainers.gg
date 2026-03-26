@@ -3,6 +3,8 @@
  * Calculates actual stats based on base stats, level, nature, EVs, and IVs
  */
 
+import { gen9 } from "./dex";
+
 export interface BaseStats {
   hp: number;
   attack: number;
@@ -114,6 +116,28 @@ export const POKEMON_BASE_STATS: Record<string, BaseStats> = {
 };
 
 /**
+ * Look up a species' base stats from the Pokédex.
+ * Returns null if the species is not found in the dex.
+ */
+export function getBaseStats(species: string): BaseStats | null {
+  try {
+    const s = gen9.species.get(species);
+    if (!s?.exists) return null;
+    const { hp, atk, def, spa, spd, spe } = s.baseStats;
+    return {
+      hp,
+      attack: atk,
+      defense: def,
+      specialAttack: spa,
+      specialDefense: spd,
+      speed: spe,
+    };
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Calculate HP stat
  */
 export function calculateHP(
@@ -184,9 +208,10 @@ export function calculateStats(
     speed: number;
   }
 ): BaseStats {
-  const baseStats = POKEMON_BASE_STATS[species];
+  // Prefer dex lookup; fall back to legacy hardcoded map then placeholder
+  const baseStats =
+    getBaseStats(species) ?? POKEMON_BASE_STATS[species] ?? null;
   if (!baseStats) {
-    // Return placeholder stats if we don't have the base stats
     return {
       hp: 100,
       attack: 100,

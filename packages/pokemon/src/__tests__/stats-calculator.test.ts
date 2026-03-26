@@ -7,6 +7,7 @@ import {
   getStatColor,
   formatStats,
   getStatStageMultiplier,
+  getBaseStats,
   NATURE_EFFECTS,
   POKEMON_BASE_STATS,
 } from "../stats-calculator";
@@ -172,6 +173,70 @@ describe("POKEMON_BASE_STATS", () => {
   it("has base stats for Garchomp", () => {
     expect(POKEMON_BASE_STATS["Garchomp"]).toBeDefined();
     expect(POKEMON_BASE_STATS["Garchomp"]!.attack).toBe(130);
+  });
+});
+
+describe("getBaseStats", () => {
+  it("returns base stats for a valid species", () => {
+    const stats = getBaseStats("Garchomp");
+    expect(stats).not.toBeNull();
+    expect(stats!.attack).toBe(130);
+    expect(stats!.hp).toBe(108);
+    expect(stats!.speed).toBe(102);
+  });
+
+  it("maps dex stat keys to our BaseStats interface", () => {
+    const stats = getBaseStats("Incineroar");
+    expect(stats).not.toBeNull();
+    // Incineroar: hp 95, atk 115, def 90, spa 80, spd 90, spe 60
+    expect(stats!.hp).toBe(95);
+    expect(stats!.attack).toBe(115);
+    expect(stats!.defense).toBe(90);
+    expect(stats!.specialAttack).toBe(80);
+    expect(stats!.specialDefense).toBe(90);
+    expect(stats!.speed).toBe(60);
+  });
+
+  it("returns null for unknown species", () => {
+    expect(getBaseStats("FakePokemon")).toBeNull();
+  });
+
+  it.each([
+    [
+      "Flutter Mane",
+      {
+        hp: 55,
+        attack: 55,
+        defense: 55,
+        specialAttack: 135,
+        specialDefense: 135,
+        speed: 135,
+      },
+    ],
+    [
+      "Iron Hands",
+      {
+        hp: 154,
+        attack: 140,
+        defense: 108,
+        specialAttack: 50,
+        specialDefense: 68,
+        speed: 50,
+      },
+    ],
+    [
+      "Gholdengo",
+      {
+        hp: 87,
+        attack: 60,
+        defense: 95,
+        specialAttack: 133,
+        specialDefense: 91,
+        speed: 84,
+      },
+    ],
+  ])("returns correct base stats for %s", (species, expected) => {
+    expect(getBaseStats(species)).toEqual(expected);
   });
 });
 
