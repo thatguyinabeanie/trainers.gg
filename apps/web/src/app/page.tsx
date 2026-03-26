@@ -1,9 +1,6 @@
 import { type Metadata } from "next";
-import { Suspense } from "react";
 import { HeroCTA } from "@/components/landing/hero-cta";
 import { JourneySteps } from "@/components/landing/journey-steps";
-import { UpcomingTournamentsPreview } from "@/components/landing/upcoming-tournaments-preview";
-import { UpcomingTournamentsSkeleton } from "@/components/landing/upcoming-tournaments-skeleton";
 
 export const revalidate = false;
 
@@ -38,11 +35,6 @@ export default function HomePage() {
 
       {/* Journey Steps */}
       <JourneySteps />
-
-      {/* Live Upcoming Tournaments */}
-      <Suspense fallback={<UpcomingTournamentsSkeleton />}>
-        <UpcomingTournamentsPreview />
-      </Suspense>
 
       {/* Closing CTA */}
       <section className="bg-primary/5 py-16">
