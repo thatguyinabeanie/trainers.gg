@@ -5,6 +5,7 @@ import {
   calculateTeamSynergy,
   getTypeColor,
   getEffectivenessDisplay,
+  getSpeciesTypes,
   POKEMON_TYPES,
   type PokemonType,
 } from "../type-effectiveness";
@@ -276,6 +277,29 @@ describe("POKEMON_TYPES", () => {
 
   it("returns undefined for Pokemon not in the table", () => {
     expect(POKEMON_TYPES["Bulbasaur"]).toBeUndefined();
+  });
+});
+
+describe("getSpeciesTypes", () => {
+  it.each([
+    ["Pikachu", ["Electric"]],
+    ["Charizard", ["Fire", "Flying"]],
+    ["Garchomp", ["Dragon", "Ground"]],
+    ["Gholdengo", ["Steel", "Ghost"]],
+    ["Amoonguss", ["Grass", "Poison"]],
+    ["Dondozo", ["Water"]],
+  ])("returns correct types for %s", (species, expected) => {
+    expect(getSpeciesTypes(species)).toEqual(expected);
+  });
+
+  it("returns empty array for unknown species", () => {
+    expect(getSpeciesTypes("FakePokemon")).toEqual([]);
+  });
+
+  it("works for any gen9 species, not just hardcoded ones", () => {
+    // Bulbasaur is not in POKEMON_TYPES but should be in the dex
+    const types = getSpeciesTypes("Bulbasaur");
+    expect(types).toEqual(["Grass", "Poison"]);
   });
 });
 

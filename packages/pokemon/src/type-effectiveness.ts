@@ -2,6 +2,8 @@
  * Pokemon type effectiveness and coverage calculations
  */
 
+import { gen9 } from "./dex";
+
 export type PokemonType =
   | "Normal"
   | "Fire"
@@ -289,6 +291,22 @@ export const POKEMON_TYPES: Record<string, PokemonType[]> = {
 };
 
 /**
+ * Look up a species' types from the Pokédex.
+ * Returns an empty array if the species is not found in the dex.
+ */
+export function getSpeciesTypes(species: string): PokemonType[] {
+  try {
+    const s = gen9.species.get(species);
+    if (!s?.exists) return [];
+    return s.types.filter((t): t is PokemonType =>
+      (ALL_TYPES as readonly string[]).includes(t)
+    );
+  } catch {
+    return [];
+  }
+}
+
+/**
  * Get type effectiveness multiplier for an attack
  */
 export function getTypeEffectiveness(
@@ -409,10 +427,9 @@ export function calculateTeamCoverage(
     "Fairy",
   ];
 
-  // For simplicity, we'll assume moves match the Pokemon's type
-  // In a real implementation, you'd have a move database
+  // Use dex-backed type lookup; coverage is based on STAB types for now
   for (const member of team) {
-    const types = POKEMON_TYPES[member.species] || [];
+    const types = getSpeciesTypes(member.species);
 
     for (const attackType of types) {
       for (const defType of allTypes) {
@@ -470,9 +487,9 @@ export function calculateTeamSynergy(team: Array<{ species: string }>): {
   const teamResistances = new Set<PokemonType>();
   const teamImmunities = new Set<PokemonType>();
 
-  // Analyze each team member's defensive profile
+  // Analyze each team member's defensive profile using dex-backed type lookup
   for (const member of team) {
-    const types = POKEMON_TYPES[member.species] || [];
+    const types = getSpeciesTypes(member.species);
     const { weaknesses, resistances, immunities } = getDefensiveMatchups(types);
 
     // Track shared weaknesses

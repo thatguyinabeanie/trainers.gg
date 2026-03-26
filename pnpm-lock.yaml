@@ -13,11 +13,11 @@ catalogs:
       specifier: ^0.1.11
       version: 0.1.11
     '@pkmn/data':
-      specifier: ^0.10.5
-      version: 0.10.5
+      specifier: ^0.10.7
+      version: 0.10.7
     '@pkmn/dex':
-      specifier: ^0.10.5
-      version: 0.10.5
+      specifier: ^0.10.7
+      version: 0.10.7
     '@pkmn/img':
       specifier: ^0.3.3
       version: 0.3.3
@@ -25,8 +25,8 @@ catalogs:
       specifier: ^5.2.0
       version: 5.2.0
     '@pkmn/sim':
-      specifier: ^0.10.5
-      version: 0.10.5
+      specifier: ^0.10.7
+      version: 0.10.7
     '@supabase/ssr':
       specifier: ^0.8.0
       version: 0.8.0
@@ -135,16 +135,16 @@ importers:
         version: 15.0.3(expo-font@14.0.11(expo@54.0.33)(react-native@0.81.5(@babel/core@7.28.6)(@types/react@19.1.17)(bufferutil@4.1.0)(react@19.1.0)(utf-8-validate@5.0.10))(react@19.1.0))(react-native@0.81.5(@babel/core@7.28.6)(@types/react@19.1.17)(bufferutil@4.1.0)(react@19.1.0)(utf-8-validate@5.0.10))(react@19.1.0)
       '@pkmn/data':
         specifier: 'catalog:'
-        version: 0.10.5
+        version: 0.10.7
       '@pkmn/dex':
         specifier: 'catalog:'
-        version: 0.10.5
+        version: 0.10.7
       '@pkmn/sets':
         specifier: 'catalog:'
         version: 5.2.0
       '@pkmn/sim':
         specifier: 'catalog:'
-        version: 0.10.5
+        version: 0.10.7
       '@supabase/supabase-js':
         specifier: 'catalog:'
         version: 2.91.0(bufferutil@4.1.0)(utf-8-validate@5.0.10)
@@ -313,16 +313,16 @@ importers:
         version: 5.2.2(react-hook-form@7.71.1(react@19.1.0))
       '@pkmn/data':
         specifier: 'catalog:'
-        version: 0.10.5
+        version: 0.10.7
       '@pkmn/dex':
         specifier: 'catalog:'
-        version: 0.10.5
+        version: 0.10.7
       '@pkmn/img':
         specifier: 'catalog:'
         version: 0.3.3
       '@pkmn/sim':
         specifier: 'catalog:'
-        version: 0.10.5
+        version: 0.10.7
       '@radix-ui/react-dialog':
         specifier: ^1.1.15
         version: 1.1.15(@types/react-dom@19.1.11(@types/react@19.1.17))(@types/react@19.1.17)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
@@ -580,16 +580,16 @@ importers:
     dependencies:
       '@pkmn/data':
         specifier: 'catalog:'
-        version: 0.10.5
+        version: 0.10.7
       '@pkmn/dex':
         specifier: 'catalog:'
-        version: 0.10.5
+        version: 0.10.7
       '@pkmn/img':
         specifier: 'catalog:'
         version: 0.3.3
       '@pkmn/sim':
         specifier: 'catalog:'
-        version: 0.10.5
+        version: 0.10.7
     devDependencies:
       '@trainers/eslint-config':
         specifier: workspace:*
@@ -843,16 +843,16 @@ importers:
     dependencies:
       '@pkmn/data':
         specifier: 'catalog:'
-        version: 0.10.5
+        version: 0.10.7
       '@pkmn/dex':
         specifier: 'catalog:'
-        version: 0.10.5
+        version: 0.10.7
       '@pkmn/sets':
         specifier: 'catalog:'
         version: 5.2.0
       '@pkmn/sim':
         specifier: 'catalog:'
-        version: 0.10.5
+        version: 0.10.7
       obscenity:
         specifier: ^0.4.6
         version: 0.4.6
@@ -2618,14 +2618,14 @@ packages:
     resolution: {integrity: sha512-QNqXyfVS2wm9hweSYD2O7F0G06uurj9kZ96TRQE5Y9hU7+tgdZwIkbAKc5Ocy1HxEY2kuDQa6cQ1WRs/O5LFKA==}
     engines: {node: ^12.20.0 || ^14.18.0 || >=16.0.0}
 
-  '@pkmn/data@0.10.5':
-    resolution: {integrity: sha512-8s3X9Q+jkJiyrhvdtzO4Uqd9cMWlYh2OSbbfvBRYO85PwmyDBO36QjqRDWbAoBwmH3MOMuLHmlIXv5EAICJqWw==}
+  '@pkmn/data@0.10.7':
+    resolution: {integrity: sha512-csUX8BU4RMHxl3nEF3gIOp1eq9+q3xh+ZaX+Nr1RZBqWF4L5PkBzUG36KKgU+lw92BmncDYm7S8t52lPhAmoXA==}
 
-  '@pkmn/dex-types@0.10.5':
-    resolution: {integrity: sha512-saehdCTV/I1GL/VRGYknOt4cnUcf5Jeg73ZDalWsjG/DneIbAVUS1j7v9kelvVJ51UT0dymgUpqFdVvIIEJ9hA==}
+  '@pkmn/dex-types@0.10.7':
+    resolution: {integrity: sha512-ewinxJHyeLwYSOcDsy+2pq9e1mMYNXwBB9B3CZG2fvonrkxAyycR5AtLKPqE61480jPPxaZocOh+SLtUm648SA==}
 
-  '@pkmn/dex@0.10.5':
-    resolution: {integrity: sha512-id55qAIMekv1EMFgm761kVT2m+gcgrpgYYZWM7cX+1e8ufGmIALV7RCEZ+4tcOMI9jeAY6Bm3dNzMkgzKICImA==}
+  '@pkmn/dex@0.10.7':
+    resolution: {integrity: sha512-W2/92PNtEP8h/2nIPH1v7qCiiKb9r4JUybv46yo3nxXVZehs3gFR4h/TKK1sopJpLBFul1VSRCTpCdhQx5gLag==}
 
   '@pkmn/img@0.3.3':
     resolution: {integrity: sha512-z9bOd8nFPxFSwU4OiPBK2fqP7huA8RG+lc7tgSnv+Xn5/ZLk+eWgSQ/of36DIFHb47tRt2gyxNjM7K7FPb01Cw==}
@@ -2633,8 +2633,8 @@ packages:
   '@pkmn/sets@5.2.0':
     resolution: {integrity: sha512-WHAW6bZu0WCo/3b+LTW7BE0fBhYZnWH1lCXIu2an8/wTiZ/+s1eTcQYj7W/YQKxWT5dm/La03AZ6CeqdJip9CQ==}
 
-  '@pkmn/sim@0.10.5':
-    resolution: {integrity: sha512-wwN4RUl0ktnxn3eOtX9OIn6pmRVswuwCOqwSwamKcY4YITn9Q8gJ3Z700w8oyq/vmte8AEHMJ+KIyqp1GsOjHQ==}
+  '@pkmn/sim@0.10.7':
+    resolution: {integrity: sha512-X30oWBU17kniD98GPRTtn3Ww7qMpvfFUyCFildTelYHanTwIFE408OGFx2CCMJJMaaEZsyuQCMHuG6tghc+Udw==}
 
   '@pkmn/streams@1.1.0':
     resolution: {integrity: sha512-Pp9k7gt4xd76DqTU+LQEUyzuaauM4bV1MlehVtX1NS7o9zMFtjw50MfaEQ62dIMZyzxNjsJGoLGBeY1iSYLsRA==}
@@ -11377,17 +11377,17 @@ snapshots:
 
   '@pkgr/core@0.2.9': {}
 
-  '@pkmn/data@0.10.5':
+  '@pkmn/data@0.10.7':
     dependencies:
-      '@pkmn/dex-types': 0.10.5
+      '@pkmn/dex-types': 0.10.7
 
-  '@pkmn/dex-types@0.10.5':
+  '@pkmn/dex-types@0.10.7':
     dependencies:
       '@pkmn/types': 4.0.0
 
-  '@pkmn/dex@0.10.5':
+  '@pkmn/dex@0.10.7':
     dependencies:
-      '@pkmn/dex-types': 0.10.5
+      '@pkmn/dex-types': 0.10.7
 
   '@pkmn/img@0.3.3': {}
 
@@ -11395,7 +11395,7 @@ snapshots:
     dependencies:
       '@pkmn/types': 4.0.0
 
-  '@pkmn/sim@0.10.5':
+  '@pkmn/sim@0.10.7':
     dependencies:
       '@pkmn/sets': 5.2.0
       '@pkmn/streams': 1.1.0
@@ -17450,7 +17450,7 @@ snapshots:
 
   parse-json@5.2.0:
     dependencies:
-      '@babel/code-frame': 7.28.6
+      '@babel/code-frame': 7.29.0
       error-ex: 1.3.4
       json-parse-even-better-errors: 2.3.1
       lines-and-columns: 1.2.4
