@@ -103,6 +103,7 @@ CREATE OR REPLACE FUNCTION public.compute_tournament_elo(p_tournament_id bigint)
 RETURNS void
 LANGUAGE plpgsql
 SECURITY DEFINER
+SET search_path = ''
 AS $$
 DECLARE
   v_format      text;
@@ -188,6 +189,10 @@ BEGIN
 END;
 $$;
 
+-- Restrict direct invocation: only service_role / postgres may call this function.
+-- It is invoked internally by triggers and recalculate_tournament_elo — not by API roles.
+REVOKE EXECUTE ON FUNCTION public.compute_tournament_elo(bigint) FROM PUBLIC, anon, authenticated;
+
 -- ─────────────────────────────────────────────
 -- 5. Trigger: fire ELO computation when a tournament completes
 -- ─────────────────────────────────────────────
@@ -195,6 +200,7 @@ CREATE OR REPLACE FUNCTION public.trigger_elo_on_tournament_complete()
 RETURNS trigger
 LANGUAGE plpgsql
 SECURITY DEFINER
+SET search_path = ''
 AS $$
 BEGIN
   -- Only fire when status transitions TO 'completed'

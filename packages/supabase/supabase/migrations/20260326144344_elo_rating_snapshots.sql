@@ -26,6 +26,7 @@ CREATE OR REPLACE FUNCTION public.trigger_elo_on_match_complete()
 RETURNS trigger
 LANGUAGE plpgsql
 SECURITY DEFINER
+SET search_path = ''
 AS $$
 DECLARE
   v_format    text;
@@ -139,6 +140,7 @@ CREATE OR REPLACE FUNCTION public.recalculate_tournament_elo(p_tournament_id big
 RETURNS void
 LANGUAGE plpgsql
 SECURITY DEFINER
+SET search_path = ''
 AS $$
 DECLARE
   v_format  text;
@@ -190,6 +192,9 @@ BEGIN
     ) sub
     ORDER BY alt_id, round_number ASC, id ASC
   )
+  -- Note: peak_rating is intentionally not restored. It is a monotonic high-water
+  -- mark (peak_rating >= rating always holds) and must never decrease — even after
+  -- a result correction. Only rating/games_played/skill_bracket are rewound.
   UPDATE public.player_ratings pr
   SET
     rating        = fm.format_rating,
@@ -202,6 +207,7 @@ BEGIN
     AND fm.format_rating IS NOT NULL;
 
   -- Restore overall ratings separately
+  -- Note: peak_rating is intentionally not restored here either (same monotonic invariant).
   WITH first_match AS (
     SELECT DISTINCT ON (alt_id)
       alt_id,
@@ -306,3 +312,7 @@ BEGIN
   END LOOP;
 END;
 $$;
+
+-- Restrict direct invocation: only service_role / postgres may call this function.
+-- It is invoked internally by trigger_elo_on_result_correction — not by API roles.
+REVOKE EXECUTE ON FUNCTION public.recalculate_tournament_elo(bigint) FROM PUBLIC, anon, authenticated;

@@ -7,6 +7,7 @@ CREATE OR REPLACE FUNCTION public.trigger_elo_on_result_correction()
 RETURNS trigger
 LANGUAGE plpgsql
 SECURITY DEFINER
+SET search_path = ''
 AS $$
 DECLARE
   v_tournament_id bigint;

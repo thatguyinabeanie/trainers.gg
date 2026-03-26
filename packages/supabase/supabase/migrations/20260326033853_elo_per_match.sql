@@ -25,6 +25,7 @@ CREATE OR REPLACE FUNCTION public.trigger_elo_on_match_complete()
 RETURNS trigger
 LANGUAGE plpgsql
 SECURITY DEFINER
+SET search_path = ''
 AS $$
 DECLARE
   v_format    text;
