@@ -115,6 +115,25 @@ Once every comment has a decision, ask: **"Ready to implement all the fixes?"**
 
 **Why parallel subagents:** Independent fixes on different lines/files can be implemented concurrently without conflicts, and a single push keeps CI clean.
 
+### Phase 3: Reply to comments
+
+After pushing the fixes, **reply to every Copilot comment on the PR** to close the loop:
+
+- **Fixed comments** → reply with the commit SHA and a one-line summary of what changed
+- **Skipped comments** → reply with "Acknowledged — [brief reason for skipping]"
+
+```bash
+# Reply to a PR review comment
+gh api repos/{owner}/{repo}/pulls/comments/{comment_id}/replies \
+  -X POST -f body="Fixed in {sha} — {what changed}"
+
+# Get comment IDs
+gh api repos/{owner}/{repo}/pulls/{pr-number}/comments \
+  --jq '.[] | {id: .id, user: .user.login, path: .path}'
+```
+
+Post all replies in parallel (background `&` + `wait`) so it's fast.
+
 ## Timing
 
 | What | Typical wait |
