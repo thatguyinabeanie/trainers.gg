@@ -83,6 +83,15 @@ describe("getPlayerRating", () => {
     expect(result).toBeNull();
   });
 
+  it("returns null when the count query fails", async () => {
+    const client = createMockClient(
+      { data: RATING_ROW, error: null },
+      { data: null, error: { message: "count query failed" }, count: null }
+    );
+    const result = await getPlayerRating(client, 1);
+    expect(result).toBeNull();
+  });
+
   it("returns a shaped PlayerRating with rank when a row exists", async () => {
     const client = createMockClient(
       { data: RATING_ROW, error: null },

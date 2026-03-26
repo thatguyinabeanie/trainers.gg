@@ -1,6 +1,7 @@
 import type { Database } from "../types";
 import type { TypedClient } from "../client";
 import { checkRegistrationOpen, checkCheckInOpen } from "../utils/registration";
+import { getPlayerRating } from "./ratings";
 
 type TournamentStatus = Database["public"]["Enums"]["tournament_status"];
 
@@ -1552,27 +1553,9 @@ export async function getMyDashboardData(supabase: TypedClient, altId: number) {
   }
 
   // Fetch overall ELO rating for this alt
-  const { data: ratingRow } = await supabase
-    .from("player_ratings")
-    .select("rating, games_played")
-    .eq("alt_id", altId)
-    .eq("format", "overall")
-    .maybeSingle();
-
-  let currentRating = 0;
-  let ratingRank = 0;
-
-  if (ratingRow) {
-    currentRating = Math.round(Number(ratingRow.rating));
-
-    const { count } = await supabase
-      .from("player_ratings")
-      .select("*", { count: "exact", head: true })
-      .eq("format", "overall")
-      .gt("rating", ratingRow.rating);
-
-    ratingRank = (count ?? 0) + 1;
-  }
+  const ratingData = await getPlayerRating(supabase, altId, "overall");
+  const currentRating = ratingData ? Math.round(ratingData.rating) : 0;
+  const ratingRank = ratingData ? ratingData.globalRank : 0;
 
   return {
     myTournaments,

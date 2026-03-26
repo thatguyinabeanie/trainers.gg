@@ -38,11 +38,13 @@ export async function getPlayerRating(
   if (error || !data) return null;
 
   // Compute global rank: number of players with a strictly higher rating + 1
-  const { count } = await supabase
+  const { count, error: countError } = await supabase
     .from("player_ratings")
     .select("*", { count: "exact", head: true })
     .eq("format", format)
     .gt("rating", data.rating);
+
+  if (countError) return null;
 
   return {
     altId: data.alt_id,

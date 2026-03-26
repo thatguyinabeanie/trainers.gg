@@ -7,7 +7,7 @@ import { getPlayerRating } from "@trainers/supabase/queries";
  *
  * Returns the ELO rating for a specific alt, including global rank.
  * Defaults to the 'overall' format if not specified.
- * Returns null (204) if the player has no rating yet.
+ * Returns null (200) if the player has no rating yet.
  * Public endpoint — no auth required.
  */
 export async function GET(request: Request) {
