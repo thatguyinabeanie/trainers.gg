@@ -956,6 +956,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "organization_requests_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "organization_requests_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
@@ -1095,6 +1102,50 @@ export type Database = {
         }
         Relationships: []
       }
+      player_ratings: {
+        Row: {
+          alt_id: number
+          created_at: string
+          format: string
+          games_played: number
+          id: number
+          peak_rating: number
+          rating: number
+          skill_bracket: string
+          updated_at: string
+        }
+        Insert: {
+          alt_id: number
+          created_at?: string
+          format?: string
+          games_played?: number
+          id?: never
+          peak_rating?: number
+          rating?: number
+          skill_bracket?: string
+          updated_at?: string
+        }
+        Update: {
+          alt_id?: number
+          created_at?: string
+          format?: string
+          games_played?: number
+          id?: never
+          peak_rating?: number
+          rating?: number
+          skill_bracket?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "player_ratings_alt_id_fkey"
+            columns: ["alt_id"]
+            isOneToOne: false
+            referencedRelation: "alts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pokemon: {
         Row: {
           ability: string
@@ -1187,118 +1238,6 @@ export type Database = {
           tera_type?: string | null
         }
         Relationships: []
-      }
-      post_likes: {
-        Row: {
-          created_at: string | null
-          id: number
-          post_id: number
-          user_id: string
-        }
-        Insert: {
-          created_at?: string | null
-          id?: never
-          post_id: number
-          user_id: string
-        }
-        Update: {
-          created_at?: string | null
-          id?: never
-          post_id?: number
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "post_likes_post_id_fkey"
-            columns: ["post_id"]
-            isOneToOne: false
-            referencedRelation: "posts"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "post_likes_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      posts: {
-        Row: {
-          content: string
-          created_at: string | null
-          deleted_at: string | null
-          id: number
-          is_deleted: boolean | null
-          is_pinned: boolean | null
-          likes_count: number | null
-          quote_content: string | null
-          replies_count: number | null
-          reply_to_id: number | null
-          repost_of_id: number | null
-          reposts_count: number | null
-          updated_at: string | null
-          user_id: string
-          views_count: number | null
-        }
-        Insert: {
-          content: string
-          created_at?: string | null
-          deleted_at?: string | null
-          id?: never
-          is_deleted?: boolean | null
-          is_pinned?: boolean | null
-          likes_count?: number | null
-          quote_content?: string | null
-          replies_count?: number | null
-          reply_to_id?: number | null
-          repost_of_id?: number | null
-          reposts_count?: number | null
-          updated_at?: string | null
-          user_id: string
-          views_count?: number | null
-        }
-        Update: {
-          content?: string
-          created_at?: string | null
-          deleted_at?: string | null
-          id?: never
-          is_deleted?: boolean | null
-          is_pinned?: boolean | null
-          likes_count?: number | null
-          quote_content?: string | null
-          replies_count?: number | null
-          reply_to_id?: number | null
-          repost_of_id?: number | null
-          reposts_count?: number | null
-          updated_at?: string | null
-          user_id?: string
-          views_count?: number | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "posts_reply_to_id_fkey"
-            columns: ["reply_to_id"]
-            isOneToOne: false
-            referencedRelation: "posts"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "posts_repost_of_id_fkey"
-            columns: ["repost_of_id"]
-            isOneToOne: false
-            referencedRelation: "posts"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "posts_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-        ]
       }
       rate_limits: {
         Row: {
@@ -1677,9 +1616,18 @@ export type Database = {
       }
       tournament_matches: {
         Row: {
+          alt1_games_before: number | null
           alt1_id: number | null
+          alt1_overall_games_before: number | null
+          alt1_overall_rating_before: number | null
+          alt1_rating_before: number | null
+          alt2_games_before: number | null
           alt2_id: number | null
+          alt2_overall_games_before: number | null
+          alt2_overall_rating_before: number | null
+          alt2_rating_before: number | null
           created_at: string | null
+          elo_applied: boolean
           end_time: string | null
           game_wins1: number | null
           game_wins2: number | null
@@ -1701,9 +1649,18 @@ export type Database = {
           winner_alt_id: number | null
         }
         Insert: {
+          alt1_games_before?: number | null
           alt1_id?: number | null
+          alt1_overall_games_before?: number | null
+          alt1_overall_rating_before?: number | null
+          alt1_rating_before?: number | null
+          alt2_games_before?: number | null
           alt2_id?: number | null
+          alt2_overall_games_before?: number | null
+          alt2_overall_rating_before?: number | null
+          alt2_rating_before?: number | null
           created_at?: string | null
+          elo_applied?: boolean
           end_time?: string | null
           game_wins1?: number | null
           game_wins2?: number | null
@@ -1725,9 +1682,18 @@ export type Database = {
           winner_alt_id?: number | null
         }
         Update: {
+          alt1_games_before?: number | null
           alt1_id?: number | null
+          alt1_overall_games_before?: number | null
+          alt1_overall_rating_before?: number | null
+          alt1_rating_before?: number | null
+          alt2_games_before?: number | null
           alt2_id?: number | null
+          alt2_overall_games_before?: number | null
+          alt2_overall_rating_before?: number | null
+          alt2_rating_before?: number | null
           created_at?: string | null
+          elo_applied?: boolean
           end_time?: string | null
           game_wins1?: number | null
           game_wins2?: number | null
@@ -2826,9 +2792,22 @@ export type Database = {
         Args: { p_top_cut_size?: number; p_tournament_id: number }
         Returns: Json
       }
+      apply_elo_result: {
+        Args: {
+          p_alt_id: number
+          p_format: string
+          p_opponent_rating: number
+          p_score: number
+        }
+        Returns: undefined
+      }
       cancel_judge_request: { Args: { p_match_id: number }; Returns: undefined }
       check_no_show_escalation: { Args: never; Returns: undefined }
       clear_judge_request: { Args: { p_match_id: number }; Returns: undefined }
+      compute_tournament_elo: {
+        Args: { p_tournament_id: number }
+        Returns: undefined
+      }
       confirm_match_checkin: {
         Args: { p_alt_id?: number; p_match_id: number }
         Returns: Json
@@ -2932,6 +2911,10 @@ export type Database = {
       }
       is_site_admin: { Args: never; Returns: boolean }
       is_sudo_active: { Args: never; Returns: boolean }
+      recalculate_tournament_elo: {
+        Args: { p_tournament_id: number }
+        Returns: undefined
+      }
       register_for_tournament_atomic: {
         Args: {
           p_alt_id?: number
@@ -2963,6 +2946,11 @@ export type Database = {
         }
         Returns: Json
       }
+      should_send_notification: {
+        Args: { p_notification_type: string; p_user_id: string }
+        Returns: boolean
+      }
+      skill_bracket_for_rating: { Args: { p_rating: number }; Returns: string }
       start_match: { Args: { p_match_id: number }; Returns: undefined }
       start_round: {
         Args: { p_best_of_override?: number; p_round_id: number }

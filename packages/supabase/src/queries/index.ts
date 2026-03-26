@@ -223,6 +223,10 @@ export type {
   NewMemberEntry,
 } from "./players";
 
+// Rating queries
+export { getPlayerRating } from "./ratings";
+export type { PlayerRating } from "./ratings";
+
 // Announcement queries
 export {
   listAnnouncements,

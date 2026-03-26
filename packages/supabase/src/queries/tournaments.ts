@@ -1551,6 +1551,29 @@ export async function getMyDashboardData(supabase: TypedClient, altId: number) {
     });
   }
 
+  // Fetch overall ELO rating for this alt
+  const { data: ratingRow } = await supabase
+    .from("player_ratings")
+    .select("rating, games_played")
+    .eq("alt_id", altId)
+    .eq("format", "overall")
+    .maybeSingle();
+
+  let currentRating = 0;
+  let ratingRank = 0;
+
+  if (ratingRow) {
+    currentRating = Math.round(Number(ratingRow.rating));
+
+    const { count } = await supabase
+      .from("player_ratings")
+      .select("*", { count: "exact", head: true })
+      .eq("format", "overall")
+      .gt("rating", ratingRow.rating);
+
+    ratingRank = (count ?? 0) + 1;
+  }
+
   return {
     myTournaments,
     recentActivity,
@@ -1558,8 +1581,8 @@ export async function getMyDashboardData(supabase: TypedClient, altId: number) {
     stats: {
       winRate: Math.round(winRate * 10) / 10,
       winRateChange: 0,
-      currentRating: 1500,
-      ratingRank: 0,
+      currentRating,
+      ratingRank,
       activeTournaments: activeTournamentsCount,
       totalEnrolled: tournamentRegistrations?.length ?? 0,
       championPoints: totalChampionPoints,

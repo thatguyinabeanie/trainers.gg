@@ -4,8 +4,11 @@ import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Trophy, Target, Award, Gamepad2, Calendar } from "lucide-react";
-import type { PlayerLifetimeStats } from "@trainers/supabase/queries";
+import { Trophy, Target, Award, Gamepad2, Calendar, Star } from "lucide-react";
+import type {
+  PlayerLifetimeStats,
+  PlayerRating,
+} from "@trainers/supabase/queries";
 import { formatPlacement, formatDate } from "./utils";
 
 // ============================================================================
@@ -37,6 +40,7 @@ const playerKeys = {
   stats: (handle: string) => [...playerKeys.all(handle), "stats"] as const,
   tournaments: (handle: string) =>
     [...playerKeys.all(handle), "tournaments"] as const,
+  rating: (handle: string) => [...playerKeys.all(handle), "rating"] as const,
 };
 
 // ============================================================================
@@ -52,6 +56,18 @@ function usePlayerStats(altIds: number[], handle: string) {
       return res.json();
     },
     enabled: altIds.length > 0,
+  });
+}
+
+function usePlayerRating(altId: number | undefined, handle: string) {
+  return useQuery<PlayerRating | null>({
+    queryKey: playerKeys.rating(handle),
+    queryFn: async () => {
+      const res = await fetch(`/api/players/rating?altId=${altId}`);
+      if (!res.ok) throw new Error("Failed to fetch player rating");
+      return res.json();
+    },
+    enabled: altId != null,
   });
 }
 
@@ -79,12 +95,21 @@ interface OverviewTabProps {
 }
 
 function StatsCards({ altIds, handle }: OverviewTabProps) {
-  const { data: stats, isLoading } = usePlayerStats(altIds, handle);
+  const { data: stats, isLoading: statsLoading } = usePlayerStats(
+    altIds,
+    handle
+  );
+  const { data: rating, isLoading: ratingLoading } = usePlayerRating(
+    altIds[0],
+    handle
+  );
+
+  const isLoading = statsLoading || ratingLoading;
 
   if (isLoading) {
     return (
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {Array.from({ length: 4 }).map((_, i) => (
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+        {Array.from({ length: 5 }).map((_, i) => (
           <Card key={i}>
             <CardContent className="flex items-center gap-4 pt-6">
               <Skeleton className="h-12 w-12 rounded-full" />
@@ -104,7 +129,7 @@ function StatsCards({ altIds, handle }: OverviewTabProps) {
   const mainFormat = stats.formats.length > 0 ? (stats.formats[0] ?? "-") : "-";
 
   return (
-    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
       <Card>
         <CardContent className="flex items-center gap-4 pt-6">
           <div className="bg-primary/10 rounded-full p-3">
@@ -127,6 +152,24 @@ function StatsCards({ altIds, handle }: OverviewTabProps) {
               {stats.winRate > 0 ? `${stats.winRate.toFixed(1)}%` : "-"}
             </p>
             <p className="text-muted-foreground text-sm">Win Rate</p>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardContent className="flex items-center gap-4 pt-6">
+          <div className="bg-primary/10 rounded-full p-3">
+            <Star className="text-primary h-6 w-6" />
+          </div>
+          <div>
+            <p className="text-2xl font-bold">
+              {rating ? rating.rating.toLocaleString() : "-"}
+            </p>
+            <p className="text-muted-foreground text-sm">
+              {rating
+                ? `Rank #${rating.globalRank.toLocaleString()}`
+                : "Rating"}
+            </p>
           </div>
         </CardContent>
       </Card>
