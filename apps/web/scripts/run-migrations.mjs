@@ -362,7 +362,7 @@ async function runMigrations() {
     exec("npx supabase db push --linked", { env: cliEnv });
 
     console.log("\n🚀 Deploying edge functions...");
-    exec("npx supabase functions deploy --linked", { env: cliEnv });
+    exec(`npx supabase functions deploy --project-ref ${projectRef}`, { env: cliEnv });
   }
 
   // Run seed data for preview environments
