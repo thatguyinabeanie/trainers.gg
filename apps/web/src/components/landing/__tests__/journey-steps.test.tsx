@@ -16,22 +16,23 @@ describe("JourneySteps", () => {
     "Run events built for competitive Pokémon.",
     "Your competitive story, one link.",
     "Write. Share. Remember.",
+    "Level up with a personal coach.",
     "Find who's competing — and where they hang out.",
   ])("renders step headline: %s", (headline) => {
     render(<JourneySteps />);
     expect(screen.getByRole("heading", { name: headline })).toBeInTheDocument();
   });
 
-  it("renders Coming Soon badges for Build Smarter and Articles steps", () => {
+  it("renders Coming Soon badges for Build Smarter, Articles, and Coaching steps", () => {
     render(<JourneySteps />);
     const badges = screen.getAllByText("Coming Soon");
-    expect(badges).toHaveLength(2);
+    expect(badges).toHaveLength(3);
     badges.forEach((badge) => {
       expect(badge).toHaveAttribute("data-status", "draft");
     });
   });
 
-  it("teases the Discord Server Index in step 07", () => {
+  it("teases the Discord Server Index in step 08", () => {
     render(<JourneySteps />);
     expect(screen.getByText(/Discord Server Index/i)).toBeInTheDocument();
   });

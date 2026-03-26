@@ -241,6 +241,33 @@ function ArticlesPreview() {
   );
 }
 
+function CoachingPreview() {
+  const players = [
+    { name: "cynthia", isCoach: true },
+    { name: "lance", isCoach: false },
+  ] as const;
+
+  return (
+    <div className="space-y-2">
+      <p className="text-muted-foreground text-xs">Coaches</p>
+      {players.map(({ name, isCoach }) => (
+        <div
+          key={name}
+          className="bg-background flex items-center gap-2 rounded px-3 py-2 text-xs"
+        >
+          <div className="bg-muted h-5 w-5 flex-shrink-0 rounded-full" />
+          <span className="flex-1 font-medium">{name}</span>
+          {isCoach && (
+            <span className="bg-primary/10 text-primary rounded px-1.5 py-0.5 text-xs font-medium">
+              Coach
+            </span>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function CommunityPreview() {
   const players = [
     { name: "cynthia", detail: "Sinnoh · 89% WR", rank: "#1" },
@@ -338,6 +365,23 @@ export function JourneySteps() {
       />
       <JourneyStep
         number={7}
+        label="Coaching"
+        comingSoon
+        headline="Level up with a personal coach."
+        description={
+          <>
+            Coaches are discoverable in the player directory and on their
+            profile — identified by a coach badge so you always know who&apos;s
+            available to help.{" "}
+            <span className="text-foreground">Coming soon:</span> book sessions
+            directly, share your teams for session prep without copy-pasting,
+            and get personalized guidance from players who know the meta.
+          </>
+        }
+        preview={<CoachingPreview />}
+      />
+      <JourneyStep
+        number={8}
         label="Community"
         headline="Find who's competing — and where they hang out."
         description={
@@ -349,6 +393,7 @@ export function JourneySteps() {
           </>
         }
         preview={<CommunityPreview />}
+        reverse
       />
     </div>
   );
