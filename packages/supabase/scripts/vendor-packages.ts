@@ -129,6 +129,12 @@ async function main() {
         '"https://esm.sh/@supabase/supabase-js@2.49.4"',
       "'@supabase/supabase-js'":
         "'https://esm.sh/@supabase/supabase-js@2.49.4'",
+      '"@pkmn/sets"': '"npm:@pkmn/sets@^5"',
+      '"@pkmn/sim"': '"npm:@pkmn/sim@^0.10"',
+      '"@pkmn/streams"': '"npm:@pkmn/streams@^0.10"',
+      '"@pkmn/data"': '"npm:@pkmn/data@^0.10"',
+      '"@pkmn/dex"': '"npm:@pkmn/dex@^0.10"',
+      '"ts-chacha20"': '"npm:ts-chacha20@*"',
     };
 
     // Rewrite bare specifiers in vendored .js bundles
