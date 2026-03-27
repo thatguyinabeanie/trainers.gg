@@ -28,7 +28,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   PlatformIcon,
   SOCIAL_PLATFORM_LABELS,
-} from "@/components/organizations/social-link-icons";
+} from "@/components/communities/social-link-icons";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { type OrgRequestRow, requestStatusLabels } from "./columns";

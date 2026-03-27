@@ -35,7 +35,7 @@ import {
   type OrganizationSocialLink,
   type SocialLinkPlatform,
 } from "@trainers/validators";
-import { PlatformIcon } from "@/components/organizations/social-link-icons";
+import { PlatformIcon } from "@/components/communities/social-link-icons";
 import { socialPlatformLabels } from "@trainers/utils";
 import { cn } from "@/lib/utils";
 

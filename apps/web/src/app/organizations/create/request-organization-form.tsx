@@ -22,7 +22,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { PlatformIcon } from "@/components/organizations/social-link-icons";
+import { PlatformIcon } from "@/components/communities/social-link-icons";
 import { submitOrganizationRequestAction } from "@/actions/organization-requests";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";

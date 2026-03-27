@@ -10,7 +10,7 @@ import Link from "next/link";
 import { OrganizationSearch } from "./organization-search";
 import { CacheTags } from "@/lib/cache";
 import { PageContainer } from "@/components/layout/page-container";
-import { OrganizationsDataTable } from "@/components/organizations/organizations-data-table";
+import { OrganizationsDataTable } from "@/components/communities/organizations-data-table";
 
 // On-demand revalidation via cache tags (no time-based revalidation)
 export const revalidate = false;
