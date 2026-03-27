@@ -361,6 +361,11 @@ async function runMigrations() {
     console.log("\n📤 Applying migrations...");
     exec("npx supabase db push --linked", { env: cliEnv });
 
+    console.log("\n📦 Vendoring monorepo packages for edge functions...");
+    exec("npx tsx scripts/vendor-packages.ts --deploy", {
+      cwd: SUPABASE_DIR,
+    });
+
     console.log("\n🚀 Deploying edge functions...");
     exec(`npx supabase functions deploy --project-ref ${projectRef} --use-api`, { env: cliEnv });
   }

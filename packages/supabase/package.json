@@ -23,6 +23,7 @@
     "db:restart": "supabase stop && supabase start",
     "db:status": "supabase status",
     "functions:serve": "supabase functions serve --no-verify-jwt --env-file .env",
+    "vendor:functions": "tsx scripts/vendor-packages.ts",
     "generate-clients": "tsx scripts/generate-clients.ts",
     "test": "jest",
     "test:watch": "jest --watch",
@@ -71,6 +72,7 @@
     }
   },
   "devDependencies": {
+    "esbuild": "^0.25.0",
     "@faker-js/faker": "^10.2.0",
     "@types/jest": "catalog:",
     "@jest/globals": "^30.2.0",
