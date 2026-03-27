@@ -20,7 +20,7 @@ describe("buildEmailLayout", () => {
   });
 
   it("includes the trainers.gg wordmark", () => {
-    expect(result).toContain("trainers.gg");
+    expect(result).toContain("trainers&zwnj;.gg");
   });
 
   it("uses the correct wordmark color", () => {

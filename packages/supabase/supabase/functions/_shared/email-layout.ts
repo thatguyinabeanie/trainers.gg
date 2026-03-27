@@ -55,7 +55,7 @@ export function buildEmailLayout({
           <!-- Wordmark -->
           <tr>
             <td style="padding: 32px 32px 20px; text-align: center;">
-              <span class="email-wordmark" style="font-size: 20px; font-weight: 700; color: #14b8a6; letter-spacing: -0.01em; font-family: ${FONT_STACK};">trainers.gg</span>
+              <span class="email-wordmark" style="font-size: 20px; font-weight: 700; color: #14b8a6; letter-spacing: -0.01em; font-family: ${FONT_STACK};">trainers&zwnj;.gg</span>
             </td>
           </tr>
           <!-- Body -->
