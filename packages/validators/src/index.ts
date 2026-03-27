@@ -83,7 +83,7 @@ export {
   updateOrganizationSchema,
   type CreateOrganizationInput,
   type UpdateOrganizationInput,
-} from "./organization";
+} from "./community";
 
 // Organization request validators
 export {

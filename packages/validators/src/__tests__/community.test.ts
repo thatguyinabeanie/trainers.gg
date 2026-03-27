@@ -5,7 +5,7 @@ import {
   organizationSocialLinksSchema,
   SOCIAL_LINK_PLATFORMS,
   type OrganizationSocialLink,
-} from "../organization";
+} from "../community";
 
 // ---------------------------------------------------------------------------
 // Helpers — reusable valid inputs to keep tests DRY
