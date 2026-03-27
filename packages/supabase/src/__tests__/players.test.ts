@@ -220,69 +220,41 @@ describe("searchPlayers", () => {
 // ============================================================================
 
 describe("getLeaderboard", () => {
-  it("returns empty array when no players qualify", async () => {
-    const supabase = mockSupabase({
-      tournament_player_stats: { data: [] },
-    });
-
-    const result = await getLeaderboard(supabase, 5);
-
-    expect(result).toEqual([]);
-  });
-
-  it("excludes players with fewer than 5 tournaments", async () => {
-    // Player with only 3 unique tournaments should be excluded
+  it("returns empty array when no rated players exist", async () => {
     const supabase = mockSupabaseSequential([
-      // tournament_player_stats
-      {
-        data: [
-          { alt_id: 1, tournament_id: 1, match_wins: 5, match_losses: 0 },
-          { alt_id: 1, tournament_id: 2, match_wins: 5, match_losses: 0 },
-          { alt_id: 1, tournament_id: 3, match_wins: 5, match_losses: 0 },
-        ],
-      },
+      // player_ratings — no rows
+      { data: [] },
     ]);
 
     const result = await getLeaderboard(supabase, 5);
 
-    // Player only has 3 tournaments, minimum is 5
     expect(result).toEqual([]);
   });
 
-  it("returns qualified players sorted by win rate", async () => {
+  it("returns players ordered by rating descending", async () => {
     const supabase = mockSupabaseSequential([
-      // tournament_player_stats — two players, both qualified
+      // player_ratings — DB returns pre-sorted rows
       {
         data: [
-          // Player A (alt 1): 5 tournaments, 80% win rate
-          { alt_id: 1, tournament_id: 1, match_wins: 4, match_losses: 1 },
-          { alt_id: 1, tournament_id: 2, match_wins: 4, match_losses: 1 },
-          { alt_id: 1, tournament_id: 3, match_wins: 4, match_losses: 1 },
-          { alt_id: 1, tournament_id: 4, match_wins: 4, match_losses: 1 },
-          { alt_id: 1, tournament_id: 5, match_wins: 4, match_losses: 1 },
-          // Player B (alt 2): 5 tournaments, 60% win rate
-          { alt_id: 2, tournament_id: 1, match_wins: 3, match_losses: 2 },
-          { alt_id: 2, tournament_id: 2, match_wins: 3, match_losses: 2 },
-          { alt_id: 2, tournament_id: 3, match_wins: 3, match_losses: 2 },
-          { alt_id: 2, tournament_id: 4, match_wins: 3, match_losses: 2 },
-          { alt_id: 2, tournament_id: 5, match_wins: 3, match_losses: 2 },
+          {
+            alt_id: 1,
+            rating: "1600.00",
+            skill_bracket: "advanced",
+            games_played: 10,
+          },
+          {
+            alt_id: 2,
+            rating: "1350.00",
+            skill_bracket: "intermediate",
+            games_played: 8,
+          },
         ],
       },
       // alts resolution
       {
         data: [
-          {
-            id: 1,
-            user_id: "user-a",
-            username: "player_a",
-            avatar_url: null,
-          },
-          {
-            id: 2,
-            user_id: "user-b",
-            username: "player_b",
-            avatar_url: null,
-          },
+          { id: 1, user_id: "user-a", username: "player_a", avatar_url: null },
+          { id: 2, user_id: "user-b", username: "player_b", avatar_url: null },
         ],
       },
     ]);
@@ -290,29 +262,69 @@ describe("getLeaderboard", () => {
     const result = await getLeaderboard(supabase, 5);
 
     expect(result).toHaveLength(2);
-    // Player A should be first (higher win rate)
+    expect(result[0]).toEqual({
+      userId: "user-a",
+      username: "player_a",
+      avatarUrl: null,
+      rating: 1600,
+      skillBracket: "advanced",
+      gamesPlayed: 10,
+    });
+    expect(result[1]).toEqual({
+      userId: "user-b",
+      username: "player_b",
+      avatarUrl: null,
+      rating: 1350,
+      skillBracket: "intermediate",
+      gamesPlayed: 8,
+    });
+  });
+
+  it("skips entries whose alt cannot be resolved", async () => {
+    const supabase = mockSupabaseSequential([
+      {
+        data: [
+          {
+            alt_id: 1,
+            rating: "1600.00",
+            skill_bracket: "advanced",
+            games_played: 5,
+          },
+          {
+            alt_id: 999,
+            rating: "1500.00",
+            skill_bracket: "intermediate",
+            games_played: 3,
+          },
+        ],
+      },
+      // Only alt 1 resolves
+      {
+        data: [
+          { id: 1, user_id: "user-a", username: "player_a", avatar_url: null },
+        ],
+      },
+    ]);
+
+    const result = await getLeaderboard(supabase, 5);
+
+    expect(result).toHaveLength(1);
     expect(result[0]!.username).toBe("player_a");
-    expect(result[0]!.winRate).toBe(80);
-    expect(result[1]!.username).toBe("player_b");
-    expect(result[1]!.winRate).toBe(60);
   });
 
   it("respects limit parameter", async () => {
-    const stats = [];
-    // Create 3 qualified players
-    for (let altId = 1; altId <= 3; altId++) {
-      for (let t = 1; t <= 5; t++) {
-        stats.push({
-          alt_id: altId,
-          tournament_id: t,
-          match_wins: 4 - altId + 1,
-          match_losses: altId,
-        });
-      }
-    }
-
     const supabase = mockSupabaseSequential([
-      { data: stats },
+      // DB enforces the limit, so only 1 row comes back
+      {
+        data: [
+          {
+            alt_id: 1,
+            rating: "1700.00",
+            skill_bracket: "advanced",
+            games_played: 12,
+          },
+        ],
+      },
       {
         data: [{ id: 1, user_id: "u1", username: "first", avatar_url: null }],
       },

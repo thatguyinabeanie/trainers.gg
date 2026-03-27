@@ -155,7 +155,17 @@ Multiple agents and humans may work on this codebase simultaneously. If you enco
 
 ### Edge Function Deployments
 
-**Never deploy edge functions via `supabase functions deploy`.** Deploy via git → merge to main only. This applies to both new functions and updates.
+**Never deploy edge functions manually via `supabase functions deploy`.** Edge functions are deployed automatically during the Vercel production build (`run-migrations.mjs`). Push to `main` to deploy. This applies to both new functions and updates.
+
+**Every edge function must be declared in `config.toml`.** The Supabase GitHub integration only deploys functions listed in `packages/supabase/supabase/config.toml`. If you create a new function directory under `supabase/functions/` without adding a `[functions.<name>]` entry to `config.toml`, it will not be deployed.
+
+```toml
+# Example: adding a new edge function
+[functions.my-new-function]
+verify_jwt = true
+```
+
+Set `verify_jwt = true` for functions that require an authenticated user (gateway rejects unauthenticated requests before the function runs). Set `verify_jwt = false` only for public functions where no JWT exists yet (e.g., `signup`, `bluesky-auth`).
 
 ### Request Interception: proxy.ts
 
@@ -249,6 +259,10 @@ Additional generated users follow the pattern `<username>@trainers.local` (see s
 ## Pre-Release Notes (remove after first public release)
 
 - **Match URLs**: Use `/tournaments/[slug]/r/[round]/t/[table]` format (not `/matches/[matchId]`). No redirect from old format needed — app is pre-release with no existing links to maintain.
+
+## Development Workflow
+
+When executing implementation plans, always use **subagent-driven development** (`superpowers:subagent-driven-development`). Do not use inline execution unless explicitly asked.
 
 ## Project Management
 

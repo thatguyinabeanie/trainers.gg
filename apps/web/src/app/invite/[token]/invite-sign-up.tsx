@@ -9,6 +9,7 @@ import { useRouter } from "next/navigation";
 import { Trophy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
 import { UsernameInput } from "@/components/ui/username-input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -171,9 +172,8 @@ export function InviteSignUp({ email, token }: InviteSignUpProps) {
             {/* Password */}
             <div className="flex flex-col gap-2">
               <Label htmlFor="password">Password</Label>
-              <Input
+              <PasswordInput
                 id="password"
-                type="password"
                 placeholder="Create a password"
                 autoComplete="new-password"
                 aria-invalid={errors.password ? "true" : undefined}
@@ -196,9 +196,8 @@ export function InviteSignUp({ email, token }: InviteSignUpProps) {
             {/* Confirm Password */}
             <div className="flex flex-col gap-2">
               <Label htmlFor="confirmPassword">Confirm Password</Label>
-              <Input
+              <PasswordInput
                 id="confirmPassword"
-                type="password"
                 placeholder="Confirm your password"
                 autoComplete="new-password"
                 aria-invalid={errors.confirmPassword ? "true" : undefined}

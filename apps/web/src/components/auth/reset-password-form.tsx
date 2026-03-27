@@ -6,7 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "@trainers/validators";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/hooks/use-auth";
@@ -80,9 +80,8 @@ export function ResetPasswordForm() {
 
           <div className="flex flex-col gap-2">
             <Label htmlFor="password">New Password</Label>
-            <Input
+            <PasswordInput
               id="password"
-              type="password"
               placeholder="Enter new password"
               autoComplete="new-password"
               aria-invalid={errors.password ? "true" : undefined}
@@ -104,9 +103,8 @@ export function ResetPasswordForm() {
 
           <div className="flex flex-col gap-2">
             <Label htmlFor="confirmPassword">Confirm New Password</Label>
-            <Input
+            <PasswordInput
               id="confirmPassword"
-              type="password"
               placeholder="Confirm new password"
               autoComplete="new-password"
               aria-invalid={errors.confirmPassword ? "true" : undefined}

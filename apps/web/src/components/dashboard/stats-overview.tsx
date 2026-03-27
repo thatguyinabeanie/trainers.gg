@@ -77,15 +77,28 @@ export function StatsOverview({ stats }: StatsOverviewProps) {
                   Rating
                 </p>
               </div>
-              <p className="mt-3 font-mono text-4xl font-bold tabular-nums">
-                {stats.currentRating.toLocaleString()}
-              </p>
-              <p className="text-muted-foreground mt-2 text-xs">
-                Global Rank{" "}
-                <span className="text-foreground font-mono font-semibold">
-                  #{stats.ratingRank.toLocaleString()}
-                </span>
-              </p>
+              {stats.currentRating > 0 ? (
+                <>
+                  <p className="mt-3 font-mono text-4xl font-bold tabular-nums">
+                    {stats.currentRating.toLocaleString()}
+                  </p>
+                  <p className="text-muted-foreground mt-2 text-xs">
+                    Global Rank{" "}
+                    <span className="text-foreground font-mono font-semibold">
+                      #{stats.ratingRank.toLocaleString()}
+                    </span>
+                  </p>
+                </>
+              ) : (
+                <>
+                  <p className="text-muted-foreground mt-3 font-mono text-4xl font-bold">
+                    —
+                  </p>
+                  <p className="text-muted-foreground mt-2 text-xs">
+                    Complete a tournament to earn a rating
+                  </p>
+                </>
+              )}
             </div>
           </div>
         </CardContent>
