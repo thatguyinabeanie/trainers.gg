@@ -352,27 +352,34 @@ async function runMigrations() {
     SUPABASE_DB_PASSWORD: process.env.POSTGRES_PASSWORD,
   };
 
-  // For preview environments, skip migrations - Supabase applies them automatically
-  // when creating the preview branch. Running migrations again causes conflicts.
+  // --- Migrations ---
   if (env.type === "preview" && !isProductionDb) {
+    // Supabase GitHub integration applies migrations when creating the preview branch.
+    // Running them again from the Vercel build would cause duplicate schema objects.
     console.log("\n⏭️  Skipping migrations for preview branch");
     console.log("   Supabase automatically applies migrations when creating preview branches.");
-    console.log("   Running migrations again would cause duplicate schema objects.");
   } else if (env.type === "preview" && isProductionDb) {
     // SAFETY: Never push unmerged branch migrations to production.
-    // This happens when Supabase branching falls back to the production URL
-    // (e.g., branch push before PR creation, or branching not enabled).
     console.log("\n⛔ Skipping migrations — preview deploy connected to production DB");
     console.log("   Unmerged migrations must not be applied to production.");
     console.log("   Migrations will run when the branch is merged to main.\n");
   } else {
-    // Production deploy from main — push new migrations and deploy edge functions
+    // Production deploy from main — push new migrations
     console.log("\n🔗 Linking to Supabase project...");
     exec(`npx supabase link --project-ref ${projectRef}`, { env: cliEnv });
 
     console.log("\n📤 Applying migrations...");
     exec("npx supabase db push --linked", { env: cliEnv });
+  }
 
+  // --- Edge Functions ---
+  // Deploy edge functions from the Vercel build for both production and preview.
+  // The Supabase GitHub integration's remote bundler cannot resolve monorepo
+  // imports, so function declarations are NOT in config.toml — this build
+  // pipeline is the sole deployment path for edge functions.
+  if (env.type === "preview" && isProductionDb) {
+    console.log("\n⏭️  Skipping edge function deploy — connected to production DB");
+  } else {
     console.log("\n📦 Vendoring monorepo packages for edge functions...");
     exec("npx tsx scripts/vendor-packages.ts --deploy", {
       cwd: SUPABASE_DIR,
