@@ -119,6 +119,40 @@ async function main() {
   console.log("  ✅ Vendor complete: _shared/vendor/ ready");
 
   if (isDeploy) {
+    // Bare specifier → Deno-native specifier (deno.json import map not used by --use-api)
+    const bareSpecifierMap: Record<string, string> = {
+      '"zod"': '"npm:zod@^3"',
+      "'zod'": "'npm:zod@^3'",
+      '"obscenity"': '"npm:obscenity@^0.4.6"',
+      "'obscenity'": "'npm:obscenity@^0.4.6'",
+      '"@supabase/supabase-js"':
+        '"https://esm.sh/@supabase/supabase-js@2.49.4"',
+      "'@supabase/supabase-js'":
+        "'https://esm.sh/@supabase/supabase-js@2.49.4'",
+    };
+
+    // Rewrite bare specifiers in vendored .js bundles
+    const vendorFiles = [
+      resolve(vendorDir, "posthog/index.js"),
+      ...validatorSubpaths.map((name) =>
+        resolve(vendorDir, `validators/${name}.js`)
+      ),
+      resolve(vendorDir, "supabase/queries.js"),
+      resolve(vendorDir, "supabase/mutations.js"),
+    ];
+
+    for (const filePath of vendorFiles) {
+      let content = readFileSync(filePath, "utf-8");
+      let changed = false;
+      for (const [from, to] of Object.entries(bareSpecifierMap)) {
+        if (content.includes(from)) {
+          content = content.replaceAll(from, to);
+          changed = true;
+        }
+      }
+      if (changed) writeFileSync(filePath, content);
+    }
+
     // Build a map of @trainers/* specifiers to vendor file names
     const vendorMap: Record<string, string> = {
       "@trainers/posthog": "vendor/posthog/index.js",
@@ -178,6 +212,14 @@ async function main() {
         content = content.replaceAll(`"${specifier}"`, `"${rel}"`);
         content = content.replaceAll(`'${specifier}'`, `'${rel}'`);
         changed = true;
+      }
+
+      // Also rewrite bare specifiers in source files
+      for (const [from, to] of Object.entries(bareSpecifierMap)) {
+        if (content.includes(from)) {
+          content = content.replaceAll(from, to);
+          changed = true;
+        }
       }
 
       if (changed) {
