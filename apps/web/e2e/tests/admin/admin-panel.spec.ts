@@ -245,12 +245,15 @@ test.describe("Admin panel — admin user with sudo mode", () => {
     await expect(page.getByRole("tab", { name: /Dashboard/i })).toBeVisible();
     await expect(page.getByRole("tab", { name: /Audit Log/i })).toBeVisible();
 
-    // Metric cards: look for the key metric titles
-    await expect(page.getByText("Total Users")).toBeVisible({ timeout: 10000 });
-    await expect(page.getByText("Active (7d)")).toBeVisible();
-    await expect(page.getByText("Communities")).toBeVisible();
-    await expect(page.getByText("Tournaments")).toBeVisible();
-    await expect(page.getByText("Events (24h)")).toBeVisible();
+    // Metric cards: look for the key metric titles (scoped to main to avoid topnav ambiguity)
+    const main = page.getByRole("main");
+    await expect(main.getByText("Total Users")).toBeVisible({ timeout: 10000 });
+    await expect(main.getByText("Active (7d)")).toBeVisible();
+    await expect(
+      main.getByText("Communities", { exact: true }).first()
+    ).toBeVisible();
+    await expect(main.getByText("Tournaments")).toBeVisible();
+    await expect(main.getByText("Events (24h)")).toBeVisible();
 
     // Recent Activity section
     await expect(page.getByText("Recent Activity")).toBeVisible();
@@ -262,21 +265,27 @@ test.describe("Admin panel — admin user with sudo mode", () => {
     const baseURL = process.env.PLAYWRIGHT_BASE_URL || "";
     await loginAndVerifyAdminAccess(page, baseURL);
 
-    // Verify all nav links from admin-nav.tsx are present
-    const nav = page.locator("nav");
-    await expect(nav.getByRole("link", { name: "Overview" })).toBeVisible();
-    await expect(nav.getByRole("link", { name: "Users" })).toBeVisible();
-    await expect(nav.getByRole("link", { name: "Communities" })).toBeVisible();
-    await expect(nav.getByRole("link", { name: "Settings" })).toBeVisible();
+    // Verify all nav links from admin-nav.tsx are present (scoped to main to avoid topnav)
+    const adminNav = page.getByRole("main").locator("nav");
+    await expect(
+      adminNav.getByRole("link", { name: "Overview" })
+    ).toBeVisible();
+    await expect(adminNav.getByRole("link", { name: "Users" })).toBeVisible();
+    await expect(
+      adminNav.getByRole("link", { name: "Communities" })
+    ).toBeVisible();
+    await expect(
+      adminNav.getByRole("link", { name: "Settings" })
+    ).toBeVisible();
   });
 
   test("clicking Users nav link navigates to users page", async ({ page }) => {
     const baseURL = process.env.PLAYWRIGHT_BASE_URL || "";
     await loginAndVerifyAdminAccess(page, baseURL);
 
-    // Click Users nav link
-    const nav = page.locator("nav");
-    await nav.getByRole("link", { name: "Users" }).click();
+    // Click Users nav link (scoped to main to avoid topnav)
+    const adminNav = page.getByRole("main").locator("nav");
+    await adminNav.getByRole("link", { name: "Users" }).click();
     await expect(page).toHaveURL(/\/admin\/users/);
   });
 
@@ -286,8 +295,8 @@ test.describe("Admin panel — admin user with sudo mode", () => {
     const baseURL = process.env.PLAYWRIGHT_BASE_URL || "";
     await loginAndVerifyAdminAccess(page, baseURL);
 
-    const nav = page.locator("nav");
-    await nav.getByRole("link", { name: "Communities" }).click();
+    const adminNav = page.getByRole("main").locator("nav");
+    await adminNav.getByRole("link", { name: "Communities" }).click();
     await expect(page).toHaveURL(/\/admin\/communities/);
   });
 
@@ -297,8 +306,8 @@ test.describe("Admin panel — admin user with sudo mode", () => {
     const baseURL = process.env.PLAYWRIGHT_BASE_URL || "";
     await loginAndVerifyAdminAccess(page, baseURL);
 
-    const nav = page.locator("nav");
-    await nav.getByRole("link", { name: "Settings" }).click();
+    const adminNav = page.getByRole("main").locator("nav");
+    await adminNav.getByRole("link", { name: "Settings" }).click();
     await expect(page).toHaveURL(/\/admin\/config/);
   });
 

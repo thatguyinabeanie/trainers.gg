@@ -222,7 +222,7 @@ describe("OrganizationsDataTable", () => {
     it("displays empty state when no organizations", () => {
       render(<OrganizationsDataTable data={[]} />);
 
-      expect(screen.getByText("No organizations found")).toBeInTheDocument();
+      expect(screen.getByText("No communities found")).toBeInTheDocument();
     });
   });
 
