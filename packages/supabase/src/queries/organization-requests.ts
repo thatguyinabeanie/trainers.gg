@@ -62,6 +62,8 @@ export async function listOrgRequestsAdmin(
       name,
       slug,
       description,
+      discord_invite_url,
+      social_links,
       status,
       admin_notes,
       reviewed_by,

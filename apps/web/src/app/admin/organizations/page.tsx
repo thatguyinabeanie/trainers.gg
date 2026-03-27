@@ -1,58 +1,66 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import {
-  flexRender,
-  getCoreRowModel,
-  useReactTable,
-  type ColumnDef,
-} from "@tanstack/react-table";
+import type { ColumnDef } from "@tanstack/react-table";
 import { Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { DataTable } from "@/components/ui/data-table";
 import { cn } from "@/lib/utils";
 import { useSupabaseQuery } from "@/lib/supabase";
-import { listOrganizationsAdmin } from "@trainers/supabase/queries";
-import { columns, type OrgRow } from "./columns";
+import {
+  listOrganizationsAdmin,
+  listOrgRequestsAdmin,
+} from "@trainers/supabase/queries";
+import { columns as orgColumns, type OrgRow } from "./columns";
+import {
+  columns as requestColumns,
+  type OrgRequestRow,
+} from "@/app/admin/org-requests/columns";
 import { OrgDetailSheet } from "./org-detail-sheet";
+import { RequestDetailSheet } from "@/app/admin/org-requests/request-detail-sheet";
 
 // --- Constants ---
 
 const PAGE_SIZE = 25;
 
-type StatusFilter = "all" | "pending" | "active" | "suspended" | "rejected";
+type StatusFilter =
+  | "all"
+  | "pending"
+  | "active"
+  | "suspended"
+  | "rejected"
+  | "requests";
 
-const STATUS_TABS: { value: StatusFilter; label: string }[] = [
+const STATUS_FILTERS: { value: StatusFilter; label: string }[] = [
   { value: "all", label: "All" },
-  { value: "pending", label: "Pending" },
   { value: "active", label: "Active" },
   { value: "suspended", label: "Suspended" },
-  { value: "rejected", label: "Rejected" },
+  { value: "requests", label: "Requests" },
 ];
 
 // --- Component ---
 
 export default function AdminOrganizationsPage() {
-  // Filter / search state
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [page, setPage] = useState(0);
 
-  // Detail sheet state
+  // Detail sheet state — orgs
   const [selectedOrg, setSelectedOrg] = useState<OrgRow | null>(null);
-  const [sheetOpen, setSheetOpen] = useState(false);
+  const [orgSheetOpen, setOrgSheetOpen] = useState(false);
 
-  // Debounce search input using useEffect
+  // Detail sheet state — requests
+  const [selectedRequest, setSelectedRequest] = useState<OrgRequestRow | null>(
+    null
+  );
+  const [requestSheetOpen, setRequestSheetOpen] = useState(false);
+
+  // Increment to force queries to re-fetch after actions
+  const [refreshKey, setRefreshKey] = useState(0);
+
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(null);
 
   useEffect(() => {
@@ -64,42 +72,58 @@ export default function AdminOrganizationsPage() {
     };
   }, [search]);
 
-  // Fetch organizations with server-side filtering and pagination
-  const { data, isLoading, error } = useSupabaseQuery(
+  const isRequestsOnly = statusFilter === "requests";
+  const isAll = statusFilter === "all";
+  const showOrgs = !isRequestsOnly;
+  const showRequests = isRequestsOnly || isAll;
+
+  // Fetch organizations
+  const orgsQuery = useSupabaseQuery(
     async (supabase) => {
-      const result = await listOrganizationsAdmin(supabase, {
+      if (!showOrgs) return { data: [], count: 0 };
+      return await listOrganizationsAdmin(supabase, {
         search: debouncedSearch || undefined,
-        status: statusFilter === "all" ? undefined : statusFilter,
+        status: isAll ? undefined : statusFilter,
         limit: PAGE_SIZE,
         offset: page * PAGE_SIZE,
       });
-      return result;
     },
-    [debouncedSearch, statusFilter, page]
+    [debouncedSearch, statusFilter, page, refreshKey]
   );
 
-  // NOTE: organization_admin_notes table is not yet in generated types,
-  // so the inferred type has SelectQueryError. Cast through unknown.
-  const organizations = (data?.data ?? []) as unknown as OrgRow[];
-  const totalCount = data?.count ?? 0;
+  // Fetch org requests (for "All" and "Requests" views)
+  // When in "All" view, only show pending requests
+  const requestsQuery = useSupabaseQuery(
+    async (supabase) => {
+      if (!showRequests) return { data: [], count: 0 };
+      return await listOrgRequestsAdmin(supabase, {
+        search: debouncedSearch || undefined,
+        status: isAll ? "pending" : undefined,
+        limit: PAGE_SIZE,
+        offset: isRequestsOnly ? page * PAGE_SIZE : 0,
+      });
+    },
+    [debouncedSearch, statusFilter, page, refreshKey]
+  );
+
+  const organizations = (orgsQuery.data?.data ?? []) as unknown as OrgRow[];
+  const requests = (requestsQuery.data?.data ??
+    []) as unknown as OrgRequestRow[];
+
+  // For pagination: use org count when not in requests-only view
+  const totalCount = isRequestsOnly
+    ? ((requestsQuery.data?.count as number) ?? 0)
+    : ((orgsQuery.data?.count as number) ?? 0);
   const totalPages = Math.ceil(totalCount / PAGE_SIZE);
+  const isLoading = isRequestsOnly
+    ? requestsQuery.isLoading
+    : orgsQuery.isLoading;
+  const error = isRequestsOnly ? requestsQuery.error : orgsQuery.error;
 
-  // TanStack table instance (rendering only, no client-side pagination)
-  const table = useReactTable({
-    data: organizations,
-    columns: columns as ColumnDef<OrgRow, unknown>[],
-    getCoreRowModel: getCoreRowModel(),
-  });
-
-  // Row click handler
-  const handleRowClick = (org: OrgRow) => {
-    setSelectedOrg(org);
-    setSheetOpen(true);
-  };
-
-  // Tab change resets page
   const handleStatusChange = (newStatus: StatusFilter) => {
     setStatusFilter(newStatus);
+    setSearch("");
+    setDebouncedSearch("");
     setPage(0);
   };
 
@@ -108,8 +132,8 @@ export default function AdminOrganizationsPage() {
       {/* Header row: title + search */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <h2 className="text-lg font-semibold">
-          Organizations
-          {!isLoading && (
+          {isRequestsOnly ? "Organization Requests" : "Organizations"}
+          {!isLoading && !isAll && (
             <span className="text-muted-foreground ml-2 text-sm font-normal">
               ({totalCount})
             </span>
@@ -129,21 +153,21 @@ export default function AdminOrganizationsPage() {
         </div>
       </div>
 
-      {/* Status filter tabs */}
+      {/* Status filter pills */}
       <div className="flex gap-1">
-        {STATUS_TABS.map((tab) => (
+        {STATUS_FILTERS.map((filter) => (
           <Button
-            key={tab.value}
-            variant={statusFilter === tab.value ? "secondary" : "ghost"}
+            key={filter.value}
+            variant={statusFilter === filter.value ? "secondary" : "ghost"}
             size="sm"
-            onClick={() => handleStatusChange(tab.value)}
+            onClick={() => handleStatusChange(filter.value)}
             className={cn(
-              statusFilter === tab.value
+              statusFilter === filter.value
                 ? "font-medium"
                 : "text-muted-foreground"
             )}
           >
-            {tab.label}
+            {filter.label}
           </Button>
         ))}
       </div>
@@ -151,11 +175,11 @@ export default function AdminOrganizationsPage() {
       {/* Error banner */}
       {error && (
         <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700 dark:border-red-800 dark:bg-red-950 dark:text-red-300">
-          Failed to load organizations. Please try again.
+          Failed to load data. Please try again.
         </div>
       )}
 
-      {/* Table */}
+      {/* Tables */}
       {isLoading ? (
         <div className="space-y-2">
           <Skeleton className="h-10 w-full" />
@@ -163,62 +187,53 @@ export default function AdminOrganizationsPage() {
             <Skeleton key={i} className="h-14 w-full" />
           ))}
         </div>
+      ) : isRequestsOnly ? (
+        <DataTable
+          columns={requestColumns as ColumnDef<OrgRequestRow, unknown>[]}
+          data={requests}
+          manualPagination
+          emptyMessage="No organization requests found"
+          onRowClick={(row) => {
+            setSelectedRequest(row);
+            setRequestSheetOpen(true);
+          }}
+        />
       ) : (
-        <div className="rounded-lg border">
-          <Table>
-            <TableHeader>
-              {table.getHeaderGroups().map((headerGroup) => (
-                <TableRow key={headerGroup.id}>
-                  {headerGroup.headers.map((header) => (
-                    <TableHead key={header.id}>
-                      {header.isPlaceholder
-                        ? null
-                        : flexRender(
-                            header.column.columnDef.header,
-                            header.getContext()
-                          )}
-                    </TableHead>
-                  ))}
-                </TableRow>
-              ))}
-            </TableHeader>
-            <TableBody>
-              {table.getRowModel().rows?.length ? (
-                table.getRowModel().rows.map((row) => (
-                  <TableRow
-                    key={row.id}
-                    onClick={() => handleRowClick(row.original)}
-                    className="cursor-pointer"
-                  >
-                    {row.getVisibleCells().map((cell) => (
-                      <TableCell key={cell.id}>
-                        {flexRender(
-                          cell.column.columnDef.cell,
-                          cell.getContext()
-                        )}
-                      </TableCell>
-                    ))}
-                  </TableRow>
-                ))
-              ) : (
-                <TableRow>
-                  <TableCell
-                    colSpan={columns.length}
-                    className="h-24 text-center"
-                  >
-                    <p className="text-muted-foreground">
-                      No organizations found
-                    </p>
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </div>
+        <>
+          <DataTable
+            columns={orgColumns as ColumnDef<OrgRow, unknown>[]}
+            data={organizations}
+            manualPagination
+            emptyMessage="No organizations found"
+            onRowClick={(row) => {
+              setSelectedOrg(row);
+              setOrgSheetOpen(true);
+            }}
+          />
+
+          {/* Show requests below orgs when "All" is selected */}
+          {isAll && requests.length > 0 && (
+            <div className="space-y-2 pt-4">
+              <h3 className="text-muted-foreground text-sm font-medium">
+                Pending Requests ({requests.length})
+              </h3>
+              <DataTable
+                columns={requestColumns as ColumnDef<OrgRequestRow, unknown>[]}
+                data={requests}
+                manualPagination
+                emptyMessage="No organization requests found"
+                onRowClick={(row) => {
+                  setSelectedRequest(row);
+                  setRequestSheetOpen(true);
+                }}
+              />
+            </div>
+          )}
+        </>
       )}
 
-      {/* Pagination */}
-      {!isLoading && totalPages > 1 && (
+      {/* Pagination (for org-filtered or requests-only views) */}
+      {!isLoading && totalPages > 1 && !isAll && (
         <div className="flex items-center justify-between">
           <div className="text-muted-foreground text-sm">
             Page {page + 1} of {totalPages}
@@ -244,11 +259,17 @@ export default function AdminOrganizationsPage() {
         </div>
       )}
 
-      {/* Detail sheet */}
+      {/* Detail sheets */}
       <OrgDetailSheet
         org={selectedOrg}
-        open={sheetOpen}
-        onOpenChange={setSheetOpen}
+        open={orgSheetOpen}
+        onOpenChange={setOrgSheetOpen}
+      />
+      <RequestDetailSheet
+        request={selectedRequest}
+        open={requestSheetOpen}
+        onOpenChange={setRequestSheetOpen}
+        onActionComplete={() => setRefreshKey((k) => k + 1)}
       />
     </div>
   );

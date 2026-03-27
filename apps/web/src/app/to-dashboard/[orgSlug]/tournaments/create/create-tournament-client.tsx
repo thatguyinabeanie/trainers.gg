@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "@trainers/validators";
+import { generateSlug } from "@trainers/utils";
 import { useSupabaseQuery, useSupabaseMutation } from "@/lib/supabase";
 import { getOrganizationBySlug, createTournament } from "@trainers/supabase";
 import { useCurrentUser } from "@/hooks/use-current-user";
@@ -244,15 +245,6 @@ export function CreateTournamentClient({
       }
     ) => createTournament(supabase, args)
   );
-
-  const generateSlug = (name: string) => {
-    return name
-      .toLowerCase()
-      .replace(/[^a-z0-9\s-]/g, "")
-      .replace(/\s+/g, "-")
-      .replace(/-+/g, "-")
-      .trim();
-  };
 
   const handleNameChange = (name: string) => {
     form.setValue("name", name);

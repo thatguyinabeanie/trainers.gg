@@ -1,3 +1,5 @@
+import type { OrganizationSocialLink } from "@trainers/validators";
+import type { Json } from "../types";
 import type { TypedClient } from "../client";
 
 const COOLDOWN_DAYS = 7;
@@ -8,7 +10,13 @@ const COOLDOWN_DAYS = 7;
  */
 export async function submitOrganizationRequest(
   supabase: TypedClient,
-  data: { name: string; slug: string; description?: string }
+  data: {
+    name: string;
+    slug: string;
+    description?: string;
+    discord_invite_url: string;
+    social_links?: OrganizationSocialLink[];
+  }
 ) {
   const {
     data: { user },
@@ -87,6 +95,8 @@ export async function submitOrganizationRequest(
       name: data.name,
       slug,
       description: data.description || null,
+      discord_invite_url: data.discord_invite_url,
+      social_links: (data.social_links ?? []) as unknown as Json,
     })
     .select()
     .single();
@@ -130,7 +140,19 @@ export async function approveOrganizationRequest(
     );
   }
 
-  // Create the organization
+  // Assemble social links from request (Discord invite + any additional)
+  const socialLinks: OrganizationSocialLink[] = [];
+  if (request.discord_invite_url) {
+    socialLinks.push({ platform: "discord", url: request.discord_invite_url });
+  }
+  const requestSocialLinks = (request.social_links ??
+    []) as OrganizationSocialLink[];
+  for (const link of requestSocialLinks) {
+    if (link.platform && link.url) {
+      socialLinks.push(link);
+    }
+  }
+
   const { data: org, error: orgError } = await supabase
     .from("organizations")
     .insert({
@@ -138,6 +160,8 @@ export async function approveOrganizationRequest(
       slug: request.slug,
       description: request.description,
       owner_user_id: request.user_id,
+      social_links: socialLinks as unknown as Json,
+      status: "active" as const,
     })
     .select()
     .single();

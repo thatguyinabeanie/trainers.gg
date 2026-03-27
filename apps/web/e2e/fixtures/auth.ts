@@ -44,7 +44,7 @@ export async function loginViaUI(
   await page.getByLabel("Email or Username").waitFor({ state: "visible" });
 
   await page.getByLabel("Email or Username").fill(user.email);
-  await page.getByLabel("Password").fill(user.password);
+  await page.locator('input[name="password"]').fill(user.password);
 
   // Scope to main to avoid matching the nav "Sign In" link/button
   await page
