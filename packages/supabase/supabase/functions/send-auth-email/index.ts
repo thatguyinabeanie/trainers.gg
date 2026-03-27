@@ -99,8 +99,9 @@ Deno.serve(async (req) => {
     }
 
     // Verify webhook signature
+    // Supabase prefixes the secret with "v1,whsec_" — strip it for standardwebhooks
     const rawBody = await req.text();
-    const wh = new Webhook(SEND_EMAIL_HOOK_SECRET);
+    const wh = new Webhook(SEND_EMAIL_HOOK_SECRET.replace("v1,whsec_", ""));
 
     const headers: Record<string, string> = {};
     req.headers.forEach((value, key) => {
