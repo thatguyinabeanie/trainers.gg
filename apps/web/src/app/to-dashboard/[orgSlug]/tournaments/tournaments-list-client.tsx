@@ -95,7 +95,7 @@ export function TournamentsListClient({
         <div>
           <h2 className="text-2xl font-bold">Tournaments</h2>
           <p className="text-muted-foreground text-sm">
-            Manage your organization&apos;s tournaments
+            Manage your community&apos;s tournaments
           </p>
         </div>
         <Link href={`${basePath}/tournaments/create`}>
