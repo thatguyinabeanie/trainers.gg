@@ -3,14 +3,13 @@ import { createStaticClient, getUser } from "@/lib/supabase/server";
 import { listPublicOrganizations } from "@trainers/supabase";
 import { type OrganizationWithCounts } from "@trainers/supabase";
 import { Suspense } from "react";
-import { Card, CardContent } from "@/components/ui/card";
-import { Building2, Plus } from "lucide-react";
+import { Users, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { CommunitySearch } from "./community-search";
 import { CacheTags } from "@/lib/cache";
 import { PageContainer } from "@/components/layout/page-container";
-import { OrganizationsDataTable } from "@/components/communities/organizations-data-table";
+import { CommunityCardGrid } from "@/components/communities/community-card-grid";
 
 // On-demand revalidation via cache tags (no time-based revalidation)
 export const revalidate = false;
@@ -29,38 +28,6 @@ const getCachedOrganizations = unstable_cache(
 );
 
 // ============================================================================
-// Organizations List (Server Component)
-// ============================================================================
-
-function OrganizationsList({
-  organizations,
-}: {
-  organizations: OrganizationWithCounts[];
-}) {
-  return <OrganizationsDataTable data={organizations} />;
-}
-
-// ============================================================================
-// Empty State (Server Component)
-// ============================================================================
-
-function EmptyState({ isSearching }: { isSearching: boolean }) {
-  return (
-    <Card>
-      <CardContent className="flex flex-col items-center justify-center py-12">
-        <Building2 className="text-muted-foreground mb-4 h-12 w-12" />
-        <h3 className="mb-2 text-lg font-semibold">No communities found</h3>
-        <p className="text-muted-foreground text-center">
-          {isSearching
-            ? "Try adjusting your search query"
-            : "Check back later for more communities!"}
-        </p>
-      </CardContent>
-    </Card>
-  );
-}
-
-// ============================================================================
 // Main Page (Server Component)
 // ============================================================================
 
@@ -75,16 +42,16 @@ export default async function OrganizationsPage({
     getUser(),
   ]);
 
-  // Filter on the server
-  const organizations = searchQuery
+  // Filter on the server — name, slug, and description
+  const organizations: OrganizationWithCounts[] = searchQuery
     ? allOrganizations.filter(
         (org) =>
           org.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          org.slug.toLowerCase().includes(searchQuery.toLowerCase())
+          org.slug.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          org.description?.toLowerCase().includes(searchQuery.toLowerCase())
       )
     : allOrganizations;
 
-  const hasNoResults = organizations.length === 0;
   const isSearching = !!searchQuery;
 
   return (
@@ -93,7 +60,7 @@ export default async function OrganizationsPage({
       <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h1 className="flex items-center gap-2 text-3xl font-bold">
-            <Building2 className="h-8 w-8" />
+            <Users className="h-8 w-8" />
             Communities
           </h1>
           <p className="text-muted-foreground mt-1">
@@ -116,11 +83,11 @@ export default async function OrganizationsPage({
         </div>
       </div>
 
-      {/* Empty State */}
-      {hasNoResults && <EmptyState isSearching={isSearching} />}
-
-      {/* Organizations List */}
-      {!hasNoResults && <OrganizationsList organizations={organizations} />}
+      {/* Card Grid */}
+      <CommunityCardGrid
+        communities={organizations}
+        isSearching={isSearching}
+      />
     </PageContainer>
   );
 }
