@@ -79,7 +79,7 @@ catalogs:
       specifier: 19.1.0
       version: 19.1.0
     supabase:
-      specifier: ^2.75.3
+      specifier: ^2
       version: 2.75.3
     tailwindcss:
       specifier: ^4.0.0
