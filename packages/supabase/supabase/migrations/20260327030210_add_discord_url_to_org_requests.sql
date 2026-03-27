@@ -9,7 +9,7 @@ ALTER TABLE public.organization_requests
 
 ALTER TABLE public.organization_requests
   ADD CONSTRAINT organization_requests_discord_invite_url_check
-  CHECK (discord_invite_url ~ '^https?://');
+  CHECK (discord_invite_url = '' OR discord_invite_url ~ '^https?://');
 
 -- Remove the default now that existing rows are backfilled
 ALTER TABLE public.organization_requests
