@@ -175,7 +175,7 @@ function OrganizationHeader({
           <Link href={`/to-dashboard/${organization.slug}`}>
             <Button variant="outline">
               <Settings className="mr-2 h-4 w-4" />
-              Manage Organization
+              Manage Community
             </Button>
           </Link>
         )}

@@ -57,7 +57,7 @@ export function OrganizationTabs({
         {!hasTournaments ? (
           <TournamentListEmpty
             title="No tournaments yet"
-            description="This organization hasn't created any tournaments"
+            description="This community hasn't created any tournaments"
           >
             {canManage && (
               <Link href={`/to-dashboard/${orgSlug}/tournaments/create`}>
@@ -117,7 +117,7 @@ export function OrganizationTabs({
           <CardHeader>
             <CardTitle>Staff</CardTitle>
             <CardDescription>
-              People who are part of this organization
+              People who are part of this community
             </CardDescription>
           </CardHeader>
           <CardContent>

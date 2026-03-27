@@ -197,7 +197,7 @@ function DraggableStaffCard({
         <button
           onClick={onRemove}
           className="text-muted-foreground hover:text-destructive rounded p-1 transition-colors"
-          title="Remove from organization"
+          title="Remove from community"
         >
           <UserMinus className="h-4 w-4" />
         </button>
@@ -516,7 +516,7 @@ export function StaffListClient({
           <p className="text-muted-foreground text-sm">
             {canDragAny
               ? "Drag and drop staff between groups to assign roles"
-              : "View your organization's staff"}
+              : "View your community's staff"}
           </p>
         </div>
         {isOwner && (
@@ -538,7 +538,7 @@ export function StaffListClient({
             <Users className="text-muted-foreground mb-4 h-12 w-12" />
             <h3 className="mb-2 text-lg font-semibold">No staff members</h3>
             <p className="text-muted-foreground mb-4 text-center">
-              Add staff members to help manage your organization
+              Add staff members to help manage your community
             </p>
             {isOwner && (
               <Button onClick={() => setIsInviteOpen(true)}>

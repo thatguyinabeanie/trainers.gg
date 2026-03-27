@@ -18,7 +18,7 @@ import {
   columns as requestColumns,
   type OrgRequestRow,
 } from "@/app/admin/org-requests/columns";
-import { OrgDetailSheet } from "./org-detail-sheet";
+import { OrgDetailSheet } from "./community-detail-sheet";
 import { RequestDetailSheet } from "@/app/admin/org-requests/request-detail-sheet";
 
 // --- Constants ---
@@ -132,7 +132,7 @@ export default function AdminOrganizationsPage() {
       {/* Header row: title + search */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <h2 className="text-lg font-semibold">
-          {isRequestsOnly ? "Organization Requests" : "Organizations"}
+          {isRequestsOnly ? "Community Requests" : "Communities"}
           {!isLoading && !isAll && (
             <span className="text-muted-foreground ml-2 text-sm font-normal">
               ({totalCount})
@@ -192,7 +192,7 @@ export default function AdminOrganizationsPage() {
           columns={requestColumns as ColumnDef<OrgRequestRow, unknown>[]}
           data={requests}
           manualPagination
-          emptyMessage="No organization requests found"
+          emptyMessage="No community requests found"
           onRowClick={(row) => {
             setSelectedRequest(row);
             setRequestSheetOpen(true);
@@ -204,7 +204,7 @@ export default function AdminOrganizationsPage() {
             columns={orgColumns as ColumnDef<OrgRow, unknown>[]}
             data={organizations}
             manualPagination
-            emptyMessage="No organizations found"
+            emptyMessage="No communities found"
             onRowClick={(row) => {
               setSelectedOrg(row);
               setOrgSheetOpen(true);
@@ -221,7 +221,7 @@ export default function AdminOrganizationsPage() {
                 columns={requestColumns as ColumnDef<OrgRequestRow, unknown>[]}
                 data={requests}
                 manualPagination
-                emptyMessage="No organization requests found"
+                emptyMessage="No community requests found"
                 onRowClick={(row) => {
                   setSelectedRequest(row);
                   setRequestSheetOpen(true);

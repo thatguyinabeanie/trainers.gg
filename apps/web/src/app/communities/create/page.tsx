@@ -76,7 +76,7 @@ export default async function CreateOrganizationPage() {
               at our discretion.
             </li>
             <li>
-              Organizations may be{" "}
+              Communities may be{" "}
               <strong className="text-foreground">suspended at any time</strong>{" "}
               if they no longer meet our community standards.
             </li>

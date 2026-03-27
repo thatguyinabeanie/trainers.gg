@@ -101,8 +101,8 @@ export default function OrgSettingsPage({ params }: PageProps) {
   if (!org) {
     return (
       <div className="space-y-6">
-        <h2 className="text-2xl font-bold">Organization Settings</h2>
-        <p className="text-muted-foreground">Organization not found.</p>
+        <h2 className="text-2xl font-bold">Community Settings</h2>
+        <p className="text-muted-foreground">Community not found.</p>
       </div>
     );
   }
@@ -110,9 +110,9 @@ export default function OrgSettingsPage({ params }: PageProps) {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-bold">Organization Settings</h2>
+        <h2 className="text-2xl font-bold">Community Settings</h2>
         <p className="text-muted-foreground text-sm">
-          Configure your organization&apos;s profile and settings
+          Configure your community&apos;s profile and settings
         </p>
       </div>
 
@@ -204,7 +204,7 @@ function OrgProfileForm({ org, onSaved }: OrgProfileFormProps) {
 
   const handleSave = () => {
     if (!name.trim()) {
-      toast.error("Organization name is required");
+      toast.error("Community name is required");
       return;
     }
 
@@ -231,7 +231,7 @@ function OrgProfileForm({ org, onSaved }: OrgProfileFormProps) {
       );
 
       if (result.success) {
-        toast.success("Organization settings updated");
+        toast.success("Community settings updated");
         onSaved();
       } else {
         toast.error(result.error);
@@ -245,10 +245,10 @@ function OrgProfileForm({ org, onSaved }: OrgProfileFormProps) {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Building2 className="h-5 w-5" />
-            Organization Profile
+            Community Profile
           </CardTitle>
           <CardDescription>
-            Public information about your organization
+            Public information about your community
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -312,12 +312,12 @@ function OrgProfileForm({ org, onSaved }: OrgProfileFormProps) {
 
           {/* Name */}
           <div className="space-y-2">
-            <Label htmlFor="orgName">Organization Name</Label>
+            <Label htmlFor="orgName">Community Name</Label>
             <Input
               id="orgName"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="My Organization"
+              placeholder="My Community"
             />
           </div>
 
@@ -328,7 +328,7 @@ function OrgProfileForm({ org, onSaved }: OrgProfileFormProps) {
               id="orgDescription"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="Describe your organization..."
+              placeholder="Describe your community..."
               rows={3}
             />
           </div>
@@ -351,12 +351,12 @@ function OrgProfileForm({ org, onSaved }: OrgProfileFormProps) {
         <CardHeader>
           <CardTitle>Slug</CardTitle>
           <CardDescription>
-            Your organization&apos;s URL identifier
+            Your community&apos;s URL identifier
           </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="bg-muted rounded-md px-3 py-2 text-sm">
-            trainers.gg/organizations/{org.slug}
+            trainers.gg/communities/{org.slug}
           </div>
           <p className="text-muted-foreground mt-2 text-xs">
             The slug cannot be changed after creation.

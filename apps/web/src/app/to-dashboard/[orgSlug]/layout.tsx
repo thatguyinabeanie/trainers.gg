@@ -45,7 +45,7 @@ export default async function OrgDashboardLayout({
   );
 
   if (!hasAccess) {
-    redirect(`/organizations/${orgSlug}`);
+    redirect(`/communities/${orgSlug}`);
   }
 
   // isOwner is needed for UI (to show owner-only features in nav)

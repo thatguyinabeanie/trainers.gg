@@ -65,7 +65,7 @@ export async function updateOrganization(
   } catch (error) {
     return {
       success: false,
-      error: getErrorMessage(error, "Failed to update organization"),
+      error: getErrorMessage(error, "Failed to update community"),
     };
   }
 }
@@ -162,7 +162,7 @@ export async function leaveOrganization(
   } catch (error) {
     return {
       success: false,
-      error: getErrorMessage(error, "Failed to leave organization"),
+      error: getErrorMessage(error, "Failed to leave community"),
     };
   }
 }

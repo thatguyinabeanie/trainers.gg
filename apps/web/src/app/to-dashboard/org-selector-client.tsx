@@ -36,16 +36,16 @@ export function OrgSelectorClient({ organizations }: OrgSelectorClientProps) {
             Tournament Organizer
           </h1>
           <p className="text-muted-foreground text-sm sm:text-base">
-            Manage your organizations and tournaments
+            Manage your communities and tournaments
           </p>
         </div>
 
         <Card className="mx-auto max-w-lg">
           <CardContent className="flex flex-col items-center justify-center py-12">
             <Building2 className="text-muted-foreground mb-4 h-12 w-12" />
-            <h3 className="mb-2 text-lg font-semibold">No organizations yet</h3>
+            <h3 className="mb-2 text-lg font-semibold">No communities yet</h3>
             <p className="text-muted-foreground mb-6 text-center">
-              Create an organization to start hosting tournaments
+              Create a community to start hosting tournaments
             </p>
             <Link href="/communities/create">
               <Button>
@@ -70,13 +70,13 @@ export function OrgSelectorClient({ organizations }: OrgSelectorClientProps) {
             Tournament Organizer
           </h1>
           <p className="text-muted-foreground text-sm sm:text-base">
-            Select an organization to manage
+            Select a community to manage
           </p>
         </div>
         <Link href="/communities/create" className="w-full sm:w-auto">
           <Button className="w-full sm:w-auto">
             <Plus className="mr-2 h-4 w-4" />
-            Request Organization
+            Request Community
           </Button>
         </Link>
       </div>
@@ -142,10 +142,10 @@ export function OrgSelectorClient({ organizations }: OrgSelectorClientProps) {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Building2 className="h-5 w-5" />
-              Your Organizations
+              Your Communities
             </CardTitle>
             <CardDescription>
-              {organizations.length} organizations
+              {organizations.length} communities
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-2">

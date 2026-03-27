@@ -156,10 +156,10 @@ export function OrgDetailSheet({
 
     // Show a brief success message, then close and refresh
     const messages: Record<ConfirmAction["type"], string> = {
-      approve: "Organization approved",
-      reject: "Organization rejected",
-      suspend: "Organization suspended",
-      unsuspend: "Organization unsuspended",
+      approve: "Community approved",
+      reject: "Community rejected",
+      suspend: "Community suspended",
+      unsuspend: "Community unsuspended",
       transfer: "Ownership transferred",
     };
     setSuccess(messages[confirmAction.type]);
@@ -177,10 +177,10 @@ export function OrgDetailSheet({
   function getConfirmTitle(): string {
     if (!confirmAction) return "";
     const titles: Record<ConfirmAction["type"], string> = {
-      approve: "Approve Organization",
-      reject: "Reject Organization",
-      suspend: "Suspend Organization",
-      unsuspend: "Unsuspend Organization",
+      approve: "Approve Community",
+      reject: "Reject Community",
+      suspend: "Suspend Community",
+      unsuspend: "Unsuspend Community",
       transfer: "Transfer Ownership",
     };
     return titles[confirmAction.type];
@@ -189,9 +189,9 @@ export function OrgDetailSheet({
   function getConfirmDescription(): string {
     if (!confirmAction || !org) return "";
     const descriptions: Record<ConfirmAction["type"], string> = {
-      approve: `This will set "${org.name}" to active status. The organization will be publicly visible.`,
+      approve: `This will set "${org.name}" to active status. The community will be publicly visible.`,
       reject: `This will reject "${org.name}". The reason will be stored in admin notes.`,
-      suspend: `This will suspend "${org.name}". The organization will be hidden from public view.`,
+      suspend: `This will suspend "${org.name}". The community will be hidden from public view.`,
       unsuspend: `This will reactivate "${org.name}" and set the status back to active.`,
       transfer: `This will transfer ownership of "${org.name}" to a different user. This action cannot be easily undone.`,
     };
@@ -298,7 +298,7 @@ export function OrgDetailSheet({
                 </p>
               ) : (
                 <p className="text-muted-foreground text-sm">
-                  No admin notes for this organization.
+                  No admin notes for this community.
                 </p>
               )}
             </section>
@@ -316,7 +316,7 @@ export function OrgDetailSheet({
                     onClick={() => setConfirmAction({ type: "approve" })}
                     disabled={loading}
                   >
-                    Approve Organization
+                    Approve Community
                   </Button>
 
                   {/* Reject (needs reason) */}
@@ -324,7 +324,7 @@ export function OrgDetailSheet({
                     <Label htmlFor="reject-reason">Rejection Reason</Label>
                     <Textarea
                       id="reject-reason"
-                      placeholder="Explain why this organization is being rejected..."
+                      placeholder="Explain why this community is being rejected..."
                       value={reason}
                       onChange={(e) => setReason(e.target.value)}
                     />
@@ -334,7 +334,7 @@ export function OrgDetailSheet({
                       onClick={() => setConfirmAction({ type: "reject" })}
                       disabled={loading || !reason.trim()}
                     >
-                      Reject Organization
+                      Reject Community
                     </Button>
                   </div>
                 </div>
@@ -345,7 +345,7 @@ export function OrgDetailSheet({
                   <Label htmlFor="suspend-reason">Suspension Reason</Label>
                   <Textarea
                     id="suspend-reason"
-                    placeholder="Explain why this organization is being suspended..."
+                    placeholder="Explain why this community is being suspended..."
                     value={reason}
                     onChange={(e) => setReason(e.target.value)}
                   />
@@ -355,7 +355,7 @@ export function OrgDetailSheet({
                     onClick={() => setConfirmAction({ type: "suspend" })}
                     disabled={loading || !reason.trim()}
                   >
-                    Suspend Organization
+                    Suspend Community
                   </Button>
                 </div>
               )}
@@ -366,7 +366,7 @@ export function OrgDetailSheet({
                   onClick={() => setConfirmAction({ type: "unsuspend" })}
                   disabled={loading}
                 >
-                  Unsuspend Organization
+                  Unsuspend Community
                 </Button>
               )}
 

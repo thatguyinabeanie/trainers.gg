@@ -49,7 +49,7 @@ export function RequestStatus({ request }: RequestStatusProps) {
                 <span className="text-foreground font-medium">
                   {request.name}
                 </span>{" "}
-                &middot; trainers.gg/organizations/{request.slug}
+                &middot; trainers.gg/communities/{request.slug}
               </p>
               {request.created_at && (
                 <p>
