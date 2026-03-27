@@ -78,6 +78,7 @@ function exec(command, options = {}) {
  * Even if VERCEL_ENV=preview, if we're connected to production Supabase, skip seeding
  *
  * Set via SUPABASE_PRODUCTION_PROJECT_REF env var.
+ * If unset, seeding is blocked as a safety precaution.
  */
 const PRODUCTION_PROJECT_REF = process.env.SUPABASE_PRODUCTION_PROJECT_REF;
 
@@ -102,6 +103,17 @@ function getEnvironment(projectRef = null) {
     // 1. A branch push triggers a preview deploy before a PR is created
     // 2. Supabase branching is not enabled or the branch doesn't exist yet
     // 3. The Supabase Vercel integration falls back to production URL
+    if (!PRODUCTION_PROJECT_REF) {
+      console.log(
+        `\n⚠️  WARNING: SUPABASE_PRODUCTION_PROJECT_REF is not set!`
+      );
+      console.log(
+        `   Cannot verify whether this is the production database.`
+      );
+      console.log(`   Seeding will be SKIPPED as a safety precaution.\n`);
+      return { type: "preview", shouldRun: true, shouldSeed: false };
+    }
+
     const isProductionDatabase = projectRef === PRODUCTION_PROJECT_REF;
 
     if (isProductionDatabase) {
