@@ -11,7 +11,7 @@ import {
   removeStaffFromGroup,
   changeStaffRole,
   removeStaffCompletely,
-} from "../organizations";
+} from "../communities";
 import type { TypedClient } from "../../client";
 import { createMockClient } from "@trainers/test-utils/mocks";
 import { organizationFactory } from "@trainers/test-utils/factories";

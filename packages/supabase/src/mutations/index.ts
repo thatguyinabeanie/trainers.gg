@@ -29,7 +29,7 @@ export {
   removeStaffFromGroup,
   changeStaffRole,
   removeStaffCompletely,
-} from "./organizations";
+} from "./communities";
 
 // Tournament mutations
 export {
