@@ -14,7 +14,6 @@ import { getUserGrowthStats as getUserGrowthStats_core } from "../queries/admin-
 import { getActiveUserStats as getActiveUserStats_core } from "../queries/admin-analytics";
 import { getTournamentStats as getTournamentStats_core } from "../queries/admin-analytics";
 import { getOrganizationStats as getOrganizationStats_core } from "../queries/admin-analytics";
-import { getInviteConversionStats as getInviteConversionStats_core } from "../queries/admin-analytics";
 import { listOrganizationsAdmin as listOrganizationsAdmin_core } from "../queries/admin-organizations";
 import { getOrganizationAdminDetails as getOrganizationAdminDetails_core } from "../queries/admin-organizations";
 import { approveOrganization as approveOrganization_core } from "../queries/admin-organizations";
@@ -47,7 +46,9 @@ import { getMatchGames as getMatchGames_core } from "../queries/match-games";
 import { getMatchGamesForPlayer as getMatchGamesForPlayer_core } from "../queries/match-games";
 import { getMatchMessages as getMatchMessages_core } from "../queries/match-games";
 import { getMatchGame as getMatchGame_core } from "../queries/match-games";
+import { getNotificationPreferences as getNotificationPreferences_core } from "../queries/notification-preferences";
 import { getNotifications as getNotifications_core } from "../queries/notifications";
+import { getNotificationCount as getNotificationCount_core } from "../queries/notifications";
 import { getUnreadNotificationCount as getUnreadNotificationCount_core } from "../queries/notifications";
 import { getActiveMatchNotifications as getActiveMatchNotifications_core } from "../queries/notifications";
 import { getMyOrganizationRequest as getMyOrganizationRequest_core } from "../queries/organization-requests";
@@ -71,6 +72,11 @@ import { searchUsersForInvite as searchUsersForInvite_core } from "../queries/or
 import { hasOrgPermission as hasOrgPermission_core } from "../queries/organizations";
 import { getUserPermissions as getUserPermissions_core } from "../queries/permissions";
 import { hasPermission as hasPermission_core } from "../queries/permissions";
+import { searchPlayers as searchPlayers_core } from "../queries/players";
+import { getLeaderboard as getLeaderboard_core } from "../queries/players";
+import { getRecentlyActivePlayers as getRecentlyActivePlayers_core } from "../queries/players";
+import { getNewMembers as getNewMembers_core } from "../queries/players";
+import { getPlayerRating as getPlayerRating_core } from "../queries/ratings";
 import { isSiteAdmin as isSiteAdmin_core } from "../queries/site-roles";
 import { getSiteRoles as getSiteRoles_core } from "../queries/site-roles";
 import { getSiteAdmins as getSiteAdmins_core } from "../queries/site-roles";
@@ -131,6 +137,10 @@ import { getCurrentUserAlts as getCurrentUserAlts_core } from "../queries/users"
 import { searchAlts as searchAlts_core } from "../queries/users";
 import { getPlayerProfileByHandle as getPlayerProfileByHandle_core } from "../queries/users";
 import { getEmailByUsername as getEmailByUsername_core } from "../queries/users";
+import { getFollowerCount as getFollowerCount_core } from "../queries/users";
+import { getFollowingCount as getFollowingCount_core } from "../queries/users";
+import { getPlayerTournamentHistoryFull as getPlayerTournamentHistoryFull_core } from "../queries/users";
+import { getPlayerPublicTeams as getPlayerPublicTeams_core } from "../queries/users";
 import { submitGameSelection as submitGameSelection_core } from "../mutations/match-games";
 import { sendMatchMessage as sendMatchMessage_core } from "../mutations/match-games";
 import { sendSystemMessage as sendSystemMessage_core } from "../mutations/match-games";
@@ -139,6 +149,7 @@ import { judgeOverrideGame as judgeOverrideGame_core } from "../mutations/match-
 import { judgeResetGame as judgeResetGame_core } from "../mutations/match-games";
 import { resetMatch as resetMatch_core } from "../mutations/match-games";
 import { confirmMatchCheckIn as confirmMatchCheckIn_core } from "../mutations/match-games";
+import { upsertNotificationPreferences as upsertNotificationPreferences_core } from "../mutations/notification-preferences";
 import { markNotificationRead as markNotificationRead_core } from "../mutations/notifications";
 import { markAllNotificationsRead as markAllNotificationsRead_core } from "../mutations/notifications";
 import { deleteNotification as deleteNotification_core } from "../mutations/notifications";
@@ -269,21 +280,6 @@ export async function getOrganizationStats(
 ): Promise<Awaited<ReturnType<typeof getOrganizationStats_core>>> {
   const client = createMobileSupabaseClient();
   return getOrganizationStats_core(client, ...args);
-}
-
-/**
- * getInviteConversionStats (auto-injected with mobile client)
- */
-export async function getInviteConversionStats(
-  ...args: Parameters<typeof getInviteConversionStats_core> extends [
-    first: infer _F,
-    ...rest: infer R,
-  ]
-    ? R
-    : never
-): Promise<Awaited<ReturnType<typeof getInviteConversionStats_core>>> {
-  const client = createMobileSupabaseClient();
-  return getInviteConversionStats_core(client, ...args);
 }
 
 /**
@@ -767,6 +763,21 @@ export async function getMatchGame(
 }
 
 /**
+ * getNotificationPreferences (auto-injected with mobile client)
+ */
+export async function getNotificationPreferences(
+  ...args: Parameters<typeof getNotificationPreferences_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof getNotificationPreferences_core>>> {
+  const client = createMobileSupabaseClient();
+  return getNotificationPreferences_core(client, ...args);
+}
+
+/**
  * getNotifications (auto-injected with mobile client)
  */
 export async function getNotifications(
@@ -779,6 +790,21 @@ export async function getNotifications(
 ): Promise<Awaited<ReturnType<typeof getNotifications_core>>> {
   const client = createMobileSupabaseClient();
   return getNotifications_core(client, ...args);
+}
+
+/**
+ * getNotificationCount (auto-injected with mobile client)
+ */
+export async function getNotificationCount(
+  ...args: Parameters<typeof getNotificationCount_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof getNotificationCount_core>>> {
+  const client = createMobileSupabaseClient();
+  return getNotificationCount_core(client, ...args);
 }
 
 /**
@@ -1126,6 +1152,81 @@ export async function hasPermission(
 ): Promise<Awaited<ReturnType<typeof hasPermission_core>>> {
   const client = createMobileSupabaseClient();
   return hasPermission_core(client, ...args);
+}
+
+/**
+ * searchPlayers (auto-injected with mobile client)
+ */
+export async function searchPlayers(
+  ...args: Parameters<typeof searchPlayers_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof searchPlayers_core>>> {
+  const client = createMobileSupabaseClient();
+  return searchPlayers_core(client, ...args);
+}
+
+/**
+ * getLeaderboard (auto-injected with mobile client)
+ */
+export async function getLeaderboard(
+  ...args: Parameters<typeof getLeaderboard_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof getLeaderboard_core>>> {
+  const client = createMobileSupabaseClient();
+  return getLeaderboard_core(client, ...args);
+}
+
+/**
+ * getRecentlyActivePlayers (auto-injected with mobile client)
+ */
+export async function getRecentlyActivePlayers(
+  ...args: Parameters<typeof getRecentlyActivePlayers_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof getRecentlyActivePlayers_core>>> {
+  const client = createMobileSupabaseClient();
+  return getRecentlyActivePlayers_core(client, ...args);
+}
+
+/**
+ * getNewMembers (auto-injected with mobile client)
+ */
+export async function getNewMembers(
+  ...args: Parameters<typeof getNewMembers_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof getNewMembers_core>>> {
+  const client = createMobileSupabaseClient();
+  return getNewMembers_core(client, ...args);
+}
+
+/**
+ * getPlayerRating (auto-injected with mobile client)
+ */
+export async function getPlayerRating(
+  ...args: Parameters<typeof getPlayerRating_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof getPlayerRating_core>>> {
+  const client = createMobileSupabaseClient();
+  return getPlayerRating_core(client, ...args);
 }
 
 /**
@@ -2030,6 +2131,66 @@ export async function getEmailByUsername(
 }
 
 /**
+ * getFollowerCount (auto-injected with mobile client)
+ */
+export async function getFollowerCount(
+  ...args: Parameters<typeof getFollowerCount_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof getFollowerCount_core>>> {
+  const client = createMobileSupabaseClient();
+  return getFollowerCount_core(client, ...args);
+}
+
+/**
+ * getFollowingCount (auto-injected with mobile client)
+ */
+export async function getFollowingCount(
+  ...args: Parameters<typeof getFollowingCount_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof getFollowingCount_core>>> {
+  const client = createMobileSupabaseClient();
+  return getFollowingCount_core(client, ...args);
+}
+
+/**
+ * getPlayerTournamentHistoryFull (auto-injected with mobile client)
+ */
+export async function getPlayerTournamentHistoryFull(
+  ...args: Parameters<typeof getPlayerTournamentHistoryFull_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof getPlayerTournamentHistoryFull_core>>> {
+  const client = createMobileSupabaseClient();
+  return getPlayerTournamentHistoryFull_core(client, ...args);
+}
+
+/**
+ * getPlayerPublicTeams (auto-injected with mobile client)
+ */
+export async function getPlayerPublicTeams(
+  ...args: Parameters<typeof getPlayerPublicTeams_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof getPlayerPublicTeams_core>>> {
+  const client = createMobileSupabaseClient();
+  return getPlayerPublicTeams_core(client, ...args);
+}
+
+/**
  * submitGameSelection (auto-injected with mobile client)
  */
 export async function submitGameSelection(
@@ -2147,6 +2308,21 @@ export async function confirmMatchCheckIn(
 ): Promise<Awaited<ReturnType<typeof confirmMatchCheckIn_core>>> {
   const client = createMobileSupabaseClient();
   return confirmMatchCheckIn_core(client, ...args);
+}
+
+/**
+ * upsertNotificationPreferences (auto-injected with mobile client)
+ */
+export async function upsertNotificationPreferences(
+  ...args: Parameters<typeof upsertNotificationPreferences_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof upsertNotificationPreferences_core>>> {
+  const client = createMobileSupabaseClient();
+  return upsertNotificationPreferences_core(client, ...args);
 }
 
 /**

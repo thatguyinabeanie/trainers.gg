@@ -403,9 +403,6 @@ verify_jwt = false
 verify_jwt = false
 
 # Authenticated functions (gateway enforces valid JWT before function runs)
-[functions.send-invite]
-verify_jwt = true
-
 [functions.provision-pds]
 verify_jwt = true
 

@@ -8,9 +8,6 @@ import { supabaseAdapter } from "@/lib/feature-flags/adapter";
  * the custom adapter. The flag key must match the `key` column
  * in the database.
  *
- * Usage in Server Components:
- *   const enabled = await openRegistration();
- *
  * Usage with Vercel Toolbar:
  *   Flags defined here appear in the Vercel Toolbar Flag Explorer
  *   via the /.well-known/vercel/flags discovery endpoint.
@@ -27,17 +24,6 @@ import { supabaseAdapter } from "@/lib/feature-flags/adapter";
  *   Set FLAGS_SECRET in .env.local for Vercel Toolbar encryption.
  *   Generate with: node -e "console.log(crypto.randomBytes(32).toString('base64url'))"
  */
-
-export const openRegistration = flag<boolean>({
-  key: "open_registration",
-  defaultValue: false,
-  description: "Allow new user signups without a beta invite",
-  options: [
-    { label: "Off", value: false },
-    { label: "On", value: true },
-  ],
-  adapter: supabaseAdapter,
-});
 
 export const dashboardStats = flag<boolean>({
   key: "dashboard_stats",

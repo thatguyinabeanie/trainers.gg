@@ -256,10 +256,6 @@ Seed data in `packages/supabase/supabase/seeds/03_users.sql`. All accounts use t
 
 Additional generated users follow the pattern `<username>@trainers.local` (see seed file for full list).
 
-## Pre-Release Notes (remove after first public release)
-
-- **Match URLs**: Use `/tournaments/[slug]/r/[round]/t/[table]` format (not `/matches/[matchId]`). No redirect from old format needed — app is pre-release with no existing links to maintain.
-
 ## Development Workflow
 
 When executing implementation plans, always use **subagent-driven development** (`superpowers:subagent-driven-development`). Do not use inline execution unless explicitly asked.

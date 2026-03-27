@@ -44,7 +44,6 @@ describe("proxy-routes", () => {
       expect(isPublicRoute("/sign-up")).toBe(true);
       expect(isPublicRoute("/forgot-password")).toBe(true);
       expect(isPublicRoute("/reset-password")).toBe(true);
-      expect(isPublicRoute("/invite")).toBe(true);
       expect(isPublicRoute("/tournaments")).toBe(true);
       expect(isPublicRoute("/organizations")).toBe(true);
       expect(isPublicRoute("/auth")).toBe(true);

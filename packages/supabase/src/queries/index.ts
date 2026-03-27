@@ -172,7 +172,6 @@ export {
   getActiveUserStats,
   getTournamentStats,
   getOrganizationStats,
-  getInviteConversionStats,
 } from "./admin-analytics";
 
 export type {
@@ -180,7 +179,6 @@ export type {
   UserGrowthEntry,
   ActiveUserStats,
   OrganizationStats,
-  InviteConversionStats,
 } from "./admin-analytics";
 
 // Admin user management queries

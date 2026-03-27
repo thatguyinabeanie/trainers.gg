@@ -7,15 +7,12 @@ import {
   Activity,
   Building2,
   Trophy,
-  Swords,
   UserCheck,
-  Mail,
   BarChart3,
   ArrowRight,
   type LucideIcon,
 } from "lucide-react";
 import Link from "next/link";
-import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   ChartContainer,
@@ -33,7 +30,6 @@ import {
   getAuditLog,
   getOrganizationStats,
   getTournamentStats,
-  getInviteConversionStats,
 } from "@trainers/supabase";
 import type { TypedSupabaseClient, Database } from "@trainers/supabase";
 import {
@@ -369,79 +365,6 @@ function RecentActivityFeed({
   );
 }
 
-// ── Invite Funnel ───────────────────────────────────────────────────
-
-function InviteFunnelCard({
-  inviteStats,
-  isLoading,
-}: {
-  inviteStats:
-    | { totalSent: number; totalUsed: number; conversionRate: number }
-    | undefined;
-  isLoading: boolean;
-}) {
-  return (
-    <Card>
-      <CardHeader className="pb-2">
-        <CardTitle className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
-          Invite Funnel
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-3">
-        {isLoading ? (
-          <>
-            <Skeleton className="h-5 w-full" />
-            <Skeleton className="h-5 w-3/4" />
-            <Skeleton className="h-3 w-full rounded-full" />
-          </>
-        ) : inviteStats ? (
-          <>
-            <div className="flex items-center justify-between">
-              <span className="text-muted-foreground flex items-center gap-1.5 text-sm">
-                <Mail className="size-3.5" /> Sent
-              </span>
-              <span className="text-sm font-medium tabular-nums">
-                {formatNumber(inviteStats.totalSent)}
-              </span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-muted-foreground flex items-center gap-1.5 text-sm">
-                <Swords className="size-3.5" /> Used
-              </span>
-              <span className="text-sm font-medium tabular-nums">
-                {formatNumber(inviteStats.totalUsed)}
-              </span>
-            </div>
-
-            <div className="space-y-1.5">
-              <div className="flex items-center justify-between">
-                <span className="text-muted-foreground text-xs">
-                  Conversion
-                </span>
-                <Badge variant="default" className="tabular-nums">
-                  {(inviteStats.conversionRate * 100).toFixed(1)}%
-                </Badge>
-              </div>
-              <div className="bg-muted h-2 overflow-hidden rounded-full">
-                <div
-                  className="bg-primary h-full rounded-full transition-all"
-                  style={{
-                    width: `${Math.min(inviteStats.conversionRate * 100, 100)}%`,
-                  }}
-                />
-              </div>
-            </div>
-          </>
-        ) : (
-          <p className="text-muted-foreground py-2 text-center text-sm">
-            No data
-          </p>
-        )}
-      </CardContent>
-    </Card>
-  );
-}
-
 // ── Dashboard Content ───────────────────────────────────────────────
 
 function DashboardContent() {
@@ -485,12 +408,6 @@ function DashboardContent() {
     error: tournamentError,
   } = useSupabaseQuery((s) => getTournamentStats(s), []);
 
-  const {
-    data: inviteStats,
-    isLoading: inviteLoading,
-    error: inviteError,
-  } = useSupabaseQuery((s) => getInviteConversionStats(s), []);
-
   const recentEntries = (recentLog?.data ?? []) as RecentEntry[];
   const pendingOrgs = orgStats?.byStatus?.pending ?? 0;
 
@@ -501,8 +418,7 @@ function DashboardContent() {
     auditStatsError ||
     recentError ||
     orgError ||
-    tournamentError ||
-    inviteError;
+    tournamentError;
 
   return (
     <div className="space-y-8">
@@ -626,11 +542,6 @@ function DashboardContent() {
             data={orgStats?.byTier}
             labels={ORG_TIER_LABELS}
             isLoading={orgLoading}
-          />
-
-          <InviteFunnelCard
-            inviteStats={inviteStats}
-            isLoading={inviteLoading}
           />
         </div>
       </div>

@@ -25,7 +25,6 @@ export const PUBLIC_ROUTES = [
   "/sign-up",
   "/forgot-password",
   "/reset-password",
-  "/invite", // Invite acceptance (unauthenticated users need access)
   "/tournaments", // Browse tournaments (public directory)
   "/organizations", // Browse organizations (public directory)
   "/players", // Player directory (public)
