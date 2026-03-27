@@ -223,15 +223,9 @@ otp_length = 6
 # Number of seconds before the email OTP expires (defaults to 1 hour).
 otp_expiry = 3600
 
-# Use Resend SMTP for email delivery
-[auth.email.smtp]
-enabled = true
-host = "smtp.resend.com"
-port = 465
-user = "resend"
-pass = "env(RESEND_API_KEY)"
-admin_email = "noreply@trainers.gg"
-sender_name = "trainers.gg"
+# Auth emails are handled by the send-auth-email edge function hook
+# (configured in Supabase Dashboard → Auth Hooks → Send Email)
+# No SMTP needed — emails sent via Resend API directly.
 
 # Uncomment to customize email template
 # [auth.email.template.invite]
@@ -393,6 +387,7 @@ PDS_HOST = "env(PDS_HOST)"
 PDS_ADMIN_PASSWORD = "env(PDS_ADMIN_PASSWORD)"
 PDS_HANDLE_DOMAIN = "env(PDS_HANDLE_DOMAIN)"
 RESEND_API_KEY = "env(RESEND_API_KEY)"
+SEND_EMAIL_HOOK_SECRET = "env(SEND_EMAIL_HOOK_SECRET)"
 
 # Edge Functions — declared here so the GitHub integration deploys them
 # Public functions (no JWT required — user isn't authenticated yet)
@@ -426,6 +421,9 @@ verify_jwt = true
 
 [functions.send-org-request-notification]
 verify_jwt = true
+
+[functions.send-auth-email]
+verify_jwt = false
 
 [analytics]
 enabled = true
