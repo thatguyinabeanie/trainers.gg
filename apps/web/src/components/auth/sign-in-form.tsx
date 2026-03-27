@@ -8,6 +8,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { UsernameInput } from "@/components/ui/username-input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/hooks/use-auth";
@@ -185,9 +186,8 @@ export function SignInView({
               Forgot password?
             </Link>
           </div>
-          <Input
+          <PasswordInput
             id="password"
-            type="password"
             placeholder="Enter your password"
             autoComplete="current-password"
             aria-invalid={errors.password ? "true" : undefined}
@@ -336,9 +336,8 @@ function SignUpView({
 
         <div className="flex flex-col gap-2">
           <Label htmlFor="password">Password</Label>
-          <Input
+          <PasswordInput
             id="password"
-            type="password"
             placeholder="Create a password"
             autoComplete="new-password"
             aria-invalid={errors.password ? "true" : undefined}
@@ -360,9 +359,8 @@ function SignUpView({
 
         <div className="flex flex-col gap-2">
           <Label htmlFor="confirmPassword">Confirm Password</Label>
-          <Input
+          <PasswordInput
             id="confirmPassword"
-            type="password"
             placeholder="Confirm your password"
             autoComplete="new-password"
             aria-invalid={errors.confirmPassword ? "true" : undefined}
