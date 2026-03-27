@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -85,6 +86,11 @@ export function RequestOrganizationForm() {
 
   const { isSubmitting } = form.formState;
   const name = form.watch("name");
+
+  // Keep slug in sync with name so validation passes
+  useEffect(() => {
+    form.setValue("slug", name ? generateSlug(name) : "");
+  }, [name, form]);
 
   async function onSubmit(data: SubmitOrganizationRequestInput) {
     const result = await submitOrganizationRequestAction({

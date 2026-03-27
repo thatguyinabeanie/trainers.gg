@@ -3,7 +3,10 @@
 ALTER TABLE public.organization_requests
   ADD COLUMN IF NOT EXISTS discord_invite_url text NOT NULL DEFAULT '';
 
--- Add URL format constraint
+-- Add URL format constraint (drop first for idempotency)
+ALTER TABLE public.organization_requests
+  DROP CONSTRAINT IF EXISTS organization_requests_discord_invite_url_check;
+
 ALTER TABLE public.organization_requests
   ADD CONSTRAINT organization_requests_discord_invite_url_check
   CHECK (discord_invite_url ~ '^https?://');
