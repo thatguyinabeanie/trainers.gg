@@ -23,7 +23,7 @@ export function OrganizerAccess({ organizations }: OrganizerAccessProps) {
           Tournament Organizer Access
         </CardTitle>
         <p className="text-muted-foreground text-sm">
-          Your roles and permissions within organizations
+          Your roles and permissions within communities
         </p>
       </CardHeader>
       <CardContent>

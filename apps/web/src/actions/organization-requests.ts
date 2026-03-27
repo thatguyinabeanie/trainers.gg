@@ -90,7 +90,7 @@ export async function submitOrganizationRequestAction(
   } catch (error) {
     return {
       success: false,
-      error: getErrorMessage(error, "Failed to submit organization request"),
+      error: getErrorMessage(error, "Failed to submit community request"),
     };
   }
 }

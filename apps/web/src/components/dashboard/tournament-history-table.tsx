@@ -111,7 +111,7 @@ export function TournamentHistoryTable({ data }: TournamentHistoryTableProps) {
           onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
           className="h-auto p-0 hover:bg-transparent"
         >
-          Organization
+          Community
           <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
       ),

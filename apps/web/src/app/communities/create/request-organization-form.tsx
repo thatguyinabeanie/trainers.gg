@@ -99,7 +99,7 @@ export function RequestOrganizationForm() {
     });
 
     if (result.success) {
-      toast.success("Organization request submitted");
+      toast.success("Community request submitted");
       router.refresh();
     } else {
       toast.error(result.error);
@@ -122,10 +122,10 @@ export function RequestOrganizationForm() {
             name="name"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Organization Name</FormLabel>
+                <FormLabel>Community Name</FormLabel>
                 <FormControl>
                   <Input
-                    placeholder="My Organization"
+                    placeholder="My Community"
                     disabled={isSubmitting}
                     {...field}
                   />
@@ -148,14 +148,14 @@ export function RequestOrganizationForm() {
                 <FormLabel>Description</FormLabel>
                 <FormControl>
                   <Textarea
-                    placeholder="Tell us about your organization — what events do you run, what community do you serve?"
+                    placeholder="Tell us about your community — what events do you run, who do you serve?"
                     disabled={isSubmitting}
                     rows={5}
                     {...field}
                   />
                 </FormControl>
                 <FormDescription>
-                  Help us understand your organization so we can review your
+                  Help us understand your community so we can review your
                   request
                 </FormDescription>
                 <FormMessage />
@@ -171,8 +171,8 @@ export function RequestOrganizationForm() {
               Community links
             </h2>
             <p className="text-muted-foreground mt-1 text-xs">
-              These will be displayed on your organization&apos;s profile page
-              and can be edited later.
+              These will be displayed on your community&apos;s profile page and
+              can be edited later.
             </p>
           </div>
 

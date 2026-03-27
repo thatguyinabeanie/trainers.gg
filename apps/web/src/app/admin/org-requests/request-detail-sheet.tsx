@@ -116,7 +116,7 @@ export function RequestDetailSheet({
       if (result.success) {
         toast.success(
           confirmAction.type === "approve"
-            ? "Request approved — organization created"
+            ? "Request approved — community created"
             : "Request rejected"
         );
         setConfirmAction(null);
@@ -138,7 +138,7 @@ export function RequestDetailSheet({
           <SheetHeader>
             <SheetTitle>{request.name}</SheetTitle>
             <SheetDescription>
-              Organization request &middot; {request.slug}
+              Community request &middot; {request.slug}
             </SheetDescription>
           </SheetHeader>
 
@@ -311,7 +311,7 @@ export function RequestDetailSheet({
             </AlertDialogTitle>
             <AlertDialogDescription>
               {confirmAction?.type === "approve"
-                ? `This will create the organization "${request.name}" and notify the requester.`
+                ? `This will create the community "${request.name}" and notify the requester.`
                 : `This will reject the request and notify the requester. They can reapply after 7 days.`}
             </AlertDialogDescription>
           </AlertDialogHeader>

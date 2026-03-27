@@ -163,7 +163,7 @@ export function OrganizationsDataTable({ data }: OrganizationsDataTableProps) {
           <div className="flex flex-col items-center justify-center py-12">
             <Building2 className="text-muted-foreground mb-4 h-12 w-12" />
             <p className="text-muted-foreground text-center">
-              No organizations found
+              No communities found
             </p>
           </div>
         )}

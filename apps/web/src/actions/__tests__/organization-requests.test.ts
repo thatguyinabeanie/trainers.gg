@@ -110,7 +110,7 @@ describe("submitOrganizationRequestAction", () => {
 
     expect(result).toEqual({
       success: false,
-      error: "Failed to submit organization request",
+      error: "Failed to submit community request",
     });
   });
 
