@@ -252,7 +252,9 @@ test.describe("Admin panel — admin user with sudo mode", () => {
     await expect(
       main.getByText("Communities", { exact: true }).first()
     ).toBeVisible();
-    await expect(main.getByText("Tournaments")).toBeVisible();
+    await expect(
+      main.getByText("Tournaments", { exact: true }).first()
+    ).toBeVisible();
     await expect(main.getByText("Events (24h)")).toBeVisible();
 
     // Recent Activity section
