@@ -17,7 +17,7 @@ export const revalidate = false;
 
 /**
  * Cached data fetcher for organizations list
- * Revalidated when CacheTags.ORGANIZATIONS_LIST is invalidated
+ * Revalidated when CacheTags.COMMUNITIES_LIST is invalidated
  */
 const getCachedOrganizations = unstable_cache(
   async () => {
@@ -25,7 +25,7 @@ const getCachedOrganizations = unstable_cache(
     return listPublicOrganizations(supabase);
   },
   ["organizations-list"],
-  { tags: [CacheTags.ORGANIZATIONS_LIST] }
+  { tags: [CacheTags.COMMUNITIES_LIST] }
 );
 
 // ============================================================================

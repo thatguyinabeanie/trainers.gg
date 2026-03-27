@@ -90,7 +90,7 @@ const getCachedOrganization = (slug: string) =>
       return getOrganizationBySlug(supabase, slug);
     },
     [`organization-detail-${slug}`],
-    { tags: [CacheTags.organization(slug), CacheTags.ORGANIZATIONS_LIST] }
+    { tags: [CacheTags.community(slug), CacheTags.COMMUNITIES_LIST] }
   )();
 
 /**

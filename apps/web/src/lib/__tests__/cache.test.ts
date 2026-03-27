@@ -5,8 +5,8 @@ describe("CacheTags", () => {
     expect(CacheTags.TOURNAMENTS_LIST).toBe("tournaments-list");
   });
 
-  it("returns static organizations list tag", () => {
-    expect(CacheTags.ORGANIZATIONS_LIST).toBe("organizations-list");
+  it("returns static communities list tag", () => {
+    expect(CacheTags.COMMUNITIES_LIST).toBe("communities-list");
   });
 
   it("returns static players directory tag", () => {
@@ -23,14 +23,12 @@ describe("CacheTags", () => {
     expect(CacheTags.tournament(42)).toBe("tournament:42");
   });
 
-  it("generates organization tag from string slug", () => {
-    expect(CacheTags.organization("pallet-town")).toBe(
-      "organization:pallet-town"
-    );
+  it("generates community tag from string slug", () => {
+    expect(CacheTags.community("pallet-town")).toBe("community:pallet-town");
   });
 
-  it("generates organization tag from numeric id", () => {
-    expect(CacheTags.organization(7)).toBe("organization:7");
+  it("generates community tag from numeric id", () => {
+    expect(CacheTags.community(7)).toBe("community:7");
   });
 
   it("generates tournament teams tag from string slug", () => {
@@ -45,5 +43,21 @@ describe("CacheTags", () => {
 
   it("generates player tag from handle", () => {
     expect(CacheTags.player("ash_ketchum")).toBe("player:ash_ketchum");
+  });
+
+  describe("deprecated aliases", () => {
+    it("ORGANIZATIONS_LIST alias resolves to communities-list", () => {
+      expect(CacheTags.ORGANIZATIONS_LIST).toBe("communities-list");
+    });
+
+    it("organization() alias resolves to community: prefix", () => {
+      expect(CacheTags.organization("pallet-town")).toBe(
+        "community:pallet-town"
+      );
+    });
+
+    it("ORG_REQUESTS_LIST alias resolves to community-requests-list", () => {
+      expect(CacheTags.ORG_REQUESTS_LIST).toBe("community-requests-list");
+    });
   });
 });

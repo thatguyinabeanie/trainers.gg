@@ -52,14 +52,14 @@ export async function updateOrganization(
 
     // Revalidate list if display data changed (name, description, logo)
     if (updates.name || updates.description || updates.logoUrl) {
-      updateTag(CacheTags.ORGANIZATIONS_LIST);
+      updateTag(CacheTags.COMMUNITIES_LIST);
     }
 
     // Revalidate individual organization page
     if (slug) {
-      updateTag(CacheTags.organization(slug));
+      updateTag(CacheTags.community(slug));
     }
-    updateTag(CacheTags.organization(organizationId));
+    updateTag(CacheTags.community(organizationId));
 
     return { success: true, data: { success: true } };
   } catch (error) {
@@ -111,7 +111,7 @@ export async function acceptOrganizationInvitation(
 
     // Revalidate org page to show new staff member
     if (organizationSlug) {
-      updateTag(CacheTags.organization(organizationSlug));
+      updateTag(CacheTags.community(organizationSlug));
     }
 
     return { success: true, data: { success: true } };
@@ -154,9 +154,9 @@ export async function leaveOrganization(
 
     // Revalidate org page to update staff list
     if (slug) {
-      updateTag(CacheTags.organization(slug));
+      updateTag(CacheTags.community(slug));
     }
-    updateTag(CacheTags.organization(organizationId));
+    updateTag(CacheTags.community(organizationId));
 
     return { success: true, data: { success: true } };
   } catch (error) {
@@ -181,9 +181,9 @@ export async function removeStaff(
 
     // Revalidate org page to update staff list
     if (slug) {
-      updateTag(CacheTags.organization(slug));
+      updateTag(CacheTags.community(slug));
     }
-    updateTag(CacheTags.organization(organizationId));
+    updateTag(CacheTags.community(organizationId));
 
     return { success: true, data: { success: true } };
   } catch (error) {
