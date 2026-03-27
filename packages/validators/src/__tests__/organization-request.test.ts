@@ -4,52 +4,82 @@ import { submitOrganizationRequestSchema } from "../organization-request";
 // submitOrganizationRequestSchema
 // ---------------------------------------------------------------------------
 
+const validBase = {
+  name: "Pallet Town League",
+  slug: "pallet-town-league",
+  description: "Competitive Pokemon tournaments in Pallet Town",
+  discord_invite_code: "pallet-town",
+};
+
 describe("submitOrganizationRequestSchema", () => {
   it("accepts valid request data", () => {
-    const result = submitOrganizationRequestSchema.safeParse({
-      name: "Pallet Town League",
-      slug: "pallet-town-league",
-      description: "Competitive Pokemon tournaments in Pallet Town",
-    });
+    const result = submitOrganizationRequestSchema.safeParse(validBase);
     expect(result.success).toBe(true);
   });
 
-  it("accepts request without description", () => {
+  it("rejects request without description", () => {
+    const { description: _, ...without } = validBase;
+    const result = submitOrganizationRequestSchema.safeParse(without);
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects request with empty description", () => {
     const result = submitOrganizationRequestSchema.safeParse({
-      name: "Pallet Town League",
-      slug: "pallet-town-league",
+      ...validBase,
+      description: "",
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects request without discord_invite_code", () => {
+    const { discord_invite_code: _, ...without } = validBase;
+    const result = submitOrganizationRequestSchema.safeParse(without);
+    expect(result.success).toBe(false);
+  });
+
+  it.each([
+    { desc: "empty string", code: "" },
+    { desc: "contains spaces", code: "invalid code" },
+    { desc: "contains special characters", code: "abc!@#" },
+  ])("rejects discord_invite_code: $desc", ({ code }) => {
+    const result = submitOrganizationRequestSchema.safeParse({
+      ...validBase,
+      discord_invite_code: code,
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it.each([
+    { desc: "simple code", code: "abc123" },
+    { desc: "code with hyphens", code: "pallet-town" },
+    { desc: "alphanumeric", code: "VGCLeague2026" },
+  ])("accepts discord_invite_code: $desc", ({ code }) => {
+    const result = submitOrganizationRequestSchema.safeParse({
+      ...validBase,
+      discord_invite_code: code,
     });
     expect(result.success).toBe(true);
   });
 
   it.each([
-    { desc: "empty name", input: { name: "", slug: "valid-slug" } },
+    { desc: "empty name", input: { ...validBase, name: "" } },
     {
       desc: "name over 100 chars",
-      input: { name: "a".repeat(101), slug: "valid-slug" },
+      input: { ...validBase, name: "a".repeat(101) },
     },
-    { desc: "empty slug", input: { name: "Valid Name", slug: "" } },
-    { desc: "missing slug", input: { name: "Valid Name" } },
-    { desc: "missing name", input: { slug: "valid-slug" } },
-    {
-      desc: "uppercase slug",
-      input: { name: "Valid Name", slug: "Invalid-Slug" },
-    },
+    { desc: "empty slug", input: { ...validBase, slug: "" } },
+    { desc: "uppercase slug", input: { ...validBase, slug: "Invalid-Slug" } },
     {
       desc: "slug with underscores",
-      input: { name: "Valid Name", slug: "invalid_slug" },
+      input: { ...validBase, slug: "invalid_slug" },
     },
     {
       desc: "slug with spaces",
-      input: { name: "Valid Name", slug: "invalid slug" },
+      input: { ...validBase, slug: "invalid slug" },
     },
     {
       desc: "description over 500 chars",
-      input: {
-        name: "Valid Name",
-        slug: "valid-slug",
-        description: "a".repeat(501),
-      },
+      input: { ...validBase, description: "a".repeat(501) },
     },
   ])("rejects $desc", ({ input }) => {
     const result = submitOrganizationRequestSchema.safeParse(input);
@@ -62,7 +92,7 @@ describe("submitOrganizationRequestSchema", () => {
     { desc: "single character slug", slug: "a" },
   ])("accepts $desc", ({ slug }) => {
     const result = submitOrganizationRequestSchema.safeParse({
-      name: "Valid Name",
+      ...validBase,
       slug,
     });
     expect(result.success).toBe(true);

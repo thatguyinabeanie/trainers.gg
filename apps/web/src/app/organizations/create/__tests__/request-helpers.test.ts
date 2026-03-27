@@ -2,20 +2,8 @@
  * @jest-environment node
  */
 
-// Mock framework dependencies that the form component imports transitively
-jest.mock("next/cache", () => ({ updateTag: jest.fn() }));
-jest.mock("@/lib/supabase/server", () => ({
-  createClient: jest.fn(),
-}));
-jest.mock("@/lib/utils", () => ({
-  getErrorMessage: jest.fn(),
-}));
-jest.mock("@trainers/supabase", () => ({
-  submitOrganizationRequest: jest.fn(),
-}));
-
 import { isCooldownExpired, getCooldownEndDate } from "../request-status";
-import { generateSlug } from "../request-organization-form";
+import { generateSlug } from "@trainers/utils";
 
 describe("generateSlug", () => {
   it.each([

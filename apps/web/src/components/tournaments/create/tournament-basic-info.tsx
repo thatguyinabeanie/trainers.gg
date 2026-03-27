@@ -12,6 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { generateSlug } from "@trainers/utils";
 import type { TournamentFormData } from "@trainers/tournaments/types";
 
 interface TournamentBasicInfoProps {
@@ -27,15 +28,6 @@ export function TournamentBasicInfo({
     (supabase) => listMyOrganizations(supabase),
     []
   );
-
-  const generateSlug = (name: string) => {
-    return name
-      .toLowerCase()
-      .replace(/[^a-z0-9\s-]/g, "")
-      .replace(/\s+/g, "-")
-      .replace(/-+/g, "-")
-      .trim();
-  };
 
   const handleNameChange = (name: string) => {
     updateFormData({

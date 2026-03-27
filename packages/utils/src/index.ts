@@ -55,5 +55,8 @@ export { isMatchNotification } from "./notifications";
 // social-links.ts — social platform display labels and SVG icon paths
 export { socialPlatformLabels, socialSvgPaths } from "./social-links";
 
+// slug.ts — URL-friendly slug generation
+export { generateSlug } from "./slug";
+
 // sql.ts — SQL/PostgREST helpers
 export { escapeLike } from "./sql";

@@ -12,6 +12,8 @@ export interface OrgRequestRow {
   name: string;
   slug: string;
   description: string | null;
+  discord_invite_url: string;
+  social_links: { platform: string; url: string }[] | null;
   status: "pending" | "approved" | "rejected";
   admin_notes: string | null;
   reviewed_at: string | null;
