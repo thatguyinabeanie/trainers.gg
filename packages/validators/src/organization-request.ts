@@ -2,18 +2,20 @@ import { z } from "zod";
 import { createOrganizationSchema } from "./organization";
 import { containsProfanity, PROFANITY_ERROR_MESSAGE } from "./profanity";
 
-/** Optional handle field — empty string treated as omitted. */
+/** Optional handle field — empty string treated as omitted, trimmed before length check. */
 const optionalHandle = z
   .string()
-  .max(100)
+  .transform((val) => val.trim())
+  .pipe(z.string().max(100))
   .or(z.literal(""))
   .optional()
-  .transform((val) => val?.trim() || undefined);
+  .transform((val) => val || undefined);
 
-/** Optional URL field — empty string treated as omitted. */
+/** Optional URL field — empty string treated as omitted, trimmed before validation. */
 const optionalUrl = z
   .string()
-  .url("Must be a valid URL")
+  .transform((val) => val.trim())
+  .pipe(z.string().url("Must be a valid URL"))
   .or(z.literal(""))
   .optional()
   .transform((val) => val || undefined);

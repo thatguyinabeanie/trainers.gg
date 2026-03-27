@@ -97,4 +97,50 @@ describe("submitOrganizationRequestSchema", () => {
     });
     expect(result.success).toBe(true);
   });
+
+  describe("transforms", () => {
+    it("trims handle whitespace and transforms to string", () => {
+      const result = submitOrganizationRequestSchema.safeParse({
+        ...validBase,
+        twitter_handle: "  pallettown  ",
+      });
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.twitter_handle).toBe("pallettown");
+      }
+    });
+
+    it("transforms empty handle to undefined", () => {
+      const result = submitOrganizationRequestSchema.safeParse({
+        ...validBase,
+        twitter_handle: "",
+      });
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.twitter_handle).toBeUndefined();
+      }
+    });
+
+    it("transforms empty other_url to undefined", () => {
+      const result = submitOrganizationRequestSchema.safeParse({
+        ...validBase,
+        other_url: "",
+      });
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.other_url).toBeUndefined();
+      }
+    });
+
+    it("trims other_url whitespace before validation", () => {
+      const result = submitOrganizationRequestSchema.safeParse({
+        ...validBase,
+        other_url: "  https://example.com  ",
+      });
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.other_url).toBe("https://example.com");
+      }
+    });
+  });
 });

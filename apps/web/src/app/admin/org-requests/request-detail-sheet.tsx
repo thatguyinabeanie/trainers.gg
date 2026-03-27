@@ -33,7 +33,10 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { type OrgRequestRow, requestStatusLabels } from "./columns";
 import { approveOrgRequestAction, rejectOrgRequestAction } from "./actions";
-import type { SocialLinkPlatform } from "@trainers/validators";
+import {
+  SOCIAL_LINK_PLATFORMS,
+  type SocialLinkPlatform,
+} from "@trainers/validators";
 
 const requestStatusClasses: Record<OrgRequestRow["status"], string> = {
   pending:
@@ -210,26 +213,33 @@ export function RequestDetailSheet({
               <section className="space-y-2">
                 <h3 className="text-sm font-medium">Community Links</h3>
                 <div className="space-y-1.5">
-                  {allLinks.map((link) => (
-                    <a
-                      key={`${link.platform}-${link.url}`}
-                      href={link.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="hover:bg-muted flex items-center gap-2.5 rounded-md px-2 py-1.5 text-sm transition-colors"
-                    >
-                      <PlatformIcon
-                        platform={link.platform as SocialLinkPlatform}
-                        className="text-primary h-4 w-4 shrink-0"
-                      />
-                      <span className="truncate">
-                        {SOCIAL_PLATFORM_LABELS[
-                          link.platform as SocialLinkPlatform
-                        ] ?? link.platform}
-                      </span>
-                      <ExternalLink className="text-muted-foreground ml-auto h-3 w-3 shrink-0" />
-                    </a>
-                  ))}
+                  {allLinks.map((link) => {
+                    const isKnownPlatform = (
+                      SOCIAL_LINK_PLATFORMS as readonly string[]
+                    ).includes(link.platform);
+                    const platform = isKnownPlatform
+                      ? (link.platform as SocialLinkPlatform)
+                      : "website";
+
+                    return (
+                      <a
+                        key={`${link.platform}-${link.url}`}
+                        href={link.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="hover:bg-muted flex items-center gap-2.5 rounded-md px-2 py-1.5 text-sm transition-colors"
+                      >
+                        <PlatformIcon
+                          platform={platform}
+                          className="text-primary h-4 w-4 shrink-0"
+                        />
+                        <span className="truncate">
+                          {SOCIAL_PLATFORM_LABELS[platform] ?? link.platform}
+                        </span>
+                        <ExternalLink className="text-muted-foreground ml-auto h-3 w-3 shrink-0" />
+                      </a>
+                    );
+                  })}
                 </div>
               </section>
             )}

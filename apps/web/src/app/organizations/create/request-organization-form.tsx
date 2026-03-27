@@ -200,9 +200,8 @@ export function RequestOrganizationForm() {
                       {...field}
                       onChange={(e) => {
                         let value = e.target.value;
-                        // Parse invite code from full URL if pasted
                         const match = value.match(
-                          /(?:https?:\/\/)?(?:discord\.gg|discord\.com\/invite)\/(.+)/i
+                          /(?:https?:\/\/)?(?:discord\.gg|discord\.com\/invite)\/([a-zA-Z0-9-]+)/i
                         );
                         if (match?.[1]) {
                           value = match[1];
@@ -255,7 +254,9 @@ export function RequestOrganizationForm() {
                               let value = e.target.value;
                               const match = value.match(social.urlPattern);
                               if (match?.[1]) {
-                                value = match[1].replace(/\/+$/, "");
+                                value = match[1]
+                                  .replace(/[?#].*$/, "")
+                                  .replace(/\/+$/, "");
                               }
                               field.onChange(value);
                             }}
