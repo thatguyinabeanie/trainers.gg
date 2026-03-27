@@ -9,6 +9,7 @@ export const organizationFactory = Factory.define<Tables<"organizations">>(
     owner_user_id: `user-${sequence}`,
     created_at: new Date().toISOString(),
     description: null,
+    discord_invite_url: null,
     icon: null,
     logo_url: null,
     platform_fee_percentage: null,

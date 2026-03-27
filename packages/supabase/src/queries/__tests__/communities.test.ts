@@ -1,4 +1,5 @@
 import { describe, it, expect, jest, beforeEach } from "@jest/globals";
+import { organizationFactory } from "@trainers/test-utils/factories";
 import {
   listPublicOrganizations,
   listOrganizations,
@@ -170,6 +171,35 @@ describe("organizations queries", () => {
 
       expect(consoleErrorSpy).toHaveBeenCalled();
       consoleErrorSpy.mockRestore();
+    });
+
+    it("should include discord_invite_url in returned organizations", async () => {
+      const mockOrg = organizationFactory.build({
+        discord_invite_url: "https://discord.gg/test-server",
+      });
+
+      const mockClient = createMockClient();
+      mockClient._queryBuilder.then = jest.fn((resolve) => {
+        return Promise.resolve({ data: [mockOrg], error: null }).then(resolve);
+      });
+
+      (mockClient.rpc as jest.Mock).mockResolvedValue({
+        data: [
+          {
+            organization_id: mockOrg.id,
+            total_count: 0,
+            active_count: 0,
+          },
+        ],
+        error: null,
+      });
+
+      const result = await listPublicOrganizations(mockClient);
+
+      expect(result).toHaveLength(1);
+      expect(result[0]?.discord_invite_url).toBe(
+        "https://discord.gg/test-server"
+      );
     });
   });
 
