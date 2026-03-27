@@ -18,7 +18,7 @@ const FONT_STACK =
 export function buildEmailLayout({
   title,
   body,
-  footer = "© 2026 trainers.gg",
+  footer = "© 2026 trainers&zwnj;.gg",
 }: EmailLayoutOptions): string {
   return `<!DOCTYPE html>
 <html lang="en">

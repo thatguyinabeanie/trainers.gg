@@ -50,7 +50,7 @@ describe("buildEmailLayout", () => {
   });
 
   it("includes the default footer", () => {
-    expect(result).toContain("© 2026 trainers.gg");
+    expect(result).toContain("© 2026 trainers&zwnj;.gg");
   });
 
   it("supports custom footer text", () => {

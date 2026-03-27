@@ -120,7 +120,7 @@ export function buildOrgApprovedContent(
   const body = [
     heading("Your organization has been approved!"),
     bodyText(
-      `Congratulations! <strong class="email-body-strong" style="color:#171717;font-weight:600;">${safeOrgName}</strong> has been approved and is now live on trainers.gg.`
+      `Congratulations! <strong class="email-body-strong" style="color:#171717;font-weight:600;">${safeOrgName}</strong> has been approved and is now live on trainers&zwnj;.gg.`
     ),
     bodyText("You can now create tournaments, manage your roster, and more."),
     ctaButton(orgUrl, "View Your Organization"),
@@ -155,7 +155,7 @@ export function buildOrgRejectedContent(
   const bodyParts = [
     heading("Organization request update"),
     bodyText(
-      `Thank you for your interest in creating <strong class="email-body-strong" style="color:#171717;font-weight:600;">${safeOrgName}</strong> on trainers.gg. Unfortunately, your request was not approved at this time.`
+      `Thank you for your interest in creating <strong class="email-body-strong" style="color:#171717;font-weight:600;">${safeOrgName}</strong> on trainers&zwnj;.gg. Unfortunately, your request was not approved at this time.`
     ),
   ];
 
@@ -232,7 +232,7 @@ export function buildPasswordResetContent(resetUrl: string): EmailContent {
   const body = [
     heading("Reset your password"),
     bodyText(
-      "We received a request to reset the password for your trainers.gg account. Click the button below to choose a new password."
+      "We received a request to reset the password for your trainers&zwnj;.gg account. Click the button below to choose a new password."
     ),
     ctaButton(resetUrl, "Reset Password"),
     finePrint(
@@ -262,9 +262,9 @@ export function buildPasswordResetContent(resetUrl: string): EmailContent {
  */
 export function buildMagicLinkContent(signInUrl: string): EmailContent {
   const body = [
-    heading("Sign in to trainers.gg"),
+    heading("Sign in to trainers&zwnj;.gg"),
     bodyText(
-      "Click the button below to sign in to your trainers.gg account. No password required."
+      "Click the button below to sign in to your trainers&zwnj;.gg account. No password required."
     ),
     ctaButton(signInUrl, "Sign In"),
     finePrint(
