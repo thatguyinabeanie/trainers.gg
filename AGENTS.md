@@ -144,7 +144,8 @@ Pre-commit: Husky runs lint-staged (Prettier auto-fix). Fix errors, re-stage, re
 1. `pnpm lint` — ESLint across all packages
 2. `pnpm typecheck` — TypeScript type checking
 3. `pnpm test` — Full unit test suite
-4. `pnpm format:check` — Prettier formatting
+4. `pnpm test:e2e` — Playwright E2E tests
+5. `pnpm format:check` — Prettier formatting
 
 If any check fails, fix the issue and re-run before pushing. Never push with known failures.
 
