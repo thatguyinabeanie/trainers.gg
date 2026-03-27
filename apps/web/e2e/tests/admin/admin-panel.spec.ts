@@ -324,19 +324,20 @@ test.describe("Admin panel — admin user with sudo mode", () => {
     // Click the Audit Log tab
     await page.getByRole("tab", { name: /Audit Log/i }).click();
 
-    // Stat cards should appear: "Last 24 Hours", "Last 7 Days", "Last 30 Days"
-    await expect(page.getByText("Last 24 Hours")).toBeVisible({
+    // Stat cards should appear (scoped to main to avoid ambiguity)
+    const main = page.getByRole("main");
+    await expect(main.getByText("Last 24 Hours")).toBeVisible({
       timeout: 10000,
     });
-    await expect(page.getByText("Last 7 Days")).toBeVisible();
-    await expect(page.getByText("Last 30 Days")).toBeVisible();
+    await expect(main.getByText("Last 7 Days")).toBeVisible();
+    await expect(main.getByText("Last 30 Days")).toBeVisible();
 
     // Filter dropdowns should be present
-    await expect(page.getByText("All Actions")).toBeVisible();
-    await expect(page.getByText("All Entities")).toBeVisible();
+    await expect(main.getByText("All Actions")).toBeVisible();
+    await expect(main.getByText("All Entities")).toBeVisible();
 
     // Refresh button in the audit log tab
-    await expect(page.getByRole("button", { name: /Refresh/i })).toBeVisible();
+    await expect(main.getByRole("button", { name: /Refresh/i })).toBeVisible();
   });
 
   // ── Users Page ─────────────────────────────────────────────────
@@ -353,20 +354,23 @@ test.describe("Admin panel — admin user with sudo mode", () => {
       "JWT custom_access_token_hook not configured — admin role not in JWT"
     );
 
-    // Users tab should be the default tab on the users page
-    await expect(page.getByRole("tab", { name: /Users/i })).toBeVisible();
-    await expect(page.getByRole("tab", { name: /Invites/i })).toBeVisible();
+    // Users tab should be the default tab on the users page (scoped to main)
+    const main = page.getByRole("main");
+    await expect(main.getByRole("tab", { name: /Users/i })).toBeVisible({
+      timeout: 10000,
+    });
+    await expect(main.getByRole("tab", { name: /Invites/i })).toBeVisible();
 
     // Search input
     await expect(
-      page.getByPlaceholder(/Search by username or email/i)
-    ).toBeVisible({ timeout: 10000 });
+      main.getByPlaceholder(/Search by username or email/i)
+    ).toBeVisible();
 
     // Users heading with count
-    await expect(page.getByRole("heading", { name: /Users/i })).toBeVisible();
+    await expect(main.getByRole("heading", { name: /Users/i })).toBeVisible();
 
     // Refresh button
-    await expect(page.getByRole("button", { name: /Refresh/i })).toBeVisible();
+    await expect(main.getByRole("button", { name: /Refresh/i })).toBeVisible();
   });
 
   // ── Communities Page ───────────────────────────────────────────
@@ -383,20 +387,21 @@ test.describe("Admin panel — admin user with sudo mode", () => {
       "JWT custom_access_token_hook not configured — admin role not in JWT"
     );
 
-    // Page heading
-    await expect(page.getByText("Communities")).toBeVisible({
-      timeout: 10000,
-    });
+    // Page heading (use heading role to avoid topnav/admin nav ambiguity)
+    const main = page.getByRole("main");
+    await expect(
+      main.getByRole("heading", { name: "Communities" })
+    ).toBeVisible({ timeout: 10000 });
 
     // Status filter buttons: All, Active, Suspended, Requests
-    await expect(page.getByRole("button", { name: "All" })).toBeVisible();
-    await expect(page.getByRole("button", { name: "Active" })).toBeVisible();
-    await expect(page.getByRole("button", { name: "Suspended" })).toBeVisible();
-    await expect(page.getByRole("button", { name: "Requests" })).toBeVisible();
+    await expect(main.getByRole("button", { name: "All" })).toBeVisible();
+    await expect(main.getByRole("button", { name: "Active" })).toBeVisible();
+    await expect(main.getByRole("button", { name: "Suspended" })).toBeVisible();
+    await expect(main.getByRole("button", { name: "Requests" })).toBeVisible();
 
     // Search input
     await expect(
-      page.getByPlaceholder(/Search by name or slug/i)
+      main.getByPlaceholder(/Search by name or slug/i)
     ).toBeVisible();
   });
 
@@ -416,13 +421,16 @@ test.describe("Admin panel — admin user with sudo mode", () => {
       "JWT custom_access_token_hook not configured — admin role not in JWT"
     );
 
-    // Feature Flags section heading
-    await expect(page.getByText(/Feature Flags/i)).toBeVisible({
-      timeout: 10000,
-    });
+    // Feature Flags section heading (use heading role to avoid matching "No feature flags defined")
+    const main = page.getByRole("main");
+    await expect(
+      main.getByRole("heading", { name: /Feature Flags/i })
+    ).toBeVisible({ timeout: 10000 });
 
     // Announcements section heading
-    await expect(page.getByText(/Announcements/i)).toBeVisible();
+    await expect(
+      main.getByRole("heading", { name: /Announcements/i })
+    ).toBeVisible();
 
     // Site Roles section heading
     await expect(page.getByText(/Site Roles/i)).toBeVisible();
