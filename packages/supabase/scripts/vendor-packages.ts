@@ -8,7 +8,7 @@ const __dirname = dirname(__filename);
 
 const repoRoot = resolve(__dirname, "../../..");
 const functionsDir = resolve(__dirname, "../supabase/functions");
-const vendorDir = resolve(functionsDir, "_vendor");
+const vendorDir = resolve(functionsDir, "_shared/vendor");
 const posthogSrc = resolve(repoRoot, "packages/posthog/src");
 const validatorsSrc = resolve(repoRoot, "packages/validators/src");
 const supabaseSrc = resolve(__dirname, "../src");
@@ -109,25 +109,25 @@ async function main() {
     outdir: resolve(vendorDir, "supabase"),
   });
 
-  console.log("  ✅ Vendor complete: _vendor/ ready");
+  console.log("  ✅ Vendor complete: _shared/vendor/ ready");
 
   if (isDeploy) {
     const denoJsonPath = resolve(functionsDir, "deno.json");
     const denoJson = JSON.parse(readFileSync(denoJsonPath, "utf-8"));
 
     const vendorImports: Record<string, string> = {
-      "@trainers/posthog": "./_vendor/posthog/index.js",
-      "@trainers/validators": "./_vendor/validators/index.js",
+      "@trainers/posthog": "./_shared/vendor/posthog/index.js",
+      "@trainers/validators": "./_shared/vendor/validators/index.js",
       ...Object.fromEntries(
         validatorSubpaths
           .filter((name) => name !== "index")
           .map((name) => [
             `@trainers/validators/${name}`,
-            `./_vendor/validators/${name}.js`,
+            `./_shared/vendor/validators/${name}.js`,
           ])
       ),
-      "@trainers/supabase/queries": "./_vendor/supabase/queries.js",
-      "@trainers/supabase/mutations": "./_vendor/supabase/mutations.js",
+      "@trainers/supabase/queries": "./_shared/vendor/supabase/queries.js",
+      "@trainers/supabase/mutations": "./_shared/vendor/supabase/mutations.js",
     };
 
     const updatedImports: Record<string, string> = {};
