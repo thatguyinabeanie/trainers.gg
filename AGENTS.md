@@ -167,6 +167,8 @@ verify_jwt = true
 
 Set `verify_jwt = true` for functions that require an authenticated user (gateway rejects unauthenticated requests before the function runs). Set `verify_jwt = false` only for public functions where no JWT exists yet (e.g., `signup`, `bluesky-auth`).
 
+**Keep the `deno.json` import map in sync.** Edge functions run in Deno. Every bare specifier import reachable from any edge function — including transitive imports through `@trainers/supabase/mutations` and `@trainers/supabase/queries` barrel exports — must be mapped in `packages/supabase/supabase/functions/deno.json`. Missing entries cause the Supabase GitHub integration to fail with `failed to bundle function: exit status 1`. See the `edge-function` skill for the verification script.
+
 ### Request Interception: proxy.ts
 
 **Next.js 16 uses `proxy.ts`** — `middleware.ts` is deprecated. Must be at `src/proxy.ts` (not project root). Export a function named `proxy`. Verify it's loading by checking for `proxy.ts: XXms` in dev server output.
