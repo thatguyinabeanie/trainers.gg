@@ -177,11 +177,13 @@ function PairingsPreview() {
       {pairs.map(({ a, b }) => (
         <div
           key={a}
-          className="bg-background flex items-center justify-between rounded px-3 py-2 text-xs"
+          className="bg-background flex items-center rounded px-3 py-2 text-xs"
         >
-          <span className="text-primary font-medium">{a}</span>
-          <span className="text-muted-foreground">vs</span>
-          <span>{b}</span>
+          <span className="text-primary flex-1 font-medium">{a}</span>
+          <span className="text-muted-foreground shrink-0 px-3 text-center">
+            vs
+          </span>
+          <span className="flex-1 text-right">{b}</span>
         </div>
       ))}
     </div>
