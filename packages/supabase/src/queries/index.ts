@@ -44,9 +44,9 @@ export {
   listOrganizationGroups,
   searchUsersForInvite,
   hasOrgPermission,
-} from "./organizations";
+} from "./communities";
 
-export type { StaffWithRole, OrganizationGroup } from "./organizations";
+export type { StaffWithRole, OrganizationGroup } from "./communities";
 
 // Tournament queries
 export {
@@ -94,7 +94,7 @@ export type {
   GroupedTournaments,
   PlayerLifetimeStats,
 } from "./tournaments";
-export type { OrganizationWithCounts } from "./organizations";
+export type { OrganizationWithCounts } from "./communities";
 
 // Permission queries
 export { getUserPermissions, hasPermission } from "./permissions";
@@ -161,9 +161,9 @@ export {
   suspendOrganization,
   unsuspendOrganization,
   transferOrgOwnership,
-} from "./admin-organizations";
+} from "./admin-communities";
 
-export type { ListOrganizationsAdminOptions } from "./admin-organizations";
+export type { ListOrganizationsAdminOptions } from "./admin-communities";
 
 // Admin analytics queries
 export {

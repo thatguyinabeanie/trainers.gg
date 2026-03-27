@@ -17,7 +17,7 @@ import {
   listOrganizationGroups,
   searchUsersForInvite,
   hasOrgPermission,
-} from "../organizations";
+} from "../communities";
 import type { TypedClient } from "../../client";
 
 // Mock query builder

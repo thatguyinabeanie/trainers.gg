@@ -7,7 +7,7 @@ import {
   suspendOrganization,
   unsuspendOrganization,
   transferOrgOwnership,
-} from "../admin-organizations";
+} from "../admin-communities";
 import type { TypedClient } from "../../client";
 
 // ---------------------------------------------------------------------------
