@@ -114,15 +114,13 @@ describe("OrgSettingsPage", () => {
       });
 
       // Skeletons are present (no heading text yet)
-      expect(
-        screen.queryByText("Organization Settings")
-      ).not.toBeInTheDocument();
+      expect(screen.queryByText("Community Settings")).not.toBeInTheDocument();
     });
 
     it("shows not found message when org is null", async () => {
       await renderPage(null);
 
-      expect(screen.getByText("Organization not found.")).toBeInTheDocument();
+      expect(screen.getByText("Community not found.")).toBeInTheDocument();
     });
   });
 
@@ -134,9 +132,7 @@ describe("OrgSettingsPage", () => {
       });
       await renderPage(org);
 
-      expect(screen.getByLabelText("Organization Name")).toHaveValue(
-        "Cool Org"
-      );
+      expect(screen.getByLabelText("Community Name")).toHaveValue("Cool Org");
       expect(screen.getByLabelText("Description")).toHaveValue(
         "A cool description"
       );
@@ -147,7 +143,7 @@ describe("OrgSettingsPage", () => {
       await renderPage(org);
 
       expect(
-        screen.getByText("trainers.gg/organizations/my-org")
+        screen.getByText("trainers.gg/communities/my-org")
       ).toBeInTheDocument();
     });
 
@@ -314,13 +310,13 @@ describe("OrgSettingsPage", () => {
       await renderPage(org);
 
       // Clear the name field
-      const nameInput = screen.getByLabelText("Organization Name");
+      const nameInput = screen.getByLabelText("Community Name");
       await user.clear(nameInput);
 
       // Click save
       await user.click(screen.getByRole("button", { name: /save changes/i }));
 
-      expect(toast.error).toHaveBeenCalledWith("Organization name is required");
+      expect(toast.error).toHaveBeenCalledWith("Community name is required");
       // Should NOT call updateOrganization
       expect(mockUpdateOrganization).not.toHaveBeenCalled();
     });
@@ -373,7 +369,7 @@ describe("OrgSettingsPage", () => {
 
       await waitFor(() => {
         expect(toast.success).toHaveBeenCalledWith(
-          "Organization settings updated"
+          "Community settings updated"
         );
       });
     });
