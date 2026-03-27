@@ -15,15 +15,15 @@ import { CommunityCardGrid } from "@/components/communities/community-card-grid"
 export const revalidate = false;
 
 /**
- * Cached data fetcher for organizations list
+ * Cached data fetcher for communities list
  * Revalidated when CacheTags.COMMUNITIES_LIST is invalidated
  */
-const getCachedOrganizations = unstable_cache(
+const getCachedCommunities = unstable_cache(
   async () => {
     const supabase = createStaticClient();
     return listPublicOrganizations(supabase);
   },
-  ["organizations-list"],
+  ["communities-list"],
   { tags: [CacheTags.COMMUNITIES_LIST] }
 );
 
@@ -31,26 +31,26 @@ const getCachedOrganizations = unstable_cache(
 // Main Page (Server Component)
 // ============================================================================
 
-export default async function OrganizationsPage({
+export default async function CommunitiesPage({
   searchParams,
 }: {
   searchParams: Promise<{ q?: string }>;
 }) {
   const { q: searchQuery } = await searchParams;
-  const [allOrganizations, user] = await Promise.all([
-    getCachedOrganizations(),
+  const [allCommunities, user] = await Promise.all([
+    getCachedCommunities(),
     getUser(),
   ]);
 
   // Filter on the server — name, slug, and description
-  const organizations: OrganizationWithCounts[] = searchQuery
-    ? allOrganizations.filter(
+  const communities: OrganizationWithCounts[] = searchQuery
+    ? allCommunities.filter(
         (org) =>
           org.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
           org.slug.toLowerCase().includes(searchQuery.toLowerCase()) ||
           org.description?.toLowerCase().includes(searchQuery.toLowerCase())
       )
-    : allOrganizations;
+    : allCommunities;
 
   const isSearching = !!searchQuery;
 
@@ -84,10 +84,7 @@ export default async function OrganizationsPage({
       </div>
 
       {/* Card Grid */}
-      <CommunityCardGrid
-        communities={organizations}
-        isSearching={isSearching}
-      />
+      <CommunityCardGrid communities={communities} isSearching={isSearching} />
     </PageContainer>
   );
 }
