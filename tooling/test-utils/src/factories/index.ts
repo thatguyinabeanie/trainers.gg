@@ -1,6 +1,6 @@
 export { userFactory } from "./user";
 export { altFactory } from "./alt";
-export { organizationFactory } from "./organization";
+export { organizationFactory } from "./community";
 export { tournamentFactory } from "./tournament";
 export { notificationFactory } from "./notification";
 export { tournamentMatchFactory, matchGameFactory } from "./match";
