@@ -11,7 +11,7 @@ export const ADMIN_ROUTES = ["/admin"];
 export const PROTECTED_ROUTES = [
   "/dashboard",
   "/to-dashboard",
-  "/organizations/create",
+  "/communities/create",
 ];
 
 // Dynamic route patterns that require authentication (checked via regex)
@@ -26,7 +26,8 @@ export const PUBLIC_ROUTES = [
   "/forgot-password",
   "/reset-password",
   "/tournaments", // Browse tournaments (public directory)
-  "/organizations", // Browse organizations (public directory)
+  "/communities", // Browse communities (public directory)
+  "/organizations", // Legacy redirect — redirects to /communities
   "/players", // Player directory (public)
   "/u", // Player profiles (public)
   "/auth",

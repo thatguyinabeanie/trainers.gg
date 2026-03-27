@@ -143,16 +143,13 @@ describe("OrganizationsDataTable", () => {
       render(<OrganizationsDataTable data={mockOrganizations} />);
 
       const vgcLink = screen.getByRole("link", { name: "VGC League" });
-      expect(vgcLink).toHaveAttribute("href", "/organizations/vgc-league");
+      expect(vgcLink).toHaveAttribute("href", "/communities/vgc-league");
 
       const tcgLink = screen.getByRole("link", { name: "TCG Masters" });
-      expect(tcgLink).toHaveAttribute("href", "/organizations/tcg-masters");
+      expect(tcgLink).toHaveAttribute("href", "/communities/tcg-masters");
 
       const battleLink = screen.getByRole("link", { name: "Battle Stadium" });
-      expect(battleLink).toHaveAttribute(
-        "href",
-        "/organizations/battle-stadium"
-      );
+      expect(battleLink).toHaveAttribute("href", "/communities/battle-stadium");
     });
 
     it("displays description or slug fallback", () => {
@@ -215,7 +212,7 @@ describe("OrganizationsDataTable", () => {
       expect(links.length).toBeGreaterThanOrEqual(3);
 
       const vgcLink = links.find(
-        (link) => link.getAttribute("href") === "/organizations/vgc-league"
+        (link) => link.getAttribute("href") === "/communities/vgc-league"
       );
       expect(vgcLink).toBeDefined();
     });

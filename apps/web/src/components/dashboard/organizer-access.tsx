@@ -32,7 +32,7 @@ export function OrganizerAccess({ organizations }: OrganizerAccessProps) {
             <p className="text-muted-foreground mb-4 text-sm">
               Need tournament hosting permissions?
             </p>
-            <Link href="/organizations/create">
+            <Link href="/communities/create">
               <Button variant="outline" size="sm">
                 Request Organizer Role
               </Button>

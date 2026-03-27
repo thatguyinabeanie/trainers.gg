@@ -45,6 +45,7 @@ describe("proxy-routes", () => {
       expect(isPublicRoute("/forgot-password")).toBe(true);
       expect(isPublicRoute("/reset-password")).toBe(true);
       expect(isPublicRoute("/tournaments")).toBe(true);
+      expect(isPublicRoute("/communities")).toBe(true);
       expect(isPublicRoute("/organizations")).toBe(true);
       expect(isPublicRoute("/auth")).toBe(true);
       expect(isPublicRoute("/api")).toBe(true);
@@ -56,6 +57,7 @@ describe("proxy-routes", () => {
       expect(isPublicRoute("/auth/callback")).toBe(true);
       expect(isPublicRoute("/api/health")).toBe(true);
       expect(isPublicRoute("/tournaments/summer-2025")).toBe(true);
+      expect(isPublicRoute("/communities/smogon")).toBe(true);
       expect(isPublicRoute("/organizations/smogon")).toBe(true);
       expect(isPublicRoute("/.well-known/atproto-did")).toBe(true);
     });
@@ -79,7 +81,7 @@ describe("proxy-routes", () => {
     it("should match exact protected routes", () => {
       expect(isProtectedRoute("/dashboard")).toBe(true);
       expect(isProtectedRoute("/to-dashboard")).toBe(true);
-      expect(isProtectedRoute("/organizations/create")).toBe(true);
+      expect(isProtectedRoute("/communities/create")).toBe(true);
     });
 
     it("should match protected route prefixes", () => {

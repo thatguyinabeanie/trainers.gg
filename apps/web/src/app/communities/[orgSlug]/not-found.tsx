@@ -9,14 +9,14 @@ export default function OrganizationNotFound() {
       <Card>
         <CardContent className="flex flex-col items-center justify-center py-12">
           <Building2 className="text-muted-foreground mb-4 h-12 w-12" />
-          <h3 className="mb-2 text-lg font-semibold">Organization not found</h3>
+          <h3 className="mb-2 text-lg font-semibold">Community not found</h3>
           <p className="text-muted-foreground mb-4 text-center">
-            This organization doesn&apos;t exist or has been removed
+            This community doesn&apos;t exist or has been removed
           </p>
-          <Link href="/organizations">
+          <Link href="/communities">
             <Button>
               <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to Organizations
+              Back to Communities
             </Button>
           </Link>
         </CardContent>

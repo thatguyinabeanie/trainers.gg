@@ -117,7 +117,7 @@ export function TournamentHistoryTable({ data }: TournamentHistoryTableProps) {
       ),
       cell: ({ row }) => (
         <Link
-          href={`/organizations/${row.original.organizationSlug}`}
+          href={`/communities/${row.original.organizationSlug}`}
           className="text-muted-foreground hover:text-primary text-sm transition-colors"
         >
           {row.original.organizationName}

@@ -47,10 +47,10 @@ export function OrgSelectorClient({ organizations }: OrgSelectorClientProps) {
             <p className="text-muted-foreground mb-6 text-center">
               Create an organization to start hosting tournaments
             </p>
-            <Link href="/organizations/create">
+            <Link href="/communities/create">
               <Button>
                 <Plus className="mr-2 h-4 w-4" />
-                Request an Organization
+                Request a Community
               </Button>
             </Link>
           </CardContent>
@@ -73,7 +73,7 @@ export function OrgSelectorClient({ organizations }: OrgSelectorClientProps) {
             Select an organization to manage
           </p>
         </div>
-        <Link href="/organizations/create" className="w-full sm:w-auto">
+        <Link href="/communities/create" className="w-full sm:w-auto">
           <Button className="w-full sm:w-auto">
             <Plus className="mr-2 h-4 w-4" />
             Request Organization

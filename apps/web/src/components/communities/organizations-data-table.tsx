@@ -51,7 +51,7 @@ export const organizationsColumns: ColumnDef<OrganizationWithCounts>[] = [
           </Avatar>
           <div className="flex items-center gap-2">
             <Link
-              href={`/organizations/${org.slug}`}
+              href={`/communities/${org.slug}`}
               className="hover:text-primary font-medium hover:underline"
             >
               {org.name}
@@ -130,7 +130,7 @@ export function OrganizationsDataTable({ data }: OrganizationsDataTableProps) {
             return (
               <Link
                 key={org.id}
-                href={`/organizations/${org.slug}`}
+                href={`/communities/${org.slug}`}
                 className="hover:bg-muted/50 flex items-center gap-3 p-3 transition-colors"
               >
                 <Avatar className="h-10 w-10 shrink-0">
