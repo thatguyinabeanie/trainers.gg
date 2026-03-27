@@ -190,7 +190,7 @@ export function TopNavAuthSection() {
               <DropdownMenuSeparator />
               <DropdownMenuGroup>
                 <DropdownMenuLabel className="text-muted-foreground text-xs font-normal">
-                  My Organizations
+                  My Communities
                 </DropdownMenuLabel>
                 {myOrganizations.map((org) => (
                   <DropdownMenuItem key={org.id} className="justify-between">

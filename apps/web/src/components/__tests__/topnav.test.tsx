@@ -85,8 +85,8 @@ describe("TopNav", () => {
         link.textContent === "Coaching"
     );
 
-    expect(navLinks[0]).toHaveTextContent("Tournaments");
-    expect(navLinks[1]).toHaveTextContent("Communities");
+    expect(navLinks[0]).toHaveTextContent("Communities");
+    expect(navLinks[1]).toHaveTextContent("Tournaments");
     expect(navLinks[2]).toHaveTextContent("Analytics");
     expect(navLinks[3]).toHaveTextContent("Coaching");
   });

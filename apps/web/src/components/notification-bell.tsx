@@ -288,7 +288,7 @@ export function NotificationBell({ userId }: NotificationBellProps) {
               {/* Organization Invitations (shown first) */}
               {invitations?.map((invitation) => {
                 const orgName =
-                  invitation.organization?.name ?? "Unknown Organization";
+                  invitation.organization?.name ?? "Unknown Community";
                 const isLoading = loadingInvitationId === invitation.id;
 
                 return (

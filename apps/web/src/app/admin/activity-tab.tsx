@@ -104,7 +104,7 @@ const entityTypes = [
   { value: "all", label: "All Entities" },
   { value: "tournament", label: "Tournaments" },
   { value: "match", label: "Matches" },
-  { value: "organization", label: "Organizations" },
+  { value: "organization", label: "Communities" },
 ] as const;
 
 // --- Stat Card Sub-Component ---

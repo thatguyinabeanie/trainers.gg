@@ -201,7 +201,7 @@ export async function approveOrganizationRequest(
       type: "org_request_approved" as const,
       title: "Organization request approved",
       body: `Your organization "${request.name}" has been approved!`,
-      action_url: `/organizations/${request.slug}`,
+      action_url: `/communities/${request.slug}`,
     });
 
   if (notificationError) {
@@ -270,7 +270,7 @@ export async function rejectOrganizationRequest(
       type: "org_request_rejected" as const,
       title: "Organization request update",
       body: `Your request for "${request.name}" was not approved.`,
-      action_url: "/organizations/create",
+      action_url: "/communities/create",
     });
 
   if (notificationError) {

@@ -428,7 +428,7 @@ describe("NotificationBell", () => {
       );
     });
 
-    it("shows 'Unknown Organization' when org name is missing", async () => {
+    it("shows 'Unknown Community' when org name is missing", async () => {
       setupQueryMocks({
         invitations: [makeInvitation({ organization: null })],
       });
@@ -436,7 +436,7 @@ describe("NotificationBell", () => {
       await userEvent.click(
         screen.getByRole("button", { name: /1 unread notifications/i })
       );
-      expect(screen.getByText("Unknown Organization")).toBeInTheDocument();
+      expect(screen.getByText("Unknown Community")).toBeInTheDocument();
     });
   });
 
