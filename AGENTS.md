@@ -155,19 +155,11 @@ Multiple agents and humans may work on this codebase simultaneously. If you enco
 
 ### Edge Function Deployments
 
-**Never deploy edge functions manually via `supabase functions deploy`.** Edge functions are deployed automatically during the Vercel production build (`run-migrations.mjs`). Push to `main` to deploy. This applies to both new functions and updates.
+**Never deploy edge functions manually via `supabase functions deploy`.** Edge functions are deployed automatically during the Vercel build (`run-migrations.mjs`) for both production and preview environments. Push to `main` to deploy to production; preview deploys happen automatically on PR branches.
 
-**Every edge function must be declared in `config.toml`.** The Supabase GitHub integration only deploys functions listed in `packages/supabase/supabase/config.toml`. If you create a new function directory under `supabase/functions/` without adding a `[functions.<name>]` entry to `config.toml`, it will not be deployed.
+**Do NOT declare edge functions in `config.toml`.** The Supabase GitHub integration's remote bundler cannot resolve monorepo imports (relative paths outside the `supabase/` directory). Declaring functions in `config.toml` causes `failed to bundle function: exit status 1` on every preview branch. Instead, edge functions are deployed solely through the Vercel build pipeline via `vendor-packages.ts` + `supabase functions deploy --use-api`.
 
-```toml
-# Example: adding a new edge function
-[functions.my-new-function]
-verify_jwt = true
-```
-
-Set `verify_jwt = true` for functions that require an authenticated user (gateway rejects unauthenticated requests before the function runs). Set `verify_jwt = false` only for public functions where no JWT exists yet (e.g., `signup`, `bluesky-auth`).
-
-**Keep the `deno.json` import map in sync.** Edge functions run in Deno. Every bare specifier import reachable from any edge function — including transitive imports through `@trainers/supabase/mutations` and `@trainers/supabase/queries` barrel exports — must be mapped in `packages/supabase/supabase/functions/deno.json`. Missing entries cause the Supabase GitHub integration to fail with `failed to bundle function: exit status 1`. See the `edge-function` skill for the verification script.
+**Keep the `deno.json` import map in sync.** Edge functions run in Deno. Every bare specifier import reachable from any edge function — including transitive imports through `@trainers/supabase/mutations` and `@trainers/supabase/queries` barrel exports — must be mapped in `packages/supabase/supabase/functions/deno.json`. Missing entries cause local `deno cache` verification to fail. See the `edge-function` skill for the verification script.
 
 ### Request Interception: proxy.ts
 

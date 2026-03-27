@@ -389,41 +389,12 @@ PDS_HANDLE_DOMAIN = "env(PDS_HANDLE_DOMAIN)"
 RESEND_API_KEY = "env(RESEND_API_KEY)"
 SEND_EMAIL_HOOK_SECRET = "env(SEND_EMAIL_HOOK_SECRET)"
 
-# Edge Functions — declared here so the GitHub integration deploys them
-# Public functions (no JWT required — user isn't authenticated yet)
-[functions.signup]
-verify_jwt = false
-
-[functions.bluesky-auth]
-verify_jwt = false
-
-# Authenticated functions (gateway enforces valid JWT before function runs)
-[functions.provision-pds]
-verify_jwt = true
-
-[functions.update-pds-handle]
-verify_jwt = true
-
-[functions.api-alts]
-verify_jwt = true
-
-[functions.api-matches]
-verify_jwt = true
-
-[functions.api-notifications]
-verify_jwt = true
-
-[functions.api-organizations]
-verify_jwt = true
-
-[functions.api-tournaments]
-verify_jwt = true
-
-[functions.send-org-request-notification]
-verify_jwt = true
-
-[functions.send-auth-email]
-verify_jwt = false
+# Edge Functions
+# Deployed via the Vercel build pipeline (run-migrations.mjs → vendor-packages.ts).
+# NOT declared here — the Supabase GitHub integration's remote bundler cannot
+# resolve monorepo imports outside the supabase/ directory. Declaring functions
+# here causes "failed to bundle function: exit status 1" on every preview branch.
+# See: packages/supabase/scripts/vendor-packages.ts
 
 [analytics]
 enabled = true
