@@ -1,6 +1,13 @@
 import * as esbuild from "esbuild";
-import { mkdirSync, rmSync, readFileSync, writeFileSync } from "node:fs";
-import { resolve, dirname } from "node:path";
+import {
+  mkdirSync,
+  rmSync,
+  readFileSync,
+  writeFileSync,
+  readdirSync,
+  statSync,
+} from "node:fs";
+import { resolve, dirname, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -112,36 +119,74 @@ async function main() {
   console.log("  ✅ Vendor complete: _shared/vendor/ ready");
 
   if (isDeploy) {
-    const denoJsonPath = resolve(functionsDir, "deno.json");
-    const denoJson = JSON.parse(readFileSync(denoJsonPath, "utf-8"));
-
-    const vendorImports: Record<string, string> = {
-      "@trainers/posthog": "./_shared/vendor/posthog/index.js",
-      "@trainers/validators": "./_shared/vendor/validators/index.js",
+    // Build a map of @trainers/* specifiers to vendor file names
+    const vendorMap: Record<string, string> = {
+      "@trainers/posthog": "vendor/posthog/index.js",
+      "@trainers/validators": "vendor/validators/index.js",
       ...Object.fromEntries(
         validatorSubpaths
           .filter((name) => name !== "index")
           .map((name) => [
             `@trainers/validators/${name}`,
-            `./_shared/vendor/validators/${name}.js`,
+            `vendor/validators/${name}.js`,
           ])
       ),
-      "@trainers/supabase/queries": "./_shared/vendor/supabase/queries.js",
-      "@trainers/supabase/mutations": "./_shared/vendor/supabase/mutations.js",
+      "@trainers/supabase/queries": "vendor/supabase/queries.js",
+      "@trainers/supabase/mutations": "vendor/supabase/mutations.js",
     };
 
-    const updatedImports: Record<string, string> = {};
-    for (const [key, value] of Object.entries(
-      denoJson.imports as Record<string, string>
-    )) {
-      updatedImports[key] = key.startsWith("@trainers/")
-        ? (vendorImports[key] ?? value)
-        : value;
+    // Rewrite imports in all function index.ts files and _shared/*.ts files
+    const filesToRewrite: string[] = [];
+
+    // Collect function index.ts files
+    for (const entry of readdirSync(functionsDir)) {
+      if (entry.startsWith("_")) continue;
+      const indexPath = resolve(functionsDir, entry, "index.ts");
+      try {
+        statSync(indexPath);
+        filesToRewrite.push(indexPath);
+      } catch {
+        // not a function directory
+      }
     }
 
-    denoJson.imports = updatedImports;
-    writeFileSync(denoJsonPath, JSON.stringify(denoJson, null, 2) + "\n");
-    console.log("  📝 Updated deno.json with vendor paths");
+    // Collect _shared/*.ts files
+    const sharedDir = resolve(functionsDir, "_shared");
+    for (const entry of readdirSync(sharedDir)) {
+      if (entry === "vendor") continue;
+      const filePath = resolve(sharedDir, entry);
+      if (entry.endsWith(".ts")) {
+        filesToRewrite.push(filePath);
+      }
+    }
+
+    let rewriteCount = 0;
+    for (const filePath of filesToRewrite) {
+      let content = readFileSync(filePath, "utf-8");
+      let changed = false;
+
+      for (const [specifier, vendorFile] of Object.entries(vendorMap)) {
+        if (!content.includes(specifier)) continue;
+
+        // Compute relative path from file's directory to _shared/vendor file
+        const fileDir = dirname(filePath);
+        const vendorPath = resolve(functionsDir, "_shared", vendorFile);
+        let rel = relative(fileDir, vendorPath);
+        if (!rel.startsWith(".")) rel = "./" + rel;
+
+        // Replace the specifier in import/export statements
+        content = content.replaceAll(`"${specifier}"`, `"${rel}"`);
+        content = content.replaceAll(`'${specifier}'`, `'${rel}'`);
+        changed = true;
+      }
+
+      if (changed) {
+        writeFileSync(filePath, content);
+        rewriteCount++;
+      }
+    }
+
+    console.log(`  📝 Rewrote imports in ${rewriteCount} source files`);
   }
 }
 
