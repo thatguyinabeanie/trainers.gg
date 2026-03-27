@@ -17,16 +17,16 @@ export function TopNav() {
         {/* Center: Navigation */}
         <nav className="hidden flex-1 items-center justify-center gap-6 md:flex">
           <Link
-            href="/tournaments"
-            className="text-muted-foreground hover:text-foreground text-sm transition-colors"
-          >
-            Tournaments
-          </Link>
-          <Link
             href="/communities"
             className="text-muted-foreground hover:text-foreground text-sm transition-colors"
           >
             Communities
+          </Link>
+          <Link
+            href="/tournaments"
+            className="text-muted-foreground hover:text-foreground text-sm transition-colors"
+          >
+            Tournaments
           </Link>
           <Link
             href="/analytics"
