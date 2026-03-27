@@ -119,25 +119,17 @@ async function main() {
   console.log("  ✅ Vendor complete: _shared/vendor/ ready");
 
   if (isDeploy) {
-    // Bare specifier → Deno-native specifier (deno.json import map not used by --use-api)
-    const bareSpecifierMap: Record<string, string> = {
-      '"zod"': '"npm:zod@^3"',
-      "'zod'": "'npm:zod@^3'",
-      '"obscenity"': '"npm:obscenity@^0.4.6"',
-      "'obscenity'": "'npm:obscenity@^0.4.6'",
-      '"@supabase/supabase-js"':
-        '"https://esm.sh/@supabase/supabase-js@2.49.4"',
-      "'@supabase/supabase-js'":
-        "'https://esm.sh/@supabase/supabase-js@2.49.4'",
-      '"@pkmn/sets"': '"npm:@pkmn/sets@^5"',
-      '"@pkmn/sim"': '"npm:@pkmn/sim@^0.10"',
-      '"@pkmn/streams"': '"npm:@pkmn/streams@^0.10"',
-      '"@pkmn/data"': '"npm:@pkmn/data@^0.10"',
-      '"@pkmn/dex"': '"npm:@pkmn/dex@^0.10"',
-      '"ts-chacha20"': '"npm:ts-chacha20@*"',
+    // Known specifier overrides (esm.sh URLs, pinned versions)
+    const specifierOverrides: Record<string, string> = {
+      "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@2.49.4",
     };
 
-    // Rewrite bare specifiers in vendored .js bundles
+    // Rewrite all bare specifiers in vendored .js bundles and source files.
+    // The --use-api server-side bundler does not read the deno.json import map,
+    // so any bare specifier (not starting with . / http npm: jsr:) must be
+    // converted to a Deno-native specifier (npm:<pkg> or a URL).
+    const bareSpecifierRegex = /from\s+["']([^"'./][^"']*)["']/g;
+
     const vendorFiles = [
       resolve(vendorDir, "posthog/index.js"),
       ...validatorSubpaths.map((name) =>
@@ -149,14 +141,21 @@ async function main() {
 
     for (const filePath of vendorFiles) {
       let content = readFileSync(filePath, "utf-8");
-      let changed = false;
-      for (const [from, to] of Object.entries(bareSpecifierMap)) {
-        if (content.includes(from)) {
-          content = content.replaceAll(from, to);
-          changed = true;
+      const rewritten = content.replace(
+        bareSpecifierRegex,
+        (_match, specifier: string) => {
+          if (
+            specifier.startsWith("npm:") ||
+            specifier.startsWith("jsr:") ||
+            specifier.startsWith("http")
+          ) {
+            return _match;
+          }
+          const override = specifierOverrides[specifier];
+          return override ? `from "${override}"` : `from "npm:${specifier}"`;
         }
-      }
-      if (changed) writeFileSync(filePath, content);
+      );
+      if (rewritten !== content) writeFileSync(filePath, rewritten);
     }
 
     // Build a map of @trainers/* specifiers to vendor file names
@@ -220,12 +219,24 @@ async function main() {
         changed = true;
       }
 
-      // Also rewrite bare specifiers in source files
-      for (const [from, to] of Object.entries(bareSpecifierMap)) {
-        if (content.includes(from)) {
-          content = content.replaceAll(from, to);
-          changed = true;
+      // Also rewrite any remaining bare specifiers in source files
+      const rewritten = content.replace(
+        bareSpecifierRegex,
+        (_match, specifier: string) => {
+          if (
+            specifier.startsWith("npm:") ||
+            specifier.startsWith("jsr:") ||
+            specifier.startsWith("http")
+          ) {
+            return _match;
+          }
+          const override = specifierOverrides[specifier];
+          return override ? `from "${override}"` : `from "npm:${specifier}"`;
         }
+      );
+      if (rewritten !== content) {
+        content = rewritten;
+        changed = true;
       }
 
       if (changed) {
