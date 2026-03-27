@@ -62,7 +62,7 @@ describe("submitOrganizationRequestAction", () => {
       discord_invite_url: "https://discord.gg/pallet-town",
       social_links: [],
     });
-    expect(mockUpdateTag).toHaveBeenCalledWith("org-requests-list");
+    expect(mockUpdateTag).toHaveBeenCalledWith("community-requests-list");
   });
 
   it("builds full URLs from handles", async () => {

@@ -132,7 +132,7 @@ export function RequestOrganizationForm() {
                 </FormControl>
                 {name && (
                   <FormDescription>
-                    trainers.gg/organizations/{generateSlug(name)}
+                    trainers.gg/communities/{generateSlug(name)}
                   </FormDescription>
                 )}
                 <FormMessage />

@@ -161,6 +161,7 @@ export async function approveOrganizationRequest(
       description: request.description,
       owner_user_id: request.user_id,
       social_links: socialLinks as unknown as Json,
+      discord_invite_url: request.discord_invite_url ?? null,
       status: "active" as const,
     })
     .select()

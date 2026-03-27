@@ -248,7 +248,7 @@ test.describe("Admin panel — admin user with sudo mode", () => {
     // Metric cards: look for the key metric titles
     await expect(page.getByText("Total Users")).toBeVisible({ timeout: 10000 });
     await expect(page.getByText("Active (7d)")).toBeVisible();
-    await expect(page.getByText("Organizations")).toBeVisible();
+    await expect(page.getByText("Communities")).toBeVisible();
     await expect(page.getByText("Tournaments")).toBeVisible();
     await expect(page.getByText("Events (24h)")).toBeVisible();
 
@@ -266,9 +266,7 @@ test.describe("Admin panel — admin user with sudo mode", () => {
     const nav = page.locator("nav");
     await expect(nav.getByRole("link", { name: "Overview" })).toBeVisible();
     await expect(nav.getByRole("link", { name: "Users" })).toBeVisible();
-    await expect(
-      nav.getByRole("link", { name: "Organizations" })
-    ).toBeVisible();
+    await expect(nav.getByRole("link", { name: "Communities" })).toBeVisible();
     await expect(nav.getByRole("link", { name: "Settings" })).toBeVisible();
   });
 
@@ -282,15 +280,15 @@ test.describe("Admin panel — admin user with sudo mode", () => {
     await expect(page).toHaveURL(/\/admin\/users/);
   });
 
-  test("clicking Organizations nav link navigates to organizations page", async ({
+  test("clicking Communities nav link navigates to communities page", async ({
     page,
   }) => {
     const baseURL = process.env.PLAYWRIGHT_BASE_URL || "";
     await loginAndVerifyAdminAccess(page, baseURL);
 
     const nav = page.locator("nav");
-    await nav.getByRole("link", { name: "Organizations" }).click();
-    await expect(page).toHaveURL(/\/admin\/organizations/);
+    await nav.getByRole("link", { name: "Communities" }).click();
+    await expect(page).toHaveURL(/\/admin\/communities/);
   });
 
   test("clicking Settings nav link navigates to config page", async ({
@@ -360,15 +358,13 @@ test.describe("Admin panel — admin user with sudo mode", () => {
     await expect(page.getByRole("button", { name: /Refresh/i })).toBeVisible();
   });
 
-  // ── Organizations Page ─────────────────────────────────────────
+  // ── Communities Page ───────────────────────────────────────────
 
-  test("organizations page renders with status filter tabs", async ({
-    page,
-  }) => {
+  test("communities page renders with status filter tabs", async ({ page }) => {
     const baseURL = process.env.PLAYWRIGHT_BASE_URL || "";
 
     await loginAsAdminWithSudo(page, baseURL);
-    await page.goto("/admin/organizations");
+    await page.goto("/admin/communities");
 
     const isAdmin = await waitForAdminOrForbidden(page);
     test.skip(
@@ -377,16 +373,15 @@ test.describe("Admin panel — admin user with sudo mode", () => {
     );
 
     // Page heading
-    await expect(page.getByText("Organizations")).toBeVisible({
+    await expect(page.getByText("Communities")).toBeVisible({
       timeout: 10000,
     });
 
-    // Status filter buttons: All, Pending, Active, Suspended, Rejected
+    // Status filter buttons: All, Active, Suspended, Requests
     await expect(page.getByRole("button", { name: "All" })).toBeVisible();
-    await expect(page.getByRole("button", { name: "Pending" })).toBeVisible();
     await expect(page.getByRole("button", { name: "Active" })).toBeVisible();
     await expect(page.getByRole("button", { name: "Suspended" })).toBeVisible();
-    await expect(page.getByRole("button", { name: "Rejected" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Requests" })).toBeVisible();
 
     // Search input
     await expect(

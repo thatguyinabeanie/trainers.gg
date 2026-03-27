@@ -112,7 +112,7 @@ export function CommunityCard({ community }: CommunityCardProps) {
           <div className="flex flex-wrap items-center gap-2">
             {socialLinks.map((link) => (
               <a
-                key={link.platform}
+                key={`${link.platform}-${link.url}`}
                 href={link.url}
                 target="_blank"
                 rel="noopener noreferrer"
