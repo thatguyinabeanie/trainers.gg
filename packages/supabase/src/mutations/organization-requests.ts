@@ -96,7 +96,7 @@ export async function submitOrganizationRequest(
       slug,
       description: data.description || null,
       discord_invite_url: data.discord_invite_url,
-      social_links: (data.social_links ?? []) as unknown as Json[],
+      social_links: (data.social_links ?? []) as unknown as Json,
     })
     .select()
     .single();
@@ -160,7 +160,7 @@ export async function approveOrganizationRequest(
       slug: request.slug,
       description: request.description,
       owner_user_id: request.user_id,
-      social_links: socialLinks as unknown as Json[],
+      social_links: socialLinks as unknown as Json,
       status: "active" as const,
     })
     .select()
