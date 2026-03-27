@@ -23,10 +23,8 @@ describe("buildEmailLayout", () => {
     expect(result).toContain("trainers.gg");
   });
 
-  it("includes the teal accent divider", () => {
-    expect(result).toContain("width: 40px");
-    expect(result).toContain("height: 2px");
-    expect(result).toContain("#0d9488");
+  it("uses the correct wordmark color", () => {
+    expect(result).toContain("#14b8a6");
   });
 
   it("includes dark mode media query", () => {

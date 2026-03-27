@@ -33,7 +33,6 @@ export function buildEmailLayout({
       .email-outer { background-color: #0a0a0a !important; }
       .email-card { background-color: #171717 !important; }
       .email-wordmark { color: #2dd4bf !important; }
-      .email-divider { background-color: #2dd4bf !important; }
       .email-heading { color: #fafafa !important; }
       .email-body-text { color: #a3a3a3 !important; }
       .email-body-strong { color: #fafafa !important; }
@@ -55,9 +54,8 @@ export function buildEmailLayout({
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" class="email-card" style="max-width: 480px; background-color: #ffffff; border-radius: 10px; overflow: hidden;">
           <!-- Wordmark -->
           <tr>
-            <td style="padding: 32px 32px 0; text-align: center;">
-              <span class="email-wordmark" style="font-size: 20px; font-weight: 700; color: #0d9488; letter-spacing: -0.01em; font-family: ${FONT_STACK};">trainers.gg</span>
-              <div class="email-divider" style="width: 40px; height: 2px; background-color: #0d9488; margin: 20px auto 0; border-radius: 1px;"></div>
+            <td style="padding: 32px 32px 20px; text-align: center;">
+              <span class="email-wordmark" style="font-size: 20px; font-weight: 700; color: #14b8a6; letter-spacing: -0.01em; font-family: ${FONT_STACK};">trainers.gg</span>
             </td>
           </tr>
           <!-- Body -->
