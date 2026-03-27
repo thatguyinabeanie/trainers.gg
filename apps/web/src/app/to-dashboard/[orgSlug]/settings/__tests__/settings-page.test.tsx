@@ -20,11 +20,11 @@ jest.mock("@/lib/supabase", () => ({
 
 const mockUpdateOrganization = jest.fn();
 
-jest.mock("@/actions/organizations", () => ({
+jest.mock("@/actions/communities", () => ({
   updateOrganization: (...args: unknown[]) => mockUpdateOrganization(...args),
 }));
 
-jest.mock("@/actions/organization-logo", () => ({
+jest.mock("@/actions/community-logo", () => ({
   uploadOrgLogo: jest.fn(),
   removeOrgLogo: jest.fn(),
 }));
@@ -41,7 +41,7 @@ jest.mock("next/navigation", () => ({
 }));
 
 // Mock PlatformIcon as a simple span to avoid SVG complexity
-jest.mock("@/components/organizations/social-link-icons", () => ({
+jest.mock("@/components/communities/social-link-icons", () => ({
   PlatformIcon: ({ platform }: { platform: string }) => (
     <span data-testid={`platform-icon-${platform}`}>{platform}</span>
   ),
@@ -558,7 +558,7 @@ describe("OrgSettingsPage", () => {
 
     it("calls uploadOrgLogo for valid file", async () => {
       const { uploadOrgLogo } = jest.requireMock(
-        "@/actions/organization-logo"
+        "@/actions/community-logo"
       ) as { uploadOrgLogo: jest.Mock };
       uploadOrgLogo.mockResolvedValue({
         success: true,

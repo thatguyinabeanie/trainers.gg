@@ -55,7 +55,7 @@ import {
   acceptOrganizationInvitation,
   leaveOrganization,
   removeStaff,
-} from "../organizations";
+} from "../communities";
 
 // =============================================================================
 // updateOrganization
@@ -84,10 +84,10 @@ describe("updateOrganization", () => {
       description: "Updated desc",
     });
     // List revalidated because name changed
-    expect(mockUpdateTag).toHaveBeenCalledWith("organizations-list");
+    expect(mockUpdateTag).toHaveBeenCalledWith("communities-list");
     // Individual org pages revalidated
-    expect(mockUpdateTag).toHaveBeenCalledWith("organization:team-rocket");
-    expect(mockUpdateTag).toHaveBeenCalledWith("organization:1");
+    expect(mockUpdateTag).toHaveBeenCalledWith("community:team-rocket");
+    expect(mockUpdateTag).toHaveBeenCalledWith("community:1");
   });
 
   it("does not revalidate the list when only socialLinks changes", async () => {
@@ -103,10 +103,10 @@ describe("updateOrganization", () => {
 
     expect(result.success).toBe(true);
     // List should NOT be revalidated — socialLinks is not display data
-    expect(mockUpdateTag).not.toHaveBeenCalledWith("organizations-list");
+    expect(mockUpdateTag).not.toHaveBeenCalledWith("communities-list");
     // Individual org pages should still be revalidated
-    expect(mockUpdateTag).toHaveBeenCalledWith("organization:team-rocket");
-    expect(mockUpdateTag).toHaveBeenCalledWith("organization:1");
+    expect(mockUpdateTag).toHaveBeenCalledWith("community:team-rocket");
+    expect(mockUpdateTag).toHaveBeenCalledWith("community:1");
   });
 });
 
@@ -158,7 +158,7 @@ describe("acceptOrganizationInvitation", () => {
       mockSupabase,
       55
     );
-    expect(mockUpdateTag).toHaveBeenCalledWith("organization:team-rocket");
+    expect(mockUpdateTag).toHaveBeenCalledWith("community:team-rocket");
   });
 });
 
@@ -181,8 +181,8 @@ describe("leaveOrganization", () => {
       data: { success: true },
     });
     expect(mockLeaveOrganization).toHaveBeenCalledWith(mockSupabase, 1);
-    expect(mockUpdateTag).toHaveBeenCalledWith("organization:team-rocket");
-    expect(mockUpdateTag).toHaveBeenCalledWith("organization:1");
+    expect(mockUpdateTag).toHaveBeenCalledWith("community:team-rocket");
+    expect(mockUpdateTag).toHaveBeenCalledWith("community:1");
   });
 });
 
@@ -209,8 +209,8 @@ describe("removeStaff", () => {
       1,
       "user-uuid-456"
     );
-    expect(mockUpdateTag).toHaveBeenCalledWith("organization:team-rocket");
-    expect(mockUpdateTag).toHaveBeenCalledWith("organization:1");
+    expect(mockUpdateTag).toHaveBeenCalledWith("community:team-rocket");
+    expect(mockUpdateTag).toHaveBeenCalledWith("community:1");
   });
 
   it("returns an error when the mutation throws", async () => {

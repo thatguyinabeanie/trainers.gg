@@ -4,8 +4,8 @@ import { useState, useTransition, useRef, use } from "react";
 import { useSupabaseQuery } from "@/lib/supabase";
 import { getOrganizationBySlug } from "@trainers/supabase";
 import type { TypedSupabaseClient } from "@trainers/supabase";
-import { updateOrganization } from "@/actions/organizations";
-import { uploadOrgLogo, removeOrgLogo } from "@/actions/organization-logo";
+import { updateOrganization } from "@/actions/communities";
+import { uploadOrgLogo, removeOrgLogo } from "@/actions/community-logo";
 import { Button } from "@/components/ui/button";
 import {
   Card,
