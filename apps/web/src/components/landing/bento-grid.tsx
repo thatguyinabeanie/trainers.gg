@@ -255,7 +255,7 @@ const underConstructionItems = [
   {
     emoji: "⚔️",
     label: "Builder",
-    desc: "Build and share teams with analytics-powered suggestions from public tournament data. Get coverage checks, spread insights, and core recommendations as you build.",
+    desc: "Build and share teams with current meta analytics at your fingertips. See usage rates, win rates, and popular cores from public tournament data as you build — plus coverage checks and spread insights.",
   },
   {
     emoji: "📝",
