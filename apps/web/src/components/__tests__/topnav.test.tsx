@@ -45,6 +45,20 @@ describe("TopNav", () => {
     expect(link).toHaveAttribute("href", "/coaching");
   });
 
+  it("renders Articles link", () => {
+    render(<TopNav />);
+    const link = screen.getByRole("link", { name: "Articles" });
+    expect(link).toBeInTheDocument();
+    expect(link).toHaveAttribute("href", "/articles");
+  });
+
+  it("renders Builder link", () => {
+    render(<TopNav />);
+    const link = screen.getByRole("link", { name: "Builder" });
+    expect(link).toBeInTheDocument();
+    expect(link).toHaveAttribute("href", "/builder");
+  });
+
   it("renders all navigation links with correct styling", () => {
     render(<TopNav />);
     const links = screen.getAllByRole("link");
@@ -52,7 +66,9 @@ describe("TopNav", () => {
       (link) =>
         link.textContent === "Tournaments" ||
         link.textContent === "Communities" ||
+        link.textContent === "Builder" ||
         link.textContent === "Analytics" ||
+        link.textContent === "Articles" ||
         link.textContent === "Coaching"
     );
 
@@ -81,13 +97,17 @@ describe("TopNav", () => {
       (link) =>
         link.textContent === "Tournaments" ||
         link.textContent === "Communities" ||
+        link.textContent === "Builder" ||
         link.textContent === "Analytics" ||
+        link.textContent === "Articles" ||
         link.textContent === "Coaching"
     );
 
-    expect(navLinks[0]).toHaveTextContent("Communities");
-    expect(navLinks[1]).toHaveTextContent("Tournaments");
-    expect(navLinks[2]).toHaveTextContent("Analytics");
-    expect(navLinks[3]).toHaveTextContent("Coaching");
+    expect(navLinks[0]).toHaveTextContent("Tournaments");
+    expect(navLinks[1]).toHaveTextContent("Communities");
+    expect(navLinks[2]).toHaveTextContent("Builder");
+    expect(navLinks[3]).toHaveTextContent("Analytics");
+    expect(navLinks[4]).toHaveTextContent("Articles");
+    expect(navLinks[5]).toHaveTextContent("Coaching");
   });
 });
