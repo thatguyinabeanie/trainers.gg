@@ -17,9 +17,9 @@ import { columns as orgColumns, type CommunityRow } from "./columns";
 import {
   columns as requestColumns,
   type CommunityRequestRow,
-} from "@/app/(app)/admin/org-requests/columns";
+} from "@/app/admin/org-requests/columns";
 import { CommunityDetailSheet } from "./community-detail-sheet";
-import { RequestDetailSheet } from "@/app/(app)/admin/org-requests/request-detail-sheet";
+import { RequestDetailSheet } from "@/app/admin/org-requests/request-detail-sheet";
 
 // --- Constants ---
 

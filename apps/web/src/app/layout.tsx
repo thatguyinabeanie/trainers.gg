@@ -1,6 +1,8 @@
 import { Providers } from "@/components/providers";
+import { TopNav } from "@/components/topnav";
 import { Toaster } from "@/components/ui/sonner";
 import { SudoModeIndicator } from "@/components/sudo-mode-indicator";
+import { AnnouncementBanner } from "@/components/layout/announcement-banner";
 import type { Metadata, Viewport } from "next";
 import { Geist_Mono, Inter } from "next/font/google";
 import type { ReactNode } from "react";
@@ -67,7 +69,22 @@ export default async function RootLayout({
         )}
       >
         <Providers isImpersonating={impersonating}>
-          {children}
+          <AnnouncementBanner />
+          <TopNav />
+          <main className="flex w-full flex-1 flex-col">{children}</main>
+
+          <footer className="text-muted-foreground mx-auto w-full max-w-screen-2xl px-6 py-3 text-[10px] sm:px-10">
+            <div className="flex items-center justify-between">
+              <p className="text-[8px] opacity-40">
+                trainers.gg is not affiliated with, endorsed by, or connected
+                to Nintendo, The Pok&eacute;mon Company, or Game Freak.
+              </p>
+              <p className="whitespace-nowrap">
+                &copy; {new Date().getFullYear()} Beanie LLC
+              </p>
+            </div>
+          </footer>
+
           <Toaster />
           <SudoModeIndicator />
         </Providers>

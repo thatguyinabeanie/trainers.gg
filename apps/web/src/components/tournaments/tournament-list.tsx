@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/table";
 import { ResponsiveTable } from "@/components/ui/responsive-table";
 import { Trophy, Users, Calendar, Swords } from "lucide-react";
-import { DateChip } from "@/app/(app)/tournaments/date-chip";
+import { DateChip } from "@/app/tournaments/date-chip";
 import { getGameById, getFormatById } from "@/components/tournaments/shared";
 import type { TournamentWithOrg } from "@trainers/supabase";
 
