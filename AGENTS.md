@@ -12,6 +12,7 @@ Domain-specific guidance lives in `.claude/skills/`. Invoke the relevant skill b
 | `building-mobile-app` | Mobile screens, Tamagui UI, Expo Router, SecureStore |
 | `supabase-queries` | DB queries/mutations, client selection, Edge Functions |
 | `input-validation` | Zod schemas, Server Action return types, profanity filter |
+| `mobile-parity` | After developing web features, check for mobile parity tickets |
 | `tournament-logic` | Swiss pairings, standings, brackets, adapters |
 | `pokemon-parsing` | Team parsing, legality validation, type effectiveness |
 | `shared-utils` | `getLabel()`, `getErrorMessage()`, permissions, formatting |
