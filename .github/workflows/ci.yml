@@ -129,10 +129,14 @@ jobs:
             tsc-${{ runner.os }}-
 
       - name: Configure Turbo Remote Cache
-        if: secrets.TURBO_TOKEN != ''
         run: |
-          echo "TURBO_TOKEN=${{ secrets.TURBO_TOKEN }}" >> "$GITHUB_ENV"
-          echo "TURBO_TEAM=${{ vars.TURBO_TEAM }}" >> "$GITHUB_ENV"
+          if [ -n "$TURBO_TOKEN" ]; then
+            echo "TURBO_TOKEN=$TURBO_TOKEN" >> "$GITHUB_ENV"
+            echo "TURBO_TEAM=$TURBO_TEAM" >> "$GITHUB_ENV"
+          fi
+        env:
+          TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+          TURBO_TEAM: ${{ vars.TURBO_TEAM }}
 
       # Register problem matchers so ESLint and tsc errors become
       # inline annotations on the PR Files tab.
@@ -203,10 +207,14 @@ jobs:
             jest-${{ runner.os }}-refs/heads/main-
 
       - name: Configure Turbo Remote Cache
-        if: secrets.TURBO_TOKEN != ''
         run: |
-          echo "TURBO_TOKEN=${{ secrets.TURBO_TOKEN }}" >> "$GITHUB_ENV"
-          echo "TURBO_TEAM=${{ vars.TURBO_TEAM }}" >> "$GITHUB_ENV"
+          if [ -n "$TURBO_TOKEN" ]; then
+            echo "TURBO_TOKEN=$TURBO_TOKEN" >> "$GITHUB_ENV"
+            echo "TURBO_TEAM=$TURBO_TEAM" >> "$GITHUB_ENV"
+          fi
+        env:
+          TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+          TURBO_TEAM: ${{ vars.TURBO_TEAM }}
 
       - name: Run unit tests with coverage
         run: pnpm test:ci
@@ -385,10 +393,14 @@ jobs:
         run: pnpm --filter=@trainers/web exec playwright install-deps chromium
 
       - name: Configure Turbo Remote Cache
-        if: secrets.TURBO_TOKEN != ''
         run: |
-          echo "TURBO_TOKEN=${{ secrets.TURBO_TOKEN }}" >> "$GITHUB_ENV"
-          echo "TURBO_TEAM=${{ vars.TURBO_TEAM }}" >> "$GITHUB_ENV"
+          if [ -n "$TURBO_TOKEN" ]; then
+            echo "TURBO_TOKEN=$TURBO_TOKEN" >> "$GITHUB_ENV"
+            echo "TURBO_TEAM=$TURBO_TEAM" >> "$GITHUB_ENV"
+          fi
+        env:
+          TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+          TURBO_TEAM: ${{ vars.TURBO_TEAM }}
 
       - name: Seed E2E test users on preview
         if: needs.wait-for-preview.outputs.url != ''
