@@ -89,7 +89,7 @@ Bold Nature
     let adminClient: TypedClient;
     let testData: {
       tournament: TestTournament;
-      organizationId: number;
+      communityId: number;
       owner: TestUser;
       players: Array<{ user: TestUser; alt: TestAlt; registrationId: number }>;
     };
@@ -109,7 +109,7 @@ Bold Nature
       // Clean up test data
       await cleanupTestData(adminClient, {
         tournamentIds: [testData.tournament.id],
-        organizationIds: [testData.organizationId],
+        communityIds: [testData.communityId],
         userIds: [testData.owner.id, ...testData.players.map((p) => p.user.id)],
       });
     });
@@ -323,7 +323,7 @@ Bold Nature
 
     describe("RLS Policy Validation", () => {
       it("should allow tournament owner to see all registrations", async () => {
-        // Query all registrations as admin (simulating owner with org permission)
+        // Query all registrations as admin (simulating owner with community permission)
         const { data: registrations, error } = await adminClient
           .from("tournament_registrations")
           .select("*")

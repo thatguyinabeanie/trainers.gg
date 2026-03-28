@@ -1,12 +1,16 @@
 import { recalculateStandings, dropPlayer } from "../standings";
 import type { TypedClient } from "../../../client";
-import { getCurrentUser, getCurrentAlt, checkOrgPermission } from "../helpers";
+import {
+  getCurrentUser,
+  getCurrentAlt,
+  checkCommunityPermission,
+} from "../helpers";
 
 // Mock helper functions
 jest.mock("../helpers", () => ({
   getCurrentUser: jest.fn(),
   getCurrentAlt: jest.fn(),
-  checkOrgPermission: jest.fn(),
+  checkCommunityPermission: jest.fn(),
 }));
 
 // Mock client type
@@ -386,7 +390,7 @@ describe("Tournament Standings Mutations", () => {
     beforeEach(() => {
       (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
       (getCurrentAlt as jest.Mock).mockResolvedValue(mockAlt);
-      (checkOrgPermission as jest.Mock).mockResolvedValue(false);
+      (checkCommunityPermission as jest.Mock).mockResolvedValue(false);
     });
 
     it("should allow player to drop themselves", async () => {
@@ -397,7 +401,7 @@ describe("Tournament Standings Mutations", () => {
           data: {
             id: tournamentId,
             status: "active",
-            organization_id: 200,
+            community_id: 200,
             organizations: { owner_user_id: "other-user" },
           },
           error: null,
@@ -450,7 +454,7 @@ describe("Tournament Standings Mutations", () => {
           data: {
             id: tournamentId,
             status: "active",
-            organization_id: 200,
+            community_id: 200,
             organizations: { owner_user_id: "other-user" },
           },
           error: null,
@@ -532,7 +536,7 @@ describe("Tournament Standings Mutations", () => {
     });
 
     it("should throw error if user lacks permission", async () => {
-      (checkOrgPermission as jest.Mock).mockResolvedValue(false);
+      (checkCommunityPermission as jest.Mock).mockResolvedValue(false);
       (getCurrentAlt as jest.Mock).mockResolvedValue({ id: 999 }); // Different player
 
       const tournamentBuilder = {
@@ -542,7 +546,7 @@ describe("Tournament Standings Mutations", () => {
           data: {
             id: tournamentId,
             status: "active",
-            organization_id: 200,
+            community_id: 200,
             organizations: { owner_user_id: "other-user" },
           },
           error: null,
@@ -564,7 +568,7 @@ describe("Tournament Standings Mutations", () => {
           data: {
             id: tournamentId,
             status: "draft",
-            organization_id: 200,
+            community_id: 200,
             organizations: { owner_user_id: "other-user" },
           },
           error: null,

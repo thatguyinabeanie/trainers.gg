@@ -20,7 +20,7 @@ import { approveOrganization as approveOrganization_core } from "../queries/admi
 import { rejectOrganization as rejectOrganization_core } from "../queries/admin-communities";
 import { suspendOrganization as suspendOrganization_core } from "../queries/admin-communities";
 import { unsuspendOrganization as unsuspendOrganization_core } from "../queries/admin-communities";
-import { transferOrgOwnership as transferOrgOwnership_core } from "../queries/admin-communities";
+import { transferCommunityOwnership as transferCommunityOwnership_core } from "../queries/admin-communities";
 import { listUsersAdmin as listUsersAdmin_core } from "../queries/admin-users";
 import { getUserAdminDetails as getUserAdminDetails_core } from "../queries/admin-users";
 import { suspendUser as suspendUser_core } from "../queries/admin-users";
@@ -69,7 +69,7 @@ import { listCommunityTournaments as listCommunityTournaments_core } from "../qu
 import { listCommunityStaffWithRoles as listCommunityStaffWithRoles_core } from "../queries/communities";
 import { listCommunityGroups as listCommunityGroups_core } from "../queries/communities";
 import { searchUsersForInvite as searchUsersForInvite_core } from "../queries/communities";
-import { hasOrgPermission as hasOrgPermission_core } from "../queries/communities";
+import { hasCommunityPermission as hasCommunityPermission_core } from "../queries/communities";
 import { getUserPermissions as getUserPermissions_core } from "../queries/permissions";
 import { hasPermission as hasPermission_core } from "../queries/permissions";
 import { searchPlayers as searchPlayers_core } from "../queries/players";
@@ -373,18 +373,18 @@ export async function unsuspendOrganization(
 }
 
 /**
- * transferOrgOwnership (auto-injected with mobile client)
+ * transferCommunityOwnership (auto-injected with mobile client)
  */
-export async function transferOrgOwnership(
-  ...args: Parameters<typeof transferOrgOwnership_core> extends [
+export async function transferCommunityOwnership(
+  ...args: Parameters<typeof transferCommunityOwnership_core> extends [
     first: infer _F,
     ...rest: infer R,
   ]
     ? R
     : never
-): Promise<Awaited<ReturnType<typeof transferOrgOwnership_core>>> {
+): Promise<Awaited<ReturnType<typeof transferCommunityOwnership_core>>> {
   const client = createMobileSupabaseClient();
-  return transferOrgOwnership_core(client, ...args);
+  return transferCommunityOwnership_core(client, ...args);
 }
 
 /**
@@ -1108,18 +1108,18 @@ export async function searchUsersForInvite(
 }
 
 /**
- * hasOrgPermission (auto-injected with mobile client)
+ * hasCommunityPermission (auto-injected with mobile client)
  */
-export async function hasOrgPermission(
-  ...args: Parameters<typeof hasOrgPermission_core> extends [
+export async function hasCommunityPermission(
+  ...args: Parameters<typeof hasCommunityPermission_core> extends [
     first: infer _F,
     ...rest: infer R,
   ]
     ? R
     : never
-): Promise<Awaited<ReturnType<typeof hasOrgPermission_core>>> {
+): Promise<Awaited<ReturnType<typeof hasCommunityPermission_core>>> {
   const client = createMobileSupabaseClient();
-  return hasOrgPermission_core(client, ...args);
+  return hasCommunityPermission_core(client, ...args);
 }
 
 /**

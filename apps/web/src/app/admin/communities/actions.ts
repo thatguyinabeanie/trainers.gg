@@ -14,13 +14,15 @@ import {
   rejectOrganization,
   suspendOrganization,
   unsuspendOrganization,
-  transferOrgOwnership,
+  transferCommunityOwnership,
 } from "@trainers/supabase/queries";
 
 // --- Approve ---
 
-export async function approveOrgAction(orgId: number): Promise<ActionResult> {
-  const parsedOrgId = positiveIntSchema.safeParse(orgId);
+export async function approveCommunityAction(
+  communityId: number
+): Promise<ActionResult> {
+  const parsedOrgId = positiveIntSchema.safeParse(communityId);
   if (!parsedOrgId.success) {
     return {
       success: false,
@@ -36,11 +38,11 @@ export async function approveOrgAction(orgId: number): Promise<ActionResult> {
 
 // --- Reject ---
 
-export async function rejectOrgAction(
-  orgId: number,
+export async function rejectCommunityAction(
+  communityId: number,
   reason: string
 ): Promise<ActionResult> {
-  const parsedOrgId = positiveIntSchema.safeParse(orgId);
+  const parsedOrgId = positiveIntSchema.safeParse(communityId);
   if (!parsedOrgId.success) {
     return {
       success: false,
@@ -68,11 +70,11 @@ export async function rejectOrgAction(
 
 // --- Suspend ---
 
-export async function suspendOrgAction(
-  orgId: number,
+export async function suspendCommunityAction(
+  communityId: number,
   reason: string
 ): Promise<ActionResult> {
-  const parsedOrgId = positiveIntSchema.safeParse(orgId);
+  const parsedOrgId = positiveIntSchema.safeParse(communityId);
   if (!parsedOrgId.success) {
     return {
       success: false,
@@ -100,8 +102,10 @@ export async function suspendOrgAction(
 
 // --- Unsuspend ---
 
-export async function unsuspendOrgAction(orgId: number): Promise<ActionResult> {
-  const parsedOrgId = positiveIntSchema.safeParse(orgId);
+export async function unsuspendCommunityAction(
+  communityId: number
+): Promise<ActionResult> {
+  const parsedOrgId = positiveIntSchema.safeParse(communityId);
   if (!parsedOrgId.success) {
     return {
       success: false,
@@ -118,10 +122,10 @@ export async function unsuspendOrgAction(orgId: number): Promise<ActionResult> {
 // --- Transfer Ownership ---
 
 export async function transferOwnershipAction(
-  orgId: number,
+  communityId: number,
   newOwnerUserId: string
 ): Promise<ActionResult> {
-  const parsedOrgId = positiveIntSchema.safeParse(orgId);
+  const parsedOrgId = positiveIntSchema.safeParse(communityId);
   if (!parsedOrgId.success) {
     return {
       success: false,
@@ -137,7 +141,7 @@ export async function transferOwnershipAction(
   }
 
   return withAdminAction(async (supabase, adminUserId) => {
-    await transferOrgOwnership(
+    await transferCommunityOwnership(
       supabase,
       parsedOrgId.data,
       parsedUserId.data,

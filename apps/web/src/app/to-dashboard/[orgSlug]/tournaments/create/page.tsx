@@ -10,7 +10,7 @@ interface PageProps {
 }
 
 export default function CreateTournamentPage({ params }: PageProps) {
-  const { orgSlug } = use(params);
+  const { orgSlug: communitySlug } = use(params);
 
-  return <CreateTournamentClient orgSlug={orgSlug} />;
+  return <CreateTournamentClient communitySlug={communitySlug} />;
 }

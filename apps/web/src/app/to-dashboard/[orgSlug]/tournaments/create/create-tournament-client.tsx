@@ -71,7 +71,7 @@ const tournamentFormSchema = z.object({
       "Only lowercase letters, numbers, and hyphens allowed"
     ),
   description: z.string().optional(),
-  organizationId: z.number().optional(),
+  communityId: z.number().optional(),
 
   // Game settings
   game: z.string().optional(),
@@ -124,11 +124,11 @@ const STEPS = [
 ];
 
 interface CreateTournamentClientProps {
-  orgSlug: string;
+  communitySlug: string;
 }
 
 export function CreateTournamentClient({
-  orgSlug,
+  communitySlug,
 }: CreateTournamentClientProps) {
   const router = useRouter();
   const { user: currentUser, isLoading: userLoading } = useCurrentUser();
@@ -140,7 +140,7 @@ export function CreateTournamentClient({
       name: "",
       slug: "",
       description: "",
-      organizationId: undefined,
+      communityId: undefined,
       game: "sv",
       gameFormat: "reg-i",
       platform: "cartridge",
@@ -185,24 +185,24 @@ export function CreateTournamentClient({
 
   // Fetch organization by slug
   const orgQueryFn = (supabase: Parameters<typeof getCommunityBySlug>[0]) =>
-    getCommunityBySlug(supabase, orgSlug);
+    getCommunityBySlug(supabase, communitySlug);
 
   const { data: organization, isLoading: orgLoading } = useSupabaseQuery(
     orgQueryFn,
-    [orgSlug]
+    [communitySlug]
   );
 
   // Update organization ID when org is loaded
-  const currentOrgId = form.watch("organizationId");
+  const currentOrgId = form.watch("communityId");
   if (organization && currentOrgId !== organization.id) {
-    form.setValue("organizationId", organization.id);
+    form.setValue("communityId", organization.id);
   }
 
   const { mutateAsync: createTournamentMutation } = useSupabaseMutation(
     (
       supabase,
       args: {
-        organizationId: number;
+        communityId: number;
         name: string;
         slug: string;
         description?: string;
@@ -300,14 +300,14 @@ export function CreateTournamentClient({
   const handleSubmit = async () => {
     const data = form.getValues();
 
-    if (!data.organizationId) {
+    if (!data.communityId) {
       toast.error("Community not found");
       return;
     }
 
     try {
       const tournament = await createTournamentMutation({
-        organizationId: data.organizationId,
+        communityId: data.communityId,
         name: data.name,
         slug: data.slug,
         description: data.description,
@@ -351,10 +351,10 @@ export function CreateTournamentClient({
 
       if (tournament?.slug) {
         router.push(
-          `/to-dashboard/${orgSlug}/tournaments/${tournament.slug}/manage`
+          `/to-dashboard/${communitySlug}/tournaments/${tournament.slug}/manage`
         );
       } else {
-        router.push(`/to-dashboard/${orgSlug}/tournaments`);
+        router.push(`/to-dashboard/${communitySlug}/tournaments`);
       }
     } catch (error) {
       toast.error("Failed to create tournament", {
@@ -413,7 +413,7 @@ export function CreateTournamentClient({
             You don&apos;t have permission to create tournaments for this
             community
           </p>
-          <Link href={`/communities/${orgSlug}`}>
+          <Link href={`/communities/${communitySlug}`}>
             <Button>
               <ArrowLeft className="mr-2 h-4 w-4" />
               View Community
@@ -439,7 +439,7 @@ export function CreateTournamentClient({
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center gap-4">
-          <Link href={`/to-dashboard/${orgSlug}/tournaments`}>
+          <Link href={`/to-dashboard/${communitySlug}/tournaments`}>
             <Button variant="ghost" size="icon">
               <ArrowLeft className="h-5 w-5" />
             </Button>

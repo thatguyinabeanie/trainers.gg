@@ -169,12 +169,12 @@ Deno.serve(async (req) => {
 
     // PATCH /api-organizations/:id → Update organization
     if (method === "PATCH" && pathParts.length === 2) {
-      const organizationId = positiveIntSchema.parse(pathParts[1]);
+      const communityId = positiveIntSchema.parse(pathParts[1]);
 
       const body = await req.json();
       updateCommunitySchema.parse(body);
 
-      await updateOrganizationMutation(supabase, organizationId, body);
+      await updateOrganizationMutation(supabase, communityId, body);
 
       return jsonResponse(
         { success: true, data: { success: true } },
@@ -185,7 +185,7 @@ Deno.serve(async (req) => {
 
     // POST /api-organizations/:id/invite → Invite staff member
     if (method === "POST" && pathParts[2] === "invite") {
-      const organizationId = positiveIntSchema.parse(pathParts[1]);
+      const communityId = positiveIntSchema.parse(pathParts[1]);
 
       const body = await req.json();
       const { email, role } = z
@@ -195,7 +195,7 @@ Deno.serve(async (req) => {
         })
         .parse(body);
 
-      await inviteToOrganizationMutation(supabase, organizationId, email, role);
+      await inviteToOrganizationMutation(supabase, communityId, email, role);
 
       return jsonResponse(
         { success: true, data: { success: true } },
@@ -240,10 +240,10 @@ Deno.serve(async (req) => {
 
     // DELETE /api-organizations/:id/staff/:userId → Remove staff member
     if (method === "DELETE" && pathParts[2] === "staff") {
-      const organizationId = positiveIntSchema.parse(pathParts[1]);
+      const communityId = positiveIntSchema.parse(pathParts[1]);
       const userId = z.string().uuid("Invalid user ID").parse(pathParts[3]);
 
-      await removeStaffMutation(supabase, organizationId, userId);
+      await removeStaffMutation(supabase, communityId, userId);
 
       return jsonResponse(
         { success: true, data: { success: true } },
@@ -254,9 +254,9 @@ Deno.serve(async (req) => {
 
     // DELETE /api-organizations/:id/leave → Leave organization
     if (method === "DELETE" && pathParts[2] === "leave") {
-      const organizationId = positiveIntSchema.parse(pathParts[1]);
+      const communityId = positiveIntSchema.parse(pathParts[1]);
 
-      await leaveOrganizationMutation(supabase, organizationId);
+      await leaveOrganizationMutation(supabase, communityId);
 
       return jsonResponse(
         { success: true, data: { success: true } },

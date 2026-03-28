@@ -43,8 +43,8 @@ import { moveStaffToGroup } from "@/actions/staff";
 // =============================================================================
 
 interface StaffListClientProps {
-  organizationId: number;
-  orgSlug: string;
+  communityId: number;
+  communitySlug: string;
   initialStaff: StaffWithRole[];
   groups: CommunityGroup[];
   isOwner: boolean;
@@ -325,8 +325,8 @@ function DroppableGroup({
 // =============================================================================
 
 export function StaffListClient({
-  organizationId,
-  orgSlug,
+  communityId,
+  communitySlug,
   initialStaff,
   groups,
   isOwner,
@@ -350,14 +350,14 @@ export function StaffListClient({
   // Fetch staff data
   const queryFn = (
     supabase: Parameters<typeof listCommunityStaffWithRoles>[0]
-  ) => listCommunityStaffWithRoles(supabase, organizationId);
+  ) => listCommunityStaffWithRoles(supabase, communityId);
 
   const {
     data: staffMembers,
     isLoading,
     error: queryError,
     refetch,
-  } = useSupabaseQuery(queryFn, [organizationId]);
+  } = useSupabaseQuery(queryFn, [communityId]);
 
   // Show error toast if query fails
   useEffect(() => {
@@ -461,10 +461,10 @@ export function StaffListClient({
     setIsMoving(true);
     try {
       const result = await moveStaffToGroup(
-        organizationId,
+        communityId,
         member.user_id,
         targetGroup.id,
-        orgSlug
+        communitySlug
       );
 
       if (result.success) {
@@ -630,8 +630,8 @@ export function StaffListClient({
       <InviteStaffDialog
         open={isInviteOpen}
         onOpenChange={setIsInviteOpen}
-        organizationId={organizationId}
-        orgSlug={orgSlug}
+        communityId={communityId}
+        communitySlug={communitySlug}
         onSuccess={handleSuccess}
       />
 
@@ -639,8 +639,8 @@ export function StaffListClient({
         <RemoveStaffDialog
           open={!!removeStaff}
           onOpenChange={(open: boolean) => !open && setRemoveStaff(null)}
-          organizationId={organizationId}
-          orgSlug={orgSlug}
+          communityId={communityId}
+          communitySlug={communitySlug}
           staff={removeStaff}
           onSuccess={handleSuccess}
         />

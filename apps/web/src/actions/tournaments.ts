@@ -68,7 +68,7 @@ type TournamentStatus = Database["public"]["Enums"]["tournament_status"];
  * Revalidates: tournaments list (after publication)
  */
 export async function createTournament(data: {
-  organizationId: number;
+  communityId: number;
   name: string;
   slug: string;
   description?: string;
@@ -1059,15 +1059,18 @@ export async function bulkRemovePlayers(
     // Verify the caller has permission to manage this tournament
     const { data: tournament } = await supabase
       .from("tournaments")
-      .select("organization_id")
+      .select("community_id")
       .eq("id", tournamentId)
       .single();
     if (!tournament) throw new Error("Tournament not found");
 
-    const { data: hasPermission } = await supabase.rpc("has_org_permission", {
-      org_id: tournament.organization_id,
-      permission_key: "tournament.manage",
-    });
+    const { data: hasPermission } = await supabase.rpc(
+      "has_community_permission",
+      {
+        p_community_id: tournament.community_id,
+        permission_key: "tournament.manage",
+      }
+    );
     if (!hasPermission) {
       throw new Error("You don't have permission to manage this tournament");
     }

@@ -15,11 +15,11 @@ export default async function TournamentsPage({
   params,
   searchParams,
 }: PageProps) {
-  const { orgSlug } = await params;
+  const { orgSlug: communitySlug } = await params;
   const { status } = await searchParams;
   const supabase = await createClient();
 
-  const organization = await getCommunityBySlug(supabase, orgSlug);
+  const organization = await getCommunityBySlug(supabase, communitySlug);
 
   if (!organization) {
     return null; // Layout handles 404
@@ -27,8 +27,8 @@ export default async function TournamentsPage({
 
   return (
     <TournamentsListClient
-      organizationId={organization.id}
-      orgSlug={orgSlug}
+      communityId={organization.id}
+      communitySlug={communitySlug}
       initialStatus={status}
     />
   );

@@ -11,10 +11,10 @@ import type { PhaseConfig } from "../helpers";
 jest.mock("../helpers", () => ({
   getCurrentUser: jest.fn(),
   getCurrentAlt: jest.fn(),
-  checkOrgPermission: jest.fn(),
+  checkCommunityPermission: jest.fn(),
 }));
 
-import { getCurrentUser, checkOrgPermission } from "../helpers";
+import { getCurrentUser, checkCommunityPermission } from "../helpers";
 
 // Helper to create mock Supabase client
 type MockQueryBuilder = {
@@ -54,7 +54,7 @@ describe("Tournament CRUD Mutations", () => {
   describe("createTournament", () => {
     const mockUser = { id: "user-123" };
     const tournamentData = {
-      organizationId: 200,
+      communityId: 200,
       name: "Regional Championship",
       slug: "regional-championship",
       description: "A competitive tournament",
@@ -78,13 +78,13 @@ describe("Tournament CRUD Mutations", () => {
 
     beforeEach(() => {
       (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
-      (checkOrgPermission as jest.Mock).mockResolvedValue(true);
+      (checkCommunityPermission as jest.Mock).mockResolvedValue(true);
     });
 
     it("should create a tournament with default phases (swiss_with_cut)", async () => {
       const fromSpy = jest.spyOn(mockClient, "from");
 
-      // Mock: Check organization exists
+      // Mock: Check community exists
       fromSpy.mockReturnValueOnce({
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
@@ -112,7 +112,7 @@ describe("Tournament CRUD Mutations", () => {
           data: {
             id: 1000,
             slug: "regional-championship",
-            organization_id: 200,
+            community_id: 200,
             name: "Regional Championship",
             status: "draft",
           },
@@ -160,7 +160,7 @@ describe("Tournament CRUD Mutations", () => {
 
       const fromSpy = jest.spyOn(mockClient, "from");
 
-      // Mock: Check organization exists
+      // Mock: Check community exists
       fromSpy.mockReturnValueOnce({
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
@@ -188,7 +188,7 @@ describe("Tournament CRUD Mutations", () => {
           data: {
             id: 1001,
             slug: "regional-championship",
-            organization_id: 200,
+            community_id: 200,
           },
           error: null,
         }),
@@ -215,7 +215,7 @@ describe("Tournament CRUD Mutations", () => {
     it("should create a tournament with swiss_only format", async () => {
       const fromSpy = jest.spyOn(mockClient, "from");
 
-      // Mock: Check organization exists
+      // Mock: Check community exists
       fromSpy.mockReturnValueOnce({
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
@@ -243,7 +243,7 @@ describe("Tournament CRUD Mutations", () => {
           data: {
             id: 1002,
             slug: "swiss-only",
-            organization_id: 200,
+            community_id: 200,
           },
           error: null,
         }),
@@ -266,7 +266,7 @@ describe("Tournament CRUD Mutations", () => {
     it("should create a tournament with single_elimination format", async () => {
       const fromSpy = jest.spyOn(mockClient, "from");
 
-      // Mock: Check organization exists
+      // Mock: Check community exists
       fromSpy.mockReturnValueOnce({
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
@@ -294,7 +294,7 @@ describe("Tournament CRUD Mutations", () => {
           data: {
             id: 1003,
             slug: "single-elim",
-            organization_id: 200,
+            community_id: 200,
           },
           error: null,
         }),
@@ -317,7 +317,7 @@ describe("Tournament CRUD Mutations", () => {
     it("should create a tournament with double_elimination format", async () => {
       const fromSpy = jest.spyOn(mockClient, "from");
 
-      // Mock: Check organization exists
+      // Mock: Check community exists
       fromSpy.mockReturnValueOnce({
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
@@ -345,7 +345,7 @@ describe("Tournament CRUD Mutations", () => {
           data: {
             id: 1004,
             slug: "double-elim",
-            organization_id: 200,
+            community_id: 200,
           },
           error: null,
         }),
@@ -373,7 +373,7 @@ describe("Tournament CRUD Mutations", () => {
       ).rejects.toThrow("Not authenticated");
     });
 
-    it("should throw error if organization not found", async () => {
+    it("should throw error if community not found", async () => {
       const fromSpy = jest.spyOn(mockClient, "from");
 
       fromSpy.mockReturnValueOnce({
@@ -387,11 +387,11 @@ describe("Tournament CRUD Mutations", () => {
 
       await expect(
         createTournament(mockClient, tournamentData)
-      ).rejects.toThrow("Organization not found");
+      ).rejects.toThrow("Community not found");
     });
 
     it("should throw error if user lacks permission", async () => {
-      (checkOrgPermission as jest.Mock).mockResolvedValue(false);
+      (checkCommunityPermission as jest.Mock).mockResolvedValue(false);
 
       const fromSpy = jest.spyOn(mockClient, "from");
 
@@ -412,7 +412,7 @@ describe("Tournament CRUD Mutations", () => {
     it("should throw error if slug already exists", async () => {
       const fromSpy = jest.spyOn(mockClient, "from");
 
-      // Mock: Check organization exists
+      // Mock: Check community exists
       fromSpy.mockReturnValueOnce({
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
@@ -434,14 +434,14 @@ describe("Tournament CRUD Mutations", () => {
 
       await expect(
         createTournament(mockClient, tournamentData)
-      ).rejects.toThrow("Tournament slug already exists in this organization");
+      ).rejects.toThrow("Tournament slug already exists in this community");
     });
 
     it("should normalize slug to lowercase", async () => {
       const fromSpy = jest.spyOn(mockClient, "from");
       const insertMock = jest.fn().mockReturnThis();
 
-      // Mock: Check organization exists
+      // Mock: Check community exists
       fromSpy.mockReturnValueOnce({
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
@@ -470,7 +470,7 @@ describe("Tournament CRUD Mutations", () => {
           data: {
             id: 1005,
             slug: "upper-case-slug",
-            organization_id: 200,
+            community_id: 200,
           },
           error: null,
         }),
@@ -503,7 +503,7 @@ describe("Tournament CRUD Mutations", () => {
       const fromSpy = jest.spyOn(mockClient, "from");
       const insertMock = jest.fn().mockReturnThis();
 
-      // Mock: Check organization exists
+      // Mock: Check community exists
       fromSpy.mockReturnValueOnce({
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
@@ -531,7 +531,7 @@ describe("Tournament CRUD Mutations", () => {
           data: {
             id: 1006,
             slug: "minimal-tournament",
-            organization_id: 200,
+            community_id: 200,
           },
           error: null,
         }),
@@ -547,7 +547,7 @@ describe("Tournament CRUD Mutations", () => {
       } as unknown as MockQueryBuilder);
 
       await createTournament(mockClient, {
-        organizationId: 200,
+        communityId: 200,
         name: "Minimal Tournament",
         slug: "minimal-tournament",
         tournamentFormat: "swiss_with_cut",
@@ -572,7 +572,7 @@ describe("Tournament CRUD Mutations", () => {
     it("should throw error if phase creation fails", async () => {
       const fromSpy = jest.spyOn(mockClient, "from");
 
-      // Mock: Check organization exists
+      // Mock: Check community exists
       fromSpy.mockReturnValueOnce({
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
@@ -600,7 +600,7 @@ describe("Tournament CRUD Mutations", () => {
           data: {
             id: 1007,
             slug: "phase-error",
-            organization_id: 200,
+            community_id: 200,
           },
           error: null,
         }),
@@ -636,7 +636,7 @@ describe("Tournament CRUD Mutations", () => {
 
       const fromSpy = jest.spyOn(mockClient, "from");
 
-      // Mock: Check organization exists
+      // Mock: Check community exists
       fromSpy.mockReturnValueOnce({
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
@@ -664,7 +664,7 @@ describe("Tournament CRUD Mutations", () => {
           data: {
             id: 1008,
             slug: "custom-phase-error",
-            organization_id: 200,
+            community_id: 200,
           },
           error: null,
         }),
@@ -690,7 +690,7 @@ describe("Tournament CRUD Mutations", () => {
     it("should throw error if tournament insert fails", async () => {
       const fromSpy = jest.spyOn(mockClient, "from");
 
-      // Mock: Check organization exists
+      // Mock: Check community exists
       fromSpy.mockReturnValueOnce({
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
@@ -729,7 +729,7 @@ describe("Tournament CRUD Mutations", () => {
     it("should throw error if Top Cut phase creation fails (swiss_with_cut)", async () => {
       const fromSpy = jest.spyOn(mockClient, "from");
 
-      // Mock: Check organization exists
+      // Mock: Check community exists
       fromSpy.mockReturnValueOnce({
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
@@ -757,7 +757,7 @@ describe("Tournament CRUD Mutations", () => {
           data: {
             id: 1009,
             slug: "top-cut-error",
-            organization_id: 200,
+            community_id: 200,
           },
           error: null,
         }),
@@ -788,7 +788,7 @@ describe("Tournament CRUD Mutations", () => {
     it("should throw error if Single Elimination phase creation fails", async () => {
       const fromSpy = jest.spyOn(mockClient, "from");
 
-      // Mock: Check organization exists
+      // Mock: Check community exists
       fromSpy.mockReturnValueOnce({
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
@@ -816,7 +816,7 @@ describe("Tournament CRUD Mutations", () => {
           data: {
             id: 1010,
             slug: "single-elim-error",
-            organization_id: 200,
+            community_id: 200,
           },
           error: null,
         }),
@@ -842,7 +842,7 @@ describe("Tournament CRUD Mutations", () => {
     it("should throw error if Double Elimination phase creation fails", async () => {
       const fromSpy = jest.spyOn(mockClient, "from");
 
-      // Mock: Check organization exists
+      // Mock: Check community exists
       fromSpy.mockReturnValueOnce({
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
@@ -870,7 +870,7 @@ describe("Tournament CRUD Mutations", () => {
           data: {
             id: 1011,
             slug: "double-elim-error",
-            organization_id: 200,
+            community_id: 200,
           },
           error: null,
         }),
@@ -900,7 +900,7 @@ describe("Tournament CRUD Mutations", () => {
 
     beforeEach(() => {
       (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
-      (checkOrgPermission as jest.Mock).mockResolvedValue(true);
+      (checkCommunityPermission as jest.Mock).mockResolvedValue(true);
     });
 
     it("should update tournament basic fields successfully", async () => {
@@ -911,7 +911,7 @@ describe("Tournament CRUD Mutations", () => {
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
         single: jest.fn().mockResolvedValue({
-          data: { organization_id: 200 },
+          data: { community_id: 200 },
           error: null,
         }),
       } as unknown as MockQueryBuilder);
@@ -939,7 +939,7 @@ describe("Tournament CRUD Mutations", () => {
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
         single: jest.fn().mockResolvedValue({
-          data: { organization_id: 200 },
+          data: { community_id: 200 },
           error: null,
         }),
       } as unknown as MockQueryBuilder);
@@ -996,7 +996,7 @@ describe("Tournament CRUD Mutations", () => {
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
         single: jest.fn().mockResolvedValue({
-          data: { organization_id: 200 },
+          data: { community_id: 200 },
           error: null,
         }),
       } as unknown as MockQueryBuilder);
@@ -1025,7 +1025,7 @@ describe("Tournament CRUD Mutations", () => {
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
         single: jest.fn().mockResolvedValue({
-          data: { organization_id: 200 },
+          data: { community_id: 200 },
           error: null,
         }),
       } as unknown as MockQueryBuilder);
@@ -1073,7 +1073,7 @@ describe("Tournament CRUD Mutations", () => {
     });
 
     it("should throw error if user lacks permission", async () => {
-      (checkOrgPermission as jest.Mock).mockResolvedValue(false);
+      (checkCommunityPermission as jest.Mock).mockResolvedValue(false);
 
       const fromSpy = jest.spyOn(mockClient, "from");
 
@@ -1081,7 +1081,7 @@ describe("Tournament CRUD Mutations", () => {
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
         single: jest.fn().mockResolvedValue({
-          data: { organization_id: 200 },
+          data: { community_id: 200 },
           error: null,
         }),
       } as unknown as MockQueryBuilder);
@@ -1099,7 +1099,7 @@ describe("Tournament CRUD Mutations", () => {
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
         single: jest.fn().mockResolvedValue({
-          data: { organization_id: 200 },
+          data: { community_id: 200 },
           error: null,
         }),
       } as unknown as MockQueryBuilder);
@@ -1125,7 +1125,7 @@ describe("Tournament CRUD Mutations", () => {
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
         single: jest.fn().mockResolvedValue({
-          data: { organization_id: 200 },
+          data: { community_id: 200 },
           error: null,
         }),
       } as unknown as MockQueryBuilder);
@@ -1152,7 +1152,7 @@ describe("Tournament CRUD Mutations", () => {
 
     beforeEach(() => {
       (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
-      (checkOrgPermission as jest.Mock).mockResolvedValue(true);
+      (checkCommunityPermission as jest.Mock).mockResolvedValue(true);
     });
 
     it("should archive tournament successfully", async () => {
@@ -1163,7 +1163,7 @@ describe("Tournament CRUD Mutations", () => {
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
         single: jest.fn().mockResolvedValue({
-          data: { organization_id: 200 },
+          data: { community_id: 200 },
           error: null,
         }),
       } as unknown as MockQueryBuilder);
@@ -1188,7 +1188,7 @@ describe("Tournament CRUD Mutations", () => {
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
         single: jest.fn().mockResolvedValue({
-          data: { organization_id: 200 },
+          data: { community_id: 200 },
           error: null,
         }),
       } as unknown as MockQueryBuilder);
@@ -1237,7 +1237,7 @@ describe("Tournament CRUD Mutations", () => {
     });
 
     it("should throw error if user lacks permission", async () => {
-      (checkOrgPermission as jest.Mock).mockResolvedValue(false);
+      (checkCommunityPermission as jest.Mock).mockResolvedValue(false);
 
       const fromSpy = jest.spyOn(mockClient, "from");
 
@@ -1245,7 +1245,7 @@ describe("Tournament CRUD Mutations", () => {
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
         single: jest.fn().mockResolvedValue({
-          data: { organization_id: 200 },
+          data: { community_id: 200 },
           error: null,
         }),
       } as unknown as MockQueryBuilder);
@@ -1263,7 +1263,7 @@ describe("Tournament CRUD Mutations", () => {
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
         single: jest.fn().mockResolvedValue({
-          data: { organization_id: 200 },
+          data: { community_id: 200 },
           error: null,
         }),
       } as unknown as MockQueryBuilder);
@@ -1287,7 +1287,7 @@ describe("Tournament CRUD Mutations", () => {
 
     beforeEach(() => {
       (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
-      (checkOrgPermission as jest.Mock).mockResolvedValue(true);
+      (checkCommunityPermission as jest.Mock).mockResolvedValue(true);
     });
 
     it("should delete draft tournament successfully", async () => {
@@ -1298,7 +1298,7 @@ describe("Tournament CRUD Mutations", () => {
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
         single: jest.fn().mockResolvedValue({
-          data: { organization_id: 200, status: "draft" },
+          data: { community_id: 200, status: "draft" },
           error: null,
         }),
       } as unknown as MockQueryBuilder);
@@ -1340,7 +1340,7 @@ describe("Tournament CRUD Mutations", () => {
     });
 
     it("should throw error if user lacks permission", async () => {
-      (checkOrgPermission as jest.Mock).mockResolvedValue(false);
+      (checkCommunityPermission as jest.Mock).mockResolvedValue(false);
 
       const fromSpy = jest.spyOn(mockClient, "from");
 
@@ -1348,7 +1348,7 @@ describe("Tournament CRUD Mutations", () => {
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
         single: jest.fn().mockResolvedValue({
-          data: { organization_id: 200, status: "draft" },
+          data: { community_id: 200, status: "draft" },
           error: null,
         }),
       } as unknown as MockQueryBuilder);
@@ -1365,7 +1365,7 @@ describe("Tournament CRUD Mutations", () => {
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
         single: jest.fn().mockResolvedValue({
-          data: { organization_id: 200, status: "active" },
+          data: { community_id: 200, status: "active" },
           error: null,
         }),
       } as unknown as MockQueryBuilder);
@@ -1382,7 +1382,7 @@ describe("Tournament CRUD Mutations", () => {
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
         single: jest.fn().mockResolvedValue({
-          data: { organization_id: 200, status: "completed" },
+          data: { community_id: 200, status: "completed" },
           error: null,
         }),
       } as unknown as MockQueryBuilder);
@@ -1399,7 +1399,7 @@ describe("Tournament CRUD Mutations", () => {
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
         single: jest.fn().mockResolvedValue({
-          data: { organization_id: 200, status: "cancelled" },
+          data: { community_id: 200, status: "cancelled" },
           error: null,
         }),
       } as unknown as MockQueryBuilder);
@@ -1417,7 +1417,7 @@ describe("Tournament CRUD Mutations", () => {
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
         single: jest.fn().mockResolvedValue({
-          data: { organization_id: 200, status: "draft" },
+          data: { community_id: 200, status: "draft" },
           error: null,
         }),
       } as unknown as MockQueryBuilder);

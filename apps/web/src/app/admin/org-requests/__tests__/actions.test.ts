@@ -25,7 +25,10 @@ jest.mock("@trainers/supabase/mutations", () => ({
 }));
 
 // Import after mocks are declared
-import { approveOrgRequestAction, rejectOrgRequestAction } from "../actions";
+import {
+  approveCommunityRequestAction,
+  rejectCommunityRequestAction,
+} from "../actions";
 import { requireAdminWithSudo } from "@/lib/auth/require-admin";
 import {
   approveCommunityRequest,
@@ -43,7 +46,7 @@ const REQUEST_ID = 42;
 
 // --- Tests ---
 
-describe("approveOrgRequestAction", () => {
+describe("approveCommunityRequestAction", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockRequireAdminWithSudo.mockResolvedValue({ userId: ADMIN_USER_ID });
@@ -52,7 +55,7 @@ describe("approveOrgRequestAction", () => {
   });
 
   it("approves a request successfully", async () => {
-    const result = await approveOrgRequestAction(REQUEST_ID);
+    const result = await approveCommunityRequestAction(REQUEST_ID);
 
     expect(result).toEqual({ success: true });
     expect(mockApproveCommunityRequest).toHaveBeenCalledWith(
@@ -63,7 +66,7 @@ describe("approveOrgRequestAction", () => {
   });
 
   it("sends email notification after approval", async () => {
-    await approveOrgRequestAction(REQUEST_ID);
+    await approveCommunityRequestAction(REQUEST_ID);
 
     expect(mockFunctionsInvoke).toHaveBeenCalledWith(
       "send-org-request-notification",
@@ -77,7 +80,7 @@ describe("approveOrgRequestAction", () => {
       error: "Not authenticated",
     });
 
-    const result = await approveOrgRequestAction(REQUEST_ID);
+    const result = await approveCommunityRequestAction(REQUEST_ID);
 
     expect(result).toEqual({ success: false, error: "Not authenticated" });
     expect(mockApproveCommunityRequest).not.toHaveBeenCalled();
@@ -88,7 +91,7 @@ describe("approveOrgRequestAction", () => {
     { desc: "zero", input: 0 },
     { desc: "float", input: 1.5 },
   ])("returns validation error for $desc", async ({ input }) => {
-    const result = await approveOrgRequestAction(input);
+    const result = await approveCommunityRequestAction(input);
 
     expect(result).toEqual({
       success: false,
@@ -102,7 +105,7 @@ describe("approveOrgRequestAction", () => {
       new Error("Request not found")
     );
 
-    const result = await approveOrgRequestAction(REQUEST_ID);
+    const result = await approveCommunityRequestAction(REQUEST_ID);
 
     expect(result).toEqual({
       success: false,
@@ -111,7 +114,7 @@ describe("approveOrgRequestAction", () => {
   });
 });
 
-describe("rejectOrgRequestAction", () => {
+describe("rejectCommunityRequestAction", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockRequireAdminWithSudo.mockResolvedValue({ userId: ADMIN_USER_ID });
@@ -120,7 +123,7 @@ describe("rejectOrgRequestAction", () => {
   });
 
   it("rejects a request with a reason", async () => {
-    const result = await rejectOrgRequestAction(
+    const result = await rejectCommunityRequestAction(
       REQUEST_ID,
       "Incomplete application"
     );
@@ -135,7 +138,7 @@ describe("rejectOrgRequestAction", () => {
   });
 
   it("sends email notification after rejection", async () => {
-    await rejectOrgRequestAction(REQUEST_ID, "Spam");
+    await rejectCommunityRequestAction(REQUEST_ID, "Spam");
 
     expect(mockFunctionsInvoke).toHaveBeenCalledWith(
       "send-org-request-notification",
@@ -144,7 +147,7 @@ describe("rejectOrgRequestAction", () => {
   });
 
   it("returns an error when reason is empty", async () => {
-    const result = await rejectOrgRequestAction(REQUEST_ID, "");
+    const result = await rejectCommunityRequestAction(REQUEST_ID, "");
 
     expect(result).toEqual({
       success: false,
@@ -154,7 +157,7 @@ describe("rejectOrgRequestAction", () => {
   });
 
   it("returns an error when reason is whitespace only", async () => {
-    const result = await rejectOrgRequestAction(REQUEST_ID, "   ");
+    const result = await rejectCommunityRequestAction(REQUEST_ID, "   ");
 
     expect(result).toEqual({
       success: false,
@@ -169,7 +172,7 @@ describe("rejectOrgRequestAction", () => {
       error: "Sudo mode required",
     });
 
-    const result = await rejectOrgRequestAction(REQUEST_ID, "Spam");
+    const result = await rejectCommunityRequestAction(REQUEST_ID, "Spam");
 
     expect(result).toEqual({ success: false, error: "Sudo mode required" });
     expect(mockRejectCommunityRequest).not.toHaveBeenCalled();
@@ -178,7 +181,7 @@ describe("rejectOrgRequestAction", () => {
   it("returns a specific error when the mutation throws", async () => {
     mockRejectCommunityRequest.mockRejectedValue(new Error("DB failure"));
 
-    const result = await rejectOrgRequestAction(REQUEST_ID, "Reason");
+    const result = await rejectCommunityRequestAction(REQUEST_ID, "Reason");
 
     expect(result).toEqual({
       success: false,

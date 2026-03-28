@@ -13,14 +13,17 @@ import {
 import { Button } from "@/components/ui/button";
 
 interface TODashboardNavProps {
-  orgSlug: string;
+  communitySlug: string;
   isOwner: boolean;
 }
 
-export function TODashboardNav({ orgSlug, isOwner }: TODashboardNavProps) {
+export function TODashboardNav({
+  communitySlug,
+  isOwner,
+}: TODashboardNavProps) {
   const pathname = usePathname();
 
-  const basePath = `/to-dashboard/${orgSlug}`;
+  const basePath = `/to-dashboard/${communitySlug}`;
 
   const tabs = [
     {
@@ -85,7 +88,7 @@ export function TODashboardNav({ orgSlug, isOwner }: TODashboardNavProps) {
       </div>
 
       <Link
-        href={`/communities/${orgSlug}`}
+        href={`/communities/${communitySlug}`}
         target="_blank"
         className="shrink-0"
       >

@@ -125,7 +125,7 @@ describe("admin-analytics queries", () => {
       });
 
       expect(mockClient.from).toHaveBeenCalledWith("users");
-      expect(mockClient.from).toHaveBeenCalledWith("organizations");
+      expect(mockClient.from).toHaveBeenCalledWith("communities");
       expect(mockClient.from).toHaveBeenCalledWith("tournaments");
       expect(mockClient.from).toHaveBeenCalledWith("tournament_matches");
     });
@@ -476,7 +476,7 @@ describe("admin-analytics queries", () => {
         free: 3,
         premium: 2,
       });
-      expect(mockClient.rpc).toHaveBeenCalledWith("get_organization_counts");
+      expect(mockClient.rpc).toHaveBeenCalledWith("get_community_counts");
     });
 
     it("should return empty objects when no organizations exist", async () => {

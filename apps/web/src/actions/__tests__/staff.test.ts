@@ -96,7 +96,7 @@ describe("inviteStaffMember", () => {
     jest.clearAllMocks();
   });
 
-  it("adds a staff member and revalidates the org page by slug", async () => {
+  it("adds a staff member and revalidates the community page by slug", async () => {
     mockAddStaffMember.mockResolvedValue(undefined);
 
     const result = await inviteStaffMember(1, "user-uuid-789", "team-rocket");
@@ -124,7 +124,7 @@ describe("inviteStaffToGroup", () => {
     jest.clearAllMocks();
   });
 
-  it("adds a staff member to a specific group and revalidates the org page", async () => {
+  it("adds a staff member to a specific group and revalidates the community page", async () => {
     mockAddStaffToGroup.mockResolvedValue(undefined);
 
     const result = await inviteStaffToGroup(
@@ -158,7 +158,7 @@ describe("changeStaffRoleAction", () => {
     jest.clearAllMocks();
   });
 
-  it("changes a staff member group and revalidates the org page", async () => {
+  it("changes a staff member group and revalidates the community page", async () => {
     mockChangeStaffRole.mockResolvedValue(undefined);
 
     const result = await changeStaffRoleAction(
@@ -192,7 +192,7 @@ describe("removeStaffAction", () => {
     jest.clearAllMocks();
   });
 
-  it("removes a staff member and revalidates the org page", async () => {
+  it("removes a staff member and revalidates the community page", async () => {
     mockRemoveStaffCompletely.mockResolvedValue(undefined);
 
     const result = await removeStaffAction(1, "user-uuid-789", "team-rocket");

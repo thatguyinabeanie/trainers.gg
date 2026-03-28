@@ -22,7 +22,7 @@ export interface AuditLogEntry {
   tournament_id: number | null;
   match_id: number | null;
   game_id: number | null;
-  organization_id: number | null;
+  community_id: number | null;
   metadata: Record<string, unknown> | null;
   created_at: string;
   actor_user: {
@@ -110,13 +110,13 @@ function extractDetails(entry: AuditLogEntry): string {
 
 /**
  * Build an entity link label from the audit log entry's FK fields.
- * Shows which tournament/match/org the event relates to.
+ * Shows which tournament/match/community the event relates to.
  */
 function getEntityLabel(entry: AuditLogEntry): string {
   const parts: string[] = [];
   if (entry.tournament_id) parts.push(`Tournament #${entry.tournament_id}`);
   if (entry.match_id) parts.push(`Match #${entry.match_id}`);
-  if (entry.organization_id) parts.push(`Org #${entry.organization_id}`);
+  if (entry.community_id) parts.push(`Community #${entry.community_id}`);
   if (entry.game_id) parts.push(`Game #${entry.game_id}`);
   return parts.join(" \u00b7 ");
 }
@@ -200,7 +200,7 @@ export const columns: ColumnDef<AuditLogEntry>[] = [
     },
   },
 
-  // Entity: shows related tournament/match/org IDs
+  // Entity: shows related tournament/match/community IDs
   {
     id: "entity",
     header: "Entity",

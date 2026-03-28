@@ -41,10 +41,10 @@ export function TournamentBasicInfo({
       <div className="space-y-2">
         <Label htmlFor="organization">Community *</Label>
         <Select
-          value={formData.organizationId?.toString()}
+          value={formData.communityId?.toString()}
           onValueChange={(value) =>
             updateFormData({
-              organizationId: value ? Number(value) : undefined,
+              communityId: value ? Number(value) : undefined,
             })
           }
         >
@@ -52,9 +52,9 @@ export function TournamentBasicInfo({
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            {organizations?.map((org) => (
-              <SelectItem key={org.id} value={String(org.id)}>
-                {org.name}
+            {organizations?.map((community) => (
+              <SelectItem key={community.id} value={String(community.id)}>
+                {community.name}
               </SelectItem>
             ))}
           </SelectContent>

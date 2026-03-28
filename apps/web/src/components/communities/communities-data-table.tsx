@@ -36,27 +36,30 @@ export const communitiesColumns: ColumnDef<CommunityWithCounts>[] = [
       <SortableHeader column={column}>Name</SortableHeader>
     ),
     cell: ({ row }) => {
-      const org = row.original;
+      const community = row.original;
       return (
         <div className="flex items-center gap-3">
           <Avatar className="h-8 w-8">
-            <AvatarImage src={org.logo_url ?? undefined} alt={org.name} />
+            <AvatarImage
+              src={community.logo_url ?? undefined}
+              alt={community.name}
+            />
             <AvatarFallback className="bg-primary/10 text-primary text-xs">
-              {org.icon ? (
-                <span className="text-base">{org.icon}</span>
+              {community.icon ? (
+                <span className="text-base">{community.icon}</span>
               ) : (
-                getCommunityInitials(org.name)
+                getCommunityInitials(community.name)
               )}
             </AvatarFallback>
           </Avatar>
           <div className="flex items-center gap-2">
             <Link
-              href={`/communities/${org.slug}`}
+              href={`/communities/${community.slug}`}
               className="hover:text-primary font-medium hover:underline"
             >
-              {org.name}
+              {community.name}
             </Link>
-            {getTierBadge(org.tier)}
+            {getTierBadge(community.tier)}
           </div>
         </div>
       );
@@ -66,10 +69,10 @@ export const communitiesColumns: ColumnDef<CommunityWithCounts>[] = [
     accessorKey: "description",
     header: "Description",
     cell: ({ row }) => {
-      const org = row.original;
+      const community = row.original;
       return (
         <span className="text-muted-foreground max-w-md truncate">
-          {org.description || `@${org.slug}`}
+          {community.description || `@${community.slug}`}
         </span>
       );
     },
@@ -123,33 +126,36 @@ export function CommunitiesDataTable({ data }: CommunitiesDataTableProps) {
       {/* Mobile: Card list */}
       <div className="divide-y rounded-lg border md:hidden">
         {data.length > 0 ? (
-          data.map((org) => {
-            const activeCount = org.activeTournamentsCount || 0;
-            const totalCount = org.totalTournamentsCount || 0;
+          data.map((community) => {
+            const activeCount = community.activeTournamentsCount || 0;
+            const totalCount = community.totalTournamentsCount || 0;
 
             return (
               <Link
-                key={org.id}
-                href={`/communities/${org.slug}`}
+                key={community.id}
+                href={`/communities/${community.slug}`}
                 className="hover:bg-muted/50 flex items-center gap-3 p-3 transition-colors"
               >
                 <Avatar className="h-10 w-10 shrink-0">
-                  <AvatarImage src={org.logo_url ?? undefined} alt={org.name} />
+                  <AvatarImage
+                    src={community.logo_url ?? undefined}
+                    alt={community.name}
+                  />
                   <AvatarFallback className="bg-primary/10 text-primary text-xs">
-                    {org.icon ? (
-                      <span className="text-lg">{org.icon}</span>
+                    {community.icon ? (
+                      <span className="text-lg">{community.icon}</span>
                     ) : (
-                      getCommunityInitials(org.name)
+                      getCommunityInitials(community.name)
                     )}
                   </AvatarFallback>
                 </Avatar>
                 <div className="min-w-0 flex-1">
                   <div className="mb-0.5 flex items-center gap-2">
-                    <p className="truncate font-semibold">{org.name}</p>
-                    {getTierBadge(org.tier)}
+                    <p className="truncate font-semibold">{community.name}</p>
+                    {getTierBadge(community.tier)}
                   </div>
                   <p className="text-muted-foreground truncate text-xs">
-                    {org.description || `@${org.slug}`}
+                    {community.description || `@${community.slug}`}
                   </p>
                   <p className="text-muted-foreground mt-0.5 text-xs">
                     <Trophy className="inline h-3 w-3" /> {activeCount} active ·{" "}

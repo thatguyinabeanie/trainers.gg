@@ -243,11 +243,11 @@ function StatsCards({
 export default async function OrganizationPage({
   params,
 }: OrganizationPageProps) {
-  const { orgSlug } = await params;
+  const { orgSlug: communitySlug } = await params;
 
   // Fetch organization (cached) and current user ID (not cached) in parallel
   const [organization, currentUserId] = await Promise.all([
-    getCachedOrganization(orgSlug),
+    getCachedOrganization(communitySlug),
     getCurrentUserId(),
   ]);
 
@@ -295,7 +295,7 @@ export default async function OrganizationPage({
       <StatsCards organization={organization} />
       <CommunityTabs
         tournaments={tournaments}
-        orgSlug={orgSlug}
+        communitySlug={communitySlug}
         canManage={canManage}
       />
     </div>

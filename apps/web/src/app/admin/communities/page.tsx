@@ -48,9 +48,10 @@ export default function AdminCommunitiesPage() {
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [page, setPage] = useState(0);
 
-  // Detail sheet state — orgs
-  const [selectedOrg, setSelectedOrg] = useState<CommunityRow | null>(null);
-  const [orgSheetOpen, setOrgSheetOpen] = useState(false);
+  // Detail sheet state — communities
+  const [selectedCommunity, setSelectedCommunity] =
+    useState<CommunityRow | null>(null);
+  const [communitySheetOpen, setCommunitySheetOpen] = useState(false);
 
   // Detail sheet state — requests
   const [selectedRequest, setSelectedRequest] =
@@ -90,7 +91,7 @@ export default function AdminCommunitiesPage() {
     [debouncedSearch, statusFilter, page, refreshKey]
   );
 
-  // Fetch org requests (for "All" and "Requests" views)
+  // Fetch community requests (for "All" and "Requests" views)
   // When in "All" view, only show pending requests
   const requestsQuery = useSupabaseQuery(
     async (supabase) => {
@@ -110,7 +111,7 @@ export default function AdminCommunitiesPage() {
   const requests = (requestsQuery.data?.data ??
     []) as unknown as CommunityRequestRow[];
 
-  // For pagination: use org count when not in requests-only view
+  // For pagination: use community count when not in requests-only view
   const totalCount = isRequestsOnly
     ? ((requestsQuery.data?.count as number) ?? 0)
     : ((orgsQuery.data?.count as number) ?? 0);
@@ -206,8 +207,8 @@ export default function AdminCommunitiesPage() {
             manualPagination
             emptyMessage="No communities found"
             onRowClick={(row) => {
-              setSelectedOrg(row);
-              setOrgSheetOpen(true);
+              setSelectedCommunity(row);
+              setCommunitySheetOpen(true);
             }}
           />
 
@@ -234,7 +235,7 @@ export default function AdminCommunitiesPage() {
         </>
       )}
 
-      {/* Pagination (for org-filtered or requests-only views) */}
+      {/* Pagination (for community-filtered or requests-only views) */}
       {!isLoading && totalPages > 1 && !isAll && (
         <div className="flex items-center justify-between">
           <div className="text-muted-foreground text-sm">
@@ -263,9 +264,9 @@ export default function AdminCommunitiesPage() {
 
       {/* Detail sheets */}
       <CommunityDetailSheet
-        org={selectedOrg}
-        open={orgSheetOpen}
-        onOpenChange={setOrgSheetOpen}
+        community={selectedCommunity}
+        open={communitySheetOpen}
+        onOpenChange={setCommunitySheetOpen}
       />
       <RequestDetailSheet
         request={selectedRequest}

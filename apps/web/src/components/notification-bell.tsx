@@ -82,7 +82,7 @@ export function NotificationBell({ userId }: NotificationBellProps) {
     [userId, refreshKey]
   );
 
-  // Fetch org invitations
+  // Fetch community invitations
   const invitationsQueryFn = useCallback(
     (client: TypedSupabaseClient) => {
       if (!userId) return Promise.resolve([]);

@@ -4,7 +4,7 @@ import {
   type TypedClient,
   getCurrentUser,
   getCurrentAlt,
-  checkOrgPermission,
+  checkCommunityPermission,
 } from "./helpers";
 
 /**
@@ -162,16 +162,16 @@ export async function updateRegistrationStatus(
 
   const { data: tournament } = await supabase
     .from("tournaments")
-    .select("organization_id")
+    .select("community_id")
     .eq("id", registration.tournament_id)
     .single();
 
   if (!tournament) throw new Error("Tournament not found");
 
   // Verify permission
-  const hasPermission = await checkOrgPermission(
+  const hasPermission = await checkCommunityPermission(
     supabase,
-    tournament.organization_id,
+    tournament.community_id,
     "tournament.manage"
   );
   if (!hasPermission) {

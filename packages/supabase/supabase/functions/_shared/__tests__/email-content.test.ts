@@ -29,11 +29,11 @@ describe("buildOrgApprovedContent", () => {
     expect(content.subject).toBe("Your organization has been approved!");
   });
 
-  it("includes the org name in the body", () => {
+  it("includes the community name in the body", () => {
     expect(content.body).toContain("Pallet Town League");
   });
 
-  it("includes a CTA linking to the org page", () => {
+  it("includes a CTA linking to the community page", () => {
     expect(content.body).toContain("/organizations/pallet-town-league");
     expect(content.body).toContain("View Your Organization");
   });
@@ -43,7 +43,7 @@ describe("buildOrgApprovedContent", () => {
     expect(content.text).toContain("approved");
   });
 
-  it("escapes HTML in org name", () => {
+  it("escapes HTML in community name", () => {
     const xss = buildOrgApprovedContent(
       "<script>alert('xss')</script>",
       "test"

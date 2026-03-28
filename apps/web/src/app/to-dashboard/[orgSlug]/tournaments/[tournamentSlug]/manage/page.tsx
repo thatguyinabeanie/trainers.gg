@@ -11,9 +11,12 @@ interface PageProps {
 }
 
 export default function TournamentManagePage({ params }: PageProps) {
-  const { orgSlug, tournamentSlug } = use(params);
+  const { orgSlug: communitySlug, tournamentSlug } = use(params);
 
   return (
-    <TournamentManageClient orgSlug={orgSlug} tournamentSlug={tournamentSlug} />
+    <TournamentManageClient
+      communitySlug={communitySlug}
+      tournamentSlug={tournamentSlug}
+    />
   );
 }

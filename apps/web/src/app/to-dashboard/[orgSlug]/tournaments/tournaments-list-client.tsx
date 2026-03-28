@@ -18,8 +18,8 @@ import {
 } from "@/components/tournaments/tournament-list";
 
 interface TournamentsListClientProps {
-  organizationId: number;
-  orgSlug: string;
+  communityId: number;
+  communitySlug: string;
   initialStatus?: string;
 }
 
@@ -41,8 +41,8 @@ const statusTabs: { value: TournamentStatus; label: string }[] = [
 ];
 
 export function TournamentsListClient({
-  organizationId,
-  orgSlug,
+  communityId,
+  communitySlug,
   initialStatus,
 }: TournamentsListClientProps) {
   const router = useRouter();
@@ -53,18 +53,18 @@ export function TournamentsListClient({
     "all") as TournamentStatus;
 
   const queryFn = (supabase: Parameters<typeof listCommunityTournaments>[0]) =>
-    listCommunityTournaments(supabase, organizationId, {
+    listCommunityTournaments(supabase, communityId, {
       status: currentStatus === "all" ? undefined : currentStatus,
       limit: 50,
     });
 
   const { data, isLoading, error } = useSupabaseQuery(queryFn, [
-    organizationId,
+    communityId,
     currentStatus,
   ]);
 
   const tournaments = data?.tournaments ?? [];
-  const basePath = `/to-dashboard/${orgSlug}`;
+  const basePath = `/to-dashboard/${communitySlug}`;
   const hasError = !!error;
 
   const handleStatusChange = (status: string) => {

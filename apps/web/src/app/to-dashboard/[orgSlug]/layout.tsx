@@ -15,7 +15,7 @@ export default async function OrgDashboardLayout({
   children,
   params,
 }: LayoutProps) {
-  const { orgSlug } = await params;
+  const { orgSlug: communitySlug } = await params;
   const supabase = await createClient();
 
   const {
@@ -23,11 +23,11 @@ export default async function OrgDashboardLayout({
   } = await supabase.auth.getUser();
 
   if (!user) {
-    redirect(`/sign-in?redirect=/to-dashboard/${orgSlug}`);
+    redirect(`/sign-in?redirect=/to-dashboard/${communitySlug}`);
   }
 
   // Get organization
-  const organization = await getCommunityBySlug(supabase, orgSlug);
+  const organization = await getCommunityBySlug(supabase, communitySlug);
 
   if (!organization) {
     notFound();
@@ -42,7 +42,7 @@ export default async function OrgDashboardLayout({
   );
 
   if (!hasAccess) {
-    redirect(`/communities/${orgSlug}`);
+    redirect(`/communities/${communitySlug}`);
   }
 
   // isOwner is needed for UI (to show owner-only features in nav)
@@ -76,7 +76,7 @@ export default async function OrgDashboardLayout({
       </div>
 
       {/* Navigation */}
-      <TODashboardNav orgSlug={orgSlug} isOwner={isOwner} />
+      <TODashboardNav communitySlug={communitySlug} isOwner={isOwner} />
 
       {/* Content */}
       {children}

@@ -71,20 +71,20 @@ export const SEED_CONFIG = {
   WEEKS_OF_PAST_TOURNAMENTS: 1,
   WEEKS_OF_FUTURE_TOURNAMENTS: 0,
 
-  // Each org runs 1 main tournament per week (no practice)
-  TOURNAMENTS_PER_WEEK_PER_ORG: 1,
+  // Each community runs 1 main tournament per week (no practice)
+  TOURNAMENTS_PER_WEEK_PER_COMMUNITY: 1,
 
   // Flagship tournament configuration (63 players — clean slate for round management testing)
   FLAGSHIP_TOURNAMENT_SIZE: 63,
   FLAGSHIP_TOURNAMENTS: [
     {
-      orgSlug: "vgc-league",
+      communitySlug: "vgc-league",
       week: 2,
       name: "VGC League Week 2 Championship",
       active: true,
     },
     {
-      orgSlug: "pallet-town",
+      communitySlug: "pallet-town",
       week: 2,
       name: "Pallet Town Trainers Week 2 Championship",
       active: true,

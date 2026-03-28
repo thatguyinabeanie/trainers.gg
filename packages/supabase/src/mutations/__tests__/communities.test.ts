@@ -50,10 +50,10 @@ describe("Community Mutations", () => {
   });
 
   describe("createCommunity", () => {
-    const orgData = {
+    const communityData = {
       name: "Test Org",
       slug: "test-org",
-      description: "A test organization",
+      description: "A test community",
       logoUrl: "https://test.org/logo.png",
     };
 
@@ -63,8 +63,8 @@ describe("Community Mutations", () => {
       overrides?: Partial<ReturnType<typeof organizationFactory.build>>
     ) {
       const mockOrg = organizationFactory.build({
-        name: orgData.name,
-        slug: orgData.slug,
+        name: communityData.name,
+        slug: communityData.slug,
         ...overrides,
       });
 
@@ -75,7 +75,7 @@ describe("Community Mutations", () => {
         single: jest.fn().mockResolvedValue({ data: null, error: null }),
       } as unknown as MockQueryBuilder);
 
-      // Create organization
+      // Create community
       const insertMock = jest.fn().mockReturnThis();
       fromSpy.mockReturnValueOnce({
         insert: insertMock,
@@ -97,16 +97,16 @@ describe("Community Mutations", () => {
       } as MockAuthResponse);
     });
 
-    it("should create organization successfully", async () => {
+    it("should create community successfully", async () => {
       const fromSpy = jest.spyOn(mockClient, "from");
       const { mockOrg } = mockSuccessfulCreate(fromSpy);
 
-      const result = await createCommunity(mockClient, orgData);
+      const result = await createCommunity(mockClient, communityData);
 
       expect(result).toEqual(mockOrg);
     });
 
-    it("should create organization with valid social links", async () => {
+    it("should create community with valid social links", async () => {
       const fromSpy = jest.spyOn(mockClient, "from");
       const socialLinks: CommunitySocialLink[] = [
         { platform: "discord", url: "https://discord.gg/test" },
@@ -114,7 +114,7 @@ describe("Community Mutations", () => {
       ];
       const { insertMock } = mockSuccessfulCreate(fromSpy);
 
-      await createCommunity(mockClient, { ...orgData, socialLinks });
+      await createCommunity(mockClient, { ...communityData, socialLinks });
 
       expect(insertMock).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -123,11 +123,11 @@ describe("Community Mutations", () => {
       );
     });
 
-    it("should create organization with empty social links array", async () => {
+    it("should create community with empty social links array", async () => {
       const fromSpy = jest.spyOn(mockClient, "from");
       const { insertMock } = mockSuccessfulCreate(fromSpy);
 
-      await createCommunity(mockClient, { ...orgData, socialLinks: [] });
+      await createCommunity(mockClient, { ...communityData, socialLinks: [] });
 
       expect(insertMock).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -161,7 +161,7 @@ describe("Community Mutations", () => {
 
         await expect(
           createCommunity(mockClient, {
-            ...orgData,
+            ...communityData,
             socialLinks: links as CommunitySocialLink[],
           })
         ).rejects.toThrow("Invalid social links");
@@ -206,21 +206,25 @@ describe("Community Mutations", () => {
         data: { user: null },
       } as MockAuthResponse);
 
-      await expect(createCommunity(mockClient, orgData)).rejects.toThrow(
+      await expect(createCommunity(mockClient, communityData)).rejects.toThrow(
         "Not authenticated"
       );
     });
 
     it("should throw error if slug already taken", async () => {
-      const existingOrg = organizationFactory.build({ slug: orgData.slug });
+      const existingCommunity = organizationFactory.build({
+        slug: communityData.slug,
+      });
       (mockClient.from as jest.Mock).mockReturnValue({
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
-        single: jest.fn().mockResolvedValue({ data: existingOrg, error: null }),
+        single: jest
+          .fn()
+          .mockResolvedValue({ data: existingCommunity, error: null }),
       });
 
-      await expect(createCommunity(mockClient, orgData)).rejects.toThrow(
-        "Organization slug is already taken"
+      await expect(createCommunity(mockClient, communityData)).rejects.toThrow(
+        "Community slug is already taken"
       );
     });
 
@@ -240,14 +244,14 @@ describe("Community Mutations", () => {
         single: jest.fn().mockResolvedValue({ data: null, error: dbError }),
       } as unknown as MockQueryBuilder);
 
-      await expect(createCommunity(mockClient, orgData)).rejects.toThrow(
+      await expect(createCommunity(mockClient, communityData)).rejects.toThrow(
         "Database error"
       );
     });
   });
 
   describe("updateCommunity", () => {
-    const orgId = 1;
+    const communityId = 1;
     const updates = {
       name: "Updated Name",
       description: "Updated description",
@@ -264,7 +268,7 @@ describe("Community Mutations", () => {
         eq: jest.fn().mockReturnThis(),
         single: jest.fn().mockResolvedValue({
           data: organizationFactory.build({
-            id: orgId,
+            id: communityId,
             owner_user_id: ownerUserId,
           }),
           error: null,
@@ -291,11 +295,11 @@ describe("Community Mutations", () => {
       } as MockAuthResponse);
     });
 
-    it("should update organization successfully", async () => {
+    it("should update community successfully", async () => {
       const fromSpy = jest.spyOn(mockClient, "from");
       mockSuccessfulUpdate(fromSpy);
 
-      const result = await updateCommunity(mockClient, orgId, updates);
+      const result = await updateCommunity(mockClient, communityId, updates);
 
       expect(result).toEqual({ success: true });
     });
@@ -304,7 +308,7 @@ describe("Community Mutations", () => {
       const fromSpy = jest.spyOn(mockClient, "from");
       const { updateMock } = mockSuccessfulUpdate(fromSpy);
 
-      await updateCommunity(mockClient, orgId, { name: "New Name" });
+      await updateCommunity(mockClient, communityId, { name: "New Name" });
 
       expect(updateMock).toHaveBeenCalledWith({ name: "New Name" });
     });
@@ -332,7 +336,7 @@ describe("Community Mutations", () => {
       const fromSpy = jest.spyOn(mockClient, "from");
       const { updateMock } = mockSuccessfulUpdate(fromSpy);
 
-      await updateCommunity(mockClient, orgId, { socialLinks: links });
+      await updateCommunity(mockClient, communityId, { socialLinks: links });
 
       expect(updateMock).toHaveBeenCalledWith({
         social_links: links,
@@ -357,7 +361,7 @@ describe("Community Mutations", () => {
         mockOwnershipCheck(fromSpy, mockUser.id);
 
         await expect(
-          updateCommunity(mockClient, orgId, {
+          updateCommunity(mockClient, communityId, {
             socialLinks: links as CommunitySocialLink[],
           })
         ).rejects.toThrow("Invalid social links");
@@ -369,21 +373,21 @@ describe("Community Mutations", () => {
         data: { user: null },
       } as MockAuthResponse);
 
-      await expect(updateCommunity(mockClient, orgId, updates)).rejects.toThrow(
-        "Not authenticated"
-      );
+      await expect(
+        updateCommunity(mockClient, communityId, updates)
+      ).rejects.toThrow("Not authenticated");
     });
 
-    it("should throw error if organization not found", async () => {
+    it("should throw error if community not found", async () => {
       (mockClient.from as jest.Mock).mockReturnValue({
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
         single: jest.fn().mockResolvedValue({ data: null, error: null }),
       });
 
-      await expect(updateCommunity(mockClient, orgId, updates)).rejects.toThrow(
-        "Organization not found"
-      );
+      await expect(
+        updateCommunity(mockClient, communityId, updates)
+      ).rejects.toThrow("Community not found");
     });
 
     it("should throw error if user is not owner", async () => {
@@ -392,16 +396,16 @@ describe("Community Mutations", () => {
         eq: jest.fn().mockReturnThis(),
         single: jest.fn().mockResolvedValue({
           data: organizationFactory.build({
-            id: orgId,
+            id: communityId,
             owner_user_id: "different-user",
           }),
           error: null,
         }),
       });
 
-      await expect(updateCommunity(mockClient, orgId, updates)).rejects.toThrow(
-        "You don't have permission to update this organization"
-      );
+      await expect(
+        updateCommunity(mockClient, communityId, updates)
+      ).rejects.toThrow("You don't have permission to update this community");
     });
 
     it("should propagate database errors", async () => {
@@ -414,14 +418,14 @@ describe("Community Mutations", () => {
         eq: jest.fn().mockResolvedValue({ error: dbError }),
       } as unknown as MockQueryBuilder);
 
-      await expect(updateCommunity(mockClient, orgId, updates)).rejects.toThrow(
-        "Update failed"
-      );
+      await expect(
+        updateCommunity(mockClient, communityId, updates)
+      ).rejects.toThrow("Update failed");
     });
   });
 
   describe("inviteToCommunity", () => {
-    const orgId = 1;
+    const communityId = 1;
     const invitedUserId = "user-456";
 
     beforeEach(() => {
@@ -434,7 +438,7 @@ describe("Community Mutations", () => {
       const fromSpy = jest.spyOn(mockClient, "from");
       const mockInvitation = {
         id: 1,
-        organization_id: orgId,
+        community_id: communityId,
         invited_user_id: invitedUserId,
       };
 
@@ -462,7 +466,11 @@ describe("Community Mutations", () => {
         }),
       } as unknown as MockQueryBuilder);
 
-      const result = await inviteToCommunity(mockClient, orgId, invitedUserId);
+      const result = await inviteToCommunity(
+        mockClient,
+        communityId,
+        invitedUserId
+      );
 
       expect(result).toEqual(mockInvitation);
     });
@@ -492,7 +500,7 @@ describe("Community Mutations", () => {
         }),
       } as unknown as MockQueryBuilder);
 
-      await inviteToCommunity(mockClient, orgId, invitedUserId);
+      await inviteToCommunity(mockClient, communityId, invitedUserId);
 
       expect(insertMock).toHaveBeenCalledWith(
         expect.objectContaining({ expires_at: mockExpiryDate })
@@ -505,7 +513,7 @@ describe("Community Mutations", () => {
       } as MockAuthResponse);
 
       await expect(
-        inviteToCommunity(mockClient, orgId, invitedUserId)
+        inviteToCommunity(mockClient, communityId, invitedUserId)
       ).rejects.toThrow("Not authenticated");
     });
 
@@ -517,8 +525,8 @@ describe("Community Mutations", () => {
       });
 
       await expect(
-        inviteToCommunity(mockClient, orgId, invitedUserId)
-      ).rejects.toThrow("User is already staff of this organization");
+        inviteToCommunity(mockClient, communityId, invitedUserId)
+      ).rejects.toThrow("User is already staff of this community");
     });
 
     it("should throw error if pending invitation exists", async () => {
@@ -539,7 +547,7 @@ describe("Community Mutations", () => {
       } as unknown as MockQueryBuilder);
 
       await expect(
-        inviteToCommunity(mockClient, orgId, invitedUserId)
+        inviteToCommunity(mockClient, communityId, invitedUserId)
       ).rejects.toThrow("User already has a pending invitation");
     });
   });
@@ -744,7 +752,7 @@ describe("Community Mutations", () => {
   });
 
   describe("leaveCommunity", () => {
-    const orgId = 1;
+    const communityId = 1;
 
     beforeEach(() => {
       (mockClient.auth.getUser as jest.Mock).mockResolvedValue({
@@ -752,7 +760,7 @@ describe("Community Mutations", () => {
       } as MockAuthResponse);
     });
 
-    it("should leave organization successfully", async () => {
+    it("should leave community successfully", async () => {
       const fromSpy = jest.spyOn(mockClient, "from");
 
       // Check user is not owner
@@ -774,7 +782,7 @@ describe("Community Mutations", () => {
       // Mock second eq call result
       (mockClient.eq as jest.Mock).mockResolvedValueOnce({ error: null });
 
-      const result = await leaveCommunity(mockClient, orgId);
+      const result = await leaveCommunity(mockClient, communityId);
 
       expect(result).toEqual({ success: true });
     });
@@ -784,7 +792,7 @@ describe("Community Mutations", () => {
         data: { user: null },
       } as MockAuthResponse);
 
-      await expect(leaveCommunity(mockClient, orgId)).rejects.toThrow(
+      await expect(leaveCommunity(mockClient, communityId)).rejects.toThrow(
         "Not authenticated"
       );
     });
@@ -799,8 +807,8 @@ describe("Community Mutations", () => {
         }),
       });
 
-      await expect(leaveCommunity(mockClient, orgId)).rejects.toThrow(
-        "Organization owner cannot leave. Transfer ownership first."
+      await expect(leaveCommunity(mockClient, communityId)).rejects.toThrow(
+        "Community owner cannot leave. Transfer ownership first."
       );
     });
 
@@ -823,14 +831,14 @@ describe("Community Mutations", () => {
         delete: jest.fn().mockReturnValue({ eq: firstEqMock }),
       } as unknown as MockQueryBuilder);
 
-      await expect(leaveCommunity(mockClient, orgId)).rejects.toThrow(
+      await expect(leaveCommunity(mockClient, communityId)).rejects.toThrow(
         "Delete failed"
       );
     });
   });
 
   describe("removeStaff", () => {
-    const orgId = 1;
+    const communityId = 1;
     const staffUserId = "user-456";
 
     beforeEach(() => {
@@ -860,7 +868,7 @@ describe("Community Mutations", () => {
 
       (mockClient.eq as jest.Mock).mockResolvedValueOnce({ error: null });
 
-      const result = await removeStaff(mockClient, orgId, staffUserId);
+      const result = await removeStaff(mockClient, communityId, staffUserId);
 
       expect(result).toEqual({ success: true });
     });
@@ -870,21 +878,21 @@ describe("Community Mutations", () => {
         data: { user: null },
       } as MockAuthResponse);
 
-      await expect(removeStaff(mockClient, orgId, staffUserId)).rejects.toThrow(
-        "Not authenticated"
-      );
+      await expect(
+        removeStaff(mockClient, communityId, staffUserId)
+      ).rejects.toThrow("Not authenticated");
     });
 
-    it("should throw error if organization not found", async () => {
+    it("should throw error if community not found", async () => {
       (mockClient.from as jest.Mock).mockReturnValue({
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
         single: jest.fn().mockResolvedValue({ data: null, error: null }),
       });
 
-      await expect(removeStaff(mockClient, orgId, staffUserId)).rejects.toThrow(
-        "Organization not found"
-      );
+      await expect(
+        removeStaff(mockClient, communityId, staffUserId)
+      ).rejects.toThrow("Community not found");
     });
 
     it("should throw error if user is not owner", async () => {
@@ -897,9 +905,9 @@ describe("Community Mutations", () => {
         }),
       });
 
-      await expect(removeStaff(mockClient, orgId, staffUserId)).rejects.toThrow(
-        "Only the owner can remove staff"
-      );
+      await expect(
+        removeStaff(mockClient, communityId, staffUserId)
+      ).rejects.toThrow("Only the owner can remove staff");
     });
 
     it("should throw error if trying to remove owner", async () => {
@@ -912,14 +920,14 @@ describe("Community Mutations", () => {
         }),
       });
 
-      await expect(removeStaff(mockClient, orgId, mockUser.id)).rejects.toThrow(
-        "Cannot remove the owner"
-      );
+      await expect(
+        removeStaff(mockClient, communityId, mockUser.id)
+      ).rejects.toThrow("Cannot remove the owner");
     });
   });
 
   describe("addStaffMember", () => {
-    const orgId = 1;
+    const communityId = 1;
     const userId = "user-456";
 
     beforeEach(() => {
@@ -932,7 +940,7 @@ describe("Community Mutations", () => {
       const fromSpy = jest.spyOn(mockClient, "from");
       const rpcMock = mockClient.rpc as jest.Mock;
 
-      // isOrgOwner check - user IS the owner (will short circuit permission check)
+      // isCommunityOwner check - user IS the owner (will short circuit permission check)
       fromSpy.mockReturnValueOnce({
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
@@ -942,7 +950,7 @@ describe("Community Mutations", () => {
         }),
       } as unknown as MockQueryBuilder);
 
-      // checkOrgPermission is still called (the logic is !ownerCheck && !permCheck)
+      // checkCommunityPermission is still called (the logic is !ownerCheck && !permCheck)
       // Both are evaluated, so we need to mock the RPC
       rpcMock.mockResolvedValueOnce({ data: true, error: null });
 
@@ -958,7 +966,7 @@ describe("Community Mutations", () => {
         insert: jest.fn().mockResolvedValue({ error: null }),
       } as unknown as MockQueryBuilder);
 
-      const result = await addStaffMember(mockClient, orgId, userId);
+      const result = await addStaffMember(mockClient, communityId, userId);
 
       expect(result).toEqual({ success: true });
     });
@@ -967,7 +975,7 @@ describe("Community Mutations", () => {
       const fromSpy = jest.spyOn(mockClient, "from");
       const rpcMock = mockClient.rpc as jest.Mock;
 
-      // isOrgOwner check - get org
+      // isCommunityOwner check - get community
       fromSpy.mockReturnValueOnce({
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
@@ -977,7 +985,7 @@ describe("Community Mutations", () => {
         }),
       } as unknown as MockQueryBuilder);
 
-      // checkOrgPermission - has permission
+      // checkCommunityPermission - has permission
       rpcMock.mockResolvedValueOnce({ data: true, error: null });
 
       // Check existing staff
@@ -992,12 +1000,12 @@ describe("Community Mutations", () => {
         insert: jest.fn().mockResolvedValue({ error: null }),
       } as unknown as MockQueryBuilder);
 
-      const result = await addStaffMember(mockClient, orgId, userId);
+      const result = await addStaffMember(mockClient, communityId, userId);
 
       expect(result).toEqual({ success: true });
-      expect(rpcMock).toHaveBeenCalledWith("has_org_permission", {
-        org_id: orgId,
-        permission_key: "org.staff.manage",
+      expect(rpcMock).toHaveBeenCalledWith("has_community_permission", {
+        p_community_id: communityId,
+        permission_key: "community.staff.manage",
       });
     });
 
@@ -1006,16 +1014,16 @@ describe("Community Mutations", () => {
         data: { user: null },
       } as MockAuthResponse);
 
-      await expect(addStaffMember(mockClient, orgId, userId)).rejects.toThrow(
-        "Not authenticated"
-      );
+      await expect(
+        addStaffMember(mockClient, communityId, userId)
+      ).rejects.toThrow("Not authenticated");
     });
 
     it("should throw error if no permission", async () => {
       const fromSpy = jest.spyOn(mockClient, "from");
       const rpcMock = mockClient.rpc as jest.Mock;
 
-      // isOrgOwner check - not owner
+      // isCommunityOwner check - not owner
       fromSpy.mockReturnValueOnce({
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
@@ -1025,19 +1033,19 @@ describe("Community Mutations", () => {
         }),
       } as unknown as MockQueryBuilder);
 
-      // checkOrgPermission - no permission
+      // checkCommunityPermission - no permission
       rpcMock.mockResolvedValueOnce({ data: false, error: null });
 
-      await expect(addStaffMember(mockClient, orgId, userId)).rejects.toThrow(
-        "You don't have permission to manage staff"
-      );
+      await expect(
+        addStaffMember(mockClient, communityId, userId)
+      ).rejects.toThrow("You don't have permission to manage staff");
     });
 
     it("should throw error if user is already staff", async () => {
       const fromSpy = jest.spyOn(mockClient, "from");
       const rpcMock = mockClient.rpc as jest.Mock;
 
-      // isOrgOwner check
+      // isCommunityOwner check
       fromSpy.mockReturnValueOnce({
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
@@ -1060,14 +1068,14 @@ describe("Community Mutations", () => {
         }),
       } as unknown as MockQueryBuilder);
 
-      await expect(addStaffMember(mockClient, orgId, userId)).rejects.toThrow(
-        "User is already a staff member"
-      );
+      await expect(
+        addStaffMember(mockClient, communityId, userId)
+      ).rejects.toThrow("User is already a staff member");
     });
   });
 
   describe("addStaffToGroup", () => {
-    const orgId = 1;
+    const communityId = 1;
     const userId = "user-456";
     const groupId = 10;
 
@@ -1081,7 +1089,7 @@ describe("Community Mutations", () => {
       const fromSpy = jest.spyOn(mockClient, "from");
       const rpcMock = mockClient.rpc as jest.Mock;
 
-      // isOrgOwner check - get org (not owner)
+      // isCommunityOwner check - get community (not owner)
       fromSpy.mockReturnValueOnce({
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
@@ -1091,7 +1099,7 @@ describe("Community Mutations", () => {
         }),
       } as unknown as MockQueryBuilder);
 
-      // checkOrgPermission - has permission
+      // checkCommunityPermission - has permission
       rpcMock.mockResolvedValueOnce({ data: true, error: null });
 
       // Verify group
@@ -1099,7 +1107,7 @@ describe("Community Mutations", () => {
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
         single: jest.fn().mockResolvedValue({
-          data: { id: groupId, organization_id: orgId },
+          data: { id: groupId, community_id: communityId },
           error: null,
         }),
       } as unknown as MockQueryBuilder);
@@ -1126,7 +1134,7 @@ describe("Community Mutations", () => {
         insert: jest.fn().mockResolvedValue({ error: null }),
       } as unknown as MockQueryBuilder);
 
-      // Get org groups
+      // Get community groups
       fromSpy.mockReturnValueOnce({
         select: jest.fn().mockReturnThis(),
         eq: jest
@@ -1152,7 +1160,12 @@ describe("Community Mutations", () => {
         insert: jest.fn().mockResolvedValue({ error: null }),
       } as unknown as MockQueryBuilder);
 
-      const result = await addStaffToGroup(mockClient, orgId, userId, groupId);
+      const result = await addStaffToGroup(
+        mockClient,
+        communityId,
+        userId,
+        groupId
+      );
 
       expect(result).toEqual({ success: true });
     });
@@ -1161,7 +1174,7 @@ describe("Community Mutations", () => {
       const fromSpy = jest.spyOn(mockClient, "from");
       const rpcMock = mockClient.rpc as jest.Mock;
 
-      // isOrgOwner check
+      // isCommunityOwner check
       fromSpy.mockReturnValueOnce({
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
@@ -1171,7 +1184,7 @@ describe("Community Mutations", () => {
         }),
       } as unknown as MockQueryBuilder);
 
-      // checkOrgPermission RPC
+      // checkCommunityPermission RPC
       rpcMock.mockResolvedValueOnce({ data: true, error: null });
 
       // Verify group (not found)
@@ -1182,15 +1195,15 @@ describe("Community Mutations", () => {
       } as unknown as MockQueryBuilder);
 
       await expect(
-        addStaffToGroup(mockClient, orgId, userId, groupId)
+        addStaffToGroup(mockClient, communityId, userId, groupId)
       ).rejects.toThrow("Group not found");
     });
 
-    it("should throw error if group does not belong to organization", async () => {
+    it("should throw error if group does not belong to community", async () => {
       const fromSpy = jest.spyOn(mockClient, "from");
       const rpcMock = mockClient.rpc as jest.Mock;
 
-      // isOrgOwner check
+      // isCommunityOwner check
       fromSpy.mockReturnValueOnce({
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
@@ -1200,29 +1213,29 @@ describe("Community Mutations", () => {
         }),
       } as unknown as MockQueryBuilder);
 
-      // checkOrgPermission RPC
+      // checkCommunityPermission RPC
       rpcMock.mockResolvedValueOnce({ data: true, error: null });
 
-      // Verify group (belongs to different org)
+      // Verify group (belongs to different community)
       fromSpy.mockReturnValueOnce({
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
         single: jest.fn().mockResolvedValue({
-          data: { id: groupId, organization_id: 999 },
+          data: { id: groupId, community_id: 999 },
           error: null,
         }),
       } as unknown as MockQueryBuilder);
 
       await expect(
-        addStaffToGroup(mockClient, orgId, userId, groupId)
-      ).rejects.toThrow("Group does not belong to this organization");
+        addStaffToGroup(mockClient, communityId, userId, groupId)
+      ).rejects.toThrow("Group does not belong to this community");
     });
 
     it("should throw error if group has no role", async () => {
       const fromSpy = jest.spyOn(mockClient, "from");
       const rpcMock = mockClient.rpc as jest.Mock;
 
-      // isOrgOwner check
+      // isCommunityOwner check
       fromSpy.mockReturnValueOnce({
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
@@ -1232,7 +1245,7 @@ describe("Community Mutations", () => {
         }),
       } as unknown as MockQueryBuilder);
 
-      // checkOrgPermission RPC
+      // checkCommunityPermission RPC
       rpcMock.mockResolvedValueOnce({ data: true, error: null });
 
       // Verify group
@@ -1240,7 +1253,7 @@ describe("Community Mutations", () => {
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
         single: jest.fn().mockResolvedValue({
-          data: { id: groupId, organization_id: orgId },
+          data: { id: groupId, community_id: communityId },
           error: null,
         }),
       } as unknown as MockQueryBuilder);
@@ -1253,13 +1266,13 @@ describe("Community Mutations", () => {
       } as unknown as MockQueryBuilder);
 
       await expect(
-        addStaffToGroup(mockClient, orgId, userId, groupId)
+        addStaffToGroup(mockClient, communityId, userId, groupId)
       ).rejects.toThrow("Group has no associated role");
     });
   });
 
   describe("removeStaffFromGroup", () => {
-    const orgId = 1;
+    const communityId = 1;
     const userId = "user-456";
 
     beforeEach(() => {
@@ -1272,7 +1285,7 @@ describe("Community Mutations", () => {
       const fromSpy = jest.spyOn(mockClient, "from");
       const rpcMock = mockClient.rpc as jest.Mock;
 
-      // isOrgOwner check
+      // isCommunityOwner check
       fromSpy.mockReturnValueOnce({
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
@@ -1282,10 +1295,10 @@ describe("Community Mutations", () => {
         }),
       } as unknown as MockQueryBuilder);
 
-      // checkOrgPermission RPC (both checks are evaluated)
+      // checkCommunityPermission RPC (both checks are evaluated)
       rpcMock.mockResolvedValueOnce({ data: true, error: null });
 
-      // Get org groups
+      // Get community groups
       fromSpy.mockReturnValueOnce({
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockResolvedValue({
@@ -1310,7 +1323,11 @@ describe("Community Mutations", () => {
         in: jest.fn().mockResolvedValue({ error: null }),
       } as unknown as MockQueryBuilder);
 
-      const result = await removeStaffFromGroup(mockClient, orgId, userId);
+      const result = await removeStaffFromGroup(
+        mockClient,
+        communityId,
+        userId
+      );
 
       expect(result).toEqual({ success: true });
     });
@@ -1319,7 +1336,7 @@ describe("Community Mutations", () => {
       const fromSpy = jest.spyOn(mockClient, "from");
       const rpcMock = mockClient.rpc as jest.Mock;
 
-      // isOrgOwner check
+      // isCommunityOwner check
       fromSpy.mockReturnValueOnce({
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
@@ -1329,16 +1346,20 @@ describe("Community Mutations", () => {
         }),
       } as unknown as MockQueryBuilder);
 
-      // checkOrgPermission RPC (both checks are evaluated)
+      // checkCommunityPermission RPC (both checks are evaluated)
       rpcMock.mockResolvedValueOnce({ data: true, error: null });
 
-      // Get org groups - empty
+      // Get community groups - empty
       fromSpy.mockReturnValueOnce({
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockResolvedValue({ data: [], error: null }),
       } as unknown as MockQueryBuilder);
 
-      const result = await removeStaffFromGroup(mockClient, orgId, userId);
+      const result = await removeStaffFromGroup(
+        mockClient,
+        communityId,
+        userId
+      );
 
       expect(result).toEqual({ success: true });
     });
@@ -1349,13 +1370,13 @@ describe("Community Mutations", () => {
       } as MockAuthResponse);
 
       await expect(
-        removeStaffFromGroup(mockClient, orgId, userId)
+        removeStaffFromGroup(mockClient, communityId, userId)
       ).rejects.toThrow("Not authenticated");
     });
   });
 
   describe("changeStaffRole", () => {
-    const orgId = 1;
+    const communityId = 1;
     const userId = "user-456";
     const newGroupId = 10;
 
@@ -1369,7 +1390,7 @@ describe("Community Mutations", () => {
       const fromSpy = jest.spyOn(mockClient, "from");
       const rpcMock = mockClient.rpc as jest.Mock;
 
-      // changeStaffRole - isOrgOwner check
+      // changeStaffRole - isCommunityOwner check
       fromSpy.mockReturnValueOnce({
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
@@ -1379,10 +1400,10 @@ describe("Community Mutations", () => {
         }),
       } as unknown as MockQueryBuilder);
 
-      // changeStaffRole - checkOrgPermission RPC
+      // changeStaffRole - checkCommunityPermission RPC
       rpcMock.mockResolvedValueOnce({ data: true, error: null });
 
-      // Get org to verify not changing owner role
+      // Get community to verify not changing owner role
       fromSpy.mockReturnValueOnce({
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
@@ -1392,7 +1413,7 @@ describe("Community Mutations", () => {
         }),
       } as unknown as MockQueryBuilder);
 
-      // addStaffToGroup - isOrgOwner check
+      // addStaffToGroup - isCommunityOwner check
       fromSpy.mockReturnValueOnce({
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
@@ -1402,7 +1423,7 @@ describe("Community Mutations", () => {
         }),
       } as unknown as MockQueryBuilder);
 
-      // addStaffToGroup - checkOrgPermission RPC
+      // addStaffToGroup - checkCommunityPermission RPC
       rpcMock.mockResolvedValueOnce({ data: true, error: null });
 
       // Verify group
@@ -1410,7 +1431,7 @@ describe("Community Mutations", () => {
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
         single: jest.fn().mockResolvedValue({
-          data: { id: newGroupId, organization_id: orgId },
+          data: { id: newGroupId, community_id: communityId },
           error: null,
         }),
       } as unknown as MockQueryBuilder);
@@ -1434,7 +1455,7 @@ describe("Community Mutations", () => {
           .mockResolvedValue({ data: { id: 1 }, error: null }),
       } as unknown as MockQueryBuilder);
 
-      // Get org groups
+      // Get community groups
       fromSpy.mockReturnValueOnce({
         select: jest.fn().mockReturnThis(),
         eq: jest
@@ -1462,7 +1483,7 @@ describe("Community Mutations", () => {
 
       const result = await changeStaffRole(
         mockClient,
-        orgId,
+        communityId,
         userId,
         newGroupId
       );
@@ -1474,7 +1495,7 @@ describe("Community Mutations", () => {
       const fromSpy = jest.spyOn(mockClient, "from");
       const rpcMock = mockClient.rpc as jest.Mock;
 
-      // changeStaffRole - isOrgOwner check
+      // changeStaffRole - isCommunityOwner check
       fromSpy.mockReturnValueOnce({
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
@@ -1484,10 +1505,10 @@ describe("Community Mutations", () => {
         }),
       } as unknown as MockQueryBuilder);
 
-      // changeStaffRole - checkOrgPermission RPC
+      // changeStaffRole - checkCommunityPermission RPC
       rpcMock.mockResolvedValueOnce({ data: true, error: null });
 
-      // Get org to verify if changing owner role (userId IS the owner)
+      // Get community to verify if changing owner role (userId IS the owner)
       fromSpy.mockReturnValueOnce({
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
@@ -1498,13 +1519,13 @@ describe("Community Mutations", () => {
       } as unknown as MockQueryBuilder);
 
       await expect(
-        changeStaffRole(mockClient, orgId, userId, newGroupId)
+        changeStaffRole(mockClient, communityId, userId, newGroupId)
       ).rejects.toThrow("Cannot change the owner's role");
     });
   });
 
   describe("removeStaffCompletely", () => {
-    const orgId = 1;
+    const communityId = 1;
     const userId = "user-456";
 
     beforeEach(() => {
@@ -1517,7 +1538,7 @@ describe("Community Mutations", () => {
       const fromSpy = jest.spyOn(mockClient, "from");
       const rpcMock = mockClient.rpc as jest.Mock;
 
-      // removeStaffCompletely - isOrgOwner check
+      // removeStaffCompletely - isCommunityOwner check
       fromSpy.mockReturnValueOnce({
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
@@ -1530,7 +1551,7 @@ describe("Community Mutations", () => {
       // Mock RPC (both checks are evaluated)
       rpcMock.mockResolvedValueOnce({ data: true, error: null });
 
-      // Get org to verify not removing owner
+      // Get community to verify not removing owner
       fromSpy.mockReturnValueOnce({
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
@@ -1540,7 +1561,7 @@ describe("Community Mutations", () => {
         }),
       } as unknown as MockQueryBuilder);
 
-      // removeStaffFromGroup - isOrgOwner check
+      // removeStaffFromGroup - isCommunityOwner check
       fromSpy.mockReturnValueOnce({
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
@@ -1550,10 +1571,10 @@ describe("Community Mutations", () => {
         }),
       } as unknown as MockQueryBuilder);
 
-      // removeStaffFromGroup - checkOrgPermission RPC
+      // removeStaffFromGroup - checkCommunityPermission RPC
       rpcMock.mockResolvedValueOnce({ data: true, error: null });
 
-      // Get org groups
+      // Get community groups
       fromSpy.mockReturnValueOnce({
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockResolvedValue({ data: [], error: null }),
@@ -1567,7 +1588,11 @@ describe("Community Mutations", () => {
 
       (mockClient.eq as jest.Mock).mockResolvedValueOnce({ error: null });
 
-      const result = await removeStaffCompletely(mockClient, orgId, userId);
+      const result = await removeStaffCompletely(
+        mockClient,
+        communityId,
+        userId
+      );
 
       expect(result).toEqual({ success: true });
     });
@@ -1576,7 +1601,7 @@ describe("Community Mutations", () => {
       const fromSpy = jest.spyOn(mockClient, "from");
       const rpcMock = mockClient.rpc as jest.Mock;
 
-      // isOrgOwner check
+      // isCommunityOwner check
       fromSpy.mockReturnValueOnce({
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
@@ -1586,10 +1611,10 @@ describe("Community Mutations", () => {
         }),
       } as unknown as MockQueryBuilder);
 
-      // checkOrgPermission RPC (both checks are evaluated)
+      // checkCommunityPermission RPC (both checks are evaluated)
       rpcMock.mockResolvedValueOnce({ data: true, error: null });
 
-      // Get org to verify (owner_user_id IS the userId being removed)
+      // Get community to verify (owner_user_id IS the userId being removed)
       fromSpy.mockReturnValueOnce({
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
@@ -1600,15 +1625,15 @@ describe("Community Mutations", () => {
       } as unknown as MockQueryBuilder);
 
       await expect(
-        removeStaffCompletely(mockClient, orgId, mockUser.id)
-      ).rejects.toThrow("Cannot remove the organization owner");
+        removeStaffCompletely(mockClient, communityId, mockUser.id)
+      ).rejects.toThrow("Cannot remove the community owner");
     });
 
     it("should throw error if trying to remove yourself", async () => {
       const fromSpy = jest.spyOn(mockClient, "from");
       const rpcMock = mockClient.rpc as jest.Mock;
 
-      // isOrgOwner check
+      // isCommunityOwner check
       fromSpy.mockReturnValueOnce({
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
@@ -1618,10 +1643,10 @@ describe("Community Mutations", () => {
         }),
       } as unknown as MockQueryBuilder);
 
-      // checkOrgPermission RPC (both checks are evaluated)
+      // checkCommunityPermission RPC (both checks are evaluated)
       rpcMock.mockResolvedValueOnce({ data: true, error: null });
 
-      // Get org to verify (owner is different, but userId === currentUser.id)
+      // Get community to verify (owner is different, but userId === currentUser.id)
       fromSpy.mockReturnValueOnce({
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
@@ -1632,9 +1657,9 @@ describe("Community Mutations", () => {
       } as unknown as MockQueryBuilder);
 
       await expect(
-        removeStaffCompletely(mockClient, orgId, mockUser.id)
+        removeStaffCompletely(mockClient, communityId, mockUser.id)
       ).rejects.toThrow(
-        "Cannot remove yourself. Use 'Leave Organization' instead."
+        "Cannot remove yourself. Use 'Leave Community' instead."
       );
     });
   });

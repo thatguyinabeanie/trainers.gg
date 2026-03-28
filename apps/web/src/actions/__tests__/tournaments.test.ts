@@ -106,7 +106,7 @@ beforeEach(() => {
 
 describe("createTournament", () => {
   const input = {
-    organizationId: 1,
+    communityId: 1,
     name: "VGC Regionals",
     slug: "vgc-regionals",
   };
@@ -454,7 +454,7 @@ describe("bulkRemovePlayers", () => {
       select: jest.fn().mockReturnThis(),
       eq: jest.fn().mockReturnThis(),
       single: jest.fn().mockResolvedValue({
-        data: { organization_id: 1 },
+        data: { community_id: 1 },
         error: null,
       }),
     });
@@ -519,7 +519,7 @@ describe("bulkRemovePlayers", () => {
       select: jest.fn().mockReturnThis(),
       eq: jest.fn().mockReturnThis(),
       single: jest.fn().mockResolvedValue({
-        data: { organization_id: 1 },
+        data: { community_id: 1 },
         error: null,
       }),
     });

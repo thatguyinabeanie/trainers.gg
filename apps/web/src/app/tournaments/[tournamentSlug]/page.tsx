@@ -192,7 +192,7 @@ function TournamentHeader({
         <div className="text-muted-foreground flex flex-wrap items-center gap-4 text-sm">
           {organization && (
             <Link
-              href={`/organizations/${organization.slug}`}
+              href={`/communities/${organization.slug}`}
               className="flex items-center gap-1 hover:underline"
             >
               <Building2 className="h-4 w-4" />
@@ -410,13 +410,13 @@ export default async function TournamentPage({ params }: PageProps) {
     notFound();
   }
 
-  // Check if user can manage (org owner or staff)
+  // Check if user can manage (community owner or staff)
   let canManage = false;
-  if (currentUserId && tournament.organization_id) {
+  if (currentUserId && tournament.community_id) {
     const supabase = await createClientReadOnly();
     canManage = await hasCommunityAccess(
       supabase,
-      tournament.organization_id,
+      tournament.community_id,
       currentUserId
     );
   }

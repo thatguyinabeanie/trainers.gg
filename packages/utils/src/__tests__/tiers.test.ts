@@ -40,8 +40,8 @@ describe("tier constants", () => {
   describe("COMMUNITY_SUBSCRIPTION_TIERS", () => {
     it("has the expected tier values", () => {
       expect(COMMUNITY_SUBSCRIPTION_TIERS.FREE).toBe("free");
-      expect(COMMUNITY_SUBSCRIPTION_TIERS.ORGANIZATION_PLUS).toBe(
-        "organization_plus"
+      expect(COMMUNITY_SUBSCRIPTION_TIERS.COMMUNITY_PLUS).toBe(
+        "community_plus"
       );
       expect(COMMUNITY_SUBSCRIPTION_TIERS.ENTERPRISE).toBe("enterprise");
     });
@@ -65,9 +65,8 @@ describe("TIER_PRICING", () => {
     expect(pricing.annual).toBe(19990);
   });
 
-  it("has pricing for organization_plus with monthly and annual amounts", () => {
-    const pricing =
-      TIER_PRICING[COMMUNITY_SUBSCRIPTION_TIERS.ORGANIZATION_PLUS];
+  it("has pricing for community_plus with monthly and annual amounts", () => {
+    const pricing = TIER_PRICING[COMMUNITY_SUBSCRIPTION_TIERS.COMMUNITY_PLUS];
     expect(pricing.monthly).toBe(2999);
     expect(pricing.annual).toBe(29990);
   });
@@ -87,9 +86,9 @@ describe("TIER_PRICING", () => {
     const coachPricing = TIER_PRICING[USER_TIERS.COACH_PREMIUM];
     expect(coachPricing.annual).toBeLessThan(coachPricing.monthly * 12);
 
-    // organization_plus: $29.99/mo vs $299.90/yr ($24.99/mo)
+    // community_plus: $29.99/mo vs $299.90/yr ($24.99/mo)
     const orgPricing =
-      TIER_PRICING[COMMUNITY_SUBSCRIPTION_TIERS.ORGANIZATION_PLUS];
+      TIER_PRICING[COMMUNITY_SUBSCRIPTION_TIERS.COMMUNITY_PLUS];
     expect(orgPricing.annual).toBeLessThan(orgPricing.monthly * 12);
   });
 });
@@ -172,10 +171,10 @@ describe("COMMUNITY_SUBSCRIPTION_FEATURES", () => {
     expect(features.advancedMetrics).toBe(false);
   });
 
-  it("organization_plus tier has unlimited tournaments and all features", () => {
+  it("community_plus tier has unlimited tournaments and all features", () => {
     const features =
       COMMUNITY_SUBSCRIPTION_FEATURES[
-        COMMUNITY_SUBSCRIPTION_TIERS.ORGANIZATION_PLUS
+        COMMUNITY_SUBSCRIPTION_TIERS.COMMUNITY_PLUS
       ];
     expect(features.maxTournaments).toBeNull(); // unlimited
     expect(features.autoBrackets).toBe(true);
@@ -237,11 +236,11 @@ describe("getCommunityFeatures", () => {
     );
   });
 
-  it("returns organization_plus features for 'organization_plus'", () => {
-    const features = getCommunityFeatures("organization_plus");
+  it("returns community_plus features for 'community_plus'", () => {
+    const features = getCommunityFeatures("community_plus");
     expect(features).toEqual(
       COMMUNITY_SUBSCRIPTION_FEATURES[
-        COMMUNITY_SUBSCRIPTION_TIERS.ORGANIZATION_PLUS
+        COMMUNITY_SUBSCRIPTION_TIERS.COMMUNITY_PLUS
       ]
     );
   });
@@ -282,22 +281,22 @@ describe("getTournamentFeePercentage", () => {
 });
 
 describe("calculatePlatformFee", () => {
-  it("calculates 8% fee for regular org with $10.00 entry", () => {
+  it("calculates 8% fee for regular community with $10.00 entry", () => {
     // 1000 cents * 0.08 = 80 cents
     expect(calculatePlatformFee(1000, "regular")).toBe(80);
   });
 
-  it("calculates 5% fee for verified org with $10.00 entry", () => {
+  it("calculates 5% fee for verified community with $10.00 entry", () => {
     // 1000 cents * 0.05 = 50 cents
     expect(calculatePlatformFee(1000, "verified")).toBe(50);
   });
 
-  it("calculates 3% fee for partner org with $10.00 entry", () => {
+  it("calculates 3% fee for partner community with $10.00 entry", () => {
     // 1000 cents * 0.03 = 30 cents
     expect(calculatePlatformFee(1000, "partner")).toBe(30);
   });
 
-  it("defaults to regular (8%) when org tier is undefined", () => {
+  it("defaults to regular (8%) when community tier is undefined", () => {
     expect(calculatePlatformFee(1000, undefined)).toBe(80);
   });
 

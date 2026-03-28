@@ -2,7 +2,7 @@ import type { Database } from "../../types";
 import {
   type TypedClient,
   getCurrentUser,
-  checkOrgPermission,
+  checkCommunityPermission,
   type PhaseConfig,
 } from "./helpers";
 
@@ -15,7 +15,7 @@ type TournamentStatus = Database["public"]["Enums"]["tournament_status"];
 export async function createTournament(
   supabase: TypedClient,
   data: {
-    organizationId: number;
+    communityId: number;
     name: string;
     slug: string;
     description?: string;
@@ -45,18 +45,18 @@ export async function createTournament(
   if (!user) throw new Error("Not authenticated");
 
   // Verify organization exists and user has permission
-  const { data: org } = await supabase
-    .from("organizations")
+  const { data: community } = await supabase
+    .from("communities")
     .select("id")
-    .eq("id", data.organizationId)
+    .eq("id", data.communityId)
     .single();
 
-  if (!org) throw new Error("Organization not found");
+  if (!community) throw new Error("Community not found");
 
-  // Check permission via has_org_permission (covers org owner + staff roles)
-  const hasPermission = await checkOrgPermission(
+  // Check permission via has_community_permission (covers community owner + staff roles)
+  const hasPermission = await checkCommunityPermission(
     supabase,
-    data.organizationId,
+    data.communityId,
     "tournament.manage"
   );
   if (!hasPermission) {
@@ -67,19 +67,19 @@ export async function createTournament(
   const { data: existing } = await supabase
     .from("tournaments")
     .select("id")
-    .eq("organization_id", data.organizationId)
+    .eq("community_id", data.communityId)
     .eq("slug", data.slug.toLowerCase())
     .single();
 
   if (existing) {
-    throw new Error("Tournament slug already exists in this organization");
+    throw new Error("Tournament slug already exists in this community");
   }
 
   // Create tournament
   const { data: tournament, error } = await supabase
     .from("tournaments")
     .insert({
-      organization_id: data.organizationId,
+      community_id: data.communityId,
       name: data.name,
       slug: data.slug.toLowerCase(),
       description: data.description,
@@ -259,19 +259,19 @@ export async function updateTournament(
   const user = await getCurrentUser(supabase);
   if (!user) throw new Error("Not authenticated");
 
-  // Get tournament and org
+  // Get tournament and community
   const { data: tournament } = await supabase
     .from("tournaments")
-    .select("organization_id")
+    .select("community_id")
     .eq("id", tournamentId)
     .single();
 
   if (!tournament) throw new Error("Tournament not found");
 
-  // Verify permission via has_org_permission (covers org owner + staff roles)
-  const hasPermission = await checkOrgPermission(
+  // Verify permission via has_community_permission (covers community owner + staff roles)
+  const hasPermission = await checkCommunityPermission(
     supabase,
-    tournament.organization_id,
+    tournament.community_id,
     "tournament.manage"
   );
   if (!hasPermission) {
@@ -328,16 +328,16 @@ export async function archiveTournament(
   // Get tournament
   const { data: tournament } = await supabase
     .from("tournaments")
-    .select("organization_id")
+    .select("community_id")
     .eq("id", tournamentId)
     .single();
 
   if (!tournament) throw new Error("Tournament not found");
 
-  // Verify permission via has_org_permission (covers org owner + staff roles)
-  const hasPermission = await checkOrgPermission(
+  // Verify permission via has_community_permission (covers community owner + staff roles)
+  const hasPermission = await checkCommunityPermission(
     supabase,
-    tournament.organization_id,
+    tournament.community_id,
     "tournament.manage"
   );
   if (!hasPermission) {
@@ -366,16 +366,16 @@ export async function deleteTournament(
   // Get tournament
   const { data: tournament } = await supabase
     .from("tournaments")
-    .select("organization_id, status")
+    .select("community_id, status")
     .eq("id", tournamentId)
     .single();
 
   if (!tournament) throw new Error("Tournament not found");
 
-  // Verify permission via has_org_permission (covers org owner + staff roles)
-  const hasPermission = await checkOrgPermission(
+  // Verify permission via has_community_permission (covers community owner + staff roles)
+  const hasPermission = await checkCommunityPermission(
     supabase,
-    tournament.organization_id,
+    tournament.community_id,
     "tournament.manage"
   );
   if (!hasPermission) {

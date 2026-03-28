@@ -5,7 +5,7 @@ import type { TypedClient } from "../../../client";
 jest.mock("../helpers", () => ({
   getCurrentUser: jest.fn(),
   getCurrentAlt: jest.fn(),
-  checkOrgPermission: jest.fn(),
+  checkCommunityPermission: jest.fn(),
 }));
 
 // Helper to create mock Supabase client

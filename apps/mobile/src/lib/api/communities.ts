@@ -2,7 +2,7 @@ import type { Database } from "@trainers/supabase/types";
 import { createQuery, createMutation } from "./query-factory";
 import { apiCall } from "./client";
 
-type Organization = Database["public"]["Tables"]["organizations"]["Row"];
+type Community = Database["public"]["Tables"]["communities"]["Row"];
 
 /**
  * Community API hooks using TanStack Query
@@ -17,7 +17,7 @@ type Organization = Database["public"]["Tables"]["organizations"]["Row"];
  * ```
  */
 export function useCommunities() {
-  return createQuery<Organization[]>(["communities"], "api-organizations", {
+  return createQuery<Community[]>(["communities"], "api-organizations", {
     staleTime: 300_000, // 5 minutes - communities change infrequently
   });
 }
@@ -31,7 +31,7 @@ export function useCommunities() {
  * ```
  */
 export function useCommunity(slug: string) {
-  return createQuery<Organization>(
+  return createQuery<Community>(
     ["community", slug],
     `api-organizations/${slug}`,
     {
@@ -56,7 +56,7 @@ export function useCommunity(slug: string) {
  */
 export function useCreateCommunity() {
   return createMutation<
-    Organization,
+    Community,
     {
       name: string;
       slug: string;
@@ -92,7 +92,7 @@ export function useCreateCommunity() {
  */
 export function useUpdateCommunity() {
   return createMutation<
-    Organization,
+    Community,
     {
       slug: string;
       name?: string;

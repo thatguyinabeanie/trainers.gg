@@ -25,8 +25,8 @@ jest.mock("@/actions/communities", () => ({
 }));
 
 jest.mock("@/actions/community-logo", () => ({
-  uploadOrgLogo: jest.fn(),
-  removeOrgLogo: jest.fn(),
+  uploadCommunityLogo: jest.fn(),
+  removeCommunityLogo: jest.fn(),
 }));
 
 jest.mock("sonner", () => ({
@@ -552,11 +552,11 @@ describe("OrgSettingsPage", () => {
       );
     });
 
-    it("calls uploadOrgLogo for valid file", async () => {
-      const { uploadOrgLogo } = jest.requireMock(
+    it("calls uploadCommunityLogo for valid file", async () => {
+      const { uploadCommunityLogo } = jest.requireMock(
         "@/actions/community-logo"
-      ) as { uploadOrgLogo: jest.Mock };
-      uploadOrgLogo.mockResolvedValue({
+      ) as { uploadCommunityLogo: jest.Mock };
+      uploadCommunityLogo.mockResolvedValue({
         success: true,
         data: { logoUrl: "https://storage.example.com/logo.jpg" },
       });
@@ -569,9 +569,12 @@ describe("OrgSettingsPage", () => {
 
       await selectFile(input, validFile);
 
-      // uploadOrgLogo is called inside a React transition — wait for it
+      // uploadCommunityLogo is called inside a React transition — wait for it
       await waitFor(() => {
-        expect(uploadOrgLogo).toHaveBeenCalledWith(42, expect.any(FormData));
+        expect(uploadCommunityLogo).toHaveBeenCalledWith(
+          42,
+          expect.any(FormData)
+        );
       });
     });
   });

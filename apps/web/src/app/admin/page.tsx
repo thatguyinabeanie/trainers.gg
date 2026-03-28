@@ -397,9 +397,9 @@ function DashboardContent() {
   } = useSupabaseQuery(recentQueryFn, []);
 
   const {
-    data: orgStats,
-    isLoading: orgLoading,
-    error: orgError,
+    data: communityStats,
+    isLoading: communityLoading,
+    error: communityError,
   } = useSupabaseQuery((s) => getOrganizationStats(s), []);
 
   const {
@@ -409,7 +409,7 @@ function DashboardContent() {
   } = useSupabaseQuery((s) => getTournamentStats(s), []);
 
   const recentEntries = (recentLog?.data ?? []) as RecentEntry[];
-  const pendingOrgs = orgStats?.byStatus?.pending ?? 0;
+  const pendingCommunities = communityStats?.byStatus?.pending ?? 0;
 
   // Collect any query errors into a single check
   const hasError =
@@ -417,7 +417,7 @@ function DashboardContent() {
     activeError ||
     auditStatsError ||
     recentError ||
-    orgError ||
+    communityError ||
     tournamentError;
 
   return (
@@ -430,7 +430,7 @@ function DashboardContent() {
       )}
 
       {/* ── Pending Org Alert ──────────────────────────────────── */}
-      {!orgLoading && pendingOrgs > 0 && (
+      {!communityLoading && pendingCommunities > 0 && (
         <Link href="/admin/communities">
           <Card className="group border-amber-500/30 bg-amber-500/5 transition-colors hover:border-amber-500/50">
             <CardContent className="flex items-center gap-4 pt-5">
@@ -439,8 +439,8 @@ function DashboardContent() {
               </div>
               <div className="flex-1">
                 <p className="text-sm font-semibold">
-                  {pendingOrgs} community request
-                  {pendingOrgs !== 1 ? "s" : ""} pending approval
+                  {pendingCommunities} community request
+                  {pendingCommunities !== 1 ? "s" : ""} pending approval
                 </p>
                 <p className="text-muted-foreground text-xs">
                   Review and approve or reject
@@ -532,16 +532,16 @@ function DashboardContent() {
 
           <DonutBreakdownCard
             title="Communities by Status"
-            data={orgStats?.byStatus}
+            data={communityStats?.byStatus}
             labels={ORG_STATUS_LABELS}
-            isLoading={orgLoading}
+            isLoading={communityLoading}
           />
 
           <DonutBreakdownCard
             title="Communities by Tier"
-            data={orgStats?.byTier}
+            data={communityStats?.byTier}
             labels={ORG_TIER_LABELS}
-            isLoading={orgLoading}
+            isLoading={communityLoading}
           />
         </div>
       </div>
