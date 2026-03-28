@@ -129,7 +129,7 @@ jobs:
             tsc-${{ runner.os }}-
 
       - name: Configure Turbo Remote Cache
-        if: vars.TURBO_TOKEN != ''
+        if: secrets.TURBO_TOKEN != ''
         run: |
           echo "TURBO_TOKEN=${{ secrets.TURBO_TOKEN }}" >> "$GITHUB_ENV"
           echo "TURBO_TEAM=${{ vars.TURBO_TEAM }}" >> "$GITHUB_ENV"
@@ -194,15 +194,16 @@ jobs:
         uses: actions/cache@v4
         with:
           path: |
-            node_modules/.cache/jest
-            **/.jest-cache
-          key: jest-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml', '**/jest.config.*', 'tooling/jest/**') }}
+            apps/web/.jest-cache
+            apps/mobile/.jest-cache
+            packages/**/.jest-cache
+          key: jest-${{ runner.os }}-${{ github.ref }}-${{ hashFiles('**/pnpm-lock.yaml', '**/jest.config.*', 'tooling/test-utils/jest-config.cjs') }}
           restore-keys: |
-            jest-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml') }}-
-            jest-${{ runner.os }}-
+            jest-${{ runner.os }}-${{ github.ref }}-
+            jest-${{ runner.os }}-refs/heads/main-
 
       - name: Configure Turbo Remote Cache
-        if: vars.TURBO_TOKEN != ''
+        if: secrets.TURBO_TOKEN != ''
         run: |
           echo "TURBO_TOKEN=${{ secrets.TURBO_TOKEN }}" >> "$GITHUB_ENV"
           echo "TURBO_TEAM=${{ vars.TURBO_TEAM }}" >> "$GITHUB_ENV"
@@ -384,7 +385,7 @@ jobs:
         run: pnpm --filter=@trainers/web exec playwright install-deps chromium
 
       - name: Configure Turbo Remote Cache
-        if: vars.TURBO_TOKEN != ''
+        if: secrets.TURBO_TOKEN != ''
         run: |
           echo "TURBO_TOKEN=${{ secrets.TURBO_TOKEN }}" >> "$GITHUB_ENV"
           echo "TURBO_TEAM=${{ vars.TURBO_TEAM }}" >> "$GITHUB_ENV"
