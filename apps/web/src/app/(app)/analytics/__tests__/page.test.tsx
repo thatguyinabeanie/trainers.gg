@@ -5,37 +5,35 @@ describe("AnalyticsPage", () => {
   it("renders the page title", () => {
     render(<AnalyticsPage />);
     expect(
-      screen.getByRole("heading", { name: "Analytics" })
+      screen.getByRole("heading", { name: "Meta Analytics" })
     ).toBeInTheDocument();
   });
 
-  it("displays coming soon message", () => {
+  it("displays under construction badge", () => {
     render(<AnalyticsPage />);
-    expect(screen.getByText("Coming Soon")).toBeInTheDocument();
+    expect(screen.getByText("Under Construction")).toBeInTheDocument();
   });
 
-  it("displays analytics feature description", () => {
+  it("displays feature description", () => {
     render(<AnalyticsPage />);
     expect(
       screen.getByText(
-        /Track your competitive performance, analyze meta trends, and gain insights from your tournament history/i
+        /Track what's winning and what's trending across tournaments/i
       )
     ).toBeInTheDocument();
   });
 
-  it("renders analytics icon", () => {
+  it("renders feature bullets", () => {
     render(<AnalyticsPage />);
-    // Check for the icon container with the correct styling
-    const iconContainer = screen
-      .getByRole("main")
-      .querySelector(".bg-teal-100");
-    expect(iconContainer).toBeInTheDocument();
+    expect(
+      screen.getByText("Usage rates, win rates, and popular cores")
+    ).toBeInTheDocument();
   });
 
-  it("renders back to home button", () => {
+  it("renders back to home link", () => {
     render(<AnalyticsPage />);
-    const backButton = screen.getByRole("link", { name: "Back to Home" });
-    expect(backButton).toBeInTheDocument();
-    expect(backButton).toHaveAttribute("href", "/");
+    const backLink = screen.getByRole("link", { name: /Back to Home/i });
+    expect(backLink).toBeInTheDocument();
+    expect(backLink).toHaveAttribute("href", "/");
   });
 });
