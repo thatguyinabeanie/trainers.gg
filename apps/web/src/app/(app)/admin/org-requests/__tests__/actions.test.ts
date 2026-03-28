@@ -137,6 +137,28 @@ describe("grantCommunityRequestAction", () => {
       undefined
     );
   });
+
+  it("returns validation error when reason exceeds max length", async () => {
+    const longReason = "a".repeat(1001);
+    const result = await grantCommunityRequestAction(REQUEST_ID, longReason);
+
+    expect(result).toEqual({
+      success: false,
+      error: expect.stringContaining("Invalid input"),
+    });
+    expect(mockGrantCommunityRequest).not.toHaveBeenCalled();
+  });
+
+  it("trims and passes validated reason to the mutation", async () => {
+    await grantCommunityRequestAction(REQUEST_ID, "  trimmed reason  ");
+
+    expect(mockGrantCommunityRequest).toHaveBeenCalledWith(
+      mockServiceClient,
+      REQUEST_ID,
+      ADMIN_USER_ID,
+      "trimmed reason"
+    );
+  });
 });
 
 describe("rejectCommunityRequestAction", () => {
