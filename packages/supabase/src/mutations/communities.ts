@@ -97,7 +97,7 @@ export async function createCommunity(
     .single();
 
   if (existing) {
-    throw new Error("Organization slug is already taken");
+    throw new Error("Community slug is already taken");
   }
 
   // Validate social links if provided
@@ -162,10 +162,10 @@ export async function updateCommunity(
     .eq("id", communityId)
     .single();
 
-  if (!org) throw new Error("Organization not found");
+  if (!org) throw new Error("Community not found");
   if (org.owner_user_id !== user.id) {
     // TODO: Check for admin role through RBAC
-    throw new Error("You don't have permission to update this organization");
+    throw new Error("You don't have permission to update this community");
   }
 
   const updateData: Database["public"]["Tables"]["communities"]["Update"] = {};
@@ -213,7 +213,7 @@ export async function inviteToCommunity(
     .single();
 
   if (existingStaff) {
-    throw new Error("User is already staff of this organization");
+    throw new Error("User is already staff of this community");
   }
 
   // Check for existing pending invitation
@@ -343,9 +343,7 @@ export async function leaveCommunity(
     .single();
 
   if (org?.owner_user_id === user.id) {
-    throw new Error(
-      "Organization owner cannot leave. Transfer ownership first."
-    );
+    throw new Error("Community owner cannot leave. Transfer ownership first.");
   }
 
   const { error } = await supabase
@@ -376,7 +374,7 @@ export async function removeStaff(
     .eq("id", communityId)
     .single();
 
-  if (!org) throw new Error("Organization not found");
+  if (!org) throw new Error("Community not found");
   if (org.owner_user_id !== currentUser.id) {
     throw new Error("Only the owner can remove staff");
   }
@@ -478,7 +476,7 @@ export async function addStaffToGroup(
 
   if (!group) throw new Error("Group not found");
   if (group.community_id !== communityId) {
-    throw new Error("Group does not belong to this organization");
+    throw new Error("Group does not belong to this community");
   }
 
   // Get the group_role for this group
@@ -631,7 +629,7 @@ export async function changeStaffRole(
     .eq("id", communityId)
     .single();
 
-  if (!org) throw new Error("Organization not found");
+  if (!org) throw new Error("Community not found");
   if (org.owner_user_id === userId) {
     throw new Error("Cannot change the owner's role");
   }
@@ -669,16 +667,14 @@ export async function removeStaffCompletely(
     .eq("id", communityId)
     .single();
 
-  if (!org) throw new Error("Organization not found");
+  if (!org) throw new Error("Community not found");
   if (org.owner_user_id === userId) {
-    throw new Error("Cannot remove the organization owner");
+    throw new Error("Cannot remove the community owner");
   }
 
   // Cannot remove yourself
   if (userId === currentUser.id) {
-    throw new Error(
-      "Cannot remove yourself. Use 'Leave Organization' instead."
-    );
+    throw new Error("Cannot remove yourself. Use 'Leave Community' instead.");
   }
 
   // First remove from all groups

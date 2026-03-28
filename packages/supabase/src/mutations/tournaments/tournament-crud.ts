@@ -51,7 +51,7 @@ export async function createTournament(
     .eq("id", data.communityId)
     .single();
 
-  if (!org) throw new Error("Organization not found");
+  if (!org) throw new Error("Community not found");
 
   // Check permission via has_community_permission (covers org owner + staff roles)
   const hasPermission = await checkCommunityPermission(
@@ -72,7 +72,7 @@ export async function createTournament(
     .single();
 
   if (existing) {
-    throw new Error("Tournament slug already exists in this organization");
+    throw new Error("Tournament slug already exists in this community");
   }
 
   // Create tournament

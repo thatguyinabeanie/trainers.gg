@@ -65,7 +65,7 @@ describe("TIER_PRICING", () => {
     expect(pricing.annual).toBe(19990);
   });
 
-  it("has pricing for organization_plus with monthly and annual amounts", () => {
+  it("has pricing for community_plus with monthly and annual amounts", () => {
     const pricing = TIER_PRICING[COMMUNITY_SUBSCRIPTION_TIERS.COMMUNITY_PLUS];
     expect(pricing.monthly).toBe(2999);
     expect(pricing.annual).toBe(29990);
@@ -86,7 +86,7 @@ describe("TIER_PRICING", () => {
     const coachPricing = TIER_PRICING[USER_TIERS.COACH_PREMIUM];
     expect(coachPricing.annual).toBeLessThan(coachPricing.monthly * 12);
 
-    // organization_plus: $29.99/mo vs $299.90/yr ($24.99/mo)
+    // community_plus: $29.99/mo vs $299.90/yr ($24.99/mo)
     const orgPricing =
       TIER_PRICING[COMMUNITY_SUBSCRIPTION_TIERS.COMMUNITY_PLUS];
     expect(orgPricing.annual).toBeLessThan(orgPricing.monthly * 12);
@@ -171,7 +171,7 @@ describe("COMMUNITY_SUBSCRIPTION_FEATURES", () => {
     expect(features.advancedMetrics).toBe(false);
   });
 
-  it("organization_plus tier has unlimited tournaments and all features", () => {
+  it("community_plus tier has unlimited tournaments and all features", () => {
     const features =
       COMMUNITY_SUBSCRIPTION_FEATURES[
         COMMUNITY_SUBSCRIPTION_TIERS.COMMUNITY_PLUS
@@ -236,7 +236,7 @@ describe("getCommunityFeatures", () => {
     );
   });
 
-  it("returns organization_plus features for 'organization_plus'", () => {
+  it("returns community_plus features for 'community_plus'", () => {
     const features = getCommunityFeatures("community_plus");
     expect(features).toEqual(
       COMMUNITY_SUBSCRIPTION_FEATURES[

@@ -326,7 +326,7 @@ export async function canManageCommunity(
   // Note: Using user_id (user-level permissions) for organization management
   // The JOIN chain: user_group_roles → group_roles → groups (which has community_id)
   // We skip permission checking for now as the schema is complex
-  // TODO: Implement full permission checking via group_roles → groups → organization
+  // TODO: Implement full permission checking via group_roles → groups → community
 
   // For now, just check if user is staff in the organization
   const { data: staffRecord } = await supabase

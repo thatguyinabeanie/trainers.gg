@@ -116,7 +116,7 @@ function getEntityLabel(entry: AuditLogEntry): string {
   const parts: string[] = [];
   if (entry.tournament_id) parts.push(`Tournament #${entry.tournament_id}`);
   if (entry.match_id) parts.push(`Match #${entry.match_id}`);
-  if (entry.community_id) parts.push(`Org #${entry.community_id}`);
+  if (entry.community_id) parts.push(`Community #${entry.community_id}`);
   if (entry.game_id) parts.push(`Game #${entry.game_id}`);
   return parts.join(" \u00b7 ");
 }
