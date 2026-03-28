@@ -33,7 +33,7 @@ function BentoCard({
       <p className="text-primary/60 font-mono text-[10px] font-medium tracking-[3px] uppercase">
         {step} — {label}
       </p>
-      <h3 className="text-foreground mt-2.5 text-[15px] font-bold">
+      <h3 className="text-foreground mt-3 text-lg font-extrabold tracking-tight sm:text-xl">
         {headline}
       </h3>
       <p className="text-muted-foreground mt-1.5 text-[11px] leading-relaxed">
