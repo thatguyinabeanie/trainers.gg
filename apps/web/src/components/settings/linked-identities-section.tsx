@@ -10,7 +10,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { oauthProviders } from "@/lib/supabase/auth";
+import { oauthProviders, type OAuthProvider } from "@/lib/supabase/auth";
 import { BlueskyIcon } from "@/components/icons/bluesky-icon";
 import { toast } from "sonner";
 import { unlinkBlueskyAction, getBlueskyStatus } from "@/actions/identities";
@@ -111,17 +111,14 @@ export function LinkedIdentitiesSection() {
   /**
    * Handle linking a new identity
    */
-  const handleLink = async (provider: string) => {
+  const handleLink = async (provider: OAuthProvider | "bluesky") => {
     if (provider === "bluesky") {
       // Redirect to Bluesky OAuth flow
       const returnUrl = encodeURIComponent("/dashboard/settings/account");
       window.location.href = `/api/oauth/login?returnUrl=${returnUrl}`;
     } else {
       // Use standard Supabase OAuth
-      await signInWithOAuth(
-        provider as "discord" | "twitter" | "twitch",
-        "/dashboard/settings/account"
-      );
+      await signInWithOAuth(provider, "/dashboard/settings/account");
     }
   };
 

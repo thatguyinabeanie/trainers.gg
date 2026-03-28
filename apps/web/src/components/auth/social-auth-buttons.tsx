@@ -4,7 +4,7 @@ import * as React from "react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
-import { oauthProviders } from "@/lib/supabase/auth";
+import { oauthProviders, type OAuthProvider } from "@/lib/supabase/auth";
 import { BlueskyIcon } from "@/components/icons/bluesky-icon";
 
 function XIcon() {
@@ -88,13 +88,10 @@ export function SocialAuthButtons({
   const { signInWithOAuth } = useAuth();
   const [loadingProvider, setLoadingProvider] = useState<string | null>(null);
 
-  const handleOAuthSignIn = async (provider: string) => {
+  const handleOAuthSignIn = async (provider: OAuthProvider) => {
     setLoadingProvider(provider);
     try {
-      await signInWithOAuth(
-        provider as "discord" | "twitter" | "twitch",
-        redirectTo
-      );
+      await signInWithOAuth(provider, redirectTo);
     } finally {
       setLoadingProvider(null);
     }

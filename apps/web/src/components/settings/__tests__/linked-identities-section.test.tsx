@@ -244,10 +244,14 @@ describe("LinkedIdentitiesSection", () => {
         expect(screen.getAllByText("Connected")).toHaveLength(2);
       });
 
-      const disconnectButtons = screen.getAllByRole("button", {
+      // Select by provider label to avoid depending on render order
+      const xRow = screen
+        .getByText("X")
+        .closest(".flex.items-center.justify-between") as HTMLElement;
+      const disconnectButton = within(xRow).getByRole("button", {
         name: /disconnect/i,
       });
-      await user.click(disconnectButtons[0]); // Disconnect X (first in provider list)
+      await user.click(disconnectButton);
 
       await waitFor(() => {
         expect(mockUnlinkIdentity).toHaveBeenCalledWith(
