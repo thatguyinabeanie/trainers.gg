@@ -46,27 +46,32 @@ import type { ActionResult } from "@trainers/validators/action-result";
 
 ### How to Add Profanity Validation to a Zod Schema
 
+**Always `.trim()` user text input before validation.** This prevents whitespace-only values from bypassing `.min()` checks and ensures profanity detection operates on cleaned content.
+
 ```typescript
 import { containsProfanity, PROFANITY_ERROR_MESSAGE } from "./profanity";
 
-// Required field:
+// Required field — trim first, then validate:
 z.string()
+  .trim()
   .min(1)
   .max(200)
   .refine((val) => !containsProfanity(val), {
     message: PROFANITY_ERROR_MESSAGE,
   })
 
-// Optional field:
+// Optional field — trim first:
 z.string()
+  .trim()
   .max(200)
   .refine((val) => !containsProfanity(val), {
     message: PROFANITY_ERROR_MESSAGE,
   })
   .optional()
 
-// Optional field that could be empty string:
+// Optional field that could be empty string — trim first:
 z.string()
+  .trim()
   .max(200)
   .refine((val) => !val || !containsProfanity(val), {
     message: PROFANITY_ERROR_MESSAGE,
