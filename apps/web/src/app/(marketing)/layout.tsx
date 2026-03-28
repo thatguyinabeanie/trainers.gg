@@ -12,8 +12,8 @@ export default function MarketingLayout({
       <AnnouncementBanner />
       <TopNav />
       <main className="flex w-full flex-1 flex-col">{children}</main>
-      <footer className="text-muted-foreground w-full px-6 py-2 text-[10px] sm:px-10">
-        <div className="mx-auto flex w-full max-w-screen-2xl items-center justify-between">
+      <footer className="text-muted-foreground mx-auto w-full max-w-screen-2xl px-6 py-2 text-[10px] sm:px-10">
+        <div className="flex items-center justify-between">
           <p className="whitespace-nowrap font-semibold">
             Built for competitors, by competitors.
           </p>
