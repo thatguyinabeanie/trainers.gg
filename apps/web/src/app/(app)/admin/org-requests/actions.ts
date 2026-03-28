@@ -6,14 +6,15 @@ import {
   type ActionResult,
 } from "@/lib/auth/with-admin-action";
 import {
-  approveCommunityRequest,
+  grantCommunityRequest,
   rejectCommunityRequest,
 } from "@trainers/supabase/mutations";
 
-// --- Approve ---
+// --- Grant (approve pending or rejected) ---
 
-export async function approveCommunityRequestAction(
-  requestId: number
+export async function grantCommunityRequestAction(
+  requestId: number,
+  reason?: string
 ): Promise<ActionResult> {
   const parsed = positiveIntSchema.safeParse(requestId);
   if (!parsed.success) {
@@ -23,8 +24,18 @@ export async function approveCommunityRequestAction(
     };
   }
 
+  if (reason !== undefined) {
+    const parsedReason = adminReasonSchema.safeParse(reason);
+    if (!parsedReason.success) {
+      return {
+        success: false,
+        error: `Invalid input: ${parsedReason.error.issues[0]?.message}`,
+      };
+    }
+  }
+
   return withAdminAction(async (supabase, adminUserId) => {
-    await approveCommunityRequest(supabase, parsed.data, adminUserId);
+    await grantCommunityRequest(supabase, parsed.data, adminUserId, reason);
 
     // Fire-and-forget email notification
     supabase.functions
@@ -36,7 +47,7 @@ export async function approveCommunityRequestAction(
       );
 
     return { success: true };
-  }, "Failed to approve organization request");
+  }, "Failed to approve community request");
 }
 
 // --- Reject ---

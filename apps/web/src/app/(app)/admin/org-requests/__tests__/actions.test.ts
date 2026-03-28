@@ -20,24 +20,24 @@ jest.mock("@/lib/supabase/server", () => ({
 
 // Mock the mutation functions
 jest.mock("@trainers/supabase/mutations", () => ({
-  approveCommunityRequest: jest.fn(),
+  grantCommunityRequest: jest.fn(),
   rejectCommunityRequest: jest.fn(),
 }));
 
 // Import after mocks are declared
 import {
-  approveCommunityRequestAction,
+  grantCommunityRequestAction,
   rejectCommunityRequestAction,
 } from "../actions";
 import { requireAdminWithSudo } from "@/lib/auth/require-admin";
 import {
-  approveCommunityRequest,
+  grantCommunityRequest,
   rejectCommunityRequest,
 } from "@trainers/supabase/mutations";
 
 // Cast to jest.Mock for type-safe mock API access
 const mockRequireAdminWithSudo = requireAdminWithSudo as jest.Mock;
-const mockApproveCommunityRequest = approveCommunityRequest as jest.Mock;
+const mockGrantCommunityRequest = grantCommunityRequest as jest.Mock;
 const mockRejectCommunityRequest = rejectCommunityRequest as jest.Mock;
 
 // --- Constants ---
@@ -46,27 +46,28 @@ const REQUEST_ID = 42;
 
 // --- Tests ---
 
-describe("approveCommunityRequestAction", () => {
+describe("grantCommunityRequestAction", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockRequireAdminWithSudo.mockResolvedValue({ userId: ADMIN_USER_ID });
-    mockApproveCommunityRequest.mockResolvedValue(undefined);
+    mockGrantCommunityRequest.mockResolvedValue(undefined);
     mockFunctionsInvoke.mockResolvedValue({ data: null });
   });
 
   it("approves a request successfully", async () => {
-    const result = await approveCommunityRequestAction(REQUEST_ID);
+    const result = await grantCommunityRequestAction(REQUEST_ID);
 
     expect(result).toEqual({ success: true });
-    expect(mockApproveCommunityRequest).toHaveBeenCalledWith(
+    expect(mockGrantCommunityRequest).toHaveBeenCalledWith(
       mockServiceClient,
       REQUEST_ID,
-      ADMIN_USER_ID
+      ADMIN_USER_ID,
+      undefined
     );
   });
 
   it("sends email notification after approval", async () => {
-    await approveCommunityRequestAction(REQUEST_ID);
+    await grantCommunityRequestAction(REQUEST_ID);
 
     expect(mockFunctionsInvoke).toHaveBeenCalledWith(
       "send-org-request-notification",
@@ -80,10 +81,10 @@ describe("approveCommunityRequestAction", () => {
       error: "Not authenticated",
     });
 
-    const result = await approveCommunityRequestAction(REQUEST_ID);
+    const result = await grantCommunityRequestAction(REQUEST_ID);
 
     expect(result).toEqual({ success: false, error: "Not authenticated" });
-    expect(mockApproveCommunityRequest).not.toHaveBeenCalled();
+    expect(mockGrantCommunityRequest).not.toHaveBeenCalled();
   });
 
   it.each([
@@ -91,26 +92,50 @@ describe("approveCommunityRequestAction", () => {
     { desc: "zero", input: 0 },
     { desc: "float", input: 1.5 },
   ])("returns validation error for $desc", async ({ input }) => {
-    const result = await approveCommunityRequestAction(input);
+    const result = await grantCommunityRequestAction(input);
 
     expect(result).toEqual({
       success: false,
       error: expect.stringContaining("Invalid input"),
     });
-    expect(mockApproveCommunityRequest).not.toHaveBeenCalled();
+    expect(mockGrantCommunityRequest).not.toHaveBeenCalled();
   });
 
   it("returns a specific error when the mutation throws", async () => {
-    mockApproveCommunityRequest.mockRejectedValue(
-      new Error("Request not found")
-    );
+    mockGrantCommunityRequest.mockRejectedValue(new Error("Request not found"));
 
-    const result = await approveCommunityRequestAction(REQUEST_ID);
+    const result = await grantCommunityRequestAction(REQUEST_ID);
 
     expect(result).toEqual({
       success: false,
-      error: "Failed to approve organization request",
+      error: "Failed to approve community request",
     });
+  });
+
+  it("passes optional reason to the mutation", async () => {
+    const result = await grantCommunityRequestAction(
+      REQUEST_ID,
+      "Reconsidered after community discussion"
+    );
+
+    expect(result).toEqual({ success: true });
+    expect(mockGrantCommunityRequest).toHaveBeenCalledWith(
+      mockServiceClient,
+      REQUEST_ID,
+      ADMIN_USER_ID,
+      "Reconsidered after community discussion"
+    );
+  });
+
+  it("passes undefined reason when not provided", async () => {
+    await grantCommunityRequestAction(REQUEST_ID);
+
+    expect(mockGrantCommunityRequest).toHaveBeenCalledWith(
+      mockServiceClient,
+      REQUEST_ID,
+      ADMIN_USER_ID,
+      undefined
+    );
   });
 });
 
