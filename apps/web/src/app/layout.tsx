@@ -74,13 +74,12 @@ export default async function RootLayout({
           <main className="flex w-full flex-1 flex-col">{children}</main>
 
           <footer className="w-full py-2">
-            <div className="text-muted-foreground container mx-auto flex flex-col items-center justify-between gap-1 px-4 text-[10px] md:flex-row md:px-6">
+            <div className="text-muted-foreground mx-auto flex w-full max-w-screen-2xl flex-col items-center justify-between gap-1 px-6 text-[10px] sm:px-10 md:flex-row">
               <p className="font-semibold">
                 Built for competitors, by competitors.
               </p>
-              <p className="max-w-sm text-[8px] leading-relaxed opacity-50 md:text-center">
-                trainers.gg is not affiliated with, endorsed by, or connected to
-                Nintendo, The Pok&eacute;mon Company, or Game Freak.
+              <p className="whitespace-nowrap text-[8px] opacity-50">
+                trainers.gg is not affiliated with, endorsed by, or connected to Nintendo, The Pok&eacute;mon Company, or Game Freak.
               </p>
               <p>&copy; {new Date().getFullYear()} Beanie LLC</p>
             </div>
