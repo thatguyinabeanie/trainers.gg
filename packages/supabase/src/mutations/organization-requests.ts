@@ -211,7 +211,7 @@ export async function grantCommunityRequest(
   }
 
   // Audit log
-  await supabase.from("audit_log").insert({
+  const { error: auditError } = await supabase.from("audit_log").insert({
     action: "admin.org_request_approved" as const,
     actor_user_id: adminUserId,
     community_id: community.id,
@@ -223,6 +223,13 @@ export async function grantCommunityRequest(
       ...(request.status === "rejected" && { from_status: "rejected" }),
     },
   });
+
+  if (auditError) {
+    console.error("Failed to create org_request_approved audit log", {
+      requestId,
+      error: auditError,
+    });
+  }
 
   // Cancel any other pending requests from the same user
   if (request.status === "rejected") {
@@ -257,16 +264,25 @@ export async function grantCommunityRequest(
             error: cancelError,
           });
         } else {
-          await supabase.from("audit_log").insert({
-            action: "admin.org_request_cancelled" as const,
-            actor_user_id: adminUserId,
-            metadata: {
-              request_id: dup.id,
-              requester_user_id: request.user_id,
-              reason: `Automatically closed — community granted via request #${requestId}`,
-              auto_cancelled: true,
-            },
-          });
+          const { error: auditCancelError } = await supabase
+            .from("audit_log")
+            .insert({
+              action: "admin.org_request_cancelled" as const,
+              actor_user_id: adminUserId,
+              metadata: {
+                request_id: dup.id,
+                requester_user_id: request.user_id,
+                reason: `Automatically closed — community granted via request #${requestId}`,
+                auto_cancelled: true,
+              },
+            });
+
+          if (auditCancelError) {
+            console.error("Failed to create org_request_cancelled audit log", {
+              duplicateId: dup.id,
+              error: auditCancelError,
+            });
+          }
         }
       }
     }
