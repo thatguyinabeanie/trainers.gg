@@ -327,9 +327,7 @@ client_id = "env(SUPABASE_AUTH_EXTERNAL_DISCORD_CLIENT_ID)"
 secret = "env(SUPABASE_AUTH_EXTERNAL_DISCORD_SECRET)"
 
 [auth.external.github]
-enabled = true
-client_id = "env(SUPABASE_AUTH_EXTERNAL_GITHUB_CLIENT_ID)"
-secret = "env(SUPABASE_AUTH_EXTERNAL_GITHUB_SECRET)"
+enabled = false
 
 [auth.external.twitch]
 enabled = false

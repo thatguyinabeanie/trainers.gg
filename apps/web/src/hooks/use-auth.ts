@@ -51,7 +51,7 @@ export function useAuth() {
   };
 
   const signInWithOAuth = async (
-    provider: "google" | "discord" | "github" | "twitter",
+    provider: "discord" | "twitter",
     /** Optional path to redirect to after auth (e.g. "/tournaments/slug") */
     redirectPath?: string
   ) => {

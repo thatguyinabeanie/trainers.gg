@@ -38,12 +38,10 @@ export const getAuthUrls = () => {
  *
  * Provider order:
  * 1. Bluesky — platform-native identity (most prominent)
- * 2. Apple — required first by App Store guidelines
- * 3. Google — highest user base
- * 4. Twitter/X — social platform overlap
+ * 2. X — social platform overlap with competitive Pokemon community
+ * 3. Discord — community communication platform
  */
 export const oauthProviders = [
-  { name: "google", displayName: "Google", icon: "google", type: "supabase" },
   {
     name: "twitter",
     displayName: "X",
@@ -54,12 +52,6 @@ export const oauthProviders = [
     name: "discord",
     displayName: "Discord",
     icon: "discord",
-    type: "supabase",
-  },
-  {
-    name: "github",
-    displayName: "GitHub",
-    icon: "github",
     type: "supabase",
   },
 ] as const;

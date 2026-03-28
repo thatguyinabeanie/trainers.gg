@@ -40,7 +40,6 @@ jest.mock("@/actions/identities", () => ({
 
 jest.mock("@/lib/supabase/auth", () => ({
   oauthProviders: [
-    { name: "google", displayName: "Google", icon: "google", type: "supabase" },
     { name: "twitter", displayName: "X", icon: "twitter", type: "supabase" },
     {
       name: "discord",
@@ -48,7 +47,6 @@ jest.mock("@/lib/supabase/auth", () => ({
       icon: "discord",
       type: "supabase",
     },
-    { name: "github", displayName: "GitHub", icon: "github", type: "supabase" },
   ],
 }));
 
@@ -92,10 +90,8 @@ describe("LinkedIdentitiesSection", () => {
       render(<LinkedIdentitiesSection />);
 
       await waitFor(() => {
-        expect(screen.getByText("Google")).toBeInTheDocument();
         expect(screen.getByText("X")).toBeInTheDocument();
         expect(screen.getByText("Discord")).toBeInTheDocument();
-        expect(screen.getByText("GitHub")).toBeInTheDocument();
       });
     });
 
@@ -104,8 +100,8 @@ describe("LinkedIdentitiesSection", () => {
 
       await waitFor(() => {
         const notConnected = screen.getAllByText("Not connected");
-        // 4 OAuth providers + Bluesky
-        expect(notConnected).toHaveLength(5);
+        // 2 OAuth providers + Bluesky
+        expect(notConnected).toHaveLength(3);
       });
     });
 
@@ -114,17 +110,17 @@ describe("LinkedIdentitiesSection", () => {
         {
           id: "identity-1",
           user_id: "user-123",
-          identity_id: "google-123",
-          provider: "google",
+          identity_id: "discord-123",
+          provider: "discord",
         },
       ];
 
       render(<LinkedIdentitiesSection />);
 
       await waitFor(() => {
-        expect(screen.getByText("Google")).toBeInTheDocument();
-        const googleContainer = screen.getByText("Google").closest("div");
-        expect(googleContainer).toHaveTextContent("Connected");
+        expect(screen.getByText("Discord")).toBeInTheDocument();
+        const discordContainer = screen.getByText("Discord").closest("div");
+        expect(discordContainer).toHaveTextContent("Connected");
       });
     });
 
@@ -175,20 +171,20 @@ describe("LinkedIdentitiesSection", () => {
       render(<LinkedIdentitiesSection />);
 
       await waitFor(() => {
-        expect(screen.getByText("Google")).toBeInTheDocument();
+        expect(screen.getByText("Discord")).toBeInTheDocument();
       });
 
-      // Find the Google row specifically and click its Connect button
-      const googleRow = screen
-        .getByText("Google")
+      // Find the Discord row specifically and click its Connect button
+      const discordRow = screen
+        .getByText("Discord")
         .closest(".flex.items-center.justify-between") as HTMLElement;
-      const connectButton = within(googleRow).getByRole("button", {
+      const connectButton = within(discordRow).getByRole("button", {
         name: /connect/i,
       });
       await user.click(connectButton);
 
       expect(mockSignInWithOAuth).toHaveBeenCalledWith(
-        "google",
+        "discord",
         "/dashboard/settings/account"
       );
     });
@@ -223,14 +219,14 @@ describe("LinkedIdentitiesSection", () => {
         {
           id: "identity-1",
           user_id: "user-123",
-          identity_id: "google-123",
-          provider: "google",
+          identity_id: "discord-123",
+          provider: "discord",
         },
         {
           id: "identity-2",
           user_id: "user-123",
-          identity_id: "github-456",
-          provider: "github",
+          identity_id: "twitter-456",
+          provider: "twitter",
         },
       ];
       mockUnlinkIdentity.mockResolvedValue({ error: null });
@@ -244,13 +240,13 @@ describe("LinkedIdentitiesSection", () => {
       const disconnectButtons = screen.getAllByRole("button", {
         name: /disconnect/i,
       });
-      await user.click(disconnectButtons[0]); // Disconnect Google
+      await user.click(disconnectButtons[0]); // Disconnect X (first in provider list)
 
       await waitFor(() => {
         expect(mockUnlinkIdentity).toHaveBeenCalledWith(
           expect.objectContaining({
-            id: "identity-1",
-            provider: "google",
+            id: "identity-2",
+            provider: "twitter",
           })
         );
       });
@@ -262,14 +258,14 @@ describe("LinkedIdentitiesSection", () => {
         {
           id: "identity-1",
           user_id: "user-123",
-          identity_id: "google-123",
-          provider: "google",
+          identity_id: "discord-123",
+          provider: "discord",
         },
         {
           id: "identity-2",
           user_id: "user-123",
-          identity_id: "github-456",
-          provider: "github",
+          identity_id: "twitter-456",
+          provider: "twitter",
         },
       ];
       mockUnlinkIdentity.mockResolvedValue({ error: null });
@@ -296,14 +292,14 @@ describe("LinkedIdentitiesSection", () => {
         {
           id: "identity-1",
           user_id: "user-123",
-          identity_id: "google-123",
-          provider: "google",
+          identity_id: "discord-123",
+          provider: "discord",
         },
         {
           id: "identity-2",
           user_id: "user-123",
-          identity_id: "github-456",
-          provider: "github",
+          identity_id: "twitter-456",
+          provider: "twitter",
         },
       ];
       mockUnlinkIdentity.mockResolvedValue({
@@ -332,8 +328,8 @@ describe("LinkedIdentitiesSection", () => {
         {
           id: "identity-1",
           user_id: "user-123",
-          identity_id: "google-123",
-          provider: "google",
+          identity_id: "discord-123",
+          provider: "discord",
         },
       ];
       mockGetBlueskyStatus.mockResolvedValue({
@@ -376,8 +372,8 @@ describe("LinkedIdentitiesSection", () => {
         {
           id: "identity-1",
           user_id: "user-123",
-          identity_id: "google-123",
-          provider: "google",
+          identity_id: "discord-123",
+          provider: "discord",
         },
       ];
       mockGetBlueskyStatus.mockResolvedValue({
@@ -402,8 +398,8 @@ describe("LinkedIdentitiesSection", () => {
         {
           id: "identity-1",
           user_id: "user-123",
-          identity_id: "google-123",
-          provider: "google",
+          identity_id: "discord-123",
+          provider: "discord",
         },
       ];
       mockGetBlueskyStatus.mockResolvedValue({
@@ -418,7 +414,7 @@ describe("LinkedIdentitiesSection", () => {
       render(<LinkedIdentitiesSection />);
 
       await waitFor(() => {
-        // Google shows "Connected", Bluesky shows the handle
+        // Discord shows "Connected", Bluesky shows the handle
         expect(screen.getByText("Connected")).toBeInTheDocument();
         expect(screen.getByText("@testuser.trainers.gg")).toBeInTheDocument();
       });
@@ -437,8 +433,8 @@ describe("LinkedIdentitiesSection", () => {
         {
           id: "identity-1",
           user_id: "user-123",
-          identity_id: "google-123",
-          provider: "google",
+          identity_id: "discord-123",
+          provider: "discord",
         },
       ];
 
@@ -467,8 +463,8 @@ describe("LinkedIdentitiesSection", () => {
         {
           id: "identity-1",
           user_id: "user-123",
-          identity_id: "google-123",
-          provider: "google",
+          identity_id: "discord-123",
+          provider: "discord",
         },
       ];
 
@@ -497,14 +493,14 @@ describe("LinkedIdentitiesSection", () => {
         {
           id: "identity-1",
           user_id: "user-123",
-          identity_id: "google-123",
-          provider: "google",
+          identity_id: "discord-123",
+          provider: "discord",
         },
         {
           id: "identity-2",
           user_id: "user-123",
-          identity_id: "github-456",
-          provider: "github",
+          identity_id: "twitter-456",
+          provider: "twitter",
         },
       ];
 
@@ -537,14 +533,14 @@ describe("LinkedIdentitiesSection", () => {
         {
           id: "identity-1",
           user_id: "user-123",
-          identity_id: "google-123",
-          provider: "google",
+          identity_id: "discord-123",
+          provider: "discord",
         },
         {
           id: "identity-2",
           user_id: "user-123",
-          identity_id: "github-456",
-          provider: "github",
+          identity_id: "twitter-456",
+          provider: "twitter",
         },
       ];
 
@@ -584,7 +580,7 @@ describe("LinkedIdentitiesSection", () => {
 
       await waitFor(() => {
         // Should still render OAuth providers
-        expect(screen.getByText("Google")).toBeInTheDocument();
+        expect(screen.getByText("Discord")).toBeInTheDocument();
         // Bluesky row still renders but shows "Not connected"
         expect(screen.getByText("Bluesky")).toBeInTheDocument();
       });
@@ -601,8 +597,8 @@ describe("LinkedIdentitiesSection", () => {
         {
           id: "identity-1",
           user_id: "user-123",
-          identity_id: "google-123",
-          provider: "google",
+          identity_id: "discord-123",
+          provider: "discord",
         },
       ];
       mockGetBlueskyStatus.mockResolvedValue({
