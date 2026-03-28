@@ -14,7 +14,7 @@ export function ComingSoon({
   bullets,
 }: ComingSoonProps) {
   return (
-    <div className="relative flex min-h-[70vh] items-center justify-center overflow-hidden px-4 py-16">
+    <div className="relative flex min-h-[70vh] items-start justify-center overflow-hidden px-4 pt-24 pb-16">
       {/* Dot grid background — light mode */}
       <div
         className="pointer-events-none absolute inset-0 dark:hidden"
