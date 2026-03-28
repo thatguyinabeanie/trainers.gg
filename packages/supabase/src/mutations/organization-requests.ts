@@ -244,7 +244,7 @@ export async function grantCommunityRequest(
         const { error: cancelError } = await supabase
           .from("community_requests")
           .update({
-            status: "rejected" as const,
+            status: "cancelled" as const,
             admin_notes: `Automatically closed — community granted via request #${requestId}`,
             reviewed_by: adminUserId,
             reviewed_at: new Date().toISOString(),
@@ -258,7 +258,7 @@ export async function grantCommunityRequest(
           });
         } else {
           await supabase.from("audit_log").insert({
-            action: "admin.org_request_rejected" as const,
+            action: "admin.org_request_cancelled" as const,
             actor_user_id: adminUserId,
             metadata: {
               request_id: dup.id,

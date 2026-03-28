@@ -14,7 +14,7 @@ export interface CommunityRequestRow {
   description: string | null;
   discord_invite_url: string;
   social_links: { platform: string; url: string }[] | null;
-  status: "pending" | "approved" | "rejected";
+  status: "pending" | "approved" | "rejected" | "cancelled";
   admin_notes: string | null;
   reviewed_at: string | null;
   created_at: string;
@@ -38,6 +38,7 @@ export const communityRequestStatusLabels: Record<
   pending: "Pending",
   approved: "Approved",
   rejected: "Rejected",
+  cancelled: "Cancelled",
 };
 
 const communityRequestStatusClasses: Record<
@@ -49,6 +50,8 @@ const communityRequestStatusClasses: Record<
   approved:
     "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/25",
   rejected:
+    "bg-gray-500/15 text-gray-600 dark:text-gray-400 border-gray-500/25",
+  cancelled:
     "bg-gray-500/15 text-gray-600 dark:text-gray-400 border-gray-500/25",
 };
 

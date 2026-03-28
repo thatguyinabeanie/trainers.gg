@@ -54,6 +54,8 @@ const communityRequestStatusClasses: Record<
     "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/25",
   rejected:
     "bg-gray-500/15 text-gray-600 dark:text-gray-400 border-gray-500/25",
+  cancelled:
+    "bg-gray-500/15 text-gray-600 dark:text-gray-400 border-gray-500/25",
 };
 
 function formatDateTime(dateStr: string): string {

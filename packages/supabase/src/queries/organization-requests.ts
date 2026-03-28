@@ -39,7 +39,7 @@ export async function getMyOrganizationRequest(supabase: TypedClient) {
 
 export interface ListOrgRequestsAdminOptions {
   search?: string;
-  status?: "pending" | "approved" | "rejected";
+  status?: "pending" | "approved" | "rejected" | "cancelled";
   limit?: number;
   offset?: number;
 }
