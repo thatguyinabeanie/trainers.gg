@@ -667,12 +667,15 @@ $$;
 -- get_role_name_from_group_role: unchanged logic, just recreate to ensure it exists
 -- (it references no renamed objects, but we keep it for consistency)
 CREATE OR REPLACE FUNCTION public.get_role_name_from_group_role(p_group_role_id bigint)
-RETURNS text AS $$
+RETURNS text
+LANGUAGE SQL STABLE SECURITY DEFINER
+SET search_path = ''
+AS $$
   SELECT r.name
   FROM public.group_roles gr
   JOIN public.roles r ON gr.role_id = r.id
   WHERE gr.id = p_group_role_id
-$$ LANGUAGE SQL STABLE SECURITY DEFINER;
+$$;
 
 -- =============================================================================
 -- 12b. BACKWARD-COMPAT WRAPPERS FOR OLD FUNCTION NAMES

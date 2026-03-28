@@ -2,7 +2,7 @@ import type { Database } from "@trainers/supabase/types";
 import { createQuery, createMutation } from "./query-factory";
 import { apiCall } from "./client";
 
-type Organization = Database["public"]["Tables"]["organizations"]["Row"];
+type Organization = Database["public"]["Tables"]["communities"]["Row"];
 
 /**
  * Community API hooks using TanStack Query
