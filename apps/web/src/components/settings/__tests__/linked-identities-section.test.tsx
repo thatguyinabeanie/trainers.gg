@@ -47,6 +47,12 @@ jest.mock("@/lib/supabase/auth", () => ({
       icon: "discord",
       type: "supabase",
     },
+    {
+      name: "twitch",
+      displayName: "Twitch",
+      icon: "twitch",
+      type: "supabase",
+    },
   ],
 }));
 
@@ -92,6 +98,7 @@ describe("LinkedIdentitiesSection", () => {
       await waitFor(() => {
         expect(screen.getByText("X")).toBeInTheDocument();
         expect(screen.getByText("Discord")).toBeInTheDocument();
+        expect(screen.getByText("Twitch")).toBeInTheDocument();
       });
     });
 
@@ -100,8 +107,8 @@ describe("LinkedIdentitiesSection", () => {
 
       await waitFor(() => {
         const notConnected = screen.getAllByText("Not connected");
-        // 2 OAuth providers + Bluesky
-        expect(notConnected).toHaveLength(3);
+        // 3 OAuth providers + Bluesky
+        expect(notConnected).toHaveLength(4);
       });
     });
 
@@ -237,10 +244,14 @@ describe("LinkedIdentitiesSection", () => {
         expect(screen.getAllByText("Connected")).toHaveLength(2);
       });
 
-      const disconnectButtons = screen.getAllByRole("button", {
+      // Select by provider label to avoid depending on render order
+      const xRow = screen
+        .getByText("X")
+        .closest(".flex.items-center.justify-between") as HTMLElement;
+      const disconnectButton = within(xRow).getByRole("button", {
         name: /disconnect/i,
       });
-      await user.click(disconnectButtons[0]); // Disconnect X (first in provider list)
+      await user.click(disconnectButton);
 
       await waitFor(() => {
         expect(mockUnlinkIdentity).toHaveBeenCalledWith(

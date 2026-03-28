@@ -40,6 +40,7 @@ export const getAuthUrls = () => {
  * 1. Bluesky — platform-native identity (most prominent)
  * 2. X — social platform overlap with competitive Pokemon community
  * 3. Discord — community communication platform
+ * 4. Twitch — streaming platform popular with competitive Pokemon
  */
 export const oauthProviders = [
   {
@@ -52,6 +53,12 @@ export const oauthProviders = [
     name: "discord",
     displayName: "Discord",
     icon: "discord",
+    type: "supabase",
+  },
+  {
+    name: "twitch",
+    displayName: "Twitch",
+    icon: "twitch",
     type: "supabase",
   },
 ] as const;

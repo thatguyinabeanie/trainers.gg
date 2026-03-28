@@ -5,6 +5,7 @@
 import { useEffect, useState } from "react";
 import { type User, type Session } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/client";
+import { type OAuthProvider } from "@/lib/supabase/auth";
 
 export function useAuth() {
   const [user, setUser] = useState<User | null>(null);
@@ -51,7 +52,7 @@ export function useAuth() {
   };
 
   const signInWithOAuth = async (
-    provider: "discord" | "twitter",
+    provider: OAuthProvider,
     /** Optional path to redirect to after auth (e.g. "/tournaments/slug") */
     redirectPath?: string
   ) => {
