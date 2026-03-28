@@ -90,11 +90,10 @@ export default function HomePage() {
 
         {/* Bento grid — same background, no separate wrapper */}
         <BentoGrid />
+
+        {/* Under Construction */}
+        <UnderConstruction />
       </div>
-
-      {/* Under Construction */}
-      <UnderConstruction />
-
     </div>
   );
 }
