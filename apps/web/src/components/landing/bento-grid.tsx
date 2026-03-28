@@ -25,7 +25,7 @@ function BentoCard({
   return (
     <div
       className={cn(
-        "bg-muted/60 rounded-xl p-5",
+        "bg-muted/60 rounded-xl p-6",
         "dark:bg-[#1a1f2e]",
         className
       )}
@@ -281,8 +281,8 @@ function UnderConstructionPreview() {
 
 export function BentoGrid() {
   return (
-    <section className="mx-auto max-w-screen-xl px-4 py-12 sm:py-16">
-      <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
+    <section className="mx-auto max-w-screen-2xl px-6 py-16 sm:px-10 sm:py-20">
+      <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
         {/* Row 1: Alts (2-col) + Profile (2-row) */}
         <BentoCard
           step="01"
@@ -328,7 +328,7 @@ export function BentoGrid() {
         />
         <div
           className={cn(
-            "bg-primary/[0.03] rounded-xl border border-dashed border-primary/20 p-5"
+            "bg-primary/[0.03] rounded-xl border border-dashed border-primary/20 p-6"
           )}
         >
           <p className="text-muted-foreground mb-2.5 text-[9px] tracking-[2px] uppercase">
