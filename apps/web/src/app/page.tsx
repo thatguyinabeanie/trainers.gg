@@ -19,7 +19,7 @@ export default function HomePage() {
   return (
     <div>
       {/* Hero + Bento unified background */}
-      <div className="relative overflow-hidden dark:bg-[#070b0a]">
+      <div className="relative overflow-hidden">
         {/* Radial glow — very subtle, only near hero */}
         <div
           className="pointer-events-none absolute inset-0 hidden dark:block"
