@@ -26,7 +26,7 @@ export default function HomePage() {
           aria-hidden="true"
           style={{
             background:
-              "radial-gradient(ellipse at 50% 15%, oklch(0.7 0.12 183 / 0.04) 0%, transparent 45%)",
+              "radial-gradient(ellipse at 50% 130%, oklch(0.7 0.12 183 / 0.04) 0%, transparent 45%)",
           }}
         />
         <div
@@ -34,7 +34,7 @@ export default function HomePage() {
           aria-hidden="true"
           style={{
             background:
-              "radial-gradient(ellipse at 50% 15%, oklch(0.7 0.12 183 / 0.1) 0%, transparent 45%)",
+              "radial-gradient(ellipse at 50% 130%, oklch(0.7 0.12 183 / 0.1) 0%, transparent 45%)",
           }}
         />
 
