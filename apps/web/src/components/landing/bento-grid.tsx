@@ -53,9 +53,9 @@ function BentoCard({
 function AltsPreview() {
   const alts = [
     { name: "thatguyinabeanie", elo: "1482", gxe: "68.2", public: true },
-    { name: "VGC_Main", elo: "1350", gxe: "59.1", public: true },
-    { name: "ScoutAlt", elo: "1200", gxe: "50.0", public: false },
-    { name: "TestingGround", elo: "1200", gxe: "50.0", public: false },
+    { name: "AdamantBeanie", elo: "1350", gxe: "59.1", public: false },
+    { name: "CalmBeanie", elo: "1200", gxe: "50.0", public: false },
+    { name: "ModestBeanie", elo: "1200", gxe: "50.0", public: false },
   ] as const;
 
   return (
@@ -160,15 +160,24 @@ function ProfilePreview() {
         </p>
         <div className="space-y-1">
           <div className="flex items-center justify-between text-[10px]">
-            <span className="text-foreground font-medium">Spring Cup 2026</span>
+            <div>
+              <span className="text-foreground font-medium">Spring Cup 2026</span>
+              <span className="text-muted-foreground ml-1 text-[9px]">as AdamantBeanie</span>
+            </div>
             <span className="text-primary font-mono font-semibold">1st</span>
           </div>
           <div className="flex items-center justify-between text-[10px]">
-            <span className="text-foreground font-medium">Weekly #12</span>
+            <div>
+              <span className="text-foreground font-medium">Weekly #12</span>
+              <span className="text-muted-foreground ml-1 text-[9px]">as thatguyinabeanie</span>
+            </div>
             <span className="text-muted-foreground font-mono">5th</span>
           </div>
           <div className="flex items-center justify-between text-[10px]">
-            <span className="text-foreground font-medium">Ladder Series</span>
+            <div>
+              <span className="text-foreground font-medium">Ladder Series</span>
+              <span className="text-muted-foreground ml-1 text-[9px]">as AdamantBeanie</span>
+            </div>
             <span className="text-muted-foreground font-mono">3rd</span>
           </div>
         </div>
@@ -181,10 +190,7 @@ function ProfilePreview() {
         </p>
         <div className="flex flex-wrap gap-1">
           <span className="border-primary/20 text-primary rounded border px-1.5 py-0.5 text-[9px]">
-            VGC_Main
-          </span>
-          <span className="border-primary/20 text-primary rounded border px-1.5 py-0.5 text-[9px]">
-            OU_Grinder
+            AdamantBeanie
           </span>
         </div>
       </div>

@@ -59,7 +59,7 @@ describe("BentoGrid", () => {
   // -------------------------------------------------------------------------
   // 4. Alts preview: all 4 alt names are visible
   // -------------------------------------------------------------------------
-  it.each(["thatguyinabeanie", "VGC_Main", "ScoutAlt", "TestingGround"])(
+  it.each(["thatguyinabeanie", "AdamantBeanie", "CalmBeanie", "ModestBeanie"])(
     'renders alt name "%s"',
     (name) => {
       // The name appears in both the AltsPreview row and the ProfilePreview — getAllByText is safe
@@ -76,8 +76,7 @@ describe("BentoGrid", () => {
   });
 
   it("renders public alts in the profile preview", () => {
-    expect(screen.getAllByText("VGC_Main").length).toBeGreaterThan(0);
-    expect(screen.getByText("OU_Grinder")).toBeInTheDocument();
+    expect(screen.getAllByText("AdamantBeanie").length).toBeGreaterThan(0);
   });
 
   // -------------------------------------------------------------------------
