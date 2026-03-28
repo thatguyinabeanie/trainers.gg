@@ -83,7 +83,7 @@ git diff main --name-only -- 'packages/supabase/supabase/functions/'
 Check if the branch includes changes under `apps/web/`:
 
 ```bash
-git diff main --name-only -- apps/web/
+git diff --name-only main...HEAD -- apps/web/
 ```
 
 - If web files were changed, invoke the `mobile-parity` skill to analyze changes and check for mobile parity tickets in Linear.

@@ -38,13 +38,13 @@ Group the changed files by feature area using this mapping:
 | `players/` or `components/players/` | Player Directory | TGG-337 |
 | `u/[handle]` or `profile/` | Player Profile | TGG-338 |
 | `tournaments/` (listing/browse) | Tournament Directory | TGG-342 |
-| `tournaments/[slug]` (registration) | Registration Flow | TGG-343 |
-| `tournaments/[slug]/r/` or `components/match/` | Match Interface | TGG-344 |
-| `tournament/manage` (standings/bracket) | Bracket & Standings | TGG-345 |
+| `tournaments/[tournamentSlug]` (registration) | Registration Flow | TGG-343 |
+| `tournaments/[tournamentSlug]/r/` or `components/match/` | Match Interface | TGG-344 |
+| both `tournaments/` and `/manage` (standings/bracket) | Bracket & Standings | TGG-345 |
 | `communities/` or `components/communities/` | Community Directory | TGG-348 |
 | `communities/create` | Community Creation | TGG-349 |
 | `to-dashboard/` | TO Dashboard | TGG-351 |
-| `to-dashboard/[slug]/staff` | Staff Management | TGG-352 |
+| both `to-dashboard/` and `/staff` | Staff Management | TGG-352 |
 | `components/tournament/` | Tournament Experience | TGG-342, TGG-345 |
 | `components/notifications/` | Notifications | TGG-341 |
 | `components/settings/` | Settings | TGG-339 |
