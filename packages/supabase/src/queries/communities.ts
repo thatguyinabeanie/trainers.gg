@@ -1,8 +1,8 @@
 import type { Database } from "../types";
 import type { TypedClient } from "../client";
-type OrganizationRow = Database["public"]["Tables"]["organizations"]["Row"];
+type CommunityRow = Database["public"]["Tables"]["communities"]["Row"];
 
-export type CommunityWithCounts = OrganizationRow & {
+export type CommunityWithCounts = CommunityRow & {
   activeTournamentsCount: number;
   totalTournamentsCount: number;
 };
@@ -14,7 +14,7 @@ export async function listPublicCommunities(
   supabase: TypedClient
 ): Promise<CommunityWithCounts[]> {
   const { data: organizations, error } = await supabase
-    .from("organizations")
+    .from("communities")
     .select("*")
     .eq("status", "active")
     .order("created_at", { ascending: false });
@@ -36,7 +36,7 @@ export async function listPublicCommunities(
   // Build a map of org_id -> counts
   const countMap: Record<string, { total: number; active: number }> = {};
   for (const row of counts ?? []) {
-    countMap[String(row.organization_id)] = {
+    countMap[String(row.community_id)] = {
       total: Number(row.total_count),
       active: Number(row.active_count),
     };
@@ -62,7 +62,7 @@ export async function listCommunities(
   const { limit = 10, offset = 0, searchTerm } = options;
 
   let query = supabase
-    .from("organizations")
+    .from("communities")
     .select(
       `
       *,
@@ -84,14 +84,14 @@ export async function listCommunities(
   const orgsWithCounts = await Promise.all(
     (data ?? []).map(async (org) => {
       const { count: staffCount } = await supabase
-        .from("organization_staff")
+        .from("community_staff")
         .select("*", { count: "exact", head: true })
-        .eq("organization_id", org.id);
+        .eq("community_id", org.id);
 
       const { count: tournamentCount } = await supabase
         .from("tournaments")
         .select("*", { count: "exact", head: true })
-        .eq("organization_id", org.id)
+        .eq("community_id", org.id)
         .is("archived_at", null);
 
       return {
@@ -114,7 +114,7 @@ export async function listCommunities(
  */
 export async function getCommunityBySlug(supabase: TypedClient, slug: string) {
   const { data: organization, error } = await supabase
-    .from("organizations")
+    .from("communities")
     .select(
       `
       *,
@@ -129,15 +129,15 @@ export async function getCommunityBySlug(supabase: TypedClient, slug: string) {
 
   // Get follower count (organization staff)
   const { count: followerCount } = await supabase
-    .from("organization_staff")
+    .from("community_staff")
     .select("*", { count: "exact", head: true })
-    .eq("organization_id", organization.id);
+    .eq("community_id", organization.id);
 
   // Get all tournaments for this organization
   const { data: allTournaments } = await supabase
     .from("tournaments")
     .select("*")
-    .eq("organization_id", organization.id)
+    .eq("community_id", organization.id)
     .is("archived_at", null)
     .order("created_at", { ascending: false });
 
@@ -215,7 +215,7 @@ export async function getCommunityBySlug(supabase: TypedClient, slug: string) {
  */
 export async function getCommunityById(supabase: TypedClient, id: number) {
   const { data, error } = await supabase
-    .from("organizations")
+    .from("communities")
     .select(
       `
       *,
@@ -259,7 +259,7 @@ export async function listMyCommunities(
 
   // Get organizations where user is owner
   const { data: ownedOrgs } = await supabase
-    .from("organizations")
+    .from("communities")
     .select("*")
     .eq("owner_user_id", targetUserId);
 
@@ -267,7 +267,7 @@ export async function listMyCommunities(
   let staffOrgs: typeof ownedOrgs = [];
   if (userId) {
     const { data: staffRecords } = await supabase
-      .from("organization_staff")
+      .from("community_staff")
       .select(
         `
         organization:organizations(*)
@@ -313,7 +313,7 @@ export async function canManageCommunity(
 ) {
   // Check if owner (owner_user_id is now a uuid)
   const { data: org } = await supabase
-    .from("organizations")
+    .from("communities")
     .select("owner_user_id")
     .eq("id", organizationId)
     .single();
@@ -324,15 +324,15 @@ export async function canManageCommunity(
 
   // Check if user has ORG_MANAGE permission through RBAC
   // Note: Using user_id (user-level permissions) for organization management
-  // The JOIN chain: user_group_roles → group_roles → groups (which has organization_id)
+  // The JOIN chain: user_group_roles → group_roles → groups (which has community_id)
   // We skip permission checking for now as the schema is complex
   // TODO: Implement full permission checking via group_roles → groups → organization
 
   // For now, just check if user is staff in the organization
   const { data: staffRecord } = await supabase
-    .from("organization_staff")
+    .from("community_staff")
     .select("id")
-    .eq("organization_id", organizationId)
+    .eq("community_id", organizationId)
     .eq("user_id", userId)
     .single();
 
@@ -347,14 +347,14 @@ export async function listCommunityStaff(
   organizationId: number
 ) {
   const { data, error } = await supabase
-    .from("organization_staff")
+    .from("community_staff")
     .select(
       `
       *,
       user:users(*)
     `
     )
-    .eq("organization_id", organizationId);
+    .eq("community_id", organizationId);
 
   if (error) throw error;
   return data ?? [];
@@ -370,7 +370,7 @@ export async function hasCommunityAccess(
 ) {
   // Check if owner (owner_user_id is now a uuid)
   const { data: org } = await supabase
-    .from("organizations")
+    .from("communities")
     .select("owner_user_id")
     .eq("id", organizationId)
     .single();
@@ -381,9 +381,9 @@ export async function hasCommunityAccess(
 
   // Check if staff (now uses user_id directly, not via alt)
   const { data } = await supabase
-    .from("organization_staff")
+    .from("community_staff")
     .select("id")
-    .eq("organization_id", organizationId)
+    .eq("community_id", organizationId)
     .eq("user_id", userId)
     .single();
 
@@ -398,12 +398,12 @@ export async function getMyCommunityInvitations(
   userId: string
 ) {
   const { data: invitations, error } = await supabase
-    .from("organization_invitations")
+    .from("community_invitations")
     .select(
       `
       *,
       organization:organizations(*),
-      invited_by:users!organization_invitations_invited_by_user_id_fkey(*)
+      invited_by:users!community_invitations_invited_by_user_id_fkey(*)
     `
     )
     .eq("invited_user_id", userId)
@@ -421,15 +421,15 @@ export async function getCommunityInvitations(
   organizationId: number
 ) {
   const { data: invitations, error } = await supabase
-    .from("organization_invitations")
+    .from("community_invitations")
     .select(
       `
       *,
-      invited_user:users!organization_invitations_invited_user_id_fkey(*),
-      invited_by:users!organization_invitations_invited_by_user_id_fkey(*)
+      invited_user:users!community_invitations_invited_user_id_fkey(*),
+      invited_by:users!community_invitations_invited_by_user_id_fkey(*)
     `
     )
-    .eq("organization_id", organizationId)
+    .eq("community_id", organizationId)
     .eq("status", "pending");
 
   if (error) throw error;
@@ -454,7 +454,7 @@ export async function listMyOwnedCommunities(
   }
 
   const { data: ownedOrgs, error } = await supabase
-    .from("organizations")
+    .from("communities")
     .select("*")
     .eq("owner_user_id", targetUserId)
     .order("name", { ascending: true });
@@ -471,7 +471,7 @@ export async function getCommunityWithTournamentStats(
   orgSlug: string
 ) {
   const { data: organization, error } = await supabase
-    .from("organizations")
+    .from("communities")
     .select("*")
     .eq("slug", orgSlug)
     .single();
@@ -483,7 +483,7 @@ export async function getCommunityWithTournamentStats(
   const { data: tournaments } = await supabase
     .from("tournaments")
     .select("id, status")
-    .eq("organization_id", organization.id)
+    .eq("community_id", organization.id)
     .is("archived_at", null);
 
   // Count by status in memory (avoids N+1 queries)
@@ -519,9 +519,9 @@ export async function getCommunityWithTournamentStats(
 
   // Get staff count
   const { count: staffCount } = await supabase
-    .from("organization_staff")
+    .from("community_staff")
     .select("*", { count: "exact", head: true })
-    .eq("organization_id", organization.id);
+    .eq("community_id", organization.id);
 
   return {
     ...organization,
@@ -559,7 +559,7 @@ export async function listCommunityTournaments(
     `,
       { count: "exact" }
     )
-    .eq("organization_id", organizationId)
+    .eq("community_id", organizationId)
     .is("archived_at", null)
     .order("created_at", { ascending: false });
 
@@ -607,7 +607,7 @@ export async function listCommunityTournaments(
 export type StaffWithRole = {
   id: number;
   user_id: string;
-  organization_id: number;
+  community_id: number;
   created_at: string | null;
   user: {
     id: string;
@@ -638,7 +638,7 @@ export async function listCommunityStaffWithRoles(
 ): Promise<StaffWithRole[]> {
   // Get organization owner
   const { data: org } = await supabase
-    .from("organizations")
+    .from("communities")
     .select("owner_user_id")
     .eq("id", organizationId)
     .single();
@@ -647,17 +647,17 @@ export async function listCommunityStaffWithRoles(
 
   // Get all staff members with user details
   const { data: staffMembers, error: staffError } = await supabase
-    .from("organization_staff")
+    .from("community_staff")
     .select(
       `
       id,
       user_id,
-      organization_id,
+      community_id,
       created_at,
       user:users(id, username, first_name, last_name, image, email)
     `
     )
-    .eq("organization_id", organizationId);
+    .eq("community_id", organizationId);
 
   if (staffError) throw staffError;
 
@@ -668,10 +668,10 @@ export async function listCommunityStaffWithRoles(
       `
       id,
       name,
-      organization_id
+      community_id
     `
     )
-    .eq("organization_id", organizationId);
+    .eq("community_id", organizationId);
 
   const groupIds = (groups ?? []).map((g) => g.id);
 
@@ -743,7 +743,7 @@ export async function listCommunityStaffWithRoles(
         result.push({
           id: -1, // Special ID for owner not in staff table
           user_id: ownerUserId,
-          organization_id: organizationId,
+          community_id: organizationId,
           created_at: null,
           user: ownerUser,
           group: null,
@@ -760,7 +760,7 @@ export async function listCommunityStaffWithRoles(
     result.push({
       id: staff.id,
       user_id: staff.user_id,
-      organization_id: staff.organization_id,
+      community_id: staff.community_id,
       created_at: staff.created_at,
       user: staff.user,
       group: userRole?.group ?? null,
@@ -829,7 +829,7 @@ export async function listCommunityGroups(
       )
     `
     )
-    .eq("organization_id", organizationId)
+    .eq("community_id", organizationId)
     .order("name");
 
   if (error) throw error;
@@ -902,15 +902,15 @@ export async function searchUsersForInvite(
 
   // Get existing staff user IDs
   const { data: existingStaff } = await supabase
-    .from("organization_staff")
+    .from("community_staff")
     .select("user_id")
-    .eq("organization_id", organizationId);
+    .eq("community_id", organizationId);
 
   const existingUserIds = (existingStaff ?? []).map((s) => s.user_id);
 
   // Get organization owner
   const { data: org } = await supabase
-    .from("organizations")
+    .from("communities")
     .select("owner_user_id")
     .eq("id", organizationId)
     .single();
