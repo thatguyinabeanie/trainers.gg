@@ -65,18 +65,24 @@ export async function POST(request: NextRequest) {
   // SAFETY: Even in preview mode, never seed the production database.
   // Preview deploys can fall back to the production Supabase URL when
   // branching isn't set up or the branch doesn't exist yet.
-  const supabaseUrl = process.env.SUPABASE_URL ?? "";
-  const projectRefMatch = supabaseUrl.match(
-    /https:\/\/([a-z0-9]+)\.supabase\.co/i
-  );
-  const projectRef = projectRefMatch?.[1];
-  const productionProjectRef = process.env.SUPABASE_PRODUCTION_PROJECT_REF;
-
-  if (!productionProjectRef || projectRef === productionProjectRef) {
-    console.error(
-      `[e2e/seed] BLOCKED: ${!productionProjectRef ? "SUPABASE_PRODUCTION_PROJECT_REF not set" : `connected to production database (${projectRef})`}`
+  // Skip this check for local dev (no VERCEL_ENV) — production ref won't be set locally.
+  if (vercelEnv) {
+    const supabaseUrl =
+      process.env.NEXT_PUBLIC_SUPABASE_URL ??
+      process.env.SUPABASE_URL ??
+      "";
+    const projectRefMatch = supabaseUrl.match(
+      /https:\/\/([a-z0-9]+)\.supabase\.co/i
     );
-    return NextResponse.json({ error: "Not found" }, { status: 404 });
+    const projectRef = projectRefMatch?.[1];
+    const productionProjectRef = process.env.SUPABASE_PRODUCTION_PROJECT_REF;
+
+    if (!productionProjectRef || projectRef === productionProjectRef) {
+      console.error(
+        `[e2e/seed] BLOCKED: ${!productionProjectRef ? "SUPABASE_PRODUCTION_PROJECT_REF not set" : `connected to production database (${projectRef})`}`
+      );
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
   }
 
   // Validate secret
