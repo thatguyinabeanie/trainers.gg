@@ -1,6 +1,4 @@
 import Link from "next/link";
-import { buttonVariants } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
 
 interface ComingSoonProps {
   emoji: string;
@@ -73,10 +71,7 @@ export function ComingSoon({
 
         <Link
           href="/"
-          className={cn(
-            buttonVariants({ variant: "outline", size: "lg" }),
-            "gap-2"
-          )}
+          className="border-border bg-background hover:bg-muted inline-flex items-center gap-2 rounded-lg border px-4 py-2 text-sm font-medium transition-colors"
         >
           ← Back to Home
         </Link>
