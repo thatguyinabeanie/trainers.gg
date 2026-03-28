@@ -4,7 +4,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useSupabaseQuery } from "@/lib/supabase";
 import {
   getTournamentBySlug,
-  getOrganizationBySlug,
+  getCommunityBySlug,
   getTournamentPhases,
 } from "@trainers/supabase";
 import { useCurrentUser } from "@/hooks/use-current-user";
@@ -65,8 +65,8 @@ export function TournamentManageClient({
   const { user: currentUser, isLoading: userLoading } = useCurrentUser();
 
   // Fetch organization by slug
-  const orgQueryFn = (supabase: Parameters<typeof getOrganizationBySlug>[0]) =>
-    getOrganizationBySlug(supabase, orgSlug);
+  const orgQueryFn = (supabase: Parameters<typeof getCommunityBySlug>[0]) =>
+    getCommunityBySlug(supabase, orgSlug);
 
   const { data: organization, isLoading: orgLoading } = useSupabaseQuery(
     orgQueryFn,

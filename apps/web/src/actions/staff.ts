@@ -12,7 +12,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getErrorMessage } from "@/lib/utils";
 import {
   searchUsersForInvite as searchUsersQuery,
-  listOrganizationGroups as listGroupsQuery,
+  listCommunityGroups as listGroupsQuery,
   addStaffMember as addStaffMemberMutation,
   addStaffToGroup as addStaffToGroupMutation,
   changeStaffRole as changeRoleMutation,
@@ -82,9 +82,9 @@ export async function inviteStaffMember(
 
     // Revalidate organization page to show new staff member
     if (slug) {
-      updateTag(CacheTags.organization(slug));
+      updateTag(CacheTags.community(slug));
     }
-    updateTag(CacheTags.organization(organizationId));
+    updateTag(CacheTags.community(organizationId));
 
     return { success: true, data: { success: true } };
   } catch (error) {
@@ -111,9 +111,9 @@ export async function inviteStaffToGroup(
 
     // Revalidate organization page to show new staff member
     if (slug) {
-      updateTag(CacheTags.organization(slug));
+      updateTag(CacheTags.community(slug));
     }
-    updateTag(CacheTags.organization(organizationId));
+    updateTag(CacheTags.community(organizationId));
 
     return { success: true, data: { success: true } };
   } catch (error) {
@@ -140,9 +140,9 @@ export async function changeStaffRoleAction(
 
     // Revalidate organization page
     if (slug) {
-      updateTag(CacheTags.organization(slug));
+      updateTag(CacheTags.community(slug));
     }
-    updateTag(CacheTags.organization(organizationId));
+    updateTag(CacheTags.community(organizationId));
 
     return { success: true, data: { success: true } };
   } catch (error) {
@@ -180,9 +180,9 @@ export async function removeStaffAction(
 
     // Revalidate organization page
     if (slug) {
-      updateTag(CacheTags.organization(slug));
+      updateTag(CacheTags.community(slug));
     }
-    updateTag(CacheTags.organization(organizationId));
+    updateTag(CacheTags.community(organizationId));
 
     return { success: true, data: { success: true } };
   } catch (error) {

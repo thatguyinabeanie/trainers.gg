@@ -66,7 +66,8 @@ const validatorSubpaths = [
   "auth",
   "tournament",
   "alt",
-  "organization",
+  "community",
+  "organization-request",
   "admin",
   "action-result",
 ];

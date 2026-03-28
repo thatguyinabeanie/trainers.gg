@@ -78,6 +78,7 @@ function exec(command, options = {}) {
  * Even if VERCEL_ENV=preview, if we're connected to production Supabase, skip seeding
  *
  * Set via SUPABASE_PRODUCTION_PROJECT_REF env var.
+ * If unset, seeding is blocked as a safety precaution.
  */
 const PRODUCTION_PROJECT_REF = process.env.SUPABASE_PRODUCTION_PROJECT_REF;
 
@@ -102,6 +103,17 @@ function getEnvironment(projectRef = null) {
     // 1. A branch push triggers a preview deploy before a PR is created
     // 2. Supabase branching is not enabled or the branch doesn't exist yet
     // 3. The Supabase Vercel integration falls back to production URL
+    if (!PRODUCTION_PROJECT_REF) {
+      console.log(
+        `\n⚠️  WARNING: SUPABASE_PRODUCTION_PROJECT_REF is not set!`
+      );
+      console.log(
+        `   Cannot verify whether this is the production database.`
+      );
+      console.log(`   Seeding will be SKIPPED as a safety precaution.\n`);
+      return { type: "preview", shouldRun: true, shouldSeed: false };
+    }
+
     const isProductionDatabase = projectRef === PRODUCTION_PROJECT_REF;
 
     if (isProductionDatabase) {
@@ -340,27 +352,34 @@ async function runMigrations() {
     SUPABASE_DB_PASSWORD: process.env.POSTGRES_PASSWORD,
   };
 
-  // For preview environments, skip migrations - Supabase applies them automatically
-  // when creating the preview branch. Running migrations again causes conflicts.
+  // --- Migrations ---
   if (env.type === "preview" && !isProductionDb) {
+    // Supabase GitHub integration applies migrations when creating the preview branch.
+    // Running them again from the Vercel build would cause duplicate schema objects.
     console.log("\n⏭️  Skipping migrations for preview branch");
     console.log("   Supabase automatically applies migrations when creating preview branches.");
-    console.log("   Running migrations again would cause duplicate schema objects.");
   } else if (env.type === "preview" && isProductionDb) {
     // SAFETY: Never push unmerged branch migrations to production.
-    // This happens when Supabase branching falls back to the production URL
-    // (e.g., branch push before PR creation, or branching not enabled).
     console.log("\n⛔ Skipping migrations — preview deploy connected to production DB");
     console.log("   Unmerged migrations must not be applied to production.");
     console.log("   Migrations will run when the branch is merged to main.\n");
   } else {
-    // Production deploy from main — push new migrations and deploy edge functions
+    // Production deploy from main — push new migrations
     console.log("\n🔗 Linking to Supabase project...");
     exec(`npx supabase link --project-ref ${projectRef}`, { env: cliEnv });
 
     console.log("\n📤 Applying migrations...");
     exec("npx supabase db push --linked", { env: cliEnv });
+  }
 
+  // --- Edge Functions ---
+  // Deploy edge functions from the Vercel build for both production and preview.
+  // The Supabase GitHub integration's remote bundler cannot resolve monorepo
+  // imports, so function declarations are NOT in config.toml — this build
+  // pipeline is the sole deployment path for edge functions.
+  if (env.type === "preview" && isProductionDb) {
+    console.log("\n⏭️  Skipping edge function deploy — connected to production DB");
+  } else {
     console.log("\n📦 Vendoring monorepo packages for edge functions...");
     exec("npx tsx scripts/vendor-packages.ts --deploy", {
       cwd: SUPABASE_DIR,

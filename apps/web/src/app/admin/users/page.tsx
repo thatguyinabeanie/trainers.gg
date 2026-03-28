@@ -7,7 +7,6 @@ import {
   ChevronRight,
   RefreshCw,
   Users,
-  Mail,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,7 +17,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { DataTable } from "@/components/ui/data-table";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useSupabaseQuery } from "@/lib/supabase";
@@ -26,7 +24,6 @@ import { listUsersAdmin } from "@trainers/supabase";
 import type { TypedSupabaseClient } from "@trainers/supabase";
 import { columns, type AdminUserRow } from "./columns";
 import { UserDetailSheet } from "./user-detail-sheet";
-import { InvitesTab } from "./invites-tab";
 
 // ----------------------------------------------------------------
 // Constants
@@ -246,26 +243,5 @@ function UsersTabContent() {
 // ----------------------------------------------------------------
 
 export default function UsersPage() {
-  return (
-    <Tabs defaultValue="users">
-      <TabsList>
-        <TabsTrigger value="users">
-          <Users className="size-4" />
-          Users
-        </TabsTrigger>
-        <TabsTrigger value="invites">
-          <Mail className="size-4" />
-          Invites
-        </TabsTrigger>
-      </TabsList>
-
-      <TabsContent value="users">
-        <UsersTabContent />
-      </TabsContent>
-
-      <TabsContent value="invites">
-        <InvitesTab />
-      </TabsContent>
-    </Tabs>
-  );
+  return <UsersTabContent />;
 }

@@ -1,3 +1,5 @@
+import type { CommunitySocialLink } from "@trainers/validators";
+import type { Json } from "../types";
 import type { TypedClient } from "../client";
 
 const COOLDOWN_DAYS = 7;
@@ -6,9 +8,15 @@ const COOLDOWN_DAYS = 7;
  * Submit an organization request.
  * Validates: no pending request, cooldown after rejection, slug uniqueness.
  */
-export async function submitOrganizationRequest(
+export async function submitCommunityRequest(
   supabase: TypedClient,
-  data: { name: string; slug: string; description?: string }
+  data: {
+    name: string;
+    slug: string;
+    description?: string;
+    discord_invite_url: string;
+    social_links?: CommunitySocialLink[];
+  }
 ) {
   const {
     data: { user },
@@ -87,6 +95,8 @@ export async function submitOrganizationRequest(
       name: data.name,
       slug,
       description: data.description || null,
+      discord_invite_url: data.discord_invite_url,
+      social_links: (data.social_links ?? []) as unknown as Json,
     })
     .select()
     .single();
@@ -100,7 +110,7 @@ export async function submitOrganizationRequest(
  * Creates the org, sets requester as owner/staff, creates notification.
  * Uses service role client (bypasses RLS).
  */
-export async function approveOrganizationRequest(
+export async function approveCommunityRequest(
   supabase: TypedClient,
   requestId: number,
   adminUserId: string
@@ -130,7 +140,19 @@ export async function approveOrganizationRequest(
     );
   }
 
-  // Create the organization
+  // Assemble social links from request (Discord invite + any additional)
+  const socialLinks: CommunitySocialLink[] = [];
+  if (request.discord_invite_url) {
+    socialLinks.push({ platform: "discord", url: request.discord_invite_url });
+  }
+  const requestSocialLinks = (request.social_links ??
+    []) as CommunitySocialLink[];
+  for (const link of requestSocialLinks) {
+    if (link.platform && link.url) {
+      socialLinks.push(link);
+    }
+  }
+
   const { data: org, error: orgError } = await supabase
     .from("organizations")
     .insert({
@@ -138,6 +160,9 @@ export async function approveOrganizationRequest(
       slug: request.slug,
       description: request.description,
       owner_user_id: request.user_id,
+      social_links: socialLinks as unknown as Json,
+      discord_invite_url: request.discord_invite_url ?? null,
+      status: "active" as const,
     })
     .select()
     .single();
@@ -176,7 +201,7 @@ export async function approveOrganizationRequest(
       type: "org_request_approved" as const,
       title: "Organization request approved",
       body: `Your organization "${request.name}" has been approved!`,
-      action_url: `/organizations/${request.slug}`,
+      action_url: `/communities/${request.slug}`,
     });
 
   if (notificationError) {
@@ -206,7 +231,7 @@ export async function approveOrganizationRequest(
  * Reject an organization request (admin action).
  * Stores reason, creates notification.
  */
-export async function rejectOrganizationRequest(
+export async function rejectCommunityRequest(
   supabase: TypedClient,
   requestId: number,
   adminUserId: string,
@@ -245,7 +270,7 @@ export async function rejectOrganizationRequest(
       type: "org_request_rejected" as const,
       title: "Organization request update",
       body: `Your request for "${request.name}" was not approved.`,
-      action_url: "/organizations/create",
+      action_url: "/communities/create",
     });
 
   if (notificationError) {

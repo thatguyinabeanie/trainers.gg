@@ -4,7 +4,6 @@ import {
   emailSchema,
   validatePassword,
   loginIdentifierSchema,
-  waitlistEmailSchema,
   signupRequestSchema,
 } from "../auth";
 
@@ -176,18 +175,6 @@ describe("loginIdentifierSchema", () => {
   });
 });
 
-describe("waitlistEmailSchema", () => {
-  it("trims and lowercases email", () => {
-    const result = waitlistEmailSchema.safeParse("  User@Example.COM  ");
-    expect(result.success).toBe(true);
-    if (result.success) expect(result.data).toBe("user@example.com");
-  });
-
-  it("rejects invalid email", () => {
-    expect(waitlistEmailSchema.safeParse("not-an-email").success).toBe(false);
-  });
-});
-
 describe("signupRequestSchema", () => {
   const validSignup = {
     email: "user@example.com",
@@ -206,7 +193,6 @@ describe("signupRequestSchema", () => {
       lastName: "Ketchum",
       birthDate: "1997-04-01",
       country: "JP",
-      inviteToken: "abc123",
     });
     expect(result.success).toBe(true);
   });

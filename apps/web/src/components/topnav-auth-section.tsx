@@ -27,7 +27,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { NotificationBell } from "@/components/notification-bell";
 import { useSupabaseQuery } from "@/lib/supabase";
-import { listMyOrganizations } from "@trainers/supabase";
+import { listMyCommunities } from "@trainers/supabase";
 import type { TypedSupabaseClient } from "@trainers/supabase";
 import { toggleSudoMode, checkSudoStatus } from "@/lib/sudo/actions";
 import { useEffect, useState } from "react";
@@ -40,7 +40,7 @@ export function TopNavAuthSection() {
   const userId = user?.id;
 
   const myOrganizationsQueryFn = (client: TypedSupabaseClient) =>
-    userId ? listMyOrganizations(client, userId) : Promise.resolve([]);
+    userId ? listMyCommunities(client, userId) : Promise.resolve([]);
 
   const { data: myOrganizations } = useSupabaseQuery(myOrganizationsQueryFn, [
     userId,
@@ -190,7 +190,7 @@ export function TopNavAuthSection() {
               <DropdownMenuSeparator />
               <DropdownMenuGroup>
                 <DropdownMenuLabel className="text-muted-foreground text-xs font-normal">
-                  My Organizations
+                  My Communities
                 </DropdownMenuLabel>
                 {myOrganizations.map((org) => (
                   <DropdownMenuItem key={org.id} className="justify-between">

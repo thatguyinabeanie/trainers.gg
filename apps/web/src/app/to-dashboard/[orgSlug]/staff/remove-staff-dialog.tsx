@@ -91,7 +91,7 @@ export function RemoveStaffDialog({
           </DialogTitle>
           <DialogDescription>
             Are you sure you want to remove this staff member? They will lose
-            all permissions in your organization.
+            all permissions in your community.
           </DialogDescription>
         </DialogHeader>
 

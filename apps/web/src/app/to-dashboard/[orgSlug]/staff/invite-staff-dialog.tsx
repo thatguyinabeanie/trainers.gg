@@ -173,8 +173,8 @@ export function InviteStaffDialog({
         <DialogHeader>
           <DialogTitle>Add Staff Member</DialogTitle>
           <DialogDescription>
-            Search for a user to add to your organization. You can assign them
-            to a group after they&apos;re added.
+            Search for a user to add to your community. You can assign them to a
+            group after they&apos;re added.
           </DialogDescription>
         </DialogHeader>
 

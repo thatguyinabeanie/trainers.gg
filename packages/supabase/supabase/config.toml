@@ -223,15 +223,9 @@ otp_length = 6
 # Number of seconds before the email OTP expires (defaults to 1 hour).
 otp_expiry = 3600
 
-# Use a production-ready SMTP server
-# [auth.email.smtp]
-# enabled = true
-# host = "smtp.sendgrid.net"
-# port = 587
-# user = "apikey"
-# pass = "env(SENDGRID_API_KEY)"
-# admin_email = "admin@email.com"
-# sender_name = "Admin"
+# Auth emails are handled by the send-auth-email edge function hook
+# (configured in Supabase Dashboard → Auth Hooks → Send Email)
+# No SMTP needed — emails sent via Resend API directly.
 
 # Uncomment to customize email template
 # [auth.email.template.invite]
@@ -393,42 +387,14 @@ PDS_HOST = "env(PDS_HOST)"
 PDS_ADMIN_PASSWORD = "env(PDS_ADMIN_PASSWORD)"
 PDS_HANDLE_DOMAIN = "env(PDS_HANDLE_DOMAIN)"
 RESEND_API_KEY = "env(RESEND_API_KEY)"
+SEND_EMAIL_HOOK_SECRET = "env(SEND_EMAIL_HOOK_SECRET)"
 
-# Edge Functions — declared here so the GitHub integration deploys them
-# Public functions (no JWT required — user isn't authenticated yet)
-[functions.signup]
-verify_jwt = false
-
-[functions.bluesky-auth]
-verify_jwt = false
-
-# Authenticated functions (gateway enforces valid JWT before function runs)
-[functions.send-invite]
-verify_jwt = true
-
-[functions.provision-pds]
-verify_jwt = true
-
-[functions.update-pds-handle]
-verify_jwt = true
-
-[functions.api-alts]
-verify_jwt = true
-
-[functions.api-matches]
-verify_jwt = true
-
-[functions.api-notifications]
-verify_jwt = true
-
-[functions.api-organizations]
-verify_jwt = true
-
-[functions.api-tournaments]
-verify_jwt = true
-
-[functions.send-org-request-notification]
-verify_jwt = true
+# Edge Functions
+# Deployed via the Vercel build pipeline (run-migrations.mjs → vendor-packages.ts).
+# NOT declared here — the Supabase GitHub integration's remote bundler cannot
+# resolve monorepo imports outside the supabase/ directory. Declaring functions
+# here causes "failed to bundle function: exit status 1" on every preview branch.
+# See: packages/supabase/scripts/vendor-packages.ts
 
 [analytics]
 enabled = true

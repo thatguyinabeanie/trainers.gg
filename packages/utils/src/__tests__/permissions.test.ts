@@ -5,42 +5,48 @@ describe("PERMISSIONS", () => {
     expect(Object.keys(PERMISSIONS).length).toBeGreaterThan(0);
   });
 
-  describe("organization permissions", () => {
-    it("has organization create permission", () => {
-      expect(PERMISSIONS.ORG_CREATE).toBe("organization.create");
+  describe("community permissions", () => {
+    it("has community create permission", () => {
+      expect(PERMISSIONS.COMMUNITY_CREATE).toBe("organization.create");
     });
 
-    it("has organization request permissions", () => {
-      expect(PERMISSIONS.ORG_REQUEST_CREATE).toBe(
+    it("has community request permissions", () => {
+      expect(PERMISSIONS.COMMUNITY_REQUEST_CREATE).toBe(
         "organization.request.create"
       );
-      expect(PERMISSIONS.ORG_REQUEST_APPROVE).toBe(
+      expect(PERMISSIONS.COMMUNITY_REQUEST_APPROVE).toBe(
         "organization.request.approve"
       );
-      expect(PERMISSIONS.ORG_REQUEST_REJECT).toBe(
+      expect(PERMISSIONS.COMMUNITY_REQUEST_REJECT).toBe(
         "organization.request.reject"
       );
-      expect(PERMISSIONS.ORG_REQUEST_VIEW_ALL).toBe(
+      expect(PERMISSIONS.COMMUNITY_REQUEST_VIEW_ALL).toBe(
         "organization.request.view.all"
       );
     });
 
-    it("has organization view permissions", () => {
-      expect(PERMISSIONS.ORG_VIEW_ALL).toBe("organization.view.all");
-      expect(PERMISSIONS.ORG_VIEW_OWN).toBe("organization.view.own");
+    it("has community view permissions", () => {
+      expect(PERMISSIONS.COMMUNITY_VIEW_ALL).toBe("organization.view.all");
+      expect(PERMISSIONS.COMMUNITY_VIEW_OWN).toBe("organization.view.own");
     });
 
-    it("has organization management permissions", () => {
-      expect(PERMISSIONS.ORG_UPDATE).toBe("organization.update");
-      expect(PERMISSIONS.ORG_DELETE).toBe("organization.delete");
-      expect(PERMISSIONS.ORG_INVITE_STAFF).toBe("organization.invite_staff");
-      expect(PERMISSIONS.ORG_VIEW_STAFF).toBe("organization.view_staff");
-      expect(PERMISSIONS.ORG_MANAGE_GROUP_ASSIGNMENTS).toBe(
+    it("has community management permissions", () => {
+      expect(PERMISSIONS.COMMUNITY_UPDATE).toBe("organization.update");
+      expect(PERMISSIONS.COMMUNITY_DELETE).toBe("organization.delete");
+      expect(PERMISSIONS.COMMUNITY_INVITE_STAFF).toBe(
+        "organization.invite_staff"
+      );
+      expect(PERMISSIONS.COMMUNITY_VIEW_STAFF).toBe("organization.view_staff");
+      expect(PERMISSIONS.COMMUNITY_MANAGE_GROUP_ASSIGNMENTS).toBe(
         "organization.manage_group_assignments"
       );
-      expect(PERMISSIONS.ORG_REMOVE_STAFF).toBe("organization.remove_staff");
-      expect(PERMISSIONS.ORG_REQUEST_JOIN).toBe("organization.request_join");
-      expect(PERMISSIONS.ORG_MANAGE_REQUESTS).toBe(
+      expect(PERMISSIONS.COMMUNITY_REMOVE_STAFF).toBe(
+        "organization.remove_staff"
+      );
+      expect(PERMISSIONS.COMMUNITY_REQUEST_JOIN).toBe(
+        "organization.request_join"
+      );
+      expect(PERMISSIONS.COMMUNITY_MANAGE_REQUESTS).toBe(
         "organization.manage_requests"
       );
     });

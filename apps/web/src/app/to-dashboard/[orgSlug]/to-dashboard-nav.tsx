@@ -85,7 +85,7 @@ export function TODashboardNav({ orgSlug, isOwner }: TODashboardNavProps) {
       </div>
 
       <Link
-        href={`/organizations/${orgSlug}`}
+        href={`/communities/${orgSlug}`}
         target="_blank"
         className="shrink-0"
       >

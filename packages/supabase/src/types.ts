@@ -281,54 +281,6 @@ export type Database = {
           },
         ]
       }
-      beta_invites: {
-        Row: {
-          converted_user_id: string | null
-          created_at: string
-          email: string
-          expires_at: string
-          id: number
-          invited_by: string
-          token: string
-          used_at: string | null
-        }
-        Insert: {
-          converted_user_id?: string | null
-          created_at?: string
-          email: string
-          expires_at?: string
-          id?: never
-          invited_by: string
-          token: string
-          used_at?: string | null
-        }
-        Update: {
-          converted_user_id?: string | null
-          created_at?: string
-          email?: string
-          expires_at?: string
-          id?: never
-          invited_by?: string
-          token?: string
-          used_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "beta_invites_converted_user_id_fkey"
-            columns: ["converted_user_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "beta_invites_invited_by_fkey"
-            columns: ["invited_by"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       feature_flags: {
         Row: {
           created_at: string
@@ -919,11 +871,13 @@ export type Database = {
           admin_notes: string | null
           created_at: string | null
           description: string | null
+          discord_invite_url: string
           id: number
           name: string
           reviewed_at: string | null
           reviewed_by: string | null
           slug: string
+          social_links: Json | null
           status: Database["public"]["Enums"]["org_request_status"]
           updated_at: string
           user_id: string
@@ -932,11 +886,13 @@ export type Database = {
           admin_notes?: string | null
           created_at?: string | null
           description?: string | null
+          discord_invite_url: string
           id?: never
           name: string
           reviewed_at?: string | null
           reviewed_by?: string | null
           slug: string
+          social_links?: Json | null
           status?: Database["public"]["Enums"]["org_request_status"]
           updated_at?: string
           user_id: string
@@ -945,11 +901,13 @@ export type Database = {
           admin_notes?: string | null
           created_at?: string | null
           description?: string | null
+          discord_invite_url?: string
           id?: never
           name?: string
           reviewed_at?: string | null
           reviewed_by?: string | null
           slug?: string
+          social_links?: Json | null
           status?: Database["public"]["Enums"]["org_request_status"]
           updated_at?: string
           user_id?: string
@@ -1011,6 +969,7 @@ export type Database = {
         Row: {
           created_at: string | null
           description: string | null
+          discord_invite_url: string | null
           icon: string | null
           id: number
           logo_url: string | null
@@ -1031,6 +990,7 @@ export type Database = {
         Insert: {
           created_at?: string | null
           description?: string | null
+          discord_invite_url?: string | null
           icon?: string | null
           id?: never
           logo_url?: string | null
@@ -1051,6 +1011,7 @@ export type Database = {
         Update: {
           created_at?: string | null
           description?: string | null
+          discord_invite_url?: string | null
           icon?: string | null
           id?: never
           logo_url?: string | null
@@ -2737,44 +2698,6 @@ export type Database = {
             columns: ["main_alt_id"]
             isOneToOne: false
             referencedRelation: "alts"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      waitlist: {
-        Row: {
-          converted_user_id: string | null
-          created_at: string
-          email: string
-          id: number
-          metadata: Json | null
-          notified_at: string | null
-          source: string | null
-        }
-        Insert: {
-          converted_user_id?: string | null
-          created_at?: string
-          email: string
-          id?: never
-          metadata?: Json | null
-          notified_at?: string | null
-          source?: string | null
-        }
-        Update: {
-          converted_user_id?: string | null
-          created_at?: string
-          email?: string
-          id?: never
-          metadata?: Json | null
-          notified_at?: string | null
-          source?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "waitlist_converted_user_id_fkey"
-            columns: ["converted_user_id"]
-            isOneToOne: false
-            referencedRelation: "users"
             referencedColumns: ["id"]
           },
         ]

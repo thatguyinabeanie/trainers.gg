@@ -137,6 +137,18 @@ Pre-commit: Husky runs lint-staged (Prettier auto-fix). Fix errors, re-stage, re
 
 ## Critical Rules
 
+### Push Policy
+
+**You may commit frequently, but you may NOT push until all checks pass locally.** Before every push, run and confirm all pass:
+
+1. `pnpm lint` — ESLint across all packages
+2. `pnpm typecheck` — TypeScript type checking
+3. `pnpm test` — Full unit test suite
+4. `pnpm test:e2e` — Playwright E2E tests
+5. `pnpm format:check` — Prettier formatting
+
+If any check fails, fix the issue and re-run before pushing. Never push with known failures.
+
 ### Parallel Work & Unexpected Changes
 
 Multiple agents and humans may work on this codebase simultaneously. If you encounter code changes, new files, or modified files that you did not make — they were either made manually by the developer or by another parallel agent. **Never delete, revert, overwrite, or undo changes you did not make.** Treat unfamiliar changes as intentional. If they conflict with your work, stop and ask rather than discarding them.
@@ -155,17 +167,11 @@ Multiple agents and humans may work on this codebase simultaneously. If you enco
 
 ### Edge Function Deployments
 
-**Never deploy edge functions manually via `supabase functions deploy`.** Edge functions are deployed automatically during the Vercel production build (`run-migrations.mjs`). Push to `main` to deploy. This applies to both new functions and updates.
+**Never deploy edge functions manually via `supabase functions deploy`.** Edge functions are deployed automatically during the Vercel build (`run-migrations.mjs`) for both production and preview environments. Push to `main` to deploy to production; preview deploys happen automatically on PR branches.
 
-**Every edge function must be declared in `config.toml`.** The Supabase GitHub integration only deploys functions listed in `packages/supabase/supabase/config.toml`. If you create a new function directory under `supabase/functions/` without adding a `[functions.<name>]` entry to `config.toml`, it will not be deployed.
+**Do NOT declare edge functions in `config.toml`.** The Supabase GitHub integration's remote bundler cannot resolve monorepo imports (relative paths outside the `supabase/` directory). Declaring functions in `config.toml` causes `failed to bundle function: exit status 1` on every preview branch. Instead, edge functions are deployed solely through the Vercel build pipeline via `vendor-packages.ts` + `supabase functions deploy --use-api`.
 
-```toml
-# Example: adding a new edge function
-[functions.my-new-function]
-verify_jwt = true
-```
-
-Set `verify_jwt = true` for functions that require an authenticated user (gateway rejects unauthenticated requests before the function runs). Set `verify_jwt = false` only for public functions where no JWT exists yet (e.g., `signup`, `bluesky-auth`).
+**Keep the `deno.json` import map in sync.** Edge functions run in Deno. Every bare specifier import reachable from any edge function — including transitive imports through `@trainers/supabase/mutations` and `@trainers/supabase/queries` barrel exports — must be mapped in `packages/supabase/supabase/functions/deno.json`. Missing entries cause local `deno cache` verification to fail. See the `edge-function` skill for the verification script.
 
 ### Request Interception: proxy.ts
 
@@ -255,10 +261,6 @@ Seed data in `packages/supabase/supabase/seeds/03_users.sql`. All accounts use t
 | `lance@trainers.local` | lance | Player |
 
 Additional generated users follow the pattern `<username>@trainers.local` (see seed file for full list).
-
-## Pre-Release Notes (remove after first public release)
-
-- **Match URLs**: Use `/tournaments/[slug]/r/[round]/t/[table]` format (not `/matches/[matchId]`). No redirect from old format needed — app is pre-release with no existing links to maintain.
 
 ## Development Workflow
 

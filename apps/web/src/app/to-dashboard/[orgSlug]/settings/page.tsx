@@ -2,10 +2,10 @@
 
 import { useState, useTransition, useRef, use } from "react";
 import { useSupabaseQuery } from "@/lib/supabase";
-import { getOrganizationBySlug } from "@trainers/supabase";
+import { getCommunityBySlug } from "@trainers/supabase";
 import type { TypedSupabaseClient } from "@trainers/supabase";
-import { updateOrganization } from "@/actions/organizations";
-import { uploadOrgLogo, removeOrgLogo } from "@/actions/organization-logo";
+import { updateOrganization } from "@/actions/communities";
+import { uploadOrgLogo, removeOrgLogo } from "@/actions/community-logo";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -31,11 +31,11 @@ import { toast } from "sonner";
 import { ALLOWED_IMAGE_TYPES, MAX_IMAGE_SIZE } from "@trainers/validators";
 import {
   SOCIAL_LINK_PLATFORMS,
-  organizationSocialLinksSchema,
-  type OrganizationSocialLink,
+  communitySocialLinksSchema,
+  type CommunitySocialLink,
   type SocialLinkPlatform,
 } from "@trainers/validators";
-import { PlatformIcon } from "@/components/organizations/social-link-icons";
+import { PlatformIcon } from "@/components/communities/social-link-icons";
 import { socialPlatformLabels } from "@trainers/utils";
 import { cn } from "@/lib/utils";
 
@@ -64,8 +64,8 @@ const PLATFORM_PLACEHOLDERS: Partial<Record<SocialLinkPlatform, string>> = {
  * Parse the raw JSONB social_links field into a typed array.
  * Returns empty array if parsing fails.
  */
-function parseSocialLinks(raw: unknown): OrganizationSocialLink[] {
-  const result = organizationSocialLinksSchema.safeParse(raw);
+function parseSocialLinks(raw: unknown): CommunitySocialLink[] {
+  const result = communitySocialLinksSchema.safeParse(raw);
   return result.success ? result.data : [];
 }
 
@@ -81,7 +81,7 @@ export default function OrgSettingsPage({ params }: PageProps) {
   const { orgSlug } = use(params);
 
   const orgQueryFn = (client: TypedSupabaseClient) =>
-    getOrganizationBySlug(client, orgSlug);
+    getCommunityBySlug(client, orgSlug);
 
   const {
     data: org,
@@ -101,8 +101,8 @@ export default function OrgSettingsPage({ params }: PageProps) {
   if (!org) {
     return (
       <div className="space-y-6">
-        <h2 className="text-2xl font-bold">Organization Settings</h2>
-        <p className="text-muted-foreground">Organization not found.</p>
+        <h2 className="text-2xl font-bold">Community Settings</h2>
+        <p className="text-muted-foreground">Community not found.</p>
       </div>
     );
   }
@@ -110,9 +110,9 @@ export default function OrgSettingsPage({ params }: PageProps) {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-bold">Organization Settings</h2>
+        <h2 className="text-2xl font-bold">Community Settings</h2>
         <p className="text-muted-foreground text-sm">
-          Configure your organization&apos;s profile and settings
+          Configure your community&apos;s profile and settings
         </p>
       </div>
 
@@ -147,7 +147,7 @@ function OrgProfileForm({ org, onSaved }: OrgProfileFormProps) {
 
   const [name, setName] = useState(org.name);
   const [description, setDescription] = useState(org.description ?? "");
-  const [socialLinks, setSocialLinks] = useState<OrganizationSocialLink[]>(() =>
+  const [socialLinks, setSocialLinks] = useState<CommunitySocialLink[]>(() =>
     parseSocialLinks(org.social_links)
   );
 
@@ -204,7 +204,7 @@ function OrgProfileForm({ org, onSaved }: OrgProfileFormProps) {
 
   const handleSave = () => {
     if (!name.trim()) {
-      toast.error("Organization name is required");
+      toast.error("Community name is required");
       return;
     }
 
@@ -212,7 +212,7 @@ function OrgProfileForm({ org, onSaved }: OrgProfileFormProps) {
     const validLinks = socialLinks
       .filter((link) => link.url.trim())
       .map((link) => ({ ...link, url: link.url.trim() }));
-    const parseResult = organizationSocialLinksSchema.safeParse(validLinks);
+    const parseResult = communitySocialLinksSchema.safeParse(validLinks);
     if (!parseResult.success) {
       const firstError = parseResult.error.issues[0];
       toast.error(firstError?.message ?? "Invalid social links");
@@ -231,7 +231,7 @@ function OrgProfileForm({ org, onSaved }: OrgProfileFormProps) {
       );
 
       if (result.success) {
-        toast.success("Organization settings updated");
+        toast.success("Community settings updated");
         onSaved();
       } else {
         toast.error(result.error);
@@ -245,10 +245,10 @@ function OrgProfileForm({ org, onSaved }: OrgProfileFormProps) {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Building2 className="h-5 w-5" />
-            Organization Profile
+            Community Profile
           </CardTitle>
           <CardDescription>
-            Public information about your organization
+            Public information about your community
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -312,12 +312,12 @@ function OrgProfileForm({ org, onSaved }: OrgProfileFormProps) {
 
           {/* Name */}
           <div className="space-y-2">
-            <Label htmlFor="orgName">Organization Name</Label>
+            <Label htmlFor="orgName">Community Name</Label>
             <Input
               id="orgName"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="My Organization"
+              placeholder="My Community"
             />
           </div>
 
@@ -328,7 +328,7 @@ function OrgProfileForm({ org, onSaved }: OrgProfileFormProps) {
               id="orgDescription"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="Describe your organization..."
+              placeholder="Describe your community..."
               rows={3}
             />
           </div>
@@ -351,12 +351,12 @@ function OrgProfileForm({ org, onSaved }: OrgProfileFormProps) {
         <CardHeader>
           <CardTitle>Slug</CardTitle>
           <CardDescription>
-            Your organization&apos;s URL identifier
+            Your community&apos;s URL identifier
           </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="bg-muted rounded-md px-3 py-2 text-sm">
-            trainers.gg/organizations/{org.slug}
+            trainers.gg/communities/{org.slug}
           </div>
           <p className="text-muted-foreground mt-2 text-xs">
             The slug cannot be changed after creation.
@@ -375,8 +375,8 @@ function SocialLinksEditor({
   links,
   onChange,
 }: {
-  links: OrganizationSocialLink[];
-  onChange: (links: OrganizationSocialLink[]) => void;
+  links: CommunitySocialLink[];
+  onChange: (links: CommunitySocialLink[]) => void;
 }) {
   const addLink = () => {
     onChange([...links, { platform: "website", url: "" }]);
@@ -388,7 +388,7 @@ function SocialLinksEditor({
 
   const updateLink = (
     index: number,
-    field: keyof OrganizationSocialLink,
+    field: keyof CommunitySocialLink,
     value: string
   ) => {
     const updated = links.map((link, i) => {

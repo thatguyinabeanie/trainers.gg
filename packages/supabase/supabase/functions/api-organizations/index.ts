@@ -19,22 +19,22 @@ import { getCacheHeaders, CACHE_TTL } from "../_shared/cache.ts";
 import type { ActionResult } from "@trainers/validators";
 import { positiveIntSchema } from "@trainers/validators/common";
 import {
-  createOrganizationSchema,
-  updateOrganizationSchema,
-} from "@trainers/validators/organization";
+  createCommunitySchema,
+  updateCommunitySchema,
+} from "@trainers/validators/community";
 import { z, ZodError } from "zod";
 import {
-  listPublicOrganizations,
-  getOrganizationBySlug,
+  listPublicCommunities,
+  getCommunityBySlug,
 } from "@trainers/supabase/queries";
 import {
-  createOrganization as createOrganizationMutation,
-  updateOrganization as updateOrganizationMutation,
-  inviteToOrganization as inviteToOrganizationMutation,
-  acceptOrganizationInvitation as acceptOrganizationInvitationMutation,
-  declineOrganizationInvitation as declineOrganizationInvitationMutation,
+  createCommunity as createOrganizationMutation,
+  updateCommunity as updateOrganizationMutation,
+  inviteToCommunity as inviteToOrganizationMutation,
+  acceptCommunityInvitation as acceptOrganizationInvitationMutation,
+  declineCommunityInvitation as declineOrganizationInvitationMutation,
   removeStaff as removeStaffMutation,
-  leaveOrganization as leaveOrganizationMutation,
+  leaveCommunity as leaveOrganizationMutation,
 } from "@trainers/supabase/mutations";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
@@ -114,7 +114,7 @@ Deno.serve(async (req) => {
 
     // GET /api-organizations → List organizations
     if (method === "GET" && pathParts.length === 1) {
-      const result = await listPublicOrganizations(supabase);
+      const result = await listPublicCommunities(supabase);
 
       return jsonResponse(
         { success: true, data: result },
@@ -128,7 +128,7 @@ Deno.serve(async (req) => {
     if (method === "GET" && pathParts.length === 2) {
       const slug = pathParts[1];
 
-      const result = await getOrganizationBySlug(supabase, slug);
+      const result = await getCommunityBySlug(supabase, slug);
 
       if (!result) {
         return jsonResponse(
@@ -153,7 +153,7 @@ Deno.serve(async (req) => {
     // POST /api-organizations → Create organization
     if (method === "POST" && pathParts.length === 1) {
       const body = await req.json();
-      createOrganizationSchema.parse(body);
+      createCommunitySchema.parse(body);
 
       const result = await createOrganizationMutation(supabase, body);
 
@@ -172,7 +172,7 @@ Deno.serve(async (req) => {
       const organizationId = positiveIntSchema.parse(pathParts[1]);
 
       const body = await req.json();
-      updateOrganizationSchema.parse(body);
+      updateCommunitySchema.parse(body);
 
       await updateOrganizationMutation(supabase, organizationId, body);
 

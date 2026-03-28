@@ -18,9 +18,9 @@ import { useDraggable, useDroppable } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
 import { useSupabaseQuery } from "@/lib/supabase";
 import {
-  listOrganizationStaffWithRoles,
+  listCommunityStaffWithRoles,
   type StaffWithRole,
-  type OrganizationGroup,
+  type CommunityGroup,
 } from "@trainers/supabase";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -46,7 +46,7 @@ interface StaffListClientProps {
   organizationId: number;
   orgSlug: string;
   initialStaff: StaffWithRole[];
-  groups: OrganizationGroup[];
+  groups: CommunityGroup[];
   isOwner: boolean;
   currentUserId?: string; // Not currently used but reserved for future use
   currentUserRole?: string | null;
@@ -197,7 +197,7 @@ function DraggableStaffCard({
         <button
           onClick={onRemove}
           className="text-muted-foreground hover:text-destructive rounded p-1 transition-colors"
-          title="Remove from organization"
+          title="Remove from community"
         >
           <UserMinus className="h-4 w-4" />
         </button>
@@ -349,8 +349,8 @@ export function StaffListClient({
 
   // Fetch staff data
   const queryFn = (
-    supabase: Parameters<typeof listOrganizationStaffWithRoles>[0]
-  ) => listOrganizationStaffWithRoles(supabase, organizationId);
+    supabase: Parameters<typeof listCommunityStaffWithRoles>[0]
+  ) => listCommunityStaffWithRoles(supabase, organizationId);
 
   const {
     data: staffMembers,
@@ -369,7 +369,7 @@ export function StaffListClient({
   // Optimistic state for drag & drop
   // This stores temporary group assignments that haven't been confirmed by the server yet
   const [optimisticMoves, setOptimisticMoves] = useState<
-    Map<string, { group: OrganizationGroup }>
+    Map<string, { group: CommunityGroup }>
   >(new Map());
 
   // Clear optimistic moves when staffMembers updates (server confirmed the change)
@@ -516,7 +516,7 @@ export function StaffListClient({
           <p className="text-muted-foreground text-sm">
             {canDragAny
               ? "Drag and drop staff between groups to assign roles"
-              : "View your organization's staff"}
+              : "View your community's staff"}
           </p>
         </div>
         {isOwner && (
@@ -538,7 +538,7 @@ export function StaffListClient({
             <Users className="text-muted-foreground mb-4 h-12 w-12" />
             <h3 className="mb-2 text-lg font-semibold">No staff members</h3>
             <p className="text-muted-foreground mb-4 text-center">
-              Add staff members to help manage your organization
+              Add staff members to help manage your community
             </p>
             {isOwner && (
               <Button onClick={() => setIsInviteOpen(true)}>

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { Check, ExternalLink, X } from "lucide-react";
 import {
   Sheet,
   SheetContent,
@@ -21,14 +21,30 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+  PlatformIcon,
+  SOCIAL_PLATFORM_LABELS,
+} from "@/components/communities/social-link-icons";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-import { type OrgRequestRow, requestStatusLabels } from "./columns";
+import {
+  type CommunityRequestRow,
+  communityRequestStatusLabels,
+} from "./columns";
 import { approveOrgRequestAction, rejectOrgRequestAction } from "./actions";
+import {
+  SOCIAL_LINK_PLATFORMS,
+  type SocialLinkPlatform,
+} from "@trainers/validators";
 
-const requestStatusClasses: Record<OrgRequestRow["status"], string> = {
+const communityRequestStatusClasses: Record<
+  CommunityRequestRow["status"],
+  string
+> = {
   pending:
     "bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/25",
   approved:
@@ -50,17 +66,18 @@ function formatDateTime(dateStr: string): string {
 type ConfirmAction = { type: "approve" } | { type: "reject" };
 
 interface RequestDetailSheetProps {
-  request: OrgRequestRow | null;
+  request: CommunityRequestRow | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onActionComplete?: () => void;
 }
 
 export function RequestDetailSheet({
   request,
   open,
   onOpenChange,
+  onActionComplete,
 }: RequestDetailSheetProps) {
-  const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [rejectReason, setRejectReason] = useState("");
   const [confirmAction, setConfirmAction] = useState<ConfirmAction | null>(
@@ -77,6 +94,19 @@ export function RequestDetailSheet({
 
   const isPending = request.status === "pending";
 
+  // Collect all links for display
+  const allLinks: { platform: string; url: string }[] = [];
+  if (request.discord_invite_url) {
+    allLinks.push({ platform: "discord", url: request.discord_invite_url });
+  }
+  if (request.social_links) {
+    for (const link of request.social_links) {
+      if (link.platform && link.url) {
+        allLinks.push(link);
+      }
+    }
+  }
+
   async function handleConfirm() {
     if (!request || !confirmAction) return;
     setIsSubmitting(true);
@@ -92,13 +122,13 @@ export function RequestDetailSheet({
       if (result.success) {
         toast.success(
           confirmAction.type === "approve"
-            ? "Request approved — organization created"
+            ? "Request approved — community created"
             : "Request rejected"
         );
         setConfirmAction(null);
         setRejectReason("");
         onOpenChange(false);
-        router.refresh();
+        onActionComplete?.();
       } else {
         toast.error(result.error);
       }
@@ -110,123 +140,162 @@ export function RequestDetailSheet({
   return (
     <>
       <Sheet open={open} onOpenChange={onOpenChange}>
-        <SheetContent className="overflow-y-auto sm:max-w-lg">
+        <SheetContent className="overflow-y-auto sm:max-w-md">
           <SheetHeader>
             <SheetTitle>{request.name}</SheetTitle>
             <SheetDescription>
-              Organization request &middot; {request.slug}
+              Community request &middot; {request.slug}
             </SheetDescription>
           </SheetHeader>
 
-          <div className="mt-6 space-y-6">
-            {/* Status */}
-            <div>
-              <p className="text-muted-foreground mb-1 text-xs font-medium uppercase">
-                Status
-              </p>
-              <Badge
-                variant="outline"
-                className={cn(requestStatusClasses[request.status])}
-              >
-                {requestStatusLabels[request.status]}
-              </Badge>
-            </div>
+          <div className="flex flex-col gap-6 px-4 pb-4">
+            {/* Details section */}
+            <section className="space-y-3">
+              <h3 className="text-sm font-medium">Details</h3>
 
-            {/* Requester */}
-            {request.requester && (
-              <div>
-                <p className="text-muted-foreground mb-2 text-xs font-medium uppercase">
-                  Requester
-                </p>
-                <div className="flex items-center gap-3">
-                  <Avatar className="h-8 w-8">
-                    <AvatarImage src={request.requester.image ?? undefined} />
-                    <AvatarFallback>
-                      {request.requester.username?.charAt(0).toUpperCase() ??
-                        "?"}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <p className="text-sm font-medium">
-                      @{request.requester.username}
-                    </p>
-                    {request.requester.email && (
-                      <p className="text-muted-foreground text-xs">
-                        {request.requester.email}
+              {/* Status + Requester row */}
+              <div className="flex items-center justify-between">
+                <Badge
+                  variant="outline"
+                  className={cn(communityRequestStatusClasses[request.status])}
+                >
+                  {communityRequestStatusLabels[request.status]}
+                </Badge>
+                {request.requester && (
+                  <div className="flex items-center gap-2">
+                    <Avatar className="h-6 w-6">
+                      <AvatarImage src={request.requester.image ?? undefined} />
+                      <AvatarFallback>
+                        {request.requester.username?.charAt(0).toUpperCase() ??
+                          "?"}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="text-right">
+                      <p className="text-sm font-medium">
+                        @{request.requester.username}
                       </p>
-                    )}
+                      {request.requester.email && (
+                        <p className="text-muted-foreground text-xs">
+                          {request.requester.email}
+                        </p>
+                      )}
+                    </div>
                   </div>
+                )}
+              </div>
+
+              {/* Description */}
+              {request.description && (
+                <p className="text-muted-foreground text-sm">
+                  {request.description}
+                </p>
+              )}
+
+              {/* Dates */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <Label className="text-muted-foreground text-xs">
+                    Submitted
+                  </Label>
+                  <p className="text-sm">
+                    {formatDateTime(request.created_at)}
+                  </p>
                 </div>
+                {request.reviewed_at && (
+                  <div className="space-y-1">
+                    <Label className="text-muted-foreground text-xs">
+                      Reviewed
+                    </Label>
+                    <p className="text-sm">
+                      {formatDateTime(request.reviewed_at)}
+                    </p>
+                  </div>
+                )}
               </div>
+            </section>
+
+            {/* Community Links */}
+            {allLinks.length > 0 && (
+              <section className="space-y-2">
+                <h3 className="text-sm font-medium">Community Links</h3>
+                <div className="space-y-1.5">
+                  {allLinks.map((link) => {
+                    const isKnownPlatform = (
+                      SOCIAL_LINK_PLATFORMS as readonly string[]
+                    ).includes(link.platform);
+                    const platform = isKnownPlatform
+                      ? (link.platform as SocialLinkPlatform)
+                      : "website";
+
+                    return (
+                      <a
+                        key={`${link.platform}-${link.url}`}
+                        href={link.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="hover:bg-muted flex items-center gap-2.5 rounded-md px-2 py-1.5 text-sm transition-colors"
+                      >
+                        <PlatformIcon
+                          platform={platform}
+                          className="text-primary h-4 w-4 shrink-0"
+                        />
+                        <span className="truncate">
+                          {SOCIAL_PLATFORM_LABELS[platform] ?? link.platform}
+                        </span>
+                        <ExternalLink className="text-muted-foreground ml-auto h-3 w-3 shrink-0" />
+                      </a>
+                    );
+                  })}
+                </div>
+              </section>
             )}
 
-            {/* Description */}
-            {request.description && (
-              <div>
-                <p className="text-muted-foreground mb-1 text-xs font-medium uppercase">
-                  Description
-                </p>
-                <p className="text-sm">{request.description}</p>
-              </div>
-            )}
-
-            {/* Dates */}
-            <div>
-              <p className="text-muted-foreground mb-1 text-xs font-medium uppercase">
-                Submitted
-              </p>
-              <p className="text-sm">{formatDateTime(request.created_at)}</p>
-            </div>
-
-            {request.reviewed_at && (
-              <div>
-                <p className="text-muted-foreground mb-1 text-xs font-medium uppercase">
-                  Reviewed
-                </p>
-                <p className="text-sm">{formatDateTime(request.reviewed_at)}</p>
-              </div>
-            )}
-
+            {/* Admin Notes */}
             {request.admin_notes && (
-              <div>
-                <p className="text-muted-foreground mb-1 text-xs font-medium uppercase">
-                  Admin Notes
-                </p>
-                <p className="rounded-lg bg-gray-500/10 p-3 text-sm">
+              <section className="space-y-2">
+                <h3 className="text-sm font-medium">Admin Notes</h3>
+                <p className="bg-muted rounded-lg p-3 text-sm whitespace-pre-wrap">
                   {request.admin_notes}
                 </p>
-              </div>
+              </section>
             )}
 
             {/* Actions (only for pending) */}
             {isPending && (
-              <div className="space-y-3 border-t pt-4">
-                <p className="text-muted-foreground text-xs font-medium uppercase">
-                  Actions
-                </p>
-                <Button
-                  className="w-full"
-                  onClick={() => setConfirmAction({ type: "approve" })}
-                >
-                  Approve Request
-                </Button>
-                <div className="space-y-2">
-                  <Textarea
-                    placeholder="Reason for rejection..."
-                    value={rejectReason}
-                    onChange={(e) => setRejectReason(e.target.value)}
-                    rows={3}
-                  />
+              <>
+                <Separator />
+                <section className="space-y-4">
+                  <h3 className="text-sm font-medium">Actions</h3>
+
                   <Button
-                    variant="outline"
                     className="w-full"
-                    onClick={() => setConfirmAction({ type: "reject" })}
-                    disabled={!rejectReason.trim()}
+                    onClick={() => setConfirmAction({ type: "approve" })}
                   >
-                    Reject Request
+                    <Check className="size-4" />
+                    Approve Request
                   </Button>
-                </div>
-              </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="reject-reason">Rejection Reason</Label>
+                    <Textarea
+                      id="reject-reason"
+                      placeholder="Explain why this request is being rejected..."
+                      value={rejectReason}
+                      onChange={(e) => setRejectReason(e.target.value)}
+                      rows={3}
+                    />
+                    <Button
+                      variant="destructive"
+                      className="w-full"
+                      onClick={() => setConfirmAction({ type: "reject" })}
+                      disabled={!rejectReason.trim()}
+                    >
+                      <X className="size-4" />
+                      Reject Request
+                    </Button>
+                  </div>
+                </section>
+              </>
             )}
           </div>
         </SheetContent>
@@ -248,7 +317,7 @@ export function RequestDetailSheet({
             </AlertDialogTitle>
             <AlertDialogDescription>
               {confirmAction?.type === "approve"
-                ? `This will create the organization "${request.name}" and notify the requester.`
+                ? `This will create the community "${request.name}" and notify the requester.`
                 : `This will reject the request and notify the requester. They can reapply after 7 days.`}
             </AlertDialogDescription>
           </AlertDialogHeader>
@@ -256,7 +325,13 @@ export function RequestDetailSheet({
             <AlertDialogCancel disabled={isSubmitting}>
               Cancel
             </AlertDialogCancel>
-            <AlertDialogAction onClick={handleConfirm} disabled={isSubmitting}>
+            <AlertDialogAction
+              onClick={handleConfirm}
+              disabled={isSubmitting}
+              variant={
+                confirmAction?.type === "reject" ? "destructive" : "default"
+              }
+            >
               {isSubmitting
                 ? "Processing..."
                 : confirmAction?.type === "approve"

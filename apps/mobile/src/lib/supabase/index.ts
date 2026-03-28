@@ -2,11 +2,11 @@ export { getSupabase, createClient, supabase } from "./client";
 export { AuthProvider, useAuth, getUserDisplayName } from "./auth-provider";
 export { useSiteRoles } from "./use-site-roles";
 export {
-  useOrganizations,
-  useOrganization,
-  type OrganizationWithCounts,
-  type OrganizationDetail,
-} from "./use-organizations";
+  useCommunities,
+  useCommunity,
+  type CommunityWithCounts,
+  type CommunityDetail,
+} from "./use-communities";
 export {
   useTournament,
   useTeamForRegistration,

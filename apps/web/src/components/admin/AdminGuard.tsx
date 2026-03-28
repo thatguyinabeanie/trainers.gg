@@ -21,7 +21,7 @@ export default function AdminGuard({
 
   // Get admin permissions to check
   const adminPermissions: PermissionKey[] = [
-    PERMISSIONS.ORG_MANAGE_REQUESTS,
+    PERMISSIONS.COMMUNITY_MANAGE_REQUESTS,
     PERMISSIONS.ROLE_CREATE,
     PERMISSIONS.ROLE_VIEW_ALL,
     PERMISSIONS.ROLE_UPDATE,
@@ -36,7 +36,7 @@ export default function AdminGuard({
 
   // Check if user has admin permissions
   const hasAdminAccess =
-    permissions[PERMISSIONS.ORG_MANAGE_REQUESTS] ||
+    permissions[PERMISSIONS.COMMUNITY_MANAGE_REQUESTS] ||
     permissions[PERMISSIONS.ROLE_CREATE] ||
     permissions[PERMISSIONS.ROLE_VIEW_ALL] ||
     permissions[PERMISSIONS.ROLE_UPDATE] ||

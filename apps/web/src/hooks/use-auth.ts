@@ -89,7 +89,6 @@ export function useAuth() {
       lastName?: string;
       birthDate?: string;
       country?: string;
-      inviteToken?: string;
     }
   ) => {
     setLoading(true);
@@ -113,7 +112,6 @@ export function useAuth() {
             lastName: metadata?.lastName,
             birthDate: metadata?.birthDate,
             country: metadata?.country?.toUpperCase(),
-            inviteToken: metadata?.inviteToken,
           }),
         }
       );

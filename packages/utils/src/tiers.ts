@@ -1,8 +1,8 @@
 // Tier definitions aligned with monetization strategy
 
 export type UserTier = "free" | "player_pro" | "coach_premium";
-export type OrganizationTier = "regular" | "verified" | "partner";
-export type OrganizationSubscriptionTier =
+export type CommunityTier = "regular" | "verified" | "partner";
+export type CommunitySubscriptionTier =
   | "free"
   | "organization_plus"
   | "enterprise";
@@ -13,13 +13,13 @@ export const USER_TIERS = {
   COACH_PREMIUM: "coach_premium" as const,
 } as const;
 
-export const ORGANIZATION_TIERS = {
+export const COMMUNITY_TIERS = {
   REGULAR: "regular" as const,
   VERIFIED: "verified" as const,
   PARTNER: "partner" as const,
 } as const;
 
-export const ORGANIZATION_SUBSCRIPTION_TIERS = {
+export const COMMUNITY_SUBSCRIPTION_TIERS = {
   FREE: "free" as const,
   ORGANIZATION_PLUS: "organization_plus" as const,
   ENTERPRISE: "enterprise" as const,
@@ -35,11 +35,11 @@ export const TIER_PRICING = {
     monthly: 1999, // $19.99
     annual: 19990, // $199.90 (2 months free)
   },
-  [ORGANIZATION_SUBSCRIPTION_TIERS.ORGANIZATION_PLUS]: {
+  [COMMUNITY_SUBSCRIPTION_TIERS.ORGANIZATION_PLUS]: {
     monthly: 2999, // $29.99
     annual: 29990, // $299.90 (2 months free)
   },
-  [ORGANIZATION_SUBSCRIPTION_TIERS.ENTERPRISE]: {
+  [COMMUNITY_SUBSCRIPTION_TIERS.ENTERPRISE]: {
     // Custom pricing - contact sales
     monthly: null,
     annual: null,
@@ -48,9 +48,9 @@ export const TIER_PRICING = {
 
 // Platform fee percentages for tournament entry fees
 export const TOURNAMENT_FEE_PERCENTAGES = {
-  [ORGANIZATION_TIERS.REGULAR]: 0.08, // 8%
-  [ORGANIZATION_TIERS.VERIFIED]: 0.05, // 5%
-  [ORGANIZATION_TIERS.PARTNER]: 0.03, // 3% (negotiable)
+  [COMMUNITY_TIERS.REGULAR]: 0.08, // 8%
+  [COMMUNITY_TIERS.VERIFIED]: 0.05, // 5%
+  [COMMUNITY_TIERS.PARTNER]: 0.03, // 3% (negotiable)
 } as const;
 
 // User tier features
@@ -86,9 +86,9 @@ export const USER_TIER_FEATURES = {
   },
 } as const;
 
-// Organization subscription features
-export const ORGANIZATION_SUBSCRIPTION_FEATURES = {
-  [ORGANIZATION_SUBSCRIPTION_TIERS.FREE]: {
+// Community subscription features
+export const COMMUNITY_SUBSCRIPTION_FEATURES = {
+  [COMMUNITY_SUBSCRIPTION_TIERS.FREE]: {
     maxTournaments: 5,
     autoBrackets: false,
     autoReminders: false,
@@ -97,7 +97,7 @@ export const ORGANIZATION_SUBSCRIPTION_FEATURES = {
     customDomains: false,
     advancedMetrics: false,
   },
-  [ORGANIZATION_SUBSCRIPTION_TIERS.ORGANIZATION_PLUS]: {
+  [COMMUNITY_SUBSCRIPTION_TIERS.ORGANIZATION_PLUS]: {
     maxTournaments: null, // unlimited
     autoBrackets: true,
     autoReminders: true,
@@ -106,7 +106,7 @@ export const ORGANIZATION_SUBSCRIPTION_FEATURES = {
     customDomains: true,
     advancedMetrics: true,
   },
-  [ORGANIZATION_SUBSCRIPTION_TIERS.ENTERPRISE]: {
+  [COMMUNITY_SUBSCRIPTION_TIERS.ENTERPRISE]: {
     maxTournaments: null,
     autoBrackets: true,
     autoReminders: true,
@@ -127,23 +127,21 @@ export function getUserTierFeatures(tier: UserTier | undefined) {
   return USER_TIER_FEATURES[tier || USER_TIERS.FREE];
 }
 
-export function getOrganizationFeatures(
-  subscriptionTier: OrganizationSubscriptionTier | undefined
+export function getCommunityFeatures(
+  subscriptionTier: CommunitySubscriptionTier | undefined
 ) {
-  return ORGANIZATION_SUBSCRIPTION_FEATURES[
-    subscriptionTier || ORGANIZATION_SUBSCRIPTION_TIERS.FREE
+  return COMMUNITY_SUBSCRIPTION_FEATURES[
+    subscriptionTier || COMMUNITY_SUBSCRIPTION_TIERS.FREE
   ];
 }
 
-export function getTournamentFeePercentage(
-  orgTier: OrganizationTier | undefined
-) {
-  return TOURNAMENT_FEE_PERCENTAGES[orgTier || ORGANIZATION_TIERS.REGULAR];
+export function getTournamentFeePercentage(orgTier: CommunityTier | undefined) {
+  return TOURNAMENT_FEE_PERCENTAGES[orgTier || COMMUNITY_TIERS.REGULAR];
 }
 
 export function calculatePlatformFee(
   entryFeeInCents: number,
-  orgTier: OrganizationTier | undefined
+  orgTier: CommunityTier | undefined
 ): number {
   const percentage = getTournamentFeePercentage(orgTier);
   return Math.round(entryFeeInCents * percentage);

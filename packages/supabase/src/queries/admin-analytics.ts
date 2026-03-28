@@ -24,13 +24,6 @@ export interface OrganizationStats {
   byTier: Record<string, number>;
 }
 
-export interface InviteConversionStats {
-  totalSent: number;
-  totalUsed: number;
-  totalExpired: number;
-  conversionRate: number;
-}
-
 // ── Helpers ───────────────────────────────────────────────────────────
 
 /**
@@ -212,55 +205,5 @@ export async function getOrganizationStats(
   return {
     byStatus: result?.by_status ?? {},
     byTier: result?.by_tier ?? {},
-  };
-}
-
-/**
- * Get beta-invite conversion metrics.
- *
- * - `totalSent`       — total invites created
- * - `totalUsed`       — invites that have been redeemed (used_at is set)
- * - `totalExpired`    — invites past their expiry that were never used
- * - `conversionRate`  — `totalUsed / totalSent` (0 when none sent)
- */
-export async function getInviteConversionStats(
-  supabase: TypedClient
-): Promise<InviteConversionStats> {
-  const now = new Date().toISOString();
-
-  // Total sent — head-only count
-  const { count: totalSent, error: sentError } = await supabase
-    .from("beta_invites")
-    .select("*", { count: "exact", head: true });
-
-  if (sentError) throw sentError;
-
-  // Total used — count where used_at is not null
-  const { count: totalUsed, error: usedError } = await supabase
-    .from("beta_invites")
-    .select("*", { count: "exact", head: true })
-    .not("used_at", "is", null);
-
-  if (usedError) throw usedError;
-
-  // Total expired — expires_at < now AND used_at is null
-  const { count: totalExpired, error: expiredError } = await supabase
-    .from("beta_invites")
-    .select("*", { count: "exact", head: true })
-    .lt("expires_at", now)
-    .is("used_at", null);
-
-  if (expiredError) throw expiredError;
-
-  const sent = totalSent ?? 0;
-  const used = totalUsed ?? 0;
-  const expired = totalExpired ?? 0;
-  const conversionRate = sent > 0 ? used / sent : 0;
-
-  return {
-    totalSent: sent,
-    totalUsed: used,
-    totalExpired: expired,
-    conversionRate,
   };
 }

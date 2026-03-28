@@ -16,20 +16,20 @@ export {
   isValidCountryCode,
 } from "./countries";
 
-// tiers.ts — user, organization, and subscription tier definitions
+// tiers.ts — user, community, and subscription tier definitions
 export {
   type UserTier,
-  type OrganizationTier,
-  type OrganizationSubscriptionTier,
+  type CommunityTier,
+  type CommunitySubscriptionTier,
   USER_TIERS,
-  ORGANIZATION_TIERS,
-  ORGANIZATION_SUBSCRIPTION_TIERS,
+  COMMUNITY_TIERS,
+  COMMUNITY_SUBSCRIPTION_TIERS,
   TIER_PRICING,
   TOURNAMENT_FEE_PERCENTAGES,
   USER_TIER_FEATURES,
-  ORGANIZATION_SUBSCRIPTION_FEATURES,
+  COMMUNITY_SUBSCRIPTION_FEATURES,
   getUserTierFeatures,
-  getOrganizationFeatures,
+  getCommunityFeatures,
   getTournamentFeePercentage,
   calculatePlatformFee,
 } from "./tiers";
@@ -54,6 +54,9 @@ export { isMatchNotification } from "./notifications";
 
 // social-links.ts — social platform display labels and SVG icon paths
 export { socialPlatformLabels, socialSvgPaths } from "./social-links";
+
+// slug.ts — URL-friendly slug generation
+export { generateSlug } from "./slug";
 
 // sql.ts — SQL/PostgREST helpers
 export { escapeLike } from "./sql";

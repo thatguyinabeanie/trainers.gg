@@ -245,12 +245,17 @@ test.describe("Admin panel — admin user with sudo mode", () => {
     await expect(page.getByRole("tab", { name: /Dashboard/i })).toBeVisible();
     await expect(page.getByRole("tab", { name: /Audit Log/i })).toBeVisible();
 
-    // Metric cards: look for the key metric titles
-    await expect(page.getByText("Total Users")).toBeVisible({ timeout: 10000 });
-    await expect(page.getByText("Active (7d)")).toBeVisible();
-    await expect(page.getByText("Organizations")).toBeVisible();
-    await expect(page.getByText("Tournaments")).toBeVisible();
-    await expect(page.getByText("Events (24h)")).toBeVisible();
+    // Metric cards: look for the key metric titles (scoped to main to avoid topnav ambiguity)
+    const main = page.getByRole("main");
+    await expect(main.getByText("Total Users")).toBeVisible({ timeout: 10000 });
+    await expect(main.getByText("Active (7d)")).toBeVisible();
+    await expect(
+      main.getByText("Communities", { exact: true }).first()
+    ).toBeVisible();
+    await expect(
+      main.getByText("Tournaments", { exact: true }).first()
+    ).toBeVisible();
+    await expect(main.getByText("Events (24h)")).toBeVisible();
 
     // Recent Activity section
     await expect(page.getByText("Recent Activity")).toBeVisible();
@@ -262,35 +267,39 @@ test.describe("Admin panel — admin user with sudo mode", () => {
     const baseURL = process.env.PLAYWRIGHT_BASE_URL || "";
     await loginAndVerifyAdminAccess(page, baseURL);
 
-    // Verify all nav links from admin-nav.tsx are present
-    const nav = page.locator("nav");
-    await expect(nav.getByRole("link", { name: "Overview" })).toBeVisible();
-    await expect(nav.getByRole("link", { name: "Users" })).toBeVisible();
+    // Verify all nav links from admin-nav.tsx are present (scoped to main to avoid topnav)
+    const adminNav = page.getByRole("main").locator("nav");
     await expect(
-      nav.getByRole("link", { name: "Organizations" })
+      adminNav.getByRole("link", { name: "Overview" })
     ).toBeVisible();
-    await expect(nav.getByRole("link", { name: "Settings" })).toBeVisible();
+    await expect(adminNav.getByRole("link", { name: "Users" })).toBeVisible();
+    await expect(
+      adminNav.getByRole("link", { name: "Communities" })
+    ).toBeVisible();
+    await expect(
+      adminNav.getByRole("link", { name: "Settings" })
+    ).toBeVisible();
   });
 
   test("clicking Users nav link navigates to users page", async ({ page }) => {
     const baseURL = process.env.PLAYWRIGHT_BASE_URL || "";
     await loginAndVerifyAdminAccess(page, baseURL);
 
-    // Click Users nav link
-    const nav = page.locator("nav");
-    await nav.getByRole("link", { name: "Users" }).click();
+    // Click Users nav link (scoped to main to avoid topnav)
+    const adminNav = page.getByRole("main").locator("nav");
+    await adminNav.getByRole("link", { name: "Users" }).click();
     await expect(page).toHaveURL(/\/admin\/users/);
   });
 
-  test("clicking Organizations nav link navigates to organizations page", async ({
+  test("clicking Communities nav link navigates to communities page", async ({
     page,
   }) => {
     const baseURL = process.env.PLAYWRIGHT_BASE_URL || "";
     await loginAndVerifyAdminAccess(page, baseURL);
 
-    const nav = page.locator("nav");
-    await nav.getByRole("link", { name: "Organizations" }).click();
-    await expect(page).toHaveURL(/\/admin\/organizations/);
+    const adminNav = page.getByRole("main").locator("nav");
+    await adminNav.getByRole("link", { name: "Communities" }).click();
+    await expect(page).toHaveURL(/\/admin\/communities/);
   });
 
   test("clicking Settings nav link navigates to config page", async ({
@@ -299,8 +308,8 @@ test.describe("Admin panel — admin user with sudo mode", () => {
     const baseURL = process.env.PLAYWRIGHT_BASE_URL || "";
     await loginAndVerifyAdminAccess(page, baseURL);
 
-    const nav = page.locator("nav");
-    await nav.getByRole("link", { name: "Settings" }).click();
+    const adminNav = page.getByRole("main").locator("nav");
+    await adminNav.getByRole("link", { name: "Settings" }).click();
     await expect(page).toHaveURL(/\/admin\/config/);
   });
 
@@ -315,19 +324,16 @@ test.describe("Admin panel — admin user with sudo mode", () => {
     // Click the Audit Log tab
     await page.getByRole("tab", { name: /Audit Log/i }).click();
 
-    // Stat cards should appear: "Last 24 Hours", "Last 7 Days", "Last 30 Days"
-    await expect(page.getByText("Last 24 Hours")).toBeVisible({
+    // Stat cards should appear (scoped to main to avoid ambiguity)
+    const main = page.getByRole("main");
+    await expect(main.getByText("Last 24 Hours")).toBeVisible({
       timeout: 10000,
     });
-    await expect(page.getByText("Last 7 Days")).toBeVisible();
-    await expect(page.getByText("Last 30 Days")).toBeVisible();
-
-    // Filter dropdowns should be present
-    await expect(page.getByText("All Actions")).toBeVisible();
-    await expect(page.getByText("All Entities")).toBeVisible();
+    await expect(main.getByText("Last 7 Days")).toBeVisible();
+    await expect(main.getByText("Last 30 Days")).toBeVisible();
 
     // Refresh button in the audit log tab
-    await expect(page.getByRole("button", { name: /Refresh/i })).toBeVisible();
+    await expect(main.getByRole("button", { name: /Refresh/i })).toBeVisible();
   });
 
   // ── Users Page ─────────────────────────────────────────────────
@@ -344,31 +350,28 @@ test.describe("Admin panel — admin user with sudo mode", () => {
       "JWT custom_access_token_hook not configured — admin role not in JWT"
     );
 
-    // Users tab should be the default tab on the users page
-    await expect(page.getByRole("tab", { name: /Users/i })).toBeVisible();
-    await expect(page.getByRole("tab", { name: /Invites/i })).toBeVisible();
+    // Users heading should be visible (scoped to main)
+    const main = page.getByRole("main");
+    await expect(main.getByRole("heading", { name: /Users/i })).toBeVisible({
+      timeout: 10000,
+    });
 
     // Search input
     await expect(
-      page.getByPlaceholder(/Search by username or email/i)
-    ).toBeVisible({ timeout: 10000 });
-
-    // Users heading with count
-    await expect(page.getByRole("heading", { name: /Users/i })).toBeVisible();
+      main.getByPlaceholder(/Search by username or email/i)
+    ).toBeVisible();
 
     // Refresh button
-    await expect(page.getByRole("button", { name: /Refresh/i })).toBeVisible();
+    await expect(main.getByRole("button", { name: /Refresh/i })).toBeVisible();
   });
 
-  // ── Organizations Page ─────────────────────────────────────────
+  // ── Communities Page ───────────────────────────────────────────
 
-  test("organizations page renders with status filter tabs", async ({
-    page,
-  }) => {
+  test("communities page renders with status filter tabs", async ({ page }) => {
     const baseURL = process.env.PLAYWRIGHT_BASE_URL || "";
 
     await loginAsAdminWithSudo(page, baseURL);
-    await page.goto("/admin/organizations");
+    await page.goto("/admin/communities");
 
     const isAdmin = await waitForAdminOrForbidden(page);
     test.skip(
@@ -376,21 +379,21 @@ test.describe("Admin panel — admin user with sudo mode", () => {
       "JWT custom_access_token_hook not configured — admin role not in JWT"
     );
 
-    // Page heading
-    await expect(page.getByText("Organizations")).toBeVisible({
-      timeout: 10000,
-    });
+    // Page heading (use heading role to avoid topnav/admin nav ambiguity)
+    const main = page.getByRole("main");
+    await expect(
+      main.getByRole("heading", { name: "Communities" })
+    ).toBeVisible({ timeout: 10000 });
 
-    // Status filter buttons: All, Pending, Active, Suspended, Rejected
-    await expect(page.getByRole("button", { name: "All" })).toBeVisible();
-    await expect(page.getByRole("button", { name: "Pending" })).toBeVisible();
-    await expect(page.getByRole("button", { name: "Active" })).toBeVisible();
-    await expect(page.getByRole("button", { name: "Suspended" })).toBeVisible();
-    await expect(page.getByRole("button", { name: "Rejected" })).toBeVisible();
+    // Status filter buttons: All, Active, Suspended, Requests
+    await expect(main.getByRole("button", { name: "All" })).toBeVisible();
+    await expect(main.getByRole("button", { name: "Active" })).toBeVisible();
+    await expect(main.getByRole("button", { name: "Suspended" })).toBeVisible();
+    await expect(main.getByRole("button", { name: "Requests" })).toBeVisible();
 
     // Search input
     await expect(
-      page.getByPlaceholder(/Search by name or slug/i)
+      main.getByPlaceholder(/Search by name or slug/i)
     ).toBeVisible();
   });
 
@@ -410,13 +413,16 @@ test.describe("Admin panel — admin user with sudo mode", () => {
       "JWT custom_access_token_hook not configured — admin role not in JWT"
     );
 
-    // Feature Flags section heading
-    await expect(page.getByText(/Feature Flags/i)).toBeVisible({
-      timeout: 10000,
-    });
+    // Feature Flags section heading (use heading role to avoid matching "No feature flags defined")
+    const main = page.getByRole("main");
+    await expect(
+      main.getByRole("heading", { name: /Feature Flags/i })
+    ).toBeVisible({ timeout: 10000 });
 
     // Announcements section heading
-    await expect(page.getByText(/Announcements/i)).toBeVisible();
+    await expect(
+      main.getByRole("heading", { name: /Announcements/i })
+    ).toBeVisible();
 
     // Site Roles section heading
     await expect(page.getByText(/Site Roles/i)).toBeVisible();

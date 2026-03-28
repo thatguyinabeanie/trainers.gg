@@ -33,6 +33,8 @@ interface DataTableProps<TData, TValue> {
   onRowClick?: (row: TData) => void;
   /** Set to true when pagination is handled externally (server-side). Disables built-in pagination. */
   manualPagination?: boolean;
+  /** Message shown when there are no rows. Defaults to "No results." */
+  emptyMessage?: string;
 }
 
 export function DataTable<TData, TValue>({
@@ -42,6 +44,7 @@ export function DataTable<TData, TValue>({
   searchPlaceholder: _searchPlaceholder = "Search...",
   onRowClick,
   manualPagination = false,
+  emptyMessage = "No results.",
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
@@ -117,7 +120,7 @@ export function DataTable<TData, TValue>({
                   colSpan={columns.length}
                   className="h-24 text-center"
                 >
-                  No results.
+                  {emptyMessage}
                 </TableCell>
               </TableRow>
             )}

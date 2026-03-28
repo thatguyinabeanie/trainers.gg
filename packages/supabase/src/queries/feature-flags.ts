@@ -21,7 +21,7 @@ export async function listFeatureFlags(supabase: TypedClient) {
  * Returns null if the flag does not exist.
  *
  * @param supabase - Typed Supabase client
- * @param key - Unique flag identifier (e.g., "maintenance_mode")
+ * @param key - Unique flag identifier (e.g., "dashboard_stats")
  */
 export async function getFeatureFlag(supabase: TypedClient, key: string) {
   const { data, error } = await supabase

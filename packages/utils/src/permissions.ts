@@ -66,22 +66,22 @@ export type PermissionKey =
 
 // Permission constants for use in frontend code
 export const PERMISSIONS = {
-  // Organization Permissions
-  ORG_CREATE: "organization.create",
-  ORG_REQUEST_CREATE: "organization.request.create",
-  ORG_REQUEST_APPROVE: "organization.request.approve",
-  ORG_REQUEST_REJECT: "organization.request.reject",
-  ORG_REQUEST_VIEW_ALL: "organization.request.view.all",
-  ORG_VIEW_ALL: "organization.view.all",
-  ORG_VIEW_OWN: "organization.view.own",
-  ORG_UPDATE: "organization.update",
-  ORG_DELETE: "organization.delete",
-  ORG_INVITE_STAFF: "organization.invite_staff",
-  ORG_VIEW_STAFF: "organization.view_staff",
-  ORG_MANAGE_GROUP_ASSIGNMENTS: "organization.manage_group_assignments",
-  ORG_REMOVE_STAFF: "organization.remove_staff",
-  ORG_REQUEST_JOIN: "organization.request_join",
-  ORG_MANAGE_REQUESTS: "organization.manage_requests",
+  // Community Permissions
+  COMMUNITY_CREATE: "organization.create",
+  COMMUNITY_REQUEST_CREATE: "organization.request.create",
+  COMMUNITY_REQUEST_APPROVE: "organization.request.approve",
+  COMMUNITY_REQUEST_REJECT: "organization.request.reject",
+  COMMUNITY_REQUEST_VIEW_ALL: "organization.request.view.all",
+  COMMUNITY_VIEW_ALL: "organization.view.all",
+  COMMUNITY_VIEW_OWN: "organization.view.own",
+  COMMUNITY_UPDATE: "organization.update",
+  COMMUNITY_DELETE: "organization.delete",
+  COMMUNITY_INVITE_STAFF: "organization.invite_staff",
+  COMMUNITY_VIEW_STAFF: "organization.view_staff",
+  COMMUNITY_MANAGE_GROUP_ASSIGNMENTS: "organization.manage_group_assignments",
+  COMMUNITY_REMOVE_STAFF: "organization.remove_staff",
+  COMMUNITY_REQUEST_JOIN: "organization.request_join",
+  COMMUNITY_MANAGE_REQUESTS: "organization.manage_requests",
 
   // Role Permissions
   ROLE_CREATE: "role.create",

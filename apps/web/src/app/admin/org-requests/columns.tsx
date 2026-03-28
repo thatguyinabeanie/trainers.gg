@@ -7,11 +7,13 @@ import { cn } from "@/lib/utils";
 
 // --- Types ---
 
-export interface OrgRequestRow {
+export interface CommunityRequestRow {
   id: number;
   name: string;
   slug: string;
   description: string | null;
+  discord_invite_url: string;
+  social_links: { platform: string; url: string }[] | null;
   status: "pending" | "approved" | "rejected";
   admin_notes: string | null;
   reviewed_at: string | null;
@@ -29,13 +31,19 @@ export interface OrgRequestRow {
 
 // --- Label / color mappings ---
 
-export const requestStatusLabels: Record<OrgRequestRow["status"], string> = {
+export const communityRequestStatusLabels: Record<
+  CommunityRequestRow["status"],
+  string
+> = {
   pending: "Pending",
   approved: "Approved",
   rejected: "Rejected",
 };
 
-const requestStatusClasses: Record<OrgRequestRow["status"], string> = {
+const communityRequestStatusClasses: Record<
+  CommunityRequestRow["status"],
+  string
+> = {
   pending:
     "bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/25",
   approved:
@@ -56,7 +64,7 @@ function formatDate(dateStr: string): string {
 
 // --- Column definitions ---
 
-const columnHelper = createColumnHelper<OrgRequestRow>();
+const columnHelper = createColumnHelper<CommunityRequestRow>();
 
 export const columns = [
   columnHelper.accessor("name", {
@@ -79,8 +87,11 @@ export const columns = [
     cell: (info) => {
       const status = info.getValue();
       return (
-        <Badge variant="outline" className={cn(requestStatusClasses[status])}>
-          {requestStatusLabels[status]}
+        <Badge
+          variant="outline"
+          className={cn(communityRequestStatusClasses[status])}
+        >
+          {communityRequestStatusLabels[status]}
         </Badge>
       );
     },
