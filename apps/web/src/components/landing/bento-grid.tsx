@@ -52,10 +52,10 @@ function BentoCard({
 
 function AltsPreview() {
   const alts = [
-    { name: "thatguyinabeanie", elo: "1482", gxe: "68.2", public: true },
-    { name: "AdamantBeanie", elo: "1350", gxe: "59.1", public: true },
-    { name: "CalmBeanie", elo: "1200", gxe: "50.0", public: false },
-    { name: "ModestBeanie", elo: "1200", gxe: "50.0", public: false },
+    { name: "thatguyinabeanie", elo: "1124", gxe: "52.3", public: true },
+    { name: "AdamantBeanie", elo: "1089", gxe: "49.7", public: true },
+    { name: "CalmBeanie", elo: "1042", gxe: "47.1", public: false },
+    { name: "ModestBeanie", elo: "1003", gxe: "44.8", public: false },
   ] as const;
 
   return (
@@ -129,7 +129,7 @@ function ProfilePreview() {
       <div className="mb-2.5 flex gap-2">
         <div className="flex-1 text-center">
           <p className="text-primary font-mono text-base font-extrabold">
-            1482
+            1124
           </p>
           <p className="text-muted-foreground text-[8px] tracking-[1px] uppercase">
             ELO
@@ -137,7 +137,7 @@ function ProfilePreview() {
         </div>
         <div className="flex-1 text-center">
           <p className="text-primary font-mono text-base font-extrabold">
-            68.2
+            52.3
           </p>
           <p className="text-muted-foreground text-[8px] tracking-[1px] uppercase">
             GXE
@@ -145,7 +145,7 @@ function ProfilePreview() {
         </div>
         <div className="flex-1 text-center">
           <p className="text-primary font-mono text-base font-extrabold">
-            71%
+            54%
           </p>
           <p className="text-muted-foreground text-[8px] tracking-[1px] uppercase">
             Win rate
