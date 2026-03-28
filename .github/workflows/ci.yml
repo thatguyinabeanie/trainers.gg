@@ -129,7 +129,7 @@ jobs:
             tsc-${{ runner.os }}-
 
       - name: Configure Turbo Remote Cache
-        if: vars.TURBO_TOKEN != ''
+        if: secrets.TURBO_TOKEN != ''
         run: |
           echo "TURBO_TOKEN=${{ secrets.TURBO_TOKEN }}" >> "$GITHUB_ENV"
           echo "TURBO_TEAM=${{ vars.TURBO_TEAM }}" >> "$GITHUB_ENV"
@@ -203,7 +203,7 @@ jobs:
             jest-${{ runner.os }}-refs/heads/main-
 
       - name: Configure Turbo Remote Cache
-        if: vars.TURBO_TOKEN != ''
+        if: secrets.TURBO_TOKEN != ''
         run: |
           echo "TURBO_TOKEN=${{ secrets.TURBO_TOKEN }}" >> "$GITHUB_ENV"
           echo "TURBO_TEAM=${{ vars.TURBO_TEAM }}" >> "$GITHUB_ENV"
@@ -385,7 +385,7 @@ jobs:
         run: pnpm --filter=@trainers/web exec playwright install-deps chromium
 
       - name: Configure Turbo Remote Cache
-        if: vars.TURBO_TOKEN != ''
+        if: secrets.TURBO_TOKEN != ''
         run: |
           echo "TURBO_TOKEN=${{ secrets.TURBO_TOKEN }}" >> "$GITHUB_ENV"
           echo "TURBO_TEAM=${{ vars.TURBO_TEAM }}" >> "$GITHUB_ENV"
