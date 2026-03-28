@@ -78,7 +78,7 @@ export default async function RootLayout({
               <p className="font-semibold">
                 Built for competitors, by competitors.
               </p>
-              <p className="max-w-sm text-[10px] leading-relaxed opacity-60 md:text-center">
+              <p className="max-w-sm text-[8px] leading-relaxed opacity-50 md:text-center">
                 trainers.gg is not affiliated with, endorsed by, or connected to
                 Nintendo, The Pok&eacute;mon Company, or Game Freak.
               </p>
