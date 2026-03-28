@@ -10,14 +10,14 @@ import type { TypedClient } from "../../../client";
 jest.mock("../helpers", () => ({
   getCurrentUser: jest.fn(),
   getCurrentAlt: jest.fn(),
-  checkOrgPermission: jest.fn(),
+  checkCommunityPermission: jest.fn(),
 }));
 
 jest.mock("../standings", () => ({
   recalculateStandings: jest.fn(),
 }));
 
-import { getCurrentUser, checkOrgPermission } from "../helpers";
+import { getCurrentUser, checkCommunityPermission } from "../helpers";
 import { recalculateStandings } from "../standings";
 
 // Helper to create mock Supabase client
@@ -68,13 +68,13 @@ describe("Tournament Flow Mutations", () => {
 
     beforeEach(() => {
       (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
-      (checkOrgPermission as jest.Mock).mockResolvedValue(true);
+      (checkCommunityPermission as jest.Mock).mockResolvedValue(true);
     });
 
     it("should successfully start tournament with phases", async () => {
       const fromSpy = jest.spyOn(mockClient, "from");
 
-      // Mock: Get tournament with org info
+      // Mock: Get tournament with community info
       fromSpy.mockReturnValueOnce({
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
@@ -82,7 +82,7 @@ describe("Tournament Flow Mutations", () => {
           data: {
             id: tournamentId,
             status: "upcoming",
-            organization_id: 200,
+            community_id: 200,
             organizations: { owner_user_id: "user-123" },
           },
           error: null,
@@ -164,7 +164,7 @@ describe("Tournament Flow Mutations", () => {
     it("should start tournament without phases", async () => {
       const fromSpy = jest.spyOn(mockClient, "from");
 
-      // Mock: Get tournament with org info
+      // Mock: Get tournament with community info
       fromSpy.mockReturnValueOnce({
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
@@ -172,7 +172,7 @@ describe("Tournament Flow Mutations", () => {
           data: {
             id: tournamentId,
             status: "upcoming",
-            organization_id: 200,
+            community_id: 200,
             organizations: { owner_user_id: "user-123" },
           },
           error: null,
@@ -238,7 +238,7 @@ describe("Tournament Flow Mutations", () => {
           data: {
             id: tournamentId,
             status: "upcoming",
-            organization_id: 200,
+            community_id: 200,
             organizations: { owner_user_id: "user-123" },
           },
           error: null,
@@ -323,7 +323,7 @@ describe("Tournament Flow Mutations", () => {
     });
 
     it("should throw error if user lacks permission", async () => {
-      (checkOrgPermission as jest.Mock).mockResolvedValue(false);
+      (checkCommunityPermission as jest.Mock).mockResolvedValue(false);
 
       (mockClient.from as jest.Mock).mockReturnValue({
         select: jest.fn().mockReturnThis(),
@@ -332,7 +332,7 @@ describe("Tournament Flow Mutations", () => {
           data: {
             id: tournamentId,
             status: "upcoming",
-            organization_id: 200,
+            community_id: 200,
             organizations: { owner_user_id: "other-user" },
           },
           error: null,
@@ -352,7 +352,7 @@ describe("Tournament Flow Mutations", () => {
           data: {
             id: tournamentId,
             status: "active",
-            organization_id: 200,
+            community_id: 200,
             organizations: { owner_user_id: "user-123" },
           },
           error: null,
@@ -375,7 +375,7 @@ describe("Tournament Flow Mutations", () => {
           data: {
             id: tournamentId,
             status: "upcoming",
-            organization_id: 200,
+            community_id: 200,
             organizations: { owner_user_id: "user-123" },
           },
           error: null,
@@ -407,7 +407,7 @@ describe("Tournament Flow Mutations", () => {
           data: {
             id: tournamentId,
             status: "upcoming",
-            organization_id: 200,
+            community_id: 200,
             organizations: { owner_user_id: "user-123" },
           },
           error: null,
@@ -449,7 +449,7 @@ describe("Tournament Flow Mutations", () => {
           data: {
             id: tournamentId,
             status: "upcoming",
-            organization_id: 200,
+            community_id: 200,
             organizations: { owner_user_id: "user-123" },
           },
           error: null,
@@ -497,7 +497,7 @@ describe("Tournament Flow Mutations", () => {
           data: {
             id: tournamentId,
             status: "upcoming",
-            organization_id: 200,
+            community_id: 200,
             organizations: { owner_user_id: "user-123" },
           },
           error: null,
@@ -555,7 +555,7 @@ describe("Tournament Flow Mutations", () => {
           data: {
             id: tournamentId,
             status: "upcoming",
-            organization_id: 200,
+            community_id: 200,
             organizations: { owner_user_id: "user-123" },
           },
           error: null,
@@ -618,7 +618,7 @@ describe("Tournament Flow Mutations", () => {
           data: {
             id: tournamentId,
             status: "upcoming",
-            organization_id: 200,
+            community_id: 200,
             organizations: { owner_user_id: "user-123" },
           },
           error: null,
@@ -687,7 +687,7 @@ describe("Tournament Flow Mutations", () => {
           data: {
             id: tournamentId,
             status: "upcoming",
-            organization_id: 200,
+            community_id: 200,
             organizations: { owner_user_id: "user-123" },
           },
           error: null,
@@ -746,7 +746,7 @@ describe("Tournament Flow Mutations", () => {
           data: {
             id: tournamentId,
             status: "upcoming",
-            organization_id: 200,
+            community_id: 200,
             organizations: { owner_user_id: "user-123" },
           },
           error: null,
@@ -920,7 +920,7 @@ describe("Tournament Flow Mutations", () => {
 
     beforeEach(() => {
       (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
-      (checkOrgPermission as jest.Mock).mockResolvedValue(true);
+      (checkCommunityPermission as jest.Mock).mockResolvedValue(true);
     });
 
     it("should successfully generate elimination pairings", async () => {
@@ -942,7 +942,7 @@ describe("Tournament Flow Mutations", () => {
               phase_type: "single_elimination",
               tournaments: {
                 id: 100,
-                organization_id: 200,
+                community_id: 200,
                 organizations: { owner_user_id: "user-123" },
               },
             },
@@ -1047,7 +1047,7 @@ describe("Tournament Flow Mutations", () => {
               phase_type: "single_elimination",
               tournaments: {
                 id: 100,
-                organization_id: 200,
+                community_id: 200,
                 organizations: { owner_user_id: "user-123" },
               },
             },
@@ -1133,7 +1133,7 @@ describe("Tournament Flow Mutations", () => {
               phase_type: "single_elimination",
               tournaments: {
                 id: 100,
-                organization_id: 200,
+                community_id: 200,
                 organizations: { owner_user_id: "user-123" },
               },
             },
@@ -1238,7 +1238,7 @@ describe("Tournament Flow Mutations", () => {
     });
 
     it("should throw error if user lacks permission", async () => {
-      (checkOrgPermission as jest.Mock).mockResolvedValue(false);
+      (checkCommunityPermission as jest.Mock).mockResolvedValue(false);
 
       (mockClient.from as jest.Mock).mockReturnValue({
         select: jest.fn().mockReturnThis(),
@@ -1255,7 +1255,7 @@ describe("Tournament Flow Mutations", () => {
               phase_type: "single_elimination",
               tournaments: {
                 id: 100,
-                organization_id: 200,
+                community_id: 200,
                 organizations: { owner_user_id: "other-user" },
               },
             },
@@ -1285,7 +1285,7 @@ describe("Tournament Flow Mutations", () => {
               phase_type: "single_elimination",
               tournaments: {
                 id: 100,
-                organization_id: 200,
+                community_id: 200,
                 organizations: { owner_user_id: "user-123" },
               },
             },
@@ -1315,7 +1315,7 @@ describe("Tournament Flow Mutations", () => {
               phase_type: "single_elimination",
               tournaments: {
                 id: 100,
-                organization_id: 200,
+                community_id: 200,
                 organizations: { owner_user_id: "user-123" },
               },
             },
@@ -1348,7 +1348,7 @@ describe("Tournament Flow Mutations", () => {
               phase_type: "single_elimination",
               tournaments: {
                 id: 100,
-                organization_id: 200,
+                community_id: 200,
                 organizations: { owner_user_id: "user-123" },
               },
             },
@@ -1393,7 +1393,7 @@ describe("Tournament Flow Mutations", () => {
               phase_type: "single_elimination",
               tournaments: {
                 id: 100,
-                organization_id: 200,
+                community_id: 200,
                 organizations: { owner_user_id: "user-123" },
               },
             },
@@ -1450,7 +1450,7 @@ describe("Tournament Flow Mutations", () => {
               phase_type: "single_elimination",
               tournaments: {
                 id: 100,
-                organization_id: 200,
+                community_id: 200,
                 organizations: { owner_user_id: "user-123" },
               },
             },
@@ -1516,7 +1516,7 @@ describe("Tournament Flow Mutations", () => {
               phase_type: "single_elimination",
               tournaments: {
                 id: 100,
-                organization_id: 200,
+                community_id: 200,
                 organizations: { owner_user_id: "user-123" },
               },
             },
@@ -1588,7 +1588,7 @@ describe("Tournament Flow Mutations", () => {
 
     beforeEach(() => {
       (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
-      (checkOrgPermission as jest.Mock).mockResolvedValue(true);
+      (checkCommunityPermission as jest.Mock).mockResolvedValue(true);
       (recalculateStandings as jest.Mock).mockResolvedValue({
         success: true,
         playersUpdated: 10,
@@ -1607,7 +1607,7 @@ describe("Tournament Flow Mutations", () => {
             id: tournamentId,
             status: "active",
             current_phase_id: 2,
-            organization_id: 200,
+            community_id: 200,
             organizations: { owner_user_id: "user-123" },
           },
           error: null,
@@ -1666,7 +1666,7 @@ describe("Tournament Flow Mutations", () => {
             id: tournamentId,
             status: "active",
             current_phase_id: null,
-            organization_id: 200,
+            community_id: 200,
             organizations: { owner_user_id: "user-123" },
           },
           error: null,
@@ -1714,7 +1714,7 @@ describe("Tournament Flow Mutations", () => {
     });
 
     it("should throw error if user lacks permission", async () => {
-      (checkOrgPermission as jest.Mock).mockResolvedValue(false);
+      (checkCommunityPermission as jest.Mock).mockResolvedValue(false);
 
       (mockClient.from as jest.Mock).mockReturnValue({
         select: jest.fn().mockReturnThis(),
@@ -1724,7 +1724,7 @@ describe("Tournament Flow Mutations", () => {
             id: tournamentId,
             status: "active",
             current_phase_id: 2,
-            organization_id: 200,
+            community_id: 200,
             organizations: { owner_user_id: "other-user" },
           },
           error: null,
@@ -1747,7 +1747,7 @@ describe("Tournament Flow Mutations", () => {
             id: tournamentId,
             status: "upcoming",
             current_phase_id: 2,
-            organization_id: 200,
+            community_id: 200,
             organizations: { owner_user_id: "user-123" },
           },
           error: null,
@@ -1771,7 +1771,7 @@ describe("Tournament Flow Mutations", () => {
             id: tournamentId,
             status: "active",
             current_phase_id: 2,
-            organization_id: 200,
+            community_id: 200,
             organizations: { owner_user_id: "user-123" },
           },
           error: null,
@@ -1819,7 +1819,7 @@ describe("Tournament Flow Mutations", () => {
             id: tournamentId,
             status: "active",
             current_phase_id: 2,
-            organization_id: 200,
+            community_id: 200,
             organizations: { owner_user_id: "user-123" },
           },
           error: null,
@@ -1869,7 +1869,7 @@ describe("Tournament Flow Mutations", () => {
             id: tournamentId,
             status: "active",
             current_phase_id: 2,
-            organization_id: 200,
+            community_id: 200,
             organizations: { owner_user_id: "user-123" },
           },
           error: null,

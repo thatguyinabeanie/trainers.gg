@@ -4,7 +4,7 @@
  * Generates tournaments with phases for each organization.
  *
  * Schema notes:
- * - tournaments have organization_id, tournament_format enum
+ * - tournaments have community_id, tournament_format enum
  * - tournament_phases have tournament_id, phase_type, phase_order
  * - tournament_registrations link alts to tournaments (alt_id, not user_id)
  */
@@ -38,7 +38,7 @@ export type PhaseStatus = "pending" | "active" | "completed";
 
 export interface GeneratedTournament {
   id: number;
-  organizationId: number;
+  communityId: number;
   name: string;
   slug: string;
   description: string;
@@ -121,7 +121,7 @@ function getDayInWeek(weekStart: Date, dayOfWeek: number, hour: number): Date {
  * Generate tournament name
  */
 function generateTournamentName(
-  org: GeneratedOrganization,
+  community: GeneratedOrganization,
   week: number,
   isMain: boolean,
   isFlagship: boolean,
@@ -134,9 +134,9 @@ function generateTournamentName(
   const weekLabel = `Week ${week}`;
 
   if (isMain) {
-    return `${org.name} ${weekLabel} Championship`;
+    return `${community.name} ${weekLabel} Championship`;
   } else {
-    return `${org.name} ${weekLabel} Practice`;
+    return `${community.name} ${weekLabel} Practice`;
   }
 }
 
@@ -144,7 +144,7 @@ function generateTournamentName(
  * Generate tournament slug
  */
 function generateTournamentSlug(
-  org: GeneratedOrganization,
+  community: GeneratedOrganization,
   week: number,
   isMain: boolean,
   isFlagship: boolean
@@ -152,13 +152,13 @@ function generateTournamentSlug(
   const weekPart = `week-${week.toString().padStart(2, "0")}`;
 
   if (isFlagship) {
-    return `${org.slug}-championship-${weekPart}`;
+    return `${community.slug}-championship-${weekPart}`;
   }
 
   if (isMain) {
-    return `${org.slug}-${weekPart}`;
+    return `${community.slug}-${weekPart}`;
   } else {
-    return `${org.slug}-practice-${weekPart}`;
+    return `${community.slug}-practice-${weekPart}`;
   }
 }
 
@@ -249,7 +249,7 @@ function getPhaseStatus(
 /**
  * Generate all tournaments for all organizations
  *
- * Creates 3 tournaments per org:
+ * Creates 3 tournaments per community:
  * 1. Week 1 (past) — completed, full capacity, all checked in with teams
  * 2. Week 2 (current) — active flagship, full capacity, all checked in with teams
  * 3. Week 3 (upcoming) — starts in ~1 hour, partial registration, check-in open, no check-ins yet
@@ -270,17 +270,17 @@ export function generateTournaments(
     const weekNumber = weekIndex + 1;
     const weekStart = getWeekStartDate(-weekOffset);
 
-    for (const org of organizations) {
+    for (const community of organizations) {
       // Check if this is a flagship week
       const flagshipConfig =
         weekOffset <= 0
           ? SEED_CONFIG.FLAGSHIP_TOURNAMENTS.find(
-              (f) => f.orgSlug === org.slug && f.week === weekNumber
+              (f) => f.communitySlug === community.slug && f.week === weekNumber
             )
           : undefined;
       const isFlagship = !!flagshipConfig;
 
-      const mainSeed = `tournament-${org.slug}-week${weekNumber}-main`;
+      const mainSeed = `tournament-${community.slug}-week${weekNumber}-main`;
       const mainSize = getTournamentSize(mainSeed, true, isFlagship);
       const mainFormat = getTournamentFormat(mainSeed, true, isFlagship);
 
@@ -294,22 +294,22 @@ export function generateTournaments(
         mainStartDate = new Date(now.getTime() - 3 * 60 * 60 * 1000);
         mainEndDate = new Date(now.getTime() + 5 * 60 * 60 * 1000);
       } else {
-        mainStartDate = getDayInWeek(weekStart, org.mainDay, 14);
+        mainStartDate = getDayInWeek(weekStart, community.mainDay, 14);
         mainEndDate = new Date(mainStartDate.getTime() + 6 * 60 * 60 * 1000);
       }
 
       tournaments.push({
         id: tournamentId++,
-        organizationId: org.id,
+        communityId: community.id,
         name: generateTournamentName(
-          org,
+          community,
           weekNumber,
           true,
           isFlagship,
           flagshipConfig?.name
         ),
-        slug: generateTournamentSlug(org, weekNumber, true, isFlagship),
-        description: `${org.name} tournament for week ${weekNumber}`,
+        slug: generateTournamentSlug(community, weekNumber, true, isFlagship),
+        description: `${community.name} tournament for week ${weekNumber}`,
         format: "VGC",
         status: getTournamentStatus(mainStartDate, mainEndDate),
         startDate: mainStartDate,
@@ -336,11 +336,11 @@ export function generateTournaments(
     }
   }
 
-  // Generate a "starting soon" upcoming tournament per org
+  // Generate a "starting soon" upcoming tournament per community
   // These have check-in windows open (startDate = NOW + 1 hour)
-  for (const org of organizations) {
+  for (const community of organizations) {
     const weekNumber = totalWeeks + 1; // Week 3
-    const upcomingSeed = `tournament-${org.slug}-week${weekNumber}-upcoming`;
+    const upcomingSeed = `tournament-${community.slug}-week${weekNumber}-upcoming`;
     const size = getTournamentSize(upcomingSeed, true, false);
     const format = getTournamentFormat(upcomingSeed, true, false);
 
@@ -350,10 +350,10 @@ export function generateTournaments(
 
     tournaments.push({
       id: tournamentId++,
-      organizationId: org.id,
-      name: `${org.name} Week ${weekNumber} Championship`,
-      slug: `${org.slug}-week-${weekNumber.toString().padStart(2, "0")}`,
-      description: `${org.name} tournament for week ${weekNumber} — check-in open!`,
+      communityId: community.id,
+      name: `${community.name} Week ${weekNumber} Championship`,
+      slug: `${community.slug}-week-${weekNumber.toString().padStart(2, "0")}`,
+      description: `${community.name} tournament for week ${weekNumber} — check-in open!`,
       format: "VGC",
       status: "upcoming",
       startDate,

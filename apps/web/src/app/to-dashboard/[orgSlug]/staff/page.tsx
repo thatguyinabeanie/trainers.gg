@@ -13,10 +13,10 @@ interface PageProps {
 }
 
 export default async function StaffPage({ params }: PageProps) {
-  const { orgSlug } = await params;
+  const { orgSlug: communitySlug } = await params;
   const supabase = await createClient();
 
-  const organization = await getCommunityBySlug(supabase, orgSlug);
+  const organization = await getCommunityBySlug(supabase, communitySlug);
 
   if (!organization) {
     return null; // Layout handles 404
@@ -43,8 +43,8 @@ export default async function StaffPage({ params }: PageProps) {
 
   return (
     <StaffListClient
-      organizationId={organization.id}
-      orgSlug={orgSlug}
+      communityId={organization.id}
+      communitySlug={communitySlug}
       initialStaff={staffMembers}
       groups={groups}
       isOwner={isOwner}

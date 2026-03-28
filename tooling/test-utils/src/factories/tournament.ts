@@ -6,7 +6,7 @@ export const tournamentFactory = Factory.define<Tables<"tournaments">>(
     id: sequence,
     name: `Tournament ${sequence}`,
     slug: `tournament-${sequence}`,
-    organization_id: 1,
+    community_id: 1,
     allow_late_registration: false,
     archive_reason: null,
     archived_at: null,

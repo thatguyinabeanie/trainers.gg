@@ -59,7 +59,7 @@ const mockTournament: TournamentWithOrg = {
   registration_start: "2026-02-01T00:00:00Z",
   registration_end: "2026-02-28T23:59:59Z",
   max_participants: 32,
-  organization_id: 1,
+  community_id: 1,
   created_by_user_id: "user-1",
   created_at: "2026-01-01T00:00:00Z",
   updated_at: "2026-01-01T00:00:00Z",

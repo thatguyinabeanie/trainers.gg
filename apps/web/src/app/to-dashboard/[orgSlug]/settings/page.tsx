@@ -5,7 +5,10 @@ import { useSupabaseQuery } from "@/lib/supabase";
 import { getCommunityBySlug } from "@trainers/supabase";
 import type { TypedSupabaseClient } from "@trainers/supabase";
 import { updateOrganization } from "@/actions/communities";
-import { uploadOrgLogo, removeOrgLogo } from "@/actions/community-logo";
+import {
+  uploadCommunityLogo,
+  removeCommunityLogo,
+} from "@/actions/community-logo";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -78,16 +81,16 @@ interface PageProps {
 }
 
 export default function OrgSettingsPage({ params }: PageProps) {
-  const { orgSlug } = use(params);
+  const { orgSlug: communitySlug } = use(params);
 
-  const orgQueryFn = (client: TypedSupabaseClient) =>
-    getCommunityBySlug(client, orgSlug);
+  const communityQueryFn = (client: TypedSupabaseClient) =>
+    getCommunityBySlug(client, communitySlug);
 
   const {
     data: org,
     isLoading,
     refetch,
-  } = useSupabaseQuery(orgQueryFn, [orgSlug]);
+  } = useSupabaseQuery(communityQueryFn, [communitySlug]);
 
   if (isLoading) {
     return (
@@ -175,7 +178,7 @@ function OrgProfileForm({ org, onSaved }: OrgProfileFormProps) {
     formData.append("file", file);
 
     startLogoTransition(async () => {
-      const result = await uploadOrgLogo(org.id, formData);
+      const result = await uploadCommunityLogo(org.id, formData);
       if (result.success) {
         setCurrentLogoUrl(result.data.logoUrl);
         toast.success("Logo updated");
@@ -191,7 +194,7 @@ function OrgProfileForm({ org, onSaved }: OrgProfileFormProps) {
 
   const handleLogoRemove = () => {
     startLogoTransition(async () => {
-      const result = await removeOrgLogo(org.id);
+      const result = await removeCommunityLogo(org.id);
       if (result.success) {
         setCurrentLogoUrl(null);
         toast.success("Logo removed");

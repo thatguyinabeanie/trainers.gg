@@ -297,7 +297,7 @@ export function UpcomingTournaments({
                       <TableCell className="text-muted-foreground">
                         {tournament.organization ? (
                           <Link
-                            href={`/organizations/${tournament.organization.slug}`}
+                            href={`/communities/${tournament.organization.slug}`}
                             className="hover:text-primary hover:underline"
                           >
                             {tournament.organization.name}
@@ -434,7 +434,7 @@ export function CompletedTournaments({
                       <TableCell className="text-muted-foreground">
                         {tournament.organization ? (
                           <Link
-                            href={`/organizations/${tournament.organization.slug}`}
+                            href={`/communities/${tournament.organization.slug}`}
                             className="hover:text-primary hover:underline"
                           >
                             {tournament.organization.name}

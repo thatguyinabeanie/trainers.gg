@@ -99,7 +99,7 @@ export async function createMatchGames(
 
 /**
  * Judge: Override a game result (resolve a dispute or correct an error).
- * Only callable by org staff with tournament.manage permission (enforced by RLS).
+ * Only callable by community staff with tournament.manage permission (enforced by RLS).
  */
 export async function judgeOverrideGame(
   supabase: TypedClient,
@@ -127,7 +127,7 @@ export async function judgeOverrideGame(
 
 /**
  * Judge: Reset a specific game (clear selections, set back to pending).
- * Only callable by org staff with tournament.manage permission (enforced by RLS).
+ * Only callable by community staff with tournament.manage permission (enforced by RLS).
  */
 export async function judgeResetGame(supabase: TypedClient, gameId: number) {
   const { data, error } = await supabase

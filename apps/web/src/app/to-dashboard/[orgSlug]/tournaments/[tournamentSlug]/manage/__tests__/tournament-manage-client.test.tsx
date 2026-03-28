@@ -135,7 +135,7 @@ describe("TournamentManageClient - Deep Linkable Tabs", () => {
 
       render(
         <TournamentManageClient
-          orgSlug="test-org"
+          communitySlug="test-org"
           tournamentSlug="test-tournament"
         />
       );
@@ -154,7 +154,7 @@ describe("TournamentManageClient - Deep Linkable Tabs", () => {
 
       render(
         <TournamentManageClient
-          orgSlug="test-org"
+          communitySlug="test-org"
           tournamentSlug="test-tournament"
         />
       );
@@ -171,7 +171,7 @@ describe("TournamentManageClient - Deep Linkable Tabs", () => {
 
       render(
         <TournamentManageClient
-          orgSlug="test-org"
+          communitySlug="test-org"
           tournamentSlug="test-tournament"
         />
       );
@@ -223,7 +223,7 @@ describe("TournamentManageClient - Deep Linkable Tabs", () => {
 
         const { unmount } = render(
           <TournamentManageClient
-            orgSlug="test-org"
+            communitySlug="test-org"
             tournamentSlug="test-tournament"
           />
         );
@@ -245,7 +245,7 @@ describe("TournamentManageClient - Deep Linkable Tabs", () => {
 
       render(
         <TournamentManageClient
-          orgSlug="test-org"
+          communitySlug="test-org"
           tournamentSlug="test-tournament"
         />
       );
@@ -264,7 +264,7 @@ describe("TournamentManageClient - Deep Linkable Tabs", () => {
 
       const { rerender: _rerender, unmount } = render(
         <TournamentManageClient
-          orgSlug="test-org"
+          communitySlug="test-org"
           tournamentSlug="test-tournament"
         />
       );
@@ -295,7 +295,7 @@ describe("TournamentManageClient - Deep Linkable Tabs", () => {
 
       render(
         <TournamentManageClient
-          orgSlug="test-org"
+          communitySlug="test-org"
           tournamentSlug="test-tournament"
         />
       );
@@ -317,7 +317,7 @@ describe("TournamentManageClient - Deep Linkable Tabs", () => {
 
       render(
         <TournamentManageClient
-          orgSlug="test-org"
+          communitySlug="test-org"
           tournamentSlug="test-tournament"
         />
       );

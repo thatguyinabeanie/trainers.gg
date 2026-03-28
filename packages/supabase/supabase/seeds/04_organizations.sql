@@ -15,15 +15,15 @@
 -- Organizations
 -- -----------------------------------------------------------------------------
 
-INSERT INTO public.organizations (
+INSERT INTO public.communities (
   name, slug, description, status, owner_user_id, tier, subscription_tier
 ) VALUES (
   'VGC League', 'vgc-league',
   'VGC League - Pokemon VGC Tournament Organization',
-  'active', 'a1b2c3d4-e5f6-4a5b-8c9d-0e1f2a3b4c5d', 'partner', 'organization_plus'
+  'active', 'a1b2c3d4-e5f6-4a5b-8c9d-0e1f2a3b4c5d', 'partner', 'community_plus'
 ) ON CONFLICT (slug) DO NOTHING;
 
-INSERT INTO public.organizations (
+INSERT INTO public.communities (
   name, slug, description, status, owner_user_id, tier, subscription_tier
 ) VALUES (
   'Pallet Town Trainers', 'pallet-town',
@@ -41,11 +41,11 @@ DECLARE
   vgc_league_id bigint;
   pallet_town_id bigint;
 BEGIN
-  SELECT id INTO vgc_league_id FROM public.organizations WHERE slug = 'vgc-league';
-  SELECT id INTO pallet_town_id FROM public.organizations WHERE slug = 'pallet-town';
+  SELECT id INTO vgc_league_id FROM public.communities WHERE slug = 'vgc-league';
+  SELECT id INTO pallet_town_id FROM public.communities WHERE slug = 'pallet-town';
 
   -- Add staff members
-  INSERT INTO public.organization_staff (organization_id, user_id) VALUES
+  INSERT INTO public.community_staff (community_id, user_id) VALUES
     (vgc_league_id, '711a6f78-b52d-dd77-fddb-e13dd02e03cf'),
     (vgc_league_id, '711a6f77-c285-5f8d-dbbc-a4f60e3eee80'),
     (vgc_league_id, '4dcc802f-cf86-d4f0-f0db-f1cfbdf9dcd0'),

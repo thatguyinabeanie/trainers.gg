@@ -19,8 +19,8 @@ import type { StaffWithRole } from "@trainers/supabase";
 interface RemoveStaffDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  organizationId: number;
-  orgSlug: string;
+  communityId: number;
+  communitySlug: string;
   staff: StaffWithRole;
   onSuccess: () => void;
 }
@@ -51,8 +51,8 @@ function getInitials(staff: StaffWithRole): string {
 export function RemoveStaffDialog({
   open,
   onOpenChange,
-  organizationId,
-  orgSlug,
+  communityId,
+  communitySlug,
   staff,
   onSuccess,
 }: RemoveStaffDialogProps) {
@@ -62,9 +62,9 @@ export function RemoveStaffDialog({
     setIsSubmitting(true);
     try {
       const result = await removeStaffAction(
-        organizationId,
+        communityId,
         staff.user_id,
-        orgSlug
+        communitySlug
       );
 
       if (result.success) {

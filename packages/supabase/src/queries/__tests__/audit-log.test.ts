@@ -463,7 +463,7 @@ describe("audit-log queries", () => {
       );
     });
 
-    it("should filter by entityType 'organization'", async () => {
+    it("should filter by entityType 'community'", async () => {
       const mockClient = createMockClient();
       mockClient._queryBuilder.then = jest.fn((resolve) => {
         return Promise.resolve({ data: [], error: null, count: 0 }).then(
@@ -471,10 +471,10 @@ describe("audit-log queries", () => {
         );
       });
 
-      await getAuditLog(mockClient, { entityType: "organization" });
+      await getAuditLog(mockClient, { entityType: "community" });
 
       expect(mockClient._queryBuilder.not).toHaveBeenCalledWith(
-        "organization_id",
+        "community_id",
         "is",
         null
       );

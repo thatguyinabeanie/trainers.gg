@@ -46,7 +46,7 @@ interface Tournament {
 interface OverviewClientProps {
   organization: OrganizationWithStats;
   recentTournaments: Tournament[];
-  orgSlug: string;
+  communitySlug: string;
 }
 
 type TournamentStatus =
@@ -70,9 +70,9 @@ const statusConfig: Record<
 export function OverviewClient({
   organization,
   recentTournaments,
-  orgSlug,
+  communitySlug,
 }: OverviewClientProps) {
-  const basePath = `/to-dashboard/${orgSlug}`;
+  const basePath = `/to-dashboard/${communitySlug}`;
 
   return (
     <div className="space-y-6">

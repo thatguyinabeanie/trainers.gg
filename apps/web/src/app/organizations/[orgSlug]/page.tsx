@@ -5,6 +5,6 @@ export default async function OrganizationDetailRedirect({
 }: {
   params: Promise<{ orgSlug: string }>;
 }) {
-  const { orgSlug } = await params;
-  redirect(`/communities/${orgSlug}`);
+  const { orgSlug: communitySlug } = await params;
+  redirect(`/communities/${communitySlug}`);
 }

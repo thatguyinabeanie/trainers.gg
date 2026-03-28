@@ -1,7 +1,7 @@
 import { Factory } from "fishery";
 import type { Tables } from "@trainers/supabase/types";
 
-export const organizationFactory = Factory.define<Tables<"organizations">>(
+export const organizationFactory = Factory.define<Tables<"communities">>(
   ({ sequence }) => ({
     id: sequence,
     name: `Organization ${sequence}`,

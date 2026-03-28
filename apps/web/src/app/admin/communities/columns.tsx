@@ -27,7 +27,7 @@ export interface CommunityRow {
     last_name: string | null;
     image: string | null;
   } | null;
-  organization_admin_notes:
+  community_admin_notes:
     | {
         notes: string | null;
         updated_at: string | null;
@@ -88,7 +88,7 @@ function formatDate(dateStr: string): string {
 const columnHelper = createColumnHelper<CommunityRow>();
 
 export const columns = [
-  // Name column: org name with slug underneath
+  // Name column: community name with slug underneath
   columnHelper.accessor("name", {
     header: "Name",
     cell: (info) => {

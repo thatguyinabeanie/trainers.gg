@@ -104,7 +104,7 @@ const entityTypes = [
   { value: "all", label: "All Entities" },
   { value: "tournament", label: "Tournaments" },
   { value: "match", label: "Matches" },
-  { value: "organization", label: "Communities" },
+  { value: "community", label: "Communities" },
 ] as const;
 
 // --- Stat Card Sub-Component ---
@@ -158,7 +158,7 @@ export function ActivityTab() {
     () =>
       entityFilter === "all"
         ? undefined
-        : (entityFilter as "tournament" | "match" | "organization"),
+        : (entityFilter as "tournament" | "match" | "community"),
     [entityFilter]
   );
 

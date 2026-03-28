@@ -273,7 +273,7 @@ describe("buildChartData (DonutBreakdownCard logic)", () => {
     });
   });
 
-  it("handles all org tier labels together", () => {
+  it("handles all community tier labels together", () => {
     const data = { regular: 50, verified: 15, partner: 5 };
     const result = buildChartData(data, ORG_TIER_LABELS);
 

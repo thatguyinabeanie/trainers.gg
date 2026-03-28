@@ -216,7 +216,7 @@ function CommunityCard({ org }: { org: CommunityWithCounts }) {
     org.tier === "verified" || org.tier === "partner" ? org.tier : null;
 
   return (
-    <Link href={`/organizations/${org.slug}` as never} asChild>
+    <Link href={`/communities/${org.slug}` as never} asChild>
       <YStack
         backgroundColor="$card"
         borderRadius="$4"

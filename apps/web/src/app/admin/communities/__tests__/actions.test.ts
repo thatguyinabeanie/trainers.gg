@@ -21,15 +21,15 @@ jest.mock("@trainers/supabase/queries", () => ({
   rejectOrganization: jest.fn(),
   suspendOrganization: jest.fn(),
   unsuspendOrganization: jest.fn(),
-  transferOrgOwnership: jest.fn(),
+  transferCommunityOwnership: jest.fn(),
 }));
 
 // Import after mocks are declared
 import {
-  approveOrgAction,
-  rejectOrgAction,
-  suspendOrgAction,
-  unsuspendOrgAction,
+  approveCommunityAction,
+  rejectCommunityAction,
+  suspendCommunityAction,
+  unsuspendCommunityAction,
   transferOwnershipAction,
 } from "../actions";
 import { requireAdminWithSudo } from "@/lib/auth/require-admin";
@@ -38,7 +38,7 @@ import {
   rejectOrganization,
   suspendOrganization,
   unsuspendOrganization,
-  transferOrgOwnership,
+  transferCommunityOwnership,
 } from "@trainers/supabase/queries";
 
 // Cast to jest.Mock for type-safe mock API access
@@ -47,7 +47,7 @@ const mockApproveOrganization = approveOrganization as jest.Mock;
 const mockRejectOrganization = rejectOrganization as jest.Mock;
 const mockSuspendOrganization = suspendOrganization as jest.Mock;
 const mockUnsuspendOrganization = unsuspendOrganization as jest.Mock;
-const mockTransferOrgOwnership = transferOrgOwnership as jest.Mock;
+const mockTransferCommunityOwnership = transferCommunityOwnership as jest.Mock;
 
 // --- Constants ---
 const ADMIN_USER_ID = "00000000-0000-0000-0000-000000000001";
@@ -56,7 +56,7 @@ const NEW_OWNER_ID = "00000000-0000-0000-0000-000000000003";
 
 // --- Tests ---
 
-describe("approveOrgAction", () => {
+describe("approveCommunityAction", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockRequireAdminWithSudo.mockResolvedValue({ userId: ADMIN_USER_ID });
@@ -64,7 +64,7 @@ describe("approveOrgAction", () => {
   });
 
   it("approves an organization successfully", async () => {
-    const result = await approveOrgAction(ORG_ID);
+    const result = await approveCommunityAction(ORG_ID);
 
     expect(result).toEqual({ success: true });
     expect(mockApproveOrganization).toHaveBeenCalledWith(
@@ -80,7 +80,7 @@ describe("approveOrgAction", () => {
       error: "Not authenticated",
     });
 
-    const result = await approveOrgAction(ORG_ID);
+    const result = await approveCommunityAction(ORG_ID);
 
     expect(result).toEqual({ success: false, error: "Not authenticated" });
     expect(mockApproveOrganization).not.toHaveBeenCalled();
@@ -91,7 +91,7 @@ describe("approveOrgAction", () => {
       new Error("Organization not found")
     );
 
-    const result = await approveOrgAction(ORG_ID);
+    const result = await approveCommunityAction(ORG_ID);
 
     expect(result).toEqual({
       success: false,
@@ -100,7 +100,7 @@ describe("approveOrgAction", () => {
   });
 });
 
-describe("rejectOrgAction", () => {
+describe("rejectCommunityAction", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockRequireAdminWithSudo.mockResolvedValue({ userId: ADMIN_USER_ID });
@@ -108,7 +108,10 @@ describe("rejectOrgAction", () => {
   });
 
   it("rejects an organization with a reason", async () => {
-    const result = await rejectOrgAction(ORG_ID, "Incomplete application");
+    const result = await rejectCommunityAction(
+      ORG_ID,
+      "Incomplete application"
+    );
 
     expect(result).toEqual({ success: true });
     expect(mockRejectOrganization).toHaveBeenCalledWith(
@@ -120,7 +123,7 @@ describe("rejectOrgAction", () => {
   });
 
   it("returns an error when reason is empty", async () => {
-    const result = await rejectOrgAction(ORG_ID, "");
+    const result = await rejectCommunityAction(ORG_ID, "");
 
     expect(result).toEqual({
       success: false,
@@ -130,7 +133,7 @@ describe("rejectOrgAction", () => {
   });
 
   it("returns an error when reason is whitespace only", async () => {
-    const result = await rejectOrgAction(ORG_ID, "   ");
+    const result = await rejectCommunityAction(ORG_ID, "   ");
 
     expect(result).toEqual({
       success: false,
@@ -145,7 +148,7 @@ describe("rejectOrgAction", () => {
       error: "Sudo mode required",
     });
 
-    const result = await rejectOrgAction(ORG_ID, "Bad org");
+    const result = await rejectCommunityAction(ORG_ID, "Bad org");
 
     expect(result).toEqual({ success: false, error: "Sudo mode required" });
     expect(mockRejectOrganization).not.toHaveBeenCalled();
@@ -154,7 +157,7 @@ describe("rejectOrgAction", () => {
   it("returns a specific error when the query throws", async () => {
     mockRejectOrganization.mockRejectedValue(new Error("DB failure"));
 
-    const result = await rejectOrgAction(ORG_ID, "Spam");
+    const result = await rejectCommunityAction(ORG_ID, "Spam");
 
     expect(result).toEqual({
       success: false,
@@ -163,7 +166,7 @@ describe("rejectOrgAction", () => {
   });
 });
 
-describe("suspendOrgAction", () => {
+describe("suspendCommunityAction", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockRequireAdminWithSudo.mockResolvedValue({ userId: ADMIN_USER_ID });
@@ -171,7 +174,7 @@ describe("suspendOrgAction", () => {
   });
 
   it("suspends an organization with a reason", async () => {
-    const result = await suspendOrgAction(ORG_ID, "Terms violation");
+    const result = await suspendCommunityAction(ORG_ID, "Terms violation");
 
     expect(result).toEqual({ success: true });
     expect(mockSuspendOrganization).toHaveBeenCalledWith(
@@ -183,7 +186,7 @@ describe("suspendOrgAction", () => {
   });
 
   it("returns an error when reason is empty", async () => {
-    const result = await suspendOrgAction(ORG_ID, "");
+    const result = await suspendCommunityAction(ORG_ID, "");
 
     expect(result).toEqual({
       success: false,
@@ -193,7 +196,7 @@ describe("suspendOrgAction", () => {
   });
 
   it("returns an error when reason is whitespace only", async () => {
-    const result = await suspendOrgAction(ORG_ID, "   ");
+    const result = await suspendCommunityAction(ORG_ID, "   ");
 
     expect(result).toEqual({
       success: false,
@@ -208,7 +211,7 @@ describe("suspendOrgAction", () => {
       error: "Admin access required",
     });
 
-    const result = await suspendOrgAction(ORG_ID, "Reason");
+    const result = await suspendCommunityAction(ORG_ID, "Reason");
 
     expect(result).toEqual({
       success: false,
@@ -220,7 +223,7 @@ describe("suspendOrgAction", () => {
   it("returns a specific error when the query throws", async () => {
     mockSuspendOrganization.mockRejectedValue(new Error("DB failure"));
 
-    const result = await suspendOrgAction(ORG_ID, "Reason");
+    const result = await suspendCommunityAction(ORG_ID, "Reason");
 
     expect(result).toEqual({
       success: false,
@@ -229,7 +232,7 @@ describe("suspendOrgAction", () => {
   });
 });
 
-describe("unsuspendOrgAction", () => {
+describe("unsuspendCommunityAction", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockRequireAdminWithSudo.mockResolvedValue({ userId: ADMIN_USER_ID });
@@ -237,7 +240,7 @@ describe("unsuspendOrgAction", () => {
   });
 
   it("unsuspends an organization successfully", async () => {
-    const result = await unsuspendOrgAction(ORG_ID);
+    const result = await unsuspendCommunityAction(ORG_ID);
 
     expect(result).toEqual({ success: true });
     expect(mockUnsuspendOrganization).toHaveBeenCalledWith(
@@ -253,7 +256,7 @@ describe("unsuspendOrgAction", () => {
       error: "Not authenticated",
     });
 
-    const result = await unsuspendOrgAction(ORG_ID);
+    const result = await unsuspendCommunityAction(ORG_ID);
 
     expect(result).toEqual({ success: false, error: "Not authenticated" });
     expect(mockUnsuspendOrganization).not.toHaveBeenCalled();
@@ -262,7 +265,7 @@ describe("unsuspendOrgAction", () => {
   it("returns a specific error when the query throws", async () => {
     mockUnsuspendOrganization.mockRejectedValue(new Error("DB failure"));
 
-    const result = await unsuspendOrgAction(ORG_ID);
+    const result = await unsuspendCommunityAction(ORG_ID);
 
     expect(result).toEqual({
       success: false,
@@ -275,14 +278,14 @@ describe("transferOwnershipAction", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockRequireAdminWithSudo.mockResolvedValue({ userId: ADMIN_USER_ID });
-    mockTransferOrgOwnership.mockResolvedValue(undefined);
+    mockTransferCommunityOwnership.mockResolvedValue(undefined);
   });
 
   it("transfers ownership successfully", async () => {
     const result = await transferOwnershipAction(ORG_ID, NEW_OWNER_ID);
 
     expect(result).toEqual({ success: true });
-    expect(mockTransferOrgOwnership).toHaveBeenCalledWith(
+    expect(mockTransferCommunityOwnership).toHaveBeenCalledWith(
       mockServiceClient,
       ORG_ID,
       NEW_OWNER_ID,
@@ -297,7 +300,7 @@ describe("transferOwnershipAction", () => {
       success: false,
       error: expect.stringContaining("Invalid input"),
     });
-    expect(mockTransferOrgOwnership).not.toHaveBeenCalled();
+    expect(mockTransferCommunityOwnership).not.toHaveBeenCalled();
   });
 
   it("returns an error when new owner ID is not a valid UUID", async () => {
@@ -307,7 +310,7 @@ describe("transferOwnershipAction", () => {
       success: false,
       error: expect.stringContaining("Invalid input"),
     });
-    expect(mockTransferOrgOwnership).not.toHaveBeenCalled();
+    expect(mockTransferCommunityOwnership).not.toHaveBeenCalled();
   });
 
   it("returns an error when auth check fails", async () => {
@@ -322,11 +325,11 @@ describe("transferOwnershipAction", () => {
       success: false,
       error: "Sudo session expired",
     });
-    expect(mockTransferOrgOwnership).not.toHaveBeenCalled();
+    expect(mockTransferCommunityOwnership).not.toHaveBeenCalled();
   });
 
   it("returns a specific error when the query throws", async () => {
-    mockTransferOrgOwnership.mockRejectedValue(new Error("DB failure"));
+    mockTransferCommunityOwnership.mockRejectedValue(new Error("DB failure"));
 
     const result = await transferOwnershipAction(ORG_ID, NEW_OWNER_ID);
 

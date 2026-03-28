@@ -12,7 +12,7 @@ import {
 
 // --- Approve ---
 
-export async function approveOrgRequestAction(
+export async function approveCommunityRequestAction(
   requestId: number
 ): Promise<ActionResult> {
   const parsed = positiveIntSchema.safeParse(requestId);
@@ -41,7 +41,7 @@ export async function approveOrgRequestAction(
 
 // --- Reject ---
 
-export async function rejectOrgRequestAction(
+export async function rejectCommunityRequestAction(
   requestId: number,
   reason: string
 ): Promise<ActionResult> {

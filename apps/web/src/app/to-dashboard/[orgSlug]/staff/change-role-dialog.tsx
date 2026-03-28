@@ -38,8 +38,8 @@ import type { StaffWithRole, CommunityGroup } from "@trainers/supabase";
 interface ChangeRoleDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  organizationId: number;
-  orgSlug: string;
+  communityId: number;
+  communitySlug: string;
   staff: StaffWithRole;
   groups: CommunityGroup[];
   onSuccess: () => void;
@@ -77,8 +77,8 @@ type ChangeRoleFormData = z.infer<typeof changeRoleSchema>;
 export function ChangeRoleDialog({
   open,
   onOpenChange,
-  organizationId,
-  orgSlug,
+  communityId,
+  communitySlug,
   staff,
   groups,
   onSuccess,
@@ -105,10 +105,10 @@ export function ChangeRoleDialog({
   const onSubmit = async (data: ChangeRoleFormData) => {
     try {
       const result = await changeStaffRoleAction(
-        organizationId,
+        communityId,
         staff.user_id,
         parseInt(data.groupId, 10),
-        orgSlug
+        communitySlug
       );
 
       if (result.success) {

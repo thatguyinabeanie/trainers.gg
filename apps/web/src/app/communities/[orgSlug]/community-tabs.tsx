@@ -22,13 +22,13 @@ import type { TournamentWithOrg } from "@trainers/supabase";
 
 interface CommunityTabsProps {
   tournaments: TournamentWithOrg[];
-  orgSlug: string;
+  communitySlug: string;
   canManage: boolean;
 }
 
 export function CommunityTabs({
   tournaments,
-  orgSlug,
+  communitySlug,
   canManage,
 }: CommunityTabsProps) {
   // Group tournaments by status
@@ -60,7 +60,7 @@ export function CommunityTabs({
             description="This community hasn't created any tournaments"
           >
             {canManage && (
-              <Link href={`/to-dashboard/${orgSlug}/tournaments/create`}>
+              <Link href={`/to-dashboard/${communitySlug}/tournaments/create`}>
                 <Button className="mt-4">
                   <Trophy className="mr-2 h-4 w-4" />
                   Create Tournament

@@ -381,7 +381,7 @@ export async function getPlayerTournamentHistoryFull(
         start_date,
         status,
         format,
-        organization:organizations!tournaments_organization_id_fkey (
+        organization:communities!tournaments_community_id_fkey (
           id,
           name,
           slug

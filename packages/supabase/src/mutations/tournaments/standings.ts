@@ -2,7 +2,7 @@ import {
   type TypedClient,
   getCurrentUser,
   getCurrentAlt,
-  checkOrgPermission,
+  checkCommunityPermission,
 } from "./helpers";
 
 /**
@@ -280,8 +280,8 @@ export async function dropPlayer(
       `
       id,
       status,
-      organization_id,
-      organizations!inner (
+      community_id,
+      communities!inner (
         owner_user_id
       )
     `
@@ -294,9 +294,9 @@ export async function dropPlayer(
   // Check permission - either the player themselves or the organizer/staff
   const currentAlt = await getCurrentAlt(supabase);
   const isPlayer = currentAlt?.id === altId;
-  const isOrganizer = await checkOrgPermission(
+  const isOrganizer = await checkCommunityPermission(
     supabase,
-    tournament.organization_id,
+    tournament.community_id,
     "tournament.manage"
   );
 
