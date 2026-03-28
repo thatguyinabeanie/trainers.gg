@@ -43,17 +43,17 @@ export async function HeroStats() {
   ];
 
   return (
-    <div className="flex justify-center gap-10 sm:gap-12">
+    <dl className="flex justify-center gap-10 sm:gap-12">
       {stats.map(({ value, label }) => (
-        <div key={label} className="text-center">
-          <p className="text-primary font-mono text-2xl font-extrabold tracking-tight">
-            {formatStat(value)}
-          </p>
-          <p className="text-muted-foreground/60 mt-0.5 text-[11px] dark:text-white/35">
+        <div key={label} className="flex flex-col-reverse text-center">
+          <dt className="text-muted-foreground/60 mt-0.5 text-[11px] dark:text-white/35">
             {label}
-          </p>
+          </dt>
+          <dd className="text-primary font-mono text-2xl font-extrabold tracking-tight">
+            {formatStat(value)}
+          </dd>
         </div>
       ))}
-    </div>
+    </dl>
   );
 }

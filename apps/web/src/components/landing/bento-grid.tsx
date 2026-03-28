@@ -25,7 +25,7 @@ function BentoCard({
   return (
     <div
       className={cn(
-        "bg-card border-primary/12 rounded-xl border p-5",
+        "bg-card rounded-xl p-5",
         "dark:bg-[#1a1f2e]",
         className
       )}
@@ -304,8 +304,7 @@ export function BentoGrid() {
         />
         <div
           className={cn(
-            "bg-primary/3 border-primary/20 rounded-xl border border-dashed p-5",
-            "dark:bg-primary/3"
+            "bg-primary/[0.03] rounded-xl border border-dashed border-primary/20 p-5"
           )}
         >
           <p className="text-muted-foreground mb-2.5 text-[9px] tracking-[2px] uppercase">
