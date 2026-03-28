@@ -106,19 +106,3 @@ export const updateCommunitySchema = z.object({
 export type CommunitySocialLink = z.infer<typeof communitySocialLinkSchema>;
 export type CreateCommunityInput = z.infer<typeof createCommunitySchema>;
 export type UpdateCommunityInput = z.infer<typeof updateCommunitySchema>;
-
-// Deprecated aliases — use the community-prefixed names instead
-/** @deprecated Use `communitySocialLinkSchema` */
-export const organizationSocialLinkSchema = communitySocialLinkSchema;
-/** @deprecated Use `communitySocialLinksSchema` */
-export const organizationSocialLinksSchema = communitySocialLinksSchema;
-/** @deprecated Use `createCommunitySchema` */
-export const createOrganizationSchema = createCommunitySchema;
-/** @deprecated Use `updateCommunitySchema` */
-export const updateOrganizationSchema = updateCommunitySchema;
-/** @deprecated Use `CommunitySocialLink` */
-export type OrganizationSocialLink = CommunitySocialLink;
-/** @deprecated Use `CreateCommunityInput` */
-export type CreateOrganizationInput = CreateCommunityInput;
-/** @deprecated Use `UpdateCommunityInput` */
-export type UpdateOrganizationInput = UpdateCommunityInput;

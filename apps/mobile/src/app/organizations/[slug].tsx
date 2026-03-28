@@ -6,8 +6,8 @@ import { Ionicons } from "@expo/vector-icons";
 import { Screen, Badge } from "@/components/ui";
 import { useOrganization } from "@/lib/supabase";
 import {
-  organizationSocialLinksSchema,
-  type OrganizationSocialLink,
+  communitySocialLinksSchema,
+  type CommunitySocialLink,
   type SocialLinkPlatform,
 } from "@trainers/validators";
 import { socialPlatformLabels } from "@trainers/utils";
@@ -33,8 +33,8 @@ const PLATFORM_ICONS: Record<SocialLinkPlatform, string> = {
   custom: "link-outline",
 };
 
-function parseSocialLinks(raw: unknown): OrganizationSocialLink[] {
-  const result = organizationSocialLinksSchema.safeParse(raw);
+function parseSocialLinks(raw: unknown): CommunitySocialLink[] {
+  const result = communitySocialLinksSchema.safeParse(raw);
   return result.success ? result.data : [];
 }
 

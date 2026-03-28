@@ -1,4 +1,4 @@
-import type { OrganizationSocialLink } from "@trainers/validators";
+import type { CommunitySocialLink } from "@trainers/validators";
 import type { Json } from "../types";
 import type { TypedClient } from "../client";
 
@@ -15,7 +15,7 @@ export async function submitCommunityRequest(
     slug: string;
     description?: string;
     discord_invite_url: string;
-    social_links?: OrganizationSocialLink[];
+    social_links?: CommunitySocialLink[];
   }
 ) {
   const {
@@ -141,12 +141,12 @@ export async function approveCommunityRequest(
   }
 
   // Assemble social links from request (Discord invite + any additional)
-  const socialLinks: OrganizationSocialLink[] = [];
+  const socialLinks: CommunitySocialLink[] = [];
   if (request.discord_invite_url) {
     socialLinks.push({ platform: "discord", url: request.discord_invite_url });
   }
   const requestSocialLinks = (request.social_links ??
-    []) as OrganizationSocialLink[];
+    []) as CommunitySocialLink[];
   for (const link of requestSocialLinks) {
     if (link.platform && link.url) {
       socialLinks.push(link);
@@ -294,14 +294,3 @@ export async function rejectCommunityRequest(
 
   return request;
 }
-
-// =============================================================================
-// Deprecated aliases (backward compatibility)
-// =============================================================================
-
-/** @deprecated Use submitCommunityRequest instead */
-export const submitOrganizationRequest = submitCommunityRequest;
-/** @deprecated Use approveCommunityRequest instead */
-export const approveOrganizationRequest = approveCommunityRequest;
-/** @deprecated Use rejectCommunityRequest instead */
-export const rejectOrganizationRequest = rejectCommunityRequest;

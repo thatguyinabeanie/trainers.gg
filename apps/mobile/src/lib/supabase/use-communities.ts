@@ -1,16 +1,16 @@
 import { useState, useEffect } from "react";
 import { getSupabase } from "./client";
 import {
-  listPublicOrganizations,
-  getOrganizationBySlug,
+  listPublicCommunities,
+  getCommunityBySlug,
 } from "@trainers/supabase/queries";
 
 export type OrganizationWithCounts = Awaited<
-  ReturnType<typeof listPublicOrganizations>
+  ReturnType<typeof listPublicCommunities>
 >[number];
 
 export type OrganizationDetail = NonNullable<
-  Awaited<ReturnType<typeof getOrganizationBySlug>>
+  Awaited<ReturnType<typeof getCommunityBySlug>>
 >;
 
 /**
@@ -28,7 +28,7 @@ export function useOrganizations() {
       setLoading(true);
       setError(null);
       const supabase = getSupabase();
-      const data = await listPublicOrganizations(supabase);
+      const data = await listPublicCommunities(supabase);
       setOrganizations(data);
     } catch (err) {
       setError(
@@ -71,7 +71,7 @@ export function useOrganization(slug: string | undefined) {
       setLoading(true);
       setError(null);
       const supabase = getSupabase();
-      const data = await getOrganizationBySlug(supabase, slug);
+      const data = await getCommunityBySlug(supabase, slug);
       setOrganization(data);
     } catch (err) {
       setError(

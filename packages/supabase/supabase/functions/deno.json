@@ -16,7 +16,7 @@
     "@trainers/validators/auth": "../../../validators/src/auth.ts",
     "@trainers/validators/tournament": "../../../validators/src/tournament.ts",
     "@trainers/validators/alt": "../../../validators/src/alt.ts",
-    "@trainers/validators/organization": "../../../validators/src/organization.ts",
+    "@trainers/validators/community": "../../../validators/src/community.ts",
     "@trainers/validators/admin": "../../../validators/src/admin.ts",
     "@trainers/validators/action-result": "../../../validators/src/action-result.ts",
     "@trainers/utils": "../../../utils/src/index.ts",

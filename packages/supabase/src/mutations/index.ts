@@ -29,13 +29,6 @@ export {
   removeStaffFromGroup,
   changeStaffRole,
   removeStaffCompletely,
-  // Deprecated aliases
-  createOrganization,
-  updateOrganization,
-  inviteToOrganization,
-  acceptOrganizationInvitation,
-  declineOrganizationInvitation,
-  leaveOrganization,
 } from "./communities";
 
 // Tournament mutations
@@ -83,10 +76,6 @@ export {
   submitCommunityRequest,
   approveCommunityRequest,
   rejectCommunityRequest,
-  // Deprecated aliases
-  submitOrganizationRequest,
-  approveOrganizationRequest,
-  rejectOrganizationRequest,
 } from "./organization-requests";
 
 // Match game mutations

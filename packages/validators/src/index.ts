@@ -83,14 +83,6 @@ export {
   updateCommunitySchema,
   type CreateCommunityInput,
   type UpdateCommunityInput,
-  // Deprecated aliases — use community-prefixed names instead
-  organizationSocialLinkSchema,
-  organizationSocialLinksSchema,
-  type OrganizationSocialLink,
-  createOrganizationSchema,
-  updateOrganizationSchema,
-  type CreateOrganizationInput,
-  type UpdateOrganizationInput,
 } from "./community";
 
 // Organization request validators

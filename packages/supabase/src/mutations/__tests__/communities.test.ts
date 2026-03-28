@@ -16,7 +16,7 @@ import type { TypedClient } from "../../client";
 import { createMockClient } from "@trainers/test-utils/mocks";
 import { organizationFactory } from "@trainers/test-utils/factories";
 import { getInvitationExpiryDate } from "../../constants";
-import type { OrganizationSocialLink } from "@trainers/validators";
+import type { CommunitySocialLink } from "@trainers/validators";
 
 jest.mock("../../constants", () => ({
   getInvitationExpiryDate: jest.fn(),
@@ -108,7 +108,7 @@ describe("Community Mutations", () => {
 
     it("should create organization with valid social links", async () => {
       const fromSpy = jest.spyOn(mockClient, "from");
-      const socialLinks: OrganizationSocialLink[] = [
+      const socialLinks: CommunitySocialLink[] = [
         { platform: "discord", url: "https://discord.gg/test" },
         { platform: "twitter", url: "https://x.com/test" },
       ];
@@ -162,7 +162,7 @@ describe("Community Mutations", () => {
         await expect(
           createCommunity(mockClient, {
             ...orgData,
-            socialLinks: links as OrganizationSocialLink[],
+            socialLinks: links as CommunitySocialLink[],
           })
         ).rejects.toThrow("Invalid social links");
       }
@@ -326,7 +326,7 @@ describe("Community Mutations", () => {
       },
       {
         desc: "empty social links array",
-        links: [] as OrganizationSocialLink[],
+        links: [] as CommunitySocialLink[],
       },
     ])("should update with valid social links ($desc)", async ({ links }) => {
       const fromSpy = jest.spyOn(mockClient, "from");
@@ -358,7 +358,7 @@ describe("Community Mutations", () => {
 
         await expect(
           updateCommunity(mockClient, orgId, {
-            socialLinks: links as OrganizationSocialLink[],
+            socialLinks: links as CommunitySocialLink[],
           })
         ).rejects.toThrow("Invalid social links");
       }

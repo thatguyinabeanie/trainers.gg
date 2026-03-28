@@ -386,12 +386,3 @@ export async function transferOrgOwnership(
 
   return data;
 }
-
-// =============================================================================
-// Deprecated aliases (backward compatibility)
-// =============================================================================
-
-/** @deprecated Use listCommunitiesAdmin instead */
-export const listOrganizationsAdmin = listCommunitiesAdmin;
-/** @deprecated Use getCommunityAdminDetails instead */
-export const getOrganizationAdminDetails = getCommunityAdminDetails;

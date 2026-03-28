@@ -2,8 +2,8 @@ import type { Database } from "../types";
 import type { TypedClient } from "../client";
 import { getInvitationExpiryDate } from "../constants";
 import {
-  organizationSocialLinksSchema,
-  type OrganizationSocialLink,
+  communitySocialLinksSchema,
+  type CommunitySocialLink,
 } from "@trainers/validators";
 
 /**
@@ -82,7 +82,7 @@ export async function createCommunity(
     name: string;
     slug: string;
     description?: string;
-    socialLinks?: OrganizationSocialLink[];
+    socialLinks?: CommunitySocialLink[];
     logoUrl?: string;
   }
 ) {
@@ -101,9 +101,9 @@ export async function createCommunity(
   }
 
   // Validate social links if provided
-  let validatedLinks: OrganizationSocialLink[] = [];
+  let validatedLinks: CommunitySocialLink[] = [];
   if (data.socialLinks) {
-    const parsed = organizationSocialLinksSchema.safeParse(data.socialLinks);
+    const parsed = communitySocialLinksSchema.safeParse(data.socialLinks);
     if (!parsed.success) {
       throw new Error(
         `Invalid social links: ${parsed.error.issues.map((i) => i.message).join(", ")}`
@@ -148,7 +148,7 @@ export async function updateCommunity(
   updates: {
     name?: string;
     description?: string;
-    socialLinks?: OrganizationSocialLink[];
+    socialLinks?: CommunitySocialLink[];
     logoUrl?: string | null;
   }
 ) {
@@ -175,7 +175,7 @@ export async function updateCommunity(
     updateData.description = updates.description;
   if (updates.socialLinks !== undefined) {
     // Validate social links through Zod before writing to JSONB
-    const parsed = organizationSocialLinksSchema.safeParse(updates.socialLinks);
+    const parsed = communitySocialLinksSchema.safeParse(updates.socialLinks);
     if (!parsed.success) {
       throw new Error(
         `Invalid social links: ${parsed.error.issues.map((i) => i.message).join(", ")}`
@@ -697,20 +697,3 @@ export async function removeStaffCompletely(
   if (error) throw error;
   return { success: true };
 }
-
-// =============================================================================
-// Deprecated aliases (backward compatibility)
-// =============================================================================
-
-/** @deprecated Use createCommunity instead */
-export const createOrganization = createCommunity;
-/** @deprecated Use updateCommunity instead */
-export const updateOrganization = updateCommunity;
-/** @deprecated Use inviteToCommunity instead */
-export const inviteToOrganization = inviteToCommunity;
-/** @deprecated Use acceptCommunityInvitation instead */
-export const acceptOrganizationInvitation = acceptCommunityInvitation;
-/** @deprecated Use declineCommunityInvitation instead */
-export const declineOrganizationInvitation = declineCommunityInvitation;
-/** @deprecated Use leaveCommunity instead */
-export const leaveOrganization = leaveCommunity;

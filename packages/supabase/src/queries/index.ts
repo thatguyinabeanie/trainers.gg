@@ -44,32 +44,12 @@ export {
   listCommunityGroups,
   searchUsersForInvite,
   hasOrgPermission,
-  // Deprecated aliases
-  listPublicOrganizations,
-  listOrganizations,
-  getOrganizationBySlug,
-  getOrganizationById,
-  listMyOrganizations,
-  listMyOwnedOrganizations,
-  getOrganizationWithTournamentStats,
-  listOrganizationTournaments,
-  canManageOrganization,
-  listOrganizationStaff,
-  hasOrganizationAccess,
-  getMyOrganizationInvitations,
-  getOrganizationInvitations,
-  listOrganizationStaffWithRoles,
-  listOrganizationGroups,
 } from "./communities";
 
 export type {
   StaffWithRole,
   CommunityGroup,
   CommunityWithCounts,
-  // @deprecated Use CommunityGroup instead
-  OrganizationGroup,
-  // @deprecated Use CommunityWithCounts instead
-  OrganizationWithCounts,
 } from "./communities";
 
 // Tournament queries
@@ -185,9 +165,6 @@ export {
   suspendOrganization,
   unsuspendOrganization,
   transferOrgOwnership,
-  // Deprecated aliases
-  listOrganizationsAdmin,
-  getOrganizationAdminDetails,
 } from "./admin-communities";
 
 export type { ListOrganizationsAdminOptions } from "./admin-communities";

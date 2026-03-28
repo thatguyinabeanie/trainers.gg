@@ -6,7 +6,7 @@ export {
   useOrganization,
   type OrganizationWithCounts,
   type OrganizationDetail,
-} from "./use-organizations";
+} from "./use-communities";
 export {
   useTournament,
   useTeamForRegistration,

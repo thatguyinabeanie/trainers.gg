@@ -1,7 +1,7 @@
 import {
-  submitOrganizationRequest,
-  approveOrganizationRequest,
-  rejectOrganizationRequest,
+  submitCommunityRequest,
+  approveCommunityRequest,
+  rejectCommunityRequest,
 } from "../organization-requests";
 import type { TypedClient } from "../../client";
 import { createMockClient } from "@trainers/test-utils/mocks";
@@ -35,10 +35,10 @@ describe("Organization Request Mutations", () => {
   });
 
   // ---------------------------------------------------------------------------
-  // submitOrganizationRequest
+  // submitCommunityRequest
   // ---------------------------------------------------------------------------
 
-  describe("submitOrganizationRequest", () => {
+  describe("submitCommunityRequest", () => {
     const requestData = {
       name: "Pallet Town League",
       slug: "pallet-town-league",
@@ -107,7 +107,7 @@ describe("Organization Request Mutations", () => {
       const fromSpy = jest.spyOn(mockClient, "from");
       const expectedRequest = mockSuccessfulSubmit(fromSpy);
 
-      const result = await submitOrganizationRequest(mockClient, requestData);
+      const result = await submitCommunityRequest(mockClient, requestData);
 
       expect(result).toEqual(expectedRequest);
     });
@@ -118,7 +118,7 @@ describe("Organization Request Mutations", () => {
       } as MockAuthResponse);
 
       await expect(
-        submitOrganizationRequest(mockClient, requestData)
+        submitCommunityRequest(mockClient, requestData)
       ).rejects.toThrow("Not authenticated");
     });
 
@@ -145,7 +145,7 @@ describe("Organization Request Mutations", () => {
       });
 
       await expect(
-        submitOrganizationRequest(mockClient, requestData)
+        submitCommunityRequest(mockClient, requestData)
       ).rejects.toThrow("You already have a pending organization request");
     });
 
@@ -191,7 +191,7 @@ describe("Organization Request Mutations", () => {
       });
 
       await expect(
-        submitOrganizationRequest(mockClient, requestData)
+        submitCommunityRequest(mockClient, requestData)
       ).rejects.toThrow("You can submit a new request after");
     });
 
@@ -237,7 +237,7 @@ describe("Organization Request Mutations", () => {
       });
 
       await expect(
-        submitOrganizationRequest(mockClient, requestData)
+        submitCommunityRequest(mockClient, requestData)
       ).rejects.toThrow("This URL slug is already requested by another user");
     });
 
@@ -280,7 +280,7 @@ describe("Organization Request Mutations", () => {
       });
 
       await expect(
-        submitOrganizationRequest(mockClient, requestData)
+        submitCommunityRequest(mockClient, requestData)
       ).rejects.toThrow(
         "This URL slug is already taken by an existing organization"
       );
@@ -288,10 +288,10 @@ describe("Organization Request Mutations", () => {
   });
 
   // ---------------------------------------------------------------------------
-  // approveOrganizationRequest
+  // approveCommunityRequest
   // ---------------------------------------------------------------------------
 
-  describe("approveOrganizationRequest", () => {
+  describe("approveCommunityRequest", () => {
     it("throws when request is not found", async () => {
       const fromSpy = jest.spyOn(mockClient, "from");
       fromSpy.mockImplementation(() => {
@@ -314,7 +314,7 @@ describe("Organization Request Mutations", () => {
       });
 
       await expect(
-        approveOrganizationRequest(mockClient, 1, ADMIN_USER_ID)
+        approveCommunityRequest(mockClient, 1, ADMIN_USER_ID)
       ).rejects.toThrow("Request not found");
     });
 
@@ -344,7 +344,7 @@ describe("Organization Request Mutations", () => {
       });
 
       await expect(
-        approveOrganizationRequest(mockClient, request.id, ADMIN_USER_ID)
+        approveCommunityRequest(mockClient, request.id, ADMIN_USER_ID)
       ).rejects.toThrow("Request is no longer pending");
     });
 
@@ -402,7 +402,7 @@ describe("Organization Request Mutations", () => {
         return builder;
       });
 
-      const result = await approveOrganizationRequest(
+      const result = await approveCommunityRequest(
         mockClient,
         request.id,
         ADMIN_USER_ID
@@ -455,7 +455,7 @@ describe("Organization Request Mutations", () => {
       });
 
       await expect(
-        approveOrganizationRequest(mockClient, request.id, ADMIN_USER_ID)
+        approveCommunityRequest(mockClient, request.id, ADMIN_USER_ID)
       ).rejects.toThrow("is now taken by an existing organization");
     });
 
@@ -502,7 +502,7 @@ describe("Organization Request Mutations", () => {
       });
 
       await expect(
-        approveOrganizationRequest(mockClient, request.id, ADMIN_USER_ID)
+        approveCommunityRequest(mockClient, request.id, ADMIN_USER_ID)
       ).rejects.toThrow("duplicate staff");
     });
 
@@ -564,7 +564,7 @@ describe("Organization Request Mutations", () => {
       });
 
       // Should not throw despite notification failure
-      const result = await approveOrganizationRequest(
+      const result = await approveCommunityRequest(
         mockClient,
         request.id,
         ADMIN_USER_ID
@@ -580,10 +580,10 @@ describe("Organization Request Mutations", () => {
   });
 
   // ---------------------------------------------------------------------------
-  // rejectOrganizationRequest
+  // rejectCommunityRequest
   // ---------------------------------------------------------------------------
 
-  describe("rejectOrganizationRequest", () => {
+  describe("rejectCommunityRequest", () => {
     it("updates status, creates notification and audit log", async () => {
       const request = organizationRequestFactory.build({
         status: "pending",
@@ -628,7 +628,7 @@ describe("Organization Request Mutations", () => {
         return builder;
       });
 
-      const result = await rejectOrganizationRequest(
+      const result = await rejectCommunityRequest(
         mockClient,
         request.id,
         ADMIN_USER_ID,
@@ -684,7 +684,7 @@ describe("Organization Request Mutations", () => {
         return builder;
       });
 
-      const result = await rejectOrganizationRequest(
+      const result = await rejectCommunityRequest(
         mockClient,
         request.id,
         ADMIN_USER_ID,
@@ -721,7 +721,7 @@ describe("Organization Request Mutations", () => {
       });
 
       await expect(
-        rejectOrganizationRequest(mockClient, 1, ADMIN_USER_ID, "Spam")
+        rejectCommunityRequest(mockClient, 1, ADMIN_USER_ID, "Spam")
       ).rejects.toThrow("Request not found");
     });
 
@@ -751,7 +751,7 @@ describe("Organization Request Mutations", () => {
       });
 
       await expect(
-        rejectOrganizationRequest(mockClient, request.id, ADMIN_USER_ID, "Spam")
+        rejectCommunityRequest(mockClient, request.id, ADMIN_USER_ID, "Spam")
       ).rejects.toThrow("Request is no longer pending");
     });
   });

@@ -20,7 +20,7 @@ import { useSupabaseQuery } from "@/lib/supabase";
 import {
   listCommunityStaffWithRoles,
   type StaffWithRole,
-  type OrganizationGroup,
+  type CommunityGroup,
 } from "@trainers/supabase";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -46,7 +46,7 @@ interface StaffListClientProps {
   organizationId: number;
   orgSlug: string;
   initialStaff: StaffWithRole[];
-  groups: OrganizationGroup[];
+  groups: CommunityGroup[];
   isOwner: boolean;
   currentUserId?: string; // Not currently used but reserved for future use
   currentUserRole?: string | null;
@@ -369,7 +369,7 @@ export function StaffListClient({
   // Optimistic state for drag & drop
   // This stores temporary group assignments that haven't been confirmed by the server yet
   const [optimisticMoves, setOptimisticMoves] = useState<
-    Map<string, { group: OrganizationGroup }>
+    Map<string, { group: CommunityGroup }>
   >(new Map());
 
   // Clear optimistic moves when staffMembers updates (server confirmed the change)
