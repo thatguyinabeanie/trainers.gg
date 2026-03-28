@@ -1,24 +1,16 @@
-import Link from "next/link";
+import { ComingSoon } from "@/components/coming-soon";
 
-export default function TeamsPage() {
+export default function BuilderPage() {
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center p-8">
-      <div className="mx-auto max-w-md text-center">
-        <div className="mb-6 text-6xl">⚔️</div>
-        <h1 className="mb-4 text-3xl font-bold text-gray-900">
-          Team Builder Coming Soon
-        </h1>
-        <p className="mb-8 text-gray-600">
-          Build, save, and share your Pokemon teams. Analyze type coverage,
-          stats, and get suggestions for your competitive teams.
-        </p>
-        <Link
-          href="/"
-          className="text-primary-600 hover:text-primary-700 hover:underline"
-        >
-          Back to Home
-        </Link>
-      </div>
-    </main>
+    <ComingSoon
+      emoji="⚔️"
+      title="Builder"
+      description="Build and share teams with current meta analytics at your fingertips."
+      bullets={[
+        "Type coverage checks and spread analysis",
+        "Usage rates and win rates from public tournament data",
+        "Popular cores and team archetypes",
+      ]}
+    />
   );
 }
