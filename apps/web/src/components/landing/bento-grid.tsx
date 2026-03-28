@@ -183,17 +183,6 @@ function ProfilePreview() {
         </div>
       </div>
 
-      {/* Public alts */}
-      <div className="border-t border-border/40 pt-2">
-        <p className="text-muted-foreground mb-1 text-[8px] tracking-[1px] uppercase">
-          Public alts
-        </p>
-        <div className="flex flex-wrap gap-1">
-          <span className="border-primary/20 text-primary rounded border px-1.5 py-0.5 text-[9px]">
-            AdamantBeanie
-          </span>
-        </div>
-      </div>
     </>
   );
 }

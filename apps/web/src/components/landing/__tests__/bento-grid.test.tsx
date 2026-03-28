@@ -75,8 +75,8 @@ describe("BentoGrid", () => {
     expect(screen.getByText("1st")).toBeInTheDocument();
   });
 
-  it("renders public alts in the profile preview", () => {
-    expect(screen.getAllByText("AdamantBeanie").length).toBeGreaterThan(0);
+  it("renders format badges in the profile preview", () => {
+    expect(screen.getByText("VGC Reg H")).toBeInTheDocument();
   });
 
   // -------------------------------------------------------------------------
