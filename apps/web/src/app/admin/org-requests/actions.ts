@@ -6,8 +6,8 @@ import {
   type ActionResult,
 } from "@/lib/auth/with-admin-action";
 import {
-  approveOrganizationRequest,
-  rejectOrganizationRequest,
+  approveCommunityRequest,
+  rejectCommunityRequest,
 } from "@trainers/supabase/mutations";
 
 // --- Approve ---
@@ -24,7 +24,7 @@ export async function approveOrgRequestAction(
   }
 
   return withAdminAction(async (supabase, adminUserId) => {
-    await approveOrganizationRequest(supabase, parsed.data, adminUserId);
+    await approveCommunityRequest(supabase, parsed.data, adminUserId);
 
     // Fire-and-forget email notification
     supabase.functions
@@ -61,7 +61,7 @@ export async function rejectOrgRequestAction(
   }
 
   return withAdminAction(async (supabase, adminUserId) => {
-    await rejectOrganizationRequest(
+    await rejectCommunityRequest(
       supabase,
       parsedId.data,
       adminUserId,

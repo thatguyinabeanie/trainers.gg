@@ -1,13 +1,13 @@
 import { describe, it, expect, jest, beforeEach } from "@jest/globals";
 import {
-  listOrganizationsAdmin,
-  getOrganizationAdminDetails,
+  listCommunitiesAdmin,
+  getCommunityAdminDetails,
   approveOrganization,
   rejectOrganization,
   suspendOrganization,
   unsuspendOrganization,
   transferOrgOwnership,
-} from "../admin-organizations";
+} from "../admin-communities";
 import type { TypedClient } from "../../client";
 
 // ---------------------------------------------------------------------------
@@ -99,7 +99,7 @@ function setupMutationMocks(
 // Tests
 // ---------------------------------------------------------------------------
 
-describe("admin-organizations queries", () => {
+describe("admin-communities queries", () => {
   let consoleErrorSpy: jest.Spied<typeof console.error>;
 
   beforeEach(() => {
@@ -115,7 +115,7 @@ describe("admin-organizations queries", () => {
   // listOrganizationsAdmin
   // -----------------------------------------------------------------------
 
-  describe("listOrganizationsAdmin", () => {
+  describe("listCommunitiesAdmin", () => {
     it("should return organizations with default pagination", async () => {
       const mockOrgs = [
         {
@@ -135,7 +135,7 @@ describe("admin-organizations queries", () => {
         count: 1,
       });
 
-      const result = await listOrganizationsAdmin(mockClient);
+      const result = await listCommunitiesAdmin(mockClient);
 
       expect(result.data).toEqual(mockOrgs);
       expect(result.count).toBe(1);
@@ -151,7 +151,7 @@ describe("admin-organizations queries", () => {
     it("should apply search filter across name and slug", async () => {
       const mockClient = createMockClient();
 
-      await listOrganizationsAdmin(mockClient, { search: "rocket" });
+      await listCommunitiesAdmin(mockClient, { search: "rocket" });
 
       expect(mockClient._queryBuilder.or).toHaveBeenCalledWith(
         "name.ilike.%rocket%,slug.ilike.%rocket%"
@@ -161,7 +161,7 @@ describe("admin-organizations queries", () => {
     it("should apply status filter", async () => {
       const mockClient = createMockClient();
 
-      await listOrganizationsAdmin(mockClient, {
+      await listCommunitiesAdmin(mockClient, {
         status: "pending" as never,
       });
 
@@ -174,7 +174,7 @@ describe("admin-organizations queries", () => {
     it("should apply tier filter", async () => {
       const mockClient = createMockClient();
 
-      await listOrganizationsAdmin(mockClient, { tier: "free" as never });
+      await listCommunitiesAdmin(mockClient, { tier: "free" as never });
 
       expect(mockClient._queryBuilder.eq).toHaveBeenCalledWith("tier", "free");
     });
@@ -182,7 +182,7 @@ describe("admin-organizations queries", () => {
     it("should use custom limit and offset", async () => {
       const mockClient = createMockClient();
 
-      await listOrganizationsAdmin(mockClient, { limit: 10, offset: 50 });
+      await listCommunitiesAdmin(mockClient, { limit: 10, offset: 50 });
 
       // range(50, 50 + 10 - 1) = range(50, 59)
       expect(mockClient._queryBuilder.range).toHaveBeenCalledWith(50, 59);
@@ -191,7 +191,7 @@ describe("admin-organizations queries", () => {
     it("should apply all filters together", async () => {
       const mockClient = createMockClient();
 
-      await listOrganizationsAdmin(mockClient, {
+      await listCommunitiesAdmin(mockClient, {
         search: "team",
         status: "active" as never,
         tier: "free" as never,
@@ -211,7 +211,7 @@ describe("admin-organizations queries", () => {
     it("should not apply search filter when search is undefined", async () => {
       const mockClient = createMockClient();
 
-      await listOrganizationsAdmin(mockClient, {});
+      await listCommunitiesAdmin(mockClient, {});
 
       expect(mockClient._queryBuilder.or).not.toHaveBeenCalled();
     });
@@ -225,7 +225,7 @@ describe("admin-organizations queries", () => {
         count: null,
       });
 
-      await expect(listOrganizationsAdmin(mockClient)).rejects.toThrow(
+      await expect(listCommunitiesAdmin(mockClient)).rejects.toThrow(
         "Database error"
       );
     });
@@ -238,7 +238,7 @@ describe("admin-organizations queries", () => {
         count: null,
       });
 
-      const result = await listOrganizationsAdmin(mockClient);
+      const result = await listCommunitiesAdmin(mockClient);
 
       expect(result.data).toEqual([]);
       expect(result.count).toBe(0);
@@ -249,7 +249,7 @@ describe("admin-organizations queries", () => {
   // getOrganizationAdminDetails
   // -----------------------------------------------------------------------
 
-  describe("getOrganizationAdminDetails", () => {
+  describe("getCommunityAdminDetails", () => {
     it("should return full org details when found", async () => {
       const mockOrg = {
         id: 1,
@@ -266,7 +266,7 @@ describe("admin-organizations queries", () => {
         error: null,
       });
 
-      const result = await getOrganizationAdminDetails(mockClient, 1);
+      const result = await getCommunityAdminDetails(mockClient, 1);
 
       expect(result).toEqual(mockOrg);
       expect(mockClient.from).toHaveBeenCalledWith("organizations");
@@ -281,7 +281,7 @@ describe("admin-organizations queries", () => {
         error: null,
       });
 
-      const result = await getOrganizationAdminDetails(mockClient, 999);
+      const result = await getCommunityAdminDetails(mockClient, 999);
 
       expect(result).toBeNull();
     });
@@ -294,7 +294,7 @@ describe("admin-organizations queries", () => {
         error: dbError,
       });
 
-      await expect(getOrganizationAdminDetails(mockClient, 1)).rejects.toThrow(
+      await expect(getCommunityAdminDetails(mockClient, 1)).rejects.toThrow(
         "Database error"
       );
     });

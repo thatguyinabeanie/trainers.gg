@@ -1,7 +1,7 @@
 "use client";
 
 import { useSupabaseQuery } from "@/lib/supabase";
-import { listMyOrganizations } from "@trainers/supabase";
+import { listMyCommunities } from "@trainers/supabase";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -25,7 +25,7 @@ export function TournamentBasicInfo({
   updateFormData,
 }: TournamentBasicInfoProps) {
   const { data: organizations } = useSupabaseQuery(
-    (supabase) => listMyOrganizations(supabase),
+    (supabase) => listMyCommunities(supabase),
     []
   );
 
@@ -39,7 +39,7 @@ export function TournamentBasicInfo({
   return (
     <div className="space-y-6">
       <div className="space-y-2">
-        <Label htmlFor="organization">Organization *</Label>
+        <Label htmlFor="organization">Community *</Label>
         <Select
           value={formData.organizationId?.toString()}
           onValueChange={(value) =>
@@ -60,7 +60,7 @@ export function TournamentBasicInfo({
           </SelectContent>
         </Select>
         <p className="text-muted-foreground text-sm">
-          Choose the organization that will host this tournament
+          Choose the community that will host this tournament
         </p>
       </div>
 

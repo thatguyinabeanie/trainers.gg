@@ -33,7 +33,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Loader2, Shield } from "lucide-react";
 import { changeStaffRoleAction } from "@/actions/staff";
-import type { StaffWithRole, OrganizationGroup } from "@trainers/supabase";
+import type { StaffWithRole, CommunityGroup } from "@trainers/supabase";
 
 interface ChangeRoleDialogProps {
   open: boolean;
@@ -41,7 +41,7 @@ interface ChangeRoleDialogProps {
   organizationId: number;
   orgSlug: string;
   staff: StaffWithRole;
-  groups: OrganizationGroup[];
+  groups: CommunityGroup[];
   onSuccess: () => void;
 }
 

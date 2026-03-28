@@ -42,15 +42,15 @@ export {
   useDeleteAlt,
 } from "./alts";
 
-// Organization hooks
+// Community hooks
 export {
-  useOrganizations,
-  useOrganization,
-  useCreateOrganization,
-  useUpdateOrganization,
+  useCommunities,
+  useCommunity,
+  useCreateCommunity,
+  useUpdateCommunity,
   useInviteStaff,
   useRemoveStaff,
-} from "./organizations";
+} from "./communities";
 
 // Notification hooks
 export {

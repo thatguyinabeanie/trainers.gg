@@ -20,22 +20,22 @@ jest.mock("@/lib/supabase/server", () => ({
 
 // Mock the mutation functions
 jest.mock("@trainers/supabase/mutations", () => ({
-  approveOrganizationRequest: jest.fn(),
-  rejectOrganizationRequest: jest.fn(),
+  approveCommunityRequest: jest.fn(),
+  rejectCommunityRequest: jest.fn(),
 }));
 
 // Import after mocks are declared
 import { approveOrgRequestAction, rejectOrgRequestAction } from "../actions";
 import { requireAdminWithSudo } from "@/lib/auth/require-admin";
 import {
-  approveOrganizationRequest,
-  rejectOrganizationRequest,
+  approveCommunityRequest,
+  rejectCommunityRequest,
 } from "@trainers/supabase/mutations";
 
 // Cast to jest.Mock for type-safe mock API access
 const mockRequireAdminWithSudo = requireAdminWithSudo as jest.Mock;
-const mockApproveOrganizationRequest = approveOrganizationRequest as jest.Mock;
-const mockRejectOrganizationRequest = rejectOrganizationRequest as jest.Mock;
+const mockApproveCommunityRequest = approveCommunityRequest as jest.Mock;
+const mockRejectCommunityRequest = rejectCommunityRequest as jest.Mock;
 
 // --- Constants ---
 const ADMIN_USER_ID = "00000000-0000-0000-0000-000000000001";
@@ -47,7 +47,7 @@ describe("approveOrgRequestAction", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockRequireAdminWithSudo.mockResolvedValue({ userId: ADMIN_USER_ID });
-    mockApproveOrganizationRequest.mockResolvedValue(undefined);
+    mockApproveCommunityRequest.mockResolvedValue(undefined);
     mockFunctionsInvoke.mockResolvedValue({ data: null });
   });
 
@@ -55,7 +55,7 @@ describe("approveOrgRequestAction", () => {
     const result = await approveOrgRequestAction(REQUEST_ID);
 
     expect(result).toEqual({ success: true });
-    expect(mockApproveOrganizationRequest).toHaveBeenCalledWith(
+    expect(mockApproveCommunityRequest).toHaveBeenCalledWith(
       mockServiceClient,
       REQUEST_ID,
       ADMIN_USER_ID
@@ -80,7 +80,7 @@ describe("approveOrgRequestAction", () => {
     const result = await approveOrgRequestAction(REQUEST_ID);
 
     expect(result).toEqual({ success: false, error: "Not authenticated" });
-    expect(mockApproveOrganizationRequest).not.toHaveBeenCalled();
+    expect(mockApproveCommunityRequest).not.toHaveBeenCalled();
   });
 
   it.each([
@@ -94,11 +94,11 @@ describe("approveOrgRequestAction", () => {
       success: false,
       error: expect.stringContaining("Invalid input"),
     });
-    expect(mockApproveOrganizationRequest).not.toHaveBeenCalled();
+    expect(mockApproveCommunityRequest).not.toHaveBeenCalled();
   });
 
   it("returns a specific error when the mutation throws", async () => {
-    mockApproveOrganizationRequest.mockRejectedValue(
+    mockApproveCommunityRequest.mockRejectedValue(
       new Error("Request not found")
     );
 
@@ -115,7 +115,7 @@ describe("rejectOrgRequestAction", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockRequireAdminWithSudo.mockResolvedValue({ userId: ADMIN_USER_ID });
-    mockRejectOrganizationRequest.mockResolvedValue(undefined);
+    mockRejectCommunityRequest.mockResolvedValue(undefined);
     mockFunctionsInvoke.mockResolvedValue({ data: null });
   });
 
@@ -126,7 +126,7 @@ describe("rejectOrgRequestAction", () => {
     );
 
     expect(result).toEqual({ success: true });
-    expect(mockRejectOrganizationRequest).toHaveBeenCalledWith(
+    expect(mockRejectCommunityRequest).toHaveBeenCalledWith(
       mockServiceClient,
       REQUEST_ID,
       ADMIN_USER_ID,
@@ -150,7 +150,7 @@ describe("rejectOrgRequestAction", () => {
       success: false,
       error: expect.stringContaining("Invalid input"),
     });
-    expect(mockRejectOrganizationRequest).not.toHaveBeenCalled();
+    expect(mockRejectCommunityRequest).not.toHaveBeenCalled();
   });
 
   it("returns an error when reason is whitespace only", async () => {
@@ -160,7 +160,7 @@ describe("rejectOrgRequestAction", () => {
       success: false,
       error: expect.stringContaining("Invalid input"),
     });
-    expect(mockRejectOrganizationRequest).not.toHaveBeenCalled();
+    expect(mockRejectCommunityRequest).not.toHaveBeenCalled();
   });
 
   it("returns an error when auth check fails", async () => {
@@ -172,11 +172,11 @@ describe("rejectOrgRequestAction", () => {
     const result = await rejectOrgRequestAction(REQUEST_ID, "Spam");
 
     expect(result).toEqual({ success: false, error: "Sudo mode required" });
-    expect(mockRejectOrganizationRequest).not.toHaveBeenCalled();
+    expect(mockRejectCommunityRequest).not.toHaveBeenCalled();
   });
 
   it("returns a specific error when the mutation throws", async () => {
-    mockRejectOrganizationRequest.mockRejectedValue(new Error("DB failure"));
+    mockRejectCommunityRequest.mockRejectedValue(new Error("DB failure"));
 
     const result = await rejectOrgRequestAction(REQUEST_ID, "Reason");
 

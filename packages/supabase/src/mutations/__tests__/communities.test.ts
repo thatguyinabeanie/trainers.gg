@@ -1,22 +1,22 @@
 import {
-  createOrganization,
-  updateOrganization,
-  inviteToOrganization,
-  acceptOrganizationInvitation,
-  declineOrganizationInvitation,
-  leaveOrganization,
+  createCommunity,
+  updateCommunity,
+  inviteToCommunity,
+  acceptCommunityInvitation,
+  declineCommunityInvitation,
+  leaveCommunity,
   removeStaff,
   addStaffMember,
   addStaffToGroup,
   removeStaffFromGroup,
   changeStaffRole,
   removeStaffCompletely,
-} from "../organizations";
+} from "../communities";
 import type { TypedClient } from "../../client";
 import { createMockClient } from "@trainers/test-utils/mocks";
 import { organizationFactory } from "@trainers/test-utils/factories";
 import { getInvitationExpiryDate } from "../../constants";
-import type { OrganizationSocialLink } from "@trainers/validators";
+import type { CommunitySocialLink } from "@trainers/validators";
 
 jest.mock("../../constants", () => ({
   getInvitationExpiryDate: jest.fn(),
@@ -38,7 +38,7 @@ type MockAuthResponse = {
   data: { user: { id: string; email?: string } | null };
 };
 
-describe("Organization Mutations", () => {
+describe("Community Mutations", () => {
   let mockClient: TypedClient;
   const mockUser = { id: "user-123", email: "test@example.com" };
   const mockExpiryDate = "2026-03-01T00:00:00.000Z";
@@ -49,7 +49,7 @@ describe("Organization Mutations", () => {
     (getInvitationExpiryDate as jest.Mock).mockReturnValue(mockExpiryDate);
   });
 
-  describe("createOrganization", () => {
+  describe("createCommunity", () => {
     const orgData = {
       name: "Test Org",
       slug: "test-org",
@@ -101,20 +101,20 @@ describe("Organization Mutations", () => {
       const fromSpy = jest.spyOn(mockClient, "from");
       const { mockOrg } = mockSuccessfulCreate(fromSpy);
 
-      const result = await createOrganization(mockClient, orgData);
+      const result = await createCommunity(mockClient, orgData);
 
       expect(result).toEqual(mockOrg);
     });
 
     it("should create organization with valid social links", async () => {
       const fromSpy = jest.spyOn(mockClient, "from");
-      const socialLinks: OrganizationSocialLink[] = [
+      const socialLinks: CommunitySocialLink[] = [
         { platform: "discord", url: "https://discord.gg/test" },
         { platform: "twitter", url: "https://x.com/test" },
       ];
       const { insertMock } = mockSuccessfulCreate(fromSpy);
 
-      await createOrganization(mockClient, { ...orgData, socialLinks });
+      await createCommunity(mockClient, { ...orgData, socialLinks });
 
       expect(insertMock).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -127,7 +127,7 @@ describe("Organization Mutations", () => {
       const fromSpy = jest.spyOn(mockClient, "from");
       const { insertMock } = mockSuccessfulCreate(fromSpy);
 
-      await createOrganization(mockClient, { ...orgData, socialLinks: [] });
+      await createCommunity(mockClient, { ...orgData, socialLinks: [] });
 
       expect(insertMock).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -160,9 +160,9 @@ describe("Organization Mutations", () => {
         } as unknown as MockQueryBuilder);
 
         await expect(
-          createOrganization(mockClient, {
+          createCommunity(mockClient, {
             ...orgData,
-            socialLinks: links as OrganizationSocialLink[],
+            socialLinks: links as CommunitySocialLink[],
           })
         ).rejects.toThrow("Invalid social links");
       }
@@ -190,7 +190,7 @@ describe("Organization Mutations", () => {
         insert: jest.fn().mockResolvedValue({ error: null }),
       } as unknown as MockQueryBuilder);
 
-      await createOrganization(mockClient, {
+      await createCommunity(mockClient, {
         name: "Test",
         slug: "MixedCase",
       });
@@ -206,7 +206,7 @@ describe("Organization Mutations", () => {
         data: { user: null },
       } as MockAuthResponse);
 
-      await expect(createOrganization(mockClient, orgData)).rejects.toThrow(
+      await expect(createCommunity(mockClient, orgData)).rejects.toThrow(
         "Not authenticated"
       );
     });
@@ -219,7 +219,7 @@ describe("Organization Mutations", () => {
         single: jest.fn().mockResolvedValue({ data: existingOrg, error: null }),
       });
 
-      await expect(createOrganization(mockClient, orgData)).rejects.toThrow(
+      await expect(createCommunity(mockClient, orgData)).rejects.toThrow(
         "Organization slug is already taken"
       );
     });
@@ -240,13 +240,13 @@ describe("Organization Mutations", () => {
         single: jest.fn().mockResolvedValue({ data: null, error: dbError }),
       } as unknown as MockQueryBuilder);
 
-      await expect(createOrganization(mockClient, orgData)).rejects.toThrow(
+      await expect(createCommunity(mockClient, orgData)).rejects.toThrow(
         "Database error"
       );
     });
   });
 
-  describe("updateOrganization", () => {
+  describe("updateCommunity", () => {
     const orgId = 1;
     const updates = {
       name: "Updated Name",
@@ -295,7 +295,7 @@ describe("Organization Mutations", () => {
       const fromSpy = jest.spyOn(mockClient, "from");
       mockSuccessfulUpdate(fromSpy);
 
-      const result = await updateOrganization(mockClient, orgId, updates);
+      const result = await updateCommunity(mockClient, orgId, updates);
 
       expect(result).toEqual({ success: true });
     });
@@ -304,7 +304,7 @@ describe("Organization Mutations", () => {
       const fromSpy = jest.spyOn(mockClient, "from");
       const { updateMock } = mockSuccessfulUpdate(fromSpy);
 
-      await updateOrganization(mockClient, orgId, { name: "New Name" });
+      await updateCommunity(mockClient, orgId, { name: "New Name" });
 
       expect(updateMock).toHaveBeenCalledWith({ name: "New Name" });
     });
@@ -326,13 +326,13 @@ describe("Organization Mutations", () => {
       },
       {
         desc: "empty social links array",
-        links: [] as OrganizationSocialLink[],
+        links: [] as CommunitySocialLink[],
       },
     ])("should update with valid social links ($desc)", async ({ links }) => {
       const fromSpy = jest.spyOn(mockClient, "from");
       const { updateMock } = mockSuccessfulUpdate(fromSpy);
 
-      await updateOrganization(mockClient, orgId, { socialLinks: links });
+      await updateCommunity(mockClient, orgId, { socialLinks: links });
 
       expect(updateMock).toHaveBeenCalledWith({
         social_links: links,
@@ -357,8 +357,8 @@ describe("Organization Mutations", () => {
         mockOwnershipCheck(fromSpy, mockUser.id);
 
         await expect(
-          updateOrganization(mockClient, orgId, {
-            socialLinks: links as OrganizationSocialLink[],
+          updateCommunity(mockClient, orgId, {
+            socialLinks: links as CommunitySocialLink[],
           })
         ).rejects.toThrow("Invalid social links");
       }
@@ -369,9 +369,9 @@ describe("Organization Mutations", () => {
         data: { user: null },
       } as MockAuthResponse);
 
-      await expect(
-        updateOrganization(mockClient, orgId, updates)
-      ).rejects.toThrow("Not authenticated");
+      await expect(updateCommunity(mockClient, orgId, updates)).rejects.toThrow(
+        "Not authenticated"
+      );
     });
 
     it("should throw error if organization not found", async () => {
@@ -381,9 +381,9 @@ describe("Organization Mutations", () => {
         single: jest.fn().mockResolvedValue({ data: null, error: null }),
       });
 
-      await expect(
-        updateOrganization(mockClient, orgId, updates)
-      ).rejects.toThrow("Organization not found");
+      await expect(updateCommunity(mockClient, orgId, updates)).rejects.toThrow(
+        "Organization not found"
+      );
     });
 
     it("should throw error if user is not owner", async () => {
@@ -399,9 +399,7 @@ describe("Organization Mutations", () => {
         }),
       });
 
-      await expect(
-        updateOrganization(mockClient, orgId, updates)
-      ).rejects.toThrow(
+      await expect(updateCommunity(mockClient, orgId, updates)).rejects.toThrow(
         "You don't have permission to update this organization"
       );
     });
@@ -416,13 +414,13 @@ describe("Organization Mutations", () => {
         eq: jest.fn().mockResolvedValue({ error: dbError }),
       } as unknown as MockQueryBuilder);
 
-      await expect(
-        updateOrganization(mockClient, orgId, updates)
-      ).rejects.toThrow("Update failed");
+      await expect(updateCommunity(mockClient, orgId, updates)).rejects.toThrow(
+        "Update failed"
+      );
     });
   });
 
-  describe("inviteToOrganization", () => {
+  describe("inviteToCommunity", () => {
     const orgId = 1;
     const invitedUserId = "user-456";
 
@@ -464,11 +462,7 @@ describe("Organization Mutations", () => {
         }),
       } as unknown as MockQueryBuilder);
 
-      const result = await inviteToOrganization(
-        mockClient,
-        orgId,
-        invitedUserId
-      );
+      const result = await inviteToCommunity(mockClient, orgId, invitedUserId);
 
       expect(result).toEqual(mockInvitation);
     });
@@ -498,7 +492,7 @@ describe("Organization Mutations", () => {
         }),
       } as unknown as MockQueryBuilder);
 
-      await inviteToOrganization(mockClient, orgId, invitedUserId);
+      await inviteToCommunity(mockClient, orgId, invitedUserId);
 
       expect(insertMock).toHaveBeenCalledWith(
         expect.objectContaining({ expires_at: mockExpiryDate })
@@ -511,7 +505,7 @@ describe("Organization Mutations", () => {
       } as MockAuthResponse);
 
       await expect(
-        inviteToOrganization(mockClient, orgId, invitedUserId)
+        inviteToCommunity(mockClient, orgId, invitedUserId)
       ).rejects.toThrow("Not authenticated");
     });
 
@@ -523,7 +517,7 @@ describe("Organization Mutations", () => {
       });
 
       await expect(
-        inviteToOrganization(mockClient, orgId, invitedUserId)
+        inviteToCommunity(mockClient, orgId, invitedUserId)
       ).rejects.toThrow("User is already staff of this organization");
     });
 
@@ -545,12 +539,12 @@ describe("Organization Mutations", () => {
       } as unknown as MockQueryBuilder);
 
       await expect(
-        inviteToOrganization(mockClient, orgId, invitedUserId)
+        inviteToCommunity(mockClient, orgId, invitedUserId)
       ).rejects.toThrow("User already has a pending invitation");
     });
   });
 
-  describe("acceptOrganizationInvitation", () => {
+  describe("acceptCommunityInvitation", () => {
     const invitationId = 1;
     const mockInvitation = {
       id: invitationId,
@@ -584,10 +578,7 @@ describe("Organization Mutations", () => {
         eq: jest.fn().mockResolvedValue({ error: null }),
       } as unknown as MockQueryBuilder);
 
-      const result = await acceptOrganizationInvitation(
-        mockClient,
-        invitationId
-      );
+      const result = await acceptCommunityInvitation(mockClient, invitationId);
 
       expect(result).toEqual({ success: true });
     });
@@ -598,7 +589,7 @@ describe("Organization Mutations", () => {
       } as MockAuthResponse);
 
       await expect(
-        acceptOrganizationInvitation(mockClient, invitationId)
+        acceptCommunityInvitation(mockClient, invitationId)
       ).rejects.toThrow("Not authenticated");
     });
 
@@ -610,7 +601,7 @@ describe("Organization Mutations", () => {
       });
 
       await expect(
-        acceptOrganizationInvitation(mockClient, invitationId)
+        acceptCommunityInvitation(mockClient, invitationId)
       ).rejects.toThrow("Invitation not found");
     });
 
@@ -625,7 +616,7 @@ describe("Organization Mutations", () => {
       });
 
       await expect(
-        acceptOrganizationInvitation(mockClient, invitationId)
+        acceptCommunityInvitation(mockClient, invitationId)
       ).rejects.toThrow("This invitation is not for you");
     });
 
@@ -640,7 +631,7 @@ describe("Organization Mutations", () => {
       });
 
       await expect(
-        acceptOrganizationInvitation(mockClient, invitationId)
+        acceptCommunityInvitation(mockClient, invitationId)
       ).rejects.toThrow("Invitation is no longer pending");
     });
 
@@ -658,12 +649,12 @@ describe("Organization Mutations", () => {
       });
 
       await expect(
-        acceptOrganizationInvitation(mockClient, invitationId)
+        acceptCommunityInvitation(mockClient, invitationId)
       ).rejects.toThrow("Invitation has expired");
     });
   });
 
-  describe("declineOrganizationInvitation", () => {
+  describe("declineCommunityInvitation", () => {
     const invitationId = 1;
     const mockInvitation = {
       id: invitationId,
@@ -694,10 +685,7 @@ describe("Organization Mutations", () => {
         eq: jest.fn().mockResolvedValue({ error: null }),
       } as unknown as MockQueryBuilder);
 
-      const result = await declineOrganizationInvitation(
-        mockClient,
-        invitationId
-      );
+      const result = await declineCommunityInvitation(mockClient, invitationId);
 
       expect(result).toEqual({ success: true });
     });
@@ -708,7 +696,7 @@ describe("Organization Mutations", () => {
       } as MockAuthResponse);
 
       await expect(
-        declineOrganizationInvitation(mockClient, invitationId)
+        declineCommunityInvitation(mockClient, invitationId)
       ).rejects.toThrow("Not authenticated");
     });
 
@@ -720,7 +708,7 @@ describe("Organization Mutations", () => {
       });
 
       await expect(
-        declineOrganizationInvitation(mockClient, invitationId)
+        declineCommunityInvitation(mockClient, invitationId)
       ).rejects.toThrow("Invitation not found");
     });
 
@@ -735,7 +723,7 @@ describe("Organization Mutations", () => {
       });
 
       await expect(
-        declineOrganizationInvitation(mockClient, invitationId)
+        declineCommunityInvitation(mockClient, invitationId)
       ).rejects.toThrow("This invitation is not for you");
     });
 
@@ -750,12 +738,12 @@ describe("Organization Mutations", () => {
       });
 
       await expect(
-        declineOrganizationInvitation(mockClient, invitationId)
+        declineCommunityInvitation(mockClient, invitationId)
       ).rejects.toThrow("Invitation is no longer pending");
     });
   });
 
-  describe("leaveOrganization", () => {
+  describe("leaveCommunity", () => {
     const orgId = 1;
 
     beforeEach(() => {
@@ -786,7 +774,7 @@ describe("Organization Mutations", () => {
       // Mock second eq call result
       (mockClient.eq as jest.Mock).mockResolvedValueOnce({ error: null });
 
-      const result = await leaveOrganization(mockClient, orgId);
+      const result = await leaveCommunity(mockClient, orgId);
 
       expect(result).toEqual({ success: true });
     });
@@ -796,7 +784,7 @@ describe("Organization Mutations", () => {
         data: { user: null },
       } as MockAuthResponse);
 
-      await expect(leaveOrganization(mockClient, orgId)).rejects.toThrow(
+      await expect(leaveCommunity(mockClient, orgId)).rejects.toThrow(
         "Not authenticated"
       );
     });
@@ -811,7 +799,7 @@ describe("Organization Mutations", () => {
         }),
       });
 
-      await expect(leaveOrganization(mockClient, orgId)).rejects.toThrow(
+      await expect(leaveCommunity(mockClient, orgId)).rejects.toThrow(
         "Organization owner cannot leave. Transfer ownership first."
       );
     });
@@ -835,7 +823,7 @@ describe("Organization Mutations", () => {
         delete: jest.fn().mockReturnValue({ eq: firstEqMock }),
       } as unknown as MockQueryBuilder);
 
-      await expect(leaveOrganization(mockClient, orgId)).rejects.toThrow(
+      await expect(leaveCommunity(mockClient, orgId)).rejects.toThrow(
         "Delete failed"
       );
     });

@@ -7,7 +7,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "@trainers/validators";
 import { generateSlug } from "@trainers/utils";
 import { useSupabaseQuery, useSupabaseMutation } from "@/lib/supabase";
-import { getOrganizationBySlug, createTournament } from "@trainers/supabase";
+import { getCommunityBySlug, createTournament } from "@trainers/supabase";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -184,8 +184,8 @@ export function CreateTournamentClient({
   const [currentStep, setCurrentStep] = useState(1);
 
   // Fetch organization by slug
-  const orgQueryFn = (supabase: Parameters<typeof getOrganizationBySlug>[0]) =>
-    getOrganizationBySlug(supabase, orgSlug);
+  const orgQueryFn = (supabase: Parameters<typeof getCommunityBySlug>[0]) =>
+    getCommunityBySlug(supabase, orgSlug);
 
   const { data: organization, isLoading: orgLoading } = useSupabaseQuery(
     orgQueryFn,
@@ -301,7 +301,7 @@ export function CreateTournamentClient({
     const data = form.getValues();
 
     if (!data.organizationId) {
-      toast.error("Organization not found");
+      toast.error("Community not found");
       return;
     }
 
@@ -379,14 +379,14 @@ export function CreateTournamentClient({
       <Card>
         <CardContent className="flex flex-col items-center justify-center py-12">
           <Building2 className="text-muted-foreground mb-4 h-12 w-12" />
-          <h3 className="mb-2 text-lg font-semibold">Organization not found</h3>
+          <h3 className="mb-2 text-lg font-semibold">Community not found</h3>
           <p className="text-muted-foreground mb-4 text-center">
-            This organization doesn&apos;t exist or has been removed
+            This community doesn&apos;t exist or has been removed
           </p>
           <Link href="/to-dashboard">
             <Button>
               <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to Organizations
+              Back to Communities
             </Button>
           </Link>
         </CardContent>
@@ -411,12 +411,12 @@ export function CreateTournamentClient({
           <h3 className="mb-2 text-lg font-semibold">Access Denied</h3>
           <p className="text-muted-foreground mb-4 text-center">
             You don&apos;t have permission to create tournaments for this
-            organization
+            community
           </p>
-          <Link href={`/organizations/${orgSlug}`}>
+          <Link href={`/communities/${orgSlug}`}>
             <Button>
               <ArrowLeft className="mr-2 h-4 w-4" />
-              View Organization
+              View Community
             </Button>
           </Link>
         </CardContent>

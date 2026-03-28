@@ -1,8 +1,8 @@
 import { createClient } from "@/lib/supabase/server";
 import {
-  getOrganizationBySlug,
-  listOrganizationStaffWithRoles,
-  listOrganizationGroups,
+  getCommunityBySlug,
+  listCommunityStaffWithRoles,
+  listCommunityGroups,
 } from "@trainers/supabase";
 import { StaffListClient } from "./staff-list-client";
 
@@ -16,7 +16,7 @@ export default async function StaffPage({ params }: PageProps) {
   const { orgSlug } = await params;
   const supabase = await createClient();
 
-  const organization = await getOrganizationBySlug(supabase, orgSlug);
+  const organization = await getCommunityBySlug(supabase, orgSlug);
 
   if (!organization) {
     return null; // Layout handles 404
@@ -31,8 +31,8 @@ export default async function StaffPage({ params }: PageProps) {
 
   // Fetch initial data
   const [staffMembers, groups] = await Promise.all([
-    listOrganizationStaffWithRoles(supabase, organization.id),
-    listOrganizationGroups(supabase, organization.id),
+    listCommunityStaffWithRoles(supabase, organization.id),
+    listCommunityGroups(supabase, organization.id),
   ]);
 
   // Get current user's role from staff list

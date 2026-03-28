@@ -14,14 +14,14 @@ export {
   setMainAlt,
 } from "./users";
 
-// Organization mutations
+// Community mutations (renamed from organization)
 export {
-  createOrganization,
-  updateOrganization,
-  inviteToOrganization,
-  acceptOrganizationInvitation,
-  declineOrganizationInvitation,
-  leaveOrganization,
+  createCommunity,
+  updateCommunity,
+  inviteToCommunity,
+  acceptCommunityInvitation,
+  declineCommunityInvitation,
+  leaveCommunity,
   removeStaff,
   // Staff group management
   addStaffMember,
@@ -29,7 +29,7 @@ export {
   removeStaffFromGroup,
   changeStaffRole,
   removeStaffCompletely,
-} from "./organizations";
+} from "./communities";
 
 // Tournament mutations
 export {
@@ -71,11 +71,11 @@ export {
   completeTournament,
 } from "./tournaments";
 
-// Organization request mutations
+// Community request mutations (renamed from organization)
 export {
-  submitOrganizationRequest,
-  approveOrganizationRequest,
-  rejectOrganizationRequest,
+  submitCommunityRequest,
+  approveCommunityRequest,
+  rejectCommunityRequest,
 } from "./organization-requests";
 
 // Match game mutations

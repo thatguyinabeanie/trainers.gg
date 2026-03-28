@@ -2,8 +2,8 @@ import type { Database } from "../types";
 import type { TypedClient } from "../client";
 import { getInvitationExpiryDate } from "../constants";
 import {
-  organizationSocialLinksSchema,
-  type OrganizationSocialLink,
+  communitySocialLinksSchema,
+  type CommunitySocialLink,
 } from "@trainers/validators";
 
 /**
@@ -76,13 +76,13 @@ async function _getCurrentAlt(supabase: TypedClient) {
  * Create a new organization
  * Organizations are owned by users (not alts) for Bluesky federation
  */
-export async function createOrganization(
+export async function createCommunity(
   supabase: TypedClient,
   data: {
     name: string;
     slug: string;
     description?: string;
-    socialLinks?: OrganizationSocialLink[];
+    socialLinks?: CommunitySocialLink[];
     logoUrl?: string;
   }
 ) {
@@ -101,9 +101,9 @@ export async function createOrganization(
   }
 
   // Validate social links if provided
-  let validatedLinks: OrganizationSocialLink[] = [];
+  let validatedLinks: CommunitySocialLink[] = [];
   if (data.socialLinks) {
-    const parsed = organizationSocialLinksSchema.safeParse(data.socialLinks);
+    const parsed = communitySocialLinksSchema.safeParse(data.socialLinks);
     if (!parsed.success) {
       throw new Error(
         `Invalid social links: ${parsed.error.issues.map((i) => i.message).join(", ")}`
@@ -142,13 +142,13 @@ export async function createOrganization(
 /**
  * Update organization details
  */
-export async function updateOrganization(
+export async function updateCommunity(
   supabase: TypedClient,
   organizationId: number,
   updates: {
     name?: string;
     description?: string;
-    socialLinks?: OrganizationSocialLink[];
+    socialLinks?: CommunitySocialLink[];
     logoUrl?: string | null;
   }
 ) {
@@ -175,7 +175,7 @@ export async function updateOrganization(
     updateData.description = updates.description;
   if (updates.socialLinks !== undefined) {
     // Validate social links through Zod before writing to JSONB
-    const parsed = organizationSocialLinksSchema.safeParse(updates.socialLinks);
+    const parsed = communitySocialLinksSchema.safeParse(updates.socialLinks);
     if (!parsed.success) {
       throw new Error(
         `Invalid social links: ${parsed.error.issues.map((i) => i.message).join(", ")}`
@@ -197,7 +197,7 @@ export async function updateOrganization(
 /**
  * Invite a user to join organization
  */
-export async function inviteToOrganization(
+export async function inviteToCommunity(
   supabase: TypedClient,
   organizationId: number,
   invitedUserId: string
@@ -252,7 +252,7 @@ export async function inviteToOrganization(
  * Accept organization invitation
  * Note: The database trigger will automatically create the organization_staff record
  */
-export async function acceptOrganizationInvitation(
+export async function acceptCommunityInvitation(
   supabase: TypedClient,
   invitationId: number
 ) {
@@ -293,7 +293,7 @@ export async function acceptOrganizationInvitation(
 /**
  * Decline organization invitation
  */
-export async function declineOrganizationInvitation(
+export async function declineCommunityInvitation(
   supabase: TypedClient,
   invitationId: number
 ) {
@@ -329,7 +329,7 @@ export async function declineOrganizationInvitation(
 /**
  * Leave organization (user-level action)
  */
-export async function leaveOrganization(
+export async function leaveCommunity(
   supabase: TypedClient,
   organizationId: number
 ) {

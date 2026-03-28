@@ -42,7 +42,7 @@ jest.mock("@trainers/supabase", () => ({
   }),
 }));
 
-import { uploadOrgLogo, removeOrgLogo } from "../organization-logo";
+import { uploadOrgLogo, removeOrgLogo } from "../community-logo";
 
 // Helper to create a test File
 function createTestFile(

@@ -24,29 +24,33 @@ export {
   getPlayerPublicTeams,
 } from "./users";
 
-// Organization queries
+// Community queries (renamed from organization)
 export {
-  listPublicOrganizations,
-  listOrganizations,
-  getOrganizationBySlug,
-  getOrganizationById,
-  listMyOrganizations,
-  listMyOwnedOrganizations,
-  getOrganizationWithTournamentStats,
-  listOrganizationTournaments,
-  canManageOrganization,
-  listOrganizationStaff,
-  hasOrganizationAccess,
-  getMyOrganizationInvitations,
-  getOrganizationInvitations,
+  listPublicCommunities,
+  listCommunities,
+  getCommunityBySlug,
+  getCommunityById,
+  listMyCommunities,
+  listMyOwnedCommunities,
+  getCommunityWithTournamentStats,
+  listCommunityTournaments,
+  canManageCommunity,
+  listCommunityStaff,
+  hasCommunityAccess,
+  getMyCommunityInvitations,
+  getCommunityInvitations,
   // Staff management
-  listOrganizationStaffWithRoles,
-  listOrganizationGroups,
+  listCommunityStaffWithRoles,
+  listCommunityGroups,
   searchUsersForInvite,
   hasOrgPermission,
-} from "./organizations";
+} from "./communities";
 
-export type { StaffWithRole, OrganizationGroup } from "./organizations";
+export type {
+  StaffWithRole,
+  CommunityGroup,
+  CommunityWithCounts,
+} from "./communities";
 
 // Tournament queries
 export {
@@ -94,7 +98,7 @@ export type {
   GroupedTournaments,
   PlayerLifetimeStats,
 } from "./tournaments";
-export type { OrganizationWithCounts } from "./organizations";
+// CommunityWithCounts already exported above
 
 // Permission queries
 export { getUserPermissions, hasPermission } from "./permissions";
@@ -152,18 +156,18 @@ export {
   type ListOrgRequestsAdminOptions,
 } from "./organization-requests";
 
-// Admin organization queries
+// Admin community queries (renamed from organization)
 export {
-  listOrganizationsAdmin,
-  getOrganizationAdminDetails,
+  listCommunitiesAdmin,
+  getCommunityAdminDetails,
   approveOrganization,
   rejectOrganization,
   suspendOrganization,
   unsuspendOrganization,
   transferOrgOwnership,
-} from "./admin-organizations";
+} from "./admin-communities";
 
-export type { ListOrganizationsAdminOptions } from "./admin-organizations";
+export type { ListOrganizationsAdminOptions } from "./admin-communities";
 
 // Admin analytics queries
 export {

@@ -137,6 +137,18 @@ Pre-commit: Husky runs lint-staged (Prettier auto-fix). Fix errors, re-stage, re
 
 ## Critical Rules
 
+### Push Policy
+
+**You may commit frequently, but you may NOT push until all checks pass locally.** Before every push, run and confirm all pass:
+
+1. `pnpm lint` — ESLint across all packages
+2. `pnpm typecheck` — TypeScript type checking
+3. `pnpm test` — Full unit test suite
+4. `pnpm test:e2e` — Playwright E2E tests
+5. `pnpm format:check` — Prettier formatting
+
+If any check fails, fix the issue and re-run before pushing. Never push with known failures.
+
 ### Parallel Work & Unexpected Changes
 
 Multiple agents and humans may work on this codebase simultaneously. If you encounter code changes, new files, or modified files that you did not make — they were either made manually by the developer or by another parallel agent. **Never delete, revert, overwrite, or undo changes you did not make.** Treat unfamiliar changes as intentional. If they conflict with your work, stop and ask rather than discarding them.

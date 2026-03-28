@@ -23,7 +23,7 @@ export function OrganizerAccess({ organizations }: OrganizerAccessProps) {
           Tournament Organizer Access
         </CardTitle>
         <p className="text-muted-foreground text-sm">
-          Your roles and permissions within organizations
+          Your roles and permissions within communities
         </p>
       </CardHeader>
       <CardContent>
@@ -32,7 +32,7 @@ export function OrganizerAccess({ organizations }: OrganizerAccessProps) {
             <p className="text-muted-foreground mb-4 text-sm">
               Need tournament hosting permissions?
             </p>
-            <Link href="/organizations/create">
+            <Link href="/communities/create">
               <Button variant="outline" size="sm">
                 Request Organizer Role
               </Button>

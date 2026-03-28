@@ -1,6 +1,6 @@
 import { render, screen } from "@testing-library/react";
-import { OrganizationsDataTable } from "../organizations-data-table";
-import { type OrganizationWithCounts } from "@trainers/supabase";
+import { CommunitiesDataTable } from "../communities-data-table";
+import { type CommunityWithCounts } from "@trainers/supabase";
 import type React from "react";
 
 // Mock Next.js Link component
@@ -18,8 +18,8 @@ jest.mock("next/link", () => {
   return MockLink;
 });
 
-describe("OrganizationsDataTable", () => {
-  const mockOrganizations: OrganizationWithCounts[] = [
+describe("CommunitiesDataTable", () => {
+  const mockOrganizations: CommunityWithCounts[] = [
     {
       id: 1,
       name: "VGC League",
@@ -84,7 +84,7 @@ describe("OrganizationsDataTable", () => {
 
   describe("Desktop View", () => {
     it("renders all organizations in desktop table", () => {
-      render(<OrganizationsDataTable data={mockOrganizations} />);
+      render(<CommunitiesDataTable data={mockOrganizations} />);
 
       // Check if all organization names are rendered (will appear in both desktop and mobile views)
       expect(screen.getAllByText("VGC League").length).toBeGreaterThan(0);
@@ -93,7 +93,7 @@ describe("OrganizationsDataTable", () => {
     });
 
     it("displays organization logos and icons correctly", () => {
-      render(<OrganizationsDataTable data={mockOrganizations} />);
+      render(<CommunitiesDataTable data={mockOrganizations} />);
 
       // VGC League should show icon in fallback (testing fallback rendering)
       expect(screen.getAllByText("🏆").length).toBeGreaterThan(0);
@@ -103,7 +103,7 @@ describe("OrganizationsDataTable", () => {
     });
 
     it("displays tier badges correctly", () => {
-      render(<OrganizationsDataTable data={mockOrganizations} />);
+      render(<CommunitiesDataTable data={mockOrganizations} />);
 
       // Partner badge (appears in both desktop and mobile views)
       expect(screen.getAllByText("Partner").length).toBeGreaterThan(0);
@@ -117,7 +117,7 @@ describe("OrganizationsDataTable", () => {
     });
 
     it("displays tournament counts correctly", () => {
-      render(<OrganizationsDataTable data={mockOrganizations} />);
+      render(<CommunitiesDataTable data={mockOrganizations} />);
 
       // Check active tournament counts
       const cells = screen.getAllByRole("cell");
@@ -140,23 +140,20 @@ describe("OrganizationsDataTable", () => {
     });
 
     it("renders clickable links to organization pages", () => {
-      render(<OrganizationsDataTable data={mockOrganizations} />);
+      render(<CommunitiesDataTable data={mockOrganizations} />);
 
       const vgcLink = screen.getByRole("link", { name: "VGC League" });
-      expect(vgcLink).toHaveAttribute("href", "/organizations/vgc-league");
+      expect(vgcLink).toHaveAttribute("href", "/communities/vgc-league");
 
       const tcgLink = screen.getByRole("link", { name: "TCG Masters" });
-      expect(tcgLink).toHaveAttribute("href", "/organizations/tcg-masters");
+      expect(tcgLink).toHaveAttribute("href", "/communities/tcg-masters");
 
       const battleLink = screen.getByRole("link", { name: "Battle Stadium" });
-      expect(battleLink).toHaveAttribute(
-        "href",
-        "/organizations/battle-stadium"
-      );
+      expect(battleLink).toHaveAttribute("href", "/communities/battle-stadium");
     });
 
     it("displays description or slug fallback", () => {
-      render(<OrganizationsDataTable data={mockOrganizations} />);
+      render(<CommunitiesDataTable data={mockOrganizations} />);
 
       // VGC League has description (will appear in both views)
       expect(
@@ -173,7 +170,7 @@ describe("OrganizationsDataTable", () => {
     });
 
     it("renders column headers with sort buttons", () => {
-      render(<OrganizationsDataTable data={mockOrganizations} />);
+      render(<CommunitiesDataTable data={mockOrganizations} />);
 
       // Check for column headers
       expect(screen.getByText("Name")).toBeInTheDocument();
@@ -185,7 +182,7 @@ describe("OrganizationsDataTable", () => {
 
   describe("Mobile View", () => {
     it("renders organizations as cards on mobile", () => {
-      render(<OrganizationsDataTable data={mockOrganizations} />);
+      render(<CommunitiesDataTable data={mockOrganizations} />);
 
       // All organization names should be present in both desktop and mobile views
       expect(screen.getAllByText("VGC League").length).toBeGreaterThan(0);
@@ -194,7 +191,7 @@ describe("OrganizationsDataTable", () => {
     });
 
     it("displays tournament counts inline on mobile", () => {
-      render(<OrganizationsDataTable data={mockOrganizations} />);
+      render(<CommunitiesDataTable data={mockOrganizations} />);
 
       // Check for inline tournament count text in mobile view
       expect(screen.getAllByText(/5 active.*20 total/).length).toBeGreaterThan(
@@ -209,13 +206,13 @@ describe("OrganizationsDataTable", () => {
     });
 
     it("renders mobile cards as clickable links", () => {
-      render(<OrganizationsDataTable data={mockOrganizations} />);
+      render(<CommunitiesDataTable data={mockOrganizations} />);
 
       const links = screen.getAllByRole("link");
       expect(links.length).toBeGreaterThanOrEqual(3);
 
       const vgcLink = links.find(
-        (link) => link.getAttribute("href") === "/organizations/vgc-league"
+        (link) => link.getAttribute("href") === "/communities/vgc-league"
       );
       expect(vgcLink).toBeDefined();
     });
@@ -223,15 +220,15 @@ describe("OrganizationsDataTable", () => {
 
   describe("Empty State", () => {
     it("displays empty state when no organizations", () => {
-      render(<OrganizationsDataTable data={[]} />);
+      render(<CommunitiesDataTable data={[]} />);
 
-      expect(screen.getByText("No organizations found")).toBeInTheDocument();
+      expect(screen.getByText("No communities found")).toBeInTheDocument();
     });
   });
 
   describe("Data Integrity", () => {
     it("handles organizations with zero tournament counts", () => {
-      const orgWithZeroCounts: OrganizationWithCounts = {
+      const orgWithZeroCounts: CommunityWithCounts = {
         id: 4,
         name: "New Organization",
         slug: "new-org",
@@ -252,7 +249,7 @@ describe("OrganizationsDataTable", () => {
         totalTournamentsCount: 0,
       };
 
-      render(<OrganizationsDataTable data={[orgWithZeroCounts]} />);
+      render(<CommunitiesDataTable data={[orgWithZeroCounts]} />);
 
       expect(screen.getAllByText("New Organization").length).toBeGreaterThan(0);
       // Should display 0 for both counts
@@ -261,7 +258,7 @@ describe("OrganizationsDataTable", () => {
     });
 
     it("handles organizations with null counts", () => {
-      const orgWithNullCounts: OrganizationWithCounts = {
+      const orgWithNullCounts: CommunityWithCounts = {
         id: 5,
         name: "Org With Null Counts",
         slug: "null-counts",
@@ -284,7 +281,7 @@ describe("OrganizationsDataTable", () => {
         totalTournamentsCount: null,
       };
 
-      render(<OrganizationsDataTable data={[orgWithNullCounts]} />);
+      render(<CommunitiesDataTable data={[orgWithNullCounts]} />);
 
       expect(
         screen.getAllByText("Org With Null Counts").length
@@ -295,7 +292,7 @@ describe("OrganizationsDataTable", () => {
     });
 
     it("generates correct initials for multi-word names", () => {
-      const orgWithLongName: OrganizationWithCounts = {
+      const orgWithLongName: CommunityWithCounts = {
         id: 6,
         name: "Very Long Organization Name",
         slug: "vlon",
@@ -316,7 +313,7 @@ describe("OrganizationsDataTable", () => {
         totalTournamentsCount: 1,
       };
 
-      render(<OrganizationsDataTable data={[orgWithLongName]} />);
+      render(<CommunitiesDataTable data={[orgWithLongName]} />);
 
       // Should only show first 2 initials: VL (appears in both desktop and mobile views)
       expect(screen.getAllByText("VL").length).toBeGreaterThan(0);

@@ -26,7 +26,11 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
-import { type OrgRow, orgStatusLabels, orgTierLabels } from "./columns";
+import {
+  type CommunityRow,
+  communityStatusLabels,
+  communityTierLabels,
+} from "./columns";
 import {
   approveOrgAction,
   rejectOrgAction,
@@ -37,7 +41,7 @@ import {
 
 // --- Status and tier badge styles (reused from columns for consistency) ---
 
-const orgStatusClasses: Record<OrgRow["status"], string> = {
+const communityStatusClasses: Record<CommunityRow["status"], string> = {
   pending:
     "bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/25",
   active:
@@ -47,7 +51,7 @@ const orgStatusClasses: Record<OrgRow["status"], string> = {
   suspended: "bg-red-500/15 text-red-600 dark:text-red-400 border-red-500/25",
 };
 
-const orgTierClasses: Record<OrgRow["tier"], string> = {
+const communityTierClasses: Record<CommunityRow["tier"], string> = {
   regular: "bg-gray-500/15 text-gray-600 dark:text-gray-400 border-gray-500/25",
   verified:
     "bg-blue-500/15 text-blue-600 dark:text-blue-400 border-blue-500/25",
@@ -78,19 +82,19 @@ type ConfirmAction =
 
 // --- Props ---
 
-interface OrgDetailSheetProps {
-  org: OrgRow | null;
+interface CommunityDetailSheetProps {
+  org: CommunityRow | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
 // --- Component ---
 
-export function OrgDetailSheet({
+export function CommunityDetailSheet({
   org,
   open,
   onOpenChange,
-}: OrgDetailSheetProps) {
+}: CommunityDetailSheetProps) {
   const router = useRouter();
 
   // Form state
@@ -156,10 +160,10 @@ export function OrgDetailSheet({
 
     // Show a brief success message, then close and refresh
     const messages: Record<ConfirmAction["type"], string> = {
-      approve: "Organization approved",
-      reject: "Organization rejected",
-      suspend: "Organization suspended",
-      unsuspend: "Organization unsuspended",
+      approve: "Community approved",
+      reject: "Community rejected",
+      suspend: "Community suspended",
+      unsuspend: "Community unsuspended",
       transfer: "Ownership transferred",
     };
     setSuccess(messages[confirmAction.type]);
@@ -177,10 +181,10 @@ export function OrgDetailSheet({
   function getConfirmTitle(): string {
     if (!confirmAction) return "";
     const titles: Record<ConfirmAction["type"], string> = {
-      approve: "Approve Organization",
-      reject: "Reject Organization",
-      suspend: "Suspend Organization",
-      unsuspend: "Unsuspend Organization",
+      approve: "Approve Community",
+      reject: "Reject Community",
+      suspend: "Suspend Community",
+      unsuspend: "Unsuspend Community",
       transfer: "Transfer Ownership",
     };
     return titles[confirmAction.type];
@@ -189,9 +193,9 @@ export function OrgDetailSheet({
   function getConfirmDescription(): string {
     if (!confirmAction || !org) return "";
     const descriptions: Record<ConfirmAction["type"], string> = {
-      approve: `This will set "${org.name}" to active status. The organization will be publicly visible.`,
+      approve: `This will set "${org.name}" to active status. The community will be publicly visible.`,
       reject: `This will reject "${org.name}". The reason will be stored in admin notes.`,
-      suspend: `This will suspend "${org.name}". The organization will be hidden from public view.`,
+      suspend: `This will suspend "${org.name}". The community will be hidden from public view.`,
       unsuspend: `This will reactivate "${org.name}" and set the status back to active.`,
       transfer: `This will transfer ownership of "${org.name}" to a different user. This action cannot be easily undone.`,
     };
@@ -235,15 +239,15 @@ export function OrgDetailSheet({
               <div className="flex flex-wrap gap-2">
                 <Badge
                   variant="outline"
-                  className={cn(orgStatusClasses[org.status])}
+                  className={cn(communityStatusClasses[org.status])}
                 >
-                  {orgStatusLabels[org.status]}
+                  {communityStatusLabels[org.status]}
                 </Badge>
                 <Badge
                   variant="outline"
-                  className={cn(orgTierClasses[org.tier])}
+                  className={cn(communityTierClasses[org.tier])}
                 >
-                  {orgTierLabels[org.tier]}
+                  {communityTierLabels[org.tier]}
                 </Badge>
               </div>
 
@@ -298,7 +302,7 @@ export function OrgDetailSheet({
                 </p>
               ) : (
                 <p className="text-muted-foreground text-sm">
-                  No admin notes for this organization.
+                  No admin notes for this community.
                 </p>
               )}
             </section>
@@ -316,7 +320,7 @@ export function OrgDetailSheet({
                     onClick={() => setConfirmAction({ type: "approve" })}
                     disabled={loading}
                   >
-                    Approve Organization
+                    Approve Community
                   </Button>
 
                   {/* Reject (needs reason) */}
@@ -324,7 +328,7 @@ export function OrgDetailSheet({
                     <Label htmlFor="reject-reason">Rejection Reason</Label>
                     <Textarea
                       id="reject-reason"
-                      placeholder="Explain why this organization is being rejected..."
+                      placeholder="Explain why this community is being rejected..."
                       value={reason}
                       onChange={(e) => setReason(e.target.value)}
                     />
@@ -334,7 +338,7 @@ export function OrgDetailSheet({
                       onClick={() => setConfirmAction({ type: "reject" })}
                       disabled={loading || !reason.trim()}
                     >
-                      Reject Organization
+                      Reject Community
                     </Button>
                   </div>
                 </div>
@@ -345,7 +349,7 @@ export function OrgDetailSheet({
                   <Label htmlFor="suspend-reason">Suspension Reason</Label>
                   <Textarea
                     id="suspend-reason"
-                    placeholder="Explain why this organization is being suspended..."
+                    placeholder="Explain why this community is being suspended..."
                     value={reason}
                     onChange={(e) => setReason(e.target.value)}
                   />
@@ -355,7 +359,7 @@ export function OrgDetailSheet({
                     onClick={() => setConfirmAction({ type: "suspend" })}
                     disabled={loading || !reason.trim()}
                   >
-                    Suspend Organization
+                    Suspend Community
                   </Button>
                 </div>
               )}
@@ -366,7 +370,7 @@ export function OrgDetailSheet({
                   onClick={() => setConfirmAction({ type: "unsuspend" })}
                   disabled={loading}
                 >
-                  Unsuspend Organization
+                  Unsuspend Community
                 </Button>
               )}
 

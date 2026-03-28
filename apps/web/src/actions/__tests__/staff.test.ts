@@ -39,7 +39,7 @@ const mockRemoveStaffCompletely = jest.fn();
 jest.mock("@trainers/supabase", () => ({
   searchUsersForInvite: (...args: unknown[]) =>
     mockSearchUsersForInvite(...args),
-  listOrganizationGroups: jest.fn(),
+  listCommunityGroups: jest.fn(),
   addStaffMember: (...args: unknown[]) => mockAddStaffMember(...args),
   addStaffToGroup: (...args: unknown[]) => mockAddStaffToGroup(...args),
   changeStaffRole: (...args: unknown[]) => mockChangeStaffRole(...args),
@@ -110,8 +110,8 @@ describe("inviteStaffMember", () => {
       1,
       "user-uuid-789"
     );
-    expect(mockUpdateTag).toHaveBeenCalledWith("organization:team-rocket");
-    expect(mockUpdateTag).toHaveBeenCalledWith("organization:1");
+    expect(mockUpdateTag).toHaveBeenCalledWith("community:team-rocket");
+    expect(mockUpdateTag).toHaveBeenCalledWith("community:1");
   });
 });
 
@@ -144,8 +144,8 @@ describe("inviteStaffToGroup", () => {
       "user-uuid-789",
       10
     );
-    expect(mockUpdateTag).toHaveBeenCalledWith("organization:team-rocket");
-    expect(mockUpdateTag).toHaveBeenCalledWith("organization:1");
+    expect(mockUpdateTag).toHaveBeenCalledWith("community:team-rocket");
+    expect(mockUpdateTag).toHaveBeenCalledWith("community:1");
   });
 });
 
@@ -178,8 +178,8 @@ describe("changeStaffRoleAction", () => {
       "user-uuid-789",
       5
     );
-    expect(mockUpdateTag).toHaveBeenCalledWith("organization:team-rocket");
-    expect(mockUpdateTag).toHaveBeenCalledWith("organization:1");
+    expect(mockUpdateTag).toHaveBeenCalledWith("community:team-rocket");
+    expect(mockUpdateTag).toHaveBeenCalledWith("community:1");
   });
 });
 
@@ -206,8 +206,8 @@ describe("removeStaffAction", () => {
       1,
       "user-uuid-789"
     );
-    expect(mockUpdateTag).toHaveBeenCalledWith("organization:team-rocket");
-    expect(mockUpdateTag).toHaveBeenCalledWith("organization:1");
+    expect(mockUpdateTag).toHaveBeenCalledWith("community:team-rocket");
+    expect(mockUpdateTag).toHaveBeenCalledWith("community:1");
   });
 
   it("returns an error when the mutation throws", async () => {

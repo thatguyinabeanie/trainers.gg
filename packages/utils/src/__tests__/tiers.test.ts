@@ -1,13 +1,13 @@
 import {
   USER_TIERS,
-  ORGANIZATION_TIERS,
-  ORGANIZATION_SUBSCRIPTION_TIERS,
+  COMMUNITY_TIERS,
+  COMMUNITY_SUBSCRIPTION_TIERS,
   TIER_PRICING,
   TOURNAMENT_FEE_PERCENTAGES,
   USER_TIER_FEATURES,
-  ORGANIZATION_SUBSCRIPTION_FEATURES,
+  COMMUNITY_SUBSCRIPTION_FEATURES,
   getUserTierFeatures,
-  getOrganizationFeatures,
+  getCommunityFeatures,
   getTournamentFeePercentage,
   calculatePlatformFee,
 } from "../tiers";
@@ -25,29 +25,29 @@ describe("tier constants", () => {
     });
   });
 
-  describe("ORGANIZATION_TIERS", () => {
+  describe("COMMUNITY_TIERS", () => {
     it("has the expected tier values", () => {
-      expect(ORGANIZATION_TIERS.REGULAR).toBe("regular");
-      expect(ORGANIZATION_TIERS.VERIFIED).toBe("verified");
-      expect(ORGANIZATION_TIERS.PARTNER).toBe("partner");
+      expect(COMMUNITY_TIERS.REGULAR).toBe("regular");
+      expect(COMMUNITY_TIERS.VERIFIED).toBe("verified");
+      expect(COMMUNITY_TIERS.PARTNER).toBe("partner");
     });
 
     it("has exactly 3 tiers", () => {
-      expect(Object.keys(ORGANIZATION_TIERS)).toHaveLength(3);
+      expect(Object.keys(COMMUNITY_TIERS)).toHaveLength(3);
     });
   });
 
-  describe("ORGANIZATION_SUBSCRIPTION_TIERS", () => {
+  describe("COMMUNITY_SUBSCRIPTION_TIERS", () => {
     it("has the expected tier values", () => {
-      expect(ORGANIZATION_SUBSCRIPTION_TIERS.FREE).toBe("free");
-      expect(ORGANIZATION_SUBSCRIPTION_TIERS.ORGANIZATION_PLUS).toBe(
+      expect(COMMUNITY_SUBSCRIPTION_TIERS.FREE).toBe("free");
+      expect(COMMUNITY_SUBSCRIPTION_TIERS.ORGANIZATION_PLUS).toBe(
         "organization_plus"
       );
-      expect(ORGANIZATION_SUBSCRIPTION_TIERS.ENTERPRISE).toBe("enterprise");
+      expect(COMMUNITY_SUBSCRIPTION_TIERS.ENTERPRISE).toBe("enterprise");
     });
 
     it("has exactly 3 tiers", () => {
-      expect(Object.keys(ORGANIZATION_SUBSCRIPTION_TIERS)).toHaveLength(3);
+      expect(Object.keys(COMMUNITY_SUBSCRIPTION_TIERS)).toHaveLength(3);
     });
   });
 });
@@ -67,13 +67,13 @@ describe("TIER_PRICING", () => {
 
   it("has pricing for organization_plus with monthly and annual amounts", () => {
     const pricing =
-      TIER_PRICING[ORGANIZATION_SUBSCRIPTION_TIERS.ORGANIZATION_PLUS];
+      TIER_PRICING[COMMUNITY_SUBSCRIPTION_TIERS.ORGANIZATION_PLUS];
     expect(pricing.monthly).toBe(2999);
     expect(pricing.annual).toBe(29990);
   });
 
   it("has null pricing for enterprise (custom pricing)", () => {
-    const pricing = TIER_PRICING[ORGANIZATION_SUBSCRIPTION_TIERS.ENTERPRISE];
+    const pricing = TIER_PRICING[COMMUNITY_SUBSCRIPTION_TIERS.ENTERPRISE];
     expect(pricing.monthly).toBeNull();
     expect(pricing.annual).toBeNull();
   });
@@ -89,22 +89,22 @@ describe("TIER_PRICING", () => {
 
     // organization_plus: $29.99/mo vs $299.90/yr ($24.99/mo)
     const orgPricing =
-      TIER_PRICING[ORGANIZATION_SUBSCRIPTION_TIERS.ORGANIZATION_PLUS];
+      TIER_PRICING[COMMUNITY_SUBSCRIPTION_TIERS.ORGANIZATION_PLUS];
     expect(orgPricing.annual).toBeLessThan(orgPricing.monthly * 12);
   });
 });
 
 describe("TOURNAMENT_FEE_PERCENTAGES", () => {
   it("has a fee for regular organizations", () => {
-    expect(TOURNAMENT_FEE_PERCENTAGES[ORGANIZATION_TIERS.REGULAR]).toBe(0.08);
+    expect(TOURNAMENT_FEE_PERCENTAGES[COMMUNITY_TIERS.REGULAR]).toBe(0.08);
   });
 
   it("has a fee for verified organizations", () => {
-    expect(TOURNAMENT_FEE_PERCENTAGES[ORGANIZATION_TIERS.VERIFIED]).toBe(0.05);
+    expect(TOURNAMENT_FEE_PERCENTAGES[COMMUNITY_TIERS.VERIFIED]).toBe(0.05);
   });
 
   it("has a fee for partner organizations", () => {
-    expect(TOURNAMENT_FEE_PERCENTAGES[ORGANIZATION_TIERS.PARTNER]).toBe(0.03);
+    expect(TOURNAMENT_FEE_PERCENTAGES[COMMUNITY_TIERS.PARTNER]).toBe(0.03);
   });
 
   it("all fees are between 0 and 1 (exclusive)", () => {
@@ -115,11 +115,11 @@ describe("TOURNAMENT_FEE_PERCENTAGES", () => {
   });
 
   it("higher tiers have lower fees", () => {
-    expect(
-      TOURNAMENT_FEE_PERCENTAGES[ORGANIZATION_TIERS.VERIFIED]
-    ).toBeLessThan(TOURNAMENT_FEE_PERCENTAGES[ORGANIZATION_TIERS.REGULAR]);
-    expect(TOURNAMENT_FEE_PERCENTAGES[ORGANIZATION_TIERS.PARTNER]).toBeLessThan(
-      TOURNAMENT_FEE_PERCENTAGES[ORGANIZATION_TIERS.VERIFIED]
+    expect(TOURNAMENT_FEE_PERCENTAGES[COMMUNITY_TIERS.VERIFIED]).toBeLessThan(
+      TOURNAMENT_FEE_PERCENTAGES[COMMUNITY_TIERS.REGULAR]
+    );
+    expect(TOURNAMENT_FEE_PERCENTAGES[COMMUNITY_TIERS.PARTNER]).toBeLessThan(
+      TOURNAMENT_FEE_PERCENTAGES[COMMUNITY_TIERS.VERIFIED]
     );
   });
 });
@@ -159,10 +159,10 @@ describe("USER_TIER_FEATURES", () => {
   });
 });
 
-describe("ORGANIZATION_SUBSCRIPTION_FEATURES", () => {
+describe("COMMUNITY_SUBSCRIPTION_FEATURES", () => {
   it("free tier has limited tournaments and no advanced features", () => {
     const features =
-      ORGANIZATION_SUBSCRIPTION_FEATURES[ORGANIZATION_SUBSCRIPTION_TIERS.FREE];
+      COMMUNITY_SUBSCRIPTION_FEATURES[COMMUNITY_SUBSCRIPTION_TIERS.FREE];
     expect(features.maxTournaments).toBe(5);
     expect(features.autoBrackets).toBe(false);
     expect(features.autoReminders).toBe(false);
@@ -174,8 +174,8 @@ describe("ORGANIZATION_SUBSCRIPTION_FEATURES", () => {
 
   it("organization_plus tier has unlimited tournaments and all features", () => {
     const features =
-      ORGANIZATION_SUBSCRIPTION_FEATURES[
-        ORGANIZATION_SUBSCRIPTION_TIERS.ORGANIZATION_PLUS
+      COMMUNITY_SUBSCRIPTION_FEATURES[
+        COMMUNITY_SUBSCRIPTION_TIERS.ORGANIZATION_PLUS
       ];
     expect(features.maxTournaments).toBeNull(); // unlimited
     expect(features.autoBrackets).toBe(true);
@@ -188,9 +188,7 @@ describe("ORGANIZATION_SUBSCRIPTION_FEATURES", () => {
 
   it("enterprise tier has all plus features and enterprise-specific ones", () => {
     const features =
-      ORGANIZATION_SUBSCRIPTION_FEATURES[
-        ORGANIZATION_SUBSCRIPTION_TIERS.ENTERPRISE
-      ];
+      COMMUNITY_SUBSCRIPTION_FEATURES[COMMUNITY_SUBSCRIPTION_TIERS.ENTERPRISE];
     // Base plus features
     expect(features.maxTournaments).toBeNull();
     expect(features.autoBrackets).toBe(true);
@@ -224,36 +222,34 @@ describe("getUserTierFeatures", () => {
   });
 });
 
-describe("getOrganizationFeatures", () => {
+describe("getCommunityFeatures", () => {
   it("returns free tier features for undefined", () => {
-    const features = getOrganizationFeatures(undefined);
+    const features = getCommunityFeatures(undefined);
     expect(features).toEqual(
-      ORGANIZATION_SUBSCRIPTION_FEATURES[ORGANIZATION_SUBSCRIPTION_TIERS.FREE]
+      COMMUNITY_SUBSCRIPTION_FEATURES[COMMUNITY_SUBSCRIPTION_TIERS.FREE]
     );
   });
 
   it("returns free tier features for 'free'", () => {
-    const features = getOrganizationFeatures("free");
+    const features = getCommunityFeatures("free");
     expect(features).toEqual(
-      ORGANIZATION_SUBSCRIPTION_FEATURES[ORGANIZATION_SUBSCRIPTION_TIERS.FREE]
+      COMMUNITY_SUBSCRIPTION_FEATURES[COMMUNITY_SUBSCRIPTION_TIERS.FREE]
     );
   });
 
   it("returns organization_plus features for 'organization_plus'", () => {
-    const features = getOrganizationFeatures("organization_plus");
+    const features = getCommunityFeatures("organization_plus");
     expect(features).toEqual(
-      ORGANIZATION_SUBSCRIPTION_FEATURES[
-        ORGANIZATION_SUBSCRIPTION_TIERS.ORGANIZATION_PLUS
+      COMMUNITY_SUBSCRIPTION_FEATURES[
+        COMMUNITY_SUBSCRIPTION_TIERS.ORGANIZATION_PLUS
       ]
     );
   });
 
   it("returns enterprise features for 'enterprise'", () => {
-    const features = getOrganizationFeatures("enterprise");
+    const features = getCommunityFeatures("enterprise");
     expect(features).toEqual(
-      ORGANIZATION_SUBSCRIPTION_FEATURES[
-        ORGANIZATION_SUBSCRIPTION_TIERS.ENTERPRISE
-      ]
+      COMMUNITY_SUBSCRIPTION_FEATURES[COMMUNITY_SUBSCRIPTION_TIERS.ENTERPRISE]
     );
   });
 });

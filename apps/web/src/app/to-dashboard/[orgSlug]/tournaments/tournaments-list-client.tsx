@@ -3,7 +3,7 @@
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useSupabaseQuery } from "@/lib/supabase";
-import { listOrganizationTournaments } from "@trainers/supabase";
+import { listCommunityTournaments } from "@trainers/supabase";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -52,10 +52,8 @@ export function TournamentsListClient({
     initialStatus ||
     "all") as TournamentStatus;
 
-  const queryFn = (
-    supabase: Parameters<typeof listOrganizationTournaments>[0]
-  ) =>
-    listOrganizationTournaments(supabase, organizationId, {
+  const queryFn = (supabase: Parameters<typeof listCommunityTournaments>[0]) =>
+    listCommunityTournaments(supabase, organizationId, {
       status: currentStatus === "all" ? undefined : currentStatus,
       limit: 50,
     });
@@ -95,7 +93,7 @@ export function TournamentsListClient({
         <div>
           <h2 className="text-2xl font-bold">Tournaments</h2>
           <p className="text-muted-foreground text-sm">
-            Manage your organization&apos;s tournaments
+            Manage your community&apos;s tournaments
           </p>
         </div>
         <Link href={`${basePath}/tournaments/create`}>

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { createOrganizationSchema } from "./organization";
+import { createCommunitySchema } from "./community";
 import { containsProfanity, PROFANITY_ERROR_MESSAGE } from "./profanity";
 
 /** Optional handle field — empty string treated as omitted, trimmed before length check. */
@@ -22,10 +22,10 @@ const optionalUrl = z
 
 /**
  * Schema for submitting an organization request.
- * Extends createOrganizationSchema with required description,
+ * Extends createCommunitySchema with required description,
  * required Discord invite code, and optional social profile links.
  */
-export const submitOrganizationRequestSchema = createOrganizationSchema.extend({
+export const submitOrganizationRequestSchema = createCommunitySchema.extend({
   description: z
     .string()
     .min(1, "Description is required")

@@ -31,8 +31,8 @@ export const CacheTags = {
   /** Tag for /tournaments list page */
   TOURNAMENTS_LIST: "tournaments-list",
 
-  /** Tag for /organizations list page */
-  ORGANIZATIONS_LIST: "organizations-list",
+  /** Tag for /communities list page */
+  COMMUNITIES_LIST: "communities-list",
 
   /**
    * Generate a tag for a specific tournament
@@ -41,10 +41,10 @@ export const CacheTags = {
   tournament: (idOrSlug: string | number) => `tournament:${idOrSlug}`,
 
   /**
-   * Generate a tag for a specific organization
-   * @param idOrSlug - Organization ID or slug
+   * Generate a tag for a specific community
+   * @param idOrSlug - Community ID or slug
    */
-  organization: (idOrSlug: string | number) => `organization:${idOrSlug}`,
+  community: (idOrSlug: string | number) => `community:${idOrSlug}`,
 
   /** Tag for tournament team submissions (open teamsheet public view) */
   tournamentTeams: (idOrSlug: string | number) =>
@@ -53,8 +53,8 @@ export const CacheTags = {
   /** Tag for a specific player profile */
   player: (handle: string) => `player:${handle}`,
 
-  /** Tag for admin org requests list */
-  ORG_REQUESTS_LIST: "org-requests-list",
+  /** Tag for admin community requests list */
+  COMMUNITY_REQUESTS_LIST: "community-requests-list",
 
   /** Tag for /players directory page (initial grid data) */
   PLAYERS_DIRECTORY: "players-directory",
@@ -70,4 +70,12 @@ export const CacheTags = {
 
   /** Tag for hero page platform overview stats (players, tournaments, matches) */
   PLATFORM_OVERVIEW: "platform-overview",
+
+  // Aliases for backward compatibility during migration
+  /** @deprecated Use COMMUNITIES_LIST */
+  ORGANIZATIONS_LIST: "communities-list",
+  /** @deprecated Use community() */
+  organization: (idOrSlug: string | number) => `community:${idOrSlug}`,
+  /** @deprecated Use COMMUNITY_REQUESTS_LIST */
+  ORG_REQUESTS_LIST: "community-requests-list",
 } as const;

@@ -31,7 +31,7 @@ export type SocialLinkPlatform = (typeof SOCIAL_LINK_PLATFORMS)[number];
  * Schema for a single social link entry.
  * Stored in the organizations.social_links JSONB column.
  */
-export const organizationSocialLinkSchema = z.object({
+export const communitySocialLinkSchema = z.object({
   platform: z.enum(SOCIAL_LINK_PLATFORMS),
   url: z.string().url("Must be a valid URL"),
   label: z
@@ -46,18 +46,16 @@ export const organizationSocialLinkSchema = z.object({
 /**
  * Schema for an array of social links.
  */
-export const organizationSocialLinksSchema = z.array(
-  organizationSocialLinkSchema
-);
+export const communitySocialLinksSchema = z.array(communitySocialLinkSchema);
 
 /**
- * Schema for creating an organization.
+ * Schema for creating a community.
  * Validates name, slug, and optional description.
  */
-export const createOrganizationSchema = z.object({
+export const createCommunitySchema = z.object({
   name: z
     .string()
-    .min(1, "Organization name is required")
+    .min(1, "Community name is required")
     .max(100)
     .refine((val) => !containsProfanity(val), {
       message: PROFANITY_ERROR_MESSAGE,
@@ -83,12 +81,12 @@ export const createOrganizationSchema = z.object({
 });
 
 /**
- * Schema for updating an organization.
+ * Schema for updating a community.
  */
-export const updateOrganizationSchema = z.object({
+export const updateCommunitySchema = z.object({
   name: z
     .string()
-    .min(1, "Organization name is required")
+    .min(1, "Community name is required")
     .max(100)
     .refine((val) => !containsProfanity(val), {
       message: PROFANITY_ERROR_MESSAGE,
@@ -101,12 +99,10 @@ export const updateOrganizationSchema = z.object({
       message: PROFANITY_ERROR_MESSAGE,
     })
     .optional(),
-  socialLinks: organizationSocialLinksSchema.optional(),
+  socialLinks: communitySocialLinksSchema.optional(),
 });
 
 // Types
-export type OrganizationSocialLink = z.infer<
-  typeof organizationSocialLinkSchema
->;
-export type CreateOrganizationInput = z.infer<typeof createOrganizationSchema>;
-export type UpdateOrganizationInput = z.infer<typeof updateOrganizationSchema>;
+export type CommunitySocialLink = z.infer<typeof communitySocialLinkSchema>;
+export type CreateCommunityInput = z.infer<typeof createCommunitySchema>;
+export type UpdateCommunityInput = z.infer<typeof updateCommunitySchema>;

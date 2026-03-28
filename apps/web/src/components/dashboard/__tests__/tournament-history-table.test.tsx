@@ -114,7 +114,7 @@ describe("TournamentHistoryTable", () => {
     render(<TournamentHistoryTable data={mockHistoryData} />);
 
     const orgLinks = screen.getAllByRole("link", { name: "Pokemon VGC" });
-    expect(orgLinks[0]).toHaveAttribute("href", "/organizations/pokemon-vgc");
+    expect(orgLinks[0]).toHaveAttribute("href", "/communities/pokemon-vgc");
     expect(orgLinks.length).toBeGreaterThan(0);
   });
 

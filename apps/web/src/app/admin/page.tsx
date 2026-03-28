@@ -431,7 +431,7 @@ function DashboardContent() {
 
       {/* ── Pending Org Alert ──────────────────────────────────── */}
       {!orgLoading && pendingOrgs > 0 && (
-        <Link href="/admin/organizations">
+        <Link href="/admin/communities">
           <Card className="group border-amber-500/30 bg-amber-500/5 transition-colors hover:border-amber-500/50">
             <CardContent className="flex items-center gap-4 pt-5">
               <div className="rounded-lg bg-amber-500/10 p-2.5">
@@ -439,7 +439,7 @@ function DashboardContent() {
               </div>
               <div className="flex-1">
                 <p className="text-sm font-semibold">
-                  {pendingOrgs} organization
+                  {pendingOrgs} community request
                   {pendingOrgs !== 1 ? "s" : ""} pending approval
                 </p>
                 <p className="text-muted-foreground text-xs">
@@ -474,7 +474,7 @@ function DashboardContent() {
           theme={metricThemes.blue}
         />
         <MetricCard
-          title="Organizations"
+          title="Communities"
           value={overview?.totalOrganizations}
           icon={Building2}
           isLoading={overviewLoading}
@@ -531,14 +531,14 @@ function DashboardContent() {
           />
 
           <DonutBreakdownCard
-            title="Organizations by Status"
+            title="Communities by Status"
             data={orgStats?.byStatus}
             labels={ORG_STATUS_LABELS}
             isLoading={orgLoading}
           />
 
           <DonutBreakdownCard
-            title="Organizations by Tier"
+            title="Communities by Tier"
             data={orgStats?.byTier}
             labels={ORG_TIER_LABELS}
             isLoading={orgLoading}

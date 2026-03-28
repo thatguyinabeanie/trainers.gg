@@ -7,7 +7,7 @@ import {
 import {
   getTournamentBySlug,
   getTeamForRegistration,
-  hasOrganizationAccess,
+  hasCommunityAccess,
 } from "@trainers/supabase";
 import { CacheTags } from "@/lib/cache";
 import Link from "next/link";
@@ -414,7 +414,7 @@ export default async function TournamentPage({ params }: PageProps) {
   let canManage = false;
   if (currentUserId && tournament.organization_id) {
     const supabase = await createClientReadOnly();
-    canManage = await hasOrganizationAccess(
+    canManage = await hasCommunityAccess(
       supabase,
       tournament.organization_id,
       currentUserId

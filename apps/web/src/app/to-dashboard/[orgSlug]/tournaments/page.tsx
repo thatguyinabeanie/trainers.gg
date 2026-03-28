@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
-import { getOrganizationBySlug } from "@trainers/supabase";
+import { getCommunityBySlug } from "@trainers/supabase";
 import { TournamentsListClient } from "./tournaments-list-client";
 
 interface PageProps {
@@ -19,7 +19,7 @@ export default async function TournamentsPage({
   const { status } = await searchParams;
   const supabase = await createClient();
 
-  const organization = await getOrganizationBySlug(supabase, orgSlug);
+  const organization = await getCommunityBySlug(supabase, orgSlug);
 
   if (!organization) {
     return null; // Layout handles 404

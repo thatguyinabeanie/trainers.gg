@@ -1,11 +1,11 @@
 import {
-  createOrganizationSchema,
-  updateOrganizationSchema,
-  organizationSocialLinkSchema,
-  organizationSocialLinksSchema,
+  createCommunitySchema,
+  updateCommunitySchema,
+  communitySocialLinkSchema,
+  communitySocialLinksSchema,
   SOCIAL_LINK_PLATFORMS,
-  type OrganizationSocialLink,
-} from "../organization";
+  type CommunitySocialLink,
+} from "../community";
 
 // ---------------------------------------------------------------------------
 // Helpers — reusable valid inputs to keep tests DRY
@@ -13,8 +13,8 @@ import {
 
 /** Builds a valid social link, with optional overrides. */
 function validLink(
-  overrides?: Partial<OrganizationSocialLink>
-): OrganizationSocialLink {
+  overrides?: Partial<CommunitySocialLink>
+): CommunitySocialLink {
   return {
     platform: "discord",
     url: "https://discord.gg/test",
@@ -23,12 +23,12 @@ function validLink(
 }
 
 // ---------------------------------------------------------------------------
-// createOrganizationSchema
+// createCommunitySchema
 // ---------------------------------------------------------------------------
 
-describe("createOrganizationSchema", () => {
+describe("createCommunitySchema", () => {
   it("accepts valid organization data", () => {
-    const result = createOrganizationSchema.safeParse({
+    const result = createCommunitySchema.safeParse({
       name: "Pokemon League",
       slug: "pokemon-league",
       description: "Official Pokemon League organization",
@@ -37,7 +37,7 @@ describe("createOrganizationSchema", () => {
   });
 
   it("accepts organization without description", () => {
-    const result = createOrganizationSchema.safeParse({
+    const result = createCommunitySchema.safeParse({
       name: "Pokemon League",
       slug: "pokemon-league",
     });
@@ -45,7 +45,7 @@ describe("createOrganizationSchema", () => {
   });
 
   it("rejects empty name", () => {
-    const result = createOrganizationSchema.safeParse({
+    const result = createCommunitySchema.safeParse({
       name: "",
       slug: "pokemon-league",
     });
@@ -53,7 +53,7 @@ describe("createOrganizationSchema", () => {
   });
 
   it("rejects name longer than 100 characters", () => {
-    const result = createOrganizationSchema.safeParse({
+    const result = createCommunitySchema.safeParse({
       name: "a".repeat(101),
       slug: "pokemon-league",
     });
@@ -61,7 +61,7 @@ describe("createOrganizationSchema", () => {
   });
 
   it("rejects empty slug", () => {
-    const result = createOrganizationSchema.safeParse({
+    const result = createCommunitySchema.safeParse({
       name: "Pokemon League",
       slug: "",
     });
@@ -69,7 +69,7 @@ describe("createOrganizationSchema", () => {
   });
 
   it("rejects slug with uppercase letters", () => {
-    const result = createOrganizationSchema.safeParse({
+    const result = createCommunitySchema.safeParse({
       name: "Pokemon League",
       slug: "Pokemon-League",
     });
@@ -77,7 +77,7 @@ describe("createOrganizationSchema", () => {
   });
 
   it("rejects slug with special characters", () => {
-    const result = createOrganizationSchema.safeParse({
+    const result = createCommunitySchema.safeParse({
       name: "Pokemon League",
       slug: "pokemon_league",
     });
@@ -85,7 +85,7 @@ describe("createOrganizationSchema", () => {
   });
 
   it("accepts slug with hyphens", () => {
-    const result = createOrganizationSchema.safeParse({
+    const result = createCommunitySchema.safeParse({
       name: "Pokemon League",
       slug: "pokemon-league-2024",
     });
@@ -93,7 +93,7 @@ describe("createOrganizationSchema", () => {
   });
 
   it("rejects description longer than 500 characters", () => {
-    const result = createOrganizationSchema.safeParse({
+    const result = createCommunitySchema.safeParse({
       name: "Pokemon League",
       slug: "pokemon-league",
       description: "a".repeat(501),
@@ -102,7 +102,7 @@ describe("createOrganizationSchema", () => {
   });
 
   it("rejects name with profanity", () => {
-    const _result = createOrganizationSchema.safeParse({
+    const _result = createCommunitySchema.safeParse({
       name: "Bad Organization Name",
       slug: "test-org",
     });
@@ -110,7 +110,7 @@ describe("createOrganizationSchema", () => {
   });
 
   it("rejects slug with profanity", () => {
-    const _result = createOrganizationSchema.safeParse({
+    const _result = createCommunitySchema.safeParse({
       name: "Test Organization",
       slug: "badslug",
     });
@@ -118,7 +118,7 @@ describe("createOrganizationSchema", () => {
   });
 
   it("rejects description with profanity", () => {
-    const _result = createOrganizationSchema.safeParse({
+    const _result = createCommunitySchema.safeParse({
       name: "Pokemon League",
       slug: "pokemon-league",
       description: "Bad description text",
@@ -160,10 +160,10 @@ describe("SOCIAL_LINK_PLATFORMS", () => {
 });
 
 // ---------------------------------------------------------------------------
-// organizationSocialLinkSchema (single link)
+// communitySocialLinkSchema (single link)
 // ---------------------------------------------------------------------------
 
-describe("organizationSocialLinkSchema", () => {
+describe("communitySocialLinkSchema", () => {
   // -- Valid cases ----------------------------------------------------------
 
   it.each([
@@ -177,14 +177,12 @@ describe("organizationSocialLinkSchema", () => {
       input: validLink({ label: "a".repeat(50) }),
     },
   ])("accepts $desc", ({ input }) => {
-    expect(organizationSocialLinkSchema.safeParse(input).success).toBe(true);
+    expect(communitySocialLinkSchema.safeParse(input).success).toBe(true);
   });
 
   // Every platform should be accepted
   it.each([...SOCIAL_LINK_PLATFORMS])("accepts platform %s", (platform) => {
-    const result = organizationSocialLinkSchema.safeParse(
-      validLink({ platform })
-    );
+    const result = communitySocialLinkSchema.safeParse(validLink({ platform }));
     expect(result.success).toBe(true);
   });
 
@@ -217,7 +215,7 @@ describe("organizationSocialLinkSchema", () => {
       message: undefined,
     },
   ])("rejects $desc", ({ input, message }) => {
-    const result = organizationSocialLinkSchema.safeParse(input);
+    const result = communitySocialLinkSchema.safeParse(input);
     expect(result.success).toBe(false);
     if (!result.success && message) {
       expect(result.error.issues[0]?.message).toBe(message);
@@ -226,10 +224,10 @@ describe("organizationSocialLinkSchema", () => {
 });
 
 // ---------------------------------------------------------------------------
-// organizationSocialLinksSchema (array of links)
+// communitySocialLinksSchema (array of links)
 // ---------------------------------------------------------------------------
 
-describe("organizationSocialLinksSchema", () => {
+describe("communitySocialLinksSchema", () => {
   it.each([
     { desc: "empty array", input: [] },
     {
@@ -241,11 +239,11 @@ describe("organizationSocialLinksSchema", () => {
       ],
     },
   ])("accepts $desc", ({ input }) => {
-    expect(organizationSocialLinksSchema.safeParse(input).success).toBe(true);
+    expect(communitySocialLinksSchema.safeParse(input).success).toBe(true);
   });
 
   it("rejects array containing an invalid link", () => {
-    const result = organizationSocialLinksSchema.safeParse([
+    const result = communitySocialLinksSchema.safeParse([
       validLink(),
       { platform: "twitter", url: "not-a-url" },
     ]);
@@ -254,10 +252,10 @@ describe("organizationSocialLinksSchema", () => {
 });
 
 // ---------------------------------------------------------------------------
-// updateOrganizationSchema
+// updateCommunitySchema
 // ---------------------------------------------------------------------------
 
-describe("updateOrganizationSchema", () => {
+describe("updateCommunitySchema", () => {
   it.each([
     { desc: "name only", input: { name: "Updated League" } },
     { desc: "description only", input: { description: "Updated desc" } },
@@ -282,7 +280,7 @@ describe("updateOrganizationSchema", () => {
       },
     },
   ])("accepts $desc", ({ input }) => {
-    expect(updateOrganizationSchema.safeParse(input).success).toBe(true);
+    expect(updateCommunitySchema.safeParse(input).success).toBe(true);
   });
 
   it.each([
@@ -296,6 +294,6 @@ describe("updateOrganizationSchema", () => {
       input: { socialLinks: [{ platform: "discord", url: "not-a-url" }] },
     },
   ])("rejects $desc", ({ input }) => {
-    expect(updateOrganizationSchema.safeParse(input).success).toBe(false);
+    expect(updateCommunitySchema.safeParse(input).success).toBe(false);
   });
 });

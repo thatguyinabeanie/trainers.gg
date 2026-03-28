@@ -2,8 +2,8 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { toast } from "sonner";
 import {
-  acceptOrganizationInvitation,
-  declineOrganizationInvitation,
+  acceptCommunityInvitation,
+  declineCommunityInvitation,
 } from "@trainers/supabase";
 import {
   markNotificationReadAction,
@@ -70,9 +70,9 @@ jest.mock("@/actions/notifications", () => ({
 jest.mock("@trainers/supabase", () => ({
   getNotifications: jest.fn(),
   getUnreadNotificationCount: jest.fn(),
-  getMyOrganizationInvitations: jest.fn(),
-  acceptOrganizationInvitation: jest.fn(),
-  declineOrganizationInvitation: jest.fn(),
+  getMyCommunityInvitations: jest.fn(),
+  acceptCommunityInvitation: jest.fn(),
+  declineCommunityInvitation: jest.fn(),
 }));
 
 // ── sonner ────────────────────────────────────────────────────────────────
@@ -88,8 +88,8 @@ jest.mock("@trainers/utils", () => ({
 // ── Typed mock references ─────────────────────────────────────────────────
 const mockedMarkRead = jest.mocked(markNotificationReadAction);
 const mockedMarkAllRead = jest.mocked(markAllNotificationsReadAction);
-const mockedAccept = jest.mocked(acceptOrganizationInvitation);
-const mockedDecline = jest.mocked(declineOrganizationInvitation);
+const mockedAccept = jest.mocked(acceptCommunityInvitation);
+const mockedDecline = jest.mocked(declineCommunityInvitation);
 const mockedToast = jest.mocked(toast);
 
 // ── Helpers ────────────────────────────────────────────────────────────────
@@ -428,7 +428,7 @@ describe("NotificationBell", () => {
       );
     });
 
-    it("shows 'Unknown Organization' when org name is missing", async () => {
+    it("shows 'Unknown Community' when org name is missing", async () => {
       setupQueryMocks({
         invitations: [makeInvitation({ organization: null })],
       });
@@ -436,7 +436,7 @@ describe("NotificationBell", () => {
       await userEvent.click(
         screen.getByRole("button", { name: /1 unread notifications/i })
       );
-      expect(screen.getByText("Unknown Organization")).toBeInTheDocument();
+      expect(screen.getByText("Unknown Community")).toBeInTheDocument();
     });
   });
 

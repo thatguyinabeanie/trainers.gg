@@ -111,13 +111,13 @@ export function TournamentHistoryTable({ data }: TournamentHistoryTableProps) {
           onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
           className="h-auto p-0 hover:bg-transparent"
         >
-          Organization
+          Community
           <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
       ),
       cell: ({ row }) => (
         <Link
-          href={`/organizations/${row.original.organizationSlug}`}
+          href={`/communities/${row.original.organizationSlug}`}
           className="text-muted-foreground hover:text-primary text-sm transition-colors"
         >
           {row.original.organizationName}

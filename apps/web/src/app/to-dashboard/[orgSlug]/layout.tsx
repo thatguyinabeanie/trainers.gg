@@ -1,10 +1,7 @@
 import type { ReactNode } from "react";
 import { redirect, notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import {
-  getOrganizationBySlug,
-  hasOrganizationAccess,
-} from "@trainers/supabase";
+import { getCommunityBySlug, hasCommunityAccess } from "@trainers/supabase";
 import { TODashboardNav } from "./to-dashboard-nav";
 
 interface LayoutProps {
@@ -30,22 +27,22 @@ export default async function OrgDashboardLayout({
   }
 
   // Get organization
-  const organization = await getOrganizationBySlug(supabase, orgSlug);
+  const organization = await getCommunityBySlug(supabase, orgSlug);
 
   if (!organization) {
     notFound();
   }
 
   // Check if user has access (owner or staff)
-  // hasOrganizationAccess returns true for owners and staff
-  const hasAccess = await hasOrganizationAccess(
+  // hasCommunityAccess returns true for owners and staff
+  const hasAccess = await hasCommunityAccess(
     supabase,
     organization.id,
     user.id
   );
 
   if (!hasAccess) {
-    redirect(`/organizations/${orgSlug}`);
+    redirect(`/communities/${orgSlug}`);
   }
 
   // isOwner is needed for UI (to show owner-only features in nav)
