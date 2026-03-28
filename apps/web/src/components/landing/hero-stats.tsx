@@ -43,19 +43,17 @@ export async function HeroStats() {
   ];
 
   return (
-    <section className="border-b py-8">
-      <div className="mx-auto max-w-screen-xl px-4">
-        <dl className="grid grid-cols-3 gap-4 text-center">
-          {stats.map(({ value, label }) => (
-            <div key={label}>
-              <dt className="text-muted-foreground text-sm">{label}</dt>
-              <dd className="text-primary text-3xl font-bold tracking-tight sm:text-4xl">
-                {formatStat(value)}
-              </dd>
-            </div>
-          ))}
-        </dl>
-      </div>
-    </section>
+    <div className="flex justify-center gap-10 sm:gap-12">
+      {stats.map(({ value, label }) => (
+        <div key={label} className="text-center">
+          <p className="text-primary font-mono text-2xl font-extrabold tracking-tight">
+            {formatStat(value)}
+          </p>
+          <p className="text-muted-foreground/60 mt-0.5 text-[11px] dark:text-white/35">
+            {label}
+          </p>
+        </div>
+      ))}
+    </div>
   );
 }
