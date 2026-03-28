@@ -190,6 +190,17 @@ jobs:
             turbo-test-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml') }}-
             turbo-test-${{ runner.os }}-
 
+      - name: Jest cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            node_modules/.cache/jest
+            **/.jest-cache
+          key: jest-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml', '**/jest.config.*', 'tooling/jest/**') }}
+          restore-keys: |
+            jest-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml') }}-
+            jest-${{ runner.os }}-
+
       - name: Configure Turbo Remote Cache
         if: vars.TURBO_TOKEN != ''
         run: |
