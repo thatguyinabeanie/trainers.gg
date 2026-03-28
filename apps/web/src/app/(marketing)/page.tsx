@@ -38,8 +38,7 @@ export default function HomePage() {
             backgroundImage:
               "radial-gradient(circle, oklch(0.5 0.08 183 / 0.35) 1px, transparent 1px)",
             backgroundSize: "28px 28px",
-            maskImage:
-              "linear-gradient(to bottom, black 20%, transparent 60%)",
+            maskImage: "linear-gradient(to bottom, black 20%, transparent 60%)",
             WebkitMaskImage:
               "linear-gradient(to bottom, black 20%, transparent 60%)",
           }}
@@ -52,8 +51,7 @@ export default function HomePage() {
             backgroundImage:
               "radial-gradient(circle, oklch(0.7 0.12 183 / 0.18) 1px, transparent 1px)",
             backgroundSize: "28px 28px",
-            maskImage:
-              "linear-gradient(to bottom, black 20%, transparent 60%)",
+            maskImage: "linear-gradient(to bottom, black 20%, transparent 60%)",
             WebkitMaskImage:
               "linear-gradient(to bottom, black 20%, transparent 60%)",
           }}
@@ -62,19 +60,19 @@ export default function HomePage() {
         {/* Hero content */}
         <section className="relative z-10 py-20 sm:py-28">
           <div className="mx-auto max-w-screen-xl px-4 text-center">
-            <p className="mb-5 text-[11px] font-medium tracking-[6px] uppercase text-primary/50">
+            <p className="text-primary/50 mb-5 text-[11px] font-medium tracking-[6px] uppercase">
               trainers.gg
             </p>
-            <h1 className="mb-4 text-4xl font-extrabold tracking-tight text-foreground sm:text-5xl dark:text-green-50">
+            <h1 className="text-foreground mb-4 text-4xl font-extrabold tracking-tight sm:text-5xl dark:text-green-50">
               Everything a trainer needs.
               <br />
               One platform.
             </h1>
-            <p className="mx-auto mb-2 max-w-xl text-base font-medium text-muted-foreground sm:text-lg dark:text-white/50">
+            <p className="text-muted-foreground mx-auto mb-2 max-w-xl text-base font-medium sm:text-lg dark:text-white/50">
               Manage your alts, guard your strategies, run tournaments, and
               connect with your community.
             </p>
-            <p className="mx-auto mb-8 max-w-xl text-sm leading-relaxed text-muted-foreground/60 dark:text-white/30">
+            <p className="text-muted-foreground/60 mx-auto mb-8 max-w-xl text-sm leading-relaxed dark:text-white/30">
               One account for everything — compete under any name, keep teams
               private until you play them, and track all your analytics in one
               place.

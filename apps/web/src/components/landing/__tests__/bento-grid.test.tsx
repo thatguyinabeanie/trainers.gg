@@ -73,8 +73,6 @@ describe("UnderConstruction", () => {
   );
 
   it("mentions meta analytics in Builder description", () => {
-    expect(
-      screen.getByText(/current meta analytics/i)
-    ).toBeInTheDocument();
+    expect(screen.getByText(/current meta analytics/i)).toBeInTheDocument();
   });
 });
