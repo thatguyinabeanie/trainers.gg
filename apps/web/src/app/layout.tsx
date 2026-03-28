@@ -73,8 +73,8 @@ export default async function RootLayout({
           <TopNav />
           <main className="flex w-full flex-1 flex-col">{children}</main>
 
-          <footer className="w-full py-4">
-            <div className="text-muted-foreground container mx-auto flex flex-col items-center justify-between gap-2 px-4 text-xs md:flex-row md:px-6">
+          <footer className="w-full py-2">
+            <div className="text-muted-foreground container mx-auto flex flex-col items-center justify-between gap-1 px-4 text-[10px] md:flex-row md:px-6">
               <p className="font-semibold">
                 Built for competitors, by competitors.
               </p>
