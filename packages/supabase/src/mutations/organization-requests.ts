@@ -226,14 +226,20 @@ export async function grantCommunityRequest(
 
   // Cancel any other pending requests from the same user
   if (request.status === "rejected") {
-    const { data: duplicates } = await supabase
+    const { data: duplicates, error: duplicatesError } = await supabase
       .from("community_requests")
       .select("id")
       .eq("user_id", request.user_id)
       .eq("status", "pending")
       .neq("id", requestId);
 
-    if (duplicates && duplicates.length > 0) {
+    if (duplicatesError) {
+      console.error("Failed to lookup duplicate pending requests", {
+        requestId,
+        userId: request.user_id,
+        error: duplicatesError,
+      });
+    } else if (duplicates && duplicates.length > 0) {
       for (const dup of duplicates) {
         const { error: cancelError } = await supabase
           .from("community_requests")
@@ -250,18 +256,18 @@ export async function grantCommunityRequest(
             duplicateId: dup.id,
             error: cancelError,
           });
+        } else {
+          await supabase.from("audit_log").insert({
+            action: "admin.org_request_rejected" as const,
+            actor_user_id: adminUserId,
+            metadata: {
+              request_id: dup.id,
+              requester_user_id: request.user_id,
+              reason: `Automatically closed — community granted via request #${requestId}`,
+              auto_cancelled: true,
+            },
+          });
         }
-
-        await supabase.from("audit_log").insert({
-          action: "admin.org_request_rejected" as const,
-          actor_user_id: adminUserId,
-          metadata: {
-            request_id: dup.id,
-            requester_user_id: request.user_id,
-            reason: `Automatically closed — community granted via request #${requestId}`,
-            auto_cancelled: true,
-          },
-        });
       }
     }
   }

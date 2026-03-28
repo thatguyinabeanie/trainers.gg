@@ -24,6 +24,7 @@ export async function grantCommunityRequestAction(
     };
   }
 
+  let validatedReason: string | undefined;
   if (reason !== undefined) {
     const parsedReason = adminReasonSchema.safeParse(reason);
     if (!parsedReason.success) {
@@ -32,10 +33,16 @@ export async function grantCommunityRequestAction(
         error: `Invalid input: ${parsedReason.error.issues[0]?.message}`,
       };
     }
+    validatedReason = parsedReason.data;
   }
 
   return withAdminAction(async (supabase, adminUserId) => {
-    await grantCommunityRequest(supabase, parsed.data, adminUserId, reason);
+    await grantCommunityRequest(
+      supabase,
+      parsed.data,
+      adminUserId,
+      validatedReason
+    );
 
     // Fire-and-forget email notification
     supabase.functions
