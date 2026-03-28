@@ -19,7 +19,7 @@ export default function HomePage() {
   return (
     <div>
       {/* Hero */}
-      <section className="bg-primary/5 relative overflow-hidden py-20 sm:py-28 dark:bg-[#070b0a]">
+      <section className="relative overflow-hidden bg-primary/5 pb-0 pt-20 sm:pt-28 dark:bg-[#070b0a]">
         {/* Dark mode: teal glow from below */}
         <div
           className="pointer-events-none absolute inset-0 hidden dark:block"
@@ -55,7 +55,7 @@ export default function HomePage() {
             Manage your alts, guard your strategies, run tournaments, and
             connect with your community.
           </p>
-          <p className="text-muted-foreground/60 mx-auto mb-8 max-w-xl text-sm leading-relaxed dark:text-white/30">
+          <p className="mx-auto mb-8 max-w-xl text-sm leading-relaxed text-muted-foreground/60 dark:text-white/30">
             One account for everything — compete under any name, keep teams
             private until you play them, and track all your analytics in one
             place.
@@ -67,16 +67,28 @@ export default function HomePage() {
 
           <HeroStats />
         </div>
+
+        {/* Gradient fade from hero into bento section */}
+        <div
+          className="pointer-events-none relative z-10 h-20 sm:h-28"
+          aria-hidden="true"
+          style={{
+            background:
+              "linear-gradient(to bottom, transparent, var(--color-background))",
+          }}
+        />
       </section>
 
       {/* Feature Bento Grid */}
-      <BentoGrid />
+      <div className="bg-primary/[0.02] dark:bg-[#050808]">
+        <BentoGrid />
+      </div>
 
       {/* Under Construction */}
       <UnderConstruction />
 
       {/* Closing CTA */}
-      <section className="bg-primary/5 relative overflow-hidden py-12 sm:py-16 dark:bg-[#070b0a]">
+      <section className="relative overflow-hidden bg-primary/5 py-12 sm:py-16 dark:bg-[#070b0a]">
         <div
           className="pointer-events-none absolute inset-0 hidden dark:block"
           aria-hidden="true"

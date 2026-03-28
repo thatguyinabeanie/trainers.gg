@@ -30,16 +30,16 @@ function BentoCard({
         className
       )}
     >
-      <p className="text-primary/60 font-mono text-[10px] font-medium tracking-[3px] uppercase">
+      <p className="text-primary font-mono text-[10px] font-semibold tracking-[3px] uppercase">
         {step} — {label}
       </p>
       <h3 className="text-foreground mt-3 text-lg font-extrabold tracking-tight sm:text-xl">
         {headline}
       </h3>
-      <p className="text-muted-foreground mt-1.5 text-[11px] leading-relaxed">
+      <p className="text-muted-foreground mt-2 text-xs leading-relaxed">
         {description}
       </p>
-      <div className="bg-background/60 mt-3 rounded-md p-2.5 text-[11px] dark:bg-black/30">
+      <div className="mt-3 rounded-md bg-white/80 p-2.5 text-[11px] dark:bg-black/30">
         {preview}
       </div>
     </div>
@@ -162,21 +162,21 @@ function ProfilePreview() {
           <div className="flex items-center justify-between text-[10px]">
             <div>
               <span className="text-foreground font-medium">Spring Cup 2026</span>
-              <span className="text-muted-foreground ml-1 text-[9px]">as AdamantBeanie</span>
+              <span className="text-muted-foreground ml-1 text-[9px]"> as AdamantBeanie</span>
             </div>
             <span className="text-primary font-mono font-semibold">1st</span>
           </div>
           <div className="flex items-center justify-between text-[10px]">
             <div>
               <span className="text-foreground font-medium">Weekly #12</span>
-              <span className="text-muted-foreground ml-1 text-[9px]">as thatguyinabeanie</span>
+              <span className="text-muted-foreground ml-1 text-[9px]"> as thatguyinabeanie</span>
             </div>
             <span className="text-muted-foreground font-mono">5th</span>
           </div>
           <div className="flex items-center justify-between text-[10px]">
             <div>
               <span className="text-foreground font-medium">Ladder Series</span>
-              <span className="text-muted-foreground ml-1 text-[9px]">as AdamantBeanie</span>
+              <span className="text-muted-foreground ml-1 text-[9px]"> as AdamantBeanie</span>
             </div>
             <span className="text-muted-foreground font-mono">3rd</span>
           </div>
