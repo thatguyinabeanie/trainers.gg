@@ -47,6 +47,12 @@ jest.mock("@/lib/supabase/auth", () => ({
       icon: "discord",
       type: "supabase",
     },
+    {
+      name: "twitch",
+      displayName: "Twitch",
+      icon: "twitch",
+      type: "supabase",
+    },
   ],
 }));
 
@@ -92,6 +98,7 @@ describe("LinkedIdentitiesSection", () => {
       await waitFor(() => {
         expect(screen.getByText("X")).toBeInTheDocument();
         expect(screen.getByText("Discord")).toBeInTheDocument();
+        expect(screen.getByText("Twitch")).toBeInTheDocument();
       });
     });
 
@@ -100,8 +107,8 @@ describe("LinkedIdentitiesSection", () => {
 
       await waitFor(() => {
         const notConnected = screen.getAllByText("Not connected");
-        // 2 OAuth providers + Bluesky
-        expect(notConnected).toHaveLength(3);
+        // 3 OAuth providers + Bluesky
+        expect(notConnected).toHaveLength(4);
       });
     });
 
