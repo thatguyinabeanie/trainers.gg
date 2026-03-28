@@ -136,7 +136,7 @@ jobs:
           fi
         env:
           TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
-          TURBO_TEAM: ${{ vars.TURBO_TEAM }}
+          TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
 
       # Register problem matchers so ESLint and tsc errors become
       # inline annotations on the PR Files tab.
@@ -214,7 +214,7 @@ jobs:
           fi
         env:
           TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
-          TURBO_TEAM: ${{ vars.TURBO_TEAM }}
+          TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
 
       - name: Run unit tests with coverage
         run: pnpm test:ci
@@ -400,7 +400,7 @@ jobs:
           fi
         env:
           TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
-          TURBO_TEAM: ${{ vars.TURBO_TEAM }}
+          TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
 
       - name: Seed E2E test users on preview
         if: needs.wait-for-preview.outputs.url != ''
