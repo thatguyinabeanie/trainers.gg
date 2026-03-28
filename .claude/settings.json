@@ -48,6 +48,17 @@
           }
         ]
       }
+    ],
+    "SessionStart": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "BRANCH=$(git branch --show-current 2>/dev/null); if [ \"$BRANCH\" != 'main' ] && [ \"$BRANCH\" != 'master' ] && [ -n \"$BRANCH\" ]; then WEB_CHANGES=$(git diff main --name-only -- apps/web/ 2>/dev/null); if [ -n \"$WEB_CHANGES\" ]; then echo 'This branch has apps/web/ changes. If you have added new features, run /mobile-parity to check for mobile parity tickets.'; fi; fi; exit 0"
+          }
+        ]
+      }
     ]
   },
   "enabledPlugins": {
