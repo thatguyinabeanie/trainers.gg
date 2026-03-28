@@ -10,6 +10,22 @@ set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SUPABASE_DIR="$(dirname "$SCRIPT_DIR")"
+ROOT_DIR="$SUPABASE_DIR/../.."
+
+# Source dev slot library
+if [ -f "$ROOT_DIR/scripts/lib/dev-slots.sh" ]; then
+  source "$ROOT_DIR/scripts/lib/dev-slots.sh"
+  SLOT=$(read_slot)
+else
+  SLOT=0
+fi
+
+# Supabase project name determines Docker container prefix
+if [ "$SLOT" -gt 0 ]; then
+  SUPABASE_PROJECT="supabase-slot-${SLOT}"
+else
+  SUPABASE_PROJECT="supabase"
+fi
 
 # Colors
 GREEN='\033[0;32m'
@@ -70,7 +86,7 @@ echo ""
 # =============================================================================
 # Find and tail the API gateway container
 # =============================================================================
-KONG_CONTAINER=$(docker ps --filter "name=supabase_kong" --format "{{.Names}}" 2>/dev/null | head -1)
+KONG_CONTAINER=$(docker ps --filter "name=${SUPABASE_PROJECT}_kong" --format "{{.Names}}" 2>/dev/null | head -1)
 
 if [ -n "$KONG_CONTAINER" ]; then
   log_success "Supabase is running — tailing API gateway logs ($KONG_CONTAINER)"
@@ -78,7 +94,7 @@ if [ -n "$KONG_CONTAINER" ]; then
   exec docker logs -f --since 0s "$KONG_CONTAINER" 2>&1
 else
   # Fallback: try to find any supabase container
-  ANY_CONTAINER=$(docker ps --filter "name=supabase_" --format "{{.Names}}" 2>/dev/null | head -1)
+  ANY_CONTAINER=$(docker ps --filter "name=${SUPABASE_PROJECT}_" --format "{{.Names}}" 2>/dev/null | head -1)
   if [ -n "$ANY_CONTAINER" ]; then
     log_warn "Kong container not found, tailing $ANY_CONTAINER instead"
     echo ""
