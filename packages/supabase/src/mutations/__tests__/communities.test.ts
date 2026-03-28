@@ -996,7 +996,7 @@ describe("Community Mutations", () => {
 
       expect(result).toEqual({ success: true });
       expect(rpcMock).toHaveBeenCalledWith("has_community_permission", {
-        org_id: orgId,
+        p_community_id: orgId,
         permission_key: "community.staff.manage",
       });
     });

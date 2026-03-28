@@ -125,7 +125,7 @@ describe("communities queries", () => {
       );
       expect(mockClient.rpc).toHaveBeenCalledWith(
         "get_community_tournament_counts",
-        { org_ids: [1, 2] }
+        { community_ids: [1, 2] }
       );
     });
 
@@ -942,7 +942,7 @@ describe("communities queries", () => {
 
       expect(result).toBe(true);
       expect(mockClient.rpc).toHaveBeenCalledWith("has_community_permission", {
-        org_id: 1,
+        p_community_id: 1,
         permission_key: "org_manage",
       });
     });
