@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 import { formatDate } from "@trainers/utils";
-import type { Enums } from "@trainers/supabase";
+import { type Enums } from "@trainers/supabase";
 
 // --- Types ---
 
