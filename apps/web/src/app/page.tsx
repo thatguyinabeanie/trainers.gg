@@ -19,16 +19,8 @@ export default function HomePage() {
   return (
     <div>
       {/* Hero + Bento unified background */}
-      <div className="relative overflow-hidden bg-primary/[0.03] dark:bg-[#070b0a]">
-        {/* Radial glow — subtle, centered behind hero */}
-        <div
-          className="pointer-events-none absolute inset-0 dark:hidden"
-          aria-hidden="true"
-          style={{
-            background:
-              "radial-gradient(ellipse at 50% 130%, oklch(0.7 0.12 183 / 0.04) 0%, transparent 45%)",
-          }}
-        />
+      <div className="relative overflow-hidden dark:bg-[#070b0a]">
+        {/* Radial glow — very subtle, only near hero */}
         <div
           className="pointer-events-none absolute inset-0 hidden dark:block"
           aria-hidden="true"
@@ -38,32 +30,32 @@ export default function HomePage() {
           }}
         />
 
-        {/* Dot grid with fade mask */}
+        {/* Dot grid with fade mask — light mode */}
         <div
           className="pointer-events-none absolute inset-0 dark:hidden"
           aria-hidden="true"
           style={{
             backgroundImage:
-              "radial-gradient(circle, oklch(0.7 0.12 183 / 0.12) 1px, transparent 1px)",
-            backgroundSize: "32px 32px",
+              "radial-gradient(circle, oklch(0.5 0.08 183 / 0.35) 1px, transparent 1px)",
+            backgroundSize: "28px 28px",
             maskImage:
-              "linear-gradient(to bottom, black 30%, transparent 70%)",
+              "linear-gradient(to bottom, black 20%, transparent 60%)",
             WebkitMaskImage:
-              "linear-gradient(to bottom, black 30%, transparent 70%)",
+              "linear-gradient(to bottom, black 20%, transparent 60%)",
           }}
         />
-        {/* Dark mode dot grid */}
+        {/* Dot grid — dark mode */}
         <div
           className="pointer-events-none absolute inset-0 hidden dark:block"
           aria-hidden="true"
           style={{
             backgroundImage:
-              "radial-gradient(circle, oklch(0.7 0.12 183 / 0.08) 1px, transparent 1px)",
-            backgroundSize: "32px 32px",
+              "radial-gradient(circle, oklch(0.7 0.12 183 / 0.18) 1px, transparent 1px)",
+            backgroundSize: "28px 28px",
             maskImage:
-              "linear-gradient(to bottom, black 30%, transparent 70%)",
+              "linear-gradient(to bottom, black 20%, transparent 60%)",
             WebkitMaskImage:
-              "linear-gradient(to bottom, black 30%, transparent 70%)",
+              "linear-gradient(to bottom, black 20%, transparent 60%)",
           }}
         />
 
