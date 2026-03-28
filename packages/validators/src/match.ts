@@ -19,6 +19,7 @@ export const sendMatchMessageSchema = z.object({
   altId: z.number().int().positive("Alt ID must be a positive integer"),
   content: z
     .string()
+    .trim()
     .min(1, "Message content is required")
     .max(500, "Message must not exceed 500 characters")
     .refine((val) => !containsProfanity(val), {

@@ -39,6 +39,7 @@ export const updateProfileSchema = z.object({
     .optional(),
   location: z
     .string()
+    .trim()
     .max(64)
     .refine((val) => !containsProfanity(val), {
       message: PROFANITY_ERROR_MESSAGE,

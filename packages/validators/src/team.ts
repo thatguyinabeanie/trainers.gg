@@ -367,9 +367,18 @@ export function parseAndValidateTeam(
   rawText: string,
   gameFormat: string
 ): ValidationResult {
+  // 0. Check raw text for profanity before parsing
+  const errors: ValidationError[] = [];
+  if (containsProfanity(rawText)) {
+    errors.push({
+      source: "structure",
+      message: PROFANITY_ERROR_MESSAGE,
+    });
+    return { valid: false, team: [], errors };
+  }
+
   // 1. Parse
   const team = parseShowdownText(rawText);
-  const errors: ValidationError[] = [];
 
   if (team.length === 0) {
     errors.push({

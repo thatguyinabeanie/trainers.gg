@@ -388,6 +388,17 @@ describe("parseAndValidateTeam", () => {
     expect(structErrors.length).toBeGreaterThan(0);
   });
 
+  it("rejects raw text containing profanity before parsing", () => {
+    const result = parseAndValidateTeam(
+      "fuck (Pikachu) @ Light Ball\nAbility: Static\nEVs: 252 Atk\nJolly Nature\n- Thunderbolt",
+      "reg-i"
+    );
+    expect(result.valid).toBe(false);
+    expect(result.errors).toHaveLength(1);
+    expect(result.errors[0]!.message).toContain("inappropriate");
+    expect(result.team).toHaveLength(0);
+  });
+
   it("includes parsed team even when validation fails", () => {
     const duplicateText = `${VALID_SHOWDOWN_MON}\n\n${VALID_SHOWDOWN_MON}`;
     const result = parseAndValidateTeam(duplicateText, "reg-i");

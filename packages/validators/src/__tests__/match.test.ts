@@ -71,6 +71,24 @@ describe("sendMatchMessageSchema", () => {
     ).toBe(false);
   });
 
+  it("rejects whitespace-only content", () => {
+    expect(
+      sendMatchMessageSchema.safeParse({
+        altId: 1,
+        content: "   ",
+      }).success
+    ).toBe(false);
+  });
+
+  it("trims whitespace from content", () => {
+    const result = sendMatchMessageSchema.safeParse({
+      altId: 1,
+      content: "  hello  ",
+    });
+    expect(result.success).toBe(true);
+    if (result.success) expect(result.data.content).toBe("hello");
+  });
+
   it("rejects content containing profanity", () => {
     expect(
       sendMatchMessageSchema.safeParse({

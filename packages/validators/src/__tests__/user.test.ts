@@ -115,6 +115,14 @@ describe("updateProfileSchema", () => {
     expect(result.success).toBe(false);
   });
 
+  it("trims whitespace from location", () => {
+    const result = updateProfileSchema.safeParse({
+      location: "  Pallet Town  ",
+    });
+    expect(result.success).toBe(true);
+    if (result.success) expect(result.data.location).toBe("Pallet Town");
+  });
+
   it("accepts clean location", () => {
     const result = updateProfileSchema.safeParse({
       location: "Pallet Town",
