@@ -54,7 +54,7 @@ infra/
 
 | Layer | Technology | Notes |
 | --- | --- | --- |
-| Auth | Supabase Auth | Email/password + OAuth (Google, X, Discord, GitHub, Bluesky) |
+| Auth | Supabase Auth | Email/password + OAuth (X, Discord, Twitch, Bluesky) |
 | Database | Supabase (PostgreSQL) | Row Level Security with auth.uid() |
 | Edge Functions | Supabase Edge Functions | Deno runtime |
 | Social/Identity | AT Protocol (Bluesky) | Decentralized identity and federation |
