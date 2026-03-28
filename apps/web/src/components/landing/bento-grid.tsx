@@ -53,7 +53,7 @@ function BentoCard({
 function AltsPreview() {
   const alts = [
     { name: "thatguyinabeanie", elo: "1482", gxe: "68.2", public: true },
-    { name: "AdamantBeanie", elo: "1350", gxe: "59.1", public: false },
+    { name: "AdamantBeanie", elo: "1350", gxe: "59.1", public: true },
     { name: "CalmBeanie", elo: "1200", gxe: "50.0", public: false },
     { name: "ModestBeanie", elo: "1200", gxe: "50.0", public: false },
   ] as const;
