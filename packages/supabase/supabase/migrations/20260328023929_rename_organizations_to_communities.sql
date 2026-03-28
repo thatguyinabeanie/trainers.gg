@@ -601,7 +601,7 @@ RETURNS TABLE (
 )
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public
+SET search_path = ''
 AS $$
 BEGIN
   RETURN QUERY
@@ -609,7 +609,7 @@ BEGIN
     t.community_id,
     COUNT(*)::bigint AS total_count,
     COUNT(*) FILTER (WHERE t.status = 'active')::bigint AS active_count
-  FROM tournaments t
+  FROM public.tournaments t
   WHERE t.community_id = ANY(community_ids)
     AND t.archived_at IS NULL
   GROUP BY t.community_id;
@@ -624,25 +624,34 @@ COMMENT ON FUNCTION public.get_community_tournament_counts(bigint[]) IS
 
 -- is_community_owner: Check if a user owns a community
 CREATE OR REPLACE FUNCTION public.is_community_owner(p_community_id bigint, p_user_id uuid)
-RETURNS boolean AS $$
+RETURNS boolean
+LANGUAGE SQL STABLE SECURITY DEFINER
+SET search_path = ''
+AS $$
   SELECT EXISTS (
     SELECT 1 FROM public.communities
     WHERE id = p_community_id AND owner_user_id = p_user_id
   )
-$$ LANGUAGE SQL STABLE SECURITY DEFINER;
+$$;
 
 -- get_community_id_from_group_role: Get community_id from a group_role_id
 CREATE OR REPLACE FUNCTION public.get_community_id_from_group_role(p_group_role_id bigint)
-RETURNS bigint AS $$
+RETURNS bigint
+LANGUAGE SQL STABLE SECURITY DEFINER
+SET search_path = ''
+AS $$
   SELECT g.community_id
   FROM public.group_roles gr
   JOIN public.groups g ON gr.group_id = g.id
   WHERE gr.id = p_group_role_id
-$$ LANGUAGE SQL STABLE SECURITY DEFINER;
+$$;
 
 -- user_has_community_role: Check if user has a specific role in a community
 CREATE OR REPLACE FUNCTION public.user_has_community_role(p_community_id bigint, p_user_id uuid, p_role_name text)
-RETURNS boolean AS $$
+RETURNS boolean
+LANGUAGE SQL STABLE SECURITY DEFINER
+SET search_path = ''
+AS $$
   SELECT EXISTS (
     SELECT 1
     FROM public.user_group_roles ugr
@@ -653,7 +662,7 @@ RETURNS boolean AS $$
       AND g.community_id = p_community_id
       AND r.name = p_role_name
   )
-$$ LANGUAGE SQL STABLE SECURITY DEFINER;
+$$;
 
 -- get_role_name_from_group_role: unchanged logic, just recreate to ensure it exists
 -- (it references no renamed objects, but we keep it for consistency)

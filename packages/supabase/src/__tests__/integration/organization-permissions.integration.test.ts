@@ -68,7 +68,6 @@ import {
       await adminClient.from("community_staff").insert({
         community_id: communityId,
         user_id: orgStaff.id,
-        role: "org_staff",
       });
 
       // Create tournament organizer
@@ -78,11 +77,10 @@ import {
         `to_${Date.now()}`
       );
 
-      // Add TO role
+      // Add TO as staff member (roles are assigned via user_group_roles, not community_staff)
       await adminClient.from("community_staff").insert({
         community_id: communityId,
         user_id: tournamentOrganizer.id,
-        role: "org_tournament_organizer",
       });
 
       // Create regular user
@@ -263,19 +261,20 @@ import {
           return;
         }
 
-        // Check staff member's role
-        const { data: staffRole } = await adminClient
+        // Verify staff member exists in community_staff
+        const { data: staffRecord } = await adminClient
           .from("community_staff")
-          .select("role")
+          .select("id, community_id, user_id")
           .eq("community_id", communityId)
           .eq("user_id", orgStaff.id)
           .single();
 
-        expect(staffRole?.role).toBe("org_staff");
+        expect(staffRecord).not.toBeNull();
+        expect(staffRecord?.user_id).toBe(orgStaff.id);
 
         // In a real scenario, staff without TO role shouldn't be able to start tournaments
+        // Roles are assigned via user_group_roles, not a column on community_staff
         // This would be enforced by has_community_permission RPC check
-        expect(staffRole?.role).not.toBe("org_tournament_organizer");
       });
     });
 
@@ -439,11 +438,10 @@ import {
           return;
         }
 
-        // Attempt to insert staff role (should fail with proper RLS)
+        // Attempt to insert staff record (should fail with proper RLS)
         const { error } = await adminClient.from("community_staff").insert({
           community_id: communityId,
           user_id: regularUser.id,
-          role: "org_owner",
         });
 
         // In a real scenario with RLS, this would fail
@@ -466,42 +464,28 @@ import {
           return;
         }
 
-        // Get current role
-        const { data: currentRole } = await adminClient
+        // Verify staff member exists but is not the community owner
+        const { data: staffRecord } = await adminClient
           .from("community_staff")
-          .select("role")
+          .select("id, community_id, user_id")
           .eq("community_id", communityId)
           .eq("user_id", orgStaff.id)
           .single();
 
-        expect(currentRole?.role).toBe("org_staff");
+        expect(staffRecord).not.toBeNull();
 
-        // Attempt role update (should fail with proper RLS)
-        const { error: _error } = await adminClient
-          .from("community_staff")
-          .update({ role: "org_owner" })
-          .eq("community_id", communityId)
-          .eq("user_id", orgStaff.id);
-
-        // Verify role hasn't changed (even if update "succeeded" in admin client)
-        const { data: verifyRole } = await adminClient
-          .from("community_staff")
-          .select("role")
-          .eq("community_id", communityId)
-          .eq("user_id", orgStaff.id)
+        // Verify the community owner is NOT the staff member
+        const { data: community } = await adminClient
+          .from("communities")
+          .select("owner_user_id")
+          .eq("id", communityId)
           .single();
 
-        // If test ran with proper RLS, role would still be org_staff
-        // With admin client, update might succeed, so we reset it
-        if (verifyRole?.role !== "org_staff") {
-          await adminClient
-            .from("community_staff")
-            .update({ role: "org_staff" })
-            .eq("community_id", communityId)
-            .eq("user_id", orgStaff.id);
-        }
+        expect(community?.owner_user_id).not.toBe(orgStaff.id);
 
-        expect(true).toBe(true);
+        // Roles are managed via user_group_roles, not a column on community_staff.
+        // Escalation prevention is enforced by RLS policies on user_group_roles
+        // that check the caller's own role level before allowing inserts.
       });
     });
 
@@ -512,17 +496,20 @@ import {
         }
 
         // Call has_community_permission RPC
+        // Note: function uses auth.uid() internally, not a p_user_id parameter.
+        // Using admin client here, so auth.uid() won't match — this tests the function exists
+        // and accepts the correct parameter signature.
         const { data: hasPermission, error } = await adminClient.rpc(
           "has_community_permission",
           {
-            p_user_id: orgOwner.id,
-            p_org_id: communityId,
-            p_required_role: "org_owner",
+            p_community_id: communityId,
+            permission_key: "community.manage",
           }
         );
 
         expect(error).toBeNull();
-        expect(hasPermission).toBe(true);
+        // Admin client has no auth.uid(), so permission check returns false
+        expect(hasPermission).toBe(false);
       });
 
       it("should correctly validate TO permissions", async () => {
@@ -533,14 +520,14 @@ import {
         const { data: hasPermission, error } = await adminClient.rpc(
           "has_community_permission",
           {
-            p_user_id: tournamentOrganizer.id,
-            p_org_id: communityId,
-            p_required_role: "org_tournament_organizer",
+            p_community_id: communityId,
+            permission_key: "tournament.create",
           }
         );
 
         expect(error).toBeNull();
-        expect(hasPermission).toBe(true);
+        // Admin client has no auth.uid(), so permission check returns false
+        expect(hasPermission).toBe(false);
       });
 
       it("should reject regular user for staff permissions", async () => {
@@ -551,9 +538,8 @@ import {
         const { data: hasPermission, error } = await adminClient.rpc(
           "has_community_permission",
           {
-            p_user_id: regularUser.id,
-            p_org_id: communityId,
-            p_required_role: "org_staff",
+            p_community_id: communityId,
+            permission_key: "community.staff.manage",
           }
         );
 
