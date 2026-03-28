@@ -246,39 +246,61 @@ function CommunityPreview() {
   );
 }
 
-function UnderConstructionPreview() {
-  const items = [
-    {
-      emoji: "📊",
-      label: "Meta Analytics",
-      desc: "Usage rates, win rates, cores",
-    },
-    { emoji: "📝", label: "Articles", desc: "Guides, reports, recaps" },
-    { emoji: "🎓", label: "Coaching", desc: "Find a personal coach" },
-    { emoji: "⚔️", label: "Builder", desc: "Build teams with analytics-powered suggestions from public tournament data" },
-  ] as const;
-
-  return (
-    <div className="space-y-1.5">
-      {items.map(({ emoji, label, desc }) => (
-        <div
-          key={label}
-          className="flex items-center gap-2 rounded-md bg-background/60 px-3 py-2 dark:bg-black/30"
-        >
-          <span className="shrink-0 text-sm">{emoji}</span>
-          <div>
-            <p className="text-foreground text-[11px] font-semibold">{label}</p>
-            <p className="text-muted-foreground text-[10px]">{desc}</p>
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}
+const underConstructionItems = [
+  {
+    emoji: "📊",
+    label: "Meta Analytics",
+    desc: "Track usage rates, win rates, and popular cores drawn from publicly played tournament teams. See what's working in the current meta before you build.",
+  },
+  {
+    emoji: "⚔️",
+    label: "Builder",
+    desc: "Build and share teams with analytics-powered suggestions from public tournament data. Get coverage checks, spread insights, and core recommendations as you build.",
+  },
+  {
+    emoji: "📝",
+    label: "Articles",
+    desc: "Publish guides, team reports, and tournament recaps. Use articles as private notes for yourself or share insights with the whole community.",
+  },
+  {
+    emoji: "🎓",
+    label: "Coaching",
+    desc: "Find coaches in the player directory, identified by a coach badge. Book sessions directly, share teams for prep, and get personalized guidance from players who know the meta.",
+  },
+] as const;
 
 // ---------------------------------------------------------------------------
 // Exported component
 // ---------------------------------------------------------------------------
+
+export function UnderConstruction() {
+  return (
+    <section className="mx-auto max-w-screen-2xl px-6 py-12 sm:px-10 sm:py-16">
+      <div className="mb-8 text-center">
+        <p className="text-primary/60 font-mono text-[11px] font-medium tracking-[3px] uppercase">
+          Under Construction
+        </p>
+        <h2 className="text-foreground mt-2 text-2xl font-extrabold tracking-tight sm:text-3xl">
+          What we&apos;re building next.
+        </h2>
+      </div>
+      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+        {underConstructionItems.map(({ emoji, label, desc }) => (
+          <div
+            key={label}
+            className="bg-muted/60 rounded-xl border border-dashed border-primary/20 p-6 dark:bg-[#1a1f2e]"
+          >
+            <span className="mb-3 block text-2xl">{emoji}</span>
+            <h3 className="text-foreground text-base font-bold">{label}</h3>
+            <p className="text-muted-foreground mt-2 text-sm leading-relaxed">
+              {desc}
+            </p>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
 
 export function BentoGrid() {
   return (
@@ -318,25 +340,15 @@ export function BentoGrid() {
           preview={<CompetePreview />}
         />
 
-        {/* Row 3: Community (2-col) + Under Construction */}
+        {/* Row 3: Community (full width) */}
         <BentoCard
           step="08"
           label="community"
           headline="Find who's competing — and where they hang out."
           description="Search players by format, country, or name. Browse competitive Discord servers."
           preview={<CommunityPreview />}
-          className="md:col-span-2 lg:col-span-2"
+          className="md:col-span-2 lg:col-span-3"
         />
-        <div
-          className={cn(
-            "bg-primary/[0.03] rounded-xl border border-dashed border-primary/20 p-6"
-          )}
-        >
-          <p className="text-muted-foreground mb-2.5 text-[9px] tracking-[2px] uppercase">
-            Under Construction
-          </p>
-          <UnderConstructionPreview />
-        </div>
       </div>
     </section>
   );

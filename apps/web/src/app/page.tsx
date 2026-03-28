@@ -1,7 +1,7 @@
 import { type Metadata } from "next";
 import { HeroCTA } from "@/components/landing/hero-cta";
 import { HeroStats } from "@/components/landing/hero-stats";
-import { BentoGrid } from "@/components/landing/bento-grid";
+import { BentoGrid, UnderConstruction } from "@/components/landing/bento-grid";
 
 export const metadata: Metadata = {
   title: "trainers.gg — Everything a trainer needs",
@@ -71,6 +71,9 @@ export default function HomePage() {
 
       {/* Feature Bento Grid */}
       <BentoGrid />
+
+      {/* Under Construction */}
+      <UnderConstruction />
 
       {/* Closing CTA */}
       <section className="bg-primary/5 relative overflow-hidden py-12 sm:py-16 dark:bg-[#070b0a]">
