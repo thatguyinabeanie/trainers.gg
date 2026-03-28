@@ -104,9 +104,9 @@ export async function submitCommunityRequest(
 }
 
 /**
- * Grant an organization request (admin action).
+ * Grant a community request (admin action).
  * Accepts both pending and previously rejected requests.
- * Creates the org, sets requester as owner/staff, creates notification.
+ * Creates the community, sets requester as owner/staff, creates notification.
  * Uses service role client (bypasses RLS).
  */
 export async function grantCommunityRequest(

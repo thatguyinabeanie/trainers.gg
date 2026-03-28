@@ -711,7 +711,7 @@ describe("Organization Request Mutations", () => {
               }),
             });
           } else if (requestCallCount === 4) {
-            // Update duplicate to rejected
+            // Update duplicate to cancelled
             builder.eq.mockReturnValue({ error: null });
             updateCalls.push({ table, id: duplicatePending.id });
           }
@@ -737,7 +737,26 @@ describe("Organization Request Mutations", () => {
 
       await grantCommunityRequest(mockClient, request.id, ADMIN_USER_ID);
 
-      // Verify audit_log was called at least twice (original approval + duplicate cancellation)
+      // Verify the duplicate pending request was updated (cancelled)
+      expect(updateCalls).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            table: "community_requests",
+            id: duplicatePending.id,
+          }),
+        ])
+      );
+
+      // Verify a specific audit_log entry was created for the duplicate cancellation
+      expect(auditInserts).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            action: "admin.org_request_cancelled",
+          }),
+        ])
+      );
+
+      // Also ensure audit_log was called at least twice (original approval + duplicate cancellation)
       const auditCalls = fromSpy.mock.calls.filter(([t]) => t === "audit_log");
       expect(auditCalls.length).toBeGreaterThanOrEqual(2);
     });
