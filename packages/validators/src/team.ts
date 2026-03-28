@@ -2,7 +2,7 @@ import { z } from "zod";
 import { Teams } from "@pkmn/sets";
 import { type PokemonSet } from "@pkmn/sets";
 import { TeamValidator } from "@pkmn/sim";
-import { containsProfanity } from "./profanity";
+import { containsProfanity, PROFANITY_ERROR_MESSAGE } from "./profanity";
 
 // ---------------------------------------------------------------------------
 // Format mapping: trainers.gg game_format → @pkmn/sim format ID
@@ -367,9 +367,18 @@ export function parseAndValidateTeam(
   rawText: string,
   gameFormat: string
 ): ValidationResult {
+  // 0. Check raw text for profanity before parsing
+  const errors: ValidationError[] = [];
+  if (containsProfanity(rawText)) {
+    errors.push({
+      source: "structure",
+      message: PROFANITY_ERROR_MESSAGE,
+    });
+    return { valid: false, team: [], errors };
+  }
+
   // 1. Parse
   const team = parseShowdownText(rawText);
-  const errors: ValidationError[] = [];
 
   if (team.length === 0) {
     errors.push({
@@ -408,7 +417,10 @@ export const teamSubmissionSchema = z.object({
   rawText: z
     .string()
     .min(1, "Team text is required")
-    .max(10000, "Team text too long"),
+    .max(10000, "Team text too long")
+    .refine((val) => !containsProfanity(val), {
+      message: PROFANITY_ERROR_MESSAGE,
+    }),
 });
 
 /** Input type inferred from `teamSubmissionSchema`. */

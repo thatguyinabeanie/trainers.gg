@@ -64,7 +64,7 @@ function AltsPreview() {
         {alts.map(({ name, elo, gxe, public: isPublic }) => (
           <div
             key={name}
-            className="flex items-center gap-2 border-b border-border/40 py-1.5 last:border-0"
+            className="border-border/40 flex items-center gap-2 border-b py-1.5 last:border-0"
           >
             <span
               className={cn(
@@ -81,7 +81,7 @@ function AltsPreview() {
           </div>
         ))}
       </div>
-      <div className="text-muted-foreground mt-2 flex items-center gap-3 border-t border-border/40 pt-2 text-[10px]">
+      <div className="text-muted-foreground border-border/40 mt-2 flex items-center gap-3 border-t pt-2 text-[10px]">
         <span className="flex items-center gap-1">
           <span className="size-2 rounded-full bg-green-500" /> Public
         </span>
@@ -144,9 +144,7 @@ function ProfilePreview() {
           </p>
         </div>
         <div className="flex-1 text-center">
-          <p className="text-primary font-mono text-base font-extrabold">
-            54%
-          </p>
+          <p className="text-primary font-mono text-base font-extrabold">54%</p>
           <p className="text-muted-foreground text-[8px] tracking-[1px] uppercase">
             Win rate
           </p>
@@ -154,35 +152,45 @@ function ProfilePreview() {
       </div>
 
       {/* Recent results */}
-      <div className="mb-2.5 border-t border-border/40 pt-2">
+      <div className="border-border/40 mb-2.5 border-t pt-2">
         <p className="text-muted-foreground mb-1 text-[8px] tracking-[1px] uppercase">
           Recent results
         </p>
         <div className="space-y-1">
           <div className="flex items-center justify-between text-[10px]">
             <div>
-              <span className="text-foreground font-medium">Spring Cup 2026</span>
-              <span className="text-muted-foreground ml-1 text-[9px]"> as AdamantBeanie</span>
+              <span className="text-foreground font-medium">
+                Spring Cup 2026
+              </span>
+              <span className="text-muted-foreground ml-1 text-[9px]">
+                {" "}
+                as AdamantBeanie
+              </span>
             </div>
             <span className="text-primary font-mono font-semibold">1st</span>
           </div>
           <div className="flex items-center justify-between text-[10px]">
             <div>
               <span className="text-foreground font-medium">Weekly #12</span>
-              <span className="text-muted-foreground ml-1 text-[9px]"> as thatguyinabeanie</span>
+              <span className="text-muted-foreground ml-1 text-[9px]">
+                {" "}
+                as thatguyinabeanie
+              </span>
             </div>
             <span className="text-muted-foreground font-mono">5th</span>
           </div>
           <div className="flex items-center justify-between text-[10px]">
             <div>
               <span className="text-foreground font-medium">Ladder Series</span>
-              <span className="text-muted-foreground ml-1 text-[9px]"> as AdamantBeanie</span>
+              <span className="text-muted-foreground ml-1 text-[9px]">
+                {" "}
+                as AdamantBeanie
+              </span>
             </div>
             <span className="text-muted-foreground font-mono">3rd</span>
           </div>
         </div>
       </div>
-
     </>
   );
 }
@@ -288,7 +296,7 @@ export function UnderConstruction() {
         {underConstructionItems.map(({ emoji, label, desc }) => (
           <div
             key={label}
-            className="bg-muted/60 rounded-xl border border-dashed border-primary/20 p-6 dark:bg-[#1a1f2e]"
+            className="bg-muted/60 border-primary/20 rounded-xl border border-dashed p-6 dark:bg-[#1a1f2e]"
           >
             <span className="mb-3 block text-2xl">{emoji}</span>
             <h3 className="text-foreground text-base font-bold">{label}</h3>

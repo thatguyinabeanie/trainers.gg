@@ -68,9 +68,7 @@ export async function POST(request: NextRequest) {
   // Skip this check for local dev (no VERCEL_ENV) — production ref won't be set locally.
   if (vercelEnv) {
     const supabaseUrl =
-      process.env.NEXT_PUBLIC_SUPABASE_URL ??
-      process.env.SUPABASE_URL ??
-      "";
+      process.env.NEXT_PUBLIC_SUPABASE_URL ?? process.env.SUPABASE_URL ?? "";
     const projectRefMatch = supabaseUrl.match(
       /https:\/\/([a-z0-9]+)\.supabase\.co/i
     );
