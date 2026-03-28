@@ -8,10 +8,10 @@ import { cn } from "@/lib/utils";
 // --- Types ---
 
 /**
- * Shape of each row returned by listOrganizationsAdmin.
+ * Shape of each row returned by listCommunitiesAdmin.
  * The `owner` field is a joined relationship from the users table.
  */
-export interface OrgRow {
+export interface CommunityRow {
   id: number;
   name: string;
   slug: string;
@@ -39,7 +39,7 @@ export interface OrgRow {
 // --- Label / color mappings ---
 
 /** Human-readable labels for organization statuses */
-export const orgStatusLabels: Record<OrgRow["status"], string> = {
+export const communityStatusLabels: Record<CommunityRow["status"], string> = {
   pending: "Pending",
   active: "Active",
   rejected: "Rejected",
@@ -47,7 +47,7 @@ export const orgStatusLabels: Record<OrgRow["status"], string> = {
 };
 
 /** Tailwind classes for each organization status badge */
-const orgStatusClasses: Record<OrgRow["status"], string> = {
+const communityStatusClasses: Record<CommunityRow["status"], string> = {
   pending:
     "bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/25",
   active:
@@ -58,14 +58,14 @@ const orgStatusClasses: Record<OrgRow["status"], string> = {
 };
 
 /** Human-readable labels for organization tiers */
-export const orgTierLabels: Record<OrgRow["tier"], string> = {
+export const communityTierLabels: Record<CommunityRow["tier"], string> = {
   regular: "Regular",
   verified: "Verified",
   partner: "Partner",
 };
 
 /** Tailwind classes for each organization tier badge */
-const orgTierClasses: Record<OrgRow["tier"], string> = {
+const communityTierClasses: Record<CommunityRow["tier"], string> = {
   regular: "bg-gray-500/15 text-gray-600 dark:text-gray-400 border-gray-500/25",
   verified:
     "bg-blue-500/15 text-blue-600 dark:text-blue-400 border-blue-500/25",
@@ -85,7 +85,7 @@ function formatDate(dateStr: string): string {
 
 // --- Column definitions ---
 
-const columnHelper = createColumnHelper<OrgRow>();
+const columnHelper = createColumnHelper<CommunityRow>();
 
 export const columns = [
   // Name column: org name with slug underneath
@@ -110,8 +110,8 @@ export const columns = [
     cell: (info) => {
       const status = info.getValue();
       return (
-        <Badge variant="outline" className={cn(orgStatusClasses[status])}>
-          {orgStatusLabels[status]}
+        <Badge variant="outline" className={cn(communityStatusClasses[status])}>
+          {communityStatusLabels[status]}
         </Badge>
       );
     },
@@ -123,8 +123,8 @@ export const columns = [
     cell: (info) => {
       const tier = info.getValue();
       return (
-        <Badge variant="outline" className={cn(orgTierClasses[tier])}>
-          {orgTierLabels[tier]}
+        <Badge variant="outline" className={cn(communityTierClasses[tier])}>
+          {communityTierLabels[tier]}
         </Badge>
       );
     },

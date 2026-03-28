@@ -3,13 +3,13 @@
 import * as React from "react";
 import Link from "next/link";
 import { type ColumnDef } from "@tanstack/react-table";
-import { type OrganizationWithCounts } from "@trainers/supabase";
+import { type CommunityWithCounts } from "@trainers/supabase";
 import { DataTable, SortableHeader } from "@/components/ui/data-table";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Building2, Trophy } from "lucide-react";
 
-function getOrganizationInitials(name: string): string {
+function getCommunityInitials(name: string): string {
   return name
     .split(" ")
     .map((word) => word[0])
@@ -29,7 +29,7 @@ function getTierBadge(tier: string | null) {
   );
 }
 
-export const organizationsColumns: ColumnDef<OrganizationWithCounts>[] = [
+export const communitiesColumns: ColumnDef<CommunityWithCounts>[] = [
   {
     accessorKey: "name",
     header: ({ column }) => (
@@ -45,7 +45,7 @@ export const organizationsColumns: ColumnDef<OrganizationWithCounts>[] = [
               {org.icon ? (
                 <span className="text-base">{org.icon}</span>
               ) : (
-                getOrganizationInitials(org.name)
+                getCommunityInitials(org.name)
               )}
             </AvatarFallback>
           </Avatar>
@@ -108,16 +108,16 @@ export const organizationsColumns: ColumnDef<OrganizationWithCounts>[] = [
   },
 ];
 
-interface OrganizationsDataTableProps {
-  data: OrganizationWithCounts[];
+interface CommunitiesDataTableProps {
+  data: CommunityWithCounts[];
 }
 
-export function OrganizationsDataTable({ data }: OrganizationsDataTableProps) {
+export function CommunitiesDataTable({ data }: CommunitiesDataTableProps) {
   return (
     <div className="space-y-4">
       {/* Desktop: DataTable */}
       <div className="hidden md:block">
-        <DataTable columns={organizationsColumns} data={data} />
+        <DataTable columns={communitiesColumns} data={data} />
       </div>
 
       {/* Mobile: Card list */}
@@ -139,7 +139,7 @@ export function OrganizationsDataTable({ data }: OrganizationsDataTableProps) {
                     {org.icon ? (
                       <span className="text-lg">{org.icon}</span>
                     ) : (
-                      getOrganizationInitials(org.name)
+                      getCommunityInitials(org.name)
                     )}
                   </AvatarFallback>
                 </Avatar>

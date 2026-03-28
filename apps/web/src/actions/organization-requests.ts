@@ -5,12 +5,12 @@ import { createClient } from "@/lib/supabase/server";
 import { getErrorMessage } from "@/lib/utils";
 import {
   type ActionResult,
-  type OrganizationSocialLink,
+  type CommunitySocialLink,
   type SocialLinkPlatform,
   submitOrganizationRequestSchema,
   type SubmitOrganizationRequestInput,
 } from "@trainers/validators";
-import { submitOrganizationRequest as submitOrganizationRequestMutation } from "@trainers/supabase";
+import { submitCommunityRequest as submitCommunityRequestMutation } from "@trainers/supabase";
 import { CacheTags } from "@/lib/cache";
 
 const HANDLE_TO_URL: {
@@ -39,8 +39,8 @@ const HANDLE_TO_URL: {
 
 function buildSocialLinks(
   data: SubmitOrganizationRequestInput
-): OrganizationSocialLink[] {
-  const links: OrganizationSocialLink[] = [];
+): CommunitySocialLink[] {
+  const links: CommunitySocialLink[] = [];
 
   for (const m of HANDLE_TO_URL) {
     const handle = data[m.field] as string | undefined;
@@ -73,7 +73,7 @@ export async function submitOrganizationRequestAction(
 
   try {
     const supabase = await createClient();
-    const result = await submitOrganizationRequestMutation(supabase, {
+    const result = await submitCommunityRequestMutation(supabase, {
       name: parsed.data.name.trim(),
       slug: parsed.data.slug.trim(),
       description: parsed.data.description?.trim(),

@@ -2,7 +2,7 @@ import type { Database } from "../types";
 import type { TypedClient } from "../client";
 type OrganizationRow = Database["public"]["Tables"]["organizations"]["Row"];
 
-export type OrganizationWithCounts = OrganizationRow & {
+export type CommunityWithCounts = OrganizationRow & {
   activeTournamentsCount: number;
   totalTournamentsCount: number;
 };
@@ -10,9 +10,9 @@ export type OrganizationWithCounts = OrganizationRow & {
 /**
  * List all public (active) organizations with tournament counts
  */
-export async function listPublicOrganizations(
+export async function listPublicCommunities(
   supabase: TypedClient
-): Promise<OrganizationWithCounts[]> {
+): Promise<CommunityWithCounts[]> {
   const { data: organizations, error } = await supabase
     .from("organizations")
     .select("*")
@@ -43,7 +43,7 @@ export async function listPublicOrganizations(
   }
 
   // Add counts to organizations
-  const orgsWithCounts: OrganizationWithCounts[] = organizations.map((org) => ({
+  const orgsWithCounts: CommunityWithCounts[] = organizations.map((org) => ({
     ...org,
     activeTournamentsCount: countMap[String(org.id)]?.active ?? 0,
     totalTournamentsCount: countMap[String(org.id)]?.total ?? 0,
@@ -55,7 +55,7 @@ export async function listPublicOrganizations(
 /**
  * List all organizations with pagination
  */
-export async function listOrganizations(
+export async function listCommunities(
   supabase: TypedClient,
   options: { limit?: number; offset?: number; searchTerm?: string } = {}
 ) {
@@ -112,10 +112,7 @@ export async function listOrganizations(
 /**
  * Get organization by slug with full details
  */
-export async function getOrganizationBySlug(
-  supabase: TypedClient,
-  slug: string
-) {
+export async function getCommunityBySlug(supabase: TypedClient, slug: string) {
   const { data: organization, error } = await supabase
     .from("organizations")
     .select(
@@ -216,7 +213,7 @@ export async function getOrganizationBySlug(
 /**
  * Get organization by ID
  */
-export async function getOrganizationById(supabase: TypedClient, id: number) {
+export async function getCommunityById(supabase: TypedClient, id: number) {
   const { data, error } = await supabase
     .from("organizations")
     .select(
@@ -235,7 +232,7 @@ export async function getOrganizationById(supabase: TypedClient, id: number) {
 /**
  * List organizations where user is owner or staff
  */
-export async function listMyOrganizations(
+export async function listMyCommunities(
   supabase: TypedClient,
   userId?: string
 ) {
@@ -309,7 +306,7 @@ export async function listMyOrganizations(
  * Check if user can manage organization (owner or has permission)
  * Note: Ownership is now at the user level, but RBAC permissions are still via alts
  */
-export async function canManageOrganization(
+export async function canManageCommunity(
   supabase: TypedClient,
   organizationId: number,
   userId: string
@@ -345,7 +342,7 @@ export async function canManageOrganization(
 /**
  * List organization staff with user details
  */
-export async function listOrganizationStaff(
+export async function listCommunityStaff(
   supabase: TypedClient,
   organizationId: number
 ) {
@@ -366,7 +363,7 @@ export async function listOrganizationStaff(
 /**
  * Check if user has access to organization (owner or staff)
  */
-export async function hasOrganizationAccess(
+export async function hasCommunityAccess(
   supabase: TypedClient,
   organizationId: number,
   userId: string
@@ -396,7 +393,7 @@ export async function hasOrganizationAccess(
 /**
  * Get pending invitations for a user
  */
-export async function getMyOrganizationInvitations(
+export async function getMyCommunityInvitations(
   supabase: TypedClient,
   userId: string
 ) {
@@ -419,7 +416,7 @@ export async function getMyOrganizationInvitations(
 /**
  * Get invitations for an organization
  */
-export async function getOrganizationInvitations(
+export async function getCommunityInvitations(
   supabase: TypedClient,
   organizationId: number
 ) {
@@ -442,7 +439,7 @@ export async function getOrganizationInvitations(
 /**
  * List organizations where user is the owner (for TO dashboard access in Phase 1)
  */
-export async function listMyOwnedOrganizations(
+export async function listMyOwnedCommunities(
   supabase: TypedClient,
   userId?: string
 ) {
@@ -469,7 +466,7 @@ export async function listMyOwnedOrganizations(
 /**
  * Get organization by slug with tournament statistics for TO dashboard
  */
-export async function getOrganizationWithTournamentStats(
+export async function getCommunityWithTournamentStats(
   supabase: TypedClient,
   orgSlug: string
 ) {
@@ -541,7 +538,7 @@ export async function getOrganizationWithTournamentStats(
 /**
  * List tournaments for an organization with optional status filter
  */
-export async function listOrganizationTournaments(
+export async function listCommunityTournaments(
   supabase: TypedClient,
   organizationId: number,
   options: {
@@ -635,7 +632,7 @@ export type StaffWithRole = {
 /**
  * List organization staff with their assigned roles via groups
  */
-export async function listOrganizationStaffWithRoles(
+export async function listCommunityStaffWithRoles(
   supabase: TypedClient,
   organizationId: number
 ): Promise<StaffWithRole[]> {
@@ -801,7 +798,7 @@ export async function listOrganizationStaffWithRoles(
 /**
  * Organization group with its role
  */
-export type OrganizationGroup = {
+export type CommunityGroup = {
   id: number;
   name: string;
   description: string | null;
@@ -816,10 +813,10 @@ export type OrganizationGroup = {
 /**
  * List all groups for an organization with their roles
  */
-export async function listOrganizationGroups(
+export async function listCommunityGroups(
   supabase: TypedClient,
   organizationId: number
-): Promise<OrganizationGroup[]> {
+): Promise<CommunityGroup[]> {
   const { data: groups, error } = await supabase
     .from("groups")
     .select(
@@ -838,7 +835,7 @@ export async function listOrganizationGroups(
   if (error) throw error;
 
   // Get member counts for each group
-  const result: OrganizationGroup[] = [];
+  const result: CommunityGroup[] = [];
 
   for (const group of groups ?? []) {
     // Get the group_role ids for this group
@@ -961,3 +958,44 @@ export async function hasOrgPermission(
 
   return data === true;
 }
+
+// =============================================================================
+// Deprecated aliases (backward compatibility)
+// =============================================================================
+
+/** @deprecated Use CommunityWithCounts instead */
+export type OrganizationWithCounts = CommunityWithCounts;
+/** @deprecated Use CommunityGroup instead */
+export type OrganizationGroup = CommunityGroup;
+
+/** @deprecated Use listPublicCommunities instead */
+export const listPublicOrganizations = listPublicCommunities;
+/** @deprecated Use listCommunities instead */
+export const listOrganizations = listCommunities;
+/** @deprecated Use getCommunityBySlug instead */
+export const getOrganizationBySlug = getCommunityBySlug;
+/** @deprecated Use getCommunityById instead */
+export const getOrganizationById = getCommunityById;
+/** @deprecated Use listMyCommunities instead */
+export const listMyOrganizations = listMyCommunities;
+/** @deprecated Use listMyOwnedCommunities instead */
+export const listMyOwnedOrganizations = listMyOwnedCommunities;
+/** @deprecated Use getCommunityWithTournamentStats instead */
+export const getOrganizationWithTournamentStats =
+  getCommunityWithTournamentStats;
+/** @deprecated Use listCommunityTournaments instead */
+export const listOrganizationTournaments = listCommunityTournaments;
+/** @deprecated Use canManageCommunity instead */
+export const canManageOrganization = canManageCommunity;
+/** @deprecated Use listCommunityStaff instead */
+export const listOrganizationStaff = listCommunityStaff;
+/** @deprecated Use hasCommunityAccess instead */
+export const hasOrganizationAccess = hasCommunityAccess;
+/** @deprecated Use getMyCommunityInvitations instead */
+export const getMyOrganizationInvitations = getMyCommunityInvitations;
+/** @deprecated Use getCommunityInvitations instead */
+export const getOrganizationInvitations = getCommunityInvitations;
+/** @deprecated Use listCommunityStaffWithRoles instead */
+export const listOrganizationStaffWithRoles = listCommunityStaffWithRoles;
+/** @deprecated Use listCommunityGroups instead */
+export const listOrganizationGroups = listCommunityGroups;

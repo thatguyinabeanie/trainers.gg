@@ -7,7 +7,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "@trainers/validators";
 import { generateSlug } from "@trainers/utils";
 import { useSupabaseQuery, useSupabaseMutation } from "@/lib/supabase";
-import { getOrganizationBySlug, createTournament } from "@trainers/supabase";
+import { getCommunityBySlug, createTournament } from "@trainers/supabase";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -184,8 +184,8 @@ export function CreateTournamentClient({
   const [currentStep, setCurrentStep] = useState(1);
 
   // Fetch organization by slug
-  const orgQueryFn = (supabase: Parameters<typeof getOrganizationBySlug>[0]) =>
-    getOrganizationBySlug(supabase, orgSlug);
+  const orgQueryFn = (supabase: Parameters<typeof getCommunityBySlug>[0]) =>
+    getCommunityBySlug(supabase, orgSlug);
 
   const { data: organization, isLoading: orgLoading } = useSupabaseQuery(
     orgQueryFn,

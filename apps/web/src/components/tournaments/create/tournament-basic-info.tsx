@@ -1,7 +1,7 @@
 "use client";
 
 import { useSupabaseQuery } from "@/lib/supabase";
-import { listMyOrganizations } from "@trainers/supabase";
+import { listMyCommunities } from "@trainers/supabase";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -25,7 +25,7 @@ export function TournamentBasicInfo({
   updateFormData,
 }: TournamentBasicInfoProps) {
   const { data: organizations } = useSupabaseQuery(
-    (supabase) => listMyOrganizations(supabase),
+    (supabase) => listMyCommunities(supabase),
     []
   );
 

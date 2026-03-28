@@ -2,7 +2,7 @@
 
 import { useState, useTransition, useRef, use } from "react";
 import { useSupabaseQuery } from "@/lib/supabase";
-import { getOrganizationBySlug } from "@trainers/supabase";
+import { getCommunityBySlug } from "@trainers/supabase";
 import type { TypedSupabaseClient } from "@trainers/supabase";
 import { updateOrganization } from "@/actions/communities";
 import { uploadOrgLogo, removeOrgLogo } from "@/actions/community-logo";
@@ -31,8 +31,8 @@ import { toast } from "sonner";
 import { ALLOWED_IMAGE_TYPES, MAX_IMAGE_SIZE } from "@trainers/validators";
 import {
   SOCIAL_LINK_PLATFORMS,
-  organizationSocialLinksSchema,
-  type OrganizationSocialLink,
+  communitySocialLinksSchema,
+  type CommunitySocialLink,
   type SocialLinkPlatform,
 } from "@trainers/validators";
 import { PlatformIcon } from "@/components/communities/social-link-icons";
@@ -64,8 +64,8 @@ const PLATFORM_PLACEHOLDERS: Partial<Record<SocialLinkPlatform, string>> = {
  * Parse the raw JSONB social_links field into a typed array.
  * Returns empty array if parsing fails.
  */
-function parseSocialLinks(raw: unknown): OrganizationSocialLink[] {
-  const result = organizationSocialLinksSchema.safeParse(raw);
+function parseSocialLinks(raw: unknown): CommunitySocialLink[] {
+  const result = communitySocialLinksSchema.safeParse(raw);
   return result.success ? result.data : [];
 }
 
@@ -81,7 +81,7 @@ export default function OrgSettingsPage({ params }: PageProps) {
   const { orgSlug } = use(params);
 
   const orgQueryFn = (client: TypedSupabaseClient) =>
-    getOrganizationBySlug(client, orgSlug);
+    getCommunityBySlug(client, orgSlug);
 
   const {
     data: org,
@@ -147,7 +147,7 @@ function OrgProfileForm({ org, onSaved }: OrgProfileFormProps) {
 
   const [name, setName] = useState(org.name);
   const [description, setDescription] = useState(org.description ?? "");
-  const [socialLinks, setSocialLinks] = useState<OrganizationSocialLink[]>(() =>
+  const [socialLinks, setSocialLinks] = useState<CommunitySocialLink[]>(() =>
     parseSocialLinks(org.social_links)
   );
 
@@ -212,7 +212,7 @@ function OrgProfileForm({ org, onSaved }: OrgProfileFormProps) {
     const validLinks = socialLinks
       .filter((link) => link.url.trim())
       .map((link) => ({ ...link, url: link.url.trim() }));
-    const parseResult = organizationSocialLinksSchema.safeParse(validLinks);
+    const parseResult = communitySocialLinksSchema.safeParse(validLinks);
     if (!parseResult.success) {
       const firstError = parseResult.error.issues[0];
       toast.error(firstError?.message ?? "Invalid social links");
@@ -375,8 +375,8 @@ function SocialLinksEditor({
   links,
   onChange,
 }: {
-  links: OrganizationSocialLink[];
-  onChange: (links: OrganizationSocialLink[]) => void;
+  links: CommunitySocialLink[];
+  onChange: (links: CommunitySocialLink[]) => void;
 }) {
   const addLink = () => {
     onChange([...links, { platform: "website", url: "" }]);
@@ -388,7 +388,7 @@ function SocialLinksEditor({
 
   const updateLink = (
     index: number,
-    field: keyof OrganizationSocialLink,
+    field: keyof CommunitySocialLink,
     value: string
   ) => {
     const updated = links.map((link, i) => {

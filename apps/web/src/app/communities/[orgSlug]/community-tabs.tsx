@@ -20,17 +20,17 @@ import {
 } from "@/components/tournaments/tournament-list";
 import type { TournamentWithOrg } from "@trainers/supabase";
 
-interface OrganizationTabsProps {
+interface CommunityTabsProps {
   tournaments: TournamentWithOrg[];
   orgSlug: string;
   canManage: boolean;
 }
 
-export function OrganizationTabs({
+export function CommunityTabs({
   tournaments,
   orgSlug,
   canManage,
-}: OrganizationTabsProps) {
+}: CommunityTabsProps) {
   // Group tournaments by status
   const groupedTournaments = {
     active: tournaments.filter((t) => t.status === "active"),

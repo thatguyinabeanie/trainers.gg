@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Trophy } from "lucide-react";
-import { type OrganizationWithCounts } from "@trainers/supabase";
+import { type CommunityWithCounts } from "@trainers/supabase";
 import { socialSvgPaths } from "@trainers/utils";
 import { cn } from "@/lib/utils";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
@@ -13,7 +13,7 @@ import { type SocialLinkPlatform } from "@trainers/validators";
 // Helpers
 // ============================================================================
 
-function getOrganizationInitials(name: string): string {
+function getCommunityInitials(name: string): string {
   return name
     .split(" ")
     .map((word) => word[0])
@@ -37,7 +37,7 @@ function getTierBadge(tier: string | null) {
 // ============================================================================
 
 interface CommunityCardProps {
-  community: OrganizationWithCounts;
+  community: CommunityWithCounts;
 }
 
 export function CommunityCard({ community }: CommunityCardProps) {
@@ -63,7 +63,7 @@ export function CommunityCard({ community }: CommunityCardProps) {
               {community.icon ? (
                 <span className="text-lg">{community.icon}</span>
               ) : (
-                getOrganizationInitials(community.name)
+                getCommunityInitials(community.name)
               )}
             </AvatarFallback>
           </Avatar>

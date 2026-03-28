@@ -35,7 +35,7 @@ export interface ListOrganizationsAdminOptions {
  * @param supabase - Typed Supabase client
  * @param options - Search, filter, and pagination options
  */
-export async function listOrganizationsAdmin(
+export async function listCommunitiesAdmin(
   supabase: TypedClient,
   options: ListOrganizationsAdminOptions = {}
 ) {
@@ -91,7 +91,7 @@ export async function listOrganizationsAdmin(
  * @param supabase - Typed Supabase client
  * @param orgId - Organization ID
  */
-export async function getOrganizationAdminDetails(
+export async function getCommunityAdminDetails(
   supabase: TypedClient,
   orgId: number
 ) {
@@ -386,3 +386,12 @@ export async function transferOrgOwnership(
 
   return data;
 }
+
+// =============================================================================
+// Deprecated aliases (backward compatibility)
+// =============================================================================
+
+/** @deprecated Use listCommunitiesAdmin instead */
+export const listOrganizationsAdmin = listCommunitiesAdmin;
+/** @deprecated Use getCommunityAdminDetails instead */
+export const getOrganizationAdminDetails = getCommunityAdminDetails;

@@ -23,10 +23,10 @@ jest.mock("@/lib/utils", () => ({
 }));
 
 // Mock @trainers/supabase mutation
-const mockSubmitOrganizationRequest = jest.fn();
+const mockSubmitCommunityRequest = jest.fn();
 jest.mock("@trainers/supabase", () => ({
-  submitOrganizationRequest: (...args: unknown[]) =>
-    mockSubmitOrganizationRequest(...args),
+  submitCommunityRequest: (...args: unknown[]) =>
+    mockSubmitCommunityRequest(...args),
 }));
 
 import { submitOrganizationRequestAction } from "../organization-requests";
@@ -44,7 +44,7 @@ describe("submitOrganizationRequestAction", () => {
   });
 
   it("submits a valid request and constructs discord URL from code", async () => {
-    mockSubmitOrganizationRequest.mockResolvedValue({
+    mockSubmitCommunityRequest.mockResolvedValue({
       id: 1,
       slug: "pallet-town",
     });
@@ -55,7 +55,7 @@ describe("submitOrganizationRequestAction", () => {
       success: true,
       data: { id: 1, slug: "pallet-town" },
     });
-    expect(mockSubmitOrganizationRequest).toHaveBeenCalledWith(mockSupabase, {
+    expect(mockSubmitCommunityRequest).toHaveBeenCalledWith(mockSupabase, {
       name: "Pallet Town",
       slug: "pallet-town",
       description: "A league",
@@ -66,7 +66,7 @@ describe("submitOrganizationRequestAction", () => {
   });
 
   it("builds full URLs from handles", async () => {
-    mockSubmitOrganizationRequest.mockResolvedValue({
+    mockSubmitCommunityRequest.mockResolvedValue({
       id: 1,
       slug: "pallet-town",
     });
@@ -77,7 +77,7 @@ describe("submitOrganizationRequestAction", () => {
       bluesky_handle: "pallettown.bsky.social",
     });
 
-    expect(mockSubmitOrganizationRequest).toHaveBeenCalledWith(
+    expect(mockSubmitCommunityRequest).toHaveBeenCalledWith(
       mockSupabase,
       expect.objectContaining({
         social_links: [
@@ -98,11 +98,11 @@ describe("submitOrganizationRequestAction", () => {
     });
 
     expect(result.success).toBe(false);
-    expect(mockSubmitOrganizationRequest).not.toHaveBeenCalled();
+    expect(mockSubmitCommunityRequest).not.toHaveBeenCalled();
   });
 
   it("returns error when mutation throws", async () => {
-    mockSubmitOrganizationRequest.mockRejectedValue(
+    mockSubmitCommunityRequest.mockRejectedValue(
       new Error("Already have pending request")
     );
 
@@ -115,7 +115,7 @@ describe("submitOrganizationRequestAction", () => {
   });
 
   it("trims whitespace from fields", async () => {
-    mockSubmitOrganizationRequest.mockResolvedValue({
+    mockSubmitCommunityRequest.mockResolvedValue({
       id: 2,
       slug: "trimmed",
     });
@@ -128,7 +128,7 @@ describe("submitOrganizationRequestAction", () => {
       discord_invite_code: "my-server",
     });
 
-    expect(mockSubmitOrganizationRequest).toHaveBeenCalledWith(
+    expect(mockSubmitCommunityRequest).toHaveBeenCalledWith(
       mockSupabase,
       expect.objectContaining({
         name: "Trimmed Org",

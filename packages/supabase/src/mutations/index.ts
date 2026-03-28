@@ -14,14 +14,14 @@ export {
   setMainAlt,
 } from "./users";
 
-// Organization mutations
+// Community mutations (renamed from organization)
 export {
-  createOrganization,
-  updateOrganization,
-  inviteToOrganization,
-  acceptOrganizationInvitation,
-  declineOrganizationInvitation,
-  leaveOrganization,
+  createCommunity,
+  updateCommunity,
+  inviteToCommunity,
+  acceptCommunityInvitation,
+  declineCommunityInvitation,
+  leaveCommunity,
   removeStaff,
   // Staff group management
   addStaffMember,
@@ -29,6 +29,13 @@ export {
   removeStaffFromGroup,
   changeStaffRole,
   removeStaffCompletely,
+  // Deprecated aliases
+  createOrganization,
+  updateOrganization,
+  inviteToOrganization,
+  acceptOrganizationInvitation,
+  declineOrganizationInvitation,
+  leaveOrganization,
 } from "./communities";
 
 // Tournament mutations
@@ -71,8 +78,12 @@ export {
   completeTournament,
 } from "./tournaments";
 
-// Organization request mutations
+// Community request mutations (renamed from organization)
 export {
+  submitCommunityRequest,
+  approveCommunityRequest,
+  rejectCommunityRequest,
+  // Deprecated aliases
   submitOrganizationRequest,
   approveOrganizationRequest,
   rejectOrganizationRequest,

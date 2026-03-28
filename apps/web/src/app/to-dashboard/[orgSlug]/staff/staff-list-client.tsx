@@ -18,7 +18,7 @@ import { useDraggable, useDroppable } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
 import { useSupabaseQuery } from "@/lib/supabase";
 import {
-  listOrganizationStaffWithRoles,
+  listCommunityStaffWithRoles,
   type StaffWithRole,
   type OrganizationGroup,
 } from "@trainers/supabase";
@@ -349,8 +349,8 @@ export function StaffListClient({
 
   // Fetch staff data
   const queryFn = (
-    supabase: Parameters<typeof listOrganizationStaffWithRoles>[0]
-  ) => listOrganizationStaffWithRoles(supabase, organizationId);
+    supabase: Parameters<typeof listCommunityStaffWithRoles>[0]
+  ) => listCommunityStaffWithRoles(supabase, organizationId);
 
   const {
     data: staffMembers,

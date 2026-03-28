@@ -10,15 +10,15 @@ import { DataTable } from "@/components/ui/data-table";
 import { cn } from "@/lib/utils";
 import { useSupabaseQuery } from "@/lib/supabase";
 import {
-  listOrganizationsAdmin,
+  listCommunitiesAdmin,
   listOrgRequestsAdmin,
 } from "@trainers/supabase/queries";
-import { columns as orgColumns, type OrgRow } from "./columns";
+import { columns as orgColumns, type CommunityRow } from "./columns";
 import {
   columns as requestColumns,
-  type OrgRequestRow,
+  type CommunityRequestRow,
 } from "@/app/admin/org-requests/columns";
-import { OrgDetailSheet } from "./community-detail-sheet";
+import { CommunityDetailSheet } from "./community-detail-sheet";
 import { RequestDetailSheet } from "@/app/admin/org-requests/request-detail-sheet";
 
 // --- Constants ---
@@ -42,20 +42,19 @@ const STATUS_FILTERS: { value: StatusFilter; label: string }[] = [
 
 // --- Component ---
 
-export default function AdminOrganizationsPage() {
+export default function AdminCommunitiesPage() {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [page, setPage] = useState(0);
 
   // Detail sheet state — orgs
-  const [selectedOrg, setSelectedOrg] = useState<OrgRow | null>(null);
+  const [selectedOrg, setSelectedOrg] = useState<CommunityRow | null>(null);
   const [orgSheetOpen, setOrgSheetOpen] = useState(false);
 
   // Detail sheet state — requests
-  const [selectedRequest, setSelectedRequest] = useState<OrgRequestRow | null>(
-    null
-  );
+  const [selectedRequest, setSelectedRequest] =
+    useState<CommunityRequestRow | null>(null);
   const [requestSheetOpen, setRequestSheetOpen] = useState(false);
 
   // Increment to force queries to re-fetch after actions
@@ -81,7 +80,7 @@ export default function AdminOrganizationsPage() {
   const orgsQuery = useSupabaseQuery(
     async (supabase) => {
       if (!showOrgs) return { data: [], count: 0 };
-      return await listOrganizationsAdmin(supabase, {
+      return await listCommunitiesAdmin(supabase, {
         search: debouncedSearch || undefined,
         status: isAll ? undefined : statusFilter,
         limit: PAGE_SIZE,
@@ -106,9 +105,10 @@ export default function AdminOrganizationsPage() {
     [debouncedSearch, statusFilter, page, refreshKey]
   );
 
-  const organizations = (orgsQuery.data?.data ?? []) as unknown as OrgRow[];
+  const organizations = (orgsQuery.data?.data ??
+    []) as unknown as CommunityRow[];
   const requests = (requestsQuery.data?.data ??
-    []) as unknown as OrgRequestRow[];
+    []) as unknown as CommunityRequestRow[];
 
   // For pagination: use org count when not in requests-only view
   const totalCount = isRequestsOnly
@@ -189,7 +189,7 @@ export default function AdminOrganizationsPage() {
         </div>
       ) : isRequestsOnly ? (
         <DataTable
-          columns={requestColumns as ColumnDef<OrgRequestRow, unknown>[]}
+          columns={requestColumns as ColumnDef<CommunityRequestRow, unknown>[]}
           data={requests}
           manualPagination
           emptyMessage="No community requests found"
@@ -201,7 +201,7 @@ export default function AdminOrganizationsPage() {
       ) : (
         <>
           <DataTable
-            columns={orgColumns as ColumnDef<OrgRow, unknown>[]}
+            columns={orgColumns as ColumnDef<CommunityRow, unknown>[]}
             data={organizations}
             manualPagination
             emptyMessage="No communities found"
@@ -218,7 +218,9 @@ export default function AdminOrganizationsPage() {
                 Pending Requests ({requests.length})
               </h3>
               <DataTable
-                columns={requestColumns as ColumnDef<OrgRequestRow, unknown>[]}
+                columns={
+                  requestColumns as ColumnDef<CommunityRequestRow, unknown>[]
+                }
                 data={requests}
                 manualPagination
                 emptyMessage="No community requests found"
@@ -260,7 +262,7 @@ export default function AdminOrganizationsPage() {
       )}
 
       {/* Detail sheets */}
-      <OrgDetailSheet
+      <CommunityDetailSheet
         org={selectedOrg}
         open={orgSheetOpen}
         onOpenChange={setOrgSheetOpen}

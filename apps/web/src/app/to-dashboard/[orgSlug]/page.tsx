@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import {
-  getOrganizationWithTournamentStats,
-  listOrganizationTournaments,
+  getCommunityWithTournamentStats,
+  listCommunityTournaments,
 } from "@trainers/supabase";
 import { OverviewClient } from "./overview-client";
 
@@ -16,17 +16,14 @@ export default async function TODashboardOverviewPage({ params }: PageProps) {
   const supabase = await createClient();
 
   // Get org with stats
-  const organization = await getOrganizationWithTournamentStats(
-    supabase,
-    orgSlug
-  );
+  const organization = await getCommunityWithTournamentStats(supabase, orgSlug);
 
   if (!organization) {
     return null; // Layout handles 404
   }
 
   // Get recent tournaments (limit 6)
-  const { tournaments: recentTournaments } = await listOrganizationTournaments(
+  const { tournaments: recentTournaments } = await listCommunityTournaments(
     supabase,
     organization.id,
     { limit: 6 }

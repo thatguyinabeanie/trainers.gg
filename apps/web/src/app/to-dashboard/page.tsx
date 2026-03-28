@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { listMyOrganizations } from "@trainers/supabase";
+import { listMyCommunities } from "@trainers/supabase";
 import { OrgSelectorClient } from "./org-selector-client";
 
 export default async function TODashboardPage() {
@@ -14,7 +14,7 @@ export default async function TODashboardPage() {
   }
 
   // Get all organizations where user is owner or staff
-  const organizations = await listMyOrganizations(supabase, user.id);
+  const organizations = await listMyCommunities(supabase, user.id);
 
   // If user has no organizations, show empty state
   if (organizations.length === 0) {

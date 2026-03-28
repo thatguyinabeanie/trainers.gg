@@ -8,7 +8,7 @@ const COOLDOWN_DAYS = 7;
  * Submit an organization request.
  * Validates: no pending request, cooldown after rejection, slug uniqueness.
  */
-export async function submitOrganizationRequest(
+export async function submitCommunityRequest(
   supabase: TypedClient,
   data: {
     name: string;
@@ -110,7 +110,7 @@ export async function submitOrganizationRequest(
  * Creates the org, sets requester as owner/staff, creates notification.
  * Uses service role client (bypasses RLS).
  */
-export async function approveOrganizationRequest(
+export async function approveCommunityRequest(
   supabase: TypedClient,
   requestId: number,
   adminUserId: string
@@ -231,7 +231,7 @@ export async function approveOrganizationRequest(
  * Reject an organization request (admin action).
  * Stores reason, creates notification.
  */
-export async function rejectOrganizationRequest(
+export async function rejectCommunityRequest(
   supabase: TypedClient,
   requestId: number,
   adminUserId: string,
@@ -294,3 +294,14 @@ export async function rejectOrganizationRequest(
 
   return request;
 }
+
+// =============================================================================
+// Deprecated aliases (backward compatibility)
+// =============================================================================
+
+/** @deprecated Use submitCommunityRequest instead */
+export const submitOrganizationRequest = submitCommunityRequest;
+/** @deprecated Use approveCommunityRequest instead */
+export const approveOrganizationRequest = approveCommunityRequest;
+/** @deprecated Use rejectCommunityRequest instead */
+export const rejectOrganizationRequest = rejectCommunityRequest;

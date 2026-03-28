@@ -20,7 +20,7 @@ import { useSupabase, useSupabaseQuery } from "@/lib/supabase";
 import {
   getNotifications,
   getUnreadNotificationCount,
-  getMyOrganizationInvitations,
+  getMyCommunityInvitations,
 } from "@trainers/supabase";
 import type { TypedSupabaseClient } from "@trainers/supabase";
 import {
@@ -35,8 +35,8 @@ import type { RealtimeChannel } from "@supabase/supabase-js";
 import { formatTimeAgo } from "@trainers/utils";
 import { notificationIcons, isSafeRelativeUrl } from "@/lib/notification-utils";
 import {
-  acceptOrganizationInvitation,
-  declineOrganizationInvitation,
+  acceptCommunityInvitation,
+  declineCommunityInvitation,
 } from "@trainers/supabase";
 
 interface NotificationBellProps {
@@ -86,7 +86,7 @@ export function NotificationBell({ userId }: NotificationBellProps) {
   const invitationsQueryFn = useCallback(
     (client: TypedSupabaseClient) => {
       if (!userId) return Promise.resolve([]);
-      return getMyOrganizationInvitations(client, userId);
+      return getMyCommunityInvitations(client, userId);
     },
     [userId]
   );
@@ -189,7 +189,7 @@ export function NotificationBell({ userId }: NotificationBellProps) {
   ) => {
     setLoadingInvitationId(invitationId);
     try {
-      await acceptOrganizationInvitation(supabase, invitationId);
+      await acceptCommunityInvitation(supabase, invitationId);
       toast.success(`You are now staff of ${orgName}`);
       setRefreshKey((k) => k + 1);
       refetchInvitations();
@@ -208,7 +208,7 @@ export function NotificationBell({ userId }: NotificationBellProps) {
   ) => {
     setLoadingInvitationId(invitationId);
     try {
-      await declineOrganizationInvitation(supabase, invitationId);
+      await declineCommunityInvitation(supabase, invitationId);
       toast.success(`Declined invitation from ${orgName}`);
       setRefreshKey((k) => k + 1);
       refetchInvitations();

@@ -24,8 +24,27 @@ export {
   getPlayerPublicTeams,
 } from "./users";
 
-// Organization queries
+// Community queries (renamed from organization)
 export {
+  listPublicCommunities,
+  listCommunities,
+  getCommunityBySlug,
+  getCommunityById,
+  listMyCommunities,
+  listMyOwnedCommunities,
+  getCommunityWithTournamentStats,
+  listCommunityTournaments,
+  canManageCommunity,
+  listCommunityStaff,
+  hasCommunityAccess,
+  getMyCommunityInvitations,
+  getCommunityInvitations,
+  // Staff management
+  listCommunityStaffWithRoles,
+  listCommunityGroups,
+  searchUsersForInvite,
+  hasOrgPermission,
+  // Deprecated aliases
   listPublicOrganizations,
   listOrganizations,
   getOrganizationBySlug,
@@ -39,14 +58,19 @@ export {
   hasOrganizationAccess,
   getMyOrganizationInvitations,
   getOrganizationInvitations,
-  // Staff management
   listOrganizationStaffWithRoles,
   listOrganizationGroups,
-  searchUsersForInvite,
-  hasOrgPermission,
 } from "./communities";
 
-export type { StaffWithRole, OrganizationGroup } from "./communities";
+export type {
+  StaffWithRole,
+  CommunityGroup,
+  CommunityWithCounts,
+  // @deprecated Use CommunityGroup instead
+  OrganizationGroup,
+  // @deprecated Use CommunityWithCounts instead
+  OrganizationWithCounts,
+} from "./communities";
 
 // Tournament queries
 export {
@@ -94,7 +118,7 @@ export type {
   GroupedTournaments,
   PlayerLifetimeStats,
 } from "./tournaments";
-export type { OrganizationWithCounts } from "./communities";
+// CommunityWithCounts already exported above
 
 // Permission queries
 export { getUserPermissions, hasPermission } from "./permissions";
@@ -152,15 +176,18 @@ export {
   type ListOrgRequestsAdminOptions,
 } from "./organization-requests";
 
-// Admin organization queries
+// Admin community queries (renamed from organization)
 export {
-  listOrganizationsAdmin,
-  getOrganizationAdminDetails,
+  listCommunitiesAdmin,
+  getCommunityAdminDetails,
   approveOrganization,
   rejectOrganization,
   suspendOrganization,
   unsuspendOrganization,
   transferOrgOwnership,
+  // Deprecated aliases
+  listOrganizationsAdmin,
+  getOrganizationAdminDetails,
 } from "./admin-communities";
 
 export type { ListOrganizationsAdminOptions } from "./admin-communities";

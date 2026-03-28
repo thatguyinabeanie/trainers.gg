@@ -31,14 +31,20 @@ import {
 } from "@/components/communities/social-link-icons";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-import { type OrgRequestRow, requestStatusLabels } from "./columns";
+import {
+  type CommunityRequestRow,
+  communityRequestStatusLabels,
+} from "./columns";
 import { approveOrgRequestAction, rejectOrgRequestAction } from "./actions";
 import {
   SOCIAL_LINK_PLATFORMS,
   type SocialLinkPlatform,
 } from "@trainers/validators";
 
-const requestStatusClasses: Record<OrgRequestRow["status"], string> = {
+const communityRequestStatusClasses: Record<
+  CommunityRequestRow["status"],
+  string
+> = {
   pending:
     "bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/25",
   approved:
@@ -60,7 +66,7 @@ function formatDateTime(dateStr: string): string {
 type ConfirmAction = { type: "approve" } | { type: "reject" };
 
 interface RequestDetailSheetProps {
-  request: OrgRequestRow | null;
+  request: CommunityRequestRow | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onActionComplete?: () => void;
@@ -151,9 +157,9 @@ export function RequestDetailSheet({
               <div className="flex items-center justify-between">
                 <Badge
                   variant="outline"
-                  className={cn(requestStatusClasses[request.status])}
+                  className={cn(communityRequestStatusClasses[request.status])}
                 >
-                  {requestStatusLabels[request.status]}
+                  {communityRequestStatusLabels[request.status]}
                 </Badge>
                 {request.requester && (
                   <div className="flex items-center gap-2">

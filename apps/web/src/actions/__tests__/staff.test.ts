@@ -39,7 +39,7 @@ const mockRemoveStaffCompletely = jest.fn();
 jest.mock("@trainers/supabase", () => ({
   searchUsersForInvite: (...args: unknown[]) =>
     mockSearchUsersForInvite(...args),
-  listOrganizationGroups: jest.fn(),
+  listCommunityGroups: jest.fn(),
   addStaffMember: (...args: unknown[]) => mockAddStaffMember(...args),
   addStaffToGroup: (...args: unknown[]) => mockAddStaffToGroup(...args),
   changeStaffRole: (...args: unknown[]) => mockChangeStaffRole(...args),

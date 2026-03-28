@@ -11,14 +11,14 @@ import { updateTag } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { getErrorMessage } from "@/lib/utils";
 import {
-  updateOrganization as updateOrganizationMutation,
-  inviteToOrganization as inviteToOrganizationMutation,
-  acceptOrganizationInvitation as acceptOrganizationInvitationMutation,
-  declineOrganizationInvitation as declineOrganizationInvitationMutation,
-  leaveOrganization as leaveOrganizationMutation,
+  updateCommunity as updateCommunityMutation,
+  inviteToCommunity as inviteToCommunityMutation,
+  acceptCommunityInvitation as acceptCommunityInvitationMutation,
+  declineCommunityInvitation as declineCommunityInvitationMutation,
+  leaveCommunity as leaveCommunityMutation,
   removeStaff as removeStaffMutation,
 } from "@trainers/supabase";
-import { type OrganizationSocialLink } from "@trainers/validators";
+import { type CommunitySocialLink } from "@trainers/validators";
 import { CacheTags } from "@/lib/cache";
 
 /**
@@ -41,14 +41,14 @@ export async function updateOrganization(
   updates: {
     name?: string;
     description?: string;
-    socialLinks?: OrganizationSocialLink[];
+    socialLinks?: CommunitySocialLink[];
     logoUrl?: string | null;
   },
   slug?: string
 ): Promise<ActionResult<{ success: true }>> {
   try {
     const supabase = await createClient();
-    await updateOrganizationMutation(supabase, organizationId, updates);
+    await updateCommunityMutation(supabase, organizationId, updates);
 
     // Revalidate list if display data changed (name, description, logo)
     if (updates.name || updates.description || updates.logoUrl) {
@@ -83,7 +83,7 @@ export async function inviteToOrganization(
 ): Promise<ActionResult<{ invitationId: number }>> {
   try {
     const supabase = await createClient();
-    const result = await inviteToOrganizationMutation(
+    const result = await inviteToCommunityMutation(
       supabase,
       organizationId,
       invitedUserId
@@ -107,7 +107,7 @@ export async function acceptOrganizationInvitation(
 ): Promise<ActionResult<{ success: true }>> {
   try {
     const supabase = await createClient();
-    await acceptOrganizationInvitationMutation(supabase, invitationId);
+    await acceptCommunityInvitationMutation(supabase, invitationId);
 
     // Revalidate org page to show new staff member
     if (organizationSlug) {
@@ -131,7 +131,7 @@ export async function declineOrganizationInvitation(
 ): Promise<ActionResult<{ success: true }>> {
   try {
     const supabase = await createClient();
-    await declineOrganizationInvitationMutation(supabase, invitationId);
+    await declineCommunityInvitationMutation(supabase, invitationId);
     return { success: true, data: { success: true } };
   } catch (error) {
     return {
@@ -150,7 +150,7 @@ export async function leaveOrganization(
 ): Promise<ActionResult<{ success: true }>> {
   try {
     const supabase = await createClient();
-    await leaveOrganizationMutation(supabase, organizationId);
+    await leaveCommunityMutation(supabase, organizationId);
 
     // Revalidate org page to update staff list
     if (slug) {

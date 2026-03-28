@@ -4,10 +4,7 @@ import {
   createStaticClient,
   createClientReadOnly,
 } from "@/lib/supabase/server";
-import {
-  getOrganizationBySlug,
-  hasOrganizationAccess,
-} from "@trainers/supabase";
+import { getCommunityBySlug, hasCommunityAccess } from "@trainers/supabase";
 import { CacheTags } from "@/lib/cache";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
@@ -16,11 +13,11 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Trophy, Users, Calendar, Settings, Globe } from "lucide-react";
 import {
-  organizationSocialLinksSchema,
-  type OrganizationSocialLink,
+  communitySocialLinksSchema,
+  type CommunitySocialLink,
 } from "@trainers/validators";
 import { socialSvgPaths, socialPlatformLabels } from "@trainers/utils";
-import { OrganizationTabs } from "./organization-tabs";
+import { CommunityTabs } from "./community-tabs";
 
 // ==========================================================================
 // Social Link Helpers
@@ -30,12 +27,12 @@ import { OrganizationTabs } from "./organization-tabs";
  * Parse the raw JSONB social_links field into typed array.
  * Returns empty array if parsing fails (defensive for bad data).
  */
-function parseSocialLinks(raw: unknown): OrganizationSocialLink[] {
-  const result = organizationSocialLinksSchema.safeParse(raw);
+function parseSocialLinks(raw: unknown): CommunitySocialLink[] {
+  const result = communitySocialLinksSchema.safeParse(raw);
   return result.success ? result.data : [];
 }
 
-function SocialLinkIcon({ link }: { link: OrganizationSocialLink }) {
+function SocialLinkIcon({ link }: { link: CommunitySocialLink }) {
   const svgPath = socialSvgPaths[link.platform];
   const label = link.label || socialPlatformLabels[link.platform] || "Link";
 
@@ -87,7 +84,7 @@ const getCachedOrganization = (slug: string) =>
   unstable_cache(
     async () => {
       const supabase = createStaticClient();
-      return getOrganizationBySlug(supabase, slug);
+      return getCommunityBySlug(supabase, slug);
     },
     [`organization-detail-${slug}`],
     { tags: [CacheTags.community(slug), CacheTags.COMMUNITIES_LIST] }
@@ -128,7 +125,7 @@ function OrganizationHeader({
   organization,
   canManage,
 }: {
-  organization: NonNullable<Awaited<ReturnType<typeof getOrganizationBySlug>>>;
+  organization: NonNullable<Awaited<ReturnType<typeof getCommunityBySlug>>>;
   canManage: boolean;
 }) {
   return (
@@ -187,7 +184,7 @@ function OrganizationHeader({
 function StatsCards({
   organization,
 }: {
-  organization: NonNullable<Awaited<ReturnType<typeof getOrganizationBySlug>>>;
+  organization: NonNullable<Awaited<ReturnType<typeof getCommunityBySlug>>>;
 }) {
   const totalTournaments =
     (organization.tournaments?.active?.length ?? 0) +
@@ -265,7 +262,7 @@ export default async function OrganizationPage({
       canManage = true;
     } else {
       const supabase = await createClientReadOnly();
-      canManage = await hasOrganizationAccess(
+      canManage = await hasCommunityAccess(
         supabase,
         organization.id,
         currentUserId
@@ -296,7 +293,7 @@ export default async function OrganizationPage({
       <Breadcrumb orgName={organization.name} />
       <OrganizationHeader organization={organization} canManage={canManage} />
       <StatsCards organization={organization} />
-      <OrganizationTabs
+      <CommunityTabs
         tournaments={tournaments}
         orgSlug={orgSlug}
         canManage={canManage}

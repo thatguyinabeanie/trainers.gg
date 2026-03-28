@@ -1,7 +1,7 @@
 import { unstable_cache } from "next/cache";
 import { createStaticClient, getUser } from "@/lib/supabase/server";
-import { listPublicOrganizations } from "@trainers/supabase";
-import { type OrganizationWithCounts } from "@trainers/supabase";
+import { listPublicCommunities } from "@trainers/supabase";
+import { type CommunityWithCounts } from "@trainers/supabase";
 import { Suspense } from "react";
 import { Users, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -21,7 +21,7 @@ export const revalidate = false;
 const getCachedCommunities = unstable_cache(
   async () => {
     const supabase = createStaticClient();
-    return listPublicOrganizations(supabase);
+    return listPublicCommunities(supabase);
   },
   ["communities-list"],
   { tags: [CacheTags.COMMUNITIES_LIST] }
@@ -43,7 +43,7 @@ export default async function CommunitiesPage({
   ]);
 
   // Filter on the server — name, slug, and description
-  const communities: OrganizationWithCounts[] = searchQuery
+  const communities: CommunityWithCounts[] = searchQuery
     ? allCommunities.filter(
         (org) =>
           org.name.toLowerCase().includes(searchQuery.toLowerCase()) ||

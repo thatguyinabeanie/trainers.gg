@@ -1,9 +1,9 @@
 import { Users } from "lucide-react";
-import { type OrganizationWithCounts } from "@trainers/supabase";
+import { type CommunityWithCounts } from "@trainers/supabase";
 import { CommunityCard } from "@/components/communities/community-card";
 
 interface CommunityCardGridProps {
-  communities: OrganizationWithCounts[];
+  communities: CommunityWithCounts[];
   isSearching?: boolean;
 }
 

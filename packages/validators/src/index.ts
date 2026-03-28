@@ -72,10 +72,18 @@ export {
   type TeamSubmissionInput,
 } from "./team";
 
-// Organization validators
+// Community validators
 export {
   SOCIAL_LINK_PLATFORMS,
   type SocialLinkPlatform,
+  communitySocialLinkSchema,
+  communitySocialLinksSchema,
+  type CommunitySocialLink,
+  createCommunitySchema,
+  updateCommunitySchema,
+  type CreateCommunityInput,
+  type UpdateCommunityInput,
+  // Deprecated aliases — use community-prefixed names instead
   organizationSocialLinkSchema,
   organizationSocialLinksSchema,
   type OrganizationSocialLink,

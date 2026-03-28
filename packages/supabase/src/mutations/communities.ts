@@ -76,7 +76,7 @@ async function _getCurrentAlt(supabase: TypedClient) {
  * Create a new organization
  * Organizations are owned by users (not alts) for Bluesky federation
  */
-export async function createOrganization(
+export async function createCommunity(
   supabase: TypedClient,
   data: {
     name: string;
@@ -142,7 +142,7 @@ export async function createOrganization(
 /**
  * Update organization details
  */
-export async function updateOrganization(
+export async function updateCommunity(
   supabase: TypedClient,
   organizationId: number,
   updates: {
@@ -197,7 +197,7 @@ export async function updateOrganization(
 /**
  * Invite a user to join organization
  */
-export async function inviteToOrganization(
+export async function inviteToCommunity(
   supabase: TypedClient,
   organizationId: number,
   invitedUserId: string
@@ -252,7 +252,7 @@ export async function inviteToOrganization(
  * Accept organization invitation
  * Note: The database trigger will automatically create the organization_staff record
  */
-export async function acceptOrganizationInvitation(
+export async function acceptCommunityInvitation(
   supabase: TypedClient,
   invitationId: number
 ) {
@@ -293,7 +293,7 @@ export async function acceptOrganizationInvitation(
 /**
  * Decline organization invitation
  */
-export async function declineOrganizationInvitation(
+export async function declineCommunityInvitation(
   supabase: TypedClient,
   invitationId: number
 ) {
@@ -329,7 +329,7 @@ export async function declineOrganizationInvitation(
 /**
  * Leave organization (user-level action)
  */
-export async function leaveOrganization(
+export async function leaveCommunity(
   supabase: TypedClient,
   organizationId: number
 ) {
@@ -697,3 +697,20 @@ export async function removeStaffCompletely(
   if (error) throw error;
   return { success: true };
 }
+
+// =============================================================================
+// Deprecated aliases (backward compatibility)
+// =============================================================================
+
+/** @deprecated Use createCommunity instead */
+export const createOrganization = createCommunity;
+/** @deprecated Use updateCommunity instead */
+export const updateOrganization = updateCommunity;
+/** @deprecated Use inviteToCommunity instead */
+export const inviteToOrganization = inviteToCommunity;
+/** @deprecated Use acceptCommunityInvitation instead */
+export const acceptOrganizationInvitation = acceptCommunityInvitation;
+/** @deprecated Use declineCommunityInvitation instead */
+export const declineOrganizationInvitation = declineCommunityInvitation;
+/** @deprecated Use leaveCommunity instead */
+export const leaveOrganization = leaveCommunity;

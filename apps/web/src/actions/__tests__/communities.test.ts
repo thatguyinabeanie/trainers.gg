@@ -31,21 +31,20 @@ jest.mock("@/lib/utils", () => ({
 }));
 
 // Mock @trainers/supabase mutations
-const mockUpdateOrganization = jest.fn();
-const mockInviteToOrganization = jest.fn();
-const mockAcceptOrganizationInvitation = jest.fn();
-const mockDeclineOrganizationInvitation = jest.fn();
-const mockLeaveOrganization = jest.fn();
+const mockUpdateCommunity = jest.fn();
+const mockInviteToCommunity = jest.fn();
+const mockAcceptCommunityInvitation = jest.fn();
+const mockDeclineCommunityInvitation = jest.fn();
+const mockLeaveCommunity = jest.fn();
 const mockRemoveStaff = jest.fn();
 jest.mock("@trainers/supabase", () => ({
-  updateOrganization: (...args: unknown[]) => mockUpdateOrganization(...args),
-  inviteToOrganization: (...args: unknown[]) =>
-    mockInviteToOrganization(...args),
-  acceptOrganizationInvitation: (...args: unknown[]) =>
-    mockAcceptOrganizationInvitation(...args),
-  declineOrganizationInvitation: (...args: unknown[]) =>
-    mockDeclineOrganizationInvitation(...args),
-  leaveOrganization: (...args: unknown[]) => mockLeaveOrganization(...args),
+  updateCommunity: (...args: unknown[]) => mockUpdateCommunity(...args),
+  inviteToCommunity: (...args: unknown[]) => mockInviteToCommunity(...args),
+  acceptCommunityInvitation: (...args: unknown[]) =>
+    mockAcceptCommunityInvitation(...args),
+  declineCommunityInvitation: (...args: unknown[]) =>
+    mockDeclineCommunityInvitation(...args),
+  leaveCommunity: (...args: unknown[]) => mockLeaveCommunity(...args),
   removeStaff: (...args: unknown[]) => mockRemoveStaff(...args),
 }));
 
@@ -67,7 +66,7 @@ describe("updateOrganization", () => {
   });
 
   it("revalidates the organizations list when display data changes", async () => {
-    mockUpdateOrganization.mockResolvedValue(undefined);
+    mockUpdateCommunity.mockResolvedValue(undefined);
 
     const result = await updateOrganization(
       1,
@@ -79,7 +78,7 @@ describe("updateOrganization", () => {
       success: true,
       data: { success: true },
     });
-    expect(mockUpdateOrganization).toHaveBeenCalledWith(mockSupabase, 1, {
+    expect(mockUpdateCommunity).toHaveBeenCalledWith(mockSupabase, 1, {
       name: "New Name",
       description: "Updated desc",
     });
@@ -91,7 +90,7 @@ describe("updateOrganization", () => {
   });
 
   it("does not revalidate the list when only socialLinks changes", async () => {
-    mockUpdateOrganization.mockResolvedValue(undefined);
+    mockUpdateCommunity.mockResolvedValue(undefined);
 
     const result = await updateOrganization(
       1,
@@ -120,7 +119,7 @@ describe("inviteToOrganization", () => {
   });
 
   it("invites a user and returns the invitation id", async () => {
-    mockInviteToOrganization.mockResolvedValue({ id: 55 });
+    mockInviteToCommunity.mockResolvedValue({ id: 55 });
 
     const result = await inviteToOrganization(1, "user-uuid-123");
 
@@ -128,7 +127,7 @@ describe("inviteToOrganization", () => {
       success: true,
       data: { invitationId: 55 },
     });
-    expect(mockInviteToOrganization).toHaveBeenCalledWith(
+    expect(mockInviteToCommunity).toHaveBeenCalledWith(
       mockSupabase,
       1,
       "user-uuid-123"
@@ -146,7 +145,7 @@ describe("acceptOrganizationInvitation", () => {
   });
 
   it("accepts an invitation and revalidates the organization page by slug", async () => {
-    mockAcceptOrganizationInvitation.mockResolvedValue(undefined);
+    mockAcceptCommunityInvitation.mockResolvedValue(undefined);
 
     const result = await acceptOrganizationInvitation(55, "team-rocket");
 
@@ -154,7 +153,7 @@ describe("acceptOrganizationInvitation", () => {
       success: true,
       data: { success: true },
     });
-    expect(mockAcceptOrganizationInvitation).toHaveBeenCalledWith(
+    expect(mockAcceptCommunityInvitation).toHaveBeenCalledWith(
       mockSupabase,
       55
     );
@@ -172,7 +171,7 @@ describe("leaveOrganization", () => {
   });
 
   it("leaves an organization and revalidates the org page", async () => {
-    mockLeaveOrganization.mockResolvedValue(undefined);
+    mockLeaveCommunity.mockResolvedValue(undefined);
 
     const result = await leaveOrganization(1, "team-rocket");
 
@@ -180,7 +179,7 @@ describe("leaveOrganization", () => {
       success: true,
       data: { success: true },
     });
-    expect(mockLeaveOrganization).toHaveBeenCalledWith(mockSupabase, 1);
+    expect(mockLeaveCommunity).toHaveBeenCalledWith(mockSupabase, 1);
     expect(mockUpdateTag).toHaveBeenCalledWith("community:team-rocket");
     expect(mockUpdateTag).toHaveBeenCalledWith("community:1");
   });

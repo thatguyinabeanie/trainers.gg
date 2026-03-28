@@ -1,21 +1,21 @@
 import { describe, it, expect, jest, beforeEach } from "@jest/globals";
 import { organizationFactory } from "@trainers/test-utils/factories";
 import {
-  listPublicOrganizations,
-  listOrganizations,
-  getOrganizationBySlug,
-  getOrganizationById,
-  listMyOrganizations,
-  canManageOrganization,
-  listOrganizationStaff,
-  hasOrganizationAccess,
-  getMyOrganizationInvitations,
-  getOrganizationInvitations,
-  listMyOwnedOrganizations,
-  getOrganizationWithTournamentStats,
-  listOrganizationTournaments,
-  listOrganizationStaffWithRoles,
-  listOrganizationGroups,
+  listPublicCommunities,
+  listCommunities,
+  getCommunityBySlug,
+  getCommunityById,
+  listMyCommunities,
+  canManageCommunity,
+  listCommunityStaff,
+  hasCommunityAccess,
+  getMyCommunityInvitations,
+  getCommunityInvitations,
+  listMyOwnedCommunities,
+  getCommunityWithTournamentStats,
+  listCommunityTournaments,
+  listCommunityStaffWithRoles,
+  listCommunityGroups,
   searchUsersForInvite,
   hasOrgPermission,
 } from "../communities";
@@ -83,12 +83,12 @@ const createMockClient = () => {
   } as unknown as TypedClient & { _queryBuilder: MockQueryBuilder };
 };
 
-describe("organizations queries", () => {
+describe("communities queries", () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });
 
-  describe("listPublicOrganizations", () => {
+  describe("listPublicCommunities", () => {
     it("should fetch active organizations with tournament counts", async () => {
       const mockOrgs = [
         { id: 1, name: "Org One", slug: "org-one", status: "active" },
@@ -110,7 +110,7 @@ describe("organizations queries", () => {
         error: null,
       });
 
-      const result = await listPublicOrganizations(mockClient);
+      const result = await listPublicCommunities(mockClient);
 
       expect(result).toHaveLength(2);
       expect(result[0]).toMatchObject({
@@ -135,7 +135,7 @@ describe("organizations queries", () => {
         return Promise.resolve({ data: [], error: null }).then(resolve);
       });
 
-      const result = await listPublicOrganizations(mockClient);
+      const result = await listPublicCommunities(mockClient);
 
       expect(result).toEqual([]);
     });
@@ -159,7 +159,7 @@ describe("organizations queries", () => {
         .spyOn(console, "error")
         .mockImplementation(() => {});
 
-      const result = await listPublicOrganizations(mockClient);
+      const result = await listPublicCommunities(mockClient);
 
       expect(result).toHaveLength(1);
       expect(result[0]).toMatchObject({
@@ -194,7 +194,7 @@ describe("organizations queries", () => {
         error: null,
       });
 
-      const result = await listPublicOrganizations(mockClient);
+      const result = await listPublicCommunities(mockClient);
 
       expect(result).toHaveLength(1);
       expect(result[0]?.discord_invite_url).toBe(
@@ -203,7 +203,7 @@ describe("organizations queries", () => {
     });
   });
 
-  describe("listOrganizations", () => {
+  describe("listCommunities", () => {
     it("should fetch organizations with pagination and counts", async () => {
       const mockOrgs = [
         {
@@ -248,7 +248,7 @@ describe("organizations queries", () => {
         .mockReturnValueOnce(staffQueryBuilder) // Staff count
         .mockReturnValueOnce(tournamentsQueryBuilder); // Tournaments count
 
-      const result = await listOrganizations(mockClient);
+      const result = await listCommunities(mockClient);
 
       expect(result.items).toHaveLength(1);
       expect(result.items[0]).toMatchObject({
@@ -264,7 +264,7 @@ describe("organizations queries", () => {
     it("should apply search filter", async () => {
       const mockClient = createMockClient();
 
-      await listOrganizations(mockClient, { searchTerm: "test" });
+      await listCommunities(mockClient, { searchTerm: "test" });
 
       expect(mockClient._queryBuilder.or).toHaveBeenCalledWith(
         "name.ilike.%test%,slug.ilike.%test%"
@@ -274,13 +274,13 @@ describe("organizations queries", () => {
     it("should handle pagination", async () => {
       const mockClient = createMockClient();
 
-      await listOrganizations(mockClient, { limit: 20, offset: 40 });
+      await listCommunities(mockClient, { limit: 20, offset: 40 });
 
       expect(mockClient._queryBuilder.range).toHaveBeenCalledWith(40, 59);
     });
   });
 
-  describe("getOrganizationBySlug", () => {
+  describe("getCommunityBySlug", () => {
     it("should fetch organization with full details", async () => {
       const mockOrg = {
         id: 1,
@@ -330,7 +330,7 @@ describe("organizations queries", () => {
         }
       });
 
-      const result = await getOrganizationBySlug(mockClient, "test-org");
+      const result = await getCommunityBySlug(mockClient, "test-org");
 
       expect(result).toBeDefined();
       expect(result?.name).toBe("Test Org");
@@ -343,13 +343,13 @@ describe("organizations queries", () => {
         error: new Error("Not found"),
       });
 
-      const result = await getOrganizationBySlug(mockClient, "nonexistent-org");
+      const result = await getCommunityBySlug(mockClient, "nonexistent-org");
 
       expect(result).toBeNull();
     });
   });
 
-  describe("getOrganizationById", () => {
+  describe("getCommunityById", () => {
     it("should fetch organization by ID", async () => {
       const mockOrg = {
         id: 1,
@@ -363,7 +363,7 @@ describe("organizations queries", () => {
         error: null,
       });
 
-      const result = await getOrganizationById(mockClient, 1);
+      const result = await getCommunityById(mockClient, 1);
 
       expect(result).toEqual(mockOrg);
       expect(mockClient._queryBuilder.eq).toHaveBeenCalledWith("id", 1);
@@ -376,13 +376,13 @@ describe("organizations queries", () => {
         error: new Error("Not found"),
       });
 
-      const result = await getOrganizationById(mockClient, 999);
+      const result = await getCommunityById(mockClient, 999);
 
       expect(result).toBeNull();
     });
   });
 
-  describe("listMyOrganizations", () => {
+  describe("listMyCommunities", () => {
     it.skip("should fetch user's owned and staff organizations", async () => {
       const mockUser = { id: "user-123", email: "test@example.com" };
       const mockAlt = { id: 1 };
@@ -409,7 +409,7 @@ describe("organizations queries", () => {
         error: null,
       });
 
-      const result = await listMyOrganizations(mockClient);
+      const result = await listMyCommunities(mockClient);
 
       expect(result).toHaveLength(1);
       expect(result[0]).toMatchObject({
@@ -427,13 +427,13 @@ describe("organizations queries", () => {
         error: null,
       });
 
-      const result = await listMyOrganizations(mockClient);
+      const result = await listMyCommunities(mockClient);
 
       expect(result).toEqual([]);
     });
   });
 
-  describe("canManageOrganization", () => {
+  describe("canManageCommunity", () => {
     it("should return true if user is owner", async () => {
       const mockOrg = { owner_user_id: "user-123" };
 
@@ -443,7 +443,7 @@ describe("organizations queries", () => {
         error: null,
       });
 
-      const result = await canManageOrganization(mockClient, 1, "user-123");
+      const result = await canManageCommunity(mockClient, 1, "user-123");
 
       expect(result).toBe(true);
     });
@@ -463,7 +463,7 @@ describe("organizations queries", () => {
           error: null,
         });
 
-      const result = await canManageOrganization(mockClient, 1, "user-123");
+      const result = await canManageCommunity(mockClient, 1, "user-123");
 
       expect(result).toBe(true);
     });
@@ -482,13 +482,13 @@ describe("organizations queries", () => {
           error: null,
         });
 
-      const result = await canManageOrganization(mockClient, 1, "user-123");
+      const result = await canManageCommunity(mockClient, 1, "user-123");
 
       expect(result).toBe(false);
     });
   });
 
-  describe("listOrganizationStaff", () => {
+  describe("listCommunityStaff", () => {
     it("should fetch staff members with user details", async () => {
       const mockStaff = [
         {
@@ -506,7 +506,7 @@ describe("organizations queries", () => {
         return Promise.resolve({ data: mockStaff, error: null }).then(resolve);
       });
 
-      const result = await listOrganizationStaff(mockClient, 1);
+      const result = await listCommunityStaff(mockClient, 1);
 
       expect(result).toEqual(mockStaff);
       expect(mockClient._queryBuilder.eq).toHaveBeenCalledWith(
@@ -522,13 +522,13 @@ describe("organizations queries", () => {
         return Promise.resolve({ data: null, error: dbError }).then(resolve);
       });
 
-      await expect(listOrganizationStaff(mockClient, 1)).rejects.toThrow(
+      await expect(listCommunityStaff(mockClient, 1)).rejects.toThrow(
         "Database error"
       );
     });
   });
 
-  describe("hasOrganizationAccess", () => {
+  describe("hasCommunityAccess", () => {
     it("should return true if user is owner", async () => {
       const mockOrg = { owner_user_id: "user-123" };
 
@@ -538,7 +538,7 @@ describe("organizations queries", () => {
         error: null,
       });
 
-      const result = await hasOrganizationAccess(mockClient, 1, "user-123");
+      const result = await hasCommunityAccess(mockClient, 1, "user-123");
 
       expect(result).toBe(true);
     });
@@ -558,7 +558,7 @@ describe("organizations queries", () => {
           error: null,
         });
 
-      const result = await hasOrganizationAccess(mockClient, 1, "user-123");
+      const result = await hasCommunityAccess(mockClient, 1, "user-123");
 
       expect(result).toBe(true);
     });
@@ -577,13 +577,13 @@ describe("organizations queries", () => {
           error: null,
         });
 
-      const result = await hasOrganizationAccess(mockClient, 1, "user-123");
+      const result = await hasCommunityAccess(mockClient, 1, "user-123");
 
       expect(result).toBe(false);
     });
   });
 
-  describe("getMyOrganizationInvitations", () => {
+  describe("getMyCommunityInvitations", () => {
     it("should fetch pending invitations for user", async () => {
       const mockInvitations = [
         {
@@ -601,7 +601,7 @@ describe("organizations queries", () => {
         }).then(resolve);
       });
 
-      const result = await getMyOrganizationInvitations(mockClient, "user-123");
+      const result = await getMyCommunityInvitations(mockClient, "user-123");
 
       expect(result).toEqual(mockInvitations);
       expect(mockClient._queryBuilder.eq).toHaveBeenCalledWith(
@@ -622,12 +622,12 @@ describe("organizations queries", () => {
       });
 
       await expect(
-        getMyOrganizationInvitations(mockClient, "user-123")
+        getMyCommunityInvitations(mockClient, "user-123")
       ).rejects.toThrow("Database error");
     });
   });
 
-  describe("getOrganizationInvitations", () => {
+  describe("getCommunityInvitations", () => {
     it("should fetch pending invitations for organization", async () => {
       const mockInvitations = [
         {
@@ -645,7 +645,7 @@ describe("organizations queries", () => {
         }).then(resolve);
       });
 
-      const result = await getOrganizationInvitations(mockClient, 1);
+      const result = await getCommunityInvitations(mockClient, 1);
 
       expect(result).toEqual(mockInvitations);
       expect(mockClient._queryBuilder.eq).toHaveBeenCalledWith(
@@ -659,7 +659,7 @@ describe("organizations queries", () => {
     });
   });
 
-  describe("listMyOwnedOrganizations", () => {
+  describe("listMyOwnedCommunities", () => {
     it("should fetch organizations owned by user", async () => {
       const mockUser = { id: "user-123" };
       const mockOrgs = [{ id: 1, name: "My Org", owner_user_id: "user-123" }];
@@ -675,7 +675,7 @@ describe("organizations queries", () => {
         return Promise.resolve({ data: mockOrgs, error: null }).then(resolve);
       });
 
-      const result = await listMyOwnedOrganizations(mockClient);
+      const result = await listMyOwnedCommunities(mockClient);
 
       expect(result).toEqual(mockOrgs);
       expect(mockClient._queryBuilder.eq).toHaveBeenCalledWith(
@@ -692,13 +692,13 @@ describe("organizations queries", () => {
         error: null,
       });
 
-      const result = await listMyOwnedOrganizations(mockClient);
+      const result = await listMyOwnedCommunities(mockClient);
 
       expect(result).toEqual([]);
     });
   });
 
-  describe("getOrganizationWithTournamentStats", () => {
+  describe("getCommunityWithTournamentStats", () => {
     it.skip("should fetch organization with tournament statistics", async () => {
       const mockOrg = { id: 1, name: "Test Org", slug: "test-org" };
       const mockTournaments = [
@@ -720,7 +720,7 @@ describe("organizations queries", () => {
         count: 100,
       });
 
-      const result = await getOrganizationWithTournamentStats(
+      const result = await getCommunityWithTournamentStats(
         mockClient,
         "test-org"
       );
@@ -730,7 +730,7 @@ describe("organizations queries", () => {
     }, 10000);
   });
 
-  describe("listOrganizationTournaments", () => {
+  describe("listCommunityTournaments", () => {
     it("should fetch tournaments for organization", async () => {
       const mockTournaments = [
         { id: 1, name: "Tournament 1", status: "active" },
@@ -752,7 +752,7 @@ describe("organizations queries", () => {
         }).then(resolve);
       });
 
-      const result = await listOrganizationTournaments(mockClient, 1);
+      const result = await listCommunityTournaments(mockClient, 1);
 
       expect(result.tournaments).toHaveLength(1);
       expect(result.total).toBe(1);
@@ -761,7 +761,7 @@ describe("organizations queries", () => {
     it("should filter by status", async () => {
       const mockClient = createMockClient();
 
-      await listOrganizationTournaments(mockClient, 1, { status: "active" });
+      await listCommunityTournaments(mockClient, 1, { status: "active" });
 
       expect(mockClient._queryBuilder.eq).toHaveBeenCalledWith(
         "status",
@@ -770,7 +770,7 @@ describe("organizations queries", () => {
     });
   });
 
-  describe("listOrganizationStaffWithRoles", () => {
+  describe("listCommunityStaffWithRoles", () => {
     it("should fetch staff members with role information", async () => {
       const mockOrg = { owner_user_id: "user-1" };
       const mockStaff = [
@@ -795,14 +795,14 @@ describe("organizations queries", () => {
         }).then(resolve);
       });
 
-      const result = await listOrganizationStaffWithRoles(mockClient, 1);
+      const result = await listCommunityStaffWithRoles(mockClient, 1);
 
       expect(result).toBeDefined();
       expect(Array.isArray(result)).toBe(true);
     }, 10000);
   });
 
-  describe("listOrganizationGroups", () => {
+  describe("listCommunityGroups", () => {
     it("should fetch groups with member counts", async () => {
       const mockGroups = [
         {
@@ -837,7 +837,7 @@ describe("organizations queries", () => {
         }
       });
 
-      const result = await listOrganizationGroups(mockClient, 1);
+      const result = await listCommunityGroups(mockClient, 1);
 
       expect(result).toHaveLength(1);
       expect(result[0]).toMatchObject({

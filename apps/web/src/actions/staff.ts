@@ -12,7 +12,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getErrorMessage } from "@/lib/utils";
 import {
   searchUsersForInvite as searchUsersQuery,
-  listOrganizationGroups as listGroupsQuery,
+  listCommunityGroups as listGroupsQuery,
   addStaffMember as addStaffMemberMutation,
   addStaffToGroup as addStaffToGroupMutation,
   changeStaffRole as changeRoleMutation,
