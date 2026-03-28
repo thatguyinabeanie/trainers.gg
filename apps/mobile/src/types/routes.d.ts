@@ -22,10 +22,10 @@ declare global {
         | "/(auth)/sign-up";
 
       // Dynamic routes
-      DynamicRoutes: `/organizations/${string}`;
+      DynamicRoutes: `/communities/${string}`;
 
       // Full route type union
-      DynamicRouteTemplate: "/organizations/[slug]";
+      DynamicRouteTemplate: "/communities/[slug]";
     }
   }
 }
