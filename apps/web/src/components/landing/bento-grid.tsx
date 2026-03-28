@@ -99,25 +99,33 @@ function AltsPreview() {
 function ProfilePreview() {
   return (
     <>
-      <div className="mb-2 flex items-center gap-2">
-        <div className="bg-primary/40 size-6 rounded-full" />
-        <div>
-          <p className="text-foreground text-[11px] font-semibold">
-            thatguyinabeanie
-          </p>
+      {/* Rich profile card */}
+      <div className="mb-2.5 flex items-center gap-2.5">
+        <div className="bg-primary/40 size-8 shrink-0 rounded-full" />
+        <div className="min-w-0">
+          <div className="flex items-center gap-1.5">
+            <p className="text-foreground text-[11px] font-semibold">
+              thatguyinabeanie
+            </p>
+            <span className="text-[10px]">🇺🇸</span>
+          </div>
           <p className="text-muted-foreground text-[9px]">
             @thatguyinabeanie.trainers.gg
           </p>
         </div>
       </div>
-      <p className="text-muted-foreground mb-1 text-[8px] tracking-[1px] uppercase">
-        Public alts
-      </p>
-      <div className="mb-2.5 flex gap-1.5">
-        <span className="bg-primary/10 border-primary/20 text-primary rounded border px-2 py-0.5 text-[10px]">
-          VGC_Main
+
+      {/* Format badges */}
+      <div className="mb-2.5 flex flex-wrap gap-1">
+        <span className="bg-primary/10 text-primary rounded-full px-2 py-0.5 text-[9px] font-medium">
+          VGC Reg H
+        </span>
+        <span className="bg-primary/10 text-primary rounded-full px-2 py-0.5 text-[9px] font-medium">
+          Smogon OU
         </span>
       </div>
+
+      {/* Stats row */}
       <div className="mb-2.5 flex gap-2">
         <div className="flex-1 text-center">
           <p className="text-primary font-mono text-base font-extrabold">
@@ -135,28 +143,49 @@ function ProfilePreview() {
             GXE
           </p>
         </div>
+        <div className="flex-1 text-center">
+          <p className="text-primary font-mono text-base font-extrabold">
+            71%
+          </p>
+          <p className="text-muted-foreground text-[8px] tracking-[1px] uppercase">
+            Win rate
+          </p>
+        </div>
       </div>
+
+      {/* Recent results */}
+      <div className="mb-2.5 border-t border-border/40 pt-2">
+        <p className="text-muted-foreground mb-1 text-[8px] tracking-[1px] uppercase">
+          Recent results
+        </p>
+        <div className="space-y-1">
+          <div className="flex items-center justify-between text-[10px]">
+            <span className="text-foreground font-medium">Spring Cup 2026</span>
+            <span className="text-primary font-mono font-semibold">1st</span>
+          </div>
+          <div className="flex items-center justify-between text-[10px]">
+            <span className="text-foreground font-medium">Weekly #12</span>
+            <span className="text-muted-foreground font-mono">5th</span>
+          </div>
+          <div className="flex items-center justify-between text-[10px]">
+            <span className="text-foreground font-medium">Ladder Series</span>
+            <span className="text-muted-foreground font-mono">3rd</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Public alts */}
       <div className="border-t border-border/40 pt-2">
         <p className="text-muted-foreground mb-1 text-[8px] tracking-[1px] uppercase">
-          Aggregate (all alts)
+          Public alts
         </p>
-        <div className="flex gap-2">
-          <div className="flex-1 text-center">
-            <p className="text-primary font-mono text-[13px] font-extrabold">
-              4
-            </p>
-            <p className="text-muted-foreground text-[8px] tracking-[1px] uppercase">
-              Alts
-            </p>
-          </div>
-          <div className="flex-1 text-center">
-            <p className="text-primary font-mono text-[13px] font-extrabold">
-              12
-            </p>
-            <p className="text-muted-foreground text-[8px] tracking-[1px] uppercase">
-              Events
-            </p>
-          </div>
+        <div className="flex flex-wrap gap-1">
+          <span className="border-primary/20 text-primary rounded border px-1.5 py-0.5 text-[9px]">
+            VGC_Main
+          </span>
+          <span className="border-primary/20 text-primary rounded border px-1.5 py-0.5 text-[9px]">
+            OU_Grinder
+          </span>
         </div>
       </div>
     </>

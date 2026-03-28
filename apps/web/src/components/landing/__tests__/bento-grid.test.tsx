@@ -68,17 +68,16 @@ describe("BentoGrid", () => {
   );
 
   // -------------------------------------------------------------------------
-  // 5. Profile preview: aggregate stats section is present
+  // 5. Profile preview: recent results and public alts
   // -------------------------------------------------------------------------
-  it('renders the "Aggregate (all alts)" label in the profile preview', () => {
-    expect(screen.getByText("Aggregate (all alts)")).toBeInTheDocument();
+  it("renders recent results in the profile preview", () => {
+    expect(screen.getByText("Spring Cup 2026")).toBeInTheDocument();
+    expect(screen.getByText("1st")).toBeInTheDocument();
   });
 
-  it("renders aggregate stat values (4 alts, 12 events)", () => {
-    // The value "4" is unique to the aggregate Alts count in this section
-    expect(screen.getByText("4")).toBeInTheDocument();
-    // The value "12" is unique to the aggregate Events count
-    expect(screen.getByText("12")).toBeInTheDocument();
+  it("renders public alts in the profile preview", () => {
+    expect(screen.getAllByText("VGC_Main").length).toBeGreaterThan(0);
+    expect(screen.getByText("OU_Grinder")).toBeInTheDocument();
   });
 
   // -------------------------------------------------------------------------
