@@ -73,16 +73,19 @@ export default async function RootLayout({
           <TopNav />
           <main className="flex w-full flex-1 flex-col">{children}</main>
 
-          <footer className="w-full py-2">
-            <div className="text-muted-foreground relative mx-auto flex w-full max-w-screen-2xl items-center justify-between px-6 text-[10px] sm:px-10">
+          <footer className="text-muted-foreground w-full px-6 py-2 text-[10px] sm:px-10">
+            <div className="mx-auto flex w-full max-w-screen-2xl items-center justify-between">
               <p className="whitespace-nowrap font-semibold">
                 Built for competitors, by competitors.
               </p>
-              <p className="absolute inset-x-0 text-center text-[8px] opacity-50">
-                trainers.gg is not affiliated with, endorsed by, or connected to Nintendo, The Pok&eacute;mon Company, or Game Freak.
+              <p className="whitespace-nowrap">
+                &copy; {new Date().getFullYear()} Beanie LLC
               </p>
-              <p className="whitespace-nowrap">&copy; {new Date().getFullYear()} Beanie LLC</p>
             </div>
+            <p className="mt-1 text-center text-[8px] opacity-40">
+              trainers.gg is not affiliated with, endorsed by, or connected
+              to Nintendo, The Pok&eacute;mon Company, or Game Freak.
+            </p>
           </footer>
 
           <Toaster />
