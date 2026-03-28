@@ -23,7 +23,7 @@ export default function SignInPage() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showEmailForm, setShowEmailForm] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(searchParams.get("error"));
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleContinue = async (e: FormEvent) => {
@@ -201,6 +201,7 @@ export default function SignInPage() {
         <SocialAuthButtons
           onEmailClick={() => setShowEmailForm(true)}
           redirectTo={getRedirectParam(searchParams) ?? undefined}
+          onError={setError}
         />
       </div>
 
