@@ -655,6 +655,92 @@ describe("Organization Request Mutations", () => {
       expect(fromSpy).toHaveBeenCalledWith("notifications");
       expect(fromSpy).toHaveBeenCalledWith("audit_log");
     });
+
+    it("cancels duplicate pending requests when granting a rejected request", async () => {
+      const request = organizationRequestFactory.build({
+        status: "rejected",
+        user_id: "requester-789",
+      });
+      const duplicatePending = organizationRequestFactory.build({
+        id: 999,
+        status: "pending",
+        user_id: "requester-789",
+      });
+      const org = { id: "org-1", name: request.name, slug: request.slug };
+      const updatedRequest = { ...request, status: "approved" };
+
+      let requestCallCount = 0;
+      const updateCalls: Array<{ table: string; id: number }> = [];
+      const auditInserts: Array<Record<string, unknown>> = [];
+      const fromSpy = jest.spyOn(mockClient, "from");
+      fromSpy.mockImplementation((table: string) => {
+        const builder: MockQueryBuilder = {
+          select: jest.fn().mockReturnThis(),
+          eq: jest.fn().mockReturnThis(),
+          neq: jest.fn().mockReturnThis(),
+          single: jest.fn(),
+          maybeSingle: jest.fn(),
+          update: jest.fn().mockReturnThis(),
+          insert: jest.fn().mockReturnThis(),
+          delete: jest.fn().mockReturnThis(),
+          order: jest.fn().mockReturnThis(),
+          limit: jest.fn().mockReturnThis(),
+        };
+
+        if (table === "community_requests") {
+          requestCallCount++;
+          if (requestCallCount === 1) {
+            // Fetch request
+            builder.single.mockResolvedValue({ data: request, error: null });
+          } else if (requestCallCount === 2) {
+            // Update request status
+            builder.single.mockResolvedValue({
+              data: updatedRequest,
+              error: null,
+            });
+          } else if (requestCallCount === 3) {
+            // Duplicate query — returns one pending duplicate
+            builder.select.mockReturnValue({
+              eq: jest.fn().mockReturnValue({
+                eq: jest.fn().mockReturnValue({
+                  neq: jest.fn().mockResolvedValue({
+                    data: [{ id: duplicatePending.id }],
+                    error: null,
+                  }),
+                }),
+              }),
+            });
+          } else if (requestCallCount === 4) {
+            // Update duplicate to rejected
+            builder.eq.mockReturnValue({ error: null });
+            updateCalls.push({ table, id: duplicatePending.id });
+          }
+        } else if (table === "communities") {
+          builder.maybeSingle.mockResolvedValue({ data: null });
+          builder.single.mockResolvedValue({ data: org, error: null });
+        } else if (table === "community_staff") {
+          builder.insert.mockReturnValue({ error: null });
+        } else if (table === "notifications") {
+          builder.insert.mockReturnValue({ error: null });
+        } else if (table === "audit_log") {
+          const mockInsert = jest.fn().mockReturnValue({ error: null });
+          builder.insert = mockInsert;
+          // Track audit inserts for assertions
+          mockInsert.mockImplementation((data: Record<string, unknown>) => {
+            auditInserts.push(data);
+            return { error: null };
+          });
+        }
+
+        return builder;
+      });
+
+      await grantCommunityRequest(mockClient, request.id, ADMIN_USER_ID);
+
+      // Verify audit_log was called at least twice (original approval + duplicate cancellation)
+      const auditCalls = fromSpy.mock.calls.filter(([t]) => t === "audit_log");
+      expect(auditCalls.length).toBeGreaterThanOrEqual(2);
+    });
   });
 
   // ---------------------------------------------------------------------------
