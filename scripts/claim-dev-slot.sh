@@ -62,6 +62,31 @@ if [ -f "$SUPABASE_CONFIG_BACKUP" ]; then
 fi
 
 # =============================================================================
+# Reuse existing slot if one is active for this worktree
+# =============================================================================
+reuse_existing_slot() {
+  local slot_file="$ROOT_DIR/.dev-slot"
+  [ -f "$slot_file" ] || return 1
+
+  local existing_slot
+  existing_slot=$(cat "$slot_file")
+  local lockfile="$DEV_SLOT_DIR/slot-${existing_slot}.lock"
+  [ -f "$lockfile" ] || return 1
+
+  local lock_pid
+  lock_pid=$(grep -o '"pid": *[0-9]*' "$lockfile" 2>/dev/null | grep -o '[0-9]*')
+  local lock_worktree
+  lock_worktree=$(grep -o '"worktree": *"[^"]*"' "$lockfile" 2>/dev/null | sed 's/.*"worktree": *"\([^"]*\)".*/\1/')
+
+  if [ "$lock_worktree" = "$ROOT_DIR" ] && is_pid_alive "$lock_pid"; then
+    echo "$existing_slot"
+    return 0
+  fi
+
+  return 1
+}
+
+# =============================================================================
 # Find a free slot
 # =============================================================================
 claim_slot() {
@@ -122,11 +147,15 @@ EOF
   done
 }
 
-SLOT=$(claim_slot)
-log_success "Claimed dev slot $SLOT"
-
-# Write slot file for other scripts to read
-echo "$SLOT" > "$ROOT_DIR/.dev-slot"
+REUSE_SLOT=false
+if SLOT=$(reuse_existing_slot); then
+  log_info "Reusing active slot $SLOT for this worktree"
+  REUSE_SLOT=true
+else
+  SLOT=$(claim_slot)
+  log_success "Claimed dev slot $SLOT"
+  echo "$SLOT" > "$ROOT_DIR/.dev-slot"
+fi
 
 # =============================================================================
 # Calculate all ports
@@ -266,4 +295,7 @@ cleanup() {
   log_success "Slot $SLOT released"
 }
 
-trap cleanup EXIT INT TERM
+# Only register cleanup for fresh claims
+if [ "$REUSE_SLOT" = "false" ]; then
+  trap cleanup EXIT INT TERM
+fi
