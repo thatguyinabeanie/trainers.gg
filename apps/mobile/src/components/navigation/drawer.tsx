@@ -63,7 +63,7 @@ const MENU_ITEMS: DrawerMenuItem[] = [
   {
     icon: "business-outline",
     iconFilled: "business",
-    label: "Organizations",
+    label: "Communities",
     href: "/(tabs)/explore",
   },
   {

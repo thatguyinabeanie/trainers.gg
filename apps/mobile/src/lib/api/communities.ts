@@ -5,34 +5,34 @@ import { apiCall } from "./client";
 type Organization = Database["public"]["Tables"]["organizations"]["Row"];
 
 /**
- * Organization API hooks using TanStack Query
+ * Community API hooks using TanStack Query
  */
 
 /**
- * Query hook: List all organizations
+ * Query hook: List all communities
  *
  * @example
  * ```tsx
- * const { data: organizations, isLoading } = useOrganizations();
+ * const { data: communities, isLoading } = useCommunities();
  * ```
  */
-export function useOrganizations() {
-  return createQuery<Organization[]>(["organizations"], "api-organizations", {
-    staleTime: 300_000, // 5 minutes - organizations change infrequently
+export function useCommunities() {
+  return createQuery<Organization[]>(["communities"], "api-organizations", {
+    staleTime: 300_000, // 5 minutes - communities change infrequently
   });
 }
 
 /**
- * Query hook: Get organization by slug
+ * Query hook: Get community by slug
  *
  * @example
  * ```tsx
- * const { data: org } = useOrganization('trainers-gg');
+ * const { data: community } = useCommunity('trainers-gg');
  * ```
  */
-export function useOrganization(slug: string) {
+export function useCommunity(slug: string) {
   return createQuery<Organization>(
-    ["organization", slug],
+    ["community", slug],
     `api-organizations/${slug}`,
     {
       staleTime: 300_000, // 5 minutes
@@ -41,20 +41,20 @@ export function useOrganization(slug: string) {
 }
 
 /**
- * Mutation hook: Create new organization
+ * Mutation hook: Create new community
  *
  * @example
  * ```tsx
- * const createOrg = useCreateOrganization();
+ * const createCommunity = useCreateCommunity();
  *
- * await createOrg.mutateAsync({
+ * await createCommunity.mutateAsync({
  *   name: 'My League',
  *   slug: 'my-league',
  *   type: 'league',
  * });
  * ```
  */
-export function useCreateOrganization() {
+export function useCreateCommunity() {
   return createMutation<
     Organization,
     {
@@ -72,25 +72,25 @@ export function useCreateOrganization() {
         body: JSON.stringify(data),
       }),
     {
-      invalidates: () => [["organizations"]],
+      invalidates: () => [["communities"]],
     }
   );
 }
 
 /**
- * Mutation hook: Update organization
+ * Mutation hook: Update community
  *
  * @example
  * ```tsx
- * const updateOrg = useUpdateOrganization();
+ * const updateCommunity = useUpdateCommunity();
  *
- * await updateOrg.mutateAsync({
+ * await updateCommunity.mutateAsync({
  *   slug: 'my-league',
  *   description: 'Updated description',
  * });
  * ```
  */
-export function useUpdateOrganization() {
+export function useUpdateCommunity() {
   return createMutation<
     Organization,
     {
@@ -108,15 +108,15 @@ export function useUpdateOrganization() {
       }),
     {
       invalidates: (variables) => [
-        ["organizations"],
-        ["organization", variables.slug],
+        ["communities"],
+        ["community", variables.slug],
       ],
     }
   );
 }
 
 /**
- * Mutation hook: Invite organization staff
+ * Mutation hook: Invite community staff
  *
  * @example
  * ```tsx
@@ -144,13 +144,13 @@ export function useInviteStaff() {
         body: JSON.stringify({ userId, role }),
       }),
     {
-      invalidates: (variables) => [["organization", variables.slug]],
+      invalidates: (variables) => [["community", variables.slug]],
     }
   );
 }
 
 /**
- * Mutation hook: Remove organization staff
+ * Mutation hook: Remove community staff
  *
  * @example
  * ```tsx
@@ -165,7 +165,7 @@ export function useRemoveStaff() {
         method: "DELETE",
       }),
     {
-      invalidates: (variables) => [["organization", variables.slug]],
+      invalidates: (variables) => [["community", variables.slug]],
     }
   );
 }

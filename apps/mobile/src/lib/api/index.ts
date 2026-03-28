@@ -44,10 +44,10 @@ export {
 
 // Community hooks
 export {
-  useOrganizations,
-  useOrganization,
-  useCreateOrganization,
-  useUpdateOrganization,
+  useCommunities,
+  useCommunity,
+  useCreateCommunity,
+  useUpdateCommunity,
   useInviteStaff,
   useRemoveStaff,
 } from "./communities";

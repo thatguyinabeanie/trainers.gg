@@ -4,7 +4,7 @@ import { YStack, XStack, Text, ScrollView, Input, useTheme } from "tamagui";
 import { Ionicons } from "@expo/vector-icons";
 import { Link } from "expo-router";
 import { Screen, Avatar, Badge } from "@/components/ui";
-import { useOrganizations, type OrganizationWithCounts } from "@/lib/supabase";
+import { useCommunities, type CommunityWithCounts } from "@/lib/supabase";
 
 // Mock data for trending content
 const TRENDING_TEAMS = [
@@ -66,7 +66,11 @@ const TOP_TRAINERS = [
 const CATEGORIES = [
   { id: "teams", label: "Teams", icon: "layers-outline" as const },
   { id: "trainers", label: "Trainers", icon: "people-outline" as const },
-  { id: "organizations", label: "Orgs", icon: "business-outline" as const },
+  {
+    id: "communities",
+    label: "Communities",
+    icon: "business-outline" as const,
+  },
   { id: "tournaments", label: "Events", icon: "trophy-outline" as const },
   { id: "analysis", label: "Analysis", icon: "analytics-outline" as const },
 ];
@@ -206,7 +210,7 @@ function TrainerRow({
   );
 }
 
-function OrganizationCard({ org }: { org: OrganizationWithCounts }) {
+function CommunityCard({ org }: { org: CommunityWithCounts }) {
   const theme = useTheme();
   const tierBadge =
     org.tier === "verified" || org.tier === "partner" ? org.tier : null;
@@ -313,8 +317,8 @@ function SectionHeader({
   );
 }
 
-function OrganizationsContent() {
-  const { organizations, loading, error } = useOrganizations();
+function CommunitiesContent() {
+  const { communities, loading, error } = useCommunities();
   const theme = useTheme();
 
   if (loading) {
@@ -334,13 +338,13 @@ function OrganizationsContent() {
           color={String(theme.destructive.get())}
         />
         <Text color="$destructive" textAlign="center">
-          Failed to load organizations
+          Failed to load communities
         </Text>
       </YStack>
     );
   }
 
-  if (organizations.length === 0) {
+  if (communities.length === 0) {
     return (
       <YStack
         backgroundColor="$card"
@@ -355,7 +359,7 @@ function OrganizationsContent() {
           color={String(theme.mutedForeground.get())}
         />
         <Text fontSize="$5" fontWeight="600" color="$color" textAlign="center">
-          No organizations yet
+          No communities yet
         </Text>
         <Text
           fontSize="$3"
@@ -363,7 +367,7 @@ function OrganizationsContent() {
           textAlign="center"
           lineHeight="$3"
         >
-          Organizations host tournaments and build communities.
+          Communities host tournaments and bring trainers together.
         </Text>
       </YStack>
     );
@@ -371,8 +375,8 @@ function OrganizationsContent() {
 
   return (
     <YStack gap="$3">
-      {organizations.map((org) => (
-        <OrganizationCard key={org.id} org={org} />
+      {communities.map((org) => (
+        <CommunityCard key={org.id} org={org} />
       ))}
     </YStack>
   );
@@ -484,10 +488,10 @@ export default function ExploreScreen() {
         </ScrollView>
 
         {/* Content based on active category */}
-        {activeCategory === "organizations" ? (
+        {activeCategory === "communities" ? (
           <YStack marginTop="$5" paddingHorizontal="$4" gap="$3">
-            <SectionHeader title="Organizations" />
-            <OrganizationsContent />
+            <SectionHeader title="Communities" />
+            <CommunitiesContent />
           </YStack>
         ) : (
           <TeamsAndTrainersContent />

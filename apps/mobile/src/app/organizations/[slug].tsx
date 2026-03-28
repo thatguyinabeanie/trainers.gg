@@ -4,7 +4,7 @@ import { useState } from "react";
 import { YStack, XStack, Text, ScrollView, useTheme } from "tamagui";
 import { Ionicons } from "@expo/vector-icons";
 import { Screen, Badge } from "@/components/ui";
-import { useOrganization } from "@/lib/supabase";
+import { useCommunity } from "@/lib/supabase";
 import {
   communitySocialLinksSchema,
   type CommunitySocialLink,
@@ -38,9 +38,9 @@ function parseSocialLinks(raw: unknown): CommunitySocialLink[] {
   return result.success ? result.data : [];
 }
 
-export default function OrganizationDetailScreen() {
+export default function CommunityDetailScreen() {
   const { slug } = useLocalSearchParams<{ slug: string }>();
-  const { organization, loading, error, refetch } = useOrganization(slug);
+  const { community, loading, error, refetch } = useCommunity(slug);
   const [refreshing, setRefreshing] = useState(false);
   const theme = useTheme();
 
@@ -60,7 +60,7 @@ export default function OrganizationDetailScreen() {
     );
   }
 
-  if (error || !organization) {
+  if (error || !community) {
     return (
       <Screen>
         <YStack
@@ -81,11 +81,11 @@ export default function OrganizationDetailScreen() {
             color="$color"
             textAlign="center"
           >
-            Organization not found
+            Community not found
           </Text>
           <Text fontSize="$3" color="$mutedForeground" textAlign="center">
-            The organization you&apos;re looking for doesn&apos;t exist or has
-            been removed.
+            The community you&apos;re looking for doesn&apos;t exist or has been
+            removed.
           </Text>
         </YStack>
       </Screen>
@@ -93,8 +93,8 @@ export default function OrganizationDetailScreen() {
   }
 
   const tierBadge =
-    organization.tier === "verified" || organization.tier === "partner"
-      ? organization.tier
+    community.tier === "verified" || community.tier === "partner"
+      ? community.tier
       : null;
 
   return (
@@ -133,7 +133,7 @@ export default function OrganizationDetailScreen() {
             <YStack flex={1} gap="$1">
               <XStack alignItems="center" gap="$2" flexWrap="wrap">
                 <Text fontSize="$7" fontWeight="700" color="$color">
-                  {organization.name}
+                  {community.name}
                 </Text>
                 {tierBadge && (
                   <Badge
@@ -144,15 +144,15 @@ export default function OrganizationDetailScreen() {
                 )}
               </XStack>
               <Text fontSize="$3" color="$mutedForeground">
-                @{organization.slug}
+                @{community.slug}
               </Text>
             </YStack>
           </XStack>
 
           {/* Description */}
-          {organization.description && (
+          {community.description && (
             <Text fontSize="$4" color="$color" lineHeight="$5">
-              {organization.description}
+              {community.description}
             </Text>
           )}
 
@@ -160,7 +160,7 @@ export default function OrganizationDetailScreen() {
           <XStack gap="$6" marginTop="$2">
             <YStack alignItems="center">
               <Text fontSize="$6" fontWeight="700" color="$primary">
-                {organization.stats.totalTournamentsCount}
+                {community.stats.totalTournamentsCount}
               </Text>
               <Text fontSize="$2" color="$mutedForeground">
                 Tournaments
@@ -168,16 +168,16 @@ export default function OrganizationDetailScreen() {
             </YStack>
             <YStack alignItems="center">
               <Text fontSize="$6" fontWeight="700" color="$color">
-                {organization.followerCount}
+                {community.followerCount}
               </Text>
               <Text fontSize="$2" color="$mutedForeground">
                 Staff
               </Text>
             </YStack>
-            {organization.stats.primaryFormat && (
+            {community.stats.primaryFormat && (
               <YStack alignItems="center">
                 <Text fontSize="$6" fontWeight="700" color="$color">
-                  {organization.stats.primaryFormat}
+                  {community.stats.primaryFormat}
                 </Text>
                 <Text fontSize="$2" color="$mutedForeground">
                   Primary Format
@@ -188,7 +188,7 @@ export default function OrganizationDetailScreen() {
 
           {/* Social Links */}
           {(() => {
-            const socialLinks = parseSocialLinks(organization.social_links);
+            const socialLinks = parseSocialLinks(community.social_links);
             if (socialLinks.length === 0) return null;
             return (
               <XStack gap="$4" marginTop="$2" flexWrap="wrap">
@@ -224,12 +224,12 @@ export default function OrganizationDetailScreen() {
         </YStack>
 
         {/* Active Tournaments */}
-        {organization.tournaments.active.length > 0 && (
+        {community.tournaments.active.length > 0 && (
           <YStack paddingHorizontal="$5" marginTop="$4" gap="$3">
             <Text fontSize="$5" fontWeight="600" color="$color">
               Active Tournaments
             </Text>
-            {organization.tournaments.active.map((tournament) => (
+            {community.tournaments.active.map((tournament) => (
               <TournamentCard
                 key={tournament.id}
                 tournament={tournament}
@@ -240,33 +240,33 @@ export default function OrganizationDetailScreen() {
         )}
 
         {/* Upcoming Tournaments */}
-        {organization.tournaments.upcoming.length > 0 && (
+        {community.tournaments.upcoming.length > 0 && (
           <YStack paddingHorizontal="$5" marginTop="$6" gap="$3">
             <Text fontSize="$5" fontWeight="600" color="$color">
               Upcoming Tournaments
             </Text>
-            {organization.tournaments.upcoming.map((tournament) => (
+            {community.tournaments.upcoming.map((tournament) => (
               <TournamentCard key={tournament.id} tournament={tournament} />
             ))}
           </YStack>
         )}
 
         {/* Completed Tournaments */}
-        {organization.tournaments.completed.length > 0 && (
+        {community.tournaments.completed.length > 0 && (
           <YStack paddingHorizontal="$5" marginTop="$6" gap="$3">
             <Text fontSize="$5" fontWeight="600" color="$color">
               Past Tournaments
             </Text>
-            {organization.tournaments.completed.map((tournament) => (
+            {community.tournaments.completed.map((tournament) => (
               <TournamentCard key={tournament.id} tournament={tournament} />
             ))}
           </YStack>
         )}
 
         {/* Empty State */}
-        {organization.tournaments.active.length === 0 &&
-          organization.tournaments.upcoming.length === 0 &&
-          organization.tournaments.completed.length === 0 && (
+        {community.tournaments.active.length === 0 &&
+          community.tournaments.upcoming.length === 0 &&
+          community.tournaments.completed.length === 0 && (
             <YStack
               marginHorizontal="$5"
               marginTop="$6"
@@ -290,7 +290,7 @@ export default function OrganizationDetailScreen() {
                 No tournaments yet
               </Text>
               <Text fontSize="$3" color="$mutedForeground" textAlign="center">
-                This organization hasn&apos;t hosted any tournaments.
+                This community hasn&apos;t hosted any tournaments.
               </Text>
             </YStack>
           )}

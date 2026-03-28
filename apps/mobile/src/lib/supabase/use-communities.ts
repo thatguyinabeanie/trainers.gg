@@ -5,34 +5,32 @@ import {
   getCommunityBySlug,
 } from "@trainers/supabase/queries";
 
-export type OrganizationWithCounts = Awaited<
+export type CommunityWithCounts = Awaited<
   ReturnType<typeof listPublicCommunities>
 >[number];
 
-export type OrganizationDetail = NonNullable<
+export type CommunityDetail = NonNullable<
   Awaited<ReturnType<typeof getCommunityBySlug>>
 >;
 
 /**
- * Hook to fetch all public organizations
+ * Hook to fetch all public communities
  */
-export function useOrganizations() {
-  const [organizations, setOrganizations] = useState<OrganizationWithCounts[]>(
-    []
-  );
+export function useCommunities() {
+  const [communities, setCommunities] = useState<CommunityWithCounts[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
-  const fetchOrganizations = async () => {
+  const fetchCommunities = async () => {
     try {
       setLoading(true);
       setError(null);
       const supabase = getSupabase();
       const data = await listPublicCommunities(supabase);
-      setOrganizations(data);
+      setCommunities(data);
     } catch (err) {
       setError(
-        err instanceof Error ? err : new Error("Failed to fetch organizations")
+        err instanceof Error ? err : new Error("Failed to fetch communities")
       );
     } finally {
       setLoading(false);
@@ -40,28 +38,26 @@ export function useOrganizations() {
   };
 
   useEffect(() => {
-    fetchOrganizations();
+    fetchCommunities();
   }, []);
 
   return {
-    organizations,
+    communities,
     loading,
     error,
-    refetch: fetchOrganizations,
+    refetch: fetchCommunities,
   };
 }
 
 /**
- * Hook to fetch a single organization by slug
+ * Hook to fetch a single community by slug
  */
-export function useOrganization(slug: string | undefined) {
-  const [organization, setOrganization] = useState<OrganizationDetail | null>(
-    null
-  );
+export function useCommunity(slug: string | undefined) {
+  const [community, setCommunity] = useState<CommunityDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
-  const fetchOrganization = async () => {
+  const fetchCommunity = async () => {
     if (!slug) {
       setLoading(false);
       return;
@@ -72,10 +68,10 @@ export function useOrganization(slug: string | undefined) {
       setError(null);
       const supabase = getSupabase();
       const data = await getCommunityBySlug(supabase, slug);
-      setOrganization(data);
+      setCommunity(data);
     } catch (err) {
       setError(
-        err instanceof Error ? err : new Error("Failed to fetch organization")
+        err instanceof Error ? err : new Error("Failed to fetch community")
       );
     } finally {
       setLoading(false);
@@ -83,13 +79,13 @@ export function useOrganization(slug: string | undefined) {
   };
 
   useEffect(() => {
-    fetchOrganization();
+    fetchCommunity();
   }, [slug]);
 
   return {
-    organization,
+    community,
     loading,
     error,
-    refetch: fetchOrganization,
+    refetch: fetchCommunity,
   };
 }
