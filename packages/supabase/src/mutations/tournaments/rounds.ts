@@ -5,7 +5,7 @@ import {
 import {
   type TypedClient,
   getCurrentUser,
-  checkOrgPermission,
+  checkCommunityPermission,
 } from "./helpers";
 import { recalculateStandings } from "./standings";
 
@@ -63,7 +63,7 @@ export async function generateRoundPairings(
   };
 
   // Verify permission
-  const hasPermission = await checkOrgPermission(
+  const hasPermission = await checkCommunityPermission(
     supabase,
     phase.tournaments.community_id,
     "tournament.manage"
@@ -373,7 +373,7 @@ export async function completeRound(supabase: TypedClient, roundId: number) {
   };
 
   // Verify permission
-  const hasPermission = await checkOrgPermission(
+  const hasPermission = await checkCommunityPermission(
     supabase,
     phase.tournaments.community_id,
     "tournament.manage"
@@ -456,7 +456,7 @@ export async function createRound(
   };
 
   // Verify permission
-  const hasPermission = await checkOrgPermission(
+  const hasPermission = await checkCommunityPermission(
     supabase,
     tournament.community_id,
     "tournament.manage"
@@ -562,7 +562,7 @@ export async function deleteRoundAndMatches(
   };
 
   // Verify permission
-  const hasPermission = await checkOrgPermission(
+  const hasPermission = await checkCommunityPermission(
     supabase,
     phase.tournaments.community_id,
     "tournament.manage"

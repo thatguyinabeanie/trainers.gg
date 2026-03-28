@@ -120,7 +120,7 @@ export class TournamentSimulator {
   // Tournament state
   private tournamentId: number = 0;
   private tournamentSlug: string = "";
-  private orgId: number = 0;
+  private communityId: number = 0;
   private orgSlug: string = "vgc-league";
   private swissPhaseId: number = 0;
   private elimPhaseId: number = 0;
@@ -237,14 +237,14 @@ export class TournamentSimulator {
     if (orgError || !org) {
       throw new Error(`VGC League org not found: ${orgError?.message}`);
     }
-    this.orgId = org.id;
+    this.communityId = org.id;
 
     // Create tournament
     this.tournamentSlug = `sim-${Date.now()}`;
     const { data: tournament, error: tournamentError } = await this.adminClient
       .from("tournaments")
       .insert({
-        community_id: this.orgId,
+        community_id: this.communityId,
         name: `Simulation Tournament ${this.tournamentSlug}`,
         slug: this.tournamentSlug,
         format: "swiss_with_cut",

@@ -192,7 +192,7 @@ function TournamentHeader({
         <div className="text-muted-foreground flex flex-wrap items-center gap-4 text-sm">
           {organization && (
             <Link
-              href={`/organizations/${organization.slug}`}
+              href={`/communities/${organization.slug}`}
               className="flex items-center gap-1 hover:underline"
             >
               <Building2 className="h-4 w-4" />

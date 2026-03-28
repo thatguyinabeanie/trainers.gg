@@ -13,20 +13,20 @@ export type CommunityWithCounts = OrganizationRow & {
 export async function listPublicCommunities(
   supabase: TypedClient
 ): Promise<CommunityWithCounts[]> {
-  const { data: organizations, error } = await supabase
+  const { data: communities, error } = await supabase
     .from("communities")
     .select("*")
     .eq("status", "active")
     .order("created_at", { ascending: false });
 
   if (error) throw error;
-  if (!organizations || organizations.length === 0) return [];
+  if (!communities || communities.length === 0) return [];
 
-  // Get tournament counts for all organizations in a single query
-  const orgIds = organizations.map((org) => org.id);
+  // Get tournament counts for all communities in a single query
+  const communityIds = communities.map((org) => org.id);
   const { data: counts, error: countsError } = await supabase.rpc(
     "get_community_tournament_counts",
-    { community_ids: orgIds }
+    { community_ids: communityIds }
   );
 
   if (countsError) {
@@ -42,8 +42,8 @@ export async function listPublicCommunities(
     };
   }
 
-  // Add counts to organizations
-  const orgsWithCounts: CommunityWithCounts[] = organizations.map((org) => ({
+  // Add counts to communities
+  const orgsWithCounts: CommunityWithCounts[] = communities.map((org) => ({
     ...org,
     activeTournamentsCount: countMap[String(org.id)]?.active ?? 0,
     totalTournamentsCount: countMap[String(org.id)]?.total ?? 0,

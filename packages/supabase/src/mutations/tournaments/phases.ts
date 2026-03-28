@@ -2,7 +2,7 @@ import {
   type TypedClient,
   type CutRule,
   getCurrentUser,
-  checkOrgPermission,
+  checkCommunityPermission,
 } from "./helpers";
 
 /**
@@ -52,7 +52,7 @@ export async function updatePhase(
   };
 
   // Verify permission
-  const hasPermission = await checkOrgPermission(
+  const hasPermission = await checkCommunityPermission(
     supabase,
     tournament.community_id,
     "tournament.manage"
@@ -139,7 +139,7 @@ export async function createPhase(
   if (!tournament) throw new Error("Tournament not found");
 
   // Verify permission
-  const hasPermission = await checkOrgPermission(
+  const hasPermission = await checkCommunityPermission(
     supabase,
     tournament.community_id,
     "tournament.manage"
@@ -231,7 +231,7 @@ export async function deletePhase(supabase: TypedClient, phaseId: number) {
   };
 
   // Verify permission
-  const hasPermission = await checkOrgPermission(
+  const hasPermission = await checkCommunityPermission(
     supabase,
     tournament.community_id,
     "tournament.manage"
@@ -338,7 +338,7 @@ export async function saveTournamentPhases(
   if (!tournament) throw new Error("Tournament not found");
 
   // Verify permission
-  const hasPermission = await checkOrgPermission(
+  const hasPermission = await checkCommunityPermission(
     supabase,
     tournament.community_id,
     "tournament.manage"

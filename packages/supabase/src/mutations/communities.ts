@@ -17,9 +17,9 @@ async function getCurrentUser(supabase: TypedClient) {
 }
 
 /**
- * Helper to check if user has a specific permission in an organization
+ * Helper to check if user has a specific permission in a community
  */
-async function checkOrgPermission(
+async function checkCommunityPermission(
   supabase: TypedClient,
   communityId: number,
   permissionKey: string
@@ -249,7 +249,7 @@ export async function inviteToCommunity(
 
 /**
  * Accept organization invitation
- * Note: The database trigger will automatically create the organization_staff record
+ * Note: The database trigger will automatically create the community_staff record
  */
 export async function acceptCommunityInvitation(
   supabase: TypedClient,
@@ -277,7 +277,7 @@ export async function acceptCommunityInvitation(
   }
 
   // Update invitation status
-  // The trigger will automatically create organization_staff record and assign role
+  // The trigger will automatically create community_staff record and assign role
   await supabase
     .from("community_invitations")
     .update({
@@ -414,7 +414,7 @@ export async function addStaffMember(
 
   // Verify permission: must be org owner or have org.staff.manage permission
   const ownerCheck = await isOrgOwner(supabase, communityId);
-  const permCheck = await checkOrgPermission(
+  const permCheck = await checkCommunityPermission(
     supabase,
     communityId,
     "community.staff.manage"
@@ -460,7 +460,7 @@ export async function addStaffToGroup(
 
   // Verify permission: must be org owner or have org.staff.manage permission
   const ownerCheck = await isOrgOwner(supabase, communityId);
-  const permCheck = await checkOrgPermission(
+  const permCheck = await checkCommunityPermission(
     supabase,
     communityId,
     "community.staff.manage"
@@ -558,7 +558,7 @@ export async function removeStaffFromGroup(
 
   // Verify permission: must be org owner or have org.staff.manage permission
   const ownerCheck = await isOrgOwner(supabase, communityId);
-  const permCheck = await checkOrgPermission(
+  const permCheck = await checkCommunityPermission(
     supabase,
     communityId,
     "community.staff.manage"
@@ -615,7 +615,7 @@ export async function changeStaffRole(
 
   // Verify permission: must be org owner or have org.staff.manage permission
   const ownerCheck = await isOrgOwner(supabase, communityId);
-  const permCheck = await checkOrgPermission(
+  const permCheck = await checkCommunityPermission(
     supabase,
     communityId,
     "community.staff.manage"
@@ -653,7 +653,7 @@ export async function removeStaffCompletely(
 
   // Verify permission: must be org owner or have org.staff.manage permission
   const ownerCheck = await isOrgOwner(supabase, communityId);
-  const permCheck = await checkOrgPermission(
+  const permCheck = await checkCommunityPermission(
     supabase,
     communityId,
     "community.staff.manage"
@@ -684,7 +684,7 @@ export async function removeStaffCompletely(
   // First remove from all groups
   await removeStaffFromGroup(supabase, communityId, userId);
 
-  // Then remove from organization_staff
+  // Then remove from community_staff
   const { error } = await supabase
     .from("community_staff")
     .delete()

@@ -62,7 +62,7 @@ export async function getAuditLog(
     actions?: AuditAction[];
     actorUserId?: string;
     dateRange?: { start: string; end: string };
-    entityType?: "tournament" | "match" | "organization";
+    entityType?: "tournament" | "match" | "community";
     limit?: number;
     offset?: number;
   } = {}
@@ -108,7 +108,7 @@ export async function getAuditLog(
     query = query.not("tournament_id", "is", null);
   } else if (entityType === "match") {
     query = query.not("match_id", "is", null);
-  } else if (entityType === "organization") {
+  } else if (entityType === "community") {
     query = query.not("community_id", "is", null);
   }
 

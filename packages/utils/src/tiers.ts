@@ -4,7 +4,7 @@ export type UserTier = "free" | "player_pro" | "coach_premium";
 export type CommunityTier = "regular" | "verified" | "partner";
 export type CommunitySubscriptionTier =
   | "free"
-  | "organization_plus"
+  | "community_plus"
   | "enterprise";
 
 export const USER_TIERS = {
@@ -21,7 +21,7 @@ export const COMMUNITY_TIERS = {
 
 export const COMMUNITY_SUBSCRIPTION_TIERS = {
   FREE: "free" as const,
-  ORGANIZATION_PLUS: "organization_plus" as const,
+  COMMUNITY_PLUS: "community_plus" as const,
   ENTERPRISE: "enterprise" as const,
 } as const;
 
@@ -35,7 +35,7 @@ export const TIER_PRICING = {
     monthly: 1999, // $19.99
     annual: 19990, // $199.90 (2 months free)
   },
-  [COMMUNITY_SUBSCRIPTION_TIERS.ORGANIZATION_PLUS]: {
+  [COMMUNITY_SUBSCRIPTION_TIERS.COMMUNITY_PLUS]: {
     monthly: 2999, // $29.99
     annual: 29990, // $299.90 (2 months free)
   },
@@ -97,7 +97,7 @@ export const COMMUNITY_SUBSCRIPTION_FEATURES = {
     customDomains: false,
     advancedMetrics: false,
   },
-  [COMMUNITY_SUBSCRIPTION_TIERS.ORGANIZATION_PLUS]: {
+  [COMMUNITY_SUBSCRIPTION_TIERS.COMMUNITY_PLUS]: {
     maxTournaments: null, // unlimited
     autoBrackets: true,
     autoReminders: true,

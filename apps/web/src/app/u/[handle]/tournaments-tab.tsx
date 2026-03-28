@@ -189,7 +189,7 @@ export function TournamentsTab({ altIds, handle }: TournamentsTabProps) {
                     <div className="text-muted-foreground mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-sm">
                       {entry.organizationName && entry.organizationSlug && (
                         <Link
-                          href={`/organizations/${entry.organizationSlug}`}
+                          href={`/communities/${entry.organizationSlug}`}
                           className="hover:underline"
                         >
                           {entry.organizationName}

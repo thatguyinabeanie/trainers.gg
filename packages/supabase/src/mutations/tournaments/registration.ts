@@ -4,7 +4,7 @@ import {
   type TypedClient,
   getCurrentUser,
   getCurrentAlt,
-  checkOrgPermission,
+  checkCommunityPermission,
 } from "./helpers";
 
 /**
@@ -169,7 +169,7 @@ export async function updateRegistrationStatus(
   if (!tournament) throw new Error("Tournament not found");
 
   // Verify permission
-  const hasPermission = await checkOrgPermission(
+  const hasPermission = await checkCommunityPermission(
     supabase,
     tournament.community_id,
     "tournament.manage"

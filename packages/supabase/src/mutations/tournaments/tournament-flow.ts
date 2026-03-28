@@ -1,7 +1,7 @@
 import {
   type TypedClient,
   getCurrentUser,
-  checkOrgPermission,
+  checkCommunityPermission,
 } from "./helpers";
 import { recalculateStandings } from "./standings";
 
@@ -33,7 +33,7 @@ export async function startTournamentEnhanced(
   if (!tournament) throw new Error("Tournament not found");
 
   // Verify permission via has_community_permission (covers org owner + staff roles)
-  const hasPermission = await checkOrgPermission(
+  const hasPermission = await checkCommunityPermission(
     supabase,
     tournament.community_id,
     "tournament.manage"
@@ -232,7 +232,7 @@ export async function generateEliminationPairings(
   };
 
   // Verify permission via has_community_permission (covers org owner + staff roles)
-  const hasPermission = await checkOrgPermission(
+  const hasPermission = await checkCommunityPermission(
     supabase,
     phase.tournaments.community_id,
     "tournament.manage"
@@ -353,7 +353,7 @@ export async function completeTournament(
   if (!tournament) throw new Error("Tournament not found");
 
   // Verify permission via has_community_permission (covers org owner + staff roles)
-  const hasPermission = await checkOrgPermission(
+  const hasPermission = await checkCommunityPermission(
     supabase,
     tournament.community_id,
     "tournament.manage"

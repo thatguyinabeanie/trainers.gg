@@ -2,7 +2,7 @@ import type { Database } from "../../types";
 import {
   type TypedClient,
   getCurrentUser,
-  checkOrgPermission,
+  checkCommunityPermission,
   type PhaseConfig,
 } from "./helpers";
 
@@ -54,7 +54,7 @@ export async function createTournament(
   if (!org) throw new Error("Organization not found");
 
   // Check permission via has_community_permission (covers org owner + staff roles)
-  const hasPermission = await checkOrgPermission(
+  const hasPermission = await checkCommunityPermission(
     supabase,
     data.communityId,
     "tournament.manage"
@@ -269,7 +269,7 @@ export async function updateTournament(
   if (!tournament) throw new Error("Tournament not found");
 
   // Verify permission via has_community_permission (covers org owner + staff roles)
-  const hasPermission = await checkOrgPermission(
+  const hasPermission = await checkCommunityPermission(
     supabase,
     tournament.community_id,
     "tournament.manage"
@@ -335,7 +335,7 @@ export async function archiveTournament(
   if (!tournament) throw new Error("Tournament not found");
 
   // Verify permission via has_community_permission (covers org owner + staff roles)
-  const hasPermission = await checkOrgPermission(
+  const hasPermission = await checkCommunityPermission(
     supabase,
     tournament.community_id,
     "tournament.manage"
@@ -373,7 +373,7 @@ export async function deleteTournament(
   if (!tournament) throw new Error("Tournament not found");
 
   // Verify permission via has_community_permission (covers org owner + staff roles)
-  const hasPermission = await checkOrgPermission(
+  const hasPermission = await checkCommunityPermission(
     supabase,
     tournament.community_id,
     "tournament.manage"

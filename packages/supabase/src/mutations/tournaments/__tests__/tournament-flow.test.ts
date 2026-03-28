@@ -10,14 +10,14 @@ import type { TypedClient } from "../../../client";
 jest.mock("../helpers", () => ({
   getCurrentUser: jest.fn(),
   getCurrentAlt: jest.fn(),
-  checkOrgPermission: jest.fn(),
+  checkCommunityPermission: jest.fn(),
 }));
 
 jest.mock("../standings", () => ({
   recalculateStandings: jest.fn(),
 }));
 
-import { getCurrentUser, checkOrgPermission } from "../helpers";
+import { getCurrentUser, checkCommunityPermission } from "../helpers";
 import { recalculateStandings } from "../standings";
 
 // Helper to create mock Supabase client
@@ -68,7 +68,7 @@ describe("Tournament Flow Mutations", () => {
 
     beforeEach(() => {
       (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
-      (checkOrgPermission as jest.Mock).mockResolvedValue(true);
+      (checkCommunityPermission as jest.Mock).mockResolvedValue(true);
     });
 
     it("should successfully start tournament with phases", async () => {
@@ -323,7 +323,7 @@ describe("Tournament Flow Mutations", () => {
     });
 
     it("should throw error if user lacks permission", async () => {
-      (checkOrgPermission as jest.Mock).mockResolvedValue(false);
+      (checkCommunityPermission as jest.Mock).mockResolvedValue(false);
 
       (mockClient.from as jest.Mock).mockReturnValue({
         select: jest.fn().mockReturnThis(),
@@ -920,7 +920,7 @@ describe("Tournament Flow Mutations", () => {
 
     beforeEach(() => {
       (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
-      (checkOrgPermission as jest.Mock).mockResolvedValue(true);
+      (checkCommunityPermission as jest.Mock).mockResolvedValue(true);
     });
 
     it("should successfully generate elimination pairings", async () => {
@@ -1238,7 +1238,7 @@ describe("Tournament Flow Mutations", () => {
     });
 
     it("should throw error if user lacks permission", async () => {
-      (checkOrgPermission as jest.Mock).mockResolvedValue(false);
+      (checkCommunityPermission as jest.Mock).mockResolvedValue(false);
 
       (mockClient.from as jest.Mock).mockReturnValue({
         select: jest.fn().mockReturnThis(),
@@ -1588,7 +1588,7 @@ describe("Tournament Flow Mutations", () => {
 
     beforeEach(() => {
       (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
-      (checkOrgPermission as jest.Mock).mockResolvedValue(true);
+      (checkCommunityPermission as jest.Mock).mockResolvedValue(true);
       (recalculateStandings as jest.Mock).mockResolvedValue({
         success: true,
         playersUpdated: 10,
@@ -1714,7 +1714,7 @@ describe("Tournament Flow Mutations", () => {
     });
 
     it("should throw error if user lacks permission", async () => {
-      (checkOrgPermission as jest.Mock).mockResolvedValue(false);
+      (checkCommunityPermission as jest.Mock).mockResolvedValue(false);
 
       (mockClient.from as jest.Mock).mockReturnValue({
         select: jest.fn().mockReturnThis(),

@@ -5,12 +5,12 @@ import {
   saveTournamentPhases,
 } from "../phases";
 import type { TypedClient } from "../../../client";
-import { getCurrentUser, checkOrgPermission } from "../helpers";
+import { getCurrentUser, checkCommunityPermission } from "../helpers";
 
 // Mock helper functions
 jest.mock("../helpers", () => ({
   getCurrentUser: jest.fn(),
-  checkOrgPermission: jest.fn(),
+  checkCommunityPermission: jest.fn(),
 }));
 
 // Mock client type
@@ -32,7 +32,7 @@ describe("Tournament Phase Mutations", () => {
     mockClient = createMockClient() as TypedClient & MockClient;
     jest.clearAllMocks();
     (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
-    (checkOrgPermission as jest.Mock).mockResolvedValue(true);
+    (checkCommunityPermission as jest.Mock).mockResolvedValue(true);
   });
 
   describe("updatePhase", () => {
@@ -193,7 +193,7 @@ describe("Tournament Phase Mutations", () => {
     });
 
     it("should throw error if user lacks permission", async () => {
-      (checkOrgPermission as jest.Mock).mockResolvedValue(false);
+      (checkCommunityPermission as jest.Mock).mockResolvedValue(false);
 
       const phaseBuilder = {
         select: jest.fn().mockReturnThis(),
@@ -315,7 +315,7 @@ describe("Tournament Phase Mutations", () => {
     });
 
     it("should throw error if user lacks permission", async () => {
-      (checkOrgPermission as jest.Mock).mockResolvedValue(false);
+      (checkCommunityPermission as jest.Mock).mockResolvedValue(false);
 
       const tournamentBuilder = {
         select: jest.fn().mockReturnThis(),
@@ -519,7 +519,7 @@ describe("Tournament Phase Mutations", () => {
     });
 
     it("should throw error if user lacks permission", async () => {
-      (checkOrgPermission as jest.Mock).mockResolvedValue(false);
+      (checkCommunityPermission as jest.Mock).mockResolvedValue(false);
 
       const phaseBuilder = {
         select: jest.fn().mockReturnThis(),

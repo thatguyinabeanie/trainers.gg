@@ -12,7 +12,7 @@ import type { PairingResult } from "../../../lib/swiss-pairings";
 jest.mock("../helpers", () => ({
   getCurrentUser: jest.fn(),
   getCurrentAlt: jest.fn(),
-  checkOrgPermission: jest.fn(),
+  checkCommunityPermission: jest.fn(),
 }));
 
 jest.mock("../standings", () => ({
@@ -23,7 +23,7 @@ jest.mock("../../../lib/swiss-pairings", () => ({
   generateSwissPairings: jest.fn(),
 }));
 
-import { getCurrentUser, checkOrgPermission } from "../helpers";
+import { getCurrentUser, checkCommunityPermission } from "../helpers";
 import { recalculateStandings } from "../standings";
 import { generateSwissPairings } from "../../../lib/swiss-pairings";
 
@@ -74,7 +74,7 @@ describe("Tournament Rounds Mutations", () => {
 
     beforeEach(() => {
       (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
-      (checkOrgPermission as jest.Mock).mockResolvedValue(true);
+      (checkCommunityPermission as jest.Mock).mockResolvedValue(true);
     });
 
     it("should generate pairings for round 1 successfully", async () => {
@@ -246,7 +246,7 @@ describe("Tournament Rounds Mutations", () => {
     });
 
     it("should throw error if user lacks permission", async () => {
-      (checkOrgPermission as jest.Mock).mockResolvedValue(false);
+      (checkCommunityPermission as jest.Mock).mockResolvedValue(false);
 
       const fromSpy = jest.spyOn(mockClient, "from");
       fromSpy.mockReturnValueOnce({
@@ -1254,7 +1254,7 @@ describe("Tournament Rounds Mutations", () => {
 
     beforeEach(() => {
       (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
-      (checkOrgPermission as jest.Mock).mockResolvedValue(true);
+      (checkCommunityPermission as jest.Mock).mockResolvedValue(true);
     });
 
     it("should complete a round successfully", async () => {
@@ -1375,7 +1375,7 @@ describe("Tournament Rounds Mutations", () => {
     });
 
     it("should throw error if user lacks permission", async () => {
-      (checkOrgPermission as jest.Mock).mockResolvedValue(false);
+      (checkCommunityPermission as jest.Mock).mockResolvedValue(false);
 
       const fromSpy = jest.spyOn(mockClient, "from");
       fromSpy.mockReturnValueOnce({
@@ -1483,7 +1483,7 @@ describe("Tournament Rounds Mutations", () => {
 
     beforeEach(() => {
       (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
-      (checkOrgPermission as jest.Mock).mockResolvedValue(true);
+      (checkCommunityPermission as jest.Mock).mockResolvedValue(true);
     });
 
     it("should create round 1 successfully", async () => {
@@ -1676,7 +1676,7 @@ describe("Tournament Rounds Mutations", () => {
     });
 
     it("should throw error if user lacks permission", async () => {
-      (checkOrgPermission as jest.Mock).mockResolvedValue(false);
+      (checkCommunityPermission as jest.Mock).mockResolvedValue(false);
 
       const fromSpy = jest.spyOn(mockClient, "from");
       fromSpy.mockReturnValueOnce({
@@ -1857,7 +1857,7 @@ describe("Tournament Rounds Mutations", () => {
 
     beforeEach(() => {
       (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
-      (checkOrgPermission as jest.Mock).mockResolvedValue(true);
+      (checkCommunityPermission as jest.Mock).mockResolvedValue(true);
     });
 
     it("should delete pending round and its matches/pairings", async () => {
@@ -2145,7 +2145,7 @@ describe("Tournament Rounds Mutations", () => {
     });
 
     it("should throw error if user lacks permission", async () => {
-      (checkOrgPermission as jest.Mock).mockResolvedValue(false);
+      (checkCommunityPermission as jest.Mock).mockResolvedValue(false);
 
       const fromSpy = jest.spyOn(mockClient, "from");
       fromSpy.mockReturnValueOnce({

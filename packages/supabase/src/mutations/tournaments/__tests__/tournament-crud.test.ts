@@ -11,10 +11,10 @@ import type { PhaseConfig } from "../helpers";
 jest.mock("../helpers", () => ({
   getCurrentUser: jest.fn(),
   getCurrentAlt: jest.fn(),
-  checkOrgPermission: jest.fn(),
+  checkCommunityPermission: jest.fn(),
 }));
 
-import { getCurrentUser, checkOrgPermission } from "../helpers";
+import { getCurrentUser, checkCommunityPermission } from "../helpers";
 
 // Helper to create mock Supabase client
 type MockQueryBuilder = {
@@ -78,7 +78,7 @@ describe("Tournament CRUD Mutations", () => {
 
     beforeEach(() => {
       (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
-      (checkOrgPermission as jest.Mock).mockResolvedValue(true);
+      (checkCommunityPermission as jest.Mock).mockResolvedValue(true);
     });
 
     it("should create a tournament with default phases (swiss_with_cut)", async () => {
@@ -391,7 +391,7 @@ describe("Tournament CRUD Mutations", () => {
     });
 
     it("should throw error if user lacks permission", async () => {
-      (checkOrgPermission as jest.Mock).mockResolvedValue(false);
+      (checkCommunityPermission as jest.Mock).mockResolvedValue(false);
 
       const fromSpy = jest.spyOn(mockClient, "from");
 
@@ -900,7 +900,7 @@ describe("Tournament CRUD Mutations", () => {
 
     beforeEach(() => {
       (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
-      (checkOrgPermission as jest.Mock).mockResolvedValue(true);
+      (checkCommunityPermission as jest.Mock).mockResolvedValue(true);
     });
 
     it("should update tournament basic fields successfully", async () => {
@@ -1073,7 +1073,7 @@ describe("Tournament CRUD Mutations", () => {
     });
 
     it("should throw error if user lacks permission", async () => {
-      (checkOrgPermission as jest.Mock).mockResolvedValue(false);
+      (checkCommunityPermission as jest.Mock).mockResolvedValue(false);
 
       const fromSpy = jest.spyOn(mockClient, "from");
 
@@ -1152,7 +1152,7 @@ describe("Tournament CRUD Mutations", () => {
 
     beforeEach(() => {
       (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
-      (checkOrgPermission as jest.Mock).mockResolvedValue(true);
+      (checkCommunityPermission as jest.Mock).mockResolvedValue(true);
     });
 
     it("should archive tournament successfully", async () => {
@@ -1237,7 +1237,7 @@ describe("Tournament CRUD Mutations", () => {
     });
 
     it("should throw error if user lacks permission", async () => {
-      (checkOrgPermission as jest.Mock).mockResolvedValue(false);
+      (checkCommunityPermission as jest.Mock).mockResolvedValue(false);
 
       const fromSpy = jest.spyOn(mockClient, "from");
 
@@ -1287,7 +1287,7 @@ describe("Tournament CRUD Mutations", () => {
 
     beforeEach(() => {
       (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
-      (checkOrgPermission as jest.Mock).mockResolvedValue(true);
+      (checkCommunityPermission as jest.Mock).mockResolvedValue(true);
     });
 
     it("should delete draft tournament successfully", async () => {
@@ -1340,7 +1340,7 @@ describe("Tournament CRUD Mutations", () => {
     });
 
     it("should throw error if user lacks permission", async () => {
-      (checkOrgPermission as jest.Mock).mockResolvedValue(false);
+      (checkCommunityPermission as jest.Mock).mockResolvedValue(false);
 
       const fromSpy = jest.spyOn(mockClient, "from");
 
