@@ -33,14 +33,13 @@ export const getAuthUrls = () => {
 };
 
 /**
- * OAuth provider configurations.
- * Includes both Supabase OAuth providers and AT Protocol (Bluesky).
+ * Supabase OAuth provider configurations.
+ * Bluesky uses AT Protocol OAuth and is defined separately as `blueskyProvider`.
  *
- * Provider order:
- * 1. Bluesky — platform-native identity (most prominent)
- * 2. X — social platform overlap with competitive Pokemon community
- * 3. Discord — community communication platform
- * 4. Twitch — streaming platform popular with competitive Pokemon
+ * Provider order (in sign-in UI, after Bluesky):
+ * 1. X — social platform overlap with competitive community
+ * 2. Discord — community communication platform
+ * 3. Twitch — streaming platform popular with competitive players
  */
 export const oauthProviders = [
   {
