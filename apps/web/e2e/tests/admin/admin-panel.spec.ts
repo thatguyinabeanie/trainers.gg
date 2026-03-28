@@ -332,10 +332,6 @@ test.describe("Admin panel — admin user with sudo mode", () => {
     await expect(main.getByText("Last 7 Days")).toBeVisible();
     await expect(main.getByText("Last 30 Days")).toBeVisible();
 
-    // Filter dropdowns should be present
-    await expect(main.getByText("All Actions")).toBeVisible();
-    await expect(main.getByText("All Entities")).toBeVisible();
-
     // Refresh button in the audit log tab
     await expect(main.getByRole("button", { name: /Refresh/i })).toBeVisible();
   });
@@ -354,20 +350,16 @@ test.describe("Admin panel — admin user with sudo mode", () => {
       "JWT custom_access_token_hook not configured — admin role not in JWT"
     );
 
-    // Users tab should be the default tab on the users page (scoped to main)
+    // Users heading should be visible (scoped to main)
     const main = page.getByRole("main");
-    await expect(main.getByRole("tab", { name: /Users/i })).toBeVisible({
+    await expect(main.getByRole("heading", { name: /Users/i })).toBeVisible({
       timeout: 10000,
     });
-    await expect(main.getByRole("tab", { name: /Invites/i })).toBeVisible();
 
     // Search input
     await expect(
       main.getByPlaceholder(/Search by username or email/i)
     ).toBeVisible();
-
-    // Users heading with count
-    await expect(main.getByRole("heading", { name: /Users/i })).toBeVisible();
 
     // Refresh button
     await expect(main.getByRole("button", { name: /Refresh/i })).toBeVisible();

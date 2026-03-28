@@ -216,7 +216,7 @@ Every user gets a Bluesky identity:
 | -------------------------- | ------------------------------------------- |
 | `users`                    | User accounts with DID and PDS handle       |
 | `alts`                     | Alternate player identities for tournaments |
-| `organizations`            | Tournament organizer accounts               |
+| `organizations`            | Communities (tournament organizer groups)    |
 | `tournaments`              | Tournament events                           |
 | `tournament_registrations` | Player registrations (with team submission) |
 | `posts`                    | Local activity feed (synced with PDS)       |
