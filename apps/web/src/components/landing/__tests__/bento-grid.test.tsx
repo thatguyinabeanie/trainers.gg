@@ -82,7 +82,7 @@ describe("BentoGrid", () => {
   // -------------------------------------------------------------------------
   // 6. Under Construction: all 3 coming-soon feature labels
   // -------------------------------------------------------------------------
-  it.each(["Meta Analytics", "Articles", "Coaching"])(
+  it.each(["Meta Analytics", "Articles", "Coaching", "Builder"])(
     'renders coming-soon feature "%s"',
     (feature) => {
       expect(screen.getByText(feature)).toBeInTheDocument();

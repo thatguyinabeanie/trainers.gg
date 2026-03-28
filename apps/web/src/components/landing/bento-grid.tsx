@@ -255,6 +255,7 @@ function UnderConstructionPreview() {
     },
     { emoji: "📝", label: "Articles", desc: "Guides, reports, recaps" },
     { emoji: "🎓", label: "Coaching", desc: "Find a personal coach" },
+    { emoji: "⚔️", label: "Builder", desc: "Build and share teams" },
   ] as const;
 
   return (
