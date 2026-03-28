@@ -26,7 +26,7 @@ jest.mock("next/link", () => {
 });
 
 // Mock DateChip component
-jest.mock("@/app/tournaments/date-chip", () => ({
+jest.mock("@/app/(app)/tournaments/date-chip", () => ({
   DateChip: ({
     dateString,
     showTime,
