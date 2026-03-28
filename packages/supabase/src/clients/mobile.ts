@@ -154,7 +154,7 @@ import { markNotificationRead as markNotificationRead_core } from "../mutations/
 import { markAllNotificationsRead as markAllNotificationsRead_core } from "../mutations/notifications";
 import { deleteNotification as deleteNotification_core } from "../mutations/notifications";
 import { submitCommunityRequest as submitCommunityRequest_core } from "../mutations/organization-requests";
-import { approveCommunityRequest as approveCommunityRequest_core } from "../mutations/organization-requests";
+import { grantCommunityRequest as grantCommunityRequest_core } from "../mutations/organization-requests";
 import { rejectCommunityRequest as rejectCommunityRequest_core } from "../mutations/organization-requests";
 import { createCommunity as createCommunity_core } from "../mutations/communities";
 import { updateCommunity as updateCommunity_core } from "../mutations/communities";
@@ -2384,18 +2384,18 @@ export async function submitCommunityRequest(
 }
 
 /**
- * approveCommunityRequest (auto-injected with mobile client)
+ * grantCommunityRequest (auto-injected with mobile client)
  */
-export async function approveCommunityRequest(
-  ...args: Parameters<typeof approveCommunityRequest_core> extends [
+export async function grantCommunityRequest(
+  ...args: Parameters<typeof grantCommunityRequest_core> extends [
     first: infer _F,
     ...rest: infer R,
   ]
     ? R
     : never
-): Promise<Awaited<ReturnType<typeof approveCommunityRequest_core>>> {
+): Promise<Awaited<ReturnType<typeof grantCommunityRequest_core>>> {
   const client = createMobileSupabaseClient();
-  return approveCommunityRequest_core(client, ...args);
+  return grantCommunityRequest_core(client, ...args);
 }
 
 /**

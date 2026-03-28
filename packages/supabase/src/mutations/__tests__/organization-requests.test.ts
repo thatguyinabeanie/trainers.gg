@@ -1,6 +1,6 @@
 import {
   submitCommunityRequest,
-  approveCommunityRequest,
+  grantCommunityRequest,
   rejectCommunityRequest,
 } from "../organization-requests";
 import type { TypedClient } from "../../client";
@@ -288,10 +288,10 @@ describe("Organization Request Mutations", () => {
   });
 
   // ---------------------------------------------------------------------------
-  // approveCommunityRequest
+  // grantCommunityRequest
   // ---------------------------------------------------------------------------
 
-  describe("approveCommunityRequest", () => {
+  describe("grantCommunityRequest", () => {
     it("throws when request is not found", async () => {
       const fromSpy = jest.spyOn(mockClient, "from");
       fromSpy.mockImplementation(() => {
@@ -314,13 +314,13 @@ describe("Organization Request Mutations", () => {
       });
 
       await expect(
-        approveCommunityRequest(mockClient, 1, ADMIN_USER_ID)
+        grantCommunityRequest(mockClient, 1, ADMIN_USER_ID)
       ).rejects.toThrow("Request not found");
     });
 
-    it("throws when request is not pending", async () => {
+    it("throws when request is already approved", async () => {
       const request = organizationRequestFactory.build({
-        status: "rejected",
+        status: "approved",
       });
 
       const fromSpy = jest.spyOn(mockClient, "from");
@@ -344,8 +344,8 @@ describe("Organization Request Mutations", () => {
       });
 
       await expect(
-        approveCommunityRequest(mockClient, request.id, ADMIN_USER_ID)
-      ).rejects.toThrow("Request is no longer pending");
+        grantCommunityRequest(mockClient, request.id, ADMIN_USER_ID)
+      ).rejects.toThrow("Request has already been approved");
     });
 
     it("creates org, staff, notification, audit log and returns updated request", async () => {
@@ -402,7 +402,7 @@ describe("Organization Request Mutations", () => {
         return builder;
       });
 
-      const result = await approveCommunityRequest(
+      const result = await grantCommunityRequest(
         mockClient,
         request.id,
         ADMIN_USER_ID
@@ -455,7 +455,7 @@ describe("Organization Request Mutations", () => {
       });
 
       await expect(
-        approveCommunityRequest(mockClient, request.id, ADMIN_USER_ID)
+        grantCommunityRequest(mockClient, request.id, ADMIN_USER_ID)
       ).rejects.toThrow("is now taken by an existing community");
     });
 
@@ -502,7 +502,7 @@ describe("Organization Request Mutations", () => {
       });
 
       await expect(
-        approveCommunityRequest(mockClient, request.id, ADMIN_USER_ID)
+        grantCommunityRequest(mockClient, request.id, ADMIN_USER_ID)
       ).rejects.toThrow("duplicate staff");
     });
 
@@ -564,7 +564,7 @@ describe("Organization Request Mutations", () => {
       });
 
       // Should not throw despite notification failure
-      const result = await approveCommunityRequest(
+      const result = await grantCommunityRequest(
         mockClient,
         request.id,
         ADMIN_USER_ID
@@ -576,6 +576,84 @@ describe("Organization Request Mutations", () => {
         expect.objectContaining({ requestId: request.id })
       );
       consoleSpy.mockRestore();
+    });
+
+    it("approves a rejected request with reason and creates community", async () => {
+      const request = organizationRequestFactory.build({
+        status: "rejected",
+        user_id: "requester-789",
+        admin_notes: "Original rejection reason",
+      });
+      const org = { id: "org-1", name: request.name, slug: request.slug };
+      const updatedRequest = { ...request, status: "approved" };
+
+      let requestCallCount = 0;
+      const fromSpy = jest.spyOn(mockClient, "from");
+      fromSpy.mockImplementation((table: string) => {
+        const builder: MockQueryBuilder = {
+          select: jest.fn().mockReturnThis(),
+          eq: jest.fn().mockReturnThis(),
+          neq: jest.fn().mockReturnThis(),
+          single: jest.fn(),
+          maybeSingle: jest.fn(),
+          update: jest.fn().mockReturnThis(),
+          insert: jest.fn().mockReturnThis(),
+          delete: jest.fn().mockReturnThis(),
+          order: jest.fn().mockReturnThis(),
+          limit: jest.fn().mockReturnThis(),
+        };
+
+        if (table === "community_requests") {
+          requestCallCount++;
+          if (requestCallCount === 1) {
+            // Fetch request — returns rejected request
+            builder.single.mockResolvedValue({
+              data: request,
+              error: null,
+            });
+          } else if (requestCallCount === 2) {
+            // Update request status
+            builder.single.mockResolvedValue({
+              data: updatedRequest,
+              error: null,
+            });
+          } else if (requestCallCount === 3) {
+            // Duplicate cancellation query — no pending duplicates
+            builder.select.mockReturnValue({
+              eq: jest.fn().mockReturnValue({
+                eq: jest.fn().mockReturnValue({
+                  neq: jest.fn().mockResolvedValue({ data: [], error: null }),
+                }),
+              }),
+            });
+          }
+        } else if (table === "communities") {
+          builder.maybeSingle.mockResolvedValue({ data: null });
+          builder.single.mockResolvedValue({ data: org, error: null });
+        } else if (table === "community_staff") {
+          builder.insert.mockReturnValue({ error: null });
+        } else if (table === "notifications") {
+          builder.insert.mockReturnValue({ error: null });
+        } else if (table === "audit_log") {
+          builder.insert.mockReturnValue({ error: null });
+        }
+
+        return builder;
+      });
+
+      const result = await grantCommunityRequest(
+        mockClient,
+        request.id,
+        ADMIN_USER_ID,
+        "Changed my mind after reviewing additional context"
+      );
+
+      expect(result.organization).toEqual(org);
+      expect(result.request).toEqual(updatedRequest);
+      expect(fromSpy).toHaveBeenCalledWith("communities");
+      expect(fromSpy).toHaveBeenCalledWith("community_staff");
+      expect(fromSpy).toHaveBeenCalledWith("notifications");
+      expect(fromSpy).toHaveBeenCalledWith("audit_log");
     });
   });
 

@@ -104,14 +104,16 @@ export async function submitCommunityRequest(
 }
 
 /**
- * Approve an organization request (admin action).
+ * Grant an organization request (admin action).
+ * Accepts both pending and previously rejected requests.
  * Creates the org, sets requester as owner/staff, creates notification.
  * Uses service role client (bypasses RLS).
  */
-export async function approveCommunityRequest(
+export async function grantCommunityRequest(
   supabase: TypedClient,
   requestId: number,
-  adminUserId: string
+  adminUserId: string,
+  reason?: string
 ) {
   // Fetch the request
   const { data: request, error: fetchError } = await supabase
@@ -121,8 +123,8 @@ export async function approveCommunityRequest(
     .single();
 
   if (fetchError || !request) throw new Error("Request not found");
-  if (request.status !== "pending") {
-    throw new Error("Request is no longer pending");
+  if (request.status !== "pending" && request.status !== "rejected") {
+    throw new Error("Request has already been approved");
   }
 
   // Re-check slug uniqueness against organizations
@@ -217,8 +219,52 @@ export async function approveCommunityRequest(
       request_id: requestId,
       community_id: community.id,
       requester_user_id: request.user_id,
+      ...(reason && { reason }),
+      ...(request.status === "rejected" && { from_status: "rejected" }),
     },
   });
+
+  // Cancel any other pending requests from the same user
+  if (request.status === "rejected") {
+    const { data: duplicates } = await supabase
+      .from("community_requests")
+      .select("id")
+      .eq("user_id", request.user_id)
+      .eq("status", "pending")
+      .neq("id", requestId);
+
+    if (duplicates && duplicates.length > 0) {
+      for (const dup of duplicates) {
+        const { error: cancelError } = await supabase
+          .from("community_requests")
+          .update({
+            status: "rejected" as const,
+            admin_notes: `Automatically closed — community granted via request #${requestId}`,
+            reviewed_by: adminUserId,
+            reviewed_at: new Date().toISOString(),
+          })
+          .eq("id", dup.id);
+
+        if (cancelError) {
+          console.error("Failed to cancel duplicate pending request", {
+            duplicateId: dup.id,
+            error: cancelError,
+          });
+        }
+
+        await supabase.from("audit_log").insert({
+          action: "admin.org_request_rejected" as const,
+          actor_user_id: adminUserId,
+          metadata: {
+            request_id: dup.id,
+            requester_user_id: request.user_id,
+            reason: `Automatically closed — community granted via request #${requestId}`,
+            auto_cancelled: true,
+          },
+        });
+      }
+    }
+  }
 
   return { request: updatedRequest, organization: community };
 }
