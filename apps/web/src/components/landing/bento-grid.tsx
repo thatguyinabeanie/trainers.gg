@@ -25,7 +25,7 @@ function BentoCard({
   return (
     <div
       className={cn(
-        "bg-card rounded-xl p-5",
+        "bg-muted/60 rounded-xl p-5",
         "dark:bg-[#1a1f2e]",
         className
       )}
@@ -39,7 +39,7 @@ function BentoCard({
       <p className="text-muted-foreground mt-1.5 text-[11px] leading-relaxed">
         {description}
       </p>
-      <div className="bg-muted/40 mt-3 rounded-md p-2.5 text-[11px] dark:bg-black/30">
+      <div className="bg-background/60 mt-3 rounded-md p-2.5 text-[11px] dark:bg-black/30">
         {preview}
       </div>
     </div>
@@ -64,7 +64,7 @@ function AltsPreview() {
         {alts.map(({ name, elo, gxe, public: isPublic }) => (
           <div
             key={name}
-            className="flex items-center gap-2 border-b border-white/5 py-1.5 last:border-0"
+            className="flex items-center gap-2 border-b border-border/40 py-1.5 last:border-0"
           >
             <span
               className={cn(
@@ -81,7 +81,7 @@ function AltsPreview() {
           </div>
         ))}
       </div>
-      <div className="text-muted-foreground mt-2 flex items-center gap-3 border-t border-white/5 pt-2 text-[10px]">
+      <div className="text-muted-foreground mt-2 flex items-center gap-3 border-t border-border/40 pt-2 text-[10px]">
         <span className="flex items-center gap-1">
           <span className="size-2 rounded-full bg-green-500" /> Public
         </span>
@@ -136,7 +136,7 @@ function ProfilePreview() {
           </p>
         </div>
       </div>
-      <div className="border-t border-white/5 pt-2">
+      <div className="border-t border-border/40 pt-2">
         <p className="text-muted-foreground mb-1 text-[8px] tracking-[1px] uppercase">
           Aggregate (all alts)
         </p>
@@ -238,7 +238,7 @@ function UnderConstructionPreview() {
       {items.map(({ emoji, label, desc }) => (
         <div
           key={label}
-          className="flex items-center gap-2 rounded-md bg-black/30 px-3 py-2 dark:bg-black/30"
+          className="flex items-center gap-2 rounded-md bg-background/60 px-3 py-2 dark:bg-black/30"
         >
           <span className="shrink-0 text-sm">{emoji}</span>
           <div>
