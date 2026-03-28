@@ -7,10 +7,10 @@ type TournamentStatus = Database["public"]["Enums"]["tournament_status"];
 
 // Base tournament type from query
 type TournamentRow = Database["public"]["Tables"]["tournaments"]["Row"];
-type OrganizationRow = Database["public"]["Tables"]["organizations"]["Row"];
+type CommunityRow = Database["public"]["Tables"]["communities"]["Row"];
 
 export type TournamentWithOrg = TournamentRow & {
-  organization: Pick<OrganizationRow, "id" | "name" | "slug"> | null;
+  organization: Pick<CommunityRow, "id" | "name" | "slug"> | null;
   registrationCount: number;
   winner: { id: number; username: string } | null;
 };
@@ -39,7 +39,7 @@ export async function listTournamentsGrouped(
     .select(
       `
       *,
-      organization:organizations(id, name, slug)
+      organization:communities(id, name, slug)
     `
     )
     .is("archived_at", null)
@@ -159,7 +159,7 @@ export async function listPublicTournaments(
     .select(
       `
       *,
-      organization:organizations(id, name, slug)
+      organization:communities(id, name, slug)
     `,
       { count: "exact" }
     )
@@ -217,7 +217,7 @@ export async function listTournaments(
   options: {
     limit?: number;
     offset?: number;
-    organizationId?: number;
+    communityId?: number;
     status?: TournamentStatus;
     includeArchived?: boolean;
   } = {}
@@ -229,15 +229,15 @@ export async function listTournaments(
     .select(
       `
       *,
-      organization:organizations(*)
+      organization:communities(*)
     `,
       { count: "exact" }
     )
     .order("created_at", { ascending: false })
     .range(offset, offset + limit - 1);
 
-  if (options.organizationId) {
-    query = query.eq("organization_id", options.organizationId);
+  if (options.communityId) {
+    query = query.eq("community_id", options.communityId);
   }
 
   if (options.status) {
@@ -283,14 +283,14 @@ export async function listTournaments(
  */
 export async function getTournamentByOrgAndSlug(
   supabase: TypedClient,
-  organizationSlug: string,
+  communitySlug: string,
   tournamentSlug: string
 ) {
   // First get the organization
   const { data: org } = await supabase
-    .from("organizations")
+    .from("communities")
     .select("id")
-    .eq("slug", organizationSlug)
+    .eq("slug", communitySlug)
     .single();
 
   if (!org) return null;
@@ -301,10 +301,10 @@ export async function getTournamentByOrgAndSlug(
     .select(
       `
       *,
-      organization:organizations(*)
+      organization:communities(*)
     `
     )
-    .eq("organization_id", org.id)
+    .eq("community_id", org.id)
     .eq("slug", tournamentSlug)
     .is("archived_at", null)
     .single();
@@ -371,7 +371,7 @@ export async function getTournamentBySlug(
     .select(
       `
       *,
-      organization:organizations(*)
+      organization:communities(*)
     `
     )
     .eq("slug", tournamentSlug)
@@ -422,7 +422,7 @@ export async function getTournamentById(supabase: TypedClient, id: number) {
     .select(
       `
       *,
-      organization:organizations(*)
+      organization:communities(*)
     `
     )
     .eq("id", id)
@@ -1979,7 +1979,7 @@ export async function getUserTournamentHistory(supabase: TypedClient) {
         end_date,
         status,
         format,
-        organization:organizations!tournaments_organization_id_fkey (
+        organization:communities!tournaments_community_id_fkey (
           id,
           name,
           slug
@@ -2159,7 +2159,7 @@ export async function getPlayerTournamentHistory(
         start_date,
         status,
         format,
-        organization:organizations!tournaments_organization_id_fkey (
+        organization:communities!tournaments_community_id_fkey (
           id,
           name,
           slug
