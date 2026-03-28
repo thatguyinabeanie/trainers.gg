@@ -19,6 +19,15 @@
             "command": "for f in $(echo \"$CLAUDE_FILE_PATHS\" | tr ',' ' '); do case \"$f\" in *.ts|*.tsx|*.js|*.jsx) npx eslint --fix --quiet \"$f\" 2>/dev/null || true;; esac; done"
           }
         ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "TOOL_INPUT=$(cat); CMD=$(echo \"$TOOL_INPUT\" | grep -o '\"command\":\"[^\"]*\"' | head -1 | sed 's/\"command\":\"//;s/\"$//'); case \"$CMD\" in *'git commit'*) WEB_CHANGES=$(git diff HEAD~1 --name-only -- apps/web/ 2>/dev/null); if [ -n \"$WEB_CHANGES\" ]; then echo 'This commit touched apps/web/. If this is a new feature or significant change, consider running /mobile-parity to check for mobile parity tickets.'; fi;; esac; exit 0"
+          }
+        ]
       }
     ],
     "PreToolUse": [
