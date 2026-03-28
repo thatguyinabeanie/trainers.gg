@@ -72,9 +72,9 @@ describe("UnderConstruction", () => {
     }
   );
 
-  it("mentions analytics-powered suggestions for Builder", () => {
+  it("mentions meta analytics in Builder description", () => {
     expect(
-      screen.getByText(/analytics-powered suggestions/i)
+      screen.getByText(/current meta analytics/i)
     ).toBeInTheDocument();
   });
 });
