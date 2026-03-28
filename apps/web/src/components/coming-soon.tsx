@@ -58,9 +58,9 @@ export function ComingSoon({
         </p>
 
         <ul className="mx-auto mb-8 max-w-sm space-y-0 text-left">
-          {bullets.map((bullet) => (
+          {bullets.map((bullet, index) => (
             <li
-              key={bullet}
+              key={`${bullet}-${index}`}
               className="text-muted-foreground border-border/40 flex items-center gap-3 border-b py-2.5 text-sm last:border-0"
             >
               <span className="bg-primary size-1.5 shrink-0 rounded-full" />
