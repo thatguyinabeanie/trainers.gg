@@ -52,7 +52,7 @@ export interface TestTournament {
   id: number;
   slug: string;
   name: string;
-  organization_id: number;
+  community_id: number;
   status: string;
 }
 
@@ -169,7 +169,7 @@ export async function createTestOrganization(
   slug: string
 ): Promise<number> {
   const { data, error } = await adminClient
-    .from("organizations")
+    .from("communities")
     .insert({
       owner_user_id: ownerUserId,
       name,
@@ -191,7 +191,7 @@ export async function createTestOrganization(
  */
 export async function createTestTournament(
   adminClient: TypedClient,
-  organizationId: number,
+  communityId: number,
   name: string,
   slug: string,
   options?: Partial<TablesInsert<"tournaments">>
@@ -199,7 +199,7 @@ export async function createTestTournament(
   const { data, error } = await adminClient
     .from("tournaments")
     .insert({
-      organization_id: organizationId,
+      community_id: communityId,
       name,
       slug,
       format: "swiss",
@@ -220,7 +220,7 @@ export async function createTestTournament(
     id: data.id,
     slug: data.slug,
     name: data.name,
-    organization_id: data.organization_id,
+    community_id: data.community_id,
     status: data.status,
   };
 }
@@ -291,12 +291,12 @@ export async function cleanupTestData(
   adminClient: TypedClient,
   options: {
     tournamentIds?: number[];
-    organizationIds?: number[];
+    communityIds?: number[];
     userIds?: string[];
     altIds?: number[];
   }
 ): Promise<void> {
-  const { tournamentIds, organizationIds, userIds, altIds } = options;
+  const { tournamentIds, communityIds, userIds, altIds } = options;
 
   // Delete tournaments (cascades to registrations, teams, rounds, matches, etc.)
   if (tournamentIds && tournamentIds.length > 0) {
@@ -304,8 +304,8 @@ export async function cleanupTestData(
   }
 
   // Delete organizations (cascades to tournaments)
-  if (organizationIds && organizationIds.length > 0) {
-    await adminClient.from("organizations").delete().in("id", organizationIds);
+  if (communityIds && communityIds.length > 0) {
+    await adminClient.from("communities").delete().in("id", communityIds);
   }
 
   // Delete alts
@@ -333,7 +333,7 @@ export async function createTournamentScenario(
   numPlayers: number
 ): Promise<{
   tournament: TestTournament;
-  organizationId: number;
+  communityId: number;
   owner: TestUser;
   players: Array<{ user: TestUser; alt: TestAlt; registrationId: number }>;
 }> {
@@ -345,7 +345,7 @@ export async function createTournamentScenario(
   );
 
   // Create organization
-  const organizationId = await createTestOrganization(
+  const communityId = await createTestOrganization(
     adminClient,
     owner.id,
     `Test Org ${Date.now()}`,
@@ -355,7 +355,7 @@ export async function createTournamentScenario(
   // Create tournament
   const tournament = await createTestTournament(
     adminClient,
-    organizationId,
+    communityId,
     `Test Tournament ${Date.now()}`,
     `test-tournament-${Date.now()}`,
     {
@@ -395,7 +395,7 @@ export async function createTournamentScenario(
 
   return {
     tournament,
-    organizationId,
+    communityId,
     owner,
     players,
   };

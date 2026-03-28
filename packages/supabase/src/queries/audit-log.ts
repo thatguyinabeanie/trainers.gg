@@ -109,7 +109,7 @@ export async function getAuditLog(
   } else if (entityType === "match") {
     query = query.not("match_id", "is", null);
   } else if (entityType === "organization") {
-    query = query.not("organization_id", "is", null);
+    query = query.not("community_id", "is", null);
   }
 
   const { data, count, error } = await query;

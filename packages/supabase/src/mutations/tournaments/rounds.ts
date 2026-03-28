@@ -34,9 +34,9 @@ export async function generateRoundPairings(
         phase_type,
         tournaments!tournament_phases_tournament_id_fkey!inner (
           id,
-          organization_id,
+          community_id,
           status,
-          organizations!inner (
+          communities!inner (
             owner_user_id
           )
         )
@@ -54,9 +54,9 @@ export async function generateRoundPairings(
     phase_type: string;
     tournaments: {
       id: number;
-      organization_id: number;
+      community_id: number;
       status: string;
-      organizations: {
+      communities: {
         owner_user_id: string;
       };
     };
@@ -65,7 +65,7 @@ export async function generateRoundPairings(
   // Verify permission
   const hasPermission = await checkOrgPermission(
     supabase,
-    phase.tournaments.organization_id,
+    phase.tournaments.community_id,
     "tournament.manage"
   );
   if (!hasPermission) {
@@ -349,8 +349,8 @@ export async function completeRound(supabase: TypedClient, roundId: number) {
       tournament_phases!inner (
         tournament_id,
         tournaments!tournament_phases_tournament_id_fkey!inner (
-          organization_id,
-          organizations!inner (
+          community_id,
+          communities!inner (
             owner_user_id
           )
         )
@@ -365,8 +365,8 @@ export async function completeRound(supabase: TypedClient, roundId: number) {
   const phase = round.tournament_phases as unknown as {
     tournament_id: number;
     tournaments: {
-      organization_id: number;
-      organizations: {
+      community_id: number;
+      communities: {
         owner_user_id: string;
       };
     };
@@ -375,7 +375,7 @@ export async function completeRound(supabase: TypedClient, roundId: number) {
   // Verify permission
   const hasPermission = await checkOrgPermission(
     supabase,
-    phase.tournaments.organization_id,
+    phase.tournaments.community_id,
     "tournament.manage"
   );
   if (!hasPermission) {
@@ -438,8 +438,8 @@ export async function createRound(
       id,
       tournament_id,
       tournaments!tournament_phases_tournament_id_fkey!inner (
-        organization_id,
-        organizations!inner (
+        community_id,
+        communities!inner (
           owner_user_id
         )
       )
@@ -451,14 +451,14 @@ export async function createRound(
   if (!phase) throw new Error("Phase not found");
 
   const tournament = phase.tournaments as unknown as {
-    organization_id: number;
-    organizations: { owner_user_id: string };
+    community_id: number;
+    communities: { owner_user_id: string };
   };
 
   // Verify permission
   const hasPermission = await checkOrgPermission(
     supabase,
-    tournament.organization_id,
+    tournament.community_id,
     "tournament.manage"
   );
   if (!hasPermission) {
@@ -539,8 +539,8 @@ export async function deleteRoundAndMatches(
         id,
         tournament_id,
         tournaments!tournament_phases_tournament_id_fkey!inner (
-          organization_id,
-          organizations!inner (
+          community_id,
+          communities!inner (
             owner_user_id
           )
         )
@@ -556,15 +556,15 @@ export async function deleteRoundAndMatches(
     id: number;
     tournament_id: number;
     tournaments: {
-      organization_id: number;
-      organizations: { owner_user_id: string };
+      community_id: number;
+      communities: { owner_user_id: string };
     };
   };
 
   // Verify permission
   const hasPermission = await checkOrgPermission(
     supabase,
-    phase.tournaments.organization_id,
+    phase.tournaments.community_id,
     "tournament.manage"
   );
   if (!hasPermission) {

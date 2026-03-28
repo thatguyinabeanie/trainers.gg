@@ -4,7 +4,7 @@
  * Generates tournaments with phases for each organization.
  *
  * Schema notes:
- * - tournaments have organization_id, tournament_format enum
+ * - tournaments have community_id, tournament_format enum
  * - tournament_phases have tournament_id, phase_type, phase_order
  * - tournament_registrations link alts to tournaments (alt_id, not user_id)
  */
@@ -38,7 +38,7 @@ export type PhaseStatus = "pending" | "active" | "completed";
 
 export interface GeneratedTournament {
   id: number;
-  organizationId: number;
+  communityId: number;
   name: string;
   slug: string;
   description: string;
@@ -300,7 +300,7 @@ export function generateTournaments(
 
       tournaments.push({
         id: tournamentId++,
-        organizationId: org.id,
+        communityId: org.id,
         name: generateTournamentName(
           org,
           weekNumber,
@@ -350,7 +350,7 @@ export function generateTournaments(
 
     tournaments.push({
       id: tournamentId++,
-      organizationId: org.id,
+      communityId: org.id,
       name: `${org.name} Week ${weekNumber} Championship`,
       slug: `${org.slug}-week-${weekNumber.toString().padStart(2, "0")}`,
       description: `${org.name} tournament for week ${weekNumber} — check-in open!`,

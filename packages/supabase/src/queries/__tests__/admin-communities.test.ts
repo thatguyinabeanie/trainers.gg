@@ -139,7 +139,7 @@ describe("admin-communities queries", () => {
 
       expect(result.data).toEqual(mockOrgs);
       expect(result.count).toBe(1);
-      expect(mockClient.from).toHaveBeenCalledWith("organizations");
+      expect(mockClient.from).toHaveBeenCalledWith("communities");
       expect(mockClient._queryBuilder.order).toHaveBeenCalledWith(
         "created_at",
         { ascending: false }
@@ -256,7 +256,7 @@ describe("admin-communities queries", () => {
         name: "Team Rocket",
         slug: "team-rocket",
         status: "active",
-        organization_admin_notes: [{ notes: "Approved by admin" }],
+        community_admin_notes: [{ notes: "Approved by admin" }],
         owner: { id: "user-1", username: "giovanni" },
       };
 
@@ -269,7 +269,7 @@ describe("admin-communities queries", () => {
       const result = await getCommunityAdminDetails(mockClient, 1);
 
       expect(result).toEqual(mockOrg);
-      expect(mockClient.from).toHaveBeenCalledWith("organizations");
+      expect(mockClient.from).toHaveBeenCalledWith("communities");
       expect(mockClient._queryBuilder.eq).toHaveBeenCalledWith("id", 1);
       expect(mockClient._queryBuilder.maybeSingle).toHaveBeenCalled();
     });
@@ -335,15 +335,15 @@ describe("admin-communities queries", () => {
       const result = await approveOrganization(mockClient, 1, "admin-1");
 
       expect(result).toEqual(mockOrg);
-      expect(mockClient.from).toHaveBeenNthCalledWith(1, "organizations");
+      expect(mockClient.from).toHaveBeenNthCalledWith(1, "communities");
       expect(mockClient.from).toHaveBeenNthCalledWith(2, "audit_log");
       expect(mockAuditChain.insert).toHaveBeenCalledWith(
         expect.objectContaining({
           action: "admin.org_approved",
           actor_user_id: "admin-1",
-          organization_id: 1,
+          community_id: 1,
           metadata: expect.objectContaining({
-            organization_id: 1,
+            community_id: 1,
           }),
         })
       );
@@ -457,27 +457,27 @@ describe("admin-communities queries", () => {
       );
 
       expect(result).toEqual(mockOrg);
-      expect(mockClient.from).toHaveBeenNthCalledWith(1, "organizations");
+      expect(mockClient.from).toHaveBeenNthCalledWith(1, "communities");
       expect(mockClient.from).toHaveBeenNthCalledWith(
         2,
-        "organization_admin_notes"
+        "community_admin_notes"
       );
       expect(mockClient.from).toHaveBeenNthCalledWith(3, "audit_log");
       expect(mockNotesChain.upsert).toHaveBeenCalledWith(
         expect.objectContaining({
-          organization_id: 1,
+          community_id: 1,
           notes: "Violates policy",
           updated_by: "admin-1",
         }),
-        { onConflict: "organization_id" }
+        { onConflict: "community_id" }
       );
       expect(mockAuditChain.insert).toHaveBeenCalledWith(
         expect.objectContaining({
           action: "admin.org_rejected",
           actor_user_id: "admin-1",
-          organization_id: 1,
+          community_id: 1,
           metadata: expect.objectContaining({
-            organization_id: 1,
+            community_id: 1,
             reason: "Violates policy",
           }),
         })
@@ -559,23 +559,23 @@ describe("admin-communities queries", () => {
       expect(result).toEqual(mockOrg);
       expect(mockClient.from).toHaveBeenNthCalledWith(
         2,
-        "organization_admin_notes"
+        "community_admin_notes"
       );
       expect(mockNotesChain.upsert).toHaveBeenCalledWith(
         expect.objectContaining({
-          organization_id: 1,
+          community_id: 1,
           notes: "Repeated violations",
           updated_by: "admin-1",
         }),
-        { onConflict: "organization_id" }
+        { onConflict: "community_id" }
       );
       expect(mockAuditChain.insert).toHaveBeenCalledWith(
         expect.objectContaining({
           action: "admin.org_suspended",
           actor_user_id: "admin-1",
-          organization_id: 1,
+          community_id: 1,
           metadata: expect.objectContaining({
-            organization_id: 1,
+            community_id: 1,
             reason: "Repeated violations",
           }),
         })
@@ -690,9 +690,9 @@ describe("admin-communities queries", () => {
         expect.objectContaining({
           action: "admin.org_unsuspended",
           actor_user_id: "admin-1",
-          organization_id: 1,
+          community_id: 1,
           metadata: expect.objectContaining({
-            organization_id: 1,
+            community_id: 1,
           }),
         })
       );
@@ -812,16 +812,16 @@ describe("admin-communities queries", () => {
       expect(result).toEqual({ id: 1, owner_user_id: "new-owner" });
       // Three from() calls: fetch, update, audit
       expect(mockClient.from).toHaveBeenCalledTimes(3);
-      expect(mockClient.from).toHaveBeenNthCalledWith(1, "organizations");
-      expect(mockClient.from).toHaveBeenNthCalledWith(2, "organizations");
+      expect(mockClient.from).toHaveBeenNthCalledWith(1, "communities");
+      expect(mockClient.from).toHaveBeenNthCalledWith(2, "communities");
       expect(mockClient.from).toHaveBeenNthCalledWith(3, "audit_log");
       expect(mockAuditChain.insert).toHaveBeenCalledWith(
         expect.objectContaining({
           action: "admin.org_ownership_transferred",
           actor_user_id: "admin-1",
-          organization_id: 1,
+          community_id: 1,
           metadata: expect.objectContaining({
-            organization_id: 1,
+            community_id: 1,
             previous_owner_user_id: "old-owner",
             new_owner_user_id: "new-owner",
           }),

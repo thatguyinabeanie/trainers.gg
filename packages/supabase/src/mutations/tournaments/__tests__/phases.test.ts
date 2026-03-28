@@ -48,7 +48,7 @@ describe("Tournament Phase Mutations", () => {
             status: "pending",
             tournament_id: 100,
             tournaments: {
-              organization_id: 200,
+              community_id: 200,
               status: "draft",
               organizations: { owner_user_id: mockUser.id },
             },
@@ -108,7 +108,7 @@ describe("Tournament Phase Mutations", () => {
             status: "pending",
             tournament_id: 100,
             tournaments: {
-              organization_id: 200,
+              community_id: 200,
               status: "active",
               organizations: { owner_user_id: mockUser.id },
             },
@@ -146,7 +146,7 @@ describe("Tournament Phase Mutations", () => {
             status: "active",
             tournament_id: 100,
             tournaments: {
-              organization_id: 200,
+              community_id: 200,
               status: "active",
               organizations: { owner_user_id: mockUser.id },
             },
@@ -174,7 +174,7 @@ describe("Tournament Phase Mutations", () => {
             status: "completed",
             tournament_id: 100,
             tournaments: {
-              organization_id: 200,
+              community_id: 200,
               status: "active",
               organizations: { owner_user_id: mockUser.id },
             },
@@ -204,7 +204,7 @@ describe("Tournament Phase Mutations", () => {
             status: "pending",
             tournament_id: 100,
             tournaments: {
-              organization_id: 200,
+              community_id: 200,
               status: "draft",
               organizations: { owner_user_id: "other-user" },
             },
@@ -232,7 +232,7 @@ describe("Tournament Phase Mutations", () => {
           data: {
             id: tournamentId,
             status: "draft",
-            organization_id: 200,
+            community_id: 200,
             organizations: { owner_user_id: mockUser.id },
           },
           error: null,
@@ -324,7 +324,7 @@ describe("Tournament Phase Mutations", () => {
           data: {
             id: tournamentId,
             status: "draft",
-            organization_id: 200,
+            community_id: 200,
             organizations: { owner_user_id: "other-user" },
           },
           error: null,
@@ -354,7 +354,7 @@ describe("Tournament Phase Mutations", () => {
           data: {
             id: tournamentId,
             status: "active",
-            organization_id: 200,
+            community_id: 200,
             organizations: { owner_user_id: mockUser.id },
           },
           error: null,
@@ -410,7 +410,7 @@ describe("Tournament Phase Mutations", () => {
           data: {
             id: tournamentId,
             status: "completed",
-            organization_id: 200,
+            community_id: 200,
             organizations: { owner_user_id: mockUser.id },
           },
           error: null,
@@ -446,7 +446,7 @@ describe("Tournament Phase Mutations", () => {
             tournament_id: 100,
             tournaments: {
               status: "draft",
-              organization_id: 200,
+              community_id: 200,
               organizations: { owner_user_id: mockUser.id },
             },
           },
@@ -532,7 +532,7 @@ describe("Tournament Phase Mutations", () => {
             tournament_id: 100,
             tournaments: {
               status: "draft",
-              organization_id: 200,
+              community_id: 200,
               organizations: { owner_user_id: "other-user" },
             },
           },
@@ -559,7 +559,7 @@ describe("Tournament Phase Mutations", () => {
             tournament_id: 100,
             tournaments: {
               status: "draft",
-              organization_id: 200,
+              community_id: 200,
               organizations: { owner_user_id: mockUser.id },
             },
           },
@@ -599,7 +599,7 @@ describe("Tournament Phase Mutations", () => {
             tournament_id: 100,
             tournaments: {
               status: "active",
-              organization_id: 200,
+              community_id: 200,
               organizations: { owner_user_id: mockUser.id },
             },
           },
@@ -654,7 +654,7 @@ describe("Tournament Phase Mutations", () => {
             tournament_id: 100,
             tournaments: {
               status: "active",
-              organization_id: 200,
+              community_id: 200,
               organizations: { owner_user_id: mockUser.id },
             },
           },
@@ -681,7 +681,7 @@ describe("Tournament Phase Mutations", () => {
           data: {
             id: tournamentId,
             status: "draft",
-            organization_id: 200,
+            community_id: 200,
             organizations: { owner_user_id: mockUser.id },
           },
           error: null,
@@ -734,7 +734,7 @@ describe("Tournament Phase Mutations", () => {
           data: {
             id: tournamentId,
             status: "draft",
-            organization_id: 200,
+            community_id: 200,
             organizations: { owner_user_id: mockUser.id },
           },
           error: null,
@@ -789,7 +789,7 @@ describe("Tournament Phase Mutations", () => {
           data: {
             id: tournamentId,
             status: "draft",
-            organization_id: 200,
+            community_id: 200,
             organizations: { owner_user_id: mockUser.id },
           },
           error: null,
@@ -853,7 +853,7 @@ describe("Tournament Phase Mutations", () => {
           data: {
             id: tournamentId,
             status: "draft",
-            organization_id: 200,
+            community_id: 200,
             organizations: { owner_user_id: mockUser.id },
           },
           error: null,
@@ -891,7 +891,7 @@ describe("Tournament Phase Mutations", () => {
           data: {
             id: tournamentId,
             status: "completed",
-            organization_id: 200,
+            community_id: 200,
             organizations: { owner_user_id: mockUser.id },
           },
           error: null,
@@ -921,7 +921,7 @@ describe("Tournament Phase Mutations", () => {
           data: {
             id: tournamentId,
             status: "active",
-            organization_id: 200,
+            community_id: 200,
             organizations: { owner_user_id: mockUser.id },
           },
           error: null,
@@ -988,7 +988,7 @@ describe("Tournament Phase Mutations", () => {
           data: {
             id: tournamentId,
             status: "active",
-            organization_id: 200,
+            community_id: 200,
             organizations: { owner_user_id: mockUser.id },
           },
           error: null,
@@ -1041,7 +1041,7 @@ describe("Tournament Phase Mutations", () => {
           data: {
             id: tournamentId,
             status: "active",
-            organization_id: 200,
+            community_id: 200,
             organizations: { owner_user_id: mockUser.id },
           },
           error: null,

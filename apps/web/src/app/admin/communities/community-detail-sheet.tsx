@@ -296,9 +296,9 @@ export function CommunityDetailSheet({
             {/* --- Admin Notes section --- */}
             <section className="space-y-2">
               <h3 className="text-sm font-medium">Admin Notes</h3>
-              {org.organization_admin_notes?.[0]?.notes ? (
+              {org.community_admin_notes?.[0]?.notes ? (
                 <p className="bg-muted rounded-lg p-3 text-sm whitespace-pre-wrap">
-                  {org.organization_admin_notes[0].notes}
+                  {org.community_admin_notes[0].notes}
                 </p>
               ) : (
                 <p className="text-muted-foreground text-sm">

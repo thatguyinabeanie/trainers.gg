@@ -204,36 +204,36 @@ export type Database = {
           action: Database["public"]["Enums"]["audit_action"]
           actor_alt_id: number | null
           actor_user_id: string | null
+          community_id: number | null
           created_at: string
           game_id: number | null
           id: number
           match_id: number | null
           metadata: Json
-          organization_id: number | null
           tournament_id: number | null
         }
         Insert: {
           action: Database["public"]["Enums"]["audit_action"]
           actor_alt_id?: number | null
           actor_user_id?: string | null
+          community_id?: number | null
           created_at?: string
           game_id?: number | null
           id?: never
           match_id?: number | null
           metadata?: Json
-          organization_id?: number | null
           tournament_id?: number | null
         }
         Update: {
           action?: Database["public"]["Enums"]["audit_action"]
           actor_alt_id?: number | null
           actor_user_id?: string | null
+          community_id?: number | null
           created_at?: string
           game_id?: number | null
           id?: never
           match_id?: number | null
           metadata?: Json
-          organization_id?: number | null
           tournament_id?: number | null
         }
         Relationships: [
@@ -252,6 +252,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "audit_log_community_id_fkey"
+            columns: ["community_id"]
+            isOneToOne: false
+            referencedRelation: "communities"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "audit_log_game_id_fkey"
             columns: ["game_id"]
             isOneToOne: false
@@ -266,17 +273,270 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "audit_log_organization_id_fkey"
-            columns: ["organization_id"]
-            isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "audit_log_tournament_id_fkey"
             columns: ["tournament_id"]
             isOneToOne: false
             referencedRelation: "tournaments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      communities: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          discord_invite_url: string | null
+          icon: string | null
+          id: number
+          logo_url: string | null
+          name: string
+          owner_user_id: string
+          platform_fee_percentage: number | null
+          slug: string
+          social_links: Json
+          status: Database["public"]["Enums"]["community_status"] | null
+          subscription_expires_at: string | null
+          subscription_started_at: string | null
+          subscription_tier:
+            | Database["public"]["Enums"]["community_subscription_tier"]
+            | null
+          tier: Database["public"]["Enums"]["community_tier"] | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          discord_invite_url?: string | null
+          icon?: string | null
+          id?: never
+          logo_url?: string | null
+          name: string
+          owner_user_id: string
+          platform_fee_percentage?: number | null
+          slug: string
+          social_links?: Json
+          status?: Database["public"]["Enums"]["community_status"] | null
+          subscription_expires_at?: string | null
+          subscription_started_at?: string | null
+          subscription_tier?:
+            | Database["public"]["Enums"]["community_subscription_tier"]
+            | null
+          tier?: Database["public"]["Enums"]["community_tier"] | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          discord_invite_url?: string | null
+          icon?: string | null
+          id?: never
+          logo_url?: string | null
+          name?: string
+          owner_user_id?: string
+          platform_fee_percentage?: number | null
+          slug?: string
+          social_links?: Json
+          status?: Database["public"]["Enums"]["community_status"] | null
+          subscription_expires_at?: string | null
+          subscription_started_at?: string | null
+          subscription_tier?:
+            | Database["public"]["Enums"]["community_subscription_tier"]
+            | null
+          tier?: Database["public"]["Enums"]["community_tier"] | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "communities_owner_user_id_fkey"
+            columns: ["owner_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      community_admin_notes: {
+        Row: {
+          community_id: number
+          id: number
+          notes: string | null
+          updated_at: string | null
+          updated_by: string | null
+        }
+        Insert: {
+          community_id: number
+          id?: never
+          notes?: string | null
+          updated_at?: string | null
+          updated_by?: string | null
+        }
+        Update: {
+          community_id?: number
+          id?: never
+          notes?: string | null
+          updated_at?: string | null
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "community_admin_notes_community_id_fkey"
+            columns: ["community_id"]
+            isOneToOne: true
+            referencedRelation: "communities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      community_invitations: {
+        Row: {
+          community_id: number
+          created_at: string | null
+          expires_at: string | null
+          id: number
+          invited_by_user_id: string
+          invited_user_id: string
+          responded_at: string | null
+          status: Database["public"]["Enums"]["invitation_status"] | null
+        }
+        Insert: {
+          community_id: number
+          created_at?: string | null
+          expires_at?: string | null
+          id?: never
+          invited_by_user_id: string
+          invited_user_id: string
+          responded_at?: string | null
+          status?: Database["public"]["Enums"]["invitation_status"] | null
+        }
+        Update: {
+          community_id?: number
+          created_at?: string | null
+          expires_at?: string | null
+          id?: never
+          invited_by_user_id?: string
+          invited_user_id?: string
+          responded_at?: string | null
+          status?: Database["public"]["Enums"]["invitation_status"] | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "community_invitations_community_id_fkey"
+            columns: ["community_id"]
+            isOneToOne: false
+            referencedRelation: "communities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "community_invitations_invited_by_user_id_fkey"
+            columns: ["invited_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "community_invitations_invited_user_id_fkey"
+            columns: ["invited_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      community_requests: {
+        Row: {
+          admin_notes: string | null
+          created_at: string | null
+          description: string | null
+          discord_invite_url: string
+          id: number
+          name: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          slug: string
+          social_links: Json | null
+          status: Database["public"]["Enums"]["community_request_status"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          admin_notes?: string | null
+          created_at?: string | null
+          description?: string | null
+          discord_invite_url: string
+          id?: never
+          name: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          slug: string
+          social_links?: Json | null
+          status?: Database["public"]["Enums"]["community_request_status"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          admin_notes?: string | null
+          created_at?: string | null
+          description?: string | null
+          discord_invite_url?: string
+          id?: never
+          name?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          slug?: string
+          social_links?: Json | null
+          status?: Database["public"]["Enums"]["community_request_status"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "community_requests_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "community_requests_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      community_staff: {
+        Row: {
+          community_id: number
+          created_at: string | null
+          id: number
+          user_id: string
+        }
+        Insert: {
+          community_id: number
+          created_at?: string | null
+          id?: never
+          user_id: string
+        }
+        Update: {
+          community_id?: number
+          created_at?: string | null
+          id?: never
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "community_staff_community_id_fkey"
+            columns: ["community_id"]
+            isOneToOne: false
+            referencedRelation: "communities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "community_staff_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
             referencedColumns: ["id"]
           },
         ]
@@ -435,32 +695,32 @@ export type Database = {
       }
       groups: {
         Row: {
+          community_id: number
           created_at: string | null
           description: string | null
           id: number
           name: string
-          organization_id: number
         }
         Insert: {
+          community_id: number
           created_at?: string | null
           description?: string | null
           id?: never
           name: string
-          organization_id: number
         }
         Update: {
+          community_id?: number
           created_at?: string | null
           description?: string | null
           id?: never
           name?: string
-          organization_id?: number
         }
         Relationships: [
           {
-            foreignKeyName: "groups_organization_id_fkey"
-            columns: ["organization_id"]
+            foreignKeyName: "groups_community_id_fkey"
+            columns: ["community_id"]
             isOneToOne: false
-            referencedRelation: "organizations"
+            referencedRelation: "communities"
             referencedColumns: ["id"]
           },
         ]
@@ -773,266 +1033,6 @@ export type Database = {
           {
             foreignKeyName: "notifications_user_id_fkey"
             columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      organization_admin_notes: {
-        Row: {
-          id: number
-          notes: string | null
-          organization_id: number
-          updated_at: string | null
-          updated_by: string | null
-        }
-        Insert: {
-          id?: never
-          notes?: string | null
-          organization_id: number
-          updated_at?: string | null
-          updated_by?: string | null
-        }
-        Update: {
-          id?: never
-          notes?: string | null
-          organization_id?: number
-          updated_at?: string | null
-          updated_by?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "organization_admin_notes_organization_id_fkey"
-            columns: ["organization_id"]
-            isOneToOne: true
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      organization_invitations: {
-        Row: {
-          created_at: string | null
-          expires_at: string | null
-          id: number
-          invited_by_user_id: string
-          invited_user_id: string
-          organization_id: number
-          responded_at: string | null
-          status: Database["public"]["Enums"]["invitation_status"] | null
-        }
-        Insert: {
-          created_at?: string | null
-          expires_at?: string | null
-          id?: never
-          invited_by_user_id: string
-          invited_user_id: string
-          organization_id: number
-          responded_at?: string | null
-          status?: Database["public"]["Enums"]["invitation_status"] | null
-        }
-        Update: {
-          created_at?: string | null
-          expires_at?: string | null
-          id?: never
-          invited_by_user_id?: string
-          invited_user_id?: string
-          organization_id?: number
-          responded_at?: string | null
-          status?: Database["public"]["Enums"]["invitation_status"] | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "organization_invitations_invited_by_user_id_fkey"
-            columns: ["invited_by_user_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "organization_invitations_invited_user_id_fkey"
-            columns: ["invited_user_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "organization_invitations_organization_id_fkey"
-            columns: ["organization_id"]
-            isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      organization_requests: {
-        Row: {
-          admin_notes: string | null
-          created_at: string | null
-          description: string | null
-          discord_invite_url: string
-          id: number
-          name: string
-          reviewed_at: string | null
-          reviewed_by: string | null
-          slug: string
-          social_links: Json | null
-          status: Database["public"]["Enums"]["org_request_status"]
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          admin_notes?: string | null
-          created_at?: string | null
-          description?: string | null
-          discord_invite_url: string
-          id?: never
-          name: string
-          reviewed_at?: string | null
-          reviewed_by?: string | null
-          slug: string
-          social_links?: Json | null
-          status?: Database["public"]["Enums"]["org_request_status"]
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          admin_notes?: string | null
-          created_at?: string | null
-          description?: string | null
-          discord_invite_url?: string
-          id?: never
-          name?: string
-          reviewed_at?: string | null
-          reviewed_by?: string | null
-          slug?: string
-          social_links?: Json | null
-          status?: Database["public"]["Enums"]["org_request_status"]
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "organization_requests_reviewed_by_fkey"
-            columns: ["reviewed_by"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "organization_requests_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      organization_staff: {
-        Row: {
-          created_at: string | null
-          id: number
-          organization_id: number
-          user_id: string
-        }
-        Insert: {
-          created_at?: string | null
-          id?: never
-          organization_id: number
-          user_id: string
-        }
-        Update: {
-          created_at?: string | null
-          id?: never
-          organization_id?: number
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "organization_staff_organization_id_fkey"
-            columns: ["organization_id"]
-            isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "organization_staff_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      organizations: {
-        Row: {
-          created_at: string | null
-          description: string | null
-          discord_invite_url: string | null
-          icon: string | null
-          id: number
-          logo_url: string | null
-          name: string
-          owner_user_id: string
-          platform_fee_percentage: number | null
-          slug: string
-          social_links: Json
-          status: Database["public"]["Enums"]["organization_status"] | null
-          subscription_expires_at: string | null
-          subscription_started_at: string | null
-          subscription_tier:
-            | Database["public"]["Enums"]["organization_subscription_tier"]
-            | null
-          tier: Database["public"]["Enums"]["organization_tier"] | null
-          updated_at: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          description?: string | null
-          discord_invite_url?: string | null
-          icon?: string | null
-          id?: never
-          logo_url?: string | null
-          name: string
-          owner_user_id: string
-          platform_fee_percentage?: number | null
-          slug: string
-          social_links?: Json
-          status?: Database["public"]["Enums"]["organization_status"] | null
-          subscription_expires_at?: string | null
-          subscription_started_at?: string | null
-          subscription_tier?:
-            | Database["public"]["Enums"]["organization_subscription_tier"]
-            | null
-          tier?: Database["public"]["Enums"]["organization_tier"] | null
-          updated_at?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          description?: string | null
-          discord_invite_url?: string | null
-          icon?: string | null
-          id?: never
-          logo_url?: string | null
-          name?: string
-          owner_user_id?: string
-          platform_fee_percentage?: number | null
-          slug?: string
-          social_links?: Json
-          status?: Database["public"]["Enums"]["organization_status"] | null
-          subscription_expires_at?: string | null
-          subscription_started_at?: string | null
-          subscription_tier?:
-            | Database["public"]["Enums"]["organization_subscription_tier"]
-            | null
-          tier?: Database["public"]["Enums"]["organization_tier"] | null
-          updated_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "organizations_owner_user_id_fkey"
-            columns: ["owner_user_id"]
             isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
@@ -2322,6 +2322,7 @@ export type Database = {
       }
       tournament_templates: {
         Row: {
+          community_id: number | null
           created_at: string | null
           created_by: number
           description: string | null
@@ -2329,13 +2330,13 @@ export type Database = {
           is_official: boolean | null
           is_public: boolean | null
           name: string
-          organization_id: number | null
           tags: string[] | null
           template_config: Json | null
           updated_at: string | null
           use_count: number | null
         }
         Insert: {
+          community_id?: number | null
           created_at?: string | null
           created_by: number
           description?: string | null
@@ -2343,13 +2344,13 @@ export type Database = {
           is_official?: boolean | null
           is_public?: boolean | null
           name: string
-          organization_id?: number | null
           tags?: string[] | null
           template_config?: Json | null
           updated_at?: string | null
           use_count?: number | null
         }
         Update: {
+          community_id?: number | null
           created_at?: string | null
           created_by?: number
           description?: string | null
@@ -2357,7 +2358,6 @@ export type Database = {
           is_official?: boolean | null
           is_public?: boolean | null
           name?: string
-          organization_id?: number | null
           tags?: string[] | null
           template_config?: Json | null
           updated_at?: string | null
@@ -2365,17 +2365,17 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "tournament_templates_community_id_fkey"
+            columns: ["community_id"]
+            isOneToOne: false
+            referencedRelation: "communities"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "tournament_templates_created_by_fkey"
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "alts"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "tournament_templates_organization_id_fkey"
-            columns: ["organization_id"]
-            isOneToOne: false
-            referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
         ]
@@ -2389,6 +2389,7 @@ export type Database = {
           battle_format: string | null
           check_in_required: boolean | null
           check_in_window_minutes: number | null
+          community_id: number
           created_at: string | null
           current_phase_id: number | null
           current_round: number | null
@@ -2403,7 +2404,6 @@ export type Database = {
           max_participants: number | null
           name: string
           open_team_sheets: boolean | null
-          organization_id: number
           participants: number[] | null
           platform: string | null
           prize_pool: string | null
@@ -2431,6 +2431,7 @@ export type Database = {
           battle_format?: string | null
           check_in_required?: boolean | null
           check_in_window_minutes?: number | null
+          community_id: number
           created_at?: string | null
           current_phase_id?: number | null
           current_round?: number | null
@@ -2445,7 +2446,6 @@ export type Database = {
           max_participants?: number | null
           name: string
           open_team_sheets?: boolean | null
-          organization_id: number
           participants?: number[] | null
           platform?: string | null
           prize_pool?: string | null
@@ -2473,6 +2473,7 @@ export type Database = {
           battle_format?: string | null
           check_in_required?: boolean | null
           check_in_window_minutes?: number | null
+          community_id?: number
           created_at?: string | null
           current_phase_id?: number | null
           current_round?: number | null
@@ -2487,7 +2488,6 @@ export type Database = {
           max_participants?: number | null
           name?: string
           open_team_sheets?: boolean | null
-          organization_id?: number
           participants?: number[] | null
           platform?: string | null
           prize_pool?: string | null
@@ -2516,17 +2516,17 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "tournaments_community_id_fkey"
+            columns: ["community_id"]
+            isOneToOne: false
+            referencedRelation: "communities"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "tournaments_current_phase_fk"
             columns: ["current_phase_id"]
             isOneToOne: false
             referencedRelation: "tournament_phases"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "tournaments_organization_id_fkey"
-            columns: ["organization_id"]
-            isOneToOne: false
-            referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
           {
@@ -2764,6 +2764,18 @@ export type Database = {
           user_id: string
         }[]
       }
+      get_community_id_from_group_role: {
+        Args: { p_group_role_id: number }
+        Returns: number
+      }
+      get_community_tournament_counts: {
+        Args: { community_ids: number[] }
+        Returns: {
+          active_count: number
+          community_id: number
+          total_count: number
+        }[]
+      }
       get_current_alt_id: { Args: never; Returns: number }
       get_current_user_id: { Args: never; Returns: string }
       get_match_games_for_player: {
@@ -2823,8 +2835,16 @@ export type Database = {
           date: string
         }[]
       }
+      has_community_permission: {
+        Args: { p_community_id: number; permission_key: string }
+        Returns: boolean
+      }
       has_org_permission: {
         Args: { org_id: number; permission_key: string }
+        Returns: boolean
+      }
+      is_community_owner: {
+        Args: { p_community_id: number; p_user_id: string }
         Returns: boolean
       }
       is_impersonating: { Args: never; Returns: boolean }
@@ -2882,6 +2902,10 @@ export type Database = {
       submit_game_selection: {
         Args: { p_game_id: number; p_selected_winner_alt_id: number }
         Returns: Json
+      }
+      user_has_community_role: {
+        Args: { p_community_id: number; p_role_name: string; p_user_id: string }
+        Returns: boolean
       }
       user_has_org_role: {
         Args: { p_org_id: number; p_role_name: string; p_user_id: string }
@@ -2943,8 +2967,12 @@ export type Database = {
         | "admin.org_request_approved"
         | "admin.org_request_rejected"
       billing_interval: "monthly" | "annual"
+      community_request_status: "pending" | "approved" | "rejected"
+      community_status: "pending" | "active" | "rejected" | "suspended"
+      community_subscription_tier: "free" | "community_plus" | "enterprise"
+      community_tier: "regular" | "verified" | "partner"
       drop_category: "no_show" | "conduct" | "disqualification" | "other"
-      entity_type: "profile" | "organization" | "alt"
+      entity_type: "profile" | "community" | "alt"
       invitation_status: "pending" | "accepted" | "declined" | "expired"
       match_game_status:
         | "pending"
@@ -2967,13 +2995,6 @@ export type Database = {
         | "match_no_show"
         | "org_request_approved"
         | "org_request_rejected"
-      org_request_status: "pending" | "approved" | "rejected"
-      organization_status: "pending" | "active" | "rejected" | "suspended"
-      organization_subscription_tier:
-        | "free"
-        | "organization_plus"
-        | "enterprise"
-      organization_tier: "regular" | "verified" | "partner"
       pds_account_status:
         | "pending"
         | "active"
@@ -2990,7 +3011,7 @@ export type Database = {
         | "checked_in"
         | "dropped"
         | "withdrawn"
-      role_scope: "site" | "organization"
+      role_scope: "site" | "community"
       sprite_preference: "gen5" | "gen5ani" | "ani"
       subscription_status: "active" | "cancelled" | "expired" | "past_due"
       tournament_format:
@@ -3183,8 +3204,12 @@ export const Constants = {
         "admin.org_request_rejected",
       ],
       billing_interval: ["monthly", "annual"],
+      community_request_status: ["pending", "approved", "rejected"],
+      community_status: ["pending", "active", "rejected", "suspended"],
+      community_subscription_tier: ["free", "community_plus", "enterprise"],
+      community_tier: ["regular", "verified", "partner"],
       drop_category: ["no_show", "conduct", "disqualification", "other"],
-      entity_type: ["profile", "organization", "alt"],
+      entity_type: ["profile", "community", "alt"],
       invitation_status: ["pending", "accepted", "declined", "expired"],
       match_game_status: [
         "pending",
@@ -3209,14 +3234,6 @@ export const Constants = {
         "org_request_approved",
         "org_request_rejected",
       ],
-      org_request_status: ["pending", "approved", "rejected"],
-      organization_status: ["pending", "active", "rejected", "suspended"],
-      organization_subscription_tier: [
-        "free",
-        "organization_plus",
-        "enterprise",
-      ],
-      organization_tier: ["regular", "verified", "partner"],
       pds_account_status: [
         "pending",
         "active",
@@ -3235,7 +3252,7 @@ export const Constants = {
         "dropped",
         "withdrawn",
       ],
-      role_scope: ["site", "organization"],
+      role_scope: ["site", "community"],
       sprite_preference: ["gen5", "gen5ani", "ani"],
       subscription_status: ["active", "cancelled", "expired", "past_due"],
       tournament_format: [

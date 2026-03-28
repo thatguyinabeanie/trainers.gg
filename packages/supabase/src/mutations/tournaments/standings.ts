@@ -280,8 +280,8 @@ export async function dropPlayer(
       `
       id,
       status,
-      organization_id,
-      organizations!inner (
+      community_id,
+      communities!inner (
         owner_user_id
       )
     `
@@ -296,7 +296,7 @@ export async function dropPlayer(
   const isPlayer = currentAlt?.id === altId;
   const isOrganizer = await checkOrgPermission(
     supabase,
-    tournament.organization_id,
+    tournament.community_id,
     "tournament.manage"
   );
 

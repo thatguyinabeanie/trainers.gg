@@ -30,7 +30,7 @@ import { searchUsersForStaffInvite, inviteStaffMember } from "@/actions/staff";
 interface InviteStaffDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  organizationId: number;
+  communityId: number;
   orgSlug: string;
   onSuccess: () => void;
 }
@@ -75,7 +75,7 @@ type InviteStaffFormData = z.infer<typeof inviteStaffSchema>;
 export function InviteStaffDialog({
   open,
   onOpenChange,
-  organizationId,
+  communityId,
   orgSlug,
   onSuccess,
 }: InviteStaffDialogProps) {
@@ -104,10 +104,7 @@ export function InviteStaffDialog({
 
     const timer = setTimeout(async () => {
       setIsSearching(true);
-      const result = await searchUsersForStaffInvite(
-        organizationId,
-        searchTerm
-      );
+      const result = await searchUsersForStaffInvite(communityId, searchTerm);
       if (cancelled) return;
       if (result.success) {
         setSearchResults(result.data);
@@ -121,7 +118,7 @@ export function InviteStaffDialog({
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [searchTerm, organizationId]);
+  }, [searchTerm, communityId]);
 
   // Reset form when dialog closes
   useEffect(() => {
@@ -149,11 +146,7 @@ export function InviteStaffDialog({
     if (!selectedUser) return;
 
     try {
-      const result = await inviteStaffMember(
-        organizationId,
-        data.userId,
-        orgSlug
-      );
+      const result = await inviteStaffMember(communityId, data.userId, orgSlug);
 
       if (result.success) {
         toast.success(`${getDisplayName(selectedUser)} added to staff`);

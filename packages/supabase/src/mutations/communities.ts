@@ -21,11 +21,11 @@ async function getCurrentUser(supabase: TypedClient) {
  */
 async function checkOrgPermission(
   supabase: TypedClient,
-  organizationId: number,
+  communityId: number,
   permissionKey: string
 ): Promise<boolean> {
-  const { data, error } = await supabase.rpc("has_org_permission", {
-    org_id: organizationId,
+  const { data, error } = await supabase.rpc("has_community_permission", {
+    p_community_id: communityId,
     permission_key: permissionKey,
   });
 
@@ -42,15 +42,15 @@ async function checkOrgPermission(
  */
 async function isOrgOwner(
   supabase: TypedClient,
-  organizationId: number
+  communityId: number
 ): Promise<boolean> {
   const currentUser = await getCurrentUser(supabase);
   if (!currentUser) return false;
 
   const { data: org } = await supabase
-    .from("organizations")
+    .from("communities")
     .select("owner_user_id")
-    .eq("id", organizationId)
+    .eq("id", communityId)
     .single();
 
   return org?.owner_user_id === currentUser.id;
@@ -91,7 +91,7 @@ export async function createCommunity(
 
   // Check slug uniqueness
   const { data: existing } = await supabase
-    .from("organizations")
+    .from("communities")
     .select("id")
     .eq("slug", data.slug.toLowerCase())
     .single();
@@ -114,7 +114,7 @@ export async function createCommunity(
 
   // Create organization with user as owner
   const { data: org, error } = await supabase
-    .from("organizations")
+    .from("communities")
     .insert({
       name: data.name,
       slug: data.slug.toLowerCase(),
@@ -130,8 +130,8 @@ export async function createCommunity(
 
   // Add the user as organization staff (user-level, not alt-level)
   if (user) {
-    await supabase.from("organization_staff").insert({
-      organization_id: org.id,
+    await supabase.from("community_staff").insert({
+      community_id: org.id,
       user_id: user.id,
     });
   }
@@ -144,7 +144,7 @@ export async function createCommunity(
  */
 export async function updateCommunity(
   supabase: TypedClient,
-  organizationId: number,
+  communityId: number,
   updates: {
     name?: string;
     description?: string;
@@ -157,9 +157,9 @@ export async function updateCommunity(
 
   // Verify ownership or admin permission
   const { data: org } = await supabase
-    .from("organizations")
+    .from("communities")
     .select("owner_user_id")
-    .eq("id", organizationId)
+    .eq("id", communityId)
     .single();
 
   if (!org) throw new Error("Organization not found");
@@ -168,8 +168,7 @@ export async function updateCommunity(
     throw new Error("You don't have permission to update this organization");
   }
 
-  const updateData: Database["public"]["Tables"]["organizations"]["Update"] =
-    {};
+  const updateData: Database["public"]["Tables"]["communities"]["Update"] = {};
   if (updates.name !== undefined) updateData.name = updates.name;
   if (updates.description !== undefined)
     updateData.description = updates.description;
@@ -186,9 +185,9 @@ export async function updateCommunity(
   if (updates.logoUrl !== undefined) updateData.logo_url = updates.logoUrl;
 
   const { error } = await supabase
-    .from("organizations")
+    .from("communities")
     .update(updateData)
-    .eq("id", organizationId);
+    .eq("id", communityId);
 
   if (error) throw error;
   return { success: true };
@@ -199,7 +198,7 @@ export async function updateCommunity(
  */
 export async function inviteToCommunity(
   supabase: TypedClient,
-  organizationId: number,
+  communityId: number,
   invitedUserId: string
 ) {
   const user = await getCurrentUser(supabase);
@@ -207,9 +206,9 @@ export async function inviteToCommunity(
 
   // Check if already staff
   const { data: existingStaff } = await supabase
-    .from("organization_staff")
+    .from("community_staff")
     .select("id")
-    .eq("organization_id", organizationId)
+    .eq("community_id", communityId)
     .eq("user_id", invitedUserId)
     .single();
 
@@ -219,9 +218,9 @@ export async function inviteToCommunity(
 
   // Check for existing pending invitation
   const { data: existingInvite } = await supabase
-    .from("organization_invitations")
+    .from("community_invitations")
     .select("id")
-    .eq("organization_id", organizationId)
+    .eq("community_id", communityId)
     .eq("invited_user_id", invitedUserId)
     .eq("status", "pending")
     .single();
@@ -232,9 +231,9 @@ export async function inviteToCommunity(
 
   // Create invitation
   const { data: invitation, error } = await supabase
-    .from("organization_invitations")
+    .from("community_invitations")
     .insert({
-      organization_id: organizationId,
+      community_id: communityId,
       invited_user_id: invitedUserId,
       invited_by_user_id: user.id,
       role: "org_moderator", // Default role
@@ -261,7 +260,7 @@ export async function acceptCommunityInvitation(
 
   // Get and verify invitation
   const { data: invitation } = await supabase
-    .from("organization_invitations")
+    .from("community_invitations")
     .select("*")
     .eq("id", invitationId)
     .single();
@@ -280,7 +279,7 @@ export async function acceptCommunityInvitation(
   // Update invitation status
   // The trigger will automatically create organization_staff record and assign role
   await supabase
-    .from("organization_invitations")
+    .from("community_invitations")
     .update({
       status: "accepted",
       responded_at: new Date().toISOString(),
@@ -302,7 +301,7 @@ export async function declineCommunityInvitation(
 
   // Get and verify invitation
   const { data: invitation } = await supabase
-    .from("organization_invitations")
+    .from("community_invitations")
     .select("*")
     .eq("id", invitationId)
     .single();
@@ -316,7 +315,7 @@ export async function declineCommunityInvitation(
   }
 
   await supabase
-    .from("organization_invitations")
+    .from("community_invitations")
     .update({
       status: "declined",
       responded_at: new Date().toISOString(),
@@ -331,16 +330,16 @@ export async function declineCommunityInvitation(
  */
 export async function leaveCommunity(
   supabase: TypedClient,
-  organizationId: number
+  communityId: number
 ) {
   const user = await getCurrentUser(supabase);
   if (!user) throw new Error("Not authenticated");
 
   // Verify not the owner
   const { data: org } = await supabase
-    .from("organizations")
+    .from("communities")
     .select("owner_user_id")
-    .eq("id", organizationId)
+    .eq("id", communityId)
     .single();
 
   if (org?.owner_user_id === user.id) {
@@ -350,9 +349,9 @@ export async function leaveCommunity(
   }
 
   const { error } = await supabase
-    .from("organization_staff")
+    .from("community_staff")
     .delete()
-    .eq("organization_id", organizationId)
+    .eq("community_id", communityId)
     .eq("user_id", user.id);
 
   if (error) throw error;
@@ -364,7 +363,7 @@ export async function leaveCommunity(
  */
 export async function removeStaff(
   supabase: TypedClient,
-  organizationId: number,
+  communityId: number,
   userId: string
 ) {
   const currentUser = await getCurrentUser(supabase);
@@ -372,9 +371,9 @@ export async function removeStaff(
 
   // Verify ownership
   const { data: org } = await supabase
-    .from("organizations")
+    .from("communities")
     .select("owner_user_id")
-    .eq("id", organizationId)
+    .eq("id", communityId)
     .single();
 
   if (!org) throw new Error("Organization not found");
@@ -388,9 +387,9 @@ export async function removeStaff(
   }
 
   const { error } = await supabase
-    .from("organization_staff")
+    .from("community_staff")
     .delete()
-    .eq("organization_id", organizationId)
+    .eq("community_id", communityId)
     .eq("user_id", userId);
 
   if (error) throw error;
@@ -407,18 +406,18 @@ export async function removeStaff(
  */
 export async function addStaffMember(
   supabase: TypedClient,
-  organizationId: number,
+  communityId: number,
   userId: string
 ) {
   const currentUser = await getCurrentUser(supabase);
   if (!currentUser) throw new Error("Not authenticated");
 
   // Verify permission: must be org owner or have org.staff.manage permission
-  const ownerCheck = await isOrgOwner(supabase, organizationId);
+  const ownerCheck = await isOrgOwner(supabase, communityId);
   const permCheck = await checkOrgPermission(
     supabase,
-    organizationId,
-    "org.staff.manage"
+    communityId,
+    "community.staff.manage"
   );
   if (!ownerCheck && !permCheck) {
     throw new Error("You don't have permission to manage staff");
@@ -426,9 +425,9 @@ export async function addStaffMember(
 
   // Check if user is already staff
   const { data: existingStaff } = await supabase
-    .from("organization_staff")
+    .from("community_staff")
     .select("id")
-    .eq("organization_id", organizationId)
+    .eq("community_id", communityId)
     .eq("user_id", userId)
     .maybeSingle();
 
@@ -437,12 +436,10 @@ export async function addStaffMember(
   }
 
   // Add user as staff (no group assignment)
-  const { error: staffError } = await supabase
-    .from("organization_staff")
-    .insert({
-      organization_id: organizationId,
-      user_id: userId,
-    });
+  const { error: staffError } = await supabase.from("community_staff").insert({
+    community_id: communityId,
+    user_id: userId,
+  });
 
   if (staffError) throw staffError;
 
@@ -454,7 +451,7 @@ export async function addStaffMember(
  */
 export async function addStaffToGroup(
   supabase: TypedClient,
-  organizationId: number,
+  communityId: number,
   userId: string,
   groupId: number
 ) {
@@ -462,11 +459,11 @@ export async function addStaffToGroup(
   if (!currentUser) throw new Error("Not authenticated");
 
   // Verify permission: must be org owner or have org.staff.manage permission
-  const ownerCheck = await isOrgOwner(supabase, organizationId);
+  const ownerCheck = await isOrgOwner(supabase, communityId);
   const permCheck = await checkOrgPermission(
     supabase,
-    organizationId,
-    "org.staff.manage"
+    communityId,
+    "community.staff.manage"
   );
   if (!ownerCheck && !permCheck) {
     throw new Error("You don't have permission to manage staff");
@@ -475,12 +472,12 @@ export async function addStaffToGroup(
   // Verify the group belongs to this organization
   const { data: group } = await supabase
     .from("groups")
-    .select("id, organization_id")
+    .select("id, community_id")
     .eq("id", groupId)
     .single();
 
   if (!group) throw new Error("Group not found");
-  if (group.organization_id !== organizationId) {
+  if (group.community_id !== communityId) {
     throw new Error("Group does not belong to this organization");
   }
 
@@ -495,18 +492,18 @@ export async function addStaffToGroup(
 
   // Check if user is already staff
   const { data: existingStaff } = await supabase
-    .from("organization_staff")
+    .from("community_staff")
     .select("id")
-    .eq("organization_id", organizationId)
+    .eq("community_id", communityId)
     .eq("user_id", userId)
     .maybeSingle();
 
   // If not already staff, add them
   if (!existingStaff) {
     const { error: staffError } = await supabase
-      .from("organization_staff")
+      .from("community_staff")
       .insert({
-        organization_id: organizationId,
+        community_id: communityId,
         user_id: userId,
       });
 
@@ -517,7 +514,7 @@ export async function addStaffToGroup(
   const { data: orgGroups } = await supabase
     .from("groups")
     .select("id")
-    .eq("organization_id", organizationId);
+    .eq("community_id", communityId);
 
   const orgGroupIds = (orgGroups ?? []).map((g) => g.id);
 
@@ -553,18 +550,18 @@ export async function addStaffToGroup(
  */
 export async function removeStaffFromGroup(
   supabase: TypedClient,
-  organizationId: number,
+  communityId: number,
   userId: string
 ) {
   const currentUser = await getCurrentUser(supabase);
   if (!currentUser) throw new Error("Not authenticated");
 
   // Verify permission: must be org owner or have org.staff.manage permission
-  const ownerCheck = await isOrgOwner(supabase, organizationId);
+  const ownerCheck = await isOrgOwner(supabase, communityId);
   const permCheck = await checkOrgPermission(
     supabase,
-    organizationId,
-    "org.staff.manage"
+    communityId,
+    "community.staff.manage"
   );
   if (!ownerCheck && !permCheck) {
     throw new Error("You don't have permission to manage staff");
@@ -574,7 +571,7 @@ export async function removeStaffFromGroup(
   const { data: orgGroups } = await supabase
     .from("groups")
     .select("id")
-    .eq("organization_id", organizationId);
+    .eq("community_id", communityId);
 
   const orgGroupIds = (orgGroups ?? []).map((g) => g.id);
 
@@ -609,7 +606,7 @@ export async function removeStaffFromGroup(
  */
 export async function changeStaffRole(
   supabase: TypedClient,
-  organizationId: number,
+  communityId: number,
   userId: string,
   newGroupId: number
 ) {
@@ -617,11 +614,11 @@ export async function changeStaffRole(
   if (!currentUser) throw new Error("Not authenticated");
 
   // Verify permission: must be org owner or have org.staff.manage permission
-  const ownerCheck = await isOrgOwner(supabase, organizationId);
+  const ownerCheck = await isOrgOwner(supabase, communityId);
   const permCheck = await checkOrgPermission(
     supabase,
-    organizationId,
-    "org.staff.manage"
+    communityId,
+    "community.staff.manage"
   );
   if (!ownerCheck && !permCheck) {
     throw new Error("You don't have permission to manage staff");
@@ -629,9 +626,9 @@ export async function changeStaffRole(
 
   // Verify the target user is not the org owner
   const { data: org } = await supabase
-    .from("organizations")
+    .from("communities")
     .select("owner_user_id")
-    .eq("id", organizationId)
+    .eq("id", communityId)
     .single();
 
   if (!org) throw new Error("Organization not found");
@@ -640,7 +637,7 @@ export async function changeStaffRole(
   }
 
   // Use addStaffToGroup which handles replacing existing role
-  return addStaffToGroup(supabase, organizationId, userId, newGroupId);
+  return addStaffToGroup(supabase, communityId, userId, newGroupId);
 }
 
 /**
@@ -648,18 +645,18 @@ export async function changeStaffRole(
  */
 export async function removeStaffCompletely(
   supabase: TypedClient,
-  organizationId: number,
+  communityId: number,
   userId: string
 ) {
   const currentUser = await getCurrentUser(supabase);
   if (!currentUser) throw new Error("Not authenticated");
 
   // Verify permission: must be org owner or have org.staff.manage permission
-  const ownerCheck = await isOrgOwner(supabase, organizationId);
+  const ownerCheck = await isOrgOwner(supabase, communityId);
   const permCheck = await checkOrgPermission(
     supabase,
-    organizationId,
-    "org.staff.manage"
+    communityId,
+    "community.staff.manage"
   );
   if (!ownerCheck && !permCheck) {
     throw new Error("You don't have permission to manage staff");
@@ -667,9 +664,9 @@ export async function removeStaffCompletely(
 
   // Verify not removing the owner
   const { data: org } = await supabase
-    .from("organizations")
+    .from("communities")
     .select("owner_user_id")
-    .eq("id", organizationId)
+    .eq("id", communityId)
     .single();
 
   if (!org) throw new Error("Organization not found");
@@ -685,13 +682,13 @@ export async function removeStaffCompletely(
   }
 
   // First remove from all groups
-  await removeStaffFromGroup(supabase, organizationId, userId);
+  await removeStaffFromGroup(supabase, communityId, userId);
 
   // Then remove from organization_staff
   const { error } = await supabase
-    .from("organization_staff")
+    .from("community_staff")
     .delete()
-    .eq("organization_id", organizationId)
+    .eq("community_id", communityId)
     .eq("user_id", userId);
 
   if (error) throw error;

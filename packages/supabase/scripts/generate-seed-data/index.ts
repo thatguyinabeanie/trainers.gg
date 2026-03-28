@@ -255,7 +255,7 @@ function generateOrganizationsSql(
   // Insert organizations
   lines.push(generateSection("Organizations"));
   for (const org of organizations) {
-    lines.push(`INSERT INTO public.organizations (`);
+    lines.push(`INSERT INTO public.communities (`);
     lines.push(
       `  name, slug, description, status, owner_user_id, tier, subscription_tier`
     );
@@ -279,17 +279,17 @@ function generateOrganizationsSql(
 
   for (const org of organizations) {
     lines.push(
-      `  SELECT id INTO ${org.slug.replace(/-/g, "_")}_id FROM public.organizations WHERE slug = '${org.slug}';`
+      `  SELECT id INTO ${org.slug.replace(/-/g, "_")}_id FROM public.communities WHERE slug = '${org.slug}';`
     );
   }
 
   lines.push(`\n  -- Add staff members`);
   lines.push(
-    `  INSERT INTO public.organization_staff (organization_id, user_id) VALUES`
+    `  INSERT INTO public.community_staff (community_id, user_id) VALUES`
   );
 
   const staffValues = orgStaff.map((staff, index) => {
-    const org = organizations.find((o) => o.id === staff.organizationId)!;
+    const org = organizations.find((o) => o.id === staff.communityId)!;
     const comma = index < orgStaff.length - 1 ? "," : "";
     return `    (${org.slug.replace(/-/g, "_")}_id, '${staff.userId}')${comma}`;
   });
@@ -363,7 +363,7 @@ function generateTournamentsSql(
   lines.push(`  -- Get organization IDs`);
   for (const org of organizations) {
     lines.push(
-      `  SELECT id INTO ${org.slug.replace(/-/g, "_")}_id FROM public.organizations WHERE slug = '${org.slug}';`
+      `  SELECT id INTO ${org.slug.replace(/-/g, "_")}_id FROM public.communities WHERE slug = '${org.slug}';`
     );
   }
   lines.push("");
@@ -375,7 +375,7 @@ function generateTournamentsSql(
     lines.push(`  -- Tournaments batch ${Math.floor(i / batchSize) + 1}`);
 
     for (const t of batch) {
-      const org = organizations.find((o) => o.id === t.organizationId)!;
+      const org = organizations.find((o) => o.id === t.communityId)!;
 
       // All dates are relative to seed_now (NOW()) to avoid timezone mismatch
       const refName = "seed_now";
@@ -391,9 +391,7 @@ function generateTournamentsSql(
         : String(t.maxParticipants);
 
       lines.push(`  INSERT INTO public.tournaments (`);
-      lines.push(
-        `    organization_id, name, slug, description, format, status,`
-      );
+      lines.push(`    community_id, name, slug, description, format, status,`);
       lines.push(`    start_date, end_date, max_participants,`);
       lines.push(
         `    tournament_format, swiss_rounds, round_time_minutes, featured, top_cut_size`

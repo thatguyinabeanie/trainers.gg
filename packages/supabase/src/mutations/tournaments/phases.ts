@@ -32,9 +32,9 @@ export async function updatePhase(
       status,
       tournament_id,
       tournaments!tournament_phases_tournament_id_fkey!inner (
-        organization_id,
+        community_id,
         status,
-        organizations!inner (
+        communities!inner (
           owner_user_id
         )
       )
@@ -46,15 +46,15 @@ export async function updatePhase(
   if (!phase) throw new Error("Phase not found");
 
   const tournament = phase.tournaments as unknown as {
-    organization_id: number;
+    community_id: number;
     status: string;
-    organizations: { owner_user_id: string };
+    communities: { owner_user_id: string };
   };
 
   // Verify permission
   const hasPermission = await checkOrgPermission(
     supabase,
-    tournament.organization_id,
+    tournament.community_id,
     "tournament.manage"
   );
   if (!hasPermission) {
@@ -127,8 +127,8 @@ export async function createPhase(
       `
       id,
       status,
-      organization_id,
-      organizations!inner (
+      community_id,
+      communities!inner (
         owner_user_id
       )
     `
@@ -141,7 +141,7 @@ export async function createPhase(
   // Verify permission
   const hasPermission = await checkOrgPermission(
     supabase,
-    tournament.organization_id,
+    tournament.community_id,
     "tournament.manage"
   );
   if (!hasPermission) {
@@ -212,8 +212,8 @@ export async function deletePhase(supabase: TypedClient, phaseId: number) {
       tournament_id,
       tournaments!tournament_phases_tournament_id_fkey!inner (
         status,
-        organization_id,
-        organizations!inner (
+        community_id,
+        communities!inner (
           owner_user_id
         )
       )
@@ -226,14 +226,14 @@ export async function deletePhase(supabase: TypedClient, phaseId: number) {
 
   const tournament = phase.tournaments as unknown as {
     status: string;
-    organization_id: number;
-    organizations: { owner_user_id: string };
+    community_id: number;
+    communities: { owner_user_id: string };
   };
 
   // Verify permission
   const hasPermission = await checkOrgPermission(
     supabase,
-    tournament.organization_id,
+    tournament.community_id,
     "tournament.manage"
   );
   if (!hasPermission) {
@@ -326,8 +326,8 @@ export async function saveTournamentPhases(
       `
       id,
       status,
-      organization_id,
-      organizations!inner (
+      community_id,
+      communities!inner (
         owner_user_id
       )
     `
@@ -340,7 +340,7 @@ export async function saveTournamentPhases(
   // Verify permission
   const hasPermission = await checkOrgPermission(
     supabase,
-    tournament.organization_id,
+    tournament.community_id,
     "tournament.manage"
   );
   if (!hasPermission) {

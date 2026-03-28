@@ -15,7 +15,7 @@ async function checkIsStaff(
   userId: string
 ): Promise<boolean> {
   const { count, error } = await supabase
-    .from("organization_staff")
+    .from("community_staff")
     .select("*", { count: "exact", head: true })
     .eq("user_id", userId);
 

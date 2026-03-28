@@ -96,8 +96,8 @@ describe("communities queries", () => {
       ];
 
       const mockCounts = [
-        { organization_id: 1, total_count: 10, active_count: 3 },
-        { organization_id: 2, total_count: 5, active_count: 1 },
+        { community_id: 1, total_count: 10, active_count: 3 },
+        { community_id: 2, total_count: 5, active_count: 1 },
       ];
 
       const mockClient = createMockClient();
@@ -124,7 +124,7 @@ describe("communities queries", () => {
         "active"
       );
       expect(mockClient.rpc).toHaveBeenCalledWith(
-        "get_organization_tournament_counts",
+        "get_community_tournament_counts",
         { org_ids: [1, 2] }
       );
     });
@@ -186,7 +186,7 @@ describe("communities queries", () => {
       (mockClient.rpc as jest.Mock).mockResolvedValue({
         data: [
           {
-            organization_id: mockOrg.id,
+            community_id: mockOrg.id,
             total_count: 0,
             active_count: 0,
           },
@@ -510,7 +510,7 @@ describe("communities queries", () => {
 
       expect(result).toEqual(mockStaff);
       expect(mockClient._queryBuilder.eq).toHaveBeenCalledWith(
-        "organization_id",
+        "community_id",
         1
       );
     });
@@ -649,7 +649,7 @@ describe("communities queries", () => {
 
       expect(result).toEqual(mockInvitations);
       expect(mockClient._queryBuilder.eq).toHaveBeenCalledWith(
-        "organization_id",
+        "community_id",
         1
       );
       expect(mockClient._queryBuilder.eq).toHaveBeenCalledWith(
@@ -941,7 +941,7 @@ describe("communities queries", () => {
       const result = await hasOrgPermission(mockClient, 1, "org_manage");
 
       expect(result).toBe(true);
-      expect(mockClient.rpc).toHaveBeenCalledWith("has_org_permission", {
+      expect(mockClient.rpc).toHaveBeenCalledWith("has_community_permission", {
         org_id: 1,
         permission_key: "org_manage",
       });

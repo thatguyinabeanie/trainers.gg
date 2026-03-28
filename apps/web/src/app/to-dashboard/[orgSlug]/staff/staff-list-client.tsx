@@ -43,7 +43,7 @@ import { moveStaffToGroup } from "@/actions/staff";
 // =============================================================================
 
 interface StaffListClientProps {
-  organizationId: number;
+  communityId: number;
   orgSlug: string;
   initialStaff: StaffWithRole[];
   groups: CommunityGroup[];
@@ -325,7 +325,7 @@ function DroppableGroup({
 // =============================================================================
 
 export function StaffListClient({
-  organizationId,
+  communityId,
   orgSlug,
   initialStaff,
   groups,
@@ -350,14 +350,14 @@ export function StaffListClient({
   // Fetch staff data
   const queryFn = (
     supabase: Parameters<typeof listCommunityStaffWithRoles>[0]
-  ) => listCommunityStaffWithRoles(supabase, organizationId);
+  ) => listCommunityStaffWithRoles(supabase, communityId);
 
   const {
     data: staffMembers,
     isLoading,
     error: queryError,
     refetch,
-  } = useSupabaseQuery(queryFn, [organizationId]);
+  } = useSupabaseQuery(queryFn, [communityId]);
 
   // Show error toast if query fails
   useEffect(() => {
@@ -461,7 +461,7 @@ export function StaffListClient({
     setIsMoving(true);
     try {
       const result = await moveStaffToGroup(
-        organizationId,
+        communityId,
         member.user_id,
         targetGroup.id,
         orgSlug
@@ -630,7 +630,7 @@ export function StaffListClient({
       <InviteStaffDialog
         open={isInviteOpen}
         onOpenChange={setIsInviteOpen}
-        organizationId={organizationId}
+        communityId={communityId}
         orgSlug={orgSlug}
         onSuccess={handleSuccess}
       />
@@ -639,7 +639,7 @@ export function StaffListClient({
         <RemoveStaffDialog
           open={!!removeStaff}
           onOpenChange={(open: boolean) => !open && setRemoveStaff(null)}
-          organizationId={organizationId}
+          communityId={communityId}
           orgSlug={orgSlug}
           staff={removeStaff}
           onSuccess={handleSuccess}

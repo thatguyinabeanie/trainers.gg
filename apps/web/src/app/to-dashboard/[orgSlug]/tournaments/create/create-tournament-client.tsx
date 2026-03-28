@@ -71,7 +71,7 @@ const tournamentFormSchema = z.object({
       "Only lowercase letters, numbers, and hyphens allowed"
     ),
   description: z.string().optional(),
-  organizationId: z.number().optional(),
+  communityId: z.number().optional(),
 
   // Game settings
   game: z.string().optional(),
@@ -140,7 +140,7 @@ export function CreateTournamentClient({
       name: "",
       slug: "",
       description: "",
-      organizationId: undefined,
+      communityId: undefined,
       game: "sv",
       gameFormat: "reg-i",
       platform: "cartridge",
@@ -193,16 +193,16 @@ export function CreateTournamentClient({
   );
 
   // Update organization ID when org is loaded
-  const currentOrgId = form.watch("organizationId");
+  const currentOrgId = form.watch("communityId");
   if (organization && currentOrgId !== organization.id) {
-    form.setValue("organizationId", organization.id);
+    form.setValue("communityId", organization.id);
   }
 
   const { mutateAsync: createTournamentMutation } = useSupabaseMutation(
     (
       supabase,
       args: {
-        organizationId: number;
+        communityId: number;
         name: string;
         slug: string;
         description?: string;
@@ -300,14 +300,14 @@ export function CreateTournamentClient({
   const handleSubmit = async () => {
     const data = form.getValues();
 
-    if (!data.organizationId) {
+    if (!data.communityId) {
       toast.error("Community not found");
       return;
     }
 
     try {
       const tournament = await createTournamentMutation({
-        organizationId: data.organizationId,
+        communityId: data.communityId,
         name: data.name,
         slug: data.slug,
         description: data.description,

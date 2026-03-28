@@ -18,7 +18,7 @@ import {
 } from "@/components/tournaments/tournament-list";
 
 interface TournamentsListClientProps {
-  organizationId: number;
+  communityId: number;
   orgSlug: string;
   initialStatus?: string;
 }
@@ -41,7 +41,7 @@ const statusTabs: { value: TournamentStatus; label: string }[] = [
 ];
 
 export function TournamentsListClient({
-  organizationId,
+  communityId,
   orgSlug,
   initialStatus,
 }: TournamentsListClientProps) {
@@ -53,13 +53,13 @@ export function TournamentsListClient({
     "all") as TournamentStatus;
 
   const queryFn = (supabase: Parameters<typeof listCommunityTournaments>[0]) =>
-    listCommunityTournaments(supabase, organizationId, {
+    listCommunityTournaments(supabase, communityId, {
       status: currentStatus === "all" ? undefined : currentStatus,
       limit: 50,
     });
 
   const { data, isLoading, error } = useSupabaseQuery(queryFn, [
-    organizationId,
+    communityId,
     currentStatus,
   ]);
 

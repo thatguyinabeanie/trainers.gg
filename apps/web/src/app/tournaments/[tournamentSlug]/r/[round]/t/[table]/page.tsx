@@ -83,17 +83,17 @@ export default async function MatchPage({ params }: PageProps) {
         : (userAlts?.[0]?.id ?? null);
 
     // Check if user is org staff or org owner (can act as judge)
-    const orgId = matchData.tournament.organization_id;
+    const orgId = matchData.tournament.community_id;
     if (orgId) {
       const [{ data: staffRecord }, { data: org }] = await Promise.all([
         supabase
-          .from("organization_staff")
+          .from("community_staff")
           .select("id")
-          .eq("organization_id", orgId)
+          .eq("community_id", orgId)
           .eq("user_id", user.id)
           .maybeSingle(),
         supabase
-          .from("organizations")
+          .from("communities")
           .select("owner_user_id")
           .eq("id", orgId)
           .maybeSingle(),

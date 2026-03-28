@@ -434,7 +434,7 @@ describe("Community Mutations", () => {
       const fromSpy = jest.spyOn(mockClient, "from");
       const mockInvitation = {
         id: 1,
-        organization_id: orgId,
+        community_id: orgId,
         invited_user_id: invitedUserId,
       };
 
@@ -995,9 +995,9 @@ describe("Community Mutations", () => {
       const result = await addStaffMember(mockClient, orgId, userId);
 
       expect(result).toEqual({ success: true });
-      expect(rpcMock).toHaveBeenCalledWith("has_org_permission", {
+      expect(rpcMock).toHaveBeenCalledWith("has_community_permission", {
         org_id: orgId,
-        permission_key: "org.staff.manage",
+        permission_key: "community.staff.manage",
       });
     });
 
@@ -1099,7 +1099,7 @@ describe("Community Mutations", () => {
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
         single: jest.fn().mockResolvedValue({
-          data: { id: groupId, organization_id: orgId },
+          data: { id: groupId, community_id: orgId },
           error: null,
         }),
       } as unknown as MockQueryBuilder);
@@ -1208,7 +1208,7 @@ describe("Community Mutations", () => {
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
         single: jest.fn().mockResolvedValue({
-          data: { id: groupId, organization_id: 999 },
+          data: { id: groupId, community_id: 999 },
           error: null,
         }),
       } as unknown as MockQueryBuilder);
@@ -1240,7 +1240,7 @@ describe("Community Mutations", () => {
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
         single: jest.fn().mockResolvedValue({
-          data: { id: groupId, organization_id: orgId },
+          data: { id: groupId, community_id: orgId },
           error: null,
         }),
       } as unknown as MockQueryBuilder);
@@ -1410,7 +1410,7 @@ describe("Community Mutations", () => {
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
         single: jest.fn().mockResolvedValue({
-          data: { id: newGroupId, organization_id: orgId },
+          data: { id: newGroupId, community_id: orgId },
           error: null,
         }),
       } as unknown as MockQueryBuilder);

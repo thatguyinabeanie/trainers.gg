@@ -66,7 +66,7 @@ export async function getCurrentAlt(supabase: TypedClient, altId?: number) {
 
 /**
  * Check if the current user has a specific permission for an organization.
- * Uses the SQL has_org_permission() function which checks both org ownership
+ * Uses the SQL has_community_permission() function which checks both org ownership
  * and staff role-based permissions.
  */
 export async function checkOrgPermission(
@@ -74,8 +74,8 @@ export async function checkOrgPermission(
   orgId: number,
   permission: string
 ): Promise<boolean> {
-  const { data, error } = await supabase.rpc("has_org_permission", {
-    org_id: orgId,
+  const { data, error } = await supabase.rpc("has_community_permission", {
+    p_community_id: orgId,
     permission_key: permission,
   });
 

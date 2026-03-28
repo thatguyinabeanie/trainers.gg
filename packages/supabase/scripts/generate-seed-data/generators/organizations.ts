@@ -35,13 +35,13 @@ export interface GeneratedOrganization {
 
 export interface GeneratedOrgStaff {
   id: number;
-  organizationId: number;
+  communityId: number;
   userId: string;
 }
 
 export interface GeneratedGroup {
   id: number;
-  organizationId: number;
+  communityId: number;
   name: string;
   description: string;
 }
@@ -167,7 +167,7 @@ export function generateOrgStaff(
     for (const user of orgStaff) {
       assignments.push({
         id: assignmentId++,
-        organizationId: org.id,
+        communityId: org.id,
         userId: user.id,
       });
 
@@ -196,7 +196,7 @@ export function generateGroups(
   for (const org of organizations) {
     groups.push({
       id: groupId++,
-      organizationId: org.id,
+      communityId: org.id,
       name: "Staff",
       description: `Staff group for ${org.name}`,
     });
@@ -223,10 +223,10 @@ export function generateUserGroupRoles(
 
   for (const org of organizations) {
     // Get staff for this org
-    const staffForOrg = orgStaff.filter((s) => s.organizationId === org.id);
+    const staffForOrg = orgStaff.filter((s) => s.communityId === org.id);
 
     // Get the group for this org
-    const orgGroup = groups.find((g) => g.organizationId === org.id);
+    const orgGroup = groups.find((g) => g.communityId === org.id);
     if (!orgGroup) continue;
 
     // Assign roles according to STAFF_ROLES_PER_ORG
@@ -270,11 +270,11 @@ export function generateUserGroupRoles(
  * Get staff users assigned to a specific organization
  */
 export function getOrgStaffUserIds(
-  organizationId: number,
+  communityId: number,
   orgStaff: GeneratedOrgStaff[]
 ): string[] {
   return orgStaff
-    .filter((s) => s.organizationId === organizationId)
+    .filter((s) => s.communityId === communityId)
     .map((s) => s.userId);
 }
 

@@ -33,12 +33,12 @@ BEGIN
   END IF;
 
   -- Get organization IDs
-  SELECT id INTO vgc_league_id FROM public.organizations WHERE slug = 'vgc-league';
-  SELECT id INTO pallet_town_id FROM public.organizations WHERE slug = 'pallet-town';
+  SELECT id INTO vgc_league_id FROM public.communities WHERE slug = 'vgc-league';
+  SELECT id INTO pallet_town_id FROM public.communities WHERE slug = 'pallet-town';
 
   -- Tournaments batch 1
   INSERT INTO public.tournaments (
-    organization_id, name, slug, description, format, status,
+    community_id, name, slug, description, format, status,
     start_date, end_date, max_participants,
     tournament_format, swiss_rounds, round_time_minutes, featured, top_cut_size
   ) VALUES (
@@ -50,7 +50,7 @@ BEGIN
   ) RETURNING id INTO tournament_1_id;
 
   INSERT INTO public.tournaments (
-    organization_id, name, slug, description, format, status,
+    community_id, name, slug, description, format, status,
     start_date, end_date, max_participants,
     tournament_format, swiss_rounds, round_time_minutes, featured, top_cut_size
   ) VALUES (
@@ -62,7 +62,7 @@ BEGIN
   ) RETURNING id INTO tournament_2_id;
 
   INSERT INTO public.tournaments (
-    organization_id, name, slug, description, format, status,
+    community_id, name, slug, description, format, status,
     start_date, end_date, max_participants,
     tournament_format, swiss_rounds, round_time_minutes, featured, top_cut_size
     , allow_late_registration, check_in_window_minutes, late_check_in_max_round
@@ -76,7 +76,7 @@ BEGIN
   ) RETURNING id INTO tournament_3_id;
 
   INSERT INTO public.tournaments (
-    organization_id, name, slug, description, format, status,
+    community_id, name, slug, description, format, status,
     start_date, end_date, max_participants,
     tournament_format, swiss_rounds, round_time_minutes, featured, top_cut_size
     , allow_late_registration, check_in_window_minutes, late_check_in_max_round
@@ -90,7 +90,7 @@ BEGIN
   ) RETURNING id INTO tournament_4_id;
 
   INSERT INTO public.tournaments (
-    organization_id, name, slug, description, format, status,
+    community_id, name, slug, description, format, status,
     start_date, end_date, max_participants,
     tournament_format, swiss_rounds, round_time_minutes, featured, top_cut_size
   ) VALUES (
@@ -102,7 +102,7 @@ BEGIN
   ) RETURNING id INTO tournament_5_id;
 
   INSERT INTO public.tournaments (
-    organization_id, name, slug, description, format, status,
+    community_id, name, slug, description, format, status,
     start_date, end_date, max_participants,
     tournament_format, swiss_rounds, round_time_minutes, featured, top_cut_size
   ) VALUES (

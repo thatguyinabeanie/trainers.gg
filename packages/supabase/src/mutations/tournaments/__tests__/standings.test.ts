@@ -397,7 +397,7 @@ describe("Tournament Standings Mutations", () => {
           data: {
             id: tournamentId,
             status: "active",
-            organization_id: 200,
+            community_id: 200,
             organizations: { owner_user_id: "other-user" },
           },
           error: null,
@@ -450,7 +450,7 @@ describe("Tournament Standings Mutations", () => {
           data: {
             id: tournamentId,
             status: "active",
-            organization_id: 200,
+            community_id: 200,
             organizations: { owner_user_id: "other-user" },
           },
           error: null,
@@ -542,7 +542,7 @@ describe("Tournament Standings Mutations", () => {
           data: {
             id: tournamentId,
             status: "active",
-            organization_id: 200,
+            community_id: 200,
             organizations: { owner_user_id: "other-user" },
           },
           error: null,
@@ -564,7 +564,7 @@ describe("Tournament Standings Mutations", () => {
           data: {
             id: tournamentId,
             status: "draft",
-            organization_id: 200,
+            community_id: 200,
             organizations: { owner_user_id: "other-user" },
           },
           error: null,

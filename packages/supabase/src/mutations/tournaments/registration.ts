@@ -162,7 +162,7 @@ export async function updateRegistrationStatus(
 
   const { data: tournament } = await supabase
     .from("tournaments")
-    .select("organization_id")
+    .select("community_id")
     .eq("id", registration.tournament_id)
     .single();
 
@@ -171,7 +171,7 @@ export async function updateRegistrationStatus(
   // Verify permission
   const hasPermission = await checkOrgPermission(
     supabase,
-    tournament.organization_id,
+    tournament.community_id,
     "tournament.manage"
   );
   if (!hasPermission) {

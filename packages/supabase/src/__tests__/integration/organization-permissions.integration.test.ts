@@ -28,7 +28,7 @@ import {
     let orgStaff: TestUser;
     let tournamentOrganizer: TestUser;
     let regularUser: TestUser;
-    let organizationId: number;
+    let communityId: number;
     let tournament: TestTournament;
 
     beforeEach(async () => {
@@ -42,7 +42,7 @@ import {
       );
 
       // Create organization
-      organizationId = await createTestOrganization(
+      communityId = await createTestOrganization(
         adminClient,
         orgOwner.id,
         `Test Org ${Date.now()}`,
@@ -52,7 +52,7 @@ import {
       // Create tournament
       tournament = await createTestTournament(
         adminClient,
-        organizationId,
+        communityId,
         `Test Tournament ${Date.now()}`,
         `test-tournament-${Date.now()}`
       );
@@ -65,8 +65,8 @@ import {
       );
 
       // Add staff member to organization
-      await adminClient.from("organization_staff").insert({
-        organization_id: organizationId,
+      await adminClient.from("community_staff").insert({
+        community_id: communityId,
         user_id: orgStaff.id,
         role: "org_staff",
       });
@@ -79,8 +79,8 @@ import {
       );
 
       // Add TO role
-      await adminClient.from("organization_staff").insert({
-        organization_id: organizationId,
+      await adminClient.from("community_staff").insert({
+        community_id: communityId,
         user_id: tournamentOrganizer.id,
         role: "org_tournament_organizer",
       });
@@ -96,7 +96,7 @@ import {
     afterEach(async () => {
       await cleanupTestData(adminClient, {
         tournamentIds: [tournament.id],
-        organizationIds: [organizationId],
+        communityIds: [communityId],
         userIds: [
           orgOwner.id,
           orgStaff.id,
@@ -112,7 +112,7 @@ import {
         const { data: newTournament, error } = await adminClient
           .from("tournaments")
           .insert({
-            organization_id: organizationId,
+            community_id: communityId,
             name: `Owner Tournament ${Date.now()}`,
             slug: `owner-tournament-${Date.now()}`,
             format: "swiss",
@@ -125,7 +125,7 @@ import {
 
         expect(error).toBeNull();
         expect(newTournament).toBeDefined();
-        expect(newTournament?.organization_id).toBe(organizationId);
+        expect(newTournament?.community_id).toBe(communityId);
 
         // Clean up
         if (newTournament) {
@@ -145,7 +145,7 @@ import {
         const { data: tournaments, error } = await adminClient
           .from("tournaments")
           .select("*")
-          .eq("organization_id", organizationId);
+          .eq("community_id", communityId);
 
         expect(error).toBeNull();
         expect(tournaments).toBeDefined();
@@ -160,9 +160,9 @@ import {
 
         // Query staff
         const { data: staff, error } = await adminClient
-          .from("organization_staff")
+          .from("community_staff")
           .select("*")
-          .eq("organization_id", organizationId);
+          .eq("community_id", communityId);
 
         expect(error).toBeNull();
         expect(staff).toBeDefined();
@@ -222,7 +222,7 @@ import {
         // In a real scenario with RLS, this would fail for non-owners
         // For now, verify the organization creation structure
         const { data: newOrg } = await adminClient
-          .from("organizations")
+          .from("communities")
           .insert({
             owner_user_id: tournamentOrganizer.id,
             name: "TO Org",
@@ -233,7 +233,7 @@ import {
 
         // Clean up if created
         if (newOrg) {
-          await adminClient.from("organizations").delete().eq("id", newOrg.id);
+          await adminClient.from("communities").delete().eq("id", newOrg.id);
         }
 
         // Test passes - structure is correct
@@ -251,7 +251,7 @@ import {
         const { data: tournaments, error } = await adminClient
           .from("tournaments")
           .select("*")
-          .eq("organization_id", organizationId);
+          .eq("community_id", communityId);
 
         expect(error).toBeNull();
         expect(tournaments).toBeDefined();
@@ -265,16 +265,16 @@ import {
 
         // Check staff member's role
         const { data: staffRole } = await adminClient
-          .from("organization_staff")
+          .from("community_staff")
           .select("role")
-          .eq("organization_id", organizationId)
+          .eq("community_id", communityId)
           .eq("user_id", orgStaff.id)
           .single();
 
         expect(staffRole?.role).toBe("org_staff");
 
         // In a real scenario, staff without TO role shouldn't be able to start tournaments
-        // This would be enforced by has_org_permission RPC check
+        // This would be enforced by has_community_permission RPC check
         expect(staffRole?.role).not.toBe("org_tournament_organizer");
       });
     });
@@ -303,9 +303,9 @@ import {
 
         // Verify user is not staff
         const { data: staffCheck } = await adminClient
-          .from("organization_staff")
+          .from("community_staff")
           .select("*")
-          .eq("organization_id", organizationId)
+          .eq("community_id", communityId)
           .eq("user_id", regularUser.id)
           .maybeSingle();
 
@@ -324,9 +324,9 @@ import {
         // In a real scenario with RLS, regular users shouldn't see staff details
         // Using admin client, we can at least verify the data structure
         const { data: staff } = await adminClient
-          .from("organization_staff")
+          .from("community_staff")
           .select("*")
-          .eq("organization_id", organizationId);
+          .eq("community_id", communityId);
 
         expect(staff).toBeDefined();
 
@@ -366,7 +366,7 @@ import {
         const { data: ownTournaments } = await adminClient
           .from("tournaments")
           .select("*")
-          .eq("organization_id", organizationId);
+          .eq("community_id", communityId);
 
         expect(ownTournaments?.some((t) => t.id === tournament.id)).toBe(true);
         expect(ownTournaments?.some((t) => t.id === otherTournament.id)).toBe(
@@ -377,7 +377,7 @@ import {
         const { data: otherTournaments } = await adminClient
           .from("tournaments")
           .select("*")
-          .eq("organization_id", otherOrgId);
+          .eq("community_id", otherOrgId);
 
         expect(otherTournaments?.some((t) => t.id === otherTournament.id)).toBe(
           true
@@ -389,7 +389,7 @@ import {
         // Clean up
         await cleanupTestData(adminClient, {
           tournamentIds: [otherTournament.id],
-          organizationIds: [otherOrgId],
+          communityIds: [otherOrgId],
           userIds: [otherOwner.id],
         });
       });
@@ -415,19 +415,19 @@ import {
 
         // Verify staff is only member of their own org
         const { data: staffOrgs } = await adminClient
-          .from("organization_staff")
-          .select("organization_id")
+          .from("community_staff")
+          .select("community_id")
           .eq("user_id", orgStaff.id);
 
         expect(staffOrgs?.length).toBe(1);
-        expect(staffOrgs?.[0]?.organization_id).toBe(organizationId);
-        expect(staffOrgs?.some((s) => s.organization_id === otherOrgId)).toBe(
+        expect(staffOrgs?.[0]?.community_id).toBe(communityId);
+        expect(staffOrgs?.some((s) => s.community_id === otherOrgId)).toBe(
           false
         );
 
         // Clean up
         await cleanupTestData(adminClient, {
-          organizationIds: [otherOrgId],
+          communityIds: [otherOrgId],
           userIds: [otherOwner.id],
         });
       });
@@ -440,8 +440,8 @@ import {
         }
 
         // Attempt to insert staff role (should fail with proper RLS)
-        const { error } = await adminClient.from("organization_staff").insert({
-          organization_id: organizationId,
+        const { error } = await adminClient.from("community_staff").insert({
+          community_id: communityId,
           user_id: regularUser.id,
           role: "org_owner",
         });
@@ -451,9 +451,9 @@ import {
         // Clean up if it succeeded
         if (!error) {
           await adminClient
-            .from("organization_staff")
+            .from("community_staff")
             .delete()
-            .eq("organization_id", organizationId)
+            .eq("community_id", communityId)
             .eq("user_id", regularUser.id);
         }
 
@@ -468,9 +468,9 @@ import {
 
         // Get current role
         const { data: currentRole } = await adminClient
-          .from("organization_staff")
+          .from("community_staff")
           .select("role")
-          .eq("organization_id", organizationId)
+          .eq("community_id", communityId)
           .eq("user_id", orgStaff.id)
           .single();
 
@@ -478,16 +478,16 @@ import {
 
         // Attempt role update (should fail with proper RLS)
         const { error: _error } = await adminClient
-          .from("organization_staff")
+          .from("community_staff")
           .update({ role: "org_owner" })
-          .eq("organization_id", organizationId)
+          .eq("community_id", communityId)
           .eq("user_id", orgStaff.id);
 
         // Verify role hasn't changed (even if update "succeeded" in admin client)
         const { data: verifyRole } = await adminClient
-          .from("organization_staff")
+          .from("community_staff")
           .select("role")
-          .eq("organization_id", organizationId)
+          .eq("community_id", communityId)
           .eq("user_id", orgStaff.id)
           .single();
 
@@ -495,9 +495,9 @@ import {
         // With admin client, update might succeed, so we reset it
         if (verifyRole?.role !== "org_staff") {
           await adminClient
-            .from("organization_staff")
+            .from("community_staff")
             .update({ role: "org_staff" })
-            .eq("organization_id", organizationId)
+            .eq("community_id", communityId)
             .eq("user_id", orgStaff.id);
         }
 
@@ -505,18 +505,18 @@ import {
       });
     });
 
-    describe("has_org_permission RPC Function", () => {
+    describe("has_community_permission RPC Function", () => {
       it("should correctly validate owner permissions", async () => {
         if (!isSupabaseRunning()) {
           return;
         }
 
-        // Call has_org_permission RPC
+        // Call has_community_permission RPC
         const { data: hasPermission, error } = await adminClient.rpc(
-          "has_org_permission",
+          "has_community_permission",
           {
             p_user_id: orgOwner.id,
-            p_org_id: organizationId,
+            p_org_id: communityId,
             p_required_role: "org_owner",
           }
         );
@@ -531,10 +531,10 @@ import {
         }
 
         const { data: hasPermission, error } = await adminClient.rpc(
-          "has_org_permission",
+          "has_community_permission",
           {
             p_user_id: tournamentOrganizer.id,
-            p_org_id: organizationId,
+            p_org_id: communityId,
             p_required_role: "org_tournament_organizer",
           }
         );
@@ -549,10 +549,10 @@ import {
         }
 
         const { data: hasPermission, error } = await adminClient.rpc(
-          "has_org_permission",
+          "has_community_permission",
           {
             p_user_id: regularUser.id,
-            p_org_id: organizationId,
+            p_org_id: communityId,
             p_required_role: "org_staff",
           }
         );

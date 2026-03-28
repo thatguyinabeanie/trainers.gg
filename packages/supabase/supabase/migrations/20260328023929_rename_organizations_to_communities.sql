@@ -522,17 +522,19 @@ UPDATE public.permissions SET key = 'community.manage'       WHERE key = 'org.ma
 UPDATE public.permissions SET key = 'community.staff.manage'  WHERE key = 'org.staff.manage';
 
 -- =============================================================================
--- 11. DROP OLD FUNCTIONS
+-- 11. DROP FUNCTIONS THAT HAVE NO DEPENDENT POLICIES
 -- =============================================================================
--- Drop the old-named functions. We'll create new ones below.
+-- has_org_permission and get_organization_tournament_counts have dependent
+-- RLS policies on many tables (tournament_pairings, match_games, etc.).
+-- Instead of dropping them (which would CASCADE-drop those policies),
+-- we create the new functions first, then redefine the old names as
+-- thin wrappers. This keeps all existing policies working.
 
-DROP FUNCTION IF EXISTS public.has_org_permission(bigint, text);
-DROP FUNCTION IF EXISTS public.get_organization_tournament_counts(bigint[]);
+-- Only drop functions with NO dependent policies.
+-- Functions with dependent policies (is_org_owner, get_org_id_from_group_role,
+-- user_has_org_role) will be redefined as wrappers in section 12b.
 DROP FUNCTION IF EXISTS public.create_default_org_groups();
 DROP FUNCTION IF EXISTS public.update_org_request_updated_at();
-DROP FUNCTION IF EXISTS public.is_org_owner(bigint, uuid);
-DROP FUNCTION IF EXISTS public.get_org_id_from_group_role(bigint);
-DROP FUNCTION IF EXISTS public.user_has_org_role(bigint, uuid, text);
 
 -- =============================================================================
 -- 12. CREATE NEW FUNCTIONS
@@ -662,6 +664,56 @@ RETURNS text AS $$
   JOIN public.roles r ON gr.role_id = r.id
   WHERE gr.id = p_group_role_id
 $$ LANGUAGE SQL STABLE SECURITY DEFINER;
+
+-- =============================================================================
+-- 12b. BACKWARD-COMPAT WRAPPERS FOR OLD FUNCTION NAMES
+-- =============================================================================
+-- Many RLS policies on tournament-related tables (tournament_pairings,
+-- tournament_standings, match_games, match_messages, teams, team_pokemon,
+-- pokemon, tournament_opponent_history, tournament_player_stats) depend on
+-- has_org_permission(). Rather than dropping and recreating all those policies,
+-- we redefine the old function as a thin wrapper that delegates to the new one.
+-- This keeps all existing policies working while new code uses the new name.
+
+CREATE OR REPLACE FUNCTION public.has_org_permission(
+  org_id bigint,
+  permission_key text
+)
+RETURNS boolean
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = ''
+AS $$
+  SELECT public.has_community_permission(org_id, permission_key);
+$$;
+
+CREATE OR REPLACE FUNCTION public.get_organization_tournament_counts(org_ids bigint[])
+RETURNS TABLE(organization_id bigint, total_count bigint, active_count bigint)
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = ''
+AS $$
+  SELECT community_id AS organization_id, total_count, active_count
+  FROM public.get_community_tournament_counts(org_ids);
+$$;
+
+-- Wrappers for helper functions with dependent policies
+CREATE OR REPLACE FUNCTION public.is_org_owner(p_org_id bigint, p_user_id uuid)
+RETURNS boolean
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path = ''
+AS $$ SELECT public.is_community_owner(p_org_id, p_user_id); $$;
+
+CREATE OR REPLACE FUNCTION public.get_org_id_from_group_role(p_group_role_id bigint)
+RETURNS bigint
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path = ''
+AS $$ SELECT public.get_community_id_from_group_role(p_group_role_id); $$;
+
+CREATE OR REPLACE FUNCTION public.user_has_org_role(p_org_id bigint, p_user_id uuid, p_role_name text)
+RETURNS boolean
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path = ''
+AS $$ SELECT public.user_has_community_role(p_org_id, p_user_id, p_role_name); $$;
 
 -- =============================================================================
 -- 13. UPDATE TRIGGER FUNCTIONS

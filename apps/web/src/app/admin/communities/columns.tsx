@@ -27,7 +27,7 @@ export interface CommunityRow {
     last_name: string | null;
     image: string | null;
   } | null;
-  organization_admin_notes:
+  community_admin_notes:
     | {
         notes: string | null;
         updated_at: string | null;

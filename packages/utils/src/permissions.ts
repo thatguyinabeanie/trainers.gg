@@ -2,21 +2,21 @@
 // Standalone file that doesn't depend on backend packages
 
 export type PermissionKey =
-  | "organization.create"
-  | "organization.request.create"
-  | "organization.request.approve"
-  | "organization.request.reject"
-  | "organization.request.view.all"
-  | "organization.view.all"
-  | "organization.view.own"
-  | "organization.update"
-  | "organization.delete"
-  | "organization.invite_staff"
-  | "organization.view_staff"
-  | "organization.manage_group_assignments"
-  | "organization.remove_staff"
-  | "organization.request_join"
-  | "organization.manage_requests"
+  | "community.create"
+  | "community.request.create"
+  | "community.request.approve"
+  | "community.request.reject"
+  | "community.request.view.all"
+  | "community.view.all"
+  | "community.view.own"
+  | "community.update"
+  | "community.delete"
+  | "community.invite_staff"
+  | "community.view_staff"
+  | "community.manage_group_assignments"
+  | "community.remove_staff"
+  | "community.request_join"
+  | "community.manage_requests"
   | "role.create"
   | "role.list"
   | "role.view.detail"
@@ -67,21 +67,21 @@ export type PermissionKey =
 // Permission constants for use in frontend code
 export const PERMISSIONS = {
   // Community Permissions
-  COMMUNITY_CREATE: "organization.create",
-  COMMUNITY_REQUEST_CREATE: "organization.request.create",
-  COMMUNITY_REQUEST_APPROVE: "organization.request.approve",
-  COMMUNITY_REQUEST_REJECT: "organization.request.reject",
-  COMMUNITY_REQUEST_VIEW_ALL: "organization.request.view.all",
-  COMMUNITY_VIEW_ALL: "organization.view.all",
-  COMMUNITY_VIEW_OWN: "organization.view.own",
-  COMMUNITY_UPDATE: "organization.update",
-  COMMUNITY_DELETE: "organization.delete",
-  COMMUNITY_INVITE_STAFF: "organization.invite_staff",
-  COMMUNITY_VIEW_STAFF: "organization.view_staff",
-  COMMUNITY_MANAGE_GROUP_ASSIGNMENTS: "organization.manage_group_assignments",
-  COMMUNITY_REMOVE_STAFF: "organization.remove_staff",
-  COMMUNITY_REQUEST_JOIN: "organization.request_join",
-  COMMUNITY_MANAGE_REQUESTS: "organization.manage_requests",
+  COMMUNITY_CREATE: "community.create",
+  COMMUNITY_REQUEST_CREATE: "community.request.create",
+  COMMUNITY_REQUEST_APPROVE: "community.request.approve",
+  COMMUNITY_REQUEST_REJECT: "community.request.reject",
+  COMMUNITY_REQUEST_VIEW_ALL: "community.request.view.all",
+  COMMUNITY_VIEW_ALL: "community.view.all",
+  COMMUNITY_VIEW_OWN: "community.view.own",
+  COMMUNITY_UPDATE: "community.update",
+  COMMUNITY_DELETE: "community.delete",
+  COMMUNITY_INVITE_STAFF: "community.invite_staff",
+  COMMUNITY_VIEW_STAFF: "community.view_staff",
+  COMMUNITY_MANAGE_GROUP_ASSIGNMENTS: "community.manage_group_assignments",
+  COMMUNITY_REMOVE_STAFF: "community.remove_staff",
+  COMMUNITY_REQUEST_JOIN: "community.request_join",
+  COMMUNITY_MANAGE_REQUESTS: "community.manage_requests",
 
   // Role Permissions
   ROLE_CREATE: "role.create",

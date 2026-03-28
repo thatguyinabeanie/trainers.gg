@@ -54,7 +54,7 @@ describe("Tournament CRUD Mutations", () => {
   describe("createTournament", () => {
     const mockUser = { id: "user-123" };
     const tournamentData = {
-      organizationId: 200,
+      communityId: 200,
       name: "Regional Championship",
       slug: "regional-championship",
       description: "A competitive tournament",
@@ -112,7 +112,7 @@ describe("Tournament CRUD Mutations", () => {
           data: {
             id: 1000,
             slug: "regional-championship",
-            organization_id: 200,
+            community_id: 200,
             name: "Regional Championship",
             status: "draft",
           },
@@ -188,7 +188,7 @@ describe("Tournament CRUD Mutations", () => {
           data: {
             id: 1001,
             slug: "regional-championship",
-            organization_id: 200,
+            community_id: 200,
           },
           error: null,
         }),
@@ -243,7 +243,7 @@ describe("Tournament CRUD Mutations", () => {
           data: {
             id: 1002,
             slug: "swiss-only",
-            organization_id: 200,
+            community_id: 200,
           },
           error: null,
         }),
@@ -294,7 +294,7 @@ describe("Tournament CRUD Mutations", () => {
           data: {
             id: 1003,
             slug: "single-elim",
-            organization_id: 200,
+            community_id: 200,
           },
           error: null,
         }),
@@ -345,7 +345,7 @@ describe("Tournament CRUD Mutations", () => {
           data: {
             id: 1004,
             slug: "double-elim",
-            organization_id: 200,
+            community_id: 200,
           },
           error: null,
         }),
@@ -470,7 +470,7 @@ describe("Tournament CRUD Mutations", () => {
           data: {
             id: 1005,
             slug: "upper-case-slug",
-            organization_id: 200,
+            community_id: 200,
           },
           error: null,
         }),
@@ -531,7 +531,7 @@ describe("Tournament CRUD Mutations", () => {
           data: {
             id: 1006,
             slug: "minimal-tournament",
-            organization_id: 200,
+            community_id: 200,
           },
           error: null,
         }),
@@ -547,7 +547,7 @@ describe("Tournament CRUD Mutations", () => {
       } as unknown as MockQueryBuilder);
 
       await createTournament(mockClient, {
-        organizationId: 200,
+        communityId: 200,
         name: "Minimal Tournament",
         slug: "minimal-tournament",
         tournamentFormat: "swiss_with_cut",
@@ -600,7 +600,7 @@ describe("Tournament CRUD Mutations", () => {
           data: {
             id: 1007,
             slug: "phase-error",
-            organization_id: 200,
+            community_id: 200,
           },
           error: null,
         }),
@@ -664,7 +664,7 @@ describe("Tournament CRUD Mutations", () => {
           data: {
             id: 1008,
             slug: "custom-phase-error",
-            organization_id: 200,
+            community_id: 200,
           },
           error: null,
         }),
@@ -757,7 +757,7 @@ describe("Tournament CRUD Mutations", () => {
           data: {
             id: 1009,
             slug: "top-cut-error",
-            organization_id: 200,
+            community_id: 200,
           },
           error: null,
         }),
@@ -816,7 +816,7 @@ describe("Tournament CRUD Mutations", () => {
           data: {
             id: 1010,
             slug: "single-elim-error",
-            organization_id: 200,
+            community_id: 200,
           },
           error: null,
         }),
@@ -870,7 +870,7 @@ describe("Tournament CRUD Mutations", () => {
           data: {
             id: 1011,
             slug: "double-elim-error",
-            organization_id: 200,
+            community_id: 200,
           },
           error: null,
         }),
@@ -911,7 +911,7 @@ describe("Tournament CRUD Mutations", () => {
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
         single: jest.fn().mockResolvedValue({
-          data: { organization_id: 200 },
+          data: { community_id: 200 },
           error: null,
         }),
       } as unknown as MockQueryBuilder);
@@ -939,7 +939,7 @@ describe("Tournament CRUD Mutations", () => {
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
         single: jest.fn().mockResolvedValue({
-          data: { organization_id: 200 },
+          data: { community_id: 200 },
           error: null,
         }),
       } as unknown as MockQueryBuilder);
@@ -996,7 +996,7 @@ describe("Tournament CRUD Mutations", () => {
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
         single: jest.fn().mockResolvedValue({
-          data: { organization_id: 200 },
+          data: { community_id: 200 },
           error: null,
         }),
       } as unknown as MockQueryBuilder);
@@ -1025,7 +1025,7 @@ describe("Tournament CRUD Mutations", () => {
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
         single: jest.fn().mockResolvedValue({
-          data: { organization_id: 200 },
+          data: { community_id: 200 },
           error: null,
         }),
       } as unknown as MockQueryBuilder);
@@ -1081,7 +1081,7 @@ describe("Tournament CRUD Mutations", () => {
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
         single: jest.fn().mockResolvedValue({
-          data: { organization_id: 200 },
+          data: { community_id: 200 },
           error: null,
         }),
       } as unknown as MockQueryBuilder);
@@ -1099,7 +1099,7 @@ describe("Tournament CRUD Mutations", () => {
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
         single: jest.fn().mockResolvedValue({
-          data: { organization_id: 200 },
+          data: { community_id: 200 },
           error: null,
         }),
       } as unknown as MockQueryBuilder);
@@ -1125,7 +1125,7 @@ describe("Tournament CRUD Mutations", () => {
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
         single: jest.fn().mockResolvedValue({
-          data: { organization_id: 200 },
+          data: { community_id: 200 },
           error: null,
         }),
       } as unknown as MockQueryBuilder);
@@ -1163,7 +1163,7 @@ describe("Tournament CRUD Mutations", () => {
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
         single: jest.fn().mockResolvedValue({
-          data: { organization_id: 200 },
+          data: { community_id: 200 },
           error: null,
         }),
       } as unknown as MockQueryBuilder);
@@ -1188,7 +1188,7 @@ describe("Tournament CRUD Mutations", () => {
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
         single: jest.fn().mockResolvedValue({
-          data: { organization_id: 200 },
+          data: { community_id: 200 },
           error: null,
         }),
       } as unknown as MockQueryBuilder);
@@ -1245,7 +1245,7 @@ describe("Tournament CRUD Mutations", () => {
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
         single: jest.fn().mockResolvedValue({
-          data: { organization_id: 200 },
+          data: { community_id: 200 },
           error: null,
         }),
       } as unknown as MockQueryBuilder);
@@ -1263,7 +1263,7 @@ describe("Tournament CRUD Mutations", () => {
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
         single: jest.fn().mockResolvedValue({
-          data: { organization_id: 200 },
+          data: { community_id: 200 },
           error: null,
         }),
       } as unknown as MockQueryBuilder);
@@ -1298,7 +1298,7 @@ describe("Tournament CRUD Mutations", () => {
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
         single: jest.fn().mockResolvedValue({
-          data: { organization_id: 200, status: "draft" },
+          data: { community_id: 200, status: "draft" },
           error: null,
         }),
       } as unknown as MockQueryBuilder);
@@ -1348,7 +1348,7 @@ describe("Tournament CRUD Mutations", () => {
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
         single: jest.fn().mockResolvedValue({
-          data: { organization_id: 200, status: "draft" },
+          data: { community_id: 200, status: "draft" },
           error: null,
         }),
       } as unknown as MockQueryBuilder);
@@ -1365,7 +1365,7 @@ describe("Tournament CRUD Mutations", () => {
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
         single: jest.fn().mockResolvedValue({
-          data: { organization_id: 200, status: "active" },
+          data: { community_id: 200, status: "active" },
           error: null,
         }),
       } as unknown as MockQueryBuilder);
@@ -1382,7 +1382,7 @@ describe("Tournament CRUD Mutations", () => {
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
         single: jest.fn().mockResolvedValue({
-          data: { organization_id: 200, status: "completed" },
+          data: { community_id: 200, status: "completed" },
           error: null,
         }),
       } as unknown as MockQueryBuilder);
@@ -1399,7 +1399,7 @@ describe("Tournament CRUD Mutations", () => {
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
         single: jest.fn().mockResolvedValue({
-          data: { organization_id: 200, status: "cancelled" },
+          data: { community_id: 200, status: "cancelled" },
           error: null,
         }),
       } as unknown as MockQueryBuilder);
@@ -1417,7 +1417,7 @@ describe("Tournament CRUD Mutations", () => {
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
         single: jest.fn().mockResolvedValue({
-          data: { organization_id: 200, status: "draft" },
+          data: { community_id: 200, status: "draft" },
           error: null,
         }),
       } as unknown as MockQueryBuilder);

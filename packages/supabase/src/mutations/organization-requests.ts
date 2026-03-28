@@ -27,7 +27,7 @@ export async function submitCommunityRequest(
 
   // Check for existing pending request
   const { data: pendingRequest } = await supabase
-    .from("organization_requests")
+    .from("community_requests")
     .select("id")
     .eq("user_id", user.id)
     .eq("status", "pending")
@@ -39,7 +39,7 @@ export async function submitCommunityRequest(
 
   // Check cooldown after rejection
   const { data: recentRejection } = await supabase
-    .from("organization_requests")
+    .from("community_requests")
     .select("reviewed_at")
     .eq("user_id", user.id)
     .eq("status", "rejected")
@@ -64,7 +64,7 @@ export async function submitCommunityRequest(
 
   // Check slug uniqueness against organizations table
   const { data: existingOrg } = await supabase
-    .from("organizations")
+    .from("communities")
     .select("id")
     .eq("slug", slug)
     .maybeSingle();
@@ -77,7 +77,7 @@ export async function submitCommunityRequest(
 
   // Check slug uniqueness against pending requests
   const { data: existingRequest } = await supabase
-    .from("organization_requests")
+    .from("community_requests")
     .select("id")
     .eq("slug", slug)
     .eq("status", "pending")
@@ -89,7 +89,7 @@ export async function submitCommunityRequest(
 
   // Insert the request
   const { data: request, error } = await supabase
-    .from("organization_requests")
+    .from("community_requests")
     .insert({
       user_id: user.id,
       name: data.name,
@@ -117,7 +117,7 @@ export async function approveCommunityRequest(
 ) {
   // Fetch the request
   const { data: request, error: fetchError } = await supabase
-    .from("organization_requests")
+    .from("community_requests")
     .select("*")
     .eq("id", requestId)
     .single();
@@ -129,7 +129,7 @@ export async function approveCommunityRequest(
 
   // Re-check slug uniqueness against organizations
   const { data: existingOrg } = await supabase
-    .from("organizations")
+    .from("communities")
     .select("id")
     .eq("slug", request.slug)
     .maybeSingle();
@@ -154,7 +154,7 @@ export async function approveCommunityRequest(
   }
 
   const { data: org, error: orgError } = await supabase
-    .from("organizations")
+    .from("communities")
     .insert({
       name: request.name,
       slug: request.slug,
@@ -170,18 +170,16 @@ export async function approveCommunityRequest(
   if (orgError) throw orgError;
 
   // Add requester as staff
-  const { error: staffError } = await supabase
-    .from("organization_staff")
-    .insert({
-      organization_id: org.id,
-      user_id: request.user_id,
-    });
+  const { error: staffError } = await supabase.from("community_staff").insert({
+    community_id: org.id,
+    user_id: request.user_id,
+  });
 
   if (staffError) throw staffError;
 
   // Update request status
   const { data: updatedRequest, error: updateError } = await supabase
-    .from("organization_requests")
+    .from("community_requests")
     .update({
       status: "approved" as const,
       reviewed_by: adminUserId,
@@ -216,10 +214,10 @@ export async function approveCommunityRequest(
   await supabase.from("audit_log").insert({
     action: "admin.org_request_approved" as const,
     actor_user_id: adminUserId,
-    organization_id: org.id,
+    community_id: org.id,
     metadata: {
       request_id: requestId,
-      organization_id: org.id,
+      community_id: org.id,
       requester_user_id: request.user_id,
     },
   });
@@ -239,7 +237,7 @@ export async function rejectCommunityRequest(
 ) {
   // Fetch the request
   const { data: request, error: fetchError } = await supabase
-    .from("organization_requests")
+    .from("community_requests")
     .select("*")
     .eq("id", requestId)
     .single();
@@ -251,7 +249,7 @@ export async function rejectCommunityRequest(
 
   // Update request status
   const { error: updateError } = await supabase
-    .from("organization_requests")
+    .from("community_requests")
     .update({
       status: "rejected" as const,
       admin_notes: reason,

@@ -74,7 +74,7 @@ describe("Organization Request Mutations", () => {
           limit: jest.fn().mockReturnThis(),
         };
 
-        if (table === "organization_requests") {
+        if (table === "community_requests") {
           callCount++;
           if (callCount === 1) {
             // Pending check — no pending request
@@ -92,8 +92,8 @@ describe("Organization Request Mutations", () => {
               error: null,
             });
           }
-        } else if (table === "organizations") {
-          // Slug uniqueness vs organizations — not taken
+        } else if (table === "communities") {
+          // Slug uniqueness vs communities — not taken
           builder.maybeSingle.mockResolvedValue({ data: null });
         }
 
@@ -174,7 +174,7 @@ describe("Organization Request Mutations", () => {
           limit: jest.fn().mockReturnThis(),
         };
 
-        if (table === "organization_requests") {
+        if (table === "community_requests") {
           orgRequestCallCount++;
           if (orgRequestCallCount === 1) {
             // No pending request
@@ -216,7 +216,7 @@ describe("Organization Request Mutations", () => {
           limit: jest.fn().mockReturnThis(),
         };
 
-        if (table === "organization_requests") {
+        if (table === "community_requests") {
           orgRequestCallCount++;
           if (orgRequestCallCount === 1) {
             // No pending request
@@ -228,8 +228,8 @@ describe("Organization Request Mutations", () => {
             // Slug already pending
             builder.maybeSingle.mockResolvedValue({ data: { id: 99 } });
           }
-        } else if (table === "organizations") {
-          // Slug not taken by existing org
+        } else if (table === "communities") {
+          // Slug not taken by existing community
           builder.maybeSingle.mockResolvedValue({ data: null });
         }
 
@@ -262,7 +262,7 @@ describe("Organization Request Mutations", () => {
           limit: jest.fn().mockReturnThis(),
         };
 
-        if (table === "organization_requests") {
+        if (table === "community_requests") {
           orgRequestCallCount++;
           if (orgRequestCallCount === 1) {
             // No pending request
@@ -271,8 +271,8 @@ describe("Organization Request Mutations", () => {
             // No recent rejection
             builder.maybeSingle.mockResolvedValue({ data: null });
           }
-        } else if (table === "organizations") {
-          // Slug taken by existing org
+        } else if (table === "communities") {
+          // Slug taken by existing community
           builder.maybeSingle.mockResolvedValue({ data: { id: 1 } });
         }
 
@@ -372,7 +372,7 @@ describe("Organization Request Mutations", () => {
           limit: jest.fn().mockReturnThis(),
         };
 
-        if (table === "organization_requests") {
+        if (table === "community_requests") {
           callCount++;
           if (callCount === 1) {
             // Fetch request
@@ -387,11 +387,11 @@ describe("Organization Request Mutations", () => {
               error: null,
             });
           }
-        } else if (table === "organizations") {
+        } else if (table === "communities") {
           // First call: slug check (maybeSingle), second call: insert (single)
           builder.maybeSingle.mockResolvedValue({ data: null });
           builder.single.mockResolvedValue({ data: org, error: null });
-        } else if (table === "organization_staff") {
+        } else if (table === "community_staff") {
           builder.insert.mockReturnValue({ error: null });
         } else if (table === "notifications") {
           builder.insert.mockReturnValue({ error: null });
@@ -411,8 +411,8 @@ describe("Organization Request Mutations", () => {
       expect(result.organization).toEqual(org);
       expect(result.request).toEqual(updatedRequest);
       // Verify all tables were touched
-      expect(fromSpy).toHaveBeenCalledWith("organizations");
-      expect(fromSpy).toHaveBeenCalledWith("organization_staff");
+      expect(fromSpy).toHaveBeenCalledWith("communities");
+      expect(fromSpy).toHaveBeenCalledWith("community_staff");
       expect(fromSpy).toHaveBeenCalledWith("notifications");
       expect(fromSpy).toHaveBeenCalledWith("audit_log");
     });
@@ -438,7 +438,7 @@ describe("Organization Request Mutations", () => {
           limit: jest.fn().mockReturnThis(),
         };
 
-        if (table === "organization_requests") {
+        if (table === "community_requests") {
           orgRequestCallCount++;
           if (orgRequestCallCount === 1) {
             builder.single.mockResolvedValue({
@@ -446,7 +446,7 @@ describe("Organization Request Mutations", () => {
               error: null,
             });
           }
-        } else if (table === "organizations") {
+        } else if (table === "communities") {
           // Slug now taken
           builder.maybeSingle.mockResolvedValue({ data: { id: 1 } });
         }
@@ -482,19 +482,19 @@ describe("Organization Request Mutations", () => {
           limit: jest.fn().mockReturnThis(),
         };
 
-        if (table === "organization_requests") {
+        if (table === "community_requests") {
           builder.single.mockResolvedValue({ data: request, error: null });
-        } else if (table === "organizations") {
+        } else if (table === "communities") {
           callIndex++;
           if (callIndex === 1) {
             // Slug check
             builder.maybeSingle.mockResolvedValue({ data: null });
           } else {
-            // Org insert
+            // Community insert
             builder.insert.mockReturnThis();
             builder.single.mockResolvedValue({ data: org, error: null });
           }
-        } else if (table === "organization_staff") {
+        } else if (table === "community_staff") {
           builder.insert.mockResolvedValue({ error: staffError });
         }
 
@@ -530,7 +530,7 @@ describe("Organization Request Mutations", () => {
           limit: jest.fn().mockReturnThis(),
         };
 
-        if (table === "organization_requests") {
+        if (table === "community_requests") {
           orgRequestCallCount++;
           if (orgRequestCallCount === 1) {
             builder.single.mockResolvedValue({ data: request, error: null });
@@ -540,10 +540,10 @@ describe("Organization Request Mutations", () => {
               error: null,
             });
           }
-        } else if (table === "organizations") {
+        } else if (table === "communities") {
           builder.maybeSingle.mockResolvedValue({ data: null });
           builder.single.mockResolvedValue({ data: org, error: null });
-        } else if (table === "organization_staff") {
+        } else if (table === "community_staff") {
           return {
             insert: jest.fn().mockReturnValue({ error: null }),
           } as unknown as MockQueryBuilder;
@@ -606,7 +606,7 @@ describe("Organization Request Mutations", () => {
           limit: jest.fn().mockReturnThis(),
         };
 
-        if (table === "organization_requests") {
+        if (table === "community_requests") {
           orgRequestCallCount++;
           if (orgRequestCallCount === 1) {
             // Fetch
@@ -662,7 +662,7 @@ describe("Organization Request Mutations", () => {
           limit: jest.fn().mockReturnThis(),
         };
 
-        if (table === "organization_requests") {
+        if (table === "community_requests") {
           orgRequestCallCount++;
           if (orgRequestCallCount === 1) {
             builder.single.mockResolvedValue({ data: request, error: null });

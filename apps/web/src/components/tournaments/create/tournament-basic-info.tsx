@@ -41,10 +41,10 @@ export function TournamentBasicInfo({
       <div className="space-y-2">
         <Label htmlFor="organization">Community *</Label>
         <Select
-          value={formData.organizationId?.toString()}
+          value={formData.communityId?.toString()}
           onValueChange={(value) =>
             updateFormData({
-              organizationId: value ? Number(value) : undefined,
+              communityId: value ? Number(value) : undefined,
             })
           }
         >

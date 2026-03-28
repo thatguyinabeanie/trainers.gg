@@ -412,7 +412,7 @@ describe("Tournament Registration Mutations", () => {
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
         single: jest.fn().mockResolvedValue({
-          data: { organization_id: 200 },
+          data: { community_id: 200 },
           error: null,
         }),
       } as unknown as MockQueryBuilder);
@@ -456,7 +456,7 @@ describe("Tournament Registration Mutations", () => {
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
         single: jest.fn().mockResolvedValue({
-          data: { organization_id: 200 },
+          data: { community_id: 200 },
           error: null,
         }),
       } as unknown as MockQueryBuilder);
@@ -485,7 +485,7 @@ describe("Tournament Registration Mutations", () => {
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
         single: jest.fn().mockResolvedValue({
-          data: { organization_id: 200 },
+          data: { community_id: 200 },
           error: null,
         }),
       } as unknown as MockQueryBuilder);
@@ -533,7 +533,7 @@ describe("Tournament Registration Mutations", () => {
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
         single: jest.fn().mockResolvedValue({
-          data: { organization_id: 200 },
+          data: { community_id: 200 },
           error: null,
         }),
       } as unknown as MockQueryBuilder);
@@ -564,7 +564,7 @@ describe("Tournament Registration Mutations", () => {
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
         single: jest.fn().mockResolvedValue({
-          data: { organization_id: 200 },
+          data: { community_id: 200 },
           error: null,
         }),
       } as unknown as MockQueryBuilder);

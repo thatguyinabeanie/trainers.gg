@@ -126,7 +126,7 @@ describe("getMatchByRoundAndTable", () => {
       id: 1,
       name: "Test Tournament",
       slug: "test-tourney",
-      organization_id: 5,
+      community_id: 5,
       status: "active",
     };
     const mockRound = {

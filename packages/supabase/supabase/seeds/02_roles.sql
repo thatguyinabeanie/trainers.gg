@@ -8,9 +8,9 @@
 
 INSERT INTO public.roles (name, description, scope) VALUES
   ('site_admin', 'Full administrative access to the entire platform', 'site'),
-  ('org_owner', 'Full control over the organization', 'organization'),
-  ('org_admin', 'Administrative privileges', 'organization'),
-  ('org_moderator', 'Can moderate content and users', 'organization'),
-  ('org_tournament_organizer', 'Can create and manage tournaments', 'organization'),
-  ('org_judge', 'Can resolve match disputes', 'organization')
+  ('org_owner', 'Full control over the organization', 'community'),
+  ('org_admin', 'Administrative privileges', 'community'),
+  ('org_moderator', 'Can moderate content and users', 'community'),
+  ('org_tournament_organizer', 'Can create and manage tournaments', 'community'),
+  ('org_judge', 'Can resolve match disputes', 'community')
 ON CONFLICT (name, scope) DO NOTHING;

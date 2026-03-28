@@ -474,7 +474,7 @@ describe("audit-log queries", () => {
       await getAuditLog(mockClient, { entityType: "organization" });
 
       expect(mockClient._queryBuilder.not).toHaveBeenCalledWith(
-        "organization_id",
+        "community_id",
         "is",
         null
       );

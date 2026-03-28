@@ -27,7 +27,7 @@ export default async function TournamentsPage({
 
   return (
     <TournamentsListClient
-      organizationId={organization.id}
+      communityId={organization.id}
       orgSlug={orgSlug}
       initialStatus={status}
     />

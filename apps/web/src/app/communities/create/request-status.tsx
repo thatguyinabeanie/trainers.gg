@@ -6,7 +6,7 @@ import type { Tables } from "@trainers/supabase/types";
 const COOLDOWN_DAYS = 7;
 
 interface RequestStatusProps {
-  request: Tables<"organization_requests">;
+  request: Tables<"community_requests">;
 }
 
 export function isCooldownExpired(reviewedAt: string | null): boolean {

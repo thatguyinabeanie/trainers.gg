@@ -96,7 +96,7 @@ describe("Tournament Rounds Mutations", () => {
               phase_type: "swiss",
               tournaments: {
                 id: 200,
-                organization_id: 300,
+                community_id: 300,
                 status: "active",
                 organizations: {
                   owner_user_id: "user-123",
@@ -264,7 +264,7 @@ describe("Tournament Rounds Mutations", () => {
               phase_type: "swiss",
               tournaments: {
                 id: 200,
-                organization_id: 300,
+                community_id: 300,
                 status: "active",
                 organizations: {
                   owner_user_id: "user-456",
@@ -298,7 +298,7 @@ describe("Tournament Rounds Mutations", () => {
               phase_type: "swiss",
               tournaments: {
                 id: 200,
-                organization_id: 300,
+                community_id: 300,
                 status: "draft",
                 organizations: {
                   owner_user_id: "user-123",
@@ -332,7 +332,7 @@ describe("Tournament Rounds Mutations", () => {
               phase_type: "swiss",
               tournaments: {
                 id: 200,
-                organization_id: 300,
+                community_id: 300,
                 status: "active",
                 organizations: {
                   owner_user_id: "user-123",
@@ -368,7 +368,7 @@ describe("Tournament Rounds Mutations", () => {
               phase_type: "swiss",
               tournaments: {
                 id: 200,
-                organization_id: 300,
+                community_id: 300,
                 status: "active",
                 organizations: {
                   owner_user_id: "user-123",
@@ -418,7 +418,7 @@ describe("Tournament Rounds Mutations", () => {
               phase_type: "swiss",
               tournaments: {
                 id: 200,
-                organization_id: 300,
+                community_id: 300,
                 status: "active",
                 organizations: {
                   owner_user_id: "user-123",
@@ -461,7 +461,7 @@ describe("Tournament Rounds Mutations", () => {
               phase_type: "swiss",
               tournaments: {
                 id: 200,
-                organization_id: 300,
+                community_id: 300,
                 status: "active",
                 organizations: {
                   owner_user_id: "user-123",
@@ -521,7 +521,7 @@ describe("Tournament Rounds Mutations", () => {
               phase_type: "swiss",
               tournaments: {
                 id: 200,
-                organization_id: 300,
+                community_id: 300,
                 status: "active",
                 organizations: {
                   owner_user_id: "user-123",
@@ -669,7 +669,7 @@ describe("Tournament Rounds Mutations", () => {
               phase_type: "swiss",
               tournaments: {
                 id: 200,
-                organization_id: 300,
+                community_id: 300,
                 status: "active",
                 organizations: {
                   owner_user_id: "user-123",
@@ -773,7 +773,7 @@ describe("Tournament Rounds Mutations", () => {
               phase_type: "swiss",
               tournaments: {
                 id: 200,
-                organization_id: 300,
+                community_id: 300,
                 status: "active",
                 organizations: {
                   owner_user_id: "user-123",
@@ -873,7 +873,7 @@ describe("Tournament Rounds Mutations", () => {
               phase_type: "swiss",
               tournaments: {
                 id: 200,
-                organization_id: 300,
+                community_id: 300,
                 status: "active",
                 organizations: {
                   owner_user_id: "user-123",
@@ -980,7 +980,7 @@ describe("Tournament Rounds Mutations", () => {
               phase_type: "swiss",
               tournaments: {
                 id: 200,
-                organization_id: 300,
+                community_id: 300,
                 status: "active",
                 organizations: {
                   owner_user_id: "user-123",
@@ -1092,7 +1092,7 @@ describe("Tournament Rounds Mutations", () => {
               phase_type: "swiss",
               tournaments: {
                 id: 200,
-                organization_id: 300,
+                community_id: 300,
                 status: "active",
                 organizations: {
                   owner_user_id: "user-123",
@@ -1272,7 +1272,7 @@ describe("Tournament Rounds Mutations", () => {
             tournament_phases: {
               tournament_id: 200,
               tournaments: {
-                organization_id: 300,
+                community_id: 300,
                 organizations: {
                   owner_user_id: "user-123",
                 },
@@ -1320,7 +1320,7 @@ describe("Tournament Rounds Mutations", () => {
             tournament_phases: {
               tournament_id: 200,
               tournaments: {
-                organization_id: 300,
+                community_id: 300,
                 organizations: {
                   owner_user_id: "user-123",
                 },
@@ -1389,7 +1389,7 @@ describe("Tournament Rounds Mutations", () => {
             tournament_phases: {
               tournament_id: 200,
               tournaments: {
-                organization_id: 300,
+                community_id: 300,
                 organizations: {
                   owner_user_id: "user-456",
                 },
@@ -1418,7 +1418,7 @@ describe("Tournament Rounds Mutations", () => {
             tournament_phases: {
               tournament_id: 200,
               tournaments: {
-                organization_id: 300,
+                community_id: 300,
                 organizations: {
                   owner_user_id: "user-123",
                 },
@@ -1449,7 +1449,7 @@ describe("Tournament Rounds Mutations", () => {
             tournament_phases: {
               tournament_id: 200,
               tournaments: {
-                organization_id: 300,
+                community_id: 300,
                 organizations: {
                   owner_user_id: "user-123",
                 },
@@ -1498,7 +1498,7 @@ describe("Tournament Rounds Mutations", () => {
             id: phaseId,
             tournament_id: 200,
             tournaments: {
-              organization_id: 300,
+              community_id: 300,
               organizations: {
                 owner_user_id: "user-123",
               },
@@ -1558,7 +1558,7 @@ describe("Tournament Rounds Mutations", () => {
             id: phaseId,
             tournament_id: 200,
             tournaments: {
-              organization_id: 300,
+              community_id: 300,
               organizations: {
                 owner_user_id: "user-123",
               },
@@ -1607,7 +1607,7 @@ describe("Tournament Rounds Mutations", () => {
             id: phaseId,
             tournament_id: 200,
             tournaments: {
-              organization_id: 300,
+              community_id: 300,
               organizations: {
                 owner_user_id: "user-123",
               },
@@ -1687,7 +1687,7 @@ describe("Tournament Rounds Mutations", () => {
             id: phaseId,
             tournament_id: 200,
             tournaments: {
-              organization_id: 300,
+              community_id: 300,
               organizations: {
                 owner_user_id: "user-456",
               },
@@ -1714,7 +1714,7 @@ describe("Tournament Rounds Mutations", () => {
             id: phaseId,
             tournament_id: 200,
             tournaments: {
-              organization_id: 300,
+              community_id: 300,
               organizations: {
                 owner_user_id: "user-123",
               },
@@ -1751,7 +1751,7 @@ describe("Tournament Rounds Mutations", () => {
             id: phaseId,
             tournament_id: 200,
             tournaments: {
-              organization_id: 300,
+              community_id: 300,
               organizations: {
                 owner_user_id: "user-123",
               },
@@ -1788,7 +1788,7 @@ describe("Tournament Rounds Mutations", () => {
             id: phaseId,
             tournament_id: 200,
             tournaments: {
-              organization_id: 300,
+              community_id: 300,
               organizations: {
                 owner_user_id: "user-123",
               },
@@ -1825,7 +1825,7 @@ describe("Tournament Rounds Mutations", () => {
             id: phaseId,
             tournament_id: 200,
             tournaments: {
-              organization_id: 300,
+              community_id: 300,
               organizations: {
                 owner_user_id: "user-123",
               },
@@ -1877,7 +1877,7 @@ describe("Tournament Rounds Mutations", () => {
               id: 100,
               tournament_id: 200,
               tournaments: {
-                organization_id: 300,
+                community_id: 300,
                 organizations: {
                   owner_user_id: "user-123",
                 },
@@ -1937,7 +1937,7 @@ describe("Tournament Rounds Mutations", () => {
               id: 100,
               tournament_id: 200,
               tournaments: {
-                organization_id: 300,
+                community_id: 300,
                 organizations: {
                   owner_user_id: "user-123",
                 },
@@ -1987,7 +1987,7 @@ describe("Tournament Rounds Mutations", () => {
               id: 100,
               tournament_id: 200,
               tournaments: {
-                organization_id: 300,
+                community_id: 300,
                 organizations: {
                   owner_user_id: "user-123",
                 },
@@ -2043,7 +2043,7 @@ describe("Tournament Rounds Mutations", () => {
               id: 100,
               tournament_id: 200,
               tournaments: {
-                organization_id: 300,
+                community_id: 300,
                 organizations: {
                   owner_user_id: "user-123",
                 },
@@ -2093,7 +2093,7 @@ describe("Tournament Rounds Mutations", () => {
               id: 100,
               tournament_id: 200,
               tournaments: {
-                organization_id: 300,
+                community_id: 300,
                 organizations: {
                   owner_user_id: "user-123",
                 },
@@ -2161,7 +2161,7 @@ describe("Tournament Rounds Mutations", () => {
               id: 100,
               tournament_id: 200,
               tournaments: {
-                organization_id: 300,
+                community_id: 300,
                 organizations: {
                   owner_user_id: "user-456",
                 },
@@ -2192,7 +2192,7 @@ describe("Tournament Rounds Mutations", () => {
               id: 100,
               tournament_id: 200,
               tournaments: {
-                organization_id: 300,
+                community_id: 300,
                 organizations: {
                   owner_user_id: "user-123",
                 },

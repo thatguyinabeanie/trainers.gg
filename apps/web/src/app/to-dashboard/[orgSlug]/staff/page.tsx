@@ -43,7 +43,7 @@ export default async function StaffPage({ params }: PageProps) {
 
   return (
     <StaffListClient
-      organizationId={organization.id}
+      communityId={organization.id}
       orgSlug={orgSlug}
       initialStaff={staffMembers}
       groups={groups}

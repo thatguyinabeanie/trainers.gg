@@ -23,8 +23,8 @@ export async function startTournamentEnhanced(
       `
       id,
       status,
-      organization_id,
-      organizations!inner(owner_user_id)
+      community_id,
+      communities!inner(owner_user_id)
     `
     )
     .eq("id", tournamentId)
@@ -32,10 +32,10 @@ export async function startTournamentEnhanced(
 
   if (!tournament) throw new Error("Tournament not found");
 
-  // Verify permission via has_org_permission (covers org owner + staff roles)
+  // Verify permission via has_community_permission (covers org owner + staff roles)
   const hasPermission = await checkOrgPermission(
     supabase,
-    tournament.organization_id,
+    tournament.community_id,
     "tournament.manage"
   );
   if (!hasPermission) {
@@ -209,8 +209,8 @@ export async function generateEliminationPairings(
         phase_type,
         tournaments!tournament_phases_tournament_id_fkey!inner(
           id,
-          organization_id,
-          organizations!inner(owner_user_id)
+          community_id,
+          communities!inner(owner_user_id)
         )
       )
     `
@@ -226,15 +226,15 @@ export async function generateEliminationPairings(
     phase_type: string;
     tournaments: {
       id: number;
-      organization_id: number;
-      organizations: { owner_user_id: string };
+      community_id: number;
+      communities: { owner_user_id: string };
     };
   };
 
-  // Verify permission via has_org_permission (covers org owner + staff roles)
+  // Verify permission via has_community_permission (covers org owner + staff roles)
   const hasPermission = await checkOrgPermission(
     supabase,
-    phase.tournaments.organization_id,
+    phase.tournaments.community_id,
     "tournament.manage"
   );
   if (!hasPermission) {
@@ -343,8 +343,8 @@ export async function completeTournament(
       id,
       status,
       current_phase_id,
-      organization_id,
-      organizations!inner(owner_user_id)
+      community_id,
+      communities!inner(owner_user_id)
     `
     )
     .eq("id", tournamentId)
@@ -352,10 +352,10 @@ export async function completeTournament(
 
   if (!tournament) throw new Error("Tournament not found");
 
-  // Verify permission via has_org_permission (covers org owner + staff roles)
+  // Verify permission via has_community_permission (covers org owner + staff roles)
   const hasPermission = await checkOrgPermission(
     supabase,
-    tournament.organization_id,
+    tournament.community_id,
     "tournament.manage"
   );
   if (!hasPermission) {

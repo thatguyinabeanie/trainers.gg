@@ -229,7 +229,7 @@ export class TournamentSimulator {
   async setupTournament(): Promise<void> {
     // Look up VGC League org
     const { data: org, error: orgError } = await this.adminClient
-      .from("organizations")
+      .from("communities")
       .select("id")
       .eq("slug", this.orgSlug)
       .single();
@@ -244,7 +244,7 @@ export class TournamentSimulator {
     const { data: tournament, error: tournamentError } = await this.adminClient
       .from("tournaments")
       .insert({
-        organization_id: this.orgId,
+        community_id: this.orgId,
         name: `Simulation Tournament ${this.tournamentSlug}`,
         slug: this.tournamentSlug,
         format: "swiss_with_cut",

@@ -45,7 +45,7 @@ export async function uploadOrgLogo(
 
     // Verify user owns this org and get current logo for cleanup
     const { data: org } = await supabase
-      .from("organizations")
+      .from("communities")
       .select("owner_user_id, logo_url")
       .eq("id", validatedId)
       .single();
@@ -74,7 +74,7 @@ export async function uploadOrgLogo(
 
     // Update org record with new logo URL
     const { error } = await supabase
-      .from("organizations")
+      .from("communities")
       .update({ logo_url: logoUrl })
       .eq("id", validatedId);
     if (error) throw error;
@@ -111,7 +111,7 @@ export async function removeOrgLogo(
 
     // Verify user owns this org and get current logo for cleanup
     const { data: org } = await supabase
-      .from("organizations")
+      .from("communities")
       .select("owner_user_id, logo_url")
       .eq("id", validatedId)
       .single();
@@ -132,7 +132,7 @@ export async function removeOrgLogo(
 
     // Set logo_url to null
     const { error } = await supabase
-      .from("organizations")
+      .from("communities")
       .update({ logo_url: null })
       .eq("id", validatedId);
     if (error) throw error;

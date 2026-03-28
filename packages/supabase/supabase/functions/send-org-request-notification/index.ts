@@ -166,9 +166,9 @@ Deno.serve(async (req) => {
 
     // Look up the request and user email
     const { data: orgRequest, error: queryError } = await supabaseAdmin
-      .from("organization_requests")
+      .from("community_requests")
       .select(
-        "id, name, slug, admin_notes, user_id, users!organization_requests_user_id_fkey(email)"
+        "id, name, slug, admin_notes, user_id, users!community_requests_user_id_fkey(email)"
       )
       .eq("id", requestId)
       .single();
