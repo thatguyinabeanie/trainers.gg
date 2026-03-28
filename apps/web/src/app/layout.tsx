@@ -81,7 +81,7 @@ export default async function RootLayout({
               <p className="whitespace-nowrap text-[8px] opacity-50">
                 trainers.gg is not affiliated with, endorsed by, or connected to Nintendo, The Pok&eacute;mon Company, or Game Freak.
               </p>
-              <p>&copy; {new Date().getFullYear()} Beanie LLC</p>
+              <p className="whitespace-nowrap">&copy; {new Date().getFullYear()} Beanie LLC</p>
             </div>
           </footer>
 
