@@ -74,30 +74,15 @@ export default async function RootLayout({
           <main className="flex w-full flex-1 flex-col">{children}</main>
 
           <footer className="border-border/40 w-full border-t py-6">
-            <div className="text-muted-foreground container mx-auto flex flex-col items-center justify-between px-4 text-sm md:flex-row md:px-6">
-              <p>
-                Powered by{" "}
-                <a
-                  href="https://bsky.app"
-                  target="_blank"
-                  className="font-bold hover:underline"
-                  rel="noreferrer"
-                >
-                  Bluesky
-                </a>
-                {" & "}
-                <a
-                  href="https://supabase.com"
-                  target="_blank"
-                  className="font-bold hover:underline"
-                  rel="noreferrer"
-                >
-                  Supabase
-                </a>
+            <div className="text-muted-foreground container mx-auto flex flex-col items-center gap-2 px-4 text-center text-sm md:px-6">
+              <p className="font-semibold">
+                Built for competitors, by competitors.
               </p>
-              <div className="flex items-center gap-4">
-                <span>&copy; {new Date().getFullYear()} trainers.gg</span>
-              </div>
+              <p>&copy; {new Date().getFullYear()} Beanie LLC</p>
+              <p className="max-w-md text-[10px] leading-relaxed opacity-60">
+                trainers.gg is not affiliated with, endorsed by, or connected to
+                Nintendo, The Pok&eacute;mon Company, or Game Freak.
+              </p>
             </div>
           </footer>
 
