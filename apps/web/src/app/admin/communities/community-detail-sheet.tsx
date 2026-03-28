@@ -32,10 +32,10 @@ import {
   communityTierLabels,
 } from "./columns";
 import {
-  approveOrgAction,
-  rejectOrgAction,
-  suspendOrgAction,
-  unsuspendOrgAction,
+  approveCommunityAction,
+  rejectCommunityAction,
+  suspendCommunityAction,
+  unsuspendCommunityAction,
   transferOwnershipAction,
 } from "./actions";
 
@@ -83,7 +83,7 @@ type ConfirmAction =
 // --- Props ---
 
 interface CommunityDetailSheetProps {
-  org: CommunityRow | null;
+  community: CommunityRow | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
@@ -91,7 +91,7 @@ interface CommunityDetailSheetProps {
 // --- Component ---
 
 export function CommunityDetailSheet({
-  org,
+  community,
   open,
   onOpenChange,
 }: CommunityDetailSheetProps) {
@@ -109,7 +109,7 @@ export function CommunityDetailSheet({
     null
   );
 
-  // Reset form state when the sheet opens/closes or org changes
+  // Reset form state when the sheet opens/closes or community changes
   const handleOpenChange = (nextOpen: boolean) => {
     if (!nextOpen) {
       setReason("");
@@ -124,7 +124,7 @@ export function CommunityDetailSheet({
   // --- Action handlers ---
 
   const handleConfirm = async () => {
-    if (!org || !confirmAction) return;
+    if (!community || !confirmAction) return;
 
     setLoading(true);
     setError(null);
@@ -134,19 +134,19 @@ export function CommunityDetailSheet({
 
     switch (confirmAction.type) {
       case "approve":
-        result = await approveOrgAction(org.id);
+        result = await approveCommunityAction(community.id);
         break;
       case "reject":
-        result = await rejectOrgAction(org.id, reason);
+        result = await rejectCommunityAction(community.id, reason);
         break;
       case "suspend":
-        result = await suspendOrgAction(org.id, reason);
+        result = await suspendCommunityAction(community.id, reason);
         break;
       case "unsuspend":
-        result = await unsuspendOrgAction(org.id);
+        result = await unsuspendCommunityAction(community.id);
         break;
       case "transfer":
-        result = await transferOwnershipAction(org.id, newOwnerId);
+        result = await transferOwnershipAction(community.id, newOwnerId);
         break;
     }
 
@@ -191,13 +191,13 @@ export function CommunityDetailSheet({
   }
 
   function getConfirmDescription(): string {
-    if (!confirmAction || !org) return "";
+    if (!confirmAction || !community) return "";
     const descriptions: Record<ConfirmAction["type"], string> = {
-      approve: `This will set "${org.name}" to active status. The community will be publicly visible.`,
-      reject: `This will reject "${org.name}". The reason will be stored in admin notes.`,
-      suspend: `This will suspend "${org.name}". The community will be hidden from public view.`,
-      unsuspend: `This will reactivate "${org.name}" and set the status back to active.`,
-      transfer: `This will transfer ownership of "${org.name}" to a different user. This action cannot be easily undone.`,
+      approve: `This will set "${community.name}" to active status. The community will be publicly visible.`,
+      reject: `This will reject "${community.name}". The reason will be stored in admin notes.`,
+      suspend: `This will suspend "${community.name}". The community will be hidden from public view.`,
+      unsuspend: `This will reactivate "${community.name}" and set the status back to active.`,
+      transfer: `This will transfer ownership of "${community.name}" to a different user. This action cannot be easily undone.`,
     };
     return descriptions[confirmAction.type];
   }
@@ -207,15 +207,15 @@ export function CommunityDetailSheet({
     return ["reject", "suspend", "transfer"].includes(confirmAction.type);
   }
 
-  if (!org) return null;
+  if (!community) return null;
 
   return (
     <>
       <Sheet open={open} onOpenChange={handleOpenChange}>
         <SheetContent className="overflow-y-auto sm:max-w-md">
           <SheetHeader>
-            <SheetTitle>{org.name}</SheetTitle>
-            <SheetDescription>{org.slug}</SheetDescription>
+            <SheetTitle>{community.name}</SheetTitle>
+            <SheetDescription>{community.slug}</SheetDescription>
           </SheetHeader>
 
           <div className="flex flex-col gap-6 px-4 pb-4">
@@ -239,37 +239,38 @@ export function CommunityDetailSheet({
               <div className="flex flex-wrap gap-2">
                 <Badge
                   variant="outline"
-                  className={cn(communityStatusClasses[org.status])}
+                  className={cn(communityStatusClasses[community.status])}
                 >
-                  {communityStatusLabels[org.status]}
+                  {communityStatusLabels[community.status]}
                 </Badge>
                 <Badge
                   variant="outline"
-                  className={cn(communityTierClasses[org.tier])}
+                  className={cn(communityTierClasses[community.tier])}
                 >
-                  {communityTierLabels[org.tier]}
+                  {communityTierLabels[community.tier]}
                 </Badge>
               </div>
 
               {/* Description */}
-              {org.description && (
+              {community.description && (
                 <p className="text-muted-foreground text-sm">
-                  {org.description}
+                  {community.description}
                 </p>
               )}
 
               {/* Owner */}
               <div className="space-y-1">
                 <Label className="text-muted-foreground text-xs">Owner</Label>
-                {org.owner ? (
+                {community.owner ? (
                   <div className="flex items-center gap-2">
                     <Avatar className="h-6 w-6">
-                      <AvatarImage src={org.owner.image ?? undefined} />
+                      <AvatarImage src={community.owner.image ?? undefined} />
                       <AvatarFallback>
-                        {org.owner.username?.charAt(0).toUpperCase() ?? "?"}
+                        {community.owner.username?.charAt(0).toUpperCase() ??
+                          "?"}
                       </AvatarFallback>
                     </Avatar>
-                    <span className="text-sm">@{org.owner.username}</span>
+                    <span className="text-sm">@{community.owner.username}</span>
                   </div>
                 ) : (
                   <span className="text-muted-foreground text-sm">--</span>
@@ -282,13 +283,17 @@ export function CommunityDetailSheet({
                   <Label className="text-muted-foreground text-xs">
                     Created
                   </Label>
-                  <p className="text-sm">{formatDateTime(org.created_at)}</p>
+                  <p className="text-sm">
+                    {formatDateTime(community.created_at)}
+                  </p>
                 </div>
                 <div className="space-y-1">
                   <Label className="text-muted-foreground text-xs">
                     Updated
                   </Label>
-                  <p className="text-sm">{formatDateTime(org.updated_at)}</p>
+                  <p className="text-sm">
+                    {formatDateTime(community.updated_at)}
+                  </p>
                 </div>
               </div>
             </section>
@@ -296,9 +301,9 @@ export function CommunityDetailSheet({
             {/* --- Admin Notes section --- */}
             <section className="space-y-2">
               <h3 className="text-sm font-medium">Admin Notes</h3>
-              {org.community_admin_notes?.[0]?.notes ? (
+              {community.community_admin_notes?.[0]?.notes ? (
                 <p className="bg-muted rounded-lg p-3 text-sm whitespace-pre-wrap">
-                  {org.community_admin_notes[0].notes}
+                  {community.community_admin_notes[0].notes}
                 </p>
               ) : (
                 <p className="text-muted-foreground text-sm">
@@ -312,7 +317,7 @@ export function CommunityDetailSheet({
               <h3 className="text-sm font-medium">Actions</h3>
 
               {/* Status-dependent actions */}
-              {org.status === "pending" && (
+              {community.status === "pending" && (
                 <div className="space-y-3">
                   {/* Approve */}
                   <Button
@@ -344,7 +349,7 @@ export function CommunityDetailSheet({
                 </div>
               )}
 
-              {org.status === "active" && (
+              {community.status === "active" && (
                 <div className="space-y-2">
                   <Label htmlFor="suspend-reason">Suspension Reason</Label>
                   <Textarea
@@ -364,7 +369,7 @@ export function CommunityDetailSheet({
                 </div>
               )}
 
-              {org.status === "suspended" && (
+              {community.status === "suspended" && (
                 <Button
                   className="w-full"
                   onClick={() => setConfirmAction({ type: "unsuspend" })}

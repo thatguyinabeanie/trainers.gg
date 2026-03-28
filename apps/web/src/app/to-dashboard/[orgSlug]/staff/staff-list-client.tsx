@@ -44,7 +44,7 @@ import { moveStaffToGroup } from "@/actions/staff";
 
 interface StaffListClientProps {
   communityId: number;
-  orgSlug: string;
+  communitySlug: string;
   initialStaff: StaffWithRole[];
   groups: CommunityGroup[];
   isOwner: boolean;
@@ -326,7 +326,7 @@ function DroppableGroup({
 
 export function StaffListClient({
   communityId,
-  orgSlug,
+  communitySlug,
   initialStaff,
   groups,
   isOwner,
@@ -464,7 +464,7 @@ export function StaffListClient({
         communityId,
         member.user_id,
         targetGroup.id,
-        orgSlug
+        communitySlug
       );
 
       if (result.success) {
@@ -631,7 +631,7 @@ export function StaffListClient({
         open={isInviteOpen}
         onOpenChange={setIsInviteOpen}
         communityId={communityId}
-        orgSlug={orgSlug}
+        communitySlug={communitySlug}
         onSuccess={handleSuccess}
       />
 
@@ -640,7 +640,7 @@ export function StaffListClient({
           open={!!removeStaff}
           onOpenChange={(open: boolean) => !open && setRemoveStaff(null)}
           communityId={communityId}
-          orgSlug={orgSlug}
+          communitySlug={communitySlug}
           staff={removeStaff}
           onSuccess={handleSuccess}
         />

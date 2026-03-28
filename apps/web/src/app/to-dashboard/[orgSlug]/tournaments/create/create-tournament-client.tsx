@@ -124,11 +124,11 @@ const STEPS = [
 ];
 
 interface CreateTournamentClientProps {
-  orgSlug: string;
+  communitySlug: string;
 }
 
 export function CreateTournamentClient({
-  orgSlug,
+  communitySlug,
 }: CreateTournamentClientProps) {
   const router = useRouter();
   const { user: currentUser, isLoading: userLoading } = useCurrentUser();
@@ -185,11 +185,11 @@ export function CreateTournamentClient({
 
   // Fetch organization by slug
   const orgQueryFn = (supabase: Parameters<typeof getCommunityBySlug>[0]) =>
-    getCommunityBySlug(supabase, orgSlug);
+    getCommunityBySlug(supabase, communitySlug);
 
   const { data: organization, isLoading: orgLoading } = useSupabaseQuery(
     orgQueryFn,
-    [orgSlug]
+    [communitySlug]
   );
 
   // Update organization ID when org is loaded
@@ -351,10 +351,10 @@ export function CreateTournamentClient({
 
       if (tournament?.slug) {
         router.push(
-          `/to-dashboard/${orgSlug}/tournaments/${tournament.slug}/manage`
+          `/to-dashboard/${communitySlug}/tournaments/${tournament.slug}/manage`
         );
       } else {
-        router.push(`/to-dashboard/${orgSlug}/tournaments`);
+        router.push(`/to-dashboard/${communitySlug}/tournaments`);
       }
     } catch (error) {
       toast.error("Failed to create tournament", {
@@ -413,7 +413,7 @@ export function CreateTournamentClient({
             You don&apos;t have permission to create tournaments for this
             community
           </p>
-          <Link href={`/communities/${orgSlug}`}>
+          <Link href={`/communities/${communitySlug}`}>
             <Button>
               <ArrowLeft className="mr-2 h-4 w-4" />
               View Community
@@ -439,7 +439,7 @@ export function CreateTournamentClient({
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center gap-4">
-          <Link href={`/to-dashboard/${orgSlug}/tournaments`}>
+          <Link href={`/to-dashboard/${communitySlug}/tournaments`}>
             <Button variant="ghost" size="icon">
               <ArrowLeft className="h-5 w-5" />
             </Button>

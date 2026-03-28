@@ -309,7 +309,7 @@ export async function generateRoundPairings(
 /**
  * Start a round (set status to active) via atomic SECURITY DEFINER RPC.
  * Activates all non-bye matches and creates their games in a single transaction.
- * The RPC checks that the caller is org owner or staff with `tournament.manage`.
+ * The RPC checks that the caller is community owner or staff with `tournament.manage`.
  */
 export async function startRound(
   supabase: TypedClient,

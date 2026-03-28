@@ -175,7 +175,7 @@ describe("NotificationBell", () => {
     expect(screen.getByText("99+")).toBeInTheDocument();
   });
 
-  it("includes org invitations in total badge count", () => {
+  it("includes community invitations in total badge count", () => {
     setupQueryMocks({ unreadCount: 1, invitations: [makeInvitation()] });
     render(<NotificationBell userId="u1" />);
     expect(screen.getByText("2")).toBeInTheDocument();
@@ -352,7 +352,7 @@ describe("NotificationBell", () => {
   });
 
   describe("organization invitations", () => {
-    it("renders invitation with org name and action buttons", async () => {
+    it("renders invitation with community name and action buttons", async () => {
       setupQueryMocks({ invitations: [makeInvitation()] });
       render(<NotificationBell userId="u1" />);
       await userEvent.click(
@@ -428,7 +428,7 @@ describe("NotificationBell", () => {
       );
     });
 
-    it("shows 'Unknown Community' when org name is missing", async () => {
+    it("shows 'Unknown Community' when community name is missing", async () => {
       setupQueryMocks({
         invitations: [makeInvitation({ organization: null })],
       });

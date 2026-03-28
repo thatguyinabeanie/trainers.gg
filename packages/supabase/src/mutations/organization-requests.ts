@@ -34,7 +34,7 @@ export async function submitCommunityRequest(
     .maybeSingle();
 
   if (pendingRequest) {
-    throw new Error("You already have a pending organization request");
+    throw new Error("You already have a pending community request");
   }
 
   // Check cooldown after rejection
@@ -63,16 +63,14 @@ export async function submitCommunityRequest(
   }
 
   // Check slug uniqueness against organizations table
-  const { data: existingOrg } = await supabase
+  const { data: existingCommunity } = await supabase
     .from("communities")
     .select("id")
     .eq("slug", slug)
     .maybeSingle();
 
-  if (existingOrg) {
-    throw new Error(
-      "This URL slug is already taken by an existing organization"
-    );
+  if (existingCommunity) {
+    throw new Error("This URL slug is already taken by an existing community");
   }
 
   // Check slug uniqueness against pending requests
@@ -128,15 +126,15 @@ export async function approveCommunityRequest(
   }
 
   // Re-check slug uniqueness against organizations
-  const { data: existingOrg } = await supabase
+  const { data: existingCommunity } = await supabase
     .from("communities")
     .select("id")
     .eq("slug", request.slug)
     .maybeSingle();
 
-  if (existingOrg) {
+  if (existingCommunity) {
     throw new Error(
-      `Slug "${request.slug}" is now taken by an existing organization`
+      `Slug "${request.slug}" is now taken by an existing community`
     );
   }
 
@@ -153,7 +151,7 @@ export async function approveCommunityRequest(
     }
   }
 
-  const { data: org, error: orgError } = await supabase
+  const { data: community, error: communityError } = await supabase
     .from("communities")
     .insert({
       name: request.name,
@@ -167,11 +165,11 @@ export async function approveCommunityRequest(
     .select()
     .single();
 
-  if (orgError) throw orgError;
+  if (communityError) throw communityError;
 
   // Add requester as staff
   const { error: staffError } = await supabase.from("community_staff").insert({
-    community_id: org.id,
+    community_id: community.id,
     user_id: request.user_id,
   });
 
@@ -214,15 +212,15 @@ export async function approveCommunityRequest(
   await supabase.from("audit_log").insert({
     action: "admin.org_request_approved" as const,
     actor_user_id: adminUserId,
-    community_id: org.id,
+    community_id: community.id,
     metadata: {
       request_id: requestId,
-      community_id: org.id,
+      community_id: community.id,
       requester_user_id: request.user_id,
     },
   });
 
-  return { request: updatedRequest, organization: org };
+  return { request: updatedRequest, organization: community };
 }
 
 /**

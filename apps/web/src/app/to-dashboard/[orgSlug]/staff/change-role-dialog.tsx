@@ -39,7 +39,7 @@ interface ChangeRoleDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   communityId: number;
-  orgSlug: string;
+  communitySlug: string;
   staff: StaffWithRole;
   groups: CommunityGroup[];
   onSuccess: () => void;
@@ -78,7 +78,7 @@ export function ChangeRoleDialog({
   open,
   onOpenChange,
   communityId,
-  orgSlug,
+  communitySlug,
   staff,
   groups,
   onSuccess,
@@ -108,7 +108,7 @@ export function ChangeRoleDialog({
         communityId,
         staff.user_id,
         parseInt(data.groupId, 10),
-        orgSlug
+        communitySlug
       );
 
       if (result.success) {

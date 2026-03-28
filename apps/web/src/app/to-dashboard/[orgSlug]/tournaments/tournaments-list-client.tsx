@@ -19,7 +19,7 @@ import {
 
 interface TournamentsListClientProps {
   communityId: number;
-  orgSlug: string;
+  communitySlug: string;
   initialStatus?: string;
 }
 
@@ -42,7 +42,7 @@ const statusTabs: { value: TournamentStatus; label: string }[] = [
 
 export function TournamentsListClient({
   communityId,
-  orgSlug,
+  communitySlug,
   initialStatus,
 }: TournamentsListClientProps) {
   const router = useRouter();
@@ -64,7 +64,7 @@ export function TournamentsListClient({
   ]);
 
   const tournaments = data?.tournaments ?? [];
-  const basePath = `/to-dashboard/${orgSlug}`;
+  const basePath = `/to-dashboard/${communitySlug}`;
   const hasError = !!error;
 
   const handleStatusChange = (status: string) => {

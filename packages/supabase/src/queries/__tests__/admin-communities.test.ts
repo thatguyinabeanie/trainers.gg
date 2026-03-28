@@ -6,7 +6,7 @@ import {
   rejectOrganization,
   suspendOrganization,
   unsuspendOrganization,
-  transferOrgOwnership,
+  transferCommunityOwnership,
 } from "../admin-communities";
 import type { TypedClient } from "../../client";
 
@@ -250,7 +250,7 @@ describe("admin-communities queries", () => {
   // -----------------------------------------------------------------------
 
   describe("getCommunityAdminDetails", () => {
-    it("should return full org details when found", async () => {
+    it("should return full community details when found", async () => {
       const mockOrg = {
         id: 1,
         name: "Team Rocket",
@@ -403,7 +403,7 @@ describe("admin-communities queries", () => {
 
       expect(result).toEqual(mockOrg);
       expect(consoleErrorSpy).toHaveBeenCalledWith(
-        "Error inserting org approval audit log:",
+        "Error inserting community approval audit log:",
         auditError
       );
     });
@@ -646,7 +646,7 @@ describe("admin-communities queries", () => {
 
       expect(result).toEqual(mockOrg);
       expect(consoleErrorSpy).toHaveBeenCalledWith(
-        "Error inserting org suspension audit log:",
+        "Error inserting community suspension audit log:",
         auditError
       );
     });
@@ -752,21 +752,21 @@ describe("admin-communities queries", () => {
 
       expect(result).toEqual(mockOrg);
       expect(consoleErrorSpy).toHaveBeenCalledWith(
-        "Error inserting org unsuspend audit log:",
+        "Error inserting community unsuspend audit log:",
         auditError
       );
     });
   });
 
   // -----------------------------------------------------------------------
-  // transferOrgOwnership
+  // transferCommunityOwnership
   // -----------------------------------------------------------------------
 
-  describe("transferOrgOwnership", () => {
+  describe("transferCommunityOwnership", () => {
     it("should transfer ownership and create audit log with previous and new owner", async () => {
       const mockClient = createMockClient();
 
-      // First call: fetch current org to get previous owner
+      // First call: fetch current community to get previous owner
       const mockFetchChain = {
         select: jest.fn().mockReturnValue({
           eq: jest.fn().mockReturnValue({
@@ -802,7 +802,7 @@ describe("admin-communities queries", () => {
         })
         .mockReturnValueOnce(mockAuditChain);
 
-      const result = await transferOrgOwnership(
+      const result = await transferCommunityOwnership(
         mockClient,
         1,
         "new-owner",
@@ -847,7 +847,7 @@ describe("admin-communities queries", () => {
       (mockClient.from as jest.Mock).mockReturnValueOnce(mockFetchChain);
 
       await expect(
-        transferOrgOwnership(mockClient, 1, "new-owner", "admin-1")
+        transferCommunityOwnership(mockClient, 1, "new-owner", "admin-1")
       ).rejects.toThrow("Fetch failed");
     });
 
@@ -884,7 +884,7 @@ describe("admin-communities queries", () => {
         });
 
       await expect(
-        transferOrgOwnership(mockClient, 1, "new-owner", "admin-1")
+        transferCommunityOwnership(mockClient, 1, "new-owner", "admin-1")
       ).rejects.toThrow("Update failed");
     });
 
@@ -925,7 +925,7 @@ describe("admin-communities queries", () => {
         })
         .mockReturnValueOnce(mockAuditChain);
 
-      const result = await transferOrgOwnership(
+      const result = await transferCommunityOwnership(
         mockClient,
         1,
         "new-owner",

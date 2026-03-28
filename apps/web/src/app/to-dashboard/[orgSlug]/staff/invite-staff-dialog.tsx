@@ -31,7 +31,7 @@ interface InviteStaffDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   communityId: number;
-  orgSlug: string;
+  communitySlug: string;
   onSuccess: () => void;
 }
 
@@ -76,7 +76,7 @@ export function InviteStaffDialog({
   open,
   onOpenChange,
   communityId,
-  orgSlug,
+  communitySlug,
   onSuccess,
 }: InviteStaffDialogProps) {
   const [searchTerm, setSearchTerm] = useState("");
@@ -146,7 +146,11 @@ export function InviteStaffDialog({
     if (!selectedUser) return;
 
     try {
-      const result = await inviteStaffMember(communityId, data.userId, orgSlug);
+      const result = await inviteStaffMember(
+        communityId,
+        data.userId,
+        communitySlug
+      );
 
       if (result.success) {
         toast.success(`${getDisplayName(selectedUser)} added to staff`);

@@ -74,7 +74,7 @@ describe("Tournament Flow Mutations", () => {
     it("should successfully start tournament with phases", async () => {
       const fromSpy = jest.spyOn(mockClient, "from");
 
-      // Mock: Get tournament with org info
+      // Mock: Get tournament with community info
       fromSpy.mockReturnValueOnce({
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
@@ -164,7 +164,7 @@ describe("Tournament Flow Mutations", () => {
     it("should start tournament without phases", async () => {
       const fromSpy = jest.spyOn(mockClient, "from");
 
-      // Mock: Get tournament with org info
+      // Mock: Get tournament with community info
       fromSpy.mockReturnValueOnce({
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),

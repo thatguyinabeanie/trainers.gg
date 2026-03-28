@@ -38,22 +38,22 @@ async function checkCommunityPermission(
 }
 
 /**
- * Helper to check if current user is org owner
+ * Helper to check if current user is community owner
  */
-async function isOrgOwner(
+async function isCommunityOwner(
   supabase: TypedClient,
   communityId: number
 ): Promise<boolean> {
   const currentUser = await getCurrentUser(supabase);
   if (!currentUser) return false;
 
-  const { data: org } = await supabase
+  const { data: community } = await supabase
     .from("communities")
     .select("owner_user_id")
     .eq("id", communityId)
     .single();
 
-  return org?.owner_user_id === currentUser.id;
+  return community?.owner_user_id === currentUser.id;
 }
 
 /**
@@ -113,7 +113,7 @@ export async function createCommunity(
   }
 
   // Create organization with user as owner
-  const { data: org, error } = await supabase
+  const { data: community, error } = await supabase
     .from("communities")
     .insert({
       name: data.name,
@@ -131,12 +131,12 @@ export async function createCommunity(
   // Add the user as organization staff (user-level, not alt-level)
   if (user) {
     await supabase.from("community_staff").insert({
-      community_id: org.id,
+      community_id: community.id,
       user_id: user.id,
     });
   }
 
-  return org;
+  return community;
 }
 
 /**
@@ -156,14 +156,14 @@ export async function updateCommunity(
   if (!user) throw new Error("Not authenticated");
 
   // Verify ownership or admin permission
-  const { data: org } = await supabase
+  const { data: community } = await supabase
     .from("communities")
     .select("owner_user_id")
     .eq("id", communityId)
     .single();
 
-  if (!org) throw new Error("Community not found");
-  if (org.owner_user_id !== user.id) {
+  if (!community) throw new Error("Community not found");
+  if (community.owner_user_id !== user.id) {
     // TODO: Check for admin role through RBAC
     throw new Error("You don't have permission to update this community");
   }
@@ -336,13 +336,13 @@ export async function leaveCommunity(
   if (!user) throw new Error("Not authenticated");
 
   // Verify not the owner
-  const { data: org } = await supabase
+  const { data: community } = await supabase
     .from("communities")
     .select("owner_user_id")
     .eq("id", communityId)
     .single();
 
-  if (org?.owner_user_id === user.id) {
+  if (community?.owner_user_id === user.id) {
     throw new Error("Community owner cannot leave. Transfer ownership first.");
   }
 
@@ -368,14 +368,14 @@ export async function removeStaff(
   if (!currentUser) throw new Error("Not authenticated");
 
   // Verify ownership
-  const { data: org } = await supabase
+  const { data: community } = await supabase
     .from("communities")
     .select("owner_user_id")
     .eq("id", communityId)
     .single();
 
-  if (!org) throw new Error("Community not found");
-  if (org.owner_user_id !== currentUser.id) {
+  if (!community) throw new Error("Community not found");
+  if (community.owner_user_id !== currentUser.id) {
     throw new Error("Only the owner can remove staff");
   }
 
@@ -410,8 +410,8 @@ export async function addStaffMember(
   const currentUser = await getCurrentUser(supabase);
   if (!currentUser) throw new Error("Not authenticated");
 
-  // Verify permission: must be org owner or have org.staff.manage permission
-  const ownerCheck = await isOrgOwner(supabase, communityId);
+  // Verify permission: must be community owner or have community.staff.manage permission
+  const ownerCheck = await isCommunityOwner(supabase, communityId);
   const permCheck = await checkCommunityPermission(
     supabase,
     communityId,
@@ -456,8 +456,8 @@ export async function addStaffToGroup(
   const currentUser = await getCurrentUser(supabase);
   if (!currentUser) throw new Error("Not authenticated");
 
-  // Verify permission: must be org owner or have org.staff.manage permission
-  const ownerCheck = await isOrgOwner(supabase, communityId);
+  // Verify permission: must be community owner or have community.staff.manage permission
+  const ownerCheck = await isCommunityOwner(supabase, communityId);
   const permCheck = await checkCommunityPermission(
     supabase,
     communityId,
@@ -508,22 +508,22 @@ export async function addStaffToGroup(
     if (staffError) throw staffError;
   }
 
-  // Check if user already has a role in any group of this org
-  const { data: orgGroups } = await supabase
+  // Check if user already has a role in any group of this community
+  const { data: communityGroups } = await supabase
     .from("groups")
     .select("id")
     .eq("community_id", communityId);
 
-  const orgGroupIds = (orgGroups ?? []).map((g) => g.id);
+  const communityGroupIds = (communityGroups ?? []).map((g) => g.id);
 
   const { data: existingGroupRoles } = await supabase
     .from("group_roles")
     .select("id")
-    .in("group_id", orgGroupIds.length > 0 ? orgGroupIds : [-1]);
+    .in("group_id", communityGroupIds.length > 0 ? communityGroupIds : [-1]);
 
   const existingGroupRoleIds = (existingGroupRoles ?? []).map((gr) => gr.id);
 
-  // Remove any existing user_group_roles for this org
+  // Remove any existing user_group_roles for this community
   if (existingGroupRoleIds.length > 0) {
     await supabase
       .from("user_group_roles")
@@ -554,8 +554,8 @@ export async function removeStaffFromGroup(
   const currentUser = await getCurrentUser(supabase);
   if (!currentUser) throw new Error("Not authenticated");
 
-  // Verify permission: must be org owner or have org.staff.manage permission
-  const ownerCheck = await isOrgOwner(supabase, communityId);
+  // Verify permission: must be community owner or have community.staff.manage permission
+  const ownerCheck = await isCommunityOwner(supabase, communityId);
   const permCheck = await checkCommunityPermission(
     supabase,
     communityId,
@@ -565,15 +565,15 @@ export async function removeStaffFromGroup(
     throw new Error("You don't have permission to manage staff");
   }
 
-  // Get all groups for this organization
-  const { data: orgGroups } = await supabase
+  // Get all groups for this community
+  const { data: communityGroups } = await supabase
     .from("groups")
     .select("id")
     .eq("community_id", communityId);
 
-  const orgGroupIds = (orgGroups ?? []).map((g) => g.id);
+  const communityGroupIds = (communityGroups ?? []).map((g) => g.id);
 
-  if (orgGroupIds.length === 0) {
+  if (communityGroupIds.length === 0) {
     return { success: true };
   }
 
@@ -581,7 +581,7 @@ export async function removeStaffFromGroup(
   const { data: groupRoles } = await supabase
     .from("group_roles")
     .select("id")
-    .in("group_id", orgGroupIds);
+    .in("group_id", communityGroupIds);
 
   const groupRoleIds = (groupRoles ?? []).map((gr) => gr.id);
 
@@ -611,8 +611,8 @@ export async function changeStaffRole(
   const currentUser = await getCurrentUser(supabase);
   if (!currentUser) throw new Error("Not authenticated");
 
-  // Verify permission: must be org owner or have org.staff.manage permission
-  const ownerCheck = await isOrgOwner(supabase, communityId);
+  // Verify permission: must be community owner or have community.staff.manage permission
+  const ownerCheck = await isCommunityOwner(supabase, communityId);
   const permCheck = await checkCommunityPermission(
     supabase,
     communityId,
@@ -622,15 +622,15 @@ export async function changeStaffRole(
     throw new Error("You don't have permission to manage staff");
   }
 
-  // Verify the target user is not the org owner
-  const { data: org } = await supabase
+  // Verify the target user is not the community owner
+  const { data: community } = await supabase
     .from("communities")
     .select("owner_user_id")
     .eq("id", communityId)
     .single();
 
-  if (!org) throw new Error("Community not found");
-  if (org.owner_user_id === userId) {
+  if (!community) throw new Error("Community not found");
+  if (community.owner_user_id === userId) {
     throw new Error("Cannot change the owner's role");
   }
 
@@ -649,8 +649,8 @@ export async function removeStaffCompletely(
   const currentUser = await getCurrentUser(supabase);
   if (!currentUser) throw new Error("Not authenticated");
 
-  // Verify permission: must be org owner or have org.staff.manage permission
-  const ownerCheck = await isOrgOwner(supabase, communityId);
+  // Verify permission: must be community owner or have community.staff.manage permission
+  const ownerCheck = await isCommunityOwner(supabase, communityId);
   const permCheck = await checkCommunityPermission(
     supabase,
     communityId,
@@ -661,14 +661,14 @@ export async function removeStaffCompletely(
   }
 
   // Verify not removing the owner
-  const { data: org } = await supabase
+  const { data: community } = await supabase
     .from("communities")
     .select("owner_user_id")
     .eq("id", communityId)
     .single();
 
-  if (!org) throw new Error("Community not found");
-  if (org.owner_user_id === userId) {
+  if (!community) throw new Error("Community not found");
+  if (community.owner_user_id === userId) {
     throw new Error("Cannot remove the community owner");
   }
 

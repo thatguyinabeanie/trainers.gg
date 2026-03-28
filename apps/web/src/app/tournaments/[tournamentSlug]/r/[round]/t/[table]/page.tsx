@@ -82,27 +82,27 @@ export default async function MatchPage({ params }: PageProps) {
         ? matchData.match.alt2_id!
         : (userAlts?.[0]?.id ?? null);
 
-    // Check if user is org staff or org owner (can act as judge)
-    const orgId = matchData.tournament.community_id;
-    if (orgId) {
-      const [{ data: staffRecord }, { data: org }] = await Promise.all([
+    // Check if user is community staff or community owner (can act as judge)
+    const communityId = matchData.tournament.community_id;
+    if (communityId) {
+      const [{ data: staffRecord }, { data: community }] = await Promise.all([
         supabase
           .from("community_staff")
           .select("id")
-          .eq("community_id", orgId)
+          .eq("community_id", communityId)
           .eq("user_id", user.id)
           .maybeSingle(),
         supabase
           .from("communities")
           .select("owner_user_id")
-          .eq("id", orgId)
+          .eq("id", communityId)
           .maybeSingle(),
       ]);
-      isStaff = !!staffRecord || org?.owner_user_id === user.id;
+      isStaff = !!staffRecord || community?.owner_user_id === user.id;
     }
   }
 
-  // Access control: only match players, org staff, and org owners can view
+  // Access control: only match players, community staff, and community owners can view
   if (!user) {
     redirect(
       `/sign-in?redirect=/tournaments/${tournamentSlug}/r/${roundNumber}/t/${tableNumber}`

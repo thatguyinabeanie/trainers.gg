@@ -88,7 +88,7 @@ function formatDate(dateStr: string): string {
 const columnHelper = createColumnHelper<CommunityRow>();
 
 export const columns = [
-  // Name column: org name with slug underneath
+  // Name column: community name with slug underneath
   columnHelper.accessor("name", {
     header: "Name",
     cell: (info) => {

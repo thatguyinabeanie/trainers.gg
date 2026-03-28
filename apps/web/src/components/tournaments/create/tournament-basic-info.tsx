@@ -52,9 +52,9 @@ export function TournamentBasicInfo({
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            {organizations?.map((org) => (
-              <SelectItem key={org.id} value={String(org.id)}>
-                {org.name}
+            {organizations?.map((community) => (
+              <SelectItem key={community.id} value={String(community.id)}>
+                {community.name}
               </SelectItem>
             ))}
           </SelectContent>

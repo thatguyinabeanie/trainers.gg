@@ -281,22 +281,22 @@ describe("getTournamentFeePercentage", () => {
 });
 
 describe("calculatePlatformFee", () => {
-  it("calculates 8% fee for regular org with $10.00 entry", () => {
+  it("calculates 8% fee for regular community with $10.00 entry", () => {
     // 1000 cents * 0.08 = 80 cents
     expect(calculatePlatformFee(1000, "regular")).toBe(80);
   });
 
-  it("calculates 5% fee for verified org with $10.00 entry", () => {
+  it("calculates 5% fee for verified community with $10.00 entry", () => {
     // 1000 cents * 0.05 = 50 cents
     expect(calculatePlatformFee(1000, "verified")).toBe(50);
   });
 
-  it("calculates 3% fee for partner org with $10.00 entry", () => {
+  it("calculates 3% fee for partner community with $10.00 entry", () => {
     // 1000 cents * 0.03 = 30 cents
     expect(calculatePlatformFee(1000, "partner")).toBe(30);
   });
 
-  it("defaults to regular (8%) when org tier is undefined", () => {
+  it("defaults to regular (8%) when community tier is undefined", () => {
     expect(calculatePlatformFee(1000, undefined)).toBe(80);
   });
 

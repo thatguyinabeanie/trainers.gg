@@ -23,7 +23,7 @@ export async function listPublicCommunities(
   if (!communities || communities.length === 0) return [];
 
   // Get tournament counts for all communities in a single query
-  const communityIds = communities.map((org) => org.id);
+  const communityIds = communities.map((community) => community.id);
   const { data: counts, error: countsError } = await supabase.rpc(
     "get_community_tournament_counts",
     { community_ids: communityIds }
@@ -43,13 +43,15 @@ export async function listPublicCommunities(
   }
 
   // Add counts to communities
-  const orgsWithCounts: CommunityWithCounts[] = communities.map((org) => ({
-    ...org,
-    activeTournamentsCount: countMap[String(org.id)]?.active ?? 0,
-    totalTournamentsCount: countMap[String(org.id)]?.total ?? 0,
-  }));
+  const communitiesWithCounts: CommunityWithCounts[] = communities.map(
+    (community) => ({
+      ...community,
+      activeTournamentsCount: countMap[String(community.id)]?.active ?? 0,
+      totalTournamentsCount: countMap[String(community.id)]?.total ?? 0,
+    })
+  );
 
-  return orgsWithCounts;
+  return communitiesWithCounts;
 }
 
 /**
@@ -81,21 +83,21 @@ export async function listCommunities(
   if (error) throw error;
 
   // Add staff and tournament counts
-  const orgsWithCounts = await Promise.all(
-    (data ?? []).map(async (org) => {
+  const communitiesWithCounts = await Promise.all(
+    (data ?? []).map(async (community) => {
       const { count: staffCount } = await supabase
         .from("community_staff")
         .select("*", { count: "exact", head: true })
-        .eq("community_id", org.id);
+        .eq("community_id", community.id);
 
       const { count: tournamentCount } = await supabase
         .from("tournaments")
         .select("*", { count: "exact", head: true })
-        .eq("community_id", org.id)
+        .eq("community_id", community.id)
         .is("archived_at", null);
 
       return {
-        ...org,
+        ...community,
         staffCount: staffCount ?? 0,
         tournamentCount: tournamentCount ?? 0,
       };
@@ -103,7 +105,7 @@ export async function listCommunities(
   );
 
   return {
-    items: orgsWithCounts,
+    items: communitiesWithCounts,
     total: count ?? 0,
     hasMore: (count ?? 0) > offset + limit,
   };
@@ -278,28 +280,32 @@ export async function listMyCommunities(
     staffOrgs = (staffRecords ?? [])
       .map((m) => m.organization)
       .filter(
-        (org): org is NonNullable<typeof org> =>
-          org !== null && org !== undefined
+        (community): community is NonNullable<typeof community> =>
+          community !== null && community !== undefined
       );
   }
 
-  const ownedOrgsWithFlag = (ownedOrgs ?? []).map((org) => ({
-    ...org,
+  const ownedCommunitiesWithFlag = (ownedOrgs ?? []).map((community) => ({
+    ...community,
     isOwner: true,
   }));
 
-  const staffOrgsWithFlag = (staffOrgs ?? []).map((org) => ({
-    ...org,
-    isOwner: org.owner_user_id === targetUserId,
+  const staffCommunitiesWithFlag = (staffOrgs ?? []).map((community) => ({
+    ...community,
+    isOwner: community.owner_user_id === targetUserId,
   }));
 
   // Combine and deduplicate
-  const allOrgs = [...ownedOrgsWithFlag, ...staffOrgsWithFlag];
-  const uniqueOrgs = allOrgs.filter(
-    (org, index, self) => index === self.findIndex((o) => o.id === org.id)
+  const allCommunities = [
+    ...ownedCommunitiesWithFlag,
+    ...staffCommunitiesWithFlag,
+  ];
+  const uniqueCommunities = allCommunities.filter(
+    (community, index, self) =>
+      index === self.findIndex((o) => o.id === community.id)
   );
 
-  return uniqueOrgs;
+  return uniqueCommunities;
 }
 
 /**
@@ -312,13 +318,13 @@ export async function canManageCommunity(
   userId: string
 ) {
   // Check if owner (owner_user_id is now a uuid)
-  const { data: org } = await supabase
+  const { data: community } = await supabase
     .from("communities")
     .select("owner_user_id")
     .eq("id", communityId)
     .single();
 
-  if (org?.owner_user_id === userId) {
+  if (community?.owner_user_id === userId) {
     return true;
   }
 
@@ -369,13 +375,13 @@ export async function hasCommunityAccess(
   userId: string
 ) {
   // Check if owner (owner_user_id is now a uuid)
-  const { data: org } = await supabase
+  const { data: community } = await supabase
     .from("communities")
     .select("owner_user_id")
     .eq("id", communityId)
     .single();
 
-  if (org?.owner_user_id === userId) {
+  if (community?.owner_user_id === userId) {
     return true;
   }
 
@@ -468,12 +474,12 @@ export async function listMyOwnedCommunities(
  */
 export async function getCommunityWithTournamentStats(
   supabase: TypedClient,
-  orgSlug: string
+  communitySlug: string
 ) {
   const { data: organization, error } = await supabase
     .from("communities")
     .select("*")
-    .eq("slug", orgSlug)
+    .eq("slug", communitySlug)
     .single();
 
   if (error) return null;
@@ -637,13 +643,13 @@ export async function listCommunityStaffWithRoles(
   communityId: number
 ): Promise<StaffWithRole[]> {
   // Get organization owner
-  const { data: org } = await supabase
+  const { data: community } = await supabase
     .from("communities")
     .select("owner_user_id")
     .eq("id", communityId)
     .single();
 
-  const ownerUserId = org?.owner_user_id;
+  const ownerUserId = community?.owner_user_id;
 
   // Get all staff members with user details
   const { data: staffMembers, error: staffError } = await supabase
@@ -909,14 +915,14 @@ export async function searchUsersForInvite(
   const existingUserIds = (existingStaff ?? []).map((s) => s.user_id);
 
   // Get organization owner
-  const { data: org } = await supabase
+  const { data: community } = await supabase
     .from("communities")
     .select("owner_user_id")
     .eq("id", communityId)
     .single();
 
-  if (org?.owner_user_id) {
-    existingUserIds.push(org.owner_user_id);
+  if (community?.owner_user_id) {
+    existingUserIds.push(community.owner_user_id);
   }
 
   // Search users by username
@@ -941,7 +947,7 @@ export async function searchUsersForInvite(
  * Check if user has a specific permission in an organization
  * Uses the database function has_community_permission
  */
-export async function hasOrgPermission(
+export async function hasCommunityPermission(
   supabase: TypedClient,
   communityId: number,
   permissionKey: string

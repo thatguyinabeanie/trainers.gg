@@ -84,7 +84,7 @@ describe("Tournament CRUD Mutations", () => {
     it("should create a tournament with default phases (swiss_with_cut)", async () => {
       const fromSpy = jest.spyOn(mockClient, "from");
 
-      // Mock: Check organization exists
+      // Mock: Check community exists
       fromSpy.mockReturnValueOnce({
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
@@ -160,7 +160,7 @@ describe("Tournament CRUD Mutations", () => {
 
       const fromSpy = jest.spyOn(mockClient, "from");
 
-      // Mock: Check organization exists
+      // Mock: Check community exists
       fromSpy.mockReturnValueOnce({
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
@@ -215,7 +215,7 @@ describe("Tournament CRUD Mutations", () => {
     it("should create a tournament with swiss_only format", async () => {
       const fromSpy = jest.spyOn(mockClient, "from");
 
-      // Mock: Check organization exists
+      // Mock: Check community exists
       fromSpy.mockReturnValueOnce({
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
@@ -266,7 +266,7 @@ describe("Tournament CRUD Mutations", () => {
     it("should create a tournament with single_elimination format", async () => {
       const fromSpy = jest.spyOn(mockClient, "from");
 
-      // Mock: Check organization exists
+      // Mock: Check community exists
       fromSpy.mockReturnValueOnce({
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
@@ -317,7 +317,7 @@ describe("Tournament CRUD Mutations", () => {
     it("should create a tournament with double_elimination format", async () => {
       const fromSpy = jest.spyOn(mockClient, "from");
 
-      // Mock: Check organization exists
+      // Mock: Check community exists
       fromSpy.mockReturnValueOnce({
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
@@ -373,7 +373,7 @@ describe("Tournament CRUD Mutations", () => {
       ).rejects.toThrow("Not authenticated");
     });
 
-    it("should throw error if organization not found", async () => {
+    it("should throw error if community not found", async () => {
       const fromSpy = jest.spyOn(mockClient, "from");
 
       fromSpy.mockReturnValueOnce({
@@ -387,7 +387,7 @@ describe("Tournament CRUD Mutations", () => {
 
       await expect(
         createTournament(mockClient, tournamentData)
-      ).rejects.toThrow("Organization not found");
+      ).rejects.toThrow("Community not found");
     });
 
     it("should throw error if user lacks permission", async () => {
@@ -412,7 +412,7 @@ describe("Tournament CRUD Mutations", () => {
     it("should throw error if slug already exists", async () => {
       const fromSpy = jest.spyOn(mockClient, "from");
 
-      // Mock: Check organization exists
+      // Mock: Check community exists
       fromSpy.mockReturnValueOnce({
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
@@ -434,14 +434,14 @@ describe("Tournament CRUD Mutations", () => {
 
       await expect(
         createTournament(mockClient, tournamentData)
-      ).rejects.toThrow("Tournament slug already exists in this organization");
+      ).rejects.toThrow("Tournament slug already exists in this community");
     });
 
     it("should normalize slug to lowercase", async () => {
       const fromSpy = jest.spyOn(mockClient, "from");
       const insertMock = jest.fn().mockReturnThis();
 
-      // Mock: Check organization exists
+      // Mock: Check community exists
       fromSpy.mockReturnValueOnce({
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
@@ -503,7 +503,7 @@ describe("Tournament CRUD Mutations", () => {
       const fromSpy = jest.spyOn(mockClient, "from");
       const insertMock = jest.fn().mockReturnThis();
 
-      // Mock: Check organization exists
+      // Mock: Check community exists
       fromSpy.mockReturnValueOnce({
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
@@ -572,7 +572,7 @@ describe("Tournament CRUD Mutations", () => {
     it("should throw error if phase creation fails", async () => {
       const fromSpy = jest.spyOn(mockClient, "from");
 
-      // Mock: Check organization exists
+      // Mock: Check community exists
       fromSpy.mockReturnValueOnce({
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
@@ -636,7 +636,7 @@ describe("Tournament CRUD Mutations", () => {
 
       const fromSpy = jest.spyOn(mockClient, "from");
 
-      // Mock: Check organization exists
+      // Mock: Check community exists
       fromSpy.mockReturnValueOnce({
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
@@ -690,7 +690,7 @@ describe("Tournament CRUD Mutations", () => {
     it("should throw error if tournament insert fails", async () => {
       const fromSpy = jest.spyOn(mockClient, "from");
 
-      // Mock: Check organization exists
+      // Mock: Check community exists
       fromSpy.mockReturnValueOnce({
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
@@ -729,7 +729,7 @@ describe("Tournament CRUD Mutations", () => {
     it("should throw error if Top Cut phase creation fails (swiss_with_cut)", async () => {
       const fromSpy = jest.spyOn(mockClient, "from");
 
-      // Mock: Check organization exists
+      // Mock: Check community exists
       fromSpy.mockReturnValueOnce({
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
@@ -788,7 +788,7 @@ describe("Tournament CRUD Mutations", () => {
     it("should throw error if Single Elimination phase creation fails", async () => {
       const fromSpy = jest.spyOn(mockClient, "from");
 
-      // Mock: Check organization exists
+      // Mock: Check community exists
       fromSpy.mockReturnValueOnce({
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
@@ -842,7 +842,7 @@ describe("Tournament CRUD Mutations", () => {
     it("should throw error if Double Elimination phase creation fails", async () => {
       const fromSpy = jest.spyOn(mockClient, "from");
 
-      // Mock: Check organization exists
+      // Mock: Check community exists
       fromSpy.mockReturnValueOnce({
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),

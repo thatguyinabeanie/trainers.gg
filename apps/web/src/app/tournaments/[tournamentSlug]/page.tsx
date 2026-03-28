@@ -410,7 +410,7 @@ export default async function TournamentPage({ params }: PageProps) {
     notFound();
   }
 
-  // Check if user can manage (org owner or staff)
+  // Check if user can manage (community owner or staff)
   let canManage = false;
   if (currentUserId && tournament.community_id) {
     const supabase = await createClientReadOnly();

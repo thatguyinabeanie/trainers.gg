@@ -20,7 +20,7 @@ interface RemoveStaffDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   communityId: number;
-  orgSlug: string;
+  communitySlug: string;
   staff: StaffWithRole;
   onSuccess: () => void;
 }
@@ -52,7 +52,7 @@ export function RemoveStaffDialog({
   open,
   onOpenChange,
   communityId,
-  orgSlug,
+  communitySlug,
   staff,
   onSuccess,
 }: RemoveStaffDialogProps) {
@@ -64,7 +64,7 @@ export function RemoveStaffDialog({
       const result = await removeStaffAction(
         communityId,
         staff.user_id,
-        orgSlug
+        communitySlug
       );
 
       if (result.success) {

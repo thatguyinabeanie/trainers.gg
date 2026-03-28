@@ -17,7 +17,7 @@ import {
   listCommunityStaffWithRoles,
   listCommunityGroups,
   searchUsersForInvite,
-  hasOrgPermission,
+  hasCommunityPermission,
 } from "../communities";
 import type { TypedClient } from "../../client";
 
@@ -929,7 +929,7 @@ describe("communities queries", () => {
     }, 10000);
   });
 
-  describe("hasOrgPermission", () => {
+  describe("hasCommunityPermission", () => {
     it("should return true when user has permission", async () => {
       const mockClient = createMockClient();
 
@@ -938,7 +938,7 @@ describe("communities queries", () => {
         error: null,
       });
 
-      const result = await hasOrgPermission(mockClient, 1, "org_manage");
+      const result = await hasCommunityPermission(mockClient, 1, "org_manage");
 
       expect(result).toBe(true);
       expect(mockClient.rpc).toHaveBeenCalledWith("has_community_permission", {
@@ -955,7 +955,7 @@ describe("communities queries", () => {
         error: null,
       });
 
-      const result = await hasOrgPermission(mockClient, 1, "org_manage");
+      const result = await hasCommunityPermission(mockClient, 1, "org_manage");
 
       expect(result).toBe(false);
     });
@@ -972,7 +972,7 @@ describe("communities queries", () => {
         .spyOn(console, "error")
         .mockImplementation(() => {});
 
-      const result = await hasOrgPermission(mockClient, 1, "org_manage");
+      const result = await hasCommunityPermission(mockClient, 1, "org_manage");
 
       expect(result).toBe(false);
       expect(consoleErrorSpy).toHaveBeenCalled();

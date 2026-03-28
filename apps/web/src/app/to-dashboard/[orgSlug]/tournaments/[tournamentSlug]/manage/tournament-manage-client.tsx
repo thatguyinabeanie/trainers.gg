@@ -36,7 +36,7 @@ import {
 } from "lucide-react";
 
 interface TournamentManageClientProps {
-  orgSlug: string;
+  communitySlug: string;
   tournamentSlug: string;
 }
 
@@ -56,7 +56,7 @@ function isValidTab(tab: string | null): tab is ValidTab {
 }
 
 export function TournamentManageClient({
-  orgSlug,
+  communitySlug,
   tournamentSlug,
 }: TournamentManageClientProps) {
   const router = useRouter();
@@ -66,11 +66,11 @@ export function TournamentManageClient({
 
   // Fetch organization by slug
   const orgQueryFn = (supabase: Parameters<typeof getCommunityBySlug>[0]) =>
-    getCommunityBySlug(supabase, orgSlug);
+    getCommunityBySlug(supabase, communitySlug);
 
   const { data: organization, isLoading: orgLoading } = useSupabaseQuery(
     orgQueryFn,
-    [orgSlug]
+    [communitySlug]
   );
 
   // Fetch tournament by slug
@@ -146,7 +146,7 @@ export function TournamentManageClient({
           <p className="text-muted-foreground mb-4 text-center">
             This tournament doesn&apos;t exist or has been removed
           </p>
-          <Link href={`/to-dashboard/${orgSlug}/tournaments`}>
+          <Link href={`/to-dashboard/${communitySlug}/tournaments`}>
             <Button>
               <ArrowLeft className="mr-2 h-4 w-4" />
               Back to Tournaments
@@ -252,7 +252,7 @@ export function TournamentManageClient({
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-4">
-          <Link href={`/to-dashboard/${orgSlug}/tournaments`}>
+          <Link href={`/to-dashboard/${communitySlug}/tournaments`}>
             <Button variant="ghost" size="icon">
               <ArrowLeft className="h-5 w-5" />
             </Button>

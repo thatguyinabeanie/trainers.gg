@@ -35,7 +35,10 @@ import {
   type CommunityRequestRow,
   communityRequestStatusLabels,
 } from "./columns";
-import { approveOrgRequestAction, rejectOrgRequestAction } from "./actions";
+import {
+  approveCommunityRequestAction,
+  rejectCommunityRequestAction,
+} from "./actions";
 import {
   SOCIAL_LINK_PLATFORMS,
   type SocialLinkPlatform,
@@ -114,9 +117,9 @@ export function RequestDetailSheet({
     try {
       let result;
       if (confirmAction.type === "approve") {
-        result = await approveOrgRequestAction(request.id);
+        result = await approveCommunityRequestAction(request.id);
       } else {
-        result = await rejectOrgRequestAction(request.id, rejectReason);
+        result = await rejectCommunityRequestAction(request.id, rejectReason);
       }
 
       if (result.success) {

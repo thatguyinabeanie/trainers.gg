@@ -28,7 +28,7 @@ export interface ListOrganizationsAdminOptions {
 /**
  * List organizations for the admin panel with search, filtering, and pagination.
  *
- * Selects core org fields plus the owner relationship and admin notes
+ * Selects core community fields plus the owner relationship and admin notes
  * from the separate `community_admin_notes` table.
  * Returns data and exact count for pagination.
  *
@@ -84,16 +84,16 @@ export async function listCommunitiesAdmin(
 /**
  * Get full admin details for a single organization.
  *
- * Returns all org fields, the owner relationship, and admin notes
+ * Returns all community fields, the owner relationship, and admin notes
  * from the separate `community_admin_notes` table.
  * Returns null if the organization is not found.
  *
  * @param supabase - Typed Supabase client
- * @param orgId - Organization ID
+ * @param communityId - Organization ID
  */
 export async function getCommunityAdminDetails(
   supabase: TypedClient,
-  orgId: number
+  communityId: number
 ) {
   const { data, error } = await supabase
     .from("communities")
@@ -104,7 +104,7 @@ export async function getCommunityAdminDetails(
       community_admin_notes(notes, updated_at, updated_by)
     `
     )
-    .eq("id", orgId)
+    .eq("id", communityId)
     .maybeSingle();
 
   if (error) throw error;
@@ -122,19 +122,19 @@ export async function getCommunityAdminDetails(
  * with the action 'admin.org_approved'.
  *
  * @param supabase - Typed Supabase client
- * @param orgId - Organization ID to approve
+ * @param communityId - Organization ID to approve
  * @param adminUserId - User ID of the admin performing the action
  */
 export async function approveOrganization(
   supabase: TypedClient,
-  orgId: number,
+  communityId: number,
   adminUserId: string
 ) {
   // Update organization status
   const { data, error } = await supabase
     .from("communities")
     .update({ status: "active" })
-    .eq("id", orgId)
+    .eq("id", communityId)
     .select()
     .single();
 
@@ -146,14 +146,14 @@ export async function approveOrganization(
   const { error: auditError } = await supabase.from("audit_log").insert({
     action: "admin.org_approved" as const,
     actor_user_id: adminUserId,
-    community_id: orgId,
+    community_id: communityId,
     metadata: {
-      community_id: orgId,
+      community_id: communityId,
     },
   });
 
   if (auditError) {
-    console.error("Error inserting org approval audit log:", auditError);
+    console.error("Error inserting community approval audit log:", auditError);
   }
 
   return data;
@@ -166,13 +166,13 @@ export async function approveOrganization(
  * `community_admin_notes`, then creates an audit log entry.
  *
  * @param supabase - Typed Supabase client
- * @param orgId - Organization ID to reject
+ * @param communityId - Organization ID to reject
  * @param adminUserId - User ID of the admin performing the action
  * @param reason - Reason for rejection (stored in community_admin_notes)
  */
 export async function rejectOrganization(
   supabase: TypedClient,
-  orgId: number,
+  communityId: number,
   adminUserId: string,
   reason: string
 ) {
@@ -181,7 +181,7 @@ export async function rejectOrganization(
     .update({
       status: "rejected" as const,
     })
-    .eq("id", orgId)
+    .eq("id", communityId)
     .select()
     .single();
 
@@ -194,7 +194,7 @@ export async function rejectOrganization(
     "community_admin_notes"
   ).upsert(
     {
-      community_id: orgId,
+      community_id: communityId,
       notes: reason,
       updated_by: adminUserId,
     },
@@ -202,22 +202,22 @@ export async function rejectOrganization(
   );
 
   if (notesError) {
-    console.error("Error upserting org admin notes:", notesError);
+    console.error("Error upserting community admin notes:", notesError);
   }
 
   // Insert audit log entry
   const { error: auditError } = await supabase.from("audit_log").insert({
     action: "admin.org_rejected" as const,
     actor_user_id: adminUserId,
-    community_id: orgId,
+    community_id: communityId,
     metadata: {
-      community_id: orgId,
+      community_id: communityId,
       reason,
     },
   });
 
   if (auditError) {
-    console.error("Error inserting org rejection audit log:", auditError);
+    console.error("Error inserting community rejection audit log:", auditError);
   }
 
   return data;
@@ -230,13 +230,13 @@ export async function rejectOrganization(
  * `community_admin_notes`, then creates an audit log entry.
  *
  * @param supabase - Typed Supabase client
- * @param orgId - Organization ID to suspend
+ * @param communityId - Organization ID to suspend
  * @param adminUserId - User ID of the admin performing the action
  * @param reason - Reason for suspension (stored in community_admin_notes)
  */
 export async function suspendOrganization(
   supabase: TypedClient,
-  orgId: number,
+  communityId: number,
   adminUserId: string,
   reason: string
 ) {
@@ -245,7 +245,7 @@ export async function suspendOrganization(
     .update({
       status: "suspended" as const,
     })
-    .eq("id", orgId)
+    .eq("id", communityId)
     .select()
     .single();
 
@@ -258,7 +258,7 @@ export async function suspendOrganization(
     "community_admin_notes"
   ).upsert(
     {
-      community_id: orgId,
+      community_id: communityId,
       notes: reason,
       updated_by: adminUserId,
     },
@@ -266,22 +266,25 @@ export async function suspendOrganization(
   );
 
   if (notesError) {
-    console.error("Error upserting org admin notes:", notesError);
+    console.error("Error upserting community admin notes:", notesError);
   }
 
   // Insert audit log entry
   const { error: auditError } = await supabase.from("audit_log").insert({
     action: "admin.org_suspended" as const,
     actor_user_id: adminUserId,
-    community_id: orgId,
+    community_id: communityId,
     metadata: {
-      community_id: orgId,
+      community_id: communityId,
       reason,
     },
   });
 
   if (auditError) {
-    console.error("Error inserting org suspension audit log:", auditError);
+    console.error(
+      "Error inserting community suspension audit log:",
+      auditError
+    );
   }
 
   return data;
@@ -294,19 +297,19 @@ export async function suspendOrganization(
  * with the action 'admin.org_unsuspended'.
  *
  * @param supabase - Typed Supabase client
- * @param orgId - Organization ID to unsuspend
+ * @param communityId - Organization ID to unsuspend
  * @param adminUserId - User ID of the admin performing the action
  */
 export async function unsuspendOrganization(
   supabase: TypedClient,
-  orgId: number,
+  communityId: number,
   adminUserId: string
 ) {
   // Update organization status
   const { data, error } = await supabase
     .from("communities")
     .update({ status: "active" })
-    .eq("id", orgId)
+    .eq("id", communityId)
     .select()
     .single();
 
@@ -316,14 +319,14 @@ export async function unsuspendOrganization(
   const { error: auditError } = await supabase.from("audit_log").insert({
     action: "admin.org_unsuspended" as const,
     actor_user_id: adminUserId,
-    community_id: orgId,
+    community_id: communityId,
     metadata: {
-      community_id: orgId,
+      community_id: communityId,
     },
   });
 
   if (auditError) {
-    console.error("Error inserting org unsuspend audit log:", auditError);
+    console.error("Error inserting community unsuspend audit log:", auditError);
   }
 
   return data;
@@ -337,13 +340,13 @@ export async function unsuspendOrganization(
  * both the previous and new owner user IDs.
  *
  * @param supabase - Typed Supabase client
- * @param orgId - Organization ID to transfer
+ * @param communityId - Organization ID to transfer
  * @param newOwnerUserId - User ID of the new owner
  * @param adminUserId - User ID of the admin performing the action
  */
-export async function transferOrgOwnership(
+export async function transferCommunityOwnership(
   supabase: TypedClient,
-  orgId: number,
+  communityId: number,
   newOwnerUserId: string,
   adminUserId: string
 ) {
@@ -351,7 +354,7 @@ export async function transferOrgOwnership(
   const { data: currentOrg, error: fetchError } = await supabase
     .from("communities")
     .select("owner_user_id")
-    .eq("id", orgId)
+    .eq("id", communityId)
     .single();
 
   if (fetchError) throw fetchError;
@@ -362,7 +365,7 @@ export async function transferOrgOwnership(
   const { data, error } = await supabase
     .from("communities")
     .update({ owner_user_id: newOwnerUserId })
-    .eq("id", orgId)
+    .eq("id", communityId)
     .select()
     .single();
 
@@ -372,9 +375,9 @@ export async function transferOrgOwnership(
   const { error: auditError } = await supabase.from("audit_log").insert({
     action: "admin.org_ownership_transferred" as const,
     actor_user_id: adminUserId,
-    community_id: orgId,
+    community_id: communityId,
     metadata: {
-      community_id: orgId,
+      community_id: communityId,
       previous_owner_user_id: previousOwnerUserId,
       new_owner_user_id: newOwnerUserId,
     },

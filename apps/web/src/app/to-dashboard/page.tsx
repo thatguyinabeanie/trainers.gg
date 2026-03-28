@@ -26,6 +26,6 @@ export default async function TODashboardPage() {
     redirect(`/to-dashboard/${organizations[0].slug}`);
   }
 
-  // Otherwise show the org selector
+  // Otherwise show the community selector
   return <OrgSelectorClient organizations={organizations} />;
 }

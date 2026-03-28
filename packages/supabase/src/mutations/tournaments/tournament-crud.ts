@@ -45,15 +45,15 @@ export async function createTournament(
   if (!user) throw new Error("Not authenticated");
 
   // Verify organization exists and user has permission
-  const { data: org } = await supabase
+  const { data: community } = await supabase
     .from("communities")
     .select("id")
     .eq("id", data.communityId)
     .single();
 
-  if (!org) throw new Error("Community not found");
+  if (!community) throw new Error("Community not found");
 
-  // Check permission via has_community_permission (covers org owner + staff roles)
+  // Check permission via has_community_permission (covers community owner + staff roles)
   const hasPermission = await checkCommunityPermission(
     supabase,
     data.communityId,
@@ -259,7 +259,7 @@ export async function updateTournament(
   const user = await getCurrentUser(supabase);
   if (!user) throw new Error("Not authenticated");
 
-  // Get tournament and org
+  // Get tournament and community
   const { data: tournament } = await supabase
     .from("tournaments")
     .select("community_id")
@@ -268,7 +268,7 @@ export async function updateTournament(
 
   if (!tournament) throw new Error("Tournament not found");
 
-  // Verify permission via has_community_permission (covers org owner + staff roles)
+  // Verify permission via has_community_permission (covers community owner + staff roles)
   const hasPermission = await checkCommunityPermission(
     supabase,
     tournament.community_id,
@@ -334,7 +334,7 @@ export async function archiveTournament(
 
   if (!tournament) throw new Error("Tournament not found");
 
-  // Verify permission via has_community_permission (covers org owner + staff roles)
+  // Verify permission via has_community_permission (covers community owner + staff roles)
   const hasPermission = await checkCommunityPermission(
     supabase,
     tournament.community_id,
@@ -372,7 +372,7 @@ export async function deleteTournament(
 
   if (!tournament) throw new Error("Tournament not found");
 
-  // Verify permission via has_community_permission (covers org owner + staff roles)
+  // Verify permission via has_community_permission (covers community owner + staff roles)
   const hasPermission = await checkCommunityPermission(
     supabase,
     tournament.community_id,

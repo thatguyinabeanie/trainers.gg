@@ -5,7 +5,7 @@ type AuditAction = Database["public"]["Enums"]["audit_action"];
 
 /**
  * Get audit log entries for a tournament, ordered by newest first.
- * RLS ensures only org staff with tournament.manage or site admins can read.
+ * RLS ensures only community staff with tournament.manage or site admins can read.
  */
 export async function getTournamentAuditLog(
   supabase: TypedClient,

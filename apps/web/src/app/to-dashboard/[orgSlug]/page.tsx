@@ -12,11 +12,14 @@ interface PageProps {
 }
 
 export default async function TODashboardOverviewPage({ params }: PageProps) {
-  const { orgSlug } = await params;
+  const { orgSlug: communitySlug } = await params;
   const supabase = await createClient();
 
-  // Get org with stats
-  const organization = await getCommunityWithTournamentStats(supabase, orgSlug);
+  // Get community with stats
+  const organization = await getCommunityWithTournamentStats(
+    supabase,
+    communitySlug
+  );
 
   if (!organization) {
     return null; // Layout handles 404
@@ -33,7 +36,7 @@ export default async function TODashboardOverviewPage({ params }: PageProps) {
     <OverviewClient
       organization={organization}
       recentTournaments={recentTournaments}
-      orgSlug={orgSlug}
+      communitySlug={communitySlug}
     />
   );
 }

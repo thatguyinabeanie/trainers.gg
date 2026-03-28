@@ -110,7 +110,7 @@ function extractDetails(entry: AuditLogEntry): string {
 
 /**
  * Build an entity link label from the audit log entry's FK fields.
- * Shows which tournament/match/org the event relates to.
+ * Shows which tournament/match/community the event relates to.
  */
 function getEntityLabel(entry: AuditLogEntry): string {
   const parts: string[] = [];
@@ -200,7 +200,7 @@ export const columns: ColumnDef<AuditLogEntry>[] = [
     },
   },
 
-  // Entity: shows related tournament/match/org IDs
+  // Entity: shows related tournament/match/community IDs
   {
     id: "entity",
     header: "Entity",

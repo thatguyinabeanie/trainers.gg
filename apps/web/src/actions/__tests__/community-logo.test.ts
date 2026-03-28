@@ -42,7 +42,7 @@ jest.mock("@trainers/supabase", () => ({
   }),
 }));
 
-import { uploadOrgLogo, removeOrgLogo } from "../community-logo";
+import { uploadCommunityLogo, removeCommunityLogo } from "../community-logo";
 
 // Helper to create a test File
 function createTestFile(
@@ -76,7 +76,7 @@ function setupAuthenticatedOwner(options?: { logoUrl?: string | null }) {
   });
 }
 
-describe("uploadOrgLogo", () => {
+describe("uploadCommunityLogo", () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });
@@ -87,7 +87,7 @@ describe("uploadOrgLogo", () => {
     const formData = new FormData();
     formData.append("file", createTestFile());
 
-    const result = await uploadOrgLogo(1, formData);
+    const result = await uploadCommunityLogo(1, formData);
 
     expect(result.success).toBe(true);
     if (result.success) {
@@ -101,7 +101,7 @@ describe("uploadOrgLogo", () => {
     const formData = new FormData();
     formData.append("file", createTestFile());
 
-    const result = await uploadOrgLogo(1, formData);
+    const result = await uploadCommunityLogo(1, formData);
 
     expect(result.success).toBe(false);
     if (!result.success) {
@@ -126,7 +126,7 @@ describe("uploadOrgLogo", () => {
     const formData = new FormData();
     formData.append("file", createTestFile());
 
-    const result = await uploadOrgLogo(1, formData);
+    const result = await uploadCommunityLogo(1, formData);
 
     expect(result.success).toBe(false);
     if (!result.success) {
@@ -137,7 +137,7 @@ describe("uploadOrgLogo", () => {
   it("returns an error when no file is provided", async () => {
     const formData = new FormData();
 
-    const result = await uploadOrgLogo(1, formData);
+    const result = await uploadCommunityLogo(1, formData);
 
     expect(result.success).toBe(false);
     if (!result.success) {
@@ -149,7 +149,7 @@ describe("uploadOrgLogo", () => {
     const formData = new FormData();
     formData.append("file", createTestFile());
 
-    const result = await uploadOrgLogo(-1, formData);
+    const result = await uploadCommunityLogo(-1, formData);
 
     expect(result.success).toBe(false);
   });
@@ -169,7 +169,7 @@ describe("uploadOrgLogo", () => {
     const formData = new FormData();
     formData.append("file", createTestFile());
 
-    const result = await uploadOrgLogo(1, formData);
+    const result = await uploadCommunityLogo(1, formData);
 
     expect(result.success).toBe(false);
     if (!result.success) {
@@ -200,7 +200,7 @@ describe("uploadOrgLogo", () => {
     const formData = new FormData();
     formData.append("file", createTestFile());
 
-    const result = await uploadOrgLogo(1, formData);
+    const result = await uploadCommunityLogo(1, formData);
 
     expect(result.success).toBe(false);
     if (!result.success) {
@@ -220,7 +220,7 @@ describe("uploadOrgLogo", () => {
     const formData = new FormData();
     formData.append("file", createTestFile());
 
-    const result = await uploadOrgLogo(1, formData);
+    const result = await uploadCommunityLogo(1, formData);
 
     expect(result.success).toBe(true);
     expect(deleteFile).toHaveBeenCalledWith(
@@ -231,7 +231,7 @@ describe("uploadOrgLogo", () => {
   });
 });
 
-describe("removeOrgLogo", () => {
+describe("removeCommunityLogo", () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });
@@ -242,7 +242,7 @@ describe("removeOrgLogo", () => {
         "https://abc.supabase.co/storage/v1/object/public/uploads/user-123/org-logos/1/file.jpg",
     });
 
-    const result = await removeOrgLogo(1);
+    const result = await removeCommunityLogo(1);
 
     expect(result.success).toBe(true);
   });
@@ -250,7 +250,7 @@ describe("removeOrgLogo", () => {
   it("returns an error when not authenticated", async () => {
     mockGetUser.mockResolvedValue({ data: { user: null } });
 
-    const result = await removeOrgLogo(1);
+    const result = await removeCommunityLogo(1);
 
     expect(result.success).toBe(false);
     if (!result.success) {
@@ -272,7 +272,7 @@ describe("removeOrgLogo", () => {
       }),
     });
 
-    const result = await removeOrgLogo(1);
+    const result = await removeCommunityLogo(1);
 
     expect(result.success).toBe(false);
     if (!result.success) {
@@ -292,7 +292,7 @@ describe("removeOrgLogo", () => {
       }),
     });
 
-    const result = await removeOrgLogo(1);
+    const result = await removeCommunityLogo(1);
 
     expect(result.success).toBe(false);
     if (!result.success) {
@@ -325,7 +325,7 @@ describe("removeOrgLogo", () => {
       update: jest.fn().mockReturnValue(updateChain),
     });
 
-    const result = await removeOrgLogo(1);
+    const result = await removeCommunityLogo(1);
 
     expect(result.success).toBe(false);
     if (!result.success) {
@@ -334,7 +334,7 @@ describe("removeOrgLogo", () => {
   });
 
   it("rejects an invalid org ID", async () => {
-    const result = await removeOrgLogo(0);
+    const result = await removeCommunityLogo(0);
 
     expect(result.success).toBe(false);
   });

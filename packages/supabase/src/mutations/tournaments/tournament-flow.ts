@@ -16,7 +16,7 @@ export async function startTournamentEnhanced(
   const user = await getCurrentUser(supabase);
   if (!user) throw new Error("Not authenticated");
 
-  // Get tournament with org info
+  // Get tournament with community info
   const { data: tournament } = await supabase
     .from("tournaments")
     .select(
@@ -32,7 +32,7 @@ export async function startTournamentEnhanced(
 
   if (!tournament) throw new Error("Tournament not found");
 
-  // Verify permission via has_community_permission (covers org owner + staff roles)
+  // Verify permission via has_community_permission (covers community owner + staff roles)
   const hasPermission = await checkCommunityPermission(
     supabase,
     tournament.community_id,
@@ -160,7 +160,7 @@ export async function startTournamentEnhanced(
 /**
  * Advance from Swiss phase to Top Cut (elimination phase) via atomic RPC.
  * Seeds top N players from Swiss standings into the elimination bracket.
- * The RPC checks that the caller is org owner or staff with `tournament.manage`.
+ * The RPC checks that the caller is community owner or staff with `tournament.manage`.
  */
 export async function advanceToTopCut(
   supabase: TypedClient,
@@ -231,7 +231,7 @@ export async function generateEliminationPairings(
     };
   };
 
-  // Verify permission via has_community_permission (covers org owner + staff roles)
+  // Verify permission via has_community_permission (covers community owner + staff roles)
   const hasPermission = await checkCommunityPermission(
     supabase,
     phase.tournaments.community_id,
@@ -335,7 +335,7 @@ export async function completeTournament(
   const user = await getCurrentUser(supabase);
   if (!user) throw new Error("Not authenticated");
 
-  // Get tournament with org info
+  // Get tournament with community info
   const { data: tournament } = await supabase
     .from("tournaments")
     .select(
@@ -352,7 +352,7 @@ export async function completeTournament(
 
   if (!tournament) throw new Error("Tournament not found");
 
-  // Verify permission via has_community_permission (covers org owner + staff roles)
+  // Verify permission via has_community_permission (covers community owner + staff roles)
   const hasPermission = await checkCommunityPermission(
     supabase,
     tournament.community_id,

@@ -323,7 +323,7 @@ Bold Nature
 
     describe("RLS Policy Validation", () => {
       it("should allow tournament owner to see all registrations", async () => {
-        // Query all registrations as admin (simulating owner with org permission)
+        // Query all registrations as admin (simulating owner with community permission)
         const { data: registrations, error } = await adminClient
           .from("tournament_registrations")
           .select("*")

@@ -45,10 +45,12 @@ export default async function CommunitiesPage({
   // Filter on the server — name, slug, and description
   const communities: CommunityWithCounts[] = searchQuery
     ? allCommunities.filter(
-        (org) =>
-          org.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          org.slug.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          org.description?.toLowerCase().includes(searchQuery.toLowerCase())
+        (community) =>
+          community.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          community.slug.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          community.description
+            ?.toLowerCase()
+            .includes(searchQuery.toLowerCase())
       )
     : allCommunities;
 

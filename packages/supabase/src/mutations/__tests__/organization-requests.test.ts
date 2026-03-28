@@ -146,7 +146,7 @@ describe("Organization Request Mutations", () => {
 
       await expect(
         submitCommunityRequest(mockClient, requestData)
-      ).rejects.toThrow("You already have a pending organization request");
+      ).rejects.toThrow("You already have a pending community request");
     });
 
     it("throws when within cooldown period after rejection", async () => {
@@ -241,7 +241,7 @@ describe("Organization Request Mutations", () => {
       ).rejects.toThrow("This URL slug is already requested by another user");
     });
 
-    it("throws when slug is taken by an existing organization", async () => {
+    it("throws when slug is taken by an existing community", async () => {
       (mockClient.auth.getUser as jest.Mock).mockResolvedValue({
         data: { user: mockUser },
       } as MockAuthResponse);
@@ -282,7 +282,7 @@ describe("Organization Request Mutations", () => {
       await expect(
         submitCommunityRequest(mockClient, requestData)
       ).rejects.toThrow(
-        "This URL slug is already taken by an existing organization"
+        "This URL slug is already taken by an existing community"
       );
     });
   });
@@ -456,7 +456,7 @@ describe("Organization Request Mutations", () => {
 
       await expect(
         approveCommunityRequest(mockClient, request.id, ADMIN_USER_ID)
-      ).rejects.toThrow("is now taken by an existing organization");
+      ).rejects.toThrow("is now taken by an existing community");
     });
 
     it("throws when staff insert fails", async () => {

@@ -84,16 +84,16 @@ export function OrgSelectorClient({ organizations }: OrgSelectorClientProps) {
       {useGrid ? (
         // Grid layout for 2-5 organizations
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {organizations.map((org) => (
-            <Link key={org.id} href={`/to-dashboard/${org.slug}`}>
+          {organizations.map((community) => (
+            <Link key={community.id} href={`/to-dashboard/${community.slug}`}>
               <Card className="h-full transition-shadow hover:shadow-md">
                 <CardHeader className="pb-3">
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex items-center gap-3">
-                      {org.logo_url ? (
+                      {community.logo_url ? (
                         <img
-                          src={org.logo_url}
-                          alt={org.name}
+                          src={community.logo_url}
+                          alt={community.name}
                           className="h-10 w-10 rounded-lg object-cover"
                         />
                       ) : (
@@ -103,10 +103,10 @@ export function OrgSelectorClient({ organizations }: OrgSelectorClientProps) {
                       )}
                       <div>
                         <CardTitle className="line-clamp-1 text-lg">
-                          {org.name}
+                          {community.name}
                         </CardTitle>
                         <CardDescription className="text-xs">
-                          @{org.slug}
+                          @{community.slug}
                         </CardDescription>
                       </div>
                     </div>
@@ -114,7 +114,7 @@ export function OrgSelectorClient({ organizations }: OrgSelectorClientProps) {
                 </CardHeader>
                 <CardContent>
                   <div className="flex flex-wrap gap-2">
-                    {org.isOwner ? (
+                    {community.isOwner ? (
                       <Badge variant="default" className="gap-1">
                         <Crown className="h-3 w-3" />
                         Owner
@@ -125,9 +125,10 @@ export function OrgSelectorClient({ organizations }: OrgSelectorClientProps) {
                         Staff
                       </Badge>
                     )}
-                    {(org.tier === "verified" || org.tier === "partner") && (
+                    {(community.tier === "verified" ||
+                      community.tier === "partner") && (
                       <Badge variant="outline">
-                        {org.tier === "partner" ? "Partner" : "Verified"}
+                        {community.tier === "partner" ? "Partner" : "Verified"}
                       </Badge>
                     )}
                   </div>
@@ -149,17 +150,17 @@ export function OrgSelectorClient({ organizations }: OrgSelectorClientProps) {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-2">
-            {organizations.map((org) => (
+            {organizations.map((community) => (
               <Link
-                key={org.id}
-                href={`/to-dashboard/${org.slug}`}
+                key={community.id}
+                href={`/to-dashboard/${community.slug}`}
                 className="hover:bg-muted flex items-center justify-between rounded-lg p-3 transition-colors"
               >
                 <div className="flex items-center gap-3">
-                  {org.logo_url ? (
+                  {community.logo_url ? (
                     <img
-                      src={org.logo_url}
-                      alt={org.name}
+                      src={community.logo_url}
+                      alt={community.name}
                       className="h-8 w-8 rounded-lg object-cover"
                     />
                   ) : (
@@ -168,12 +169,14 @@ export function OrgSelectorClient({ organizations }: OrgSelectorClientProps) {
                     </div>
                   )}
                   <div>
-                    <p className="font-medium">{org.name}</p>
-                    <p className="text-muted-foreground text-xs">@{org.slug}</p>
+                    <p className="font-medium">{community.name}</p>
+                    <p className="text-muted-foreground text-xs">
+                      @{community.slug}
+                    </p>
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
-                  {org.isOwner ? (
+                  {community.isOwner ? (
                     <Badge variant="default" className="gap-1">
                       <Crown className="h-3 w-3" />
                       Owner

@@ -43,7 +43,7 @@ export {
   listCommunityStaffWithRoles,
   listCommunityGroups,
   searchUsersForInvite,
-  hasOrgPermission,
+  hasCommunityPermission,
 } from "./communities";
 
 export type {
@@ -164,7 +164,7 @@ export {
   rejectOrganization,
   suspendOrganization,
   unsuspendOrganization,
-  transferOrgOwnership,
+  transferCommunityOwnership,
 } from "./admin-communities";
 
 export type { ListOrganizationsAdminOptions } from "./admin-communities";

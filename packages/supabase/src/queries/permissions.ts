@@ -10,7 +10,7 @@ export async function getUserPermissions(
   _userId: string
 ): Promise<string[]> {
   // STUB: Returns empty array until full RBAC is implemented.
-  // Permission checks currently rely on org owner_user_id checks in TypeScript
+  // Permission checks currently rely on community owner_user_id checks in TypeScript
   // and has_community_permission() in SQL RPCs.
   return [];
 }

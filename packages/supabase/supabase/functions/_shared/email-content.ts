@@ -1,6 +1,6 @@
 import { escapeHtml } from "./escape-html.ts";
 
-/** The canonical site URL used for building org links. */
+/** The canonical site URL used for building community links. */
 const SITE_URL = "https://trainers.gg";
 
 // ---------------------------------------------------------------------------
@@ -110,30 +110,30 @@ export function formatOtp(code: string): string {
  * Builds email content for organization approval notifications.
  */
 export function buildOrgApprovedContent(
-  orgName: string,
-  orgSlug: string
+  communityName: string,
+  communitySlug: string
 ): EmailContent {
-  const safeOrgName = escapeHtml(orgName);
-  const safeSlug = escapeHtml(orgSlug);
-  const orgUrl = `${SITE_URL}/organizations/${safeSlug}`;
+  const safeCommunityName = escapeHtml(communityName);
+  const safeSlug = escapeHtml(communitySlug);
+  const communityUrl = `${SITE_URL}/organizations/${safeSlug}`;
 
   const body = [
     heading("Your organization has been approved!"),
     bodyText(
-      `Congratulations! <strong class="email-body-strong" style="color:#171717;font-weight:600;">${safeOrgName}</strong> has been approved and is now live on trainers&zwnj;.gg.`
+      `Congratulations! <strong class="email-body-strong" style="color:#171717;font-weight:600;">${safeCommunityName}</strong> has been approved and is now live on trainers&zwnj;.gg.`
     ),
     bodyText("You can now create tournaments, manage your roster, and more."),
-    ctaButton(orgUrl, "View Your Organization"),
+    ctaButton(communityUrl, "View Your Organization"),
   ].join("\n");
 
   const text = [
     "Your organization has been approved!",
     "",
-    `Congratulations! ${orgName} has been approved and is now live on trainers.gg.`,
+    `Congratulations! ${communityName} has been approved and is now live on trainers.gg.`,
     "",
     "You can now create tournaments, manage your roster, and more.",
     "",
-    `View your organization: ${SITE_URL}/organizations/${orgSlug}`,
+    `View your organization: ${SITE_URL}/organizations/${communitySlug}`,
   ].join("\n");
 
   return {
@@ -147,15 +147,15 @@ export function buildOrgApprovedContent(
  * Builds email content for organization rejection notifications.
  */
 export function buildOrgRejectedContent(
-  orgName: string,
+  communityName: string,
   adminNotes: string | null
 ): EmailContent {
-  const safeOrgName = escapeHtml(orgName);
+  const safeCommunityName = escapeHtml(communityName);
 
   const bodyParts = [
     heading("Organization request update"),
     bodyText(
-      `Thank you for your interest in creating <strong class="email-body-strong" style="color:#171717;font-weight:600;">${safeOrgName}</strong> on trainers&zwnj;.gg. Unfortunately, your request was not approved at this time.`
+      `Thank you for your interest in creating <strong class="email-body-strong" style="color:#171717;font-weight:600;">${safeCommunityName}</strong> on trainers&zwnj;.gg. Unfortunately, your request was not approved at this time.`
     ),
   ];
 
@@ -174,7 +174,7 @@ export function buildOrgRejectedContent(
   const textParts = [
     "Organization request update",
     "",
-    `Thank you for your interest in creating ${orgName} on trainers.gg. Unfortunately, your request was not approved at this time.`,
+    `Thank you for your interest in creating ${communityName} on trainers.gg. Unfortunately, your request was not approved at this time.`,
   ];
 
   if (adminNotes) {

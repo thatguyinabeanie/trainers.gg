@@ -121,7 +121,7 @@ export class TournamentSimulator {
   private tournamentId: number = 0;
   private tournamentSlug: string = "";
   private communityId: number = 0;
-  private orgSlug: string = "vgc-league";
+  private communitySlug: string = "vgc-league";
   private swissPhaseId: number = 0;
   private elimPhaseId: number = 0;
   private currentRoundData: RoundMatchData | null = null;
@@ -141,7 +141,7 @@ export class TournamentSimulator {
 
   /** Management URL for the TO dashboard */
   get managementUrl(): string {
-    return `/to-dashboard/${this.orgSlug}/tournaments/${this.tournamentSlug}/manage`;
+    return `/to-dashboard/${this.communitySlug}/tournaments/${this.tournamentSlug}/manage`;
   }
 
   /** Tournament ID getter */
@@ -156,8 +156,8 @@ export class TournamentSimulator {
   // -- Setup Methods --
 
   /**
-   * Create a TO client (signed in as admin@trainers.local, the VGC League org owner).
-   * Required for mutations that check getCurrentUser() + org permissions.
+   * Create a TO client (signed in as admin@trainers.local, the VGC League community owner).
+   * Required for mutations that check getCurrentUser() + community permissions.
    */
   async createTOClient(): Promise<void> {
     this.toClient = this.createAnonClient();
@@ -223,21 +223,23 @@ export class TournamentSimulator {
   }
 
   /**
-   * Create tournament under VGC League org with Swiss + top cut phases.
+   * Create tournament under VGC League community with Swiss + top cut phases.
    * Uses admin client for direct DB inserts.
    */
   async setupTournament(): Promise<void> {
-    // Look up VGC League org
-    const { data: org, error: orgError } = await this.adminClient
+    // Look up VGC League community
+    const { data: community, error: communityError } = await this.adminClient
       .from("communities")
       .select("id")
-      .eq("slug", this.orgSlug)
+      .eq("slug", this.communitySlug)
       .single();
 
-    if (orgError || !org) {
-      throw new Error(`VGC League org not found: ${orgError?.message}`);
+    if (communityError || !community) {
+      throw new Error(
+        `VGC League community not found: ${communityError?.message}`
+      );
     }
-    this.communityId = org.id;
+    this.communityId = community.id;
 
     // Create tournament
     this.tournamentSlug = `sim-${Date.now()}`;
@@ -413,7 +415,7 @@ export class TournamentSimulator {
 
   /**
    * Start the tournament (locks teams, activates Swiss phase, creates Round 1).
-   * Uses TO client (requires auth + org permission).
+   * Uses TO client (requires auth + community permission).
    */
   async startTournament(): Promise<void> {
     if (!this.toClient) {
@@ -616,7 +618,7 @@ export class TournamentSimulator {
 
   /**
    * Drop a player from the tournament.
-   * Uses TO client (requires auth + org permission).
+   * Uses TO client (requires auth + community permission).
    */
   async dropPlayer(playerIndex: number): Promise<void> {
     if (!this.toClient) {
@@ -637,7 +639,7 @@ export class TournamentSimulator {
 
   /**
    * Advance from Swiss to Top Cut elimination phase.
-   * Uses TO client (RPC checks org permission).
+   * Uses TO client (RPC checks community permission).
    */
   async advanceToTopCut(): Promise<void> {
     if (!this.toClient) {
@@ -657,7 +659,7 @@ export class TournamentSimulator {
 
   /**
    * Complete the tournament (finalize standings, mark as completed).
-   * Uses TO client (requires auth + org permission).
+   * Uses TO client (requires auth + community permission).
    */
   async completeTournament(): Promise<void> {
     if (!this.toClient) {
@@ -743,7 +745,7 @@ export class TournamentSimulator {
 
   /**
    * Delete the tournament and all cascaded child data.
-   * Does NOT delete seed users or org.
+   * Does NOT delete seed users or community.
    */
   async cleanup(): Promise<void> {
     if (this.tournamentId) {
