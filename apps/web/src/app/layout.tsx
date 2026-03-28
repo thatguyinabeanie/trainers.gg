@@ -1,8 +1,6 @@
 import { Providers } from "@/components/providers";
-import { TopNav } from "@/components/topnav";
 import { Toaster } from "@/components/ui/sonner";
 import { SudoModeIndicator } from "@/components/sudo-mode-indicator";
-import { AnnouncementBanner } from "@/components/layout/announcement-banner";
 import type { Metadata, Viewport } from "next";
 import { Geist_Mono, Inter } from "next/font/google";
 import type { ReactNode } from "react";
@@ -69,38 +67,7 @@ export default async function RootLayout({
         )}
       >
         <Providers isImpersonating={impersonating}>
-          <AnnouncementBanner />
-          <TopNav />
-          <main className="flex w-full flex-1 flex-col">{children}</main>
-
-          <footer className="border-border/40 w-full border-t py-6">
-            <div className="text-muted-foreground container mx-auto flex flex-col items-center justify-between px-4 text-sm md:flex-row md:px-6">
-              <p>
-                Powered by{" "}
-                <a
-                  href="https://bsky.app"
-                  target="_blank"
-                  className="font-bold hover:underline"
-                  rel="noreferrer"
-                >
-                  Bluesky
-                </a>
-                {" & "}
-                <a
-                  href="https://supabase.com"
-                  target="_blank"
-                  className="font-bold hover:underline"
-                  rel="noreferrer"
-                >
-                  Supabase
-                </a>
-              </p>
-              <div className="flex items-center gap-4">
-                <span>&copy; {new Date().getFullYear()} trainers.gg</span>
-              </div>
-            </div>
-          </footer>
-
+          {children}
           <Toaster />
           <SudoModeIndicator />
         </Providers>

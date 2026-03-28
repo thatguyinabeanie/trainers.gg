@@ -27,19 +27,19 @@ export async function submitCommunityRequest(
 
   // Check for existing pending request
   const { data: pendingRequest } = await supabase
-    .from("organization_requests")
+    .from("community_requests")
     .select("id")
     .eq("user_id", user.id)
     .eq("status", "pending")
     .maybeSingle();
 
   if (pendingRequest) {
-    throw new Error("You already have a pending organization request");
+    throw new Error("You already have a pending community request");
   }
 
   // Check cooldown after rejection
   const { data: recentRejection } = await supabase
-    .from("organization_requests")
+    .from("community_requests")
     .select("reviewed_at")
     .eq("user_id", user.id)
     .eq("status", "rejected")
@@ -63,21 +63,19 @@ export async function submitCommunityRequest(
   }
 
   // Check slug uniqueness against organizations table
-  const { data: existingOrg } = await supabase
-    .from("organizations")
+  const { data: existingCommunity } = await supabase
+    .from("communities")
     .select("id")
     .eq("slug", slug)
     .maybeSingle();
 
-  if (existingOrg) {
-    throw new Error(
-      "This URL slug is already taken by an existing organization"
-    );
+  if (existingCommunity) {
+    throw new Error("This URL slug is already taken by an existing community");
   }
 
   // Check slug uniqueness against pending requests
   const { data: existingRequest } = await supabase
-    .from("organization_requests")
+    .from("community_requests")
     .select("id")
     .eq("slug", slug)
     .eq("status", "pending")
@@ -89,7 +87,7 @@ export async function submitCommunityRequest(
 
   // Insert the request
   const { data: request, error } = await supabase
-    .from("organization_requests")
+    .from("community_requests")
     .insert({
       user_id: user.id,
       name: data.name,
@@ -106,37 +104,39 @@ export async function submitCommunityRequest(
 }
 
 /**
- * Approve an organization request (admin action).
- * Creates the org, sets requester as owner/staff, creates notification.
+ * Grant a community request (admin action).
+ * Accepts both pending and previously rejected requests.
+ * Creates the community, sets requester as owner/staff, creates notification.
  * Uses service role client (bypasses RLS).
  */
-export async function approveCommunityRequest(
+export async function grantCommunityRequest(
   supabase: TypedClient,
   requestId: number,
-  adminUserId: string
+  adminUserId: string,
+  reason?: string
 ) {
   // Fetch the request
   const { data: request, error: fetchError } = await supabase
-    .from("organization_requests")
+    .from("community_requests")
     .select("*")
     .eq("id", requestId)
     .single();
 
   if (fetchError || !request) throw new Error("Request not found");
-  if (request.status !== "pending") {
-    throw new Error("Request is no longer pending");
+  if (request.status !== "pending" && request.status !== "rejected") {
+    throw new Error("Request has already been approved");
   }
 
   // Re-check slug uniqueness against organizations
-  const { data: existingOrg } = await supabase
-    .from("organizations")
+  const { data: existingCommunity } = await supabase
+    .from("communities")
     .select("id")
     .eq("slug", request.slug)
     .maybeSingle();
 
-  if (existingOrg) {
+  if (existingCommunity) {
     throw new Error(
-      `Slug "${request.slug}" is now taken by an existing organization`
+      `Slug "${request.slug}" is now taken by an existing community`
     );
   }
 
@@ -153,8 +153,8 @@ export async function approveCommunityRequest(
     }
   }
 
-  const { data: org, error: orgError } = await supabase
-    .from("organizations")
+  const { data: community, error: communityError } = await supabase
+    .from("communities")
     .insert({
       name: request.name,
       slug: request.slug,
@@ -167,21 +167,19 @@ export async function approveCommunityRequest(
     .select()
     .single();
 
-  if (orgError) throw orgError;
+  if (communityError) throw communityError;
 
   // Add requester as staff
-  const { error: staffError } = await supabase
-    .from("organization_staff")
-    .insert({
-      organization_id: org.id,
-      user_id: request.user_id,
-    });
+  const { error: staffError } = await supabase.from("community_staff").insert({
+    community_id: community.id,
+    user_id: request.user_id,
+  });
 
   if (staffError) throw staffError;
 
   // Update request status
   const { data: updatedRequest, error: updateError } = await supabase
-    .from("organization_requests")
+    .from("community_requests")
     .update({
       status: "approved" as const,
       reviewed_by: adminUserId,
@@ -213,18 +211,84 @@ export async function approveCommunityRequest(
   }
 
   // Audit log
-  await supabase.from("audit_log").insert({
+  const { error: auditError } = await supabase.from("audit_log").insert({
     action: "admin.org_request_approved" as const,
     actor_user_id: adminUserId,
-    organization_id: org.id,
+    community_id: community.id,
     metadata: {
       request_id: requestId,
-      organization_id: org.id,
+      community_id: community.id,
       requester_user_id: request.user_id,
+      ...(reason && { reason }),
+      ...(request.status === "rejected" && { from_status: "rejected" }),
     },
   });
 
-  return { request: updatedRequest, organization: org };
+  if (auditError) {
+    console.error("Failed to create org_request_approved audit log", {
+      requestId,
+      error: auditError,
+    });
+  }
+
+  // Cancel any other pending requests from the same user
+  if (request.status === "rejected") {
+    const { data: duplicates, error: duplicatesError } = await supabase
+      .from("community_requests")
+      .select("id")
+      .eq("user_id", request.user_id)
+      .eq("status", "pending")
+      .neq("id", requestId);
+
+    if (duplicatesError) {
+      console.error("Failed to lookup duplicate pending requests", {
+        requestId,
+        userId: request.user_id,
+        error: duplicatesError,
+      });
+    } else if (duplicates && duplicates.length > 0) {
+      for (const dup of duplicates) {
+        const { error: cancelError } = await supabase
+          .from("community_requests")
+          .update({
+            status: "cancelled" as const,
+            admin_notes: `Automatically closed — community granted via request #${requestId}`,
+            reviewed_by: adminUserId,
+            reviewed_at: new Date().toISOString(),
+          })
+          .eq("id", dup.id);
+
+        if (cancelError) {
+          console.error("Failed to cancel duplicate pending request", {
+            duplicateId: dup.id,
+            error: cancelError,
+          });
+        } else {
+          const { error: auditCancelError } = await supabase
+            .from("audit_log")
+            .insert({
+              action: "admin.org_request_cancelled" as const,
+              actor_user_id: adminUserId,
+              metadata: {
+                request_id: dup.id,
+                requester_user_id: request.user_id,
+                reason: `Automatically closed — community granted via request #${requestId}`,
+                auto_cancelled: true,
+              },
+            });
+
+          if (auditCancelError) {
+            console.error("Failed to create org_request_cancelled audit log", {
+              duplicateId: dup.id,
+              error: auditCancelError,
+            });
+          }
+        }
+      }
+    }
+  }
+
+  return { request: updatedRequest, organization: community };
 }
 
 /**
@@ -239,7 +303,7 @@ export async function rejectCommunityRequest(
 ) {
   // Fetch the request
   const { data: request, error: fetchError } = await supabase
-    .from("organization_requests")
+    .from("community_requests")
     .select("*")
     .eq("id", requestId)
     .single();
@@ -251,7 +315,7 @@ export async function rejectCommunityRequest(
 
   // Update request status
   const { error: updateError } = await supabase
-    .from("organization_requests")
+    .from("community_requests")
     .update({
       status: "rejected" as const,
       admin_notes: reason,

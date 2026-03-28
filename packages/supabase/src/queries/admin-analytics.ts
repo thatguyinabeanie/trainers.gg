@@ -32,7 +32,7 @@ export interface OrganizationStats {
  */
 async function countTable(
   supabase: TypedClient,
-  table: "users" | "organizations" | "tournaments" | "tournament_matches"
+  table: "users" | "communities" | "tournaments" | "tournament_matches"
 ): Promise<number> {
   const { count, error } = await supabase
     .from(table)
@@ -62,7 +62,7 @@ export async function getPlatformOverview(
   const [totalUsers, totalOrganizations, totalTournaments, totalMatches] =
     await Promise.all([
       countTable(supabase, "users"),
-      countTable(supabase, "organizations"),
+      countTable(supabase, "communities"),
       countTable(supabase, "tournaments"),
       countTable(supabase, "tournament_matches"),
     ]);
@@ -183,7 +183,7 @@ export async function getTournamentStats(
 /**
  * Get organization counts grouped by status and by tier.
  *
- * Uses the `get_organization_counts` RPC for server-side aggregation.
+ * Uses the `get_community_counts` RPC for server-side aggregation.
  * The RPC returns a jsonb object with `by_status` and `by_tier` keys.
  */
 export async function getOrganizationStats(
@@ -191,7 +191,7 @@ export async function getOrganizationStats(
 ): Promise<OrganizationStats> {
   // Cast needed: RPC not yet in generated types (added by migration 20260210000003).
   const { data, error } = await (supabase.rpc as CallableFunction)(
-    "get_organization_counts"
+    "get_community_counts"
   );
 
   if (error) throw error;

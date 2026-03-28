@@ -6,7 +6,7 @@ import {
   rejectOrganization,
   suspendOrganization,
   unsuspendOrganization,
-  transferOrgOwnership,
+  transferCommunityOwnership,
 } from "../admin-communities";
 import type { TypedClient } from "../../client";
 
@@ -139,7 +139,7 @@ describe("admin-communities queries", () => {
 
       expect(result.data).toEqual(mockOrgs);
       expect(result.count).toBe(1);
-      expect(mockClient.from).toHaveBeenCalledWith("organizations");
+      expect(mockClient.from).toHaveBeenCalledWith("communities");
       expect(mockClient._queryBuilder.order).toHaveBeenCalledWith(
         "created_at",
         { ascending: false }
@@ -250,13 +250,13 @@ describe("admin-communities queries", () => {
   // -----------------------------------------------------------------------
 
   describe("getCommunityAdminDetails", () => {
-    it("should return full org details when found", async () => {
+    it("should return full community details when found", async () => {
       const mockOrg = {
         id: 1,
         name: "Team Rocket",
         slug: "team-rocket",
         status: "active",
-        organization_admin_notes: [{ notes: "Approved by admin" }],
+        community_admin_notes: [{ notes: "Approved by admin" }],
         owner: { id: "user-1", username: "giovanni" },
       };
 
@@ -269,7 +269,7 @@ describe("admin-communities queries", () => {
       const result = await getCommunityAdminDetails(mockClient, 1);
 
       expect(result).toEqual(mockOrg);
-      expect(mockClient.from).toHaveBeenCalledWith("organizations");
+      expect(mockClient.from).toHaveBeenCalledWith("communities");
       expect(mockClient._queryBuilder.eq).toHaveBeenCalledWith("id", 1);
       expect(mockClient._queryBuilder.maybeSingle).toHaveBeenCalled();
     });
@@ -335,15 +335,15 @@ describe("admin-communities queries", () => {
       const result = await approveOrganization(mockClient, 1, "admin-1");
 
       expect(result).toEqual(mockOrg);
-      expect(mockClient.from).toHaveBeenNthCalledWith(1, "organizations");
+      expect(mockClient.from).toHaveBeenNthCalledWith(1, "communities");
       expect(mockClient.from).toHaveBeenNthCalledWith(2, "audit_log");
       expect(mockAuditChain.insert).toHaveBeenCalledWith(
         expect.objectContaining({
           action: "admin.org_approved",
           actor_user_id: "admin-1",
-          organization_id: 1,
+          community_id: 1,
           metadata: expect.objectContaining({
-            organization_id: 1,
+            community_id: 1,
           }),
         })
       );
@@ -403,7 +403,7 @@ describe("admin-communities queries", () => {
 
       expect(result).toEqual(mockOrg);
       expect(consoleErrorSpy).toHaveBeenCalledWith(
-        "Error inserting org approval audit log:",
+        "Error inserting community approval audit log:",
         auditError
       );
     });
@@ -457,27 +457,27 @@ describe("admin-communities queries", () => {
       );
 
       expect(result).toEqual(mockOrg);
-      expect(mockClient.from).toHaveBeenNthCalledWith(1, "organizations");
+      expect(mockClient.from).toHaveBeenNthCalledWith(1, "communities");
       expect(mockClient.from).toHaveBeenNthCalledWith(
         2,
-        "organization_admin_notes"
+        "community_admin_notes"
       );
       expect(mockClient.from).toHaveBeenNthCalledWith(3, "audit_log");
       expect(mockNotesChain.upsert).toHaveBeenCalledWith(
         expect.objectContaining({
-          organization_id: 1,
+          community_id: 1,
           notes: "Violates policy",
           updated_by: "admin-1",
         }),
-        { onConflict: "organization_id" }
+        { onConflict: "community_id" }
       );
       expect(mockAuditChain.insert).toHaveBeenCalledWith(
         expect.objectContaining({
           action: "admin.org_rejected",
           actor_user_id: "admin-1",
-          organization_id: 1,
+          community_id: 1,
           metadata: expect.objectContaining({
-            organization_id: 1,
+            community_id: 1,
             reason: "Violates policy",
           }),
         })
@@ -559,23 +559,23 @@ describe("admin-communities queries", () => {
       expect(result).toEqual(mockOrg);
       expect(mockClient.from).toHaveBeenNthCalledWith(
         2,
-        "organization_admin_notes"
+        "community_admin_notes"
       );
       expect(mockNotesChain.upsert).toHaveBeenCalledWith(
         expect.objectContaining({
-          organization_id: 1,
+          community_id: 1,
           notes: "Repeated violations",
           updated_by: "admin-1",
         }),
-        { onConflict: "organization_id" }
+        { onConflict: "community_id" }
       );
       expect(mockAuditChain.insert).toHaveBeenCalledWith(
         expect.objectContaining({
           action: "admin.org_suspended",
           actor_user_id: "admin-1",
-          organization_id: 1,
+          community_id: 1,
           metadata: expect.objectContaining({
-            organization_id: 1,
+            community_id: 1,
             reason: "Repeated violations",
           }),
         })
@@ -646,7 +646,7 @@ describe("admin-communities queries", () => {
 
       expect(result).toEqual(mockOrg);
       expect(consoleErrorSpy).toHaveBeenCalledWith(
-        "Error inserting org suspension audit log:",
+        "Error inserting community suspension audit log:",
         auditError
       );
     });
@@ -690,9 +690,9 @@ describe("admin-communities queries", () => {
         expect.objectContaining({
           action: "admin.org_unsuspended",
           actor_user_id: "admin-1",
-          organization_id: 1,
+          community_id: 1,
           metadata: expect.objectContaining({
-            organization_id: 1,
+            community_id: 1,
           }),
         })
       );
@@ -752,21 +752,21 @@ describe("admin-communities queries", () => {
 
       expect(result).toEqual(mockOrg);
       expect(consoleErrorSpy).toHaveBeenCalledWith(
-        "Error inserting org unsuspend audit log:",
+        "Error inserting community unsuspend audit log:",
         auditError
       );
     });
   });
 
   // -----------------------------------------------------------------------
-  // transferOrgOwnership
+  // transferCommunityOwnership
   // -----------------------------------------------------------------------
 
-  describe("transferOrgOwnership", () => {
+  describe("transferCommunityOwnership", () => {
     it("should transfer ownership and create audit log with previous and new owner", async () => {
       const mockClient = createMockClient();
 
-      // First call: fetch current org to get previous owner
+      // First call: fetch current community to get previous owner
       const mockFetchChain = {
         select: jest.fn().mockReturnValue({
           eq: jest.fn().mockReturnValue({
@@ -802,7 +802,7 @@ describe("admin-communities queries", () => {
         })
         .mockReturnValueOnce(mockAuditChain);
 
-      const result = await transferOrgOwnership(
+      const result = await transferCommunityOwnership(
         mockClient,
         1,
         "new-owner",
@@ -812,16 +812,16 @@ describe("admin-communities queries", () => {
       expect(result).toEqual({ id: 1, owner_user_id: "new-owner" });
       // Three from() calls: fetch, update, audit
       expect(mockClient.from).toHaveBeenCalledTimes(3);
-      expect(mockClient.from).toHaveBeenNthCalledWith(1, "organizations");
-      expect(mockClient.from).toHaveBeenNthCalledWith(2, "organizations");
+      expect(mockClient.from).toHaveBeenNthCalledWith(1, "communities");
+      expect(mockClient.from).toHaveBeenNthCalledWith(2, "communities");
       expect(mockClient.from).toHaveBeenNthCalledWith(3, "audit_log");
       expect(mockAuditChain.insert).toHaveBeenCalledWith(
         expect.objectContaining({
           action: "admin.org_ownership_transferred",
           actor_user_id: "admin-1",
-          organization_id: 1,
+          community_id: 1,
           metadata: expect.objectContaining({
-            organization_id: 1,
+            community_id: 1,
             previous_owner_user_id: "old-owner",
             new_owner_user_id: "new-owner",
           }),
@@ -847,7 +847,7 @@ describe("admin-communities queries", () => {
       (mockClient.from as jest.Mock).mockReturnValueOnce(mockFetchChain);
 
       await expect(
-        transferOrgOwnership(mockClient, 1, "new-owner", "admin-1")
+        transferCommunityOwnership(mockClient, 1, "new-owner", "admin-1")
       ).rejects.toThrow("Fetch failed");
     });
 
@@ -884,7 +884,7 @@ describe("admin-communities queries", () => {
         });
 
       await expect(
-        transferOrgOwnership(mockClient, 1, "new-owner", "admin-1")
+        transferCommunityOwnership(mockClient, 1, "new-owner", "admin-1")
       ).rejects.toThrow("Update failed");
     });
 
@@ -925,7 +925,7 @@ describe("admin-communities queries", () => {
         })
         .mockReturnValueOnce(mockAuditChain);
 
-      const result = await transferOrgOwnership(
+      const result = await transferCommunityOwnership(
         mockClient,
         1,
         "new-owner",

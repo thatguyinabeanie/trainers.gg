@@ -14,19 +14,19 @@ import {
 } from "@trainers/supabase";
 import { withAction } from "./utils";
 
-const orgIdSchema = z.number().int().positive();
+const communityIdSchema = z.number().int().positive();
 
 /**
  * Upload a logo image for an organization.
  * Validates the file, uploads to storage, updates the org record,
  * and cleans up the previous logo if it was in our storage.
  */
-export async function uploadOrgLogo(
-  orgId: number,
+export async function uploadCommunityLogo(
+  communityId: number,
   formData: FormData
 ): Promise<ActionResult<{ logoUrl: string }>> {
   return withAction(async () => {
-    const validatedId = orgIdSchema.parse(orgId);
+    const validatedId = communityIdSchema.parse(communityId);
     const file = formData.get("file");
     if (!(file instanceof File)) {
       throw new Error("No file provided");
@@ -45,7 +45,7 @@ export async function uploadOrgLogo(
 
     // Verify user owns this org and get current logo for cleanup
     const { data: org } = await supabase
-      .from("organizations")
+      .from("communities")
       .select("owner_user_id, logo_url")
       .eq("id", validatedId)
       .single();
@@ -57,7 +57,7 @@ export async function uploadOrgLogo(
 
     const oldLogoUrl = org.logo_url;
 
-    // Upload new logo — path: {userId}/org-logos/{orgId}/{timestamp}.{ext}
+    // Upload new logo — path: {userId}/org-logos/{communityId}/{timestamp}.{ext}
     const rawPath = getUploadPath(user.id, file.name);
     const path = rawPath.replace(
       `${user.id}/`,
@@ -74,7 +74,7 @@ export async function uploadOrgLogo(
 
     // Update org record with new logo URL
     const { error } = await supabase
-      .from("organizations")
+      .from("communities")
       .update({ logo_url: logoUrl })
       .eq("id", validatedId);
     if (error) throw error;
@@ -96,11 +96,11 @@ export async function uploadOrgLogo(
  * Remove the logo from an organization.
  * Deletes the file from storage and sets logo_url to null.
  */
-export async function removeOrgLogo(
-  orgId: number
+export async function removeCommunityLogo(
+  communityId: number
 ): Promise<ActionResult<{ success: true }>> {
   return withAction(async () => {
-    const validatedId = orgIdSchema.parse(orgId);
+    const validatedId = communityIdSchema.parse(communityId);
     const supabase = await createClient();
 
     // Verify user is authenticated
@@ -111,7 +111,7 @@ export async function removeOrgLogo(
 
     // Verify user owns this org and get current logo for cleanup
     const { data: org } = await supabase
-      .from("organizations")
+      .from("communities")
       .select("owner_user_id, logo_url")
       .eq("id", validatedId)
       .single();
@@ -132,7 +132,7 @@ export async function removeOrgLogo(
 
     // Set logo_url to null
     const { error } = await supabase
-      .from("organizations")
+      .from("communities")
       .update({ logo_url: null })
       .eq("id", validatedId);
     if (error) throw error;

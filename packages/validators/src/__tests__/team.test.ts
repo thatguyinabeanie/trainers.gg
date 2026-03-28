@@ -309,6 +309,22 @@ describe("teamSubmissionSchema", () => {
     });
     expect(result.success).toBe(false);
   });
+
+  it("rejects rawText containing profanity", () => {
+    const result = teamSubmissionSchema.safeParse({
+      tournamentId: 1,
+      rawText: "fuck (Pikachu) @ Light Ball",
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("accepts clean rawText", () => {
+    const result = teamSubmissionSchema.safeParse({
+      tournamentId: 1,
+      rawText: VALID_SHOWDOWN_MON,
+    });
+    expect(result.success).toBe(true);
+  });
 });
 
 describe("validateTeamFormat", () => {
@@ -370,6 +386,17 @@ describe("parseAndValidateTeam", () => {
     expect(formatErrors).toHaveLength(0);
     const structErrors = result.errors.filter((e) => e.source === "structure");
     expect(structErrors.length).toBeGreaterThan(0);
+  });
+
+  it("rejects raw text containing profanity before parsing", () => {
+    const result = parseAndValidateTeam(
+      "fuck (Pikachu) @ Light Ball\nAbility: Static\nEVs: 252 Atk\nJolly Nature\n- Thunderbolt",
+      "reg-i"
+    );
+    expect(result.valid).toBe(false);
+    expect(result.errors).toHaveLength(1);
+    expect(result.errors[0]!.message).toContain("inappropriate");
+    expect(result.team).toHaveLength(0);
   });
 
   it("includes parsed team even when validation fails", () => {

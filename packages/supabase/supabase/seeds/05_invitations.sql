@@ -12,8 +12,8 @@ DECLARE
   pallet_town_id bigint;
 BEGIN
   -- Look up org IDs by slug
-  SELECT id INTO vgc_league_id FROM public.organizations WHERE slug = 'vgc-league';
-  SELECT id INTO pallet_town_id FROM public.organizations WHERE slug = 'pallet-town';
+  SELECT id INTO vgc_league_id FROM public.communities WHERE slug = 'vgc-league';
+  SELECT id INTO pallet_town_id FROM public.communities WHERE slug = 'pallet-town';
 
   -- Exit if orgs don't exist
   IF vgc_league_id IS NULL OR pallet_town_id IS NULL THEN
@@ -22,8 +22,8 @@ BEGIN
   END IF;
 
   -- Create pending invitations (idempotent via unique constraint on org_id + invited_user_id)
-  INSERT INTO public.organization_invitations (
-    organization_id, invited_user_id, invited_by_user_id, status, expires_at
+  INSERT INTO public.community_invitations (
+    community_id, invited_user_id, invited_by_user_id, status, expires_at
   ) VALUES
     -- VGC League invites Brock (pending) - Admin invites
     (vgc_league_id, 'd4e5f6a7-b8c9-7d8e-1f2a-3b4c5d6e7f8a', 'a1b2c3d4-e5f6-4a5b-8c9d-0e1f2a3b4c5d', 'pending', NOW() + INTERVAL '7 days'),

@@ -20,7 +20,7 @@ import { approveOrganization as approveOrganization_core } from "../queries/admi
 import { rejectOrganization as rejectOrganization_core } from "../queries/admin-communities";
 import { suspendOrganization as suspendOrganization_core } from "../queries/admin-communities";
 import { unsuspendOrganization as unsuspendOrganization_core } from "../queries/admin-communities";
-import { transferOrgOwnership as transferOrgOwnership_core } from "../queries/admin-communities";
+import { transferCommunityOwnership as transferCommunityOwnership_core } from "../queries/admin-communities";
 import { listUsersAdmin as listUsersAdmin_core } from "../queries/admin-users";
 import { getUserAdminDetails as getUserAdminDetails_core } from "../queries/admin-users";
 import { suspendUser as suspendUser_core } from "../queries/admin-users";
@@ -36,6 +36,23 @@ import { getTournamentAuditLog as getTournamentAuditLog_core } from "../queries/
 import { getMatchAuditLog as getMatchAuditLog_core } from "../queries/audit-log";
 import { getAuditLog as getAuditLog_core } from "../queries/audit-log";
 import { getAuditLogStats as getAuditLogStats_core } from "../queries/audit-log";
+import { listPublicCommunities as listPublicCommunities_core } from "../queries/communities";
+import { listCommunities as listCommunities_core } from "../queries/communities";
+import { getCommunityBySlug as getCommunityBySlug_core } from "../queries/communities";
+import { getCommunityById as getCommunityById_core } from "../queries/communities";
+import { listMyCommunities as listMyCommunities_core } from "../queries/communities";
+import { canManageCommunity as canManageCommunity_core } from "../queries/communities";
+import { listCommunityStaff as listCommunityStaff_core } from "../queries/communities";
+import { hasCommunityAccess as hasCommunityAccess_core } from "../queries/communities";
+import { getMyCommunityInvitations as getMyCommunityInvitations_core } from "../queries/communities";
+import { getCommunityInvitations as getCommunityInvitations_core } from "../queries/communities";
+import { listMyOwnedCommunities as listMyOwnedCommunities_core } from "../queries/communities";
+import { getCommunityWithTournamentStats as getCommunityWithTournamentStats_core } from "../queries/communities";
+import { listCommunityTournaments as listCommunityTournaments_core } from "../queries/communities";
+import { listCommunityStaffWithRoles as listCommunityStaffWithRoles_core } from "../queries/communities";
+import { listCommunityGroups as listCommunityGroups_core } from "../queries/communities";
+import { searchUsersForInvite as searchUsersForInvite_core } from "../queries/communities";
+import { hasCommunityPermission as hasCommunityPermission_core } from "../queries/communities";
 import { listFeatureFlags as listFeatureFlags_core } from "../queries/feature-flags";
 import { getFeatureFlag as getFeatureFlag_core } from "../queries/feature-flags";
 import { isFeatureEnabled as isFeatureEnabled_core } from "../queries/feature-flags";
@@ -53,23 +70,6 @@ import { getUnreadNotificationCount as getUnreadNotificationCount_core } from ".
 import { getActiveMatchNotifications as getActiveMatchNotifications_core } from "../queries/notifications";
 import { getMyOrganizationRequest as getMyOrganizationRequest_core } from "../queries/organization-requests";
 import { listOrgRequestsAdmin as listOrgRequestsAdmin_core } from "../queries/organization-requests";
-import { listPublicCommunities as listPublicCommunities_core } from "../queries/communities";
-import { listCommunities as listCommunities_core } from "../queries/communities";
-import { getCommunityBySlug as getCommunityBySlug_core } from "../queries/communities";
-import { getCommunityById as getCommunityById_core } from "../queries/communities";
-import { listMyCommunities as listMyCommunities_core } from "../queries/communities";
-import { canManageCommunity as canManageCommunity_core } from "../queries/communities";
-import { listCommunityStaff as listCommunityStaff_core } from "../queries/communities";
-import { hasCommunityAccess as hasCommunityAccess_core } from "../queries/communities";
-import { getMyCommunityInvitations as getMyCommunityInvitations_core } from "../queries/communities";
-import { getCommunityInvitations as getCommunityInvitations_core } from "../queries/communities";
-import { listMyOwnedCommunities as listMyOwnedCommunities_core } from "../queries/communities";
-import { getCommunityWithTournamentStats as getCommunityWithTournamentStats_core } from "../queries/communities";
-import { listCommunityTournaments as listCommunityTournaments_core } from "../queries/communities";
-import { listCommunityStaffWithRoles as listCommunityStaffWithRoles_core } from "../queries/communities";
-import { listCommunityGroups as listCommunityGroups_core } from "../queries/communities";
-import { searchUsersForInvite as searchUsersForInvite_core } from "../queries/communities";
-import { hasOrgPermission as hasOrgPermission_core } from "../queries/communities";
 import { getUserPermissions as getUserPermissions_core } from "../queries/permissions";
 import { hasPermission as hasPermission_core } from "../queries/permissions";
 import { searchPlayers as searchPlayers_core } from "../queries/players";
@@ -141,6 +141,18 @@ import { getFollowerCount as getFollowerCount_core } from "../queries/users";
 import { getFollowingCount as getFollowingCount_core } from "../queries/users";
 import { getPlayerTournamentHistoryFull as getPlayerTournamentHistoryFull_core } from "../queries/users";
 import { getPlayerPublicTeams as getPlayerPublicTeams_core } from "../queries/users";
+import { createCommunity as createCommunity_core } from "../mutations/communities";
+import { updateCommunity as updateCommunity_core } from "../mutations/communities";
+import { inviteToCommunity as inviteToCommunity_core } from "../mutations/communities";
+import { acceptCommunityInvitation as acceptCommunityInvitation_core } from "../mutations/communities";
+import { declineCommunityInvitation as declineCommunityInvitation_core } from "../mutations/communities";
+import { leaveCommunity as leaveCommunity_core } from "../mutations/communities";
+import { removeStaff as removeStaff_core } from "../mutations/communities";
+import { addStaffMember as addStaffMember_core } from "../mutations/communities";
+import { addStaffToGroup as addStaffToGroup_core } from "../mutations/communities";
+import { removeStaffFromGroup as removeStaffFromGroup_core } from "../mutations/communities";
+import { changeStaffRole as changeStaffRole_core } from "../mutations/communities";
+import { removeStaffCompletely as removeStaffCompletely_core } from "../mutations/communities";
 import { submitGameSelection as submitGameSelection_core } from "../mutations/match-games";
 import { sendMatchMessage as sendMatchMessage_core } from "../mutations/match-games";
 import { sendSystemMessage as sendSystemMessage_core } from "../mutations/match-games";
@@ -154,20 +166,8 @@ import { markNotificationRead as markNotificationRead_core } from "../mutations/
 import { markAllNotificationsRead as markAllNotificationsRead_core } from "../mutations/notifications";
 import { deleteNotification as deleteNotification_core } from "../mutations/notifications";
 import { submitCommunityRequest as submitCommunityRequest_core } from "../mutations/organization-requests";
-import { approveCommunityRequest as approveCommunityRequest_core } from "../mutations/organization-requests";
+import { grantCommunityRequest as grantCommunityRequest_core } from "../mutations/organization-requests";
 import { rejectCommunityRequest as rejectCommunityRequest_core } from "../mutations/organization-requests";
-import { createCommunity as createCommunity_core } from "../mutations/communities";
-import { updateCommunity as updateCommunity_core } from "../mutations/communities";
-import { inviteToCommunity as inviteToCommunity_core } from "../mutations/communities";
-import { acceptCommunityInvitation as acceptCommunityInvitation_core } from "../mutations/communities";
-import { declineCommunityInvitation as declineCommunityInvitation_core } from "../mutations/communities";
-import { leaveCommunity as leaveCommunity_core } from "../mutations/communities";
-import { removeStaff as removeStaff_core } from "../mutations/communities";
-import { addStaffMember as addStaffMember_core } from "../mutations/communities";
-import { addStaffToGroup as addStaffToGroup_core } from "../mutations/communities";
-import { removeStaffFromGroup as removeStaffFromGroup_core } from "../mutations/communities";
-import { changeStaffRole as changeStaffRole_core } from "../mutations/communities";
-import { removeStaffCompletely as removeStaffCompletely_core } from "../mutations/communities";
 import { updateAlt as updateAlt_core } from "../mutations/users";
 import { updateUsername as updateUsername_core } from "../mutations/users";
 import { ensureAlt as ensureAlt_core } from "../mutations/users";
@@ -373,18 +373,18 @@ export async function unsuspendOrganization(
 }
 
 /**
- * transferOrgOwnership (auto-injected with server client)
+ * transferCommunityOwnership (auto-injected with server client)
  */
-export async function transferOrgOwnership(
-  ...args: Parameters<typeof transferOrgOwnership_core> extends [
+export async function transferCommunityOwnership(
+  ...args: Parameters<typeof transferCommunityOwnership_core> extends [
     first: infer _F,
     ...rest: infer R,
   ]
     ? R
     : never
-): Promise<Awaited<ReturnType<typeof transferOrgOwnership_core>>> {
+): Promise<Awaited<ReturnType<typeof transferCommunityOwnership_core>>> {
   const client = await createServerSupabaseClient();
-  return transferOrgOwnership_core(client, ...args);
+  return transferCommunityOwnership_core(client, ...args);
 }
 
 /**
@@ -610,6 +610,261 @@ export async function getAuditLogStats(
 ): Promise<Awaited<ReturnType<typeof getAuditLogStats_core>>> {
   const client = await createServerSupabaseClient();
   return getAuditLogStats_core(client, ...args);
+}
+
+/**
+ * listPublicCommunities (auto-injected with server client)
+ */
+export async function listPublicCommunities(
+  ...args: Parameters<typeof listPublicCommunities_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof listPublicCommunities_core>>> {
+  const client = await createServerSupabaseClient();
+  return listPublicCommunities_core(client, ...args);
+}
+
+/**
+ * listCommunities (auto-injected with server client)
+ */
+export async function listCommunities(
+  ...args: Parameters<typeof listCommunities_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof listCommunities_core>>> {
+  const client = await createServerSupabaseClient();
+  return listCommunities_core(client, ...args);
+}
+
+/**
+ * getCommunityBySlug (auto-injected with server client)
+ */
+export async function getCommunityBySlug(
+  ...args: Parameters<typeof getCommunityBySlug_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof getCommunityBySlug_core>>> {
+  const client = await createServerSupabaseClient();
+  return getCommunityBySlug_core(client, ...args);
+}
+
+/**
+ * getCommunityById (auto-injected with server client)
+ */
+export async function getCommunityById(
+  ...args: Parameters<typeof getCommunityById_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof getCommunityById_core>>> {
+  const client = await createServerSupabaseClient();
+  return getCommunityById_core(client, ...args);
+}
+
+/**
+ * listMyCommunities (auto-injected with server client)
+ */
+export async function listMyCommunities(
+  ...args: Parameters<typeof listMyCommunities_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof listMyCommunities_core>>> {
+  const client = await createServerSupabaseClient();
+  return listMyCommunities_core(client, ...args);
+}
+
+/**
+ * canManageCommunity (auto-injected with server client)
+ */
+export async function canManageCommunity(
+  ...args: Parameters<typeof canManageCommunity_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof canManageCommunity_core>>> {
+  const client = await createServerSupabaseClient();
+  return canManageCommunity_core(client, ...args);
+}
+
+/**
+ * listCommunityStaff (auto-injected with server client)
+ */
+export async function listCommunityStaff(
+  ...args: Parameters<typeof listCommunityStaff_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof listCommunityStaff_core>>> {
+  const client = await createServerSupabaseClient();
+  return listCommunityStaff_core(client, ...args);
+}
+
+/**
+ * hasCommunityAccess (auto-injected with server client)
+ */
+export async function hasCommunityAccess(
+  ...args: Parameters<typeof hasCommunityAccess_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof hasCommunityAccess_core>>> {
+  const client = await createServerSupabaseClient();
+  return hasCommunityAccess_core(client, ...args);
+}
+
+/**
+ * getMyCommunityInvitations (auto-injected with server client)
+ */
+export async function getMyCommunityInvitations(
+  ...args: Parameters<typeof getMyCommunityInvitations_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof getMyCommunityInvitations_core>>> {
+  const client = await createServerSupabaseClient();
+  return getMyCommunityInvitations_core(client, ...args);
+}
+
+/**
+ * getCommunityInvitations (auto-injected with server client)
+ */
+export async function getCommunityInvitations(
+  ...args: Parameters<typeof getCommunityInvitations_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof getCommunityInvitations_core>>> {
+  const client = await createServerSupabaseClient();
+  return getCommunityInvitations_core(client, ...args);
+}
+
+/**
+ * listMyOwnedCommunities (auto-injected with server client)
+ */
+export async function listMyOwnedCommunities(
+  ...args: Parameters<typeof listMyOwnedCommunities_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof listMyOwnedCommunities_core>>> {
+  const client = await createServerSupabaseClient();
+  return listMyOwnedCommunities_core(client, ...args);
+}
+
+/**
+ * getCommunityWithTournamentStats (auto-injected with server client)
+ */
+export async function getCommunityWithTournamentStats(
+  ...args: Parameters<typeof getCommunityWithTournamentStats_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof getCommunityWithTournamentStats_core>>> {
+  const client = await createServerSupabaseClient();
+  return getCommunityWithTournamentStats_core(client, ...args);
+}
+
+/**
+ * listCommunityTournaments (auto-injected with server client)
+ */
+export async function listCommunityTournaments(
+  ...args: Parameters<typeof listCommunityTournaments_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof listCommunityTournaments_core>>> {
+  const client = await createServerSupabaseClient();
+  return listCommunityTournaments_core(client, ...args);
+}
+
+/**
+ * listCommunityStaffWithRoles (auto-injected with server client)
+ */
+export async function listCommunityStaffWithRoles(
+  ...args: Parameters<typeof listCommunityStaffWithRoles_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof listCommunityStaffWithRoles_core>>> {
+  const client = await createServerSupabaseClient();
+  return listCommunityStaffWithRoles_core(client, ...args);
+}
+
+/**
+ * listCommunityGroups (auto-injected with server client)
+ */
+export async function listCommunityGroups(
+  ...args: Parameters<typeof listCommunityGroups_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof listCommunityGroups_core>>> {
+  const client = await createServerSupabaseClient();
+  return listCommunityGroups_core(client, ...args);
+}
+
+/**
+ * searchUsersForInvite (auto-injected with server client)
+ */
+export async function searchUsersForInvite(
+  ...args: Parameters<typeof searchUsersForInvite_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof searchUsersForInvite_core>>> {
+  const client = await createServerSupabaseClient();
+  return searchUsersForInvite_core(client, ...args);
+}
+
+/**
+ * hasCommunityPermission (auto-injected with server client)
+ */
+export async function hasCommunityPermission(
+  ...args: Parameters<typeof hasCommunityPermission_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof hasCommunityPermission_core>>> {
+  const client = await createServerSupabaseClient();
+  return hasCommunityPermission_core(client, ...args);
 }
 
 /**
@@ -865,261 +1120,6 @@ export async function listOrgRequestsAdmin(
 ): Promise<Awaited<ReturnType<typeof listOrgRequestsAdmin_core>>> {
   const client = await createServerSupabaseClient();
   return listOrgRequestsAdmin_core(client, ...args);
-}
-
-/**
- * listPublicCommunities (auto-injected with server client)
- */
-export async function listPublicCommunities(
-  ...args: Parameters<typeof listPublicCommunities_core> extends [
-    first: infer _F,
-    ...rest: infer R,
-  ]
-    ? R
-    : never
-): Promise<Awaited<ReturnType<typeof listPublicCommunities_core>>> {
-  const client = await createServerSupabaseClient();
-  return listPublicCommunities_core(client, ...args);
-}
-
-/**
- * listCommunities (auto-injected with server client)
- */
-export async function listCommunities(
-  ...args: Parameters<typeof listCommunities_core> extends [
-    first: infer _F,
-    ...rest: infer R,
-  ]
-    ? R
-    : never
-): Promise<Awaited<ReturnType<typeof listCommunities_core>>> {
-  const client = await createServerSupabaseClient();
-  return listCommunities_core(client, ...args);
-}
-
-/**
- * getCommunityBySlug (auto-injected with server client)
- */
-export async function getCommunityBySlug(
-  ...args: Parameters<typeof getCommunityBySlug_core> extends [
-    first: infer _F,
-    ...rest: infer R,
-  ]
-    ? R
-    : never
-): Promise<Awaited<ReturnType<typeof getCommunityBySlug_core>>> {
-  const client = await createServerSupabaseClient();
-  return getCommunityBySlug_core(client, ...args);
-}
-
-/**
- * getCommunityById (auto-injected with server client)
- */
-export async function getCommunityById(
-  ...args: Parameters<typeof getCommunityById_core> extends [
-    first: infer _F,
-    ...rest: infer R,
-  ]
-    ? R
-    : never
-): Promise<Awaited<ReturnType<typeof getCommunityById_core>>> {
-  const client = await createServerSupabaseClient();
-  return getCommunityById_core(client, ...args);
-}
-
-/**
- * listMyCommunities (auto-injected with server client)
- */
-export async function listMyCommunities(
-  ...args: Parameters<typeof listMyCommunities_core> extends [
-    first: infer _F,
-    ...rest: infer R,
-  ]
-    ? R
-    : never
-): Promise<Awaited<ReturnType<typeof listMyCommunities_core>>> {
-  const client = await createServerSupabaseClient();
-  return listMyCommunities_core(client, ...args);
-}
-
-/**
- * canManageCommunity (auto-injected with server client)
- */
-export async function canManageCommunity(
-  ...args: Parameters<typeof canManageCommunity_core> extends [
-    first: infer _F,
-    ...rest: infer R,
-  ]
-    ? R
-    : never
-): Promise<Awaited<ReturnType<typeof canManageCommunity_core>>> {
-  const client = await createServerSupabaseClient();
-  return canManageCommunity_core(client, ...args);
-}
-
-/**
- * listCommunityStaff (auto-injected with server client)
- */
-export async function listCommunityStaff(
-  ...args: Parameters<typeof listCommunityStaff_core> extends [
-    first: infer _F,
-    ...rest: infer R,
-  ]
-    ? R
-    : never
-): Promise<Awaited<ReturnType<typeof listCommunityStaff_core>>> {
-  const client = await createServerSupabaseClient();
-  return listCommunityStaff_core(client, ...args);
-}
-
-/**
- * hasCommunityAccess (auto-injected with server client)
- */
-export async function hasCommunityAccess(
-  ...args: Parameters<typeof hasCommunityAccess_core> extends [
-    first: infer _F,
-    ...rest: infer R,
-  ]
-    ? R
-    : never
-): Promise<Awaited<ReturnType<typeof hasCommunityAccess_core>>> {
-  const client = await createServerSupabaseClient();
-  return hasCommunityAccess_core(client, ...args);
-}
-
-/**
- * getMyCommunityInvitations (auto-injected with server client)
- */
-export async function getMyCommunityInvitations(
-  ...args: Parameters<typeof getMyCommunityInvitations_core> extends [
-    first: infer _F,
-    ...rest: infer R,
-  ]
-    ? R
-    : never
-): Promise<Awaited<ReturnType<typeof getMyCommunityInvitations_core>>> {
-  const client = await createServerSupabaseClient();
-  return getMyCommunityInvitations_core(client, ...args);
-}
-
-/**
- * getCommunityInvitations (auto-injected with server client)
- */
-export async function getCommunityInvitations(
-  ...args: Parameters<typeof getCommunityInvitations_core> extends [
-    first: infer _F,
-    ...rest: infer R,
-  ]
-    ? R
-    : never
-): Promise<Awaited<ReturnType<typeof getCommunityInvitations_core>>> {
-  const client = await createServerSupabaseClient();
-  return getCommunityInvitations_core(client, ...args);
-}
-
-/**
- * listMyOwnedCommunities (auto-injected with server client)
- */
-export async function listMyOwnedCommunities(
-  ...args: Parameters<typeof listMyOwnedCommunities_core> extends [
-    first: infer _F,
-    ...rest: infer R,
-  ]
-    ? R
-    : never
-): Promise<Awaited<ReturnType<typeof listMyOwnedCommunities_core>>> {
-  const client = await createServerSupabaseClient();
-  return listMyOwnedCommunities_core(client, ...args);
-}
-
-/**
- * getCommunityWithTournamentStats (auto-injected with server client)
- */
-export async function getCommunityWithTournamentStats(
-  ...args: Parameters<typeof getCommunityWithTournamentStats_core> extends [
-    first: infer _F,
-    ...rest: infer R,
-  ]
-    ? R
-    : never
-): Promise<Awaited<ReturnType<typeof getCommunityWithTournamentStats_core>>> {
-  const client = await createServerSupabaseClient();
-  return getCommunityWithTournamentStats_core(client, ...args);
-}
-
-/**
- * listCommunityTournaments (auto-injected with server client)
- */
-export async function listCommunityTournaments(
-  ...args: Parameters<typeof listCommunityTournaments_core> extends [
-    first: infer _F,
-    ...rest: infer R,
-  ]
-    ? R
-    : never
-): Promise<Awaited<ReturnType<typeof listCommunityTournaments_core>>> {
-  const client = await createServerSupabaseClient();
-  return listCommunityTournaments_core(client, ...args);
-}
-
-/**
- * listCommunityStaffWithRoles (auto-injected with server client)
- */
-export async function listCommunityStaffWithRoles(
-  ...args: Parameters<typeof listCommunityStaffWithRoles_core> extends [
-    first: infer _F,
-    ...rest: infer R,
-  ]
-    ? R
-    : never
-): Promise<Awaited<ReturnType<typeof listCommunityStaffWithRoles_core>>> {
-  const client = await createServerSupabaseClient();
-  return listCommunityStaffWithRoles_core(client, ...args);
-}
-
-/**
- * listCommunityGroups (auto-injected with server client)
- */
-export async function listCommunityGroups(
-  ...args: Parameters<typeof listCommunityGroups_core> extends [
-    first: infer _F,
-    ...rest: infer R,
-  ]
-    ? R
-    : never
-): Promise<Awaited<ReturnType<typeof listCommunityGroups_core>>> {
-  const client = await createServerSupabaseClient();
-  return listCommunityGroups_core(client, ...args);
-}
-
-/**
- * searchUsersForInvite (auto-injected with server client)
- */
-export async function searchUsersForInvite(
-  ...args: Parameters<typeof searchUsersForInvite_core> extends [
-    first: infer _F,
-    ...rest: infer R,
-  ]
-    ? R
-    : never
-): Promise<Awaited<ReturnType<typeof searchUsersForInvite_core>>> {
-  const client = await createServerSupabaseClient();
-  return searchUsersForInvite_core(client, ...args);
-}
-
-/**
- * hasOrgPermission (auto-injected with server client)
- */
-export async function hasOrgPermission(
-  ...args: Parameters<typeof hasOrgPermission_core> extends [
-    first: infer _F,
-    ...rest: infer R,
-  ]
-    ? R
-    : never
-): Promise<Awaited<ReturnType<typeof hasOrgPermission_core>>> {
-  const client = await createServerSupabaseClient();
-  return hasOrgPermission_core(client, ...args);
 }
 
 /**
@@ -2189,6 +2189,186 @@ export async function getPlayerPublicTeams(
 }
 
 /**
+ * createCommunity (auto-injected with server client)
+ */
+export async function createCommunity(
+  ...args: Parameters<typeof createCommunity_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof createCommunity_core>>> {
+  const client = await createServerSupabaseClient();
+  return createCommunity_core(client, ...args);
+}
+
+/**
+ * updateCommunity (auto-injected with server client)
+ */
+export async function updateCommunity(
+  ...args: Parameters<typeof updateCommunity_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof updateCommunity_core>>> {
+  const client = await createServerSupabaseClient();
+  return updateCommunity_core(client, ...args);
+}
+
+/**
+ * inviteToCommunity (auto-injected with server client)
+ */
+export async function inviteToCommunity(
+  ...args: Parameters<typeof inviteToCommunity_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof inviteToCommunity_core>>> {
+  const client = await createServerSupabaseClient();
+  return inviteToCommunity_core(client, ...args);
+}
+
+/**
+ * acceptCommunityInvitation (auto-injected with server client)
+ */
+export async function acceptCommunityInvitation(
+  ...args: Parameters<typeof acceptCommunityInvitation_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof acceptCommunityInvitation_core>>> {
+  const client = await createServerSupabaseClient();
+  return acceptCommunityInvitation_core(client, ...args);
+}
+
+/**
+ * declineCommunityInvitation (auto-injected with server client)
+ */
+export async function declineCommunityInvitation(
+  ...args: Parameters<typeof declineCommunityInvitation_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof declineCommunityInvitation_core>>> {
+  const client = await createServerSupabaseClient();
+  return declineCommunityInvitation_core(client, ...args);
+}
+
+/**
+ * leaveCommunity (auto-injected with server client)
+ */
+export async function leaveCommunity(
+  ...args: Parameters<typeof leaveCommunity_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof leaveCommunity_core>>> {
+  const client = await createServerSupabaseClient();
+  return leaveCommunity_core(client, ...args);
+}
+
+/**
+ * removeStaff (auto-injected with server client)
+ */
+export async function removeStaff(
+  ...args: Parameters<typeof removeStaff_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof removeStaff_core>>> {
+  const client = await createServerSupabaseClient();
+  return removeStaff_core(client, ...args);
+}
+
+/**
+ * addStaffMember (auto-injected with server client)
+ */
+export async function addStaffMember(
+  ...args: Parameters<typeof addStaffMember_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof addStaffMember_core>>> {
+  const client = await createServerSupabaseClient();
+  return addStaffMember_core(client, ...args);
+}
+
+/**
+ * addStaffToGroup (auto-injected with server client)
+ */
+export async function addStaffToGroup(
+  ...args: Parameters<typeof addStaffToGroup_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof addStaffToGroup_core>>> {
+  const client = await createServerSupabaseClient();
+  return addStaffToGroup_core(client, ...args);
+}
+
+/**
+ * removeStaffFromGroup (auto-injected with server client)
+ */
+export async function removeStaffFromGroup(
+  ...args: Parameters<typeof removeStaffFromGroup_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof removeStaffFromGroup_core>>> {
+  const client = await createServerSupabaseClient();
+  return removeStaffFromGroup_core(client, ...args);
+}
+
+/**
+ * changeStaffRole (auto-injected with server client)
+ */
+export async function changeStaffRole(
+  ...args: Parameters<typeof changeStaffRole_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof changeStaffRole_core>>> {
+  const client = await createServerSupabaseClient();
+  return changeStaffRole_core(client, ...args);
+}
+
+/**
+ * removeStaffCompletely (auto-injected with server client)
+ */
+export async function removeStaffCompletely(
+  ...args: Parameters<typeof removeStaffCompletely_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof removeStaffCompletely_core>>> {
+  const client = await createServerSupabaseClient();
+  return removeStaffCompletely_core(client, ...args);
+}
+
+/**
  * submitGameSelection (auto-injected with server client)
  */
 export async function submitGameSelection(
@@ -2384,18 +2564,18 @@ export async function submitCommunityRequest(
 }
 
 /**
- * approveCommunityRequest (auto-injected with server client)
+ * grantCommunityRequest (auto-injected with server client)
  */
-export async function approveCommunityRequest(
-  ...args: Parameters<typeof approveCommunityRequest_core> extends [
+export async function grantCommunityRequest(
+  ...args: Parameters<typeof grantCommunityRequest_core> extends [
     first: infer _F,
     ...rest: infer R,
   ]
     ? R
     : never
-): Promise<Awaited<ReturnType<typeof approveCommunityRequest_core>>> {
+): Promise<Awaited<ReturnType<typeof grantCommunityRequest_core>>> {
   const client = await createServerSupabaseClient();
-  return approveCommunityRequest_core(client, ...args);
+  return grantCommunityRequest_core(client, ...args);
 }
 
 /**
@@ -2411,186 +2591,6 @@ export async function rejectCommunityRequest(
 ): Promise<Awaited<ReturnType<typeof rejectCommunityRequest_core>>> {
   const client = await createServerSupabaseClient();
   return rejectCommunityRequest_core(client, ...args);
-}
-
-/**
- * createCommunity (auto-injected with server client)
- */
-export async function createCommunity(
-  ...args: Parameters<typeof createCommunity_core> extends [
-    first: infer _F,
-    ...rest: infer R,
-  ]
-    ? R
-    : never
-): Promise<Awaited<ReturnType<typeof createCommunity_core>>> {
-  const client = await createServerSupabaseClient();
-  return createCommunity_core(client, ...args);
-}
-
-/**
- * updateCommunity (auto-injected with server client)
- */
-export async function updateCommunity(
-  ...args: Parameters<typeof updateCommunity_core> extends [
-    first: infer _F,
-    ...rest: infer R,
-  ]
-    ? R
-    : never
-): Promise<Awaited<ReturnType<typeof updateCommunity_core>>> {
-  const client = await createServerSupabaseClient();
-  return updateCommunity_core(client, ...args);
-}
-
-/**
- * inviteToCommunity (auto-injected with server client)
- */
-export async function inviteToCommunity(
-  ...args: Parameters<typeof inviteToCommunity_core> extends [
-    first: infer _F,
-    ...rest: infer R,
-  ]
-    ? R
-    : never
-): Promise<Awaited<ReturnType<typeof inviteToCommunity_core>>> {
-  const client = await createServerSupabaseClient();
-  return inviteToCommunity_core(client, ...args);
-}
-
-/**
- * acceptCommunityInvitation (auto-injected with server client)
- */
-export async function acceptCommunityInvitation(
-  ...args: Parameters<typeof acceptCommunityInvitation_core> extends [
-    first: infer _F,
-    ...rest: infer R,
-  ]
-    ? R
-    : never
-): Promise<Awaited<ReturnType<typeof acceptCommunityInvitation_core>>> {
-  const client = await createServerSupabaseClient();
-  return acceptCommunityInvitation_core(client, ...args);
-}
-
-/**
- * declineCommunityInvitation (auto-injected with server client)
- */
-export async function declineCommunityInvitation(
-  ...args: Parameters<typeof declineCommunityInvitation_core> extends [
-    first: infer _F,
-    ...rest: infer R,
-  ]
-    ? R
-    : never
-): Promise<Awaited<ReturnType<typeof declineCommunityInvitation_core>>> {
-  const client = await createServerSupabaseClient();
-  return declineCommunityInvitation_core(client, ...args);
-}
-
-/**
- * leaveCommunity (auto-injected with server client)
- */
-export async function leaveCommunity(
-  ...args: Parameters<typeof leaveCommunity_core> extends [
-    first: infer _F,
-    ...rest: infer R,
-  ]
-    ? R
-    : never
-): Promise<Awaited<ReturnType<typeof leaveCommunity_core>>> {
-  const client = await createServerSupabaseClient();
-  return leaveCommunity_core(client, ...args);
-}
-
-/**
- * removeStaff (auto-injected with server client)
- */
-export async function removeStaff(
-  ...args: Parameters<typeof removeStaff_core> extends [
-    first: infer _F,
-    ...rest: infer R,
-  ]
-    ? R
-    : never
-): Promise<Awaited<ReturnType<typeof removeStaff_core>>> {
-  const client = await createServerSupabaseClient();
-  return removeStaff_core(client, ...args);
-}
-
-/**
- * addStaffMember (auto-injected with server client)
- */
-export async function addStaffMember(
-  ...args: Parameters<typeof addStaffMember_core> extends [
-    first: infer _F,
-    ...rest: infer R,
-  ]
-    ? R
-    : never
-): Promise<Awaited<ReturnType<typeof addStaffMember_core>>> {
-  const client = await createServerSupabaseClient();
-  return addStaffMember_core(client, ...args);
-}
-
-/**
- * addStaffToGroup (auto-injected with server client)
- */
-export async function addStaffToGroup(
-  ...args: Parameters<typeof addStaffToGroup_core> extends [
-    first: infer _F,
-    ...rest: infer R,
-  ]
-    ? R
-    : never
-): Promise<Awaited<ReturnType<typeof addStaffToGroup_core>>> {
-  const client = await createServerSupabaseClient();
-  return addStaffToGroup_core(client, ...args);
-}
-
-/**
- * removeStaffFromGroup (auto-injected with server client)
- */
-export async function removeStaffFromGroup(
-  ...args: Parameters<typeof removeStaffFromGroup_core> extends [
-    first: infer _F,
-    ...rest: infer R,
-  ]
-    ? R
-    : never
-): Promise<Awaited<ReturnType<typeof removeStaffFromGroup_core>>> {
-  const client = await createServerSupabaseClient();
-  return removeStaffFromGroup_core(client, ...args);
-}
-
-/**
- * changeStaffRole (auto-injected with server client)
- */
-export async function changeStaffRole(
-  ...args: Parameters<typeof changeStaffRole_core> extends [
-    first: infer _F,
-    ...rest: infer R,
-  ]
-    ? R
-    : never
-): Promise<Awaited<ReturnType<typeof changeStaffRole_core>>> {
-  const client = await createServerSupabaseClient();
-  return changeStaffRole_core(client, ...args);
-}
-
-/**
- * removeStaffCompletely (auto-injected with server client)
- */
-export async function removeStaffCompletely(
-  ...args: Parameters<typeof removeStaffCompletely_core> extends [
-    first: infer _F,
-    ...rest: infer R,
-  ]
-    ? R
-    : never
-): Promise<Awaited<ReturnType<typeof removeStaffCompletely_core>>> {
-  const client = await createServerSupabaseClient();
-  return removeStaffCompletely_core(client, ...args);
 }
 
 /**

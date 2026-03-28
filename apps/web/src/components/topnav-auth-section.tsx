@@ -192,15 +192,18 @@ export function TopNavAuthSection() {
                 <DropdownMenuLabel className="text-muted-foreground text-xs font-normal">
                   My Communities
                 </DropdownMenuLabel>
-                {myOrganizations.map((org) => (
-                  <DropdownMenuItem key={org.id} className="justify-between">
+                {myOrganizations.map((community) => (
+                  <DropdownMenuItem
+                    key={community.id}
+                    className="justify-between"
+                  >
                     <Link
-                      href={`/to-dashboard/${org.slug}`}
+                      href={`/to-dashboard/${community.slug}`}
                       className="flex flex-1 items-center justify-between gap-1.5"
                     >
                       <div className="flex items-center">
                         <Building2 className="mr-2 h-4 w-4" />
-                        <span className="truncate">{org.name}</span>
+                        <span className="truncate">{community.name}</span>
                       </div>
                       <ChevronRight className="text-muted-foreground h-4 w-4" />
                     </Link>

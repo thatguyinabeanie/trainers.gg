@@ -40,15 +40,15 @@ export function OrganizerAccess({ organizations }: OrganizerAccessProps) {
           </div>
         ) : (
           <div className="space-y-3">
-            {organizations.map((org) => (
+            {organizations.map((community) => (
               <div
-                key={org.id}
+                key={community.id}
                 className="flex items-center justify-between rounded-lg border p-3"
               >
                 <div>
-                  <p className="font-medium">{org.name}</p>
+                  <p className="font-medium">{community.name}</p>
                   <Badge variant="secondary" className="mt-1">
-                    {org.role}
+                    {community.role}
                   </Badge>
                 </div>
                 <Badge className="bg-green-500 text-white hover:bg-green-600">

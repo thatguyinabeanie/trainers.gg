@@ -15,7 +15,7 @@ import type { TypedClient } from "../../../client";
 jest.mock("../helpers", () => ({
   getCurrentUser: jest.fn(),
   getCurrentAlt: jest.fn(),
-  checkOrgPermission: jest.fn(),
+  checkCommunityPermission: jest.fn(),
 }));
 
 jest.mock("../../../utils/registration", () => ({
@@ -27,7 +27,11 @@ jest.mock("../../../constants", () => ({
   getInvitationExpiryDate: jest.fn(() => "2026-03-05T00:00:00Z"),
 }));
 
-import { getCurrentUser, getCurrentAlt, checkOrgPermission } from "../helpers";
+import {
+  getCurrentUser,
+  getCurrentAlt,
+  checkCommunityPermission,
+} from "../helpers";
 import {
   checkRegistrationOpen,
   checkCheckInOpen,
@@ -394,7 +398,7 @@ describe("Tournament Registration Mutations", () => {
 
     beforeEach(() => {
       (getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
-      (checkOrgPermission as jest.Mock).mockResolvedValue(true);
+      (checkCommunityPermission as jest.Mock).mockResolvedValue(true);
     });
 
     it("should update registration status successfully", async () => {
@@ -412,7 +416,7 @@ describe("Tournament Registration Mutations", () => {
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
         single: jest.fn().mockResolvedValue({
-          data: { organization_id: 200 },
+          data: { community_id: 200 },
           error: null,
         }),
       } as unknown as MockQueryBuilder);
@@ -440,7 +444,7 @@ describe("Tournament Registration Mutations", () => {
     });
 
     it("should throw error if user lacks permission", async () => {
-      (checkOrgPermission as jest.Mock).mockResolvedValue(false);
+      (checkCommunityPermission as jest.Mock).mockResolvedValue(false);
 
       const fromSpy = jest.spyOn(mockClient, "from");
       fromSpy.mockReturnValueOnce({
@@ -456,7 +460,7 @@ describe("Tournament Registration Mutations", () => {
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
         single: jest.fn().mockResolvedValue({
-          data: { organization_id: 200 },
+          data: { community_id: 200 },
           error: null,
         }),
       } as unknown as MockQueryBuilder);
@@ -485,7 +489,7 @@ describe("Tournament Registration Mutations", () => {
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
         single: jest.fn().mockResolvedValue({
-          data: { organization_id: 200 },
+          data: { community_id: 200 },
           error: null,
         }),
       } as unknown as MockQueryBuilder);
@@ -533,7 +537,7 @@ describe("Tournament Registration Mutations", () => {
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
         single: jest.fn().mockResolvedValue({
-          data: { organization_id: 200 },
+          data: { community_id: 200 },
           error: null,
         }),
       } as unknown as MockQueryBuilder);
@@ -564,7 +568,7 @@ describe("Tournament Registration Mutations", () => {
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
         single: jest.fn().mockResolvedValue({
-          data: { organization_id: 200 },
+          data: { community_id: 200 },
           error: null,
         }),
       } as unknown as MockQueryBuilder);

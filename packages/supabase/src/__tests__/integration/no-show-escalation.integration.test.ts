@@ -25,7 +25,7 @@ const describeIntegration = isSupabaseRunning() ? describe : describe.skip;
 describeIntegration("check_no_show_escalation", () => {
   let adminClient: TypedClient;
   let tournament: TestTournament;
-  let organizationId: number;
+  let communityId: number;
   let owner: TestUser;
   let players: Array<{ user: TestUser; alt: TestAlt; registrationId: number }>;
   let phaseId: number;
@@ -210,7 +210,7 @@ describeIntegration("check_no_show_escalation", () => {
     // Create a scenario with 2 players
     const scenario = await createTournamentScenario(adminClient, 2);
     tournament = scenario.tournament;
-    organizationId = scenario.organizationId;
+    communityId = scenario.communityId;
     owner = scenario.owner;
     players = scenario.players;
 
@@ -230,7 +230,7 @@ describeIntegration("check_no_show_escalation", () => {
 
     await cleanupTestData(adminClient, {
       tournamentIds: [tournament.id],
-      organizationIds: [organizationId],
+      communityIds: [communityId],
       userIds: [owner.id, ...players.map((p) => p.user.id)],
     });
   });

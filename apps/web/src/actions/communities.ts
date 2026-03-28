@@ -37,7 +37,7 @@ export type ActionResult<T = void> =
  * Revalidates: organizations list (if display data changes) and individual org page
  */
 export async function updateOrganization(
-  organizationId: number,
+  communityId: number,
   updates: {
     name?: string;
     description?: string;
@@ -48,7 +48,7 @@ export async function updateOrganization(
 ): Promise<ActionResult<{ success: true }>> {
   try {
     const supabase = await createClient();
-    await updateCommunityMutation(supabase, organizationId, updates);
+    await updateCommunityMutation(supabase, communityId, updates);
 
     // Revalidate list if display data changed (name, description, logo)
     if (updates.name || updates.description || updates.logoUrl) {
@@ -59,7 +59,7 @@ export async function updateOrganization(
     if (slug) {
       updateTag(CacheTags.community(slug));
     }
-    updateTag(CacheTags.community(organizationId));
+    updateTag(CacheTags.community(communityId));
 
     return { success: true, data: { success: true } };
   } catch (error) {
@@ -78,14 +78,14 @@ export async function updateOrganization(
  * Invite a user to join an organization
  */
 export async function inviteToOrganization(
-  organizationId: number,
+  communityId: number,
   invitedUserId: string
 ): Promise<ActionResult<{ invitationId: number }>> {
   try {
     const supabase = await createClient();
     const result = await inviteToCommunityMutation(
       supabase,
-      organizationId,
+      communityId,
       invitedUserId
     );
 
@@ -145,18 +145,18 @@ export async function declineOrganizationInvitation(
  * Leave an organization
  */
 export async function leaveOrganization(
-  organizationId: number,
+  communityId: number,
   slug?: string
 ): Promise<ActionResult<{ success: true }>> {
   try {
     const supabase = await createClient();
-    await leaveCommunityMutation(supabase, organizationId);
+    await leaveCommunityMutation(supabase, communityId);
 
     // Revalidate org page to update staff list
     if (slug) {
       updateTag(CacheTags.community(slug));
     }
-    updateTag(CacheTags.community(organizationId));
+    updateTag(CacheTags.community(communityId));
 
     return { success: true, data: { success: true } };
   } catch (error) {
@@ -171,19 +171,19 @@ export async function leaveOrganization(
  * Remove a staff member from an organization
  */
 export async function removeStaff(
-  organizationId: number,
+  communityId: number,
   userId: string,
   slug?: string
 ): Promise<ActionResult<{ success: true }>> {
   try {
     const supabase = await createClient();
-    await removeStaffMutation(supabase, organizationId, userId);
+    await removeStaffMutation(supabase, communityId, userId);
 
     // Revalidate org page to update staff list
     if (slug) {
       updateTag(CacheTags.community(slug));
     }
-    updateTag(CacheTags.community(organizationId));
+    updateTag(CacheTags.community(communityId));
 
     return { success: true, data: { success: true } };
   } catch (error) {

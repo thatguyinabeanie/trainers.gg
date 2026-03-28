@@ -254,16 +254,18 @@ function generateOrganizationsSql(
 
   // Insert organizations
   lines.push(generateSection("Organizations"));
-  for (const org of organizations) {
-    lines.push(`INSERT INTO public.organizations (`);
+  for (const community of organizations) {
+    lines.push(`INSERT INTO public.communities (`);
     lines.push(
       `  name, slug, description, status, owner_user_id, tier, subscription_tier`
     );
     lines.push(`) VALUES (`);
-    lines.push(`  '${escapeString(org.name)}', '${escapeString(org.slug)}',`);
-    lines.push(`  '${escapeString(org.description)}',`);
     lines.push(
-      `  '${org.status}', '${org.ownerUserId}', '${org.tier}', '${org.subscriptionTier}'`
+      `  '${escapeString(community.name)}', '${escapeString(community.slug)}',`
+    );
+    lines.push(`  '${escapeString(community.description)}',`);
+    lines.push(
+      `  '${community.status}', '${community.ownerUserId}', '${community.tier}', '${community.subscriptionTier}'`
     );
     lines.push(`) ON CONFLICT (slug) DO NOTHING;\n`);
   }
@@ -272,26 +274,26 @@ function generateOrganizationsSql(
   lines.push(generateSection("Organization Staff"));
   lines.push(`DO $$`);
   lines.push(`DECLARE`);
-  for (const org of organizations) {
-    lines.push(`  ${org.slug.replace(/-/g, "_")}_id bigint;`);
+  for (const community of organizations) {
+    lines.push(`  ${community.slug.replace(/-/g, "_")}_id bigint;`);
   }
   lines.push(`BEGIN`);
 
-  for (const org of organizations) {
+  for (const community of organizations) {
     lines.push(
-      `  SELECT id INTO ${org.slug.replace(/-/g, "_")}_id FROM public.organizations WHERE slug = '${org.slug}';`
+      `  SELECT id INTO ${community.slug.replace(/-/g, "_")}_id FROM public.communities WHERE slug = '${community.slug}';`
     );
   }
 
   lines.push(`\n  -- Add staff members`);
   lines.push(
-    `  INSERT INTO public.organization_staff (organization_id, user_id) VALUES`
+    `  INSERT INTO public.community_staff (community_id, user_id) VALUES`
   );
 
   const staffValues = orgStaff.map((staff, index) => {
-    const org = organizations.find((o) => o.id === staff.organizationId)!;
+    const community = organizations.find((o) => o.id === staff.communityId)!;
     const comma = index < orgStaff.length - 1 ? "," : "";
-    return `    (${org.slug.replace(/-/g, "_")}_id, '${staff.userId}')${comma}`;
+    return `    (${community.slug.replace(/-/g, "_")}_id, '${staff.userId}')${comma}`;
   });
 
   lines.push(staffValues.join("\n"));
@@ -335,9 +337,9 @@ function generateTournamentsSql(
   // Declare date reference variable
   lines.push(`  seed_now timestamptz := NOW();`);
 
-  // Declare org IDs
-  for (const org of organizations) {
-    lines.push(`  ${org.slug.replace(/-/g, "_")}_id bigint;`);
+  // Declare community IDs
+  for (const community of organizations) {
+    lines.push(`  ${community.slug.replace(/-/g, "_")}_id bigint;`);
   }
 
   // Declare tournament IDs
@@ -359,11 +361,11 @@ function generateTournamentsSql(
   lines.push(`    RETURN;`);
   lines.push(`  END IF;\n`);
 
-  // Get org IDs
+  // Get community IDs
   lines.push(`  -- Get organization IDs`);
-  for (const org of organizations) {
+  for (const community of organizations) {
     lines.push(
-      `  SELECT id INTO ${org.slug.replace(/-/g, "_")}_id FROM public.organizations WHERE slug = '${org.slug}';`
+      `  SELECT id INTO ${community.slug.replace(/-/g, "_")}_id FROM public.communities WHERE slug = '${community.slug}';`
     );
   }
   lines.push("");
@@ -375,7 +377,7 @@ function generateTournamentsSql(
     lines.push(`  -- Tournaments batch ${Math.floor(i / batchSize) + 1}`);
 
     for (const t of batch) {
-      const org = organizations.find((o) => o.id === t.organizationId)!;
+      const community = organizations.find((o) => o.id === t.communityId)!;
 
       // All dates are relative to seed_now (NOW()) to avoid timezone mismatch
       const refName = "seed_now";
@@ -391,9 +393,7 @@ function generateTournamentsSql(
         : String(t.maxParticipants);
 
       lines.push(`  INSERT INTO public.tournaments (`);
-      lines.push(
-        `    organization_id, name, slug, description, format, status,`
-      );
+      lines.push(`    community_id, name, slug, description, format, status,`);
       lines.push(`    start_date, end_date, max_participants,`);
       lines.push(
         `    tournament_format, swiss_rounds, round_time_minutes, featured, top_cut_size`
@@ -405,7 +405,7 @@ function generateTournamentsSql(
       }
       lines.push(`  ) VALUES (`);
       lines.push(
-        `    ${org.slug.replace(/-/g, "_")}_id, '${escapeString(t.name)}', '${escapeString(t.slug)}',`
+        `    ${community.slug.replace(/-/g, "_")}_id, '${escapeString(t.name)}', '${escapeString(t.slug)}',`
       );
       lines.push(`    '${escapeString(t.description)}',`);
       lines.push(`    '${t.format}', 'upcoming',`);

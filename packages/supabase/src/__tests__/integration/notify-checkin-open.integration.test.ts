@@ -23,7 +23,7 @@ const describeIntegration = isSupabaseRunning() ? describe : describe.skip;
 describeIntegration("notify_checkin_open trigger", () => {
   let adminClient: TypedClient;
   let tournament: TestTournament;
-  let organizationId: number;
+  let communityId: number;
   let owner: TestUser;
   let players: Array<{ user: TestUser; alt: TestAlt; registrationId: number }>;
 
@@ -33,7 +33,7 @@ describeIntegration("notify_checkin_open trigger", () => {
     // Create a scenario with 3 registered players
     const scenario = await createTournamentScenario(adminClient, 3);
     tournament = scenario.tournament;
-    organizationId = scenario.organizationId;
+    communityId = scenario.communityId;
     owner = scenario.owner;
     players = scenario.players;
 
@@ -53,7 +53,7 @@ describeIntegration("notify_checkin_open trigger", () => {
 
     await cleanupTestData(adminClient, {
       tournamentIds: [tournament.id],
-      organizationIds: [organizationId],
+      communityIds: [communityId],
       userIds: [owner.id, ...players.map((p) => p.user.id)],
     });
   });
@@ -154,7 +154,7 @@ describeIntegration("notify_checkin_open trigger", () => {
       .eq("tournament_id", tournament2.id);
     await cleanupTestData(adminClient, {
       tournamentIds: [tournament2.id],
-      organizationIds: [scenario2.organizationId],
+      communityIds: [scenario2.communityId],
       userIds: scenario2.players
         .map((p) => p.user.id)
         .concat(scenario2.owner.id),

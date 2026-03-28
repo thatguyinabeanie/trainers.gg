@@ -14,7 +14,7 @@ export async function getMyOrganizationRequest(supabase: TypedClient) {
 
   // Get pending request first
   const { data: pending } = await supabase
-    .from("organization_requests")
+    .from("community_requests")
     .select("*")
     .eq("user_id", user.id)
     .eq("status", "pending")
@@ -24,7 +24,7 @@ export async function getMyOrganizationRequest(supabase: TypedClient) {
 
   // Get most recent rejected request (for cooldown display)
   const { data: rejected } = await supabase
-    .from("organization_requests")
+    .from("community_requests")
     .select("*")
     .eq("user_id", user.id)
     .eq("status", "rejected")
@@ -39,7 +39,7 @@ export async function getMyOrganizationRequest(supabase: TypedClient) {
 
 export interface ListOrgRequestsAdminOptions {
   search?: string;
-  status?: "pending" | "approved" | "rejected";
+  status?: "pending" | "approved" | "rejected" | "cancelled";
   limit?: number;
   offset?: number;
 }
@@ -55,7 +55,7 @@ export async function listOrgRequestsAdmin(
   const { search, status, limit = 25, offset = 0 } = options;
 
   let query = supabase
-    .from("organization_requests")
+    .from("community_requests")
     .select(
       `
       id,
@@ -70,7 +70,7 @@ export async function listOrgRequestsAdmin(
       reviewed_at,
       created_at,
       updated_at,
-      requester:users!organization_requests_user_id_fkey(id, username, first_name, last_name, image, email)
+      requester:users!community_requests_user_id_fkey(id, username, first_name, last_name, image, email)
     `,
       { count: "exact", head: false }
     )

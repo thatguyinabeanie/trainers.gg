@@ -33,17 +33,15 @@ export const getAuthUrls = () => {
 };
 
 /**
- * OAuth provider configurations.
- * Includes both Supabase OAuth providers and AT Protocol (Bluesky).
+ * Supabase OAuth provider configurations.
+ * Bluesky uses AT Protocol OAuth and is defined separately as `blueskyProvider`.
  *
- * Provider order:
- * 1. Bluesky — platform-native identity (most prominent)
- * 2. Apple — required first by App Store guidelines
- * 3. Google — highest user base
- * 4. Twitter/X — social platform overlap
+ * Provider order (in sign-in UI, after Bluesky):
+ * 1. X — social platform overlap with competitive community
+ * 2. Discord — community communication platform
+ * 3. Twitch — streaming platform popular with competitive players
  */
 export const oauthProviders = [
-  { name: "google", displayName: "Google", icon: "google", type: "supabase" },
   {
     name: "twitter",
     displayName: "X",
@@ -57,9 +55,9 @@ export const oauthProviders = [
     type: "supabase",
   },
   {
-    name: "github",
-    displayName: "GitHub",
-    icon: "github",
+    name: "twitch",
+    displayName: "Twitch",
+    icon: "twitch",
     type: "supabase",
   },
 ] as const;

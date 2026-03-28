@@ -69,7 +69,7 @@ export type BattleFormat = "singles" | "doubles";
 export type RegistrationType = "open" | "invite_only";
 
 export interface TournamentFormData {
-  organizationId?: number;
+  communityId?: number;
   name: string;
   slug: string;
   description?: string;

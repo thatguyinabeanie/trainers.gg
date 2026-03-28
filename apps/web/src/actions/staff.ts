@@ -36,7 +36,7 @@ export type ActionResult<T = void> =
  * Returns users matching the search term who are NOT already staff or owner
  */
 export async function searchUsersForStaffInvite(
-  organizationId: number,
+  communityId: number,
   searchTerm: string
 ): Promise<
   ActionResult<
@@ -51,7 +51,7 @@ export async function searchUsersForStaffInvite(
 > {
   try {
     const supabase = await createClient();
-    const users = await searchUsersQuery(supabase, organizationId, searchTerm);
+    const users = await searchUsersQuery(supabase, communityId, searchTerm);
 
     return { success: true, data: users };
   } catch (error) {
@@ -72,19 +72,19 @@ export async function searchUsersForStaffInvite(
  * Revalidates: organization page
  */
 export async function inviteStaffMember(
-  organizationId: number,
+  communityId: number,
   userId: string,
   slug?: string
 ): Promise<ActionResult<{ success: true }>> {
   try {
     const supabase = await createClient();
-    await addStaffMemberMutation(supabase, organizationId, userId);
+    await addStaffMemberMutation(supabase, communityId, userId);
 
     // Revalidate organization page to show new staff member
     if (slug) {
       updateTag(CacheTags.community(slug));
     }
-    updateTag(CacheTags.community(organizationId));
+    updateTag(CacheTags.community(communityId));
 
     return { success: true, data: { success: true } };
   } catch (error) {
@@ -100,20 +100,20 @@ export async function inviteStaffMember(
  * Revalidates: organization page
  */
 export async function inviteStaffToGroup(
-  organizationId: number,
+  communityId: number,
   userId: string,
   groupId: number,
   slug?: string
 ): Promise<ActionResult<{ success: true }>> {
   try {
     const supabase = await createClient();
-    await addStaffToGroupMutation(supabase, organizationId, userId, groupId);
+    await addStaffToGroupMutation(supabase, communityId, userId, groupId);
 
     // Revalidate organization page to show new staff member
     if (slug) {
       updateTag(CacheTags.community(slug));
     }
-    updateTag(CacheTags.community(organizationId));
+    updateTag(CacheTags.community(communityId));
 
     return { success: true, data: { success: true } };
   } catch (error) {
@@ -129,20 +129,20 @@ export async function inviteStaffToGroup(
  * Revalidates: organization page
  */
 export async function changeStaffRoleAction(
-  organizationId: number,
+  communityId: number,
   userId: string,
   newGroupId: number,
   slug?: string
 ): Promise<ActionResult<{ success: true }>> {
   try {
     const supabase = await createClient();
-    await changeRoleMutation(supabase, organizationId, userId, newGroupId);
+    await changeRoleMutation(supabase, communityId, userId, newGroupId);
 
     // Revalidate organization page
     if (slug) {
       updateTag(CacheTags.community(slug));
     }
-    updateTag(CacheTags.community(organizationId));
+    updateTag(CacheTags.community(communityId));
 
     return { success: true, data: { success: true } };
   } catch (error) {
@@ -157,12 +157,12 @@ export async function changeStaffRoleAction(
  * Move a staff member to a group (alias for changeStaffRoleAction for drag & drop)
  */
 export async function moveStaffToGroup(
-  organizationId: number,
+  communityId: number,
   userId: string,
   groupId: number,
   slug?: string
 ): Promise<ActionResult<{ success: true }>> {
-  return changeStaffRoleAction(organizationId, userId, groupId, slug);
+  return changeStaffRoleAction(communityId, userId, groupId, slug);
 }
 
 /**
@@ -170,19 +170,19 @@ export async function moveStaffToGroup(
  * Revalidates: organization page
  */
 export async function removeStaffAction(
-  organizationId: number,
+  communityId: number,
   userId: string,
   slug?: string
 ): Promise<ActionResult<{ success: true }>> {
   try {
     const supabase = await createClient();
-    await removeStaffMutation(supabase, organizationId, userId);
+    await removeStaffMutation(supabase, communityId, userId);
 
     // Revalidate organization page
     if (slug) {
       updateTag(CacheTags.community(slug));
     }
-    updateTag(CacheTags.community(organizationId));
+    updateTag(CacheTags.community(communityId));
 
     return { success: true, data: { success: true } };
   } catch (error) {
@@ -200,7 +200,7 @@ export async function removeStaffAction(
 /**
  * Get all groups for an organization (for role selection dropdowns)
  */
-export async function getOrganizationGroups(organizationId: number): Promise<
+export async function getOrganizationGroups(communityId: number): Promise<
   ActionResult<
     {
       id: number;
@@ -217,7 +217,7 @@ export async function getOrganizationGroups(organizationId: number): Promise<
 > {
   try {
     const supabase = await createClient();
-    const groups = await listGroupsQuery(supabase, organizationId);
+    const groups = await listGroupsQuery(supabase, communityId);
 
     return { success: true, data: groups };
   } catch (error) {

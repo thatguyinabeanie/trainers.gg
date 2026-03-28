@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/table";
 import { ResponsiveTable } from "@/components/ui/responsive-table";
 import { Trophy, Users, Calendar, Swords } from "lucide-react";
-import { DateChip } from "@/app/tournaments/date-chip";
+import { DateChip } from "@/app/(app)/tournaments/date-chip";
 import { getGameById, getFormatById } from "@/components/tournaments/shared";
 import type { TournamentWithOrg } from "@trainers/supabase";
 
@@ -297,7 +297,7 @@ export function UpcomingTournaments({
                       <TableCell className="text-muted-foreground">
                         {tournament.organization ? (
                           <Link
-                            href={`/organizations/${tournament.organization.slug}`}
+                            href={`/communities/${tournament.organization.slug}`}
                             className="hover:text-primary hover:underline"
                           >
                             {tournament.organization.name}
@@ -434,7 +434,7 @@ export function CompletedTournaments({
                       <TableCell className="text-muted-foreground">
                         {tournament.organization ? (
                           <Link
-                            href={`/organizations/${tournament.organization.slug}`}
+                            href={`/communities/${tournament.organization.slug}`}
                             className="hover:text-primary hover:underline"
                           >
                             {tournament.organization.name}

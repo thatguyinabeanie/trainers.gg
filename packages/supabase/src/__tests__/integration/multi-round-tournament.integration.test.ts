@@ -91,7 +91,7 @@ Bold Nature
     let adminClient: TypedClient;
     let testData: {
       tournament: TestTournament;
-      organizationId: number;
+      communityId: number;
       owner: TestUser;
       players: Array<{ user: TestUser; alt: TestAlt; registrationId: number }>;
     };
@@ -120,7 +120,7 @@ Bold Nature
 
       await cleanupTestData(adminClient, {
         tournamentIds: [testData.tournament.id],
-        organizationIds: [testData.organizationId],
+        communityIds: [testData.communityId],
         userIds: [testData.owner.id, ...testData.players.map((p) => p.user.id)],
       });
     });

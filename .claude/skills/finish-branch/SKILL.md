@@ -78,6 +78,19 @@ git diff main --name-only -- 'packages/supabase/supabase/functions/'
 - If edge function files were changed, invoke the `edge-function-reviewer` agent.
 - Report findings.
 
+### 5.5. Mobile parity check
+
+Check if the branch includes changes under `apps/web/`:
+
+```bash
+git diff --name-only main...HEAD -- apps/web/
+```
+
+- If web files were changed, invoke the `mobile-parity` skill to analyze changes and check for mobile parity tickets in Linear.
+- The skill will present findings and ask whether to create, update, or skip — it never acts without confirmation.
+- The user can skip to proceed directly to PR creation.
+- If no web files were changed, skip this step silently.
+
 ### 6. Push and create PR
 
 After all checks pass:

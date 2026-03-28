@@ -12,6 +12,7 @@ Domain-specific guidance lives in `.claude/skills/`. Invoke the relevant skill b
 | `building-mobile-app` | Mobile screens, Tamagui UI, Expo Router, SecureStore |
 | `supabase-queries` | DB queries/mutations, client selection, Edge Functions |
 | `input-validation` | Zod schemas, Server Action return types, profanity filter |
+| `mobile-parity` | After developing web features, check for mobile parity tickets |
 | `tournament-logic` | Swiss pairings, standings, brackets, adapters |
 | `pokemon-parsing` | Team parsing, legality validation, type effectiveness |
 | `shared-utils` | `getLabel()`, `getErrorMessage()`, permissions, formatting |
@@ -54,7 +55,7 @@ infra/
 
 | Layer | Technology | Notes |
 | --- | --- | --- |
-| Auth | Supabase Auth | Email/password + OAuth (Google, X, Discord, GitHub, Bluesky) |
+| Auth | Supabase Auth | Email/password + OAuth (X, Discord, Twitch, Bluesky) |
 | Database | Supabase (PostgreSQL) | Row Level Security with auth.uid() |
 | Edge Functions | Supabase Edge Functions | Deno runtime |
 | Social/Identity | AT Protocol (Bluesky) | Decentralized identity and federation |
