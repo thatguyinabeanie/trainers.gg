@@ -4,6 +4,7 @@ import { type ColumnDef } from "@tanstack/react-table";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { formatDate } from "@trainers/utils";
 
 // ----------------------------------------------------------------
 // Types
@@ -51,14 +52,6 @@ const roleLabels: Record<string, string> = {
 
 function getRoleLabel(name: string): string {
   return roleLabels[name] ?? name;
-}
-
-function formatDate(dateStr: string): string {
-  return new Date(dateStr).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
 }
 
 /**

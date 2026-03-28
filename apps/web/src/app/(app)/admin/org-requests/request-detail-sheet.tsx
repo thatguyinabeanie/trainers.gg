@@ -285,7 +285,6 @@ export function RequestDetailSheet({
         </SheetContent>
       </Sheet>
 
-      {/* Confirmation dialog */}
       <AlertDialog
         open={!!confirmAction}
         onOpenChange={(open) => {
