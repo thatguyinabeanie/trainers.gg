@@ -70,6 +70,24 @@ describe("sendMatchMessageSchema", () => {
       }).success
     ).toBe(false);
   });
+
+  it("rejects content containing profanity", () => {
+    expect(
+      sendMatchMessageSchema.safeParse({
+        altId: 1,
+        content: "fuck you",
+      }).success
+    ).toBe(false);
+  });
+
+  it("accepts clean content", () => {
+    expect(
+      sendMatchMessageSchema.safeParse({
+        altId: 1,
+        content: "good game well played",
+      }).success
+    ).toBe(true);
+  });
 });
 
 describe("createMatchGamesSchema", () => {

@@ -107,6 +107,20 @@ describe("updateProfileSchema", () => {
     });
     expect(result.success).toBe(false);
   });
+
+  it("rejects location containing profanity", () => {
+    const result = updateProfileSchema.safeParse({
+      location: "fuck town",
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("accepts clean location", () => {
+    const result = updateProfileSchema.safeParse({
+      location: "Pallet Town",
+    });
+    expect(result.success).toBe(true);
+  });
 });
 
 describe("updateSettingsSchema", () => {

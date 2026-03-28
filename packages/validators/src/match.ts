@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { containsProfanity, PROFANITY_ERROR_MESSAGE } from "./profanity";
 
 /**
  * Schema for a player submitting their game winner selection.
@@ -19,7 +20,10 @@ export const sendMatchMessageSchema = z.object({
   content: z
     .string()
     .min(1, "Message content is required")
-    .max(500, "Message must not exceed 500 characters"),
+    .max(500, "Message must not exceed 500 characters")
+    .refine((val) => !containsProfanity(val), {
+      message: PROFANITY_ERROR_MESSAGE,
+    }),
   messageType: z.enum(["player", "judge"]).default("player"),
 });
 

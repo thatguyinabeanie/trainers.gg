@@ -309,6 +309,22 @@ describe("teamSubmissionSchema", () => {
     });
     expect(result.success).toBe(false);
   });
+
+  it("rejects rawText containing profanity", () => {
+    const result = teamSubmissionSchema.safeParse({
+      tournamentId: 1,
+      rawText: "fuck (Pikachu) @ Light Ball",
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("accepts clean rawText", () => {
+    const result = teamSubmissionSchema.safeParse({
+      tournamentId: 1,
+      rawText: VALID_SHOWDOWN_MON,
+    });
+    expect(result.success).toBe(true);
+  });
 });
 
 describe("validateTeamFormat", () => {

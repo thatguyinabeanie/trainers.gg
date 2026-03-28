@@ -37,7 +37,13 @@ export const updateProfileSchema = z.object({
       message: PROFANITY_ERROR_MESSAGE,
     })
     .optional(),
-  location: z.string().max(64).optional(),
+  location: z
+    .string()
+    .max(64)
+    .refine((val) => !containsProfanity(val), {
+      message: PROFANITY_ERROR_MESSAGE,
+    })
+    .optional(),
   gamePreferences: gamePreferencesSchema.optional(),
   socialLinks: socialLinksSchema.optional(),
 });
