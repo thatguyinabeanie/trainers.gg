@@ -36,11 +36,22 @@ Run all of these and collect results:
 pnpm lint
 pnpm typecheck
 pnpm format:check
+pnpm test
 ```
 
 - If any check fails, report the failures clearly and ask if the user wants you to fix them.
 - Fix issues if requested, commit the fixes, then re-run the failing checks.
 - Do not proceed until all checks pass.
+
+### 2.5. Run E2E tests
+
+```bash
+pnpm test:e2e
+```
+
+- E2E tests require the local Supabase backend to be running (`pnpm dev:backend`).
+- If E2E fails because the backend is not running, report it and ask if the user wants to start it or skip E2E.
+- If E2E fails for other reasons, report the failures and ask if they should be fixed before proceeding.
 
 ### 3. Review migrations (if any)
 
@@ -101,14 +112,14 @@ After all checks pass:
 git push -u origin $(git branch --show-current)
 ```
 
-2. Generate PR title and body from the branch's commits:
+1. Generate PR title and body from the branch's commits:
 
 ```bash
 git log main..HEAD --oneline
 git diff main...HEAD --stat
 ```
 
-3. Create the PR using `gh`:
+1. Create the PR using `gh`:
 
 ```bash
 gh pr create --title "<title>" --body "<body>"
@@ -126,6 +137,8 @@ gh pr create --title "<title>" --body "<body>"
 - [x] Lint passes
 - [x] Typecheck passes
 - [x] Format check passes
+- [x] Unit tests pass
+- [x] E2E tests pass
 - [x] Migration review (if applicable)
 - [x] Security review (if applicable)
 - [x] Edge function review (if applicable)
@@ -135,7 +148,7 @@ gh pr create --title "<title>" --body "<body>"
 <How to verify the changes work>
 ```
 
-4. Return the PR URL to the user.
+1. Return the PR URL to the user.
 
 ## Error Handling
 
