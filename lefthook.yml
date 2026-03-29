@@ -1,14 +1,173 @@
+# Per-package pre-commit hooks using lefthook's `root` scoping.
+# Each command runs from the package directory, using its local
+# node_modules/.bin binaries. Commands are skipped automatically
+# when no staged files match the root + glob filter.
+
 pre-commit:
-  piped: true
+  parallel: true
   commands:
-    prettier:
-      priority: 1
-      glob: "*.{ts,tsx,js,jsx,mjs,json,css,md,yml,yaml,toml}"
+    # ── Root-level files ──────────────────────────────────────────
+    prettier-root:
+      glob: "*.{json,yml,yaml,toml,md,js,mjs}"
+      exclude: "^(apps|packages|tooling)/"
       run: ./node_modules/.bin/prettier --write {staged_files}
       stage_fixed: true
 
+    # ── Apps ──────────────────────────────────────────────────────
+    prettier-web:
+      root: "apps/web/"
+      glob: "*.{ts,tsx,js,jsx,json,md,css}"
+      run: ./node_modules/.bin/prettier --write {staged_files}
+      stage_fixed: true
+
+    eslint-web:
+      root: "apps/web/"
+      glob: "*.{ts,tsx,js,jsx}"
+      run: ./node_modules/.bin/eslint --fix --max-warnings 0 {staged_files}
+      stage_fixed: true
+
+    prettier-mobile:
+      root: "apps/mobile/"
+      glob: "*.{ts,tsx,js,jsx,json,md,css}"
+      run: ./node_modules/.bin/prettier --write {staged_files}
+      stage_fixed: true
+
+    eslint-mobile:
+      root: "apps/mobile/"
+      glob: "*.{ts,tsx,js,jsx}"
+      run: ./node_modules/.bin/eslint --fix --max-warnings 0 {staged_files}
+      stage_fixed: true
+
+    # ── Packages ──────────────────────────────────────────────────
+    prettier-atproto:
+      root: "packages/atproto/"
+      glob: "*.{ts,tsx,js,jsx,json,md}"
+      run: ./node_modules/.bin/prettier --write {staged_files}
+      stage_fixed: true
+
+    eslint-atproto:
+      root: "packages/atproto/"
+      glob: "*.{ts,tsx,js,jsx}"
+      run: ./node_modules/.bin/eslint --fix --max-warnings 0 {staged_files}
+      stage_fixed: true
+
+    prettier-pokemon:
+      root: "packages/pokemon/"
+      glob: "*.{ts,tsx,js,jsx,json,md}"
+      run: ./node_modules/.bin/prettier --write {staged_files}
+      stage_fixed: true
+
+    eslint-pokemon:
+      root: "packages/pokemon/"
+      glob: "*.{ts,tsx,js,jsx}"
+      run: ./node_modules/.bin/eslint --fix --max-warnings 0 {staged_files}
+      stage_fixed: true
+
+    prettier-posthog:
+      root: "packages/posthog/"
+      glob: "*.{ts,tsx,js,jsx,json,md}"
+      run: ./node_modules/.bin/prettier --write {staged_files}
+      stage_fixed: true
+
+    eslint-posthog:
+      root: "packages/posthog/"
+      glob: "*.{ts,tsx,js,jsx}"
+      run: ./node_modules/.bin/eslint --fix --max-warnings 0 {staged_files}
+      stage_fixed: true
+
+    prettier-supabase:
+      root: "packages/supabase/"
+      glob: "*.{ts,tsx,js,jsx,json,md}"
+      run: ./node_modules/.bin/prettier --write {staged_files}
+      stage_fixed: true
+
+    eslint-supabase:
+      root: "packages/supabase/"
+      glob: "*.{ts,tsx,js,jsx}"
+      run: ./node_modules/.bin/eslint --fix --max-warnings 0 {staged_files}
+      stage_fixed: true
+
+    prettier-theme:
+      root: "packages/theme/"
+      glob: "*.{ts,tsx,js,jsx,json,md}"
+      run: ./node_modules/.bin/prettier --write {staged_files}
+      stage_fixed: true
+
+    eslint-theme:
+      root: "packages/theme/"
+      glob: "*.{ts,tsx,js,jsx}"
+      run: ./node_modules/.bin/eslint --fix --max-warnings 0 {staged_files}
+      stage_fixed: true
+
+    prettier-tournaments:
+      root: "packages/tournaments/"
+      glob: "*.{ts,tsx,js,jsx,json,md}"
+      run: ./node_modules/.bin/prettier --write {staged_files}
+      stage_fixed: true
+
+    eslint-tournaments:
+      root: "packages/tournaments/"
+      glob: "*.{ts,tsx,js,jsx}"
+      run: ./node_modules/.bin/eslint --fix --max-warnings 0 {staged_files}
+      stage_fixed: true
+
+    prettier-utils:
+      root: "packages/utils/"
+      glob: "*.{ts,tsx,js,jsx,json,md}"
+      run: ./node_modules/.bin/prettier --write {staged_files}
+      stage_fixed: true
+
+    eslint-utils:
+      root: "packages/utils/"
+      glob: "*.{ts,tsx,js,jsx}"
+      run: ./node_modules/.bin/eslint --fix --max-warnings 0 {staged_files}
+      stage_fixed: true
+
+    prettier-validators:
+      root: "packages/validators/"
+      glob: "*.{ts,tsx,js,jsx,json,md}"
+      run: ./node_modules/.bin/prettier --write {staged_files}
+      stage_fixed: true
+
+    eslint-validators:
+      root: "packages/validators/"
+      glob: "*.{ts,tsx,js,jsx}"
+      run: ./node_modules/.bin/eslint --fix --max-warnings 0 {staged_files}
+      stage_fixed: true
+
+    # ── Tooling ───────────────────────────────────────────────────
+    prettier-tooling-eslint:
+      root: "tooling/eslint/"
+      glob: "*.{js,json}"
+      run: ./node_modules/.bin/prettier --write {staged_files}
+      stage_fixed: true
+
+    prettier-tooling-prettier:
+      root: "tooling/prettier/"
+      glob: "*.{js,json}"
+      run: ./node_modules/.bin/prettier --write {staged_files}
+      stage_fixed: true
+
+    prettier-tooling-tailwind:
+      root: "tooling/tailwind/"
+      glob: "*.{ts,js,json}"
+      run: ./node_modules/.bin/prettier --write {staged_files}
+      stage_fixed: true
+
+    prettier-tooling-test-utils:
+      root: "tooling/test-utils/"
+      glob: "*.{ts,js,json}"
+      run: ./node_modules/.bin/prettier --write {staged_files}
+      stage_fixed: true
+
+    prettier-tooling-typescript:
+      root: "tooling/typescript/"
+      glob: "*.json"
+      run: ./node_modules/.bin/prettier --write {staged_files}
+      stage_fixed: true
+
+    # ── Typecheck (runs on affected packages only) ────────────────
     typecheck:
-      priority: 2
       env:
         TURBO_UI: "false"
       run: |

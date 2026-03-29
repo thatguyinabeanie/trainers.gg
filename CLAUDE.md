@@ -134,7 +134,7 @@ See `jest.config.ts` (root), `codecov.yml`, and `.github/workflows/ci.yml` for c
 
 **Prefer existing helpers over inline logic.** Check `@trainers/utils` and the package's own helpers before writing new code. Extract repeated test setup into shared helpers. Keep tests DRY and simple (KISS) — if a utility function exists, use it.
 
-Pre-commit: Lefthook runs Prettier auto-fix and typecheck on affected packages. Fix errors, re-stage, retry — never skip hooks.
+Pre-commit: Lefthook runs ESLint `--fix`, Prettier auto-fix, and typecheck on affected packages. Fix errors, re-stage, retry — never skip hooks.
 
 ## Critical Rules
 

@@ -66,7 +66,7 @@
   },
   "devDependencies": {
     "@trainers/prettier-config": "workspace:*",
-    "prettier": "^3.5.3",
+    "prettier": "catalog:",
     "turbo": "^2.8.21"
   },
   "pnpm": {

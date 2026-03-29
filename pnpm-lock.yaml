@@ -110,7 +110,7 @@ importers:
         specifier: workspace:*
         version: link:tooling/prettier
       prettier:
-        specifier: ^3.5.3
+        specifier: 'catalog:'
         version: 3.8.1
       turbo:
         specifier: ^2.8.21
