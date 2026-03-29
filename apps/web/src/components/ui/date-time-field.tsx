@@ -185,8 +185,7 @@ export function DateTimeField({
           />
 
           {/* Time selection */}
-          <div className="border-border space-y-3 border-t p-3">
-            {/* Native time input (12h with AM/PM on supported browsers) */}
+          <div className="border-border space-y-2.5 border-t p-3">
             <div className="flex items-center gap-2">
               <Clock className="text-muted-foreground h-4 w-4 shrink-0" />
               <input
@@ -195,16 +194,16 @@ export function DateTimeField({
                 onChange={handleTimeInputChange}
                 className={cn(
                   "border-input bg-background focus-visible:border-ring focus-visible:ring-ring/50",
-                  "h-9 w-full rounded-lg border px-3 py-2 text-sm outline-none focus-visible:ring-[3px]"
+                  "h-8 rounded-lg border px-2 py-1 text-sm outline-none focus-visible:ring-[3px]"
                 )}
               />
-              <span className="text-muted-foreground text-sm whitespace-nowrap">
+              <span className="text-muted-foreground text-xs">
                 {formatTime12h(hours, minutes)}
               </span>
             </div>
 
-            {/* Preset time slots */}
-            <div className="flex flex-wrap gap-1.5">
+            {/* Preset time slots in a compact grid */}
+            <div className="grid grid-cols-5 gap-1">
               {TIME_PRESETS.map((preset) => (
                 <Button
                   key={preset.label}
@@ -215,6 +214,7 @@ export function DateTimeField({
                       : "outline"
                   }
                   size="xs"
+                  className="px-1 text-[11px]"
                   onClick={() =>
                     handlePresetClick(preset.hours, preset.minutes)
                   }
