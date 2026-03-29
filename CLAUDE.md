@@ -1,6 +1,6 @@
 # trainers.gg - Agent Guidelines
 
-Pokemon community platform for competitive players. Monorepo: Next.js 16 web, Expo 54 mobile, Supabase backend, Bluesky PDS integration.
+All-in-one integrated platform for Pokemon fans. Current focus: competitive battling (VGC, Showdown, Pokemon Champions). Monorepo: Next.js 16 web, Expo 54 mobile, Supabase backend, Bluesky PDS integration.
 
 ## Workspace Skills
 
@@ -19,8 +19,11 @@ Domain-specific guidance lives in `.claude/skills/`. Invoke the relevant skill b
 | `posthog-analytics`   | PostHog event constants, adding new events                                 |
 | `atproto-bluesky`     | Bluesky/AT Protocol, DID resolution, public agent                          |
 | `design-tokens`       | OKLCH tokens, design tokens, web/mobile theme exports                      |
+| `design-system`       | Elevation, typography hierarchy, transitions, layout conventions           |
 | `writing-tests`       | Fishery factories, Supabase/AT Protocol mocks, Jest config                 |
 | `code-audit`          | Codebase audits for type safety, code reuse, architecture, maintainability |
+| `product-vision`      | Product vision, feature roadmap, differentiators, user types              |
+| `competitive-landscape` | Competitive landscape, positioning, alternatives by category            |
 
 ### Infrastructure
 
@@ -112,6 +115,10 @@ pnpm --filter @trainers/theme build         # Generate design tokens
 # Edge Functions
 pnpm functions:serve                  # Serve edge functions locally
 ```
+
+### Playwright Screenshots
+
+Store all Playwright MCP screenshots in `.playwright-mcp/screenshots/`. This directory is gitignored.
 
 ### Gotchas
 
@@ -239,11 +246,19 @@ Extract abstractions after 2–3 repetitions. See existing patterns before creat
 
 **Error handling**: `throw new Error()` for validation; `null` from queries when not found; Server Actions return `{ success, error }`.
 
+## Product Vision
+
+trainers.gg is the all-in-one integrated platform for Pokemon fans — one place that connects tools that currently exist in isolation. Not an esports site. Community-first. See `product-vision` and `competitive-landscape` skills for full details.
+
 ## Design Principles
 
-- Minimal flat design: no borders, subtle background differentiation, consistent spacing
+- **Personality:** Clean, Playful, Community-driven — data-rich and precise where it matters, but warm, friendly, and never cold or intimidating
+- **Anti-reference:** NOT an esports/gaming site — no dark aggressive "gamer" aesthetic, no neon accents, no angular/militaristic UI
+- **Audience:** All ages, mixed tech comfort, equal desktop/mobile priority
 - Teal primary (OKLCH tokens from `@trainers/theme`): single accent across all interactive elements
+- Minimal flat design: no borders, subtle background differentiation, consistent spacing
 - `StatusBadge` for semantic status colors (emerald=active, blue=upcoming, amber=draft, gray=completed, red=cancelled)
+- WCAG AA minimum accessibility
 
 ## Local Dev Test Accounts
 
