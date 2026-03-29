@@ -76,10 +76,38 @@ test.describe("Onboarding flow", () => {
       // --- Submit ---
       await page.getByRole("button", { name: /complete setup/i }).click();
 
-      // --- Should redirect to dashboard ---
-      // Server action includes PDS handle check (5s timeout) + PDS provisioning
-      // (30s timeout) which can take a while on preview deployments
-      await page.waitForURL("**/dashboard/overview", { timeout: 60000 });
+      // Wait for the button to show loading state or for navigation
+      // If the action fails, an error message appears on the form
+      const errorOrRedirect = await Promise.race([
+        page
+          .waitForURL("**/dashboard/overview", { timeout: 60000 })
+          .then(() => null),
+        page
+          .locator("[class*=red]")
+          .first()
+          .waitFor({ state: "visible", timeout: 10000 })
+          .then(async () => {
+            const errorText = await page
+              .locator("[class*=red]")
+              .first()
+              .textContent();
+            return `Form error: ${errorText}`;
+          })
+          .catch(() => null),
+      ]);
+
+      if (errorOrRedirect) {
+        // Capture page state for debugging
+        const url = page.url();
+        const bodyText = await page
+          .locator("main")
+          .textContent()
+          .catch(() => "N/A");
+        throw new Error(
+          `Onboarding failed. ${errorOrRedirect}\nURL: ${url}\nPage: ${bodyText?.slice(0, 500)}`
+        );
+      }
+
       expect(page.url()).toContain("/dashboard/overview");
     } finally {
       // --- Cleanup: delete the test user via the preview API ---
