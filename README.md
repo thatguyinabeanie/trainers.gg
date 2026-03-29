@@ -1,6 +1,5 @@
 # trainers.gg
 
-
 A Pokemon community platform for competitive players, tournament organizers, and teams. Integrated with the **AT Protocol (Bluesky)** for decentralized social features.
 
 ## Tech Stack
@@ -216,7 +215,7 @@ Every user gets a Bluesky identity:
 | -------------------------- | ------------------------------------------- |
 | `users`                    | User accounts with DID and PDS handle       |
 | `alts`                     | Alternate player identities for tournaments |
-| `organizations`            | Communities (tournament organizer groups)    |
+| `organizations`            | Communities (tournament organizer groups)   |
 | `tournaments`              | Tournament events                           |
 | `tournament_registrations` | Player registrations (with team submission) |
 | `posts`                    | Local activity feed (synced with PDS)       |
@@ -266,12 +265,12 @@ Without this, the JWT will never contain `site_roles`, and `/admin` routes will 
 
 The `[edge_runtime.secrets]` in `config.toml` only apply to local Supabase. Production secrets must be set via **Dashboard > Edge Functions > Secrets** (or `supabase secrets set`):
 
-| Secret               | Description                               | Example                       |
-| -------------------- | ----------------------------------------- | ----------------------------- |
-| `PDS_HOST`           | Production PDS URL                        | `https://pds.trainers.gg`     |
-| `PDS_ADMIN_PASSWORD` | PDS admin password                        | *(from Fly.io secrets)*       |
-| `PDS_HANDLE_DOMAIN`  | Domain for user handles                   | `trainers.gg`                 |
-| `RESEND_API_KEY`     | Resend API key for transactional email    | `re_...`                      |
+| Secret               | Description                            | Example                   |
+| -------------------- | -------------------------------------- | ------------------------- |
+| `PDS_HOST`           | Production PDS URL                     | `https://pds.trainers.gg` |
+| `PDS_ADMIN_PASSWORD` | PDS admin password                     | _(from Fly.io secrets)_   |
+| `PDS_HANDLE_DOMAIN`  | Domain for user handles                | `trainers.gg`             |
+| `RESEND_API_KEY`     | Resend API key for transactional email | `re_...`                  |
 
 ##### 3. OAuth Providers
 
@@ -347,8 +346,3 @@ See [AGENTS.md](./AGENTS.md) for code style guidelines and architecture decision
 ## License
 
 Private - All rights reserved.
- 
- 
- 
- 
- 
