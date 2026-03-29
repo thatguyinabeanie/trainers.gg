@@ -1,5 +1,6 @@
 "use server";
 
+import { updateTag } from "next/cache";
 import { positiveIntSchema, adminReasonSchema } from "@trainers/validators";
 import {
   withAdminAction,
@@ -9,6 +10,7 @@ import {
   grantCommunityRequest,
   rejectCommunityRequest,
 } from "@trainers/supabase/mutations";
+import { CacheTags } from "@/lib/cache";
 
 // --- Grant (approve pending or rejected) ---
 
@@ -43,6 +45,9 @@ export async function grantCommunityRequestAction(
       adminUserId,
       validatedReason
     );
+
+    updateTag(CacheTags.COMMUNITIES_LIST);
+    updateTag(CacheTags.COMMUNITY_REQUESTS_LIST);
 
     // Fire-and-forget email notification
     supabase.functions
@@ -85,6 +90,8 @@ export async function rejectCommunityRequestAction(
       adminUserId,
       parsedReason.data
     );
+
+    updateTag(CacheTags.COMMUNITY_REQUESTS_LIST);
 
     // Fire-and-forget email notification
     supabase.functions

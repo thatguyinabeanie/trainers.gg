@@ -2,8 +2,25 @@
  * @jest-environment node
  */
 
-// Mock Supabase client
-const mockSupabaseClient = {};
+// Mock next/cache
+jest.mock("next/cache", () => ({
+  updateTag: jest.fn(),
+}));
+
+// Mock Supabase client with auth.getUser and users query for invalidatePlayerCache
+const mockMaybeSingle = jest.fn().mockResolvedValue({
+  data: { username: "test_user" },
+  error: null,
+});
+const mockEq = jest.fn().mockReturnValue({ maybeSingle: mockMaybeSingle });
+const mockSelect = jest.fn().mockReturnValue({ eq: mockEq });
+const mockFrom = jest.fn().mockReturnValue({ select: mockSelect });
+const mockSupabaseClient = {
+  auth: {
+    getUser: jest.fn().mockResolvedValue({ data: { user: { id: "user-1" } } }),
+  },
+  from: mockFrom,
+};
 jest.mock("@/lib/supabase/server", () => ({
   createClient: jest.fn(async () => mockSupabaseClient),
 }));

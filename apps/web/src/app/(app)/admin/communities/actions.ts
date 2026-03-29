@@ -1,5 +1,6 @@
 "use server";
 
+import { updateTag } from "next/cache";
 import {
   positiveIntSchema,
   uuidSchema,
@@ -16,6 +17,7 @@ import {
   unsuspendOrganization,
   transferCommunityOwnership,
 } from "@trainers/supabase/queries";
+import { CacheTags } from "@/lib/cache";
 
 // --- Approve ---
 
@@ -32,6 +34,8 @@ export async function approveCommunityAction(
 
   return withAdminAction(async (supabase, adminUserId) => {
     await approveOrganization(supabase, parsedOrgId.data, adminUserId);
+    updateTag(CacheTags.COMMUNITIES_LIST);
+    updateTag(CacheTags.community(parsedOrgId.data));
     return { success: true };
   }, "Failed to approve organization");
 }
@@ -64,6 +68,8 @@ export async function rejectCommunityAction(
       adminUserId,
       parsedReason.data
     );
+    updateTag(CacheTags.COMMUNITIES_LIST);
+    updateTag(CacheTags.community(parsedOrgId.data));
     return { success: true };
   }, "Failed to reject organization");
 }
@@ -96,6 +102,8 @@ export async function suspendCommunityAction(
       adminUserId,
       parsedReason.data
     );
+    updateTag(CacheTags.COMMUNITIES_LIST);
+    updateTag(CacheTags.community(parsedOrgId.data));
     return { success: true };
   }, "Failed to suspend organization");
 }
@@ -115,6 +123,8 @@ export async function unsuspendCommunityAction(
 
   return withAdminAction(async (supabase, adminUserId) => {
     await unsuspendOrganization(supabase, parsedOrgId.data, adminUserId);
+    updateTag(CacheTags.COMMUNITIES_LIST);
+    updateTag(CacheTags.community(parsedOrgId.data));
     return { success: true };
   }, "Failed to unsuspend organization");
 }
@@ -147,6 +157,8 @@ export async function transferOwnershipAction(
       parsedUserId.data,
       adminUserId
     );
+    updateTag(CacheTags.COMMUNITIES_LIST);
+    updateTag(CacheTags.community(parsedOrgId.data));
     return { success: true };
   }, "Failed to transfer ownership");
 }

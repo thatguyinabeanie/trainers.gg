@@ -3,6 +3,8 @@
  */
 
 // Mock Supabase client with chainable query builder
+// Default implementation returns a passthrough query builder so
+// extra from() calls (e.g. for cache invalidation) don't break tests.
 const mockFrom = jest.fn();
 const mockAuth = {
   getUser: jest.fn(),
@@ -25,6 +27,7 @@ jest.mock("botid/server", () => ({
 
 jest.mock("next/cache", () => ({
   revalidatePath: jest.fn(),
+  updateTag: jest.fn(),
 }));
 
 // Mock global fetch for PDS handle checks
@@ -429,6 +432,21 @@ describe("getCurrentUserProfile", () => {
   });
 });
 
+/**
+ * Prepend a mock for the "current username" query that updateProfile
+ * calls first for cache invalidation. Must be called before any other
+ * mockFrom.mockReturnValueOnce in each test.
+ */
+function mockUsernameQuery(username = "test_user") {
+  mockFrom.mockReturnValueOnce(
+    createQueryBuilder({
+      maybeSingle: jest
+        .fn()
+        .mockResolvedValue({ data: { username }, error: null }),
+    })
+  );
+}
+
 describe("updateProfile", () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -444,6 +462,18 @@ describe("updateProfile", () => {
     global.fetch = jest.fn().mockResolvedValue({
       json: () => Promise.resolve({ success: true }),
     });
+    // Default fallback for any from() call not covered by mockReturnValueOnce.
+    // Handles the "current username" fetch for cache invalidation and any
+    // other from() calls that tests don't explicitly mock.
+    mockFrom.mockImplementation(() =>
+      createQueryBuilder({
+        maybeSingle: jest.fn().mockResolvedValue({
+          data: { username: "test_user", main_alt_id: null },
+          error: null,
+        }),
+        eq: jest.fn().mockResolvedValue({ error: null }),
+      })
+    );
   });
 
   afterAll(() => {
@@ -477,6 +507,7 @@ describe("updateProfile", () => {
   });
 
   it("updates birth date and country without username change", async () => {
+    mockUsernameQuery();
     // Update users table
     mockFrom.mockReturnValueOnce(
       createQueryBuilder({
@@ -493,6 +524,7 @@ describe("updateProfile", () => {
   });
 
   it("handles database update errors", async () => {
+    mockUsernameQuery();
     mockFrom.mockReturnValueOnce(
       createQueryBuilder({
         eq: jest.fn().mockResolvedValue({
@@ -508,6 +540,7 @@ describe("updateProfile", () => {
   });
 
   it("handles unique constraint violation on username", async () => {
+    mockUsernameQuery();
     // PDS status check - use 'external' to skip PDS operations
     mockFrom.mockReturnValueOnce(
       createQueryBuilder({
@@ -536,6 +569,8 @@ describe("updateProfile", () => {
   describe("PDS handle updates", () => {
     beforeEach(() => {
       process.env.NEXT_PUBLIC_SUPABASE_URL = "https://test.supabase.co";
+      // Prepend the "current username" query mock before any PDS mocks
+      mockUsernameQuery();
     });
 
     afterEach(() => {

@@ -4,6 +4,12 @@
 
 // --- Mocks (declared before imports so jest.mock hoisting works) ---
 
+// Mock next/cache
+const mockUpdateTag = jest.fn();
+jest.mock("next/cache", () => ({
+  updateTag: (...args: unknown[]) => mockUpdateTag(...args),
+}));
+
 // Mock the auth check
 jest.mock("@/lib/auth/require-admin", () => ({
   requireAdminWithSudo: jest.fn(),
