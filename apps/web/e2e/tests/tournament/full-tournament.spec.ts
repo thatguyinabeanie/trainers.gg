@@ -37,6 +37,12 @@ async function reloadWithReauth(page: Page, targetUrl: string): Promise<void> {
     await loginViaUI(page, TEST_USERS.admin);
     await page.goto(targetUrl);
     await page.waitForLoadState("networkidle");
+
+    if (page.url().includes("/sign-in")) {
+      throw new Error(
+        `Re-authentication failed: still on sign-in page. Target: ${targetUrl}`
+      );
+    }
   }
 }
 

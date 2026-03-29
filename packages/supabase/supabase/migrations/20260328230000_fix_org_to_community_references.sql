@@ -1,5 +1,6 @@
 -- =============================================================================
--- Migration: Fix stale organization_id references in 13 database functions
+-- Migration: Fix stale organization_id references in 10 database functions
+-- (3 more in separate files: _230002, _230003, _230004)
 -- =============================================================================
 -- The rename_organizations_to_communities migration (20260328023929) renamed
 -- tables and columns but missed updating references inside these function
