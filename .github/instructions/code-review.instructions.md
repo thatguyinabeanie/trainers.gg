@@ -7,67 +7,57 @@ excludeAgent: "coding-agent"
 
 ## Check All Commits Before Flagging Issues
 
-This project uses stacked commits within PRs. Before flagging an issue, check whether a later commit in the same PR already addresses it. Review the full commit history, not just the diff against base.
+This project uses stacked commits. Before flagging an issue, check whether a later commit already addresses it.
 
 ## Auto-Generated Files
 
-`packages/supabase/src/types.ts` is regenerated from the live database schema via `pnpm generate-types`. Changes in this file (including removed table types) reflect intentional schema changes in migration files — not accidental deletions. Do not flag added, removed, or modified types in this file.
+`packages/supabase/src/types.ts` is regenerated via `pnpm generate-types`. Do not flag changes in this file — including removed types, which reflect intentional schema changes.
 
 ## Migration Conventions
 
-All migrations must be idempotent because Supabase preview branches replay every migration on a fresh database.
-
-The standard pattern for constraints is:
-
-```sql
-DROP CONSTRAINT IF EXISTS ... ;
-ADD CONSTRAINT ... ;
-```
-
-This is the project's idempotency pattern, not a redundant operation. Do not suggest removing the `DROP IF EXISTS`.
-
-Migrations that add a `NOT NULL` column with `DEFAULT ''` followed by a `CHECK` constraint must account for backfilled empty strings. The pattern `CHECK (col = '' OR col ~ '^https?://')` is intentional.
-
-Never suggest editing or renaming a committed migration file — timestamps are recorded in production history and renaming breaks preview branches.
+All migrations must be idempotent (Supabase preview branches replay all). `DROP IF EXISTS` before `ADD CONSTRAINT` is the standard pattern — not redundant. Never suggest editing or renaming committed migration files.
 
 ## Regex Analysis
 
-Before claiming a regex captures unintended characters, verify the character class. For example, `([a-zA-Z0-9-]+)` inherently stops at `?`, `#`, `/`, and any character not in the class. Do not flag it as capturing query parameters or fragments.
+Verify character classes before claiming a regex captures unintended characters. `([a-zA-Z0-9-]+)` stops at `?`, `#`, `/` — do not flag it as capturing query params.
 
 ## React Compiler
 
-React Compiler is enabled in this project. Do not suggest adding `useMemo`, `useCallback`, or `React.memo` — manual memoization conflicts with compiler optimizations.
+Enabled project-wide. Do not suggest `useMemo`, `useCallback`, or `React.memo`.
 
-## Zod Validation Patterns
+## Zod Validation
 
-This project uses Zod's `.transform().pipe()` pattern to trim input before validation:
-
-```ts
-z.string()
-  .transform((val) => val.trim())
-  .pipe(z.string().max(100));
-```
-
-This ensures trimming happens before length/format checks. Do not suggest `.preprocess()` as an alternative — the project has standardized on transform+pipe.
+Standard pattern is `.transform(v => v.trim()).pipe(z.string().max(N))`. Do not suggest `.preprocess()`.
 
 ## JSONB Type Casting
 
-Supabase JSONB columns use `as unknown as Json` for type casting (where `Json` is the Supabase-generated type). Do not suggest `Json[]` — the generated column type is `Json | null`, not `Json[]`.
+Supabase JSONB uses `as unknown as Json`. Do not suggest `Json[]` — the type is `Json | null`.
 
 ## UI Components
 
-- This project uses shadcn/ui v4 with **Base UI** primitives (not Radix). Do not suggest `asChild` — it does not exist in Base UI.
-- Never suggest rendering raw enum or database values in UI. Values must be mapped through label constants (e.g., `SOCIAL_PLATFORM_LABELS`).
-- Use `cn()` for dynamic Tailwind classes, never template literals.
+- shadcn/ui v4 with **Base UI** (not Radix). `asChild` does not exist.
+- Never render raw enum/DB values — map through label constants.
+- Use `cn()` for dynamic classes, never template literals.
 
 ## Edge Functions
 
-Edge functions are deployed automatically during CI — never suggest manual `supabase functions deploy`. Every edge function must have a `[functions.<name>]` entry in `packages/supabase/supabase/config.toml`.
+Deployed automatically during Vercel build via `run-migrations.mjs`. Do NOT suggest declaring edge functions in `config.toml` — the Supabase remote bundler cannot resolve monorepo imports, causing build failures on preview branches.
 
 ## Server Actions
 
-Server Actions return `{ success: boolean; error?: string }`. Do not suggest throwing errors from Server Actions — errors are returned as values.
+Return `{ success: boolean; error?: string }`. Do not suggest throwing errors.
 
 ## Request Interception
 
-Next.js 16 uses `proxy.ts` (at `src/proxy.ts`), not `middleware.ts`. Do not reference middleware patterns.
+Next.js 16 uses `proxy.ts` (at `src/proxy.ts`), not `middleware.ts`.
+
+## Pre-Commit Hooks (Lefthook)
+
+Uses Lefthook (not Husky/lint-staged), configured in `lefthook.yml`.
+
+- Lefthook `glob` filters staged files by extension — NOT filesystem globbing. `*.{ts,tsx}` matches staged files at any depth.
+- `parallel: true` with `stage_fixed: true` is safe — Prettier and ESLint have non-overlapping concerns (`eslint-config-prettier` disables formatting rules). Do not suggest `parallel: false`.
+
+## BotID and E2E Tests
+
+`checkBotId()` rejects headless Playwright (flagged as bot). Server actions called during E2E must check `x-vercel-protection-bypass` header against `VERCEL_AUTOMATION_BYPASS_SECRET` to skip BotID. Same trust model as `/api/e2e/*` endpoints.
