@@ -32,7 +32,9 @@ test.describe("Onboarding flow", () => {
 
     try {
       // --- Sign in via the UI ---
-      await page.goto("/sign-in");
+      // Use redirect=/dashboard so after sign-in the user hits a protected
+      // route, which triggers the onboarding gate in proxy.ts
+      await page.goto("/sign-in?redirect=/dashboard");
       await page.getByRole("button", { name: /continue with email/i }).click();
 
       // Wait for the email form to be ready
