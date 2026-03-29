@@ -40,7 +40,7 @@ async function main() {
     const workspacePatterns =
       workspaceYaml
         .match(/packages:\s*\n([\s\S]*?)(?:\n\S|$)/)?.[1]
-        .split("\n")
+        ?.split("\n")
         .map((line) =>
           line
             .trim()
@@ -48,6 +48,12 @@ async function main() {
             .replace(/['"]?$/, "")
         )
         .filter(Boolean) || [];
+
+    if (workspacePatterns.length === 0) {
+      console.error(
+        "Warning: No workspace patterns found in pnpm-workspace.yaml"
+      );
+    }
 
     // Convert glob patterns to regex
     const workspaceRegexes = workspacePatterns.map((pattern) => {
@@ -79,8 +85,12 @@ async function main() {
               if (pkgJson.name) {
                 affectedPackages.add(pkgJson.name);
               }
-            } catch {
-              // Skip if package.json doesn't exist or can't be read
+            } catch (err) {
+              if (err.code !== "ENOENT") {
+                console.error(
+                  `Warning: Could not read package.json for ${pkgPath}: ${err.message}`
+                );
+              }
             }
           }
           break;
