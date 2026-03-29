@@ -4,6 +4,9 @@ import baseConfig from "@trainers/eslint-config/base";
 export default [
   ...baseConfig,
   {
+    ignores: ["supabase/functions/_shared/vendor/**"],
+  },
+  {
     files: ["supabase/functions/**/*.ts"],
     languageOptions: {
       globals: {

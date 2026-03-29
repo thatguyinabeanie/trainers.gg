@@ -203,6 +203,8 @@ export async function completeTournament(
 
     updateTag(CacheTags.TOURNAMENTS_LIST);
     updateTag(CacheTags.tournament(tournamentId));
+    updateTag(CacheTags.PLAYERS_LEADERBOARD);
+    updateTag(CacheTags.PLAYERS_RECENT);
 
     return { success: true, data: { success: true } };
   } catch (error) {
