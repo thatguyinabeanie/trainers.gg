@@ -6,25 +6,25 @@ Pokemon community platform for competitive players. Monorepo: Next.js 16 web, Ex
 
 Domain-specific guidance lives in `.claude/skills/`. Invoke the relevant skill before working in an area.
 
-| Skill                        | When to Use                                                          |
-| ---------------------------- | -------------------------------------------------------------------- |
-| `building-web-app`           | Web routes, components, Server Actions, data fetching, proxy.ts      |
-| `building-mobile-app`        | Mobile screens, Tamagui UI, Expo Router, SecureStore                 |
-| `querying-supabase`          | DB queries/mutations, client selection, Edge Functions                |
-| `validating-input`           | Zod schemas, Server Action return types, profanity filter            |
-| `creating-components`        | UI components, design tokens, design principles                      |
-| `checking-mobile-parity`     | After developing web features, check for mobile parity tickets       |
-| `implementing-tournaments`   | Swiss pairings, standings, brackets, adapters                        |
-| `parsing-pokemon`            | Team parsing, legality validation, type effectiveness                |
-| `using-utils`                | `getLabel()`, `getErrorMessage()`, permissions, formatting           |
-| `tracking-analytics`         | PostHog event constants, adding new events                           |
-| `integrating-bluesky`        | Bluesky/AT Protocol, DID resolution, public agent                    |
-| `writing-tests`              | Fishery factories, Supabase/AT Protocol mocks, Jest config           |
-| `managing-infrastructure`    | PDS on Fly.io, ngrok tunnel for local dev                            |
-| `creating-edge-functions`    | Creating/updating Supabase edge functions                            |
-| `managing-edge-imports`      | Deno import maps, `deno.json` management                             |
-| `auditing-code`              | Codebase audits for type safety, architecture, maintainability       |
-| `writing-skills`             | Creating/editing skills, agents, maintaining the architecture        |
+| Skill                      | When to Use                                                     |
+| -------------------------- | --------------------------------------------------------------- |
+| `building-web-app`         | Web routes, components, Server Actions, data fetching, proxy.ts |
+| `building-mobile-app`      | Mobile screens, Tamagui UI, Expo Router, SecureStore            |
+| `querying-supabase`        | DB queries/mutations, client selection, Edge Functions          |
+| `validating-input`         | Zod schemas, Server Action return types, profanity filter       |
+| `creating-components`      | UI components, design tokens, design principles                 |
+| `checking-mobile-parity`   | After developing web features, check for mobile parity tickets  |
+| `implementing-tournaments` | Swiss pairings, standings, brackets, adapters                   |
+| `parsing-pokemon`          | Team parsing, legality validation, type effectiveness           |
+| `using-utils`              | `getLabel()`, `getErrorMessage()`, permissions, formatting      |
+| `tracking-analytics`       | PostHog event constants, adding new events                      |
+| `integrating-bluesky`      | Bluesky/AT Protocol, DID resolution, public agent               |
+| `writing-tests`            | Fishery factories, Supabase/AT Protocol mocks, Jest config      |
+| `managing-infrastructure`  | PDS on Fly.io, ngrok tunnel for local dev                       |
+| `creating-edge-functions`  | Creating/updating Supabase edge functions                       |
+| `managing-edge-imports`    | Deno import maps, `deno.json` management                        |
+| `auditing-code`            | Codebase audits for type safety, architecture, maintainability  |
+| `writing-skills`           | Creating/editing skills, agents, maintaining the architecture   |
 
 Slash-command skills (invoked directly, not listed above): `commit`, `create-migration`, `finish-branch`, `post-pr-monitoring`, `ticket`.
 
@@ -32,25 +32,25 @@ Slash-command skills (invoked directly, not listed above): `commit`, `create-mig
 
 Path-scoped rules in `.claude/rules/` load automatically when working with matching files.
 
-| Rule                     | Applies To                              |
-| ------------------------ | --------------------------------------- |
-| `code-style.md`          | All TypeScript/TSX files (`**/*.{ts,tsx}`) |
-| `architecture.md`        | All shared packages (`packages/**/*`)   |
-| `testing-philosophy.md`  | All test files (`**/*.test.*`, `**/__tests__/**`) |
+| Rule                    | Applies To                                        |
+| ----------------------- | ------------------------------------------------- |
+| `code-style.md`         | All TypeScript/TSX files (`**/*.{ts,tsx}`)        |
+| `architecture.md`       | All shared packages (`packages/**/*`)             |
+| `testing-philosophy.md` | All test files (`**/*.test.*`, `**/__tests__/**`) |
 
 ## Workspace Agents
 
 Custom agents in `.claude/agents/`. Invoke for isolated, focused work.
 
-| Agent                    | Model  | Purpose                                                   |
-| ------------------------ | ------ | --------------------------------------------------------- |
-| `qa-engineer`            | sonnet | Write/review tests with fresh context                     |
-| `pre-push-checker`       | haiku  | Run lint/typecheck/test/format, report pass/fail          |
-| `code-reviewer`          | sonnet | Review changes for style, architecture, correctness       |
-| `feature-implementer`    | sonnet | Implement features following domain skill patterns        |
-| `edge-function-reviewer` | —      | Review edge functions for CORS, auth, validation          |
-| `migration-reviewer`     | —      | Review SQL migrations for correctness, RLS, safety        |
-| `security-reviewer`      | —      | Security-focused review: RLS, auth, route protection      |
+| Agent                    | Model  | Purpose                                              |
+| ------------------------ | ------ | ---------------------------------------------------- |
+| `qa-engineer`            | sonnet | Write/review tests with fresh context                |
+| `pre-push-checker`       | haiku  | Run lint/typecheck/test/format, report pass/fail     |
+| `code-reviewer`          | sonnet | Review changes for style, architecture, correctness  |
+| `feature-implementer`    | sonnet | Implement features following domain skill patterns   |
+| `edge-function-reviewer` | —      | Review edge functions for CORS, auth, validation     |
+| `migration-reviewer`     | —      | Review SQL migrations for correctness, RLS, safety   |
+| `security-reviewer`      | —      | Security-focused review: RLS, auth, route protection |
 
 ## Monorepo Structure
 
@@ -161,6 +161,10 @@ If any check fails, fix the issue and re-run before pushing. Never push with kno
 ### Parallel Work & Unexpected Changes
 
 Multiple agents and humans may work on this codebase simultaneously. If you encounter code changes, new files, or modified files that you did not make — they were either made manually by the developer or by another parallel agent. **Never delete, revert, overwrite, or undo changes you did not make.** Treat unfamiliar changes as intentional. If they conflict with your work, stop and ask rather than discarding them.
+
+### Error Visibility
+
+**Never suppress errors with `2>/dev/null`, `|| true`, or `|| exit 0`.** If a command can fail, the failure must be visible. Guard against expected empty inputs (e.g., check `[ -n "$VAR" ]` before using it), but never hide real errors. Silent failures waste hours of debugging.
 
 ### React Compiler
 
