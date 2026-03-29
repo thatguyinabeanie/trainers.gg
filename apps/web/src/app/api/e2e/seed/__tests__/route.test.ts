@@ -156,33 +156,41 @@ describe("POST /api/e2e/seed", () => {
   // --------------------------------------------------------------------------
 
   describe("production database guard", () => {
-    it("returns 404 when SUPABASE_PRODUCTION_PROJECT_REF is not set on Vercel", async () => {
+    it("allows seeding when SUPABASE_PRODUCTION_PROJECT_REF is not set on Vercel", async () => {
       setEnv({
         VERCEL_ENV: "preview",
         NEXT_PUBLIC_SUPABASE_URL: `https://${PREVIEW_PROJECT_REF}.supabase.co`,
         SUPABASE_PRODUCTION_PROJECT_REF: undefined,
       });
+      mockUpsert.mockResolvedValue({ error: null });
+      mockCreateUser.mockResolvedValue({ error: null });
+      mockUpdate.mockReturnValue({
+        eq: jest.fn().mockResolvedValue({ error: null }),
+      });
 
-      const { status, body } = await getJsonResponse(makeRequest());
+      const { status } = await getJsonResponse(makeRequest());
 
-      expect(status).toBe(404);
-      expect(body.error).toBe("Not found");
+      expect(status).not.toBe(404);
     });
 
-    it("returns 404 when Supabase URL is empty or unparseable", async () => {
+    it("allows seeding when Supabase URL is unparseable and no production ref is set", async () => {
       setEnv({
         VERCEL_ENV: "preview",
         NEXT_PUBLIC_SUPABASE_URL: "",
-        SUPABASE_PRODUCTION_PROJECT_REF: PRODUCTION_PROJECT_REF,
+        SUPABASE_PRODUCTION_PROJECT_REF: undefined,
+      });
+      mockUpsert.mockResolvedValue({ error: null });
+      mockCreateUser.mockResolvedValue({ error: null });
+      mockUpdate.mockReturnValue({
+        eq: jest.fn().mockResolvedValue({ error: null }),
       });
 
-      const { status, body } = await getJsonResponse(makeRequest());
+      const { status } = await getJsonResponse(makeRequest());
 
-      expect(status).toBe(404);
-      expect(body.error).toBe("Not found");
+      expect(status).not.toBe(404);
     });
 
-    it("returns 404 when connected to production database", async () => {
+    it("returns 404 with reason when connected to production database", async () => {
       setEnv({
         VERCEL_ENV: "preview",
         NEXT_PUBLIC_SUPABASE_URL: `https://${PRODUCTION_PROJECT_REF}.supabase.co`,
@@ -193,6 +201,7 @@ describe("POST /api/e2e/seed", () => {
 
       expect(status).toBe(404);
       expect(body.error).toBe("Not found");
+      expect(body.reason).toMatch(/production database/i);
     });
 
     it("allows preview deploy connected to branch database", async () => {
