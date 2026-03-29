@@ -77,20 +77,18 @@ export async function POST(request: NextRequest) {
     const productionRef = process.env.SUPABASE_PRODUCTION_PROJECT_REF;
 
     if (!productionRef || !currentRef) {
-      console.error(
-        `[e2e/seed] BLOCKED: ${!productionRef ? "SUPABASE_PRODUCTION_PROJECT_REF not set" : "could not extract project ref from Supabase URL"} — ` +
-          "add SUPABASE_PRODUCTION_PROJECT_REF to Vercel env vars (Preview scope)"
-      );
-      return NextResponse.json({ error: "Not found" }, { status: 404 });
+      const reason = !productionRef
+        ? "SUPABASE_PRODUCTION_PROJECT_REF not set — add it to Vercel env vars (Preview scope)"
+        : "Could not extract project ref from Supabase URL";
+      console.error(`[e2e/seed] BLOCKED: ${reason}`);
+      return NextResponse.json({ error: "Not found", reason }, { status: 404 });
     }
 
     if (currentRef === productionRef) {
-      console.error(
-        `[e2e/seed] BLOCKED: connected to production database (ref: ${currentRef}). ` +
-          "This preview deployment may have fallen back to the production Supabase URL. " +
-          "Check that Supabase branching created a branch database for this PR."
-      );
-      return NextResponse.json({ error: "Not found" }, { status: 404 });
+      const reason =
+        "Connected to production database — Supabase branching may not have created a branch DB for this PR";
+      console.error(`[e2e/seed] BLOCKED: ${reason} (ref: ${currentRef})`);
+      return NextResponse.json({ error: "Not found", reason }, { status: 404 });
     }
   }
 
