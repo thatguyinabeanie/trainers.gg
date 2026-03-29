@@ -1,30 +1,33 @@
 # trainers.gg - Agent Guidelines
 
-Pokemon community platform for competitive players. Monorepo: Next.js 16 web, Expo 54 mobile, Supabase backend, Bluesky PDS integration.
+All-in-one integrated platform for Pokemon fans. Current focus: competitive battling (VGC, Showdown, Pokemon Champions). Monorepo: Next.js 16 web, Expo 54 mobile, Supabase backend, Bluesky PDS integration.
 
 ## Workspace Skills
 
 Domain-specific guidance lives in `.claude/skills/`. Invoke the relevant skill before working in an area.
 
-| Skill                      | When to Use                                                     |
-| -------------------------- | --------------------------------------------------------------- |
-| `building-web-app`         | Web routes, components, Server Actions, data fetching, proxy.ts |
-| `building-mobile-app`      | Mobile screens, Tamagui UI, Expo Router, SecureStore            |
-| `querying-supabase`        | DB queries/mutations, client selection, Edge Functions          |
-| `validating-input`         | Zod schemas, Server Action return types, profanity filter       |
-| `creating-components`      | UI components, design tokens, design principles                 |
-| `checking-mobile-parity`   | After developing web features, check for mobile parity tickets  |
-| `implementing-tournaments` | Swiss pairings, standings, brackets, adapters                   |
-| `parsing-pokemon`          | Team parsing, legality validation, type effectiveness           |
-| `using-utils`              | `getLabel()`, `getErrorMessage()`, permissions, formatting      |
-| `tracking-analytics`       | PostHog event constants, adding new events                      |
-| `integrating-bluesky`      | Bluesky/AT Protocol, DID resolution, public agent               |
-| `writing-tests`            | Fishery factories, Supabase/AT Protocol mocks, Jest config      |
-| `managing-infrastructure`  | PDS on Fly.io, ngrok tunnel for local dev                       |
-| `creating-edge-functions`  | Creating/updating Supabase edge functions                       |
-| `managing-edge-imports`    | Deno import maps, `deno.json` management                        |
-| `auditing-code`            | Codebase audits for type safety, architecture, maintainability  |
-| `writing-skills`           | Creating/editing skills, agents, maintaining the architecture   |
+| Skill                      | When to Use                                                      |
+| -------------------------- | ---------------------------------------------------------------- |
+| `building-web-app`         | Web routes, components, Server Actions, data fetching, proxy.ts  |
+| `building-mobile-app`      | Mobile screens, Tamagui UI, Expo Router, SecureStore             |
+| `querying-supabase`        | DB queries/mutations, client selection, Edge Functions           |
+| `validating-input`         | Zod schemas, Server Action return types, profanity filter        |
+| `creating-components`      | UI components, design tokens, design principles                  |
+| `checking-mobile-parity`   | After developing web features, check for mobile parity tickets   |
+| `implementing-tournaments` | Swiss pairings, standings, brackets, adapters                    |
+| `parsing-pokemon`          | Team parsing, legality validation, type effectiveness            |
+| `using-utils`              | `getLabel()`, `getErrorMessage()`, permissions, formatting       |
+| `tracking-analytics`       | PostHog event constants, adding new events                       |
+| `integrating-bluesky`      | Bluesky/AT Protocol, DID resolution, public agent                |
+| `writing-tests`            | Fishery factories, Supabase/AT Protocol mocks, Jest config       |
+| `managing-infrastructure`  | PDS on Fly.io, ngrok tunnel for local dev                        |
+| `creating-edge-functions`  | Creating/updating Supabase edge functions                        |
+| `managing-edge-imports`    | Deno import maps, `deno.json` management                         |
+| `auditing-code`            | Codebase audits for type safety, architecture, maintainability   |
+| `writing-skills`           | Creating/editing skills, agents, maintaining the architecture    |
+| `design-system`            | Elevation, typography hierarchy, transitions, layout conventions |
+| `product-vision`           | Product vision, feature roadmap, differentiators, user types     |
+| `competitive-landscape`    | Competitive landscape, positioning, alternatives by category     |
 
 Slash-command skills (invoked directly, not listed above): `commit`, `create-migration`, `finish-branch`, `post-pr-monitoring`, `ticket`.
 
@@ -137,6 +140,10 @@ pnpm --filter @trainers/theme build         # Generate design tokens
 pnpm functions:serve                  # Serve edge functions locally
 ```
 
+### Playwright Screenshots
+
+Store all Playwright MCP screenshots in `.playwright-mcp/screenshots/`. This directory is gitignored.
+
 ### Gotchas
 
 - **Always use `pnpm supabase`** from repo root — never `cd packages/supabase && supabase`
@@ -177,6 +184,20 @@ Multiple agents and humans may work on this codebase simultaneously. If you enco
 ### Edge Function Deployments
 
 **Never deploy edge functions manually.** They deploy automatically during the Vercel build. Never declare in `config.toml`. See `creating-edge-functions` skill for details.
+
+## Product Vision
+
+trainers.gg is the all-in-one integrated platform for Pokemon fans — one place that connects tools that currently exist in isolation. Not an esports site. Community-first. See `product-vision` and `competitive-landscape` skills for full details.
+
+## Design Principles
+
+- **Personality:** Clean, Playful, Community-driven — data-rich and precise where it matters, but warm, friendly, and never cold or intimidating
+- **Anti-reference:** NOT an esports/gaming site — no dark aggressive "gamer" aesthetic, no neon accents, no angular/militaristic UI
+- **Audience:** All ages, mixed tech comfort, equal desktop/mobile priority
+- Teal primary (OKLCH tokens from `@trainers/theme`): single accent across all interactive elements
+- Minimal flat design: no borders, subtle background differentiation, consistent spacing
+- `StatusBadge` for semantic status colors (emerald=active, blue=upcoming, amber=draft, gray=completed, red=cancelled)
+- WCAG AA minimum accessibility
 
 ## Development Workflow
 
