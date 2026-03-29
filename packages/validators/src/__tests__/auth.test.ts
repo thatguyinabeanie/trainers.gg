@@ -5,6 +5,7 @@ import {
   validatePassword,
   loginIdentifierSchema,
   signupRequestSchema,
+  completeOnboardingSchema,
 } from "../auth";
 
 describe("passwordSchema", () => {
@@ -212,5 +213,105 @@ describe("signupRequestSchema", () => {
       signupRequestSchema.safeParse({ ...validSignup, password: "weak" })
         .success
     ).toBe(false);
+  });
+});
+
+describe("completeOnboardingSchema", () => {
+  const validInput = {
+    username: "ash_ketchum",
+    country: "US",
+    bio: "Pokemon trainer from Pallet Town",
+  };
+
+  it("accepts valid input with all required fields", () => {
+    const result = completeOnboardingSchema.safeParse(validInput);
+    expect(result.success).toBe(true);
+  });
+
+  it("accepts valid input with optional birthDate", () => {
+    const result = completeOnboardingSchema.safeParse({
+      ...validInput,
+      birthDate: "1996-05-22",
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("accepts input without birthDate", () => {
+    const result = completeOnboardingSchema.safeParse(validInput);
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.birthDate).toBeUndefined();
+    }
+  });
+
+  it("rejects missing username", () => {
+    const { username: _, ...input } = validInput;
+    expect(completeOnboardingSchema.safeParse(input).success).toBe(false);
+  });
+
+  it("rejects missing country", () => {
+    const { country: _, ...input } = validInput;
+    expect(completeOnboardingSchema.safeParse(input).success).toBe(false);
+  });
+
+  it("rejects missing bio", () => {
+    const { bio: _, ...input } = validInput;
+    expect(completeOnboardingSchema.safeParse(input).success).toBe(false);
+  });
+
+  it("rejects temp_ username prefix", () => {
+    const result = completeOnboardingSchema.safeParse({
+      ...validInput,
+      username: "temp_abc123",
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects bio over 160 characters", () => {
+    const result = completeOnboardingSchema.safeParse({
+      ...validInput,
+      bio: "a".repeat(161),
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects empty bio", () => {
+    const result = completeOnboardingSchema.safeParse({
+      ...validInput,
+      bio: "",
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects whitespace-only bio", () => {
+    const result = completeOnboardingSchema.safeParse({
+      ...validInput,
+      bio: "   ",
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects country code that is not 2 letters", () => {
+    const result = completeOnboardingSchema.safeParse({
+      ...validInput,
+      country: "USA",
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects invalid birthDate format", () => {
+    const result = completeOnboardingSchema.safeParse({
+      ...validInput,
+      birthDate: "22-05-1996",
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects bio with profanity", () => {
+    const result = completeOnboardingSchema.safeParse({
+      ...validInput,
+      bio: "I am a fucking trainer",
+    });
+    expect(result.success).toBe(false);
   });
 });

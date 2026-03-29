@@ -29,10 +29,12 @@ export {
   validatePassword,
   loginIdentifierSchema,
   signupRequestSchema,
+  completeOnboardingSchema,
   type Password,
   type Username,
   type Email,
   type SignupRequestInput,
+  type CompleteOnboardingInput,
 } from "./auth";
 
 // User validators

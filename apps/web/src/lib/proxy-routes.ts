@@ -12,6 +12,7 @@ export const PROTECTED_ROUTES = [
   "/dashboard",
   "/to-dashboard",
   "/communities/create",
+  "/onboarding",
 ];
 
 // Dynamic route patterns that require authentication (checked via regex)
@@ -80,4 +81,14 @@ export function isAdminRoute(pathname: string): boolean {
 
 export function isNextInternal(pathname: string): boolean {
   return pathname.startsWith("/_next") || pathname.startsWith("/__next");
+}
+
+/**
+ * Returns true when a username indicates the user still needs to complete
+ * onboarding. OAuth sign-ups generate temporary usernames with "temp_" or
+ * "user_" prefixes that must be replaced before the user can proceed.
+ */
+export function needsOnboarding(username: unknown): boolean {
+  if (typeof username !== "string") return false;
+  return username.startsWith("temp_") || username.startsWith("user_");
 }
