@@ -1,6 +1,9 @@
 import type { Config } from "jest";
 import { createConfig } from "@trainers/test-utils/jest-config";
 
+// Pin timezone for deterministic date formatting tests
+process.env.TZ = "UTC";
+
 const config: Config = createConfig({
   displayName: "utils",
   testMatch: ["<rootDir>/src/**/__tests__/**/*.test.ts"],

@@ -108,7 +108,7 @@ describe("grantCommunityRequestAction", () => {
 
     expect(result).toEqual({
       success: false,
-      error: "Failed to approve community request",
+      error: "Failed to approve community request: Request not found",
     });
   });
 
@@ -232,7 +232,7 @@ describe("rejectCommunityRequestAction", () => {
 
     expect(result).toEqual({
       success: false,
-      error: "Failed to reject organization request",
+      error: "Failed to reject organization request: DB failure",
     });
   });
 });

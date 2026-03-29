@@ -228,7 +228,7 @@ Extract abstractions after 2–3 repetitions. See existing patterns before creat
 
 ## Code Style
 
-**TypeScript**: strict, `noUncheckedIndexedAccess`, `noImplicitOverride`. Type-only imports: `import { type Foo }`. Unused vars: prefix `_`. No `any` — use `unknown`.
+**TypeScript**: strict, `noUncheckedIndexedAccess`, `noImplicitOverride`. Type-only imports: `import { type Foo }`. Unused vars: prefix `_`. No `any` — use `unknown`. No `@ts-expect-error` or `@ts-ignore` — fix the type error instead. No `globalThis` for accessing Node.js globals — use proper imports or configure `tsconfig`/`jest.config` instead. Never `eslint-disable` `react-hooks/exhaustive-deps` — fix the dependency issue instead (extract to a ref, restructure the effect, or move the function outside the component).
 
 **Prettier**: `{ semi: true, singleQuote: false, tabWidth: 2, trailingComma: "es5", printWidth: 80 }`
 

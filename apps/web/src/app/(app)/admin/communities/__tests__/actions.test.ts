@@ -95,7 +95,7 @@ describe("approveCommunityAction", () => {
 
     expect(result).toEqual({
       success: false,
-      error: "Failed to approve organization",
+      error: "Failed to approve organization: Organization not found",
     });
   });
 });
@@ -161,7 +161,7 @@ describe("rejectCommunityAction", () => {
 
     expect(result).toEqual({
       success: false,
-      error: "Failed to reject organization",
+      error: "Failed to reject organization: DB failure",
     });
   });
 });
@@ -227,7 +227,7 @@ describe("suspendCommunityAction", () => {
 
     expect(result).toEqual({
       success: false,
-      error: "Failed to suspend organization",
+      error: "Failed to suspend organization: DB failure",
     });
   });
 });
@@ -269,7 +269,7 @@ describe("unsuspendCommunityAction", () => {
 
     expect(result).toEqual({
       success: false,
-      error: "Failed to unsuspend organization",
+      error: "Failed to unsuspend organization: DB failure",
     });
   });
 });
@@ -335,7 +335,7 @@ describe("transferOwnershipAction", () => {
 
     expect(result).toEqual({
       success: false,
-      error: "Failed to transfer ownership",
+      error: "Failed to transfer ownership: DB failure",
     });
   });
 });
