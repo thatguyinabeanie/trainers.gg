@@ -17,6 +17,18 @@
           {
             "type": "command",
             "command": "for f in $(echo \"$CLAUDE_FILE_PATHS\" | tr ',' ' '); do case \"$f\" in *.ts|*.tsx|*.js|*.jsx) npx eslint --fix --quiet \"$f\" 2>/dev/null || true;; esac; done"
+          },
+          {
+            "type": "command",
+            "command": "for f in $(echo \"$CLAUDE_FILE_PATHS\" | tr ',' ' '); do case \"$f\" in */packages/*/src/*.ts|*/packages/*/src/*.tsx) if grep -qE \"from ['\\\"](@?react|next/|expo)\" \"$f\" 2>/dev/null; then echo \"WARNING: Shared packages must have zero framework imports. Found React/Next/Expo import in $f\"; fi;; esac; done; exit 0"
+          },
+          {
+            "type": "command",
+            "command": "for f in $(echo \"$CLAUDE_FILE_PATHS\" | tr ',' ' '); do case \"$f\" in */supabase/migrations/*.sql) if grep -qi \"CREATE TABLE\" \"$f\" 2>/dev/null && ! grep -qi \"ENABLE ROW LEVEL SECURITY\" \"$f\" 2>/dev/null; then echo \"WARNING: New table detected without ENABLE ROW LEVEL SECURITY. All tables must have RLS enabled.\"; fi;; esac; done; exit 0"
+          },
+          {
+            "type": "command",
+            "command": "for f in $(echo \"$CLAUDE_FILE_PATHS\" | tr ',' ' '); do case \"$f\" in */supabase/migrations/*.sql) echo \"Remember: run 'pnpm generate-types' after applying this migration to update TypeScript types.\";; esac; done; exit 0"
           }
         ]
       },

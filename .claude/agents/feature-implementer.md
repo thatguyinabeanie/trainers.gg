@@ -11,6 +11,7 @@ tools:
   - Bash
   - Skill
 maxTurns: 50
+memory: project
 ---
 
 # Feature Implementer

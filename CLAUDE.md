@@ -20,8 +20,6 @@ Domain-specific guidance lives in `.claude/skills/`. Invoke the relevant skill b
 | `posthog-analytics`      | PostHog event constants, adding new events                           |
 | `atproto-bluesky`        | Bluesky/AT Protocol, DID resolution, public agent                    |
 | `writing-tests`          | Fishery factories, Supabase/AT Protocol mocks, Jest config           |
-| `code-style`             | TypeScript rules, naming conventions, Prettier, error handling       |
-| `architecture-principles`| Shared package vs app code, code reuse rules                         |
 | `infrastructure`         | PDS on Fly.io, ngrok tunnel for local dev                            |
 | `edge-function`          | Creating/updating Supabase edge functions                            |
 | `edge-function-imports`  | Deno import maps, `deno.json` management                             |
@@ -29,6 +27,16 @@ Domain-specific guidance lives in `.claude/skills/`. Invoke the relevant skill b
 | `writing-skills`         | Creating/editing skills, agents, maintaining the architecture        |
 
 Slash-command skills (invoked directly, not listed above): `commit`, `create-migration`, `finish-branch`, `post-pr-monitoring`, `ticket`.
+
+## Project Rules
+
+Path-scoped rules in `.claude/rules/` load automatically when working with matching files.
+
+| Rule                     | Applies To                              |
+| ------------------------ | --------------------------------------- |
+| `code-style.md`          | All TypeScript/TSX files (`**/*.{ts,tsx}`) |
+| `architecture.md`        | All shared packages (`packages/**/*`)   |
+| `testing-philosophy.md`  | All test files (`**/*.test.*`, `**/__tests__/**`) |
 
 ## Workspace Agents
 

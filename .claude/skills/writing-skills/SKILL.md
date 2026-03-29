@@ -246,3 +246,46 @@ Separate agents for writing tests vs reviewing them. The reviewer catches gaps t
 
 ### Agent Pipeline with File Handoffs
 Agents communicate through markdown files in a shared directory. Each agent reads the previous agent's output file and writes its own.
+
+## v2 Architecture
+
+### Rules Declare, Hooks Enforce
+
+The project uses a layered system where `.claude/rules/` files declare conventions and hooks automatically enforce them.
+
+| Rule Type | Example | Hook Needed? |
+|-----------|---------|-------------|
+| Machine-verifiable | "Use 2-space indent" | Yes — Prettier enforces |
+| Judgment-based | "Minimal flat design" | No — Claude internalizes |
+| Structural | "Server Actions in src/actions/" | Maybe — depends on strictness |
+
+### Path-Scoped Rules (`.claude/rules/`)
+
+Rules with `paths` frontmatter auto-load when Claude touches matching files:
+
+```yaml
+---
+paths:
+  - "**/*.{ts,tsx}"
+---
+```
+
+Use rules for enforcement and conventions. Use skills for reference guides and workflows.
+
+### Nested CLAUDE.md (Orientation Cards)
+
+Lightweight files in `apps/web/CLAUDE.md`, `apps/mobile/CLAUDE.md`, `packages/supabase/CLAUDE.md` that auto-load when entering those directories. They answer "where things are" — key files, paths, and skill pointers. Keep them under 30 lines.
+
+### Agent Memory
+
+Agents with `memory: project` accumulate learnings across sessions. Enable for agents that benefit from remembering patterns (qa-engineer, code-reviewer, feature-implementer). Don't enable for purely mechanical agents (pre-push-checker).
+
+### Decision Framework
+
+| If the content... | Put it in... |
+|---|---|
+| Applies to EVERY task | Root `CLAUDE.md` |
+| Is enforcement for certain file types | `.claude/rules/` with paths |
+| Is "where things are" for a directory | Nested `CLAUDE.md` |
+| Is a reference guide, template, or workflow | `.claude/skills/` |
+| Needs isolated execution | `.claude/agents/` |

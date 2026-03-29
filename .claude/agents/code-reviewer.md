@@ -10,6 +10,7 @@ tools:
   - Skill
 permissionMode: plan
 maxTurns: 20
+memory: project
 ---
 
 # Code Reviewer
