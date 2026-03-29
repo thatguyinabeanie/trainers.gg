@@ -283,6 +283,14 @@ describe("completeOnboardingSchema", () => {
     expect(result.success).toBe(false);
   });
 
+  it("rejects whitespace-only bio", () => {
+    const result = completeOnboardingSchema.safeParse({
+      ...validInput,
+      bio: "   ",
+    });
+    expect(result.success).toBe(false);
+  });
+
   it("rejects country code that is not 2 letters", () => {
     const result = completeOnboardingSchema.safeParse({
       ...validInput,

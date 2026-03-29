@@ -117,6 +117,7 @@ export const completeOnboardingSchema = z.object({
   country: z.string().length(2, "Country must be a 2-letter ISO code"),
   bio: z
     .string()
+    .trim()
     .min(1, "Bio is required")
     .max(160, "Bio must be 160 characters or less")
     .refine((val) => !containsProfanity(val), {

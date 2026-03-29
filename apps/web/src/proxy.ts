@@ -164,7 +164,7 @@ export default async function proxy(request: NextRequest) {
     user &&
     isProtectedRoute(pathname) &&
     !pathname.startsWith("/onboarding") &&
-    needsOnboarding(user.user_metadata?.username as string | undefined)
+    needsOnboarding(user.user_metadata?.username)
   ) {
     return NextResponse.redirect(new URL("/onboarding", request.url));
   }
@@ -174,7 +174,7 @@ export default async function proxy(request: NextRequest) {
   if (
     user &&
     pathname.startsWith("/onboarding") &&
-    !needsOnboarding(user.user_metadata?.username as string | undefined)
+    !needsOnboarding(user.user_metadata?.username)
   ) {
     return NextResponse.redirect(new URL("/dashboard/overview", request.url));
   }

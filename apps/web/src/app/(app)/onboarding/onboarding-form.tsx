@@ -72,7 +72,7 @@ export function OnboardingForm() {
     !isPending &&
     username.length > 0 &&
     country.length > 0 &&
-    bio.length > 0 &&
+    bio.trim().length > 0 &&
     usernameStatus === "available";
 
   function handleSubmit() {

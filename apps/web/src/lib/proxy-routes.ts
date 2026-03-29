@@ -88,7 +88,7 @@ export function isNextInternal(pathname: string): boolean {
  * onboarding. OAuth sign-ups generate temporary usernames with "temp_" or
  * "user_" prefixes that must be replaced before the user can proceed.
  */
-export function needsOnboarding(username: string | undefined): boolean {
-  if (!username) return false;
+export function needsOnboarding(username: unknown): boolean {
+  if (typeof username !== "string") return false;
   return username.startsWith("temp_") || username.startsWith("user_");
 }

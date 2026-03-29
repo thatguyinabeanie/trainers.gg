@@ -44,23 +44,39 @@ export async function completeOnboarding(data: {
     // Re-check username availability (race condition guard)
     const escaped = escapeLike(validated.username);
 
-    const { data: existingUser } = await supabase
+    const { data: existingUser, error: existingUserError } = await supabase
       .from("users")
       .select("id")
       .ilike("username", escaped)
       .neq("id", user.id)
       .maybeSingle();
 
+    if (existingUserError) {
+      console.error("Error checking username in users:", existingUserError);
+      return {
+        success: false,
+        error: "Unable to verify username availability",
+      };
+    }
+
     if (existingUser) {
       return { success: false, error: "Username is already taken" };
     }
 
-    const { data: existingAlt } = await supabase
+    const { data: existingAlt, error: existingAltError } = await supabase
       .from("alts")
       .select("id, user_id")
       .ilike("username", escaped)
       .neq("user_id", user.id)
       .maybeSingle();
+
+    if (existingAltError) {
+      console.error("Error checking username in alts:", existingAltError);
+      return {
+        success: false,
+        error: "Unable to verify username availability",
+      };
+    }
 
     if (existingAlt) {
       return { success: false, error: "Username is already taken" };
@@ -99,7 +115,7 @@ export async function completeOnboarding(data: {
       return { success: false, error: "Failed to update profile" };
     }
 
-    // Get main alt ID and update alt record
+    // Get main alt ID and update alt record (non-blocking — log failures)
     const { data: userData } = await supabase
       .from("users")
       .select("main_alt_id")
@@ -117,7 +133,6 @@ export async function completeOnboarding(data: {
 
       if (altError) {
         console.error("Error updating alt:", altError);
-        return { success: false, error: "Failed to sync username" };
       }
     }
 

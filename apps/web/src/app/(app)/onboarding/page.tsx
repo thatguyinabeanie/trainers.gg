@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { getUser } from "@/lib/supabase/server";
+import { needsOnboarding } from "@/lib/proxy-routes";
 import { OnboardingForm } from "./onboarding-form";
 
 export const metadata: Metadata = {
@@ -16,14 +17,13 @@ export default async function OnboardingPage() {
   }
 
   // If user already has a permanent username, redirect to dashboard
-  const username = user.user_metadata?.username as string | undefined;
-  if (username && !username.startsWith("temp_") && !username.startsWith("user_")) {
+  if (!needsOnboarding(user.user_metadata?.username)) {
     redirect("/dashboard/overview");
   }
 
   return (
     <div className="flex min-h-[calc(100vh-4rem)] items-center justify-center px-4 py-12">
-      <div className="flex w-full max-w-4xl overflow-hidden rounded-xl border border-zinc-800 bg-zinc-950">
+      <div className="flex w-full max-w-4xl overflow-hidden rounded-xl bg-zinc-950">
         {/* Welcome panel */}
         <div className="hidden w-[400px] shrink-0 bg-gradient-to-br from-teal-600 to-emerald-800 p-10 lg:flex lg:flex-col lg:justify-center">
           <h1 className="text-2xl font-bold text-white">Welcome, Trainer!</h1>

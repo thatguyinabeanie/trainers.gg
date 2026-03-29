@@ -168,6 +168,13 @@ describe("proxy-routes", () => {
         expect(needsOnboarding(username)).toBe(expected);
       }
     );
+
+    it("returns false for non-string types", () => {
+      expect(needsOnboarding(123)).toBe(false);
+      expect(needsOnboarding(true)).toBe(false);
+      expect(needsOnboarding(null)).toBe(false);
+      expect(needsOnboarding({})).toBe(false);
+    });
   });
 
   describe("isNextInternal", () => {
