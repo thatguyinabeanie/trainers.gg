@@ -31,17 +31,17 @@ Project-wide coding standards for all TypeScript and TSX code in the trainers.gg
 
 ## Naming Conventions
 
-| Kind | Convention | Example |
-|------|-----------|---------|
-| Files | `kebab-case` | `tournament-card.tsx` |
-| Components | `PascalCase` | `TournamentCard` |
-| Functions/vars | `camelCase` | `getTournament` |
-| Constants | `SCREAMING_SNAKE` | `MAX_TEAM_SIZE` |
-| Zod schemas | `camelCaseSchema` | `createTournamentSchema` |
+| Kind           | Convention        | Example                  |
+| -------------- | ----------------- | ------------------------ |
+| Files          | `kebab-case`      | `tournament-card.tsx`    |
+| Components     | `PascalCase`      | `TournamentCard`         |
+| Functions/vars | `camelCase`       | `getTournament`          |
+| Constants      | `SCREAMING_SNAKE` | `MAX_TEAM_SIZE`          |
+| Zod schemas    | `camelCaseSchema` | `createTournamentSchema` |
 
-## Dynamic Classes
+## Dynamic Classes (Web Only)
 
-Always use `cn()` from `@/lib/utils` for combining class names — template literals cause Tailwind purge issues.
+In `apps/web/`, always use `cn()` from `@/lib/utils` for combining class names — template literals cause Tailwind purge issues. Shared packages and mobile do not use `@/` aliases or Tailwind.
 
 ```tsx
 // Good
@@ -53,8 +53,8 @@ Always use `cn()` from `@/lib/utils` for combining class names — template lite
 
 ## Error Handling
 
-| Context | Pattern |
-|---------|---------|
-| Validation errors | `throw new Error("message")` |
-| Query not found | Return `null` |
-| Server Actions | Return `{ success: boolean, error?: string }` |
+| Context           | Pattern                                       |
+| ----------------- | --------------------------------------------- |
+| Validation errors | `throw new Error("message")`                  |
+| Query not found   | Return `null`                                 |
+| Server Actions    | Return `{ success: boolean, error?: string }` |

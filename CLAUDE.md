@@ -32,11 +32,11 @@ Slash-command skills (invoked directly, not listed above): `commit`, `create-mig
 
 Path-scoped rules in `.claude/rules/` load automatically when working with matching files.
 
-| Rule                    | Applies To                                        |
-| ----------------------- | ------------------------------------------------- |
-| `code-style.md`         | All TypeScript/TSX files (`**/*.{ts,tsx}`)        |
-| `architecture.md`       | All shared packages (`packages/**/*`)             |
-| `testing-philosophy.md` | All test files (`**/*.test.*`, `**/__tests__/**`) |
+| Rule                    | Applies To                                                                    |
+| ----------------------- | ----------------------------------------------------------------------------- |
+| `code-style.md`         | All TypeScript/TSX files (`**/*.{ts,tsx}`)                                    |
+| `architecture.md`       | All shared packages (`packages/**/*`)                                         |
+| `testing-philosophy.md` | All test files (`**/*.test.*`, `**/*.spec.*`, `**/__tests__/**`, `**/e2e/**`) |
 
 ## Workspace Agents
 

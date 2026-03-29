@@ -9,7 +9,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "[ -n \"$CLAUDE_FILE_PATHS\" ] && npx prettier --write $CLAUDE_FILE_PATHS || exit 0"
+            "command": "if [ -n \"$CLAUDE_FILE_PATHS\" ]; then npx prettier --write $(echo \"$CLAUDE_FILE_PATHS\" | tr ',' ' '); fi"
           },
           {
             "type": "command",
@@ -17,7 +17,7 @@
           },
           {
             "type": "command",
-            "command": "for f in $(echo \"$CLAUDE_FILE_PATHS\" | tr ',' ' '); do case \"$f\" in */packages/*/src/*.ts|*/packages/*/src/*.tsx) if grep -qE \"from ['\\\"](@?react|next/|expo)\" \"$f\" 2>/dev/null; then echo \"WARNING: Shared packages must have zero framework imports. Found React/Next/Expo import in $f\"; fi;; esac; done; exit 0"
+            "command": "for f in $(echo \"$CLAUDE_FILE_PATHS\" | tr ',' ' '); do case \"$f\" in *.ts|*.tsx) if echo \"$f\" | grep -qE '.*/packages/.*/src/'; then if grep -qE \"from ['\\\"](@?react|next/|expo)\" \"$f\" 2>/dev/null; then echo \"WARNING: Shared packages must have zero framework imports. Found React/Next/Expo import in $f\"; fi; fi;; esac; done; exit 0"
           },
           {
             "type": "command",
