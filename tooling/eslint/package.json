@@ -8,10 +8,7 @@
     "./nextjs": "./nextjs.js",
     "./expo": "./expo.js"
   },
-  "scripts": {
-    "format": "prettier --write \"*.js\"",
-    "format:check": "prettier --check \"*.js\""
-  },
+  "scripts": {},
   "files": [
     "base.js",
     "nextjs.js",

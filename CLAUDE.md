@@ -6,20 +6,20 @@ All-in-one integrated platform for Pokemon fans. Current focus: competitive batt
 
 Domain-specific guidance lives in `.claude/skills/`. Invoke the relevant skill before working in an area.
 
-| Skill                 | When to Use                                                     |
-| --------------------- | --------------------------------------------------------------- |
-| `building-web-app`    | Web routes, components, Server Actions, data fetching, proxy.ts |
-| `building-mobile-app` | Mobile screens, Tamagui UI, Expo Router, SecureStore            |
-| `supabase-queries`    | DB queries/mutations, client selection, Edge Functions          |
-| `input-validation`    | Zod schemas, Server Action return types, profanity filter       |
-| `mobile-parity`       | After developing web features, check for mobile parity tickets  |
-| `tournament-logic`    | Swiss pairings, standings, brackets, adapters                   |
-| `pokemon-parsing`     | Team parsing, legality validation, type effectiveness           |
-| `shared-utils`        | `getLabel()`, `getErrorMessage()`, permissions, formatting      |
-| `posthog-analytics`   | PostHog event constants, adding new events                      |
-| `atproto-bluesky`     | Bluesky/AT Protocol, DID resolution, public agent               |
-| `design-tokens`       | OKLCH tokens, design tokens, web/mobile theme exports           |
-| `writing-tests`       | Fishery factories, Supabase/AT Protocol mocks, Jest config      |
+| Skill                 | When to Use                                                                |
+| --------------------- | -------------------------------------------------------------------------- |
+| `building-web-app`    | Web routes, components, Server Actions, data fetching, proxy.ts            |
+| `building-mobile-app` | Mobile screens, Tamagui UI, Expo Router, SecureStore                       |
+| `supabase-queries`    | DB queries/mutations, client selection, Edge Functions                     |
+| `input-validation`    | Zod schemas, Server Action return types, profanity filter                  |
+| `mobile-parity`       | After developing web features, check for mobile parity tickets             |
+| `tournament-logic`    | Swiss pairings, standings, brackets, adapters                              |
+| `pokemon-parsing`     | Team parsing, legality validation, type effectiveness                      |
+| `shared-utils`        | `getLabel()`, `getErrorMessage()`, permissions, formatting                 |
+| `posthog-analytics`   | PostHog event constants, adding new events                                 |
+| `atproto-bluesky`     | Bluesky/AT Protocol, DID resolution, public agent                          |
+| `design-tokens`       | OKLCH tokens, design tokens, web/mobile theme exports                      |
+| `writing-tests`       | Fishery factories, Supabase/AT Protocol mocks, Jest config                 |
 | `code-audit`          | Codebase audits for type safety, code reuse, architecture, maintainability |
 | `product-vision`      | Product vision, feature roadmap, differentiators, user types              |
 | `competitive-landscape` | Competitive landscape, positioning, alternatives by category            |
@@ -140,7 +140,7 @@ See `jest.config.ts` (root), `codecov.yml`, and `.github/workflows/ci.yml` for c
 
 **Prefer existing helpers over inline logic.** Check `@trainers/utils` and the package's own helpers before writing new code. Extract repeated test setup into shared helpers. Keep tests DRY and simple (KISS) — if a utility function exists, use it.
 
-Pre-commit: Husky runs lint-staged (Prettier auto-fix). Fix errors, re-stage, retry — never skip hooks.
+Pre-commit: Lefthook runs ESLint `--fix`, Prettier auto-fix, and typecheck on affected packages. Fix errors, re-stage, retry — never skip hooks.
 
 ## Critical Rules
 

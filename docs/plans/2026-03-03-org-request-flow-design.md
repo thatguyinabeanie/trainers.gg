@@ -10,19 +10,19 @@ There is no "direct create" path. Every organization goes through request → ad
 
 ### New table: `organization_requests`
 
-| Column | Type | Notes |
-|--------|------|-------|
-| `id` | bigint (identity PK) | |
-| `user_id` | uuid (FK → users) | Requesting user |
-| `name` | text (1–100 chars) | Requested org name |
-| `slug` | text (1–100 chars) | Requested URL slug |
-| `description` | text (≤500 chars, nullable) | Optional description |
-| `status` | enum: `pending` / `approved` / `rejected` | |
-| `admin_notes` | text (≤1000 chars, nullable) | Rejection reason or admin feedback |
-| `reviewed_by` | uuid (FK → auth.users, nullable) | Which admin reviewed |
-| `reviewed_at` | timestamptz (nullable) | When reviewed |
-| `created_at` | timestamptz | |
-| `updated_at` | timestamptz | |
+| Column        | Type                                      | Notes                              |
+| ------------- | ----------------------------------------- | ---------------------------------- |
+| `id`          | bigint (identity PK)                      |                                    |
+| `user_id`     | uuid (FK → users)                         | Requesting user                    |
+| `name`        | text (1–100 chars)                        | Requested org name                 |
+| `slug`        | text (1–100 chars)                        | Requested URL slug                 |
+| `description` | text (≤500 chars, nullable)               | Optional description               |
+| `status`      | enum: `pending` / `approved` / `rejected` |                                    |
+| `admin_notes` | text (≤1000 chars, nullable)              | Rejection reason or admin feedback |
+| `reviewed_by` | uuid (FK → auth.users, nullable)          | Which admin reviewed               |
+| `reviewed_at` | timestamptz (nullable)                    | When reviewed                      |
+| `created_at`  | timestamptz                               |                                    |
+| `updated_at`  | timestamptz                               |                                    |
 
 ### Constraints
 
@@ -91,10 +91,10 @@ Shows full request info (name, slug, description, requester profile, submission 
 
 Created by admin approve/reject mutations via service role client:
 
-| Action | Title | Body | Links to |
-|--------|-------|------|----------|
+| Action   | Title                           | Body                                            | Links to                |
+| -------- | ------------------------------- | ----------------------------------------------- | ----------------------- |
 | Approved | "Organization request approved" | `Your organization "{name}" has been approved!` | `/organizations/{slug}` |
-| Rejected | "Organization request update" | `Your request for "{name}" was not approved.` | `/organizations/create` |
+| Rejected | "Organization request update"   | `Your request for "{name}" was not approved.`   | `/organizations/create` |
 
 Both types use the `Building2` icon in the notification bell.
 
@@ -111,13 +111,13 @@ New edge function `send-org-request-notification` following the `send-invite` pa
 
 ## What gets removed / changed
 
-| Current | After |
-|---------|-------|
-| `createOrganization` server action (user-facing) | Removed — replaced by `submitOrganizationRequestAction` |
-| `CreateOrganizationForm` component | Replaced by `RequestOrganizationForm` (same fields, different action) |
-| Page title "Create Organization" | "Request an Organization" |
-| TO dashboard button "Create Organization" | "Request an Organization" |
-| Direct org creation mutation (user-facing) | Internal only, called by admin approval flow |
+| Current                                          | After                                                                 |
+| ------------------------------------------------ | --------------------------------------------------------------------- |
+| `createOrganization` server action (user-facing) | Removed — replaced by `submitOrganizationRequestAction`               |
+| `CreateOrganizationForm` component               | Replaced by `RequestOrganizationForm` (same fields, different action) |
+| Page title "Create Organization"                 | "Request an Organization"                                             |
+| TO dashboard button "Create Organization"        | "Request an Organization"                                             |
+| Direct org creation mutation (user-facing)       | Internal only, called by admin approval flow                          |
 
 The existing `/admin/organizations` page stays as-is for managing orgs that already exist.
 

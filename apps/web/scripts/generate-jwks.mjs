@@ -93,9 +93,7 @@ async function main() {
 
     console.log("✅ JWKS generated successfully");
     console.log(`   File: ${JWKS_FILE}`);
-    console.log(
-      "   Public key will be available at /oauth/jwks.json"
-    );
+    console.log("   Public key will be available at /oauth/jwks.json");
 
     return 0;
   } catch (error) {
@@ -103,7 +101,9 @@ async function main() {
     console.error(error.stack);
     console.log("");
     console.log("⚠️  Build will continue, but Bluesky OAuth will not work");
-    console.log("   Check that ATPROTO_PRIVATE_KEY is a valid ES256 private key");
+    console.log(
+      "   Check that ATPROTO_PRIVATE_KEY is a valid ES256 private key"
+    );
     return 0; // Don't fail the build
   }
 }

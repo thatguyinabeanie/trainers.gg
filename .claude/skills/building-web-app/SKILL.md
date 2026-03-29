@@ -9,14 +9,14 @@ Next.js 16 (React 19) web app. App Router, Server Components by default.
 
 ## Route Groups
 
-| Group              | Path                               | Purpose                               |
-| ------------------ | ---------------------------------- | ------------------------------------- |
-| `(auth-pages)`     | /sign-in, /sign-up, etc.           | Unauthenticated auth flows            |
-| `(dashboard)`      | /dashboard, /settings, /onboarding | Protected — requires auth             |
-| `(org)`            | /organizations/[orgSlug]           | Org hub pages                         |
-| `tournaments/[id]` | /tournaments/[id]                  | Tournament detail, matches, standings |
-| `admin`            | /admin/*                           | Site admin only (site_admin role)     |
-| `players`          | /players                           | Public player directory               |
+| Group              | Path                               | Purpose                                                   |
+| ------------------ | ---------------------------------- | --------------------------------------------------------- |
+| `(auth-pages)`     | /sign-in, /sign-up, etc.           | Unauthenticated auth flows                                |
+| `(dashboard)`      | /dashboard, /settings, /onboarding | Protected — requires auth                                 |
+| `(org)`            | /organizations/[orgSlug]           | Org hub pages                                             |
+| `tournaments/[id]` | /tournaments/[id]                  | Tournament detail, matches, standings                     |
+| `admin`            | /admin/\*                          | Site admin only (site_admin role)                         |
+| `players`          | /players                           | Public player directory                                   |
 | `u/[handle]`       | /u/[handle]                        | Public player profile (overview, teams, tournaments tabs) |
 
 ## Component Organization
@@ -46,20 +46,23 @@ export async function myAction(data: FormData) {
   try {
     return { success: true };
   } catch (e) {
-    return { success: false, error: getErrorMessage(e, "Something went wrong") };
+    return {
+      success: false,
+      error: getErrorMessage(e, "Something went wrong"),
+    };
   }
 }
 ```
 
 ## Key Files
 
-| File | Purpose |
-| ---- | ------- |
-| `src/proxy.ts` | Request interception — auth checks, route protection, maintenance mode |
-| `src/lib/supabase/server.ts` | Server-side Supabase client (RSC + Server Actions) |
-| `src/lib/supabase/client.ts` | Browser Supabase client (client components) |
-| `src/lib/feature-flags/` | Feature gating — check before building gated features |
-| `src/components/providers.tsx` | TanStack Query client setup |
+| File                           | Purpose                                                                |
+| ------------------------------ | ---------------------------------------------------------------------- |
+| `src/proxy.ts`                 | Request interception — auth checks, route protection, maintenance mode |
+| `src/lib/supabase/server.ts`   | Server-side Supabase client (RSC + Server Actions)                     |
+| `src/lib/supabase/client.ts`   | Browser Supabase client (client components)                            |
+| `src/lib/feature-flags/`       | Feature gating — check before building gated features                  |
+| `src/components/providers.tsx` | TanStack Query client setup                                            |
 
 ## Data Fetching
 

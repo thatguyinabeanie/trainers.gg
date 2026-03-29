@@ -75,13 +75,6 @@
     "clean": {
       "cache": false
     },
-    "format": {
-      "outputs": [],
-      "cache": false
-    },
-    "format:check": {
-      "outputs": []
-    },
     "db:start": {
       "cache": false,
       "persistent": true

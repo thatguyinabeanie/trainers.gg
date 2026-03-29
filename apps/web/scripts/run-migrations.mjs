@@ -104,12 +104,8 @@ function getEnvironment(projectRef = null) {
     // 2. Supabase branching is not enabled or the branch doesn't exist yet
     // 3. The Supabase Vercel integration falls back to production URL
     if (!PRODUCTION_PROJECT_REF) {
-      console.log(
-        `\n⚠️  WARNING: SUPABASE_PRODUCTION_PROJECT_REF is not set!`
-      );
-      console.log(
-        `   Cannot verify whether this is the production database.`
-      );
+      console.log(`\n⚠️  WARNING: SUPABASE_PRODUCTION_PROJECT_REF is not set!`);
+      console.log(`   Cannot verify whether this is the production database.`);
       console.log(`   Seeding will be SKIPPED as a safety precaution.\n`);
       return { type: "preview", shouldRun: true, shouldSeed: false };
     }
@@ -357,10 +353,14 @@ async function runMigrations() {
     // Supabase GitHub integration applies migrations when creating the preview branch.
     // Running them again from the Vercel build would cause duplicate schema objects.
     console.log("\n⏭️  Skipping migrations for preview branch");
-    console.log("   Supabase automatically applies migrations when creating preview branches.");
+    console.log(
+      "   Supabase automatically applies migrations when creating preview branches."
+    );
   } else if (env.type === "preview" && isProductionDb) {
     // SAFETY: Never push unmerged branch migrations to production.
-    console.log("\n⛔ Skipping migrations — preview deploy connected to production DB");
+    console.log(
+      "\n⛔ Skipping migrations — preview deploy connected to production DB"
+    );
     console.log("   Unmerged migrations must not be applied to production.");
     console.log("   Migrations will run when the branch is merged to main.\n");
   } else {
@@ -378,7 +378,9 @@ async function runMigrations() {
   // imports, so function declarations are NOT in config.toml — this build
   // pipeline is the sole deployment path for edge functions.
   if (env.type === "preview" && isProductionDb) {
-    console.log("\n⏭️  Skipping edge function deploy — connected to production DB");
+    console.log(
+      "\n⏭️  Skipping edge function deploy — connected to production DB"
+    );
   } else {
     console.log("\n📦 Vendoring monorepo packages for edge functions...");
     exec("npx tsx scripts/vendor-packages.ts --deploy", {
@@ -386,7 +388,10 @@ async function runMigrations() {
     });
 
     console.log("\n🚀 Deploying edge functions...");
-    exec(`npx supabase functions deploy --project-ref ${projectRef} --use-api`, { env: cliEnv });
+    exec(
+      `npx supabase functions deploy --project-ref ${projectRef} --use-api`,
+      { env: cliEnv }
+    );
   }
 
   // Run seed data for preview environments

@@ -147,7 +147,7 @@ function SectionSeparator({ label }: { label: string }) {
   return (
     <div className="relative py-2">
       <Separator />
-      <span className="bg-card text-muted-foreground absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 px-2 text-xs font-medium">
+      <span className="bg-card text-muted-foreground absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 px-2 text-xs font-medium">
         {label}
       </span>
     </div>

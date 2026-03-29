@@ -149,7 +149,7 @@ export function TopNavAuthSection() {
       <DropdownMenu>
         <DropdownMenuTrigger
           aria-label="User menu"
-          className="hover:bg-accent focus-visible:ring-ring inline-flex cursor-pointer items-center justify-center gap-2 rounded-md bg-transparent px-2 py-1.5 text-sm font-medium whitespace-nowrap transition-colors focus-visible:ring-1 focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50"
+          className="hover:bg-accent focus-visible:ring-ring inline-flex cursor-pointer items-center justify-center gap-2 whitespace-nowrap rounded-md bg-transparent px-2 py-1.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:opacity-50"
         >
           <Avatar className="h-8 w-8">
             {avatarUrl && <AvatarImage src={avatarUrl} alt={displayName} />}
@@ -163,7 +163,7 @@ export function TopNavAuthSection() {
         </DropdownMenuTrigger>
         <DropdownMenuContent className="w-56" align="end">
           <div className="px-1.5 py-1.5">
-            <p className="text-sm leading-none font-medium">{displayName}</p>
+            <p className="text-sm font-medium leading-none">{displayName}</p>
           </div>
           <DropdownMenuSeparator />
           <DropdownMenuItem>

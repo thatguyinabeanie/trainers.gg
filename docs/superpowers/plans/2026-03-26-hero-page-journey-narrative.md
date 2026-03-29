@@ -14,18 +14,18 @@
 
 ## File Map
 
-| Action | Path |
-|--------|------|
-| **Modify** | `apps/web/src/components/landing/hero-cta.tsx` |
-| **Modify** | `apps/web/src/components/landing/__tests__/hero-cta.test.tsx` |
-| **Create** | `apps/web/src/components/landing/journey-steps.tsx` |
-| **Create** | `apps/web/src/components/landing/__tests__/journey-steps.test.tsx` |
-| **Modify** | `apps/web/src/app/page.tsx` |
-| **Delete** | `apps/web/src/components/landing/feature-cards.tsx` |
-| **Delete** | `apps/web/src/components/landing/coming-soon-cards.tsx` |
-| **Delete** | `apps/web/src/components/landing/analytics-card-link.tsx` |
-| **Delete** | `apps/web/src/components/landing/__tests__/feature-cards.test.tsx` |
-| **Delete** | `apps/web/src/components/landing/__tests__/coming-soon-cards.test.tsx` |
+| Action     | Path                                                                     |
+| ---------- | ------------------------------------------------------------------------ |
+| **Modify** | `apps/web/src/components/landing/hero-cta.tsx`                           |
+| **Modify** | `apps/web/src/components/landing/__tests__/hero-cta.test.tsx`            |
+| **Create** | `apps/web/src/components/landing/journey-steps.tsx`                      |
+| **Create** | `apps/web/src/components/landing/__tests__/journey-steps.test.tsx`       |
+| **Modify** | `apps/web/src/app/page.tsx`                                              |
+| **Delete** | `apps/web/src/components/landing/feature-cards.tsx`                      |
+| **Delete** | `apps/web/src/components/landing/coming-soon-cards.tsx`                  |
+| **Delete** | `apps/web/src/components/landing/analytics-card-link.tsx`                |
+| **Delete** | `apps/web/src/components/landing/__tests__/feature-cards.test.tsx`       |
+| **Delete** | `apps/web/src/components/landing/__tests__/coming-soon-cards.test.tsx`   |
 | **Delete** | `apps/web/src/components/landing/__tests__/analytics-card-link.test.tsx` |
 
 ---
@@ -35,6 +35,7 @@
 The spec requires the secondary CTA to link to `/players` ("Explore Players"), not `/tournaments` ("Browse Tournaments").
 
 **Files:**
+
 - Modify: `apps/web/src/components/landing/hero-cta.tsx`
 - Modify: `apps/web/src/components/landing/__tests__/hero-cta.test.tsx`
 
@@ -118,6 +119,7 @@ git commit -m "feat: update hero secondary CTA to Explore Players"
 ## Task 2: Write failing tests for `JourneySteps`
 
 **Files:**
+
 - Create: `apps/web/src/components/landing/__tests__/journey-steps.test.tsx`
 
 - [ ] **Step 1: Create the test file**
@@ -144,9 +146,7 @@ describe("JourneySteps", () => {
     "Find who's competing — and where they hang out.",
   ])("renders step headline: %s", (headline) => {
     render(<JourneySteps />);
-    expect(
-      screen.getByRole("heading", { name: headline })
-    ).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: headline })).toBeInTheDocument();
   });
 
   it("renders Coming Soon badges for Build Smarter and Articles steps", () => {
@@ -183,6 +183,7 @@ Expected: FAIL — `Cannot find module '../journey-steps'`
 ## Task 3: Implement `JourneySteps`
 
 **Files:**
+
 - Create: `apps/web/src/components/landing/journey-steps.tsx`
 
 - [ ] **Step 1: Create the component file**
@@ -347,7 +348,7 @@ function MetaPreview() {
           </div>
         </div>
       ))}
-      <div className="border-amber-500/20 bg-amber-500/10 mt-2 rounded border px-3 py-2 text-xs text-amber-500">
+      <div className="mt-2 rounded border border-amber-500/20 bg-amber-500/10 px-3 py-2 text-xs text-amber-500">
         🔜 Regionals data integration coming soon
       </div>
     </div>
@@ -454,7 +455,7 @@ function CommunityPreview() {
           </div>
         ))}
       </div>
-      <div className="border-amber-500/20 bg-amber-500/10 rounded border px-3 py-2 text-xs">
+      <div className="rounded border border-amber-500/20 bg-amber-500/10 px-3 py-2 text-xs">
         <p className="font-semibold text-amber-500">🔜 Discord Server Index</p>
         <p className="text-muted-foreground mt-0.5">
           Find competitive Pokémon communities — all in one place
@@ -533,10 +534,9 @@ export function JourneySteps() {
         description={
           <>
             Search players by format, country, or name and browse the
-            leaderboard.{" "}
-            <span className="text-foreground">Coming soon:</span> a searchable
-            index of competitive Pokémon Discord servers — find your community
-            in one place.
+            leaderboard. <span className="text-foreground">Coming soon:</span> a
+            searchable index of competitive Pokémon Discord servers — find your
+            community in one place.
           </>
         }
         preview={<CommunityPreview />}
@@ -567,6 +567,7 @@ git commit -m "feat: add JourneySteps component with 7-step hero narrative"
 ## Task 4: Update `page.tsx`
 
 **Files:**
+
 - Modify: `apps/web/src/app/page.tsx`
 
 - [ ] **Step 1: Replace the file**
@@ -656,6 +657,7 @@ git commit -m "feat: wire journey narrative into hero page, update metadata and 
 ## Task 5: Delete replaced components and their tests
 
 **Files:**
+
 - Delete: `apps/web/src/components/landing/feature-cards.tsx`
 - Delete: `apps/web/src/components/landing/coming-soon-cards.tsx`
 - Delete: `apps/web/src/components/landing/analytics-card-link.tsx`

@@ -61,7 +61,7 @@ export function FormatPerformance({ altId: _altId }: FormatPerformanceProps) {
           {formatStats.map((stat) => (
             <div
               key={stat.format}
-              className="group bg-card hover:bg-muted/50 rounded-lg border p-4 transition-colors"
+              className="bg-card hover:bg-muted/50 group rounded-lg border p-4 transition-colors"
             >
               <div className="flex items-center justify-between">
                 <div className="flex-1">

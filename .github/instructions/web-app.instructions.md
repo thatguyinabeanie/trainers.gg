@@ -11,6 +11,7 @@ Next.js 16 with React 19, App Router, and React Compiler enabled.
 ## Request Interception
 
 This project uses `proxy.ts` at `src/proxy.ts` (Next.js 16 pattern), not `middleware.ts`. The proxy handles:
+
 - Admin route protection (site_admin role + sudo mode)
 - Impersonation header propagation
 - Protected route authentication redirects

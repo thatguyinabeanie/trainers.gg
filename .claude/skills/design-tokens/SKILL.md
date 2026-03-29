@@ -37,6 +37,7 @@ pnpm --filter @trainers/theme typecheck       # Type checking
 ## Build Process
 
 `pnpm build` runs `tsx scripts/generate.ts` and outputs:
+
 - `src/generated/theme.css` — CSS custom properties for Tailwind
 - `src/generated/mobile-theme.ts` — Tamagui theme object
 - `src/generated/colors.hex.ts` — Hex color values
