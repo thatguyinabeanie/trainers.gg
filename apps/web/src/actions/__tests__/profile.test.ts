@@ -25,9 +25,10 @@ jest.mock("botid/server", () => ({
   checkBotId: jest.fn(async () => ({ isBot: false })),
 }));
 
+const mockUpdateTag = jest.fn();
 jest.mock("next/cache", () => ({
   revalidatePath: jest.fn(),
-  updateTag: jest.fn(),
+  updateTag: (...args: unknown[]) => mockUpdateTag(...args),
 }));
 
 // Mock global fetch for PDS handle checks
@@ -462,16 +463,15 @@ describe("updateProfile", () => {
     global.fetch = jest.fn().mockResolvedValue({
       json: () => Promise.resolve({ success: true }),
     });
-    // Default fallback for any from() call not covered by mockReturnValueOnce.
-    // Handles the "current username" fetch for cache invalidation and any
-    // other from() calls that tests don't explicitly mock.
+    // Default fallback for the "current username" fetch and bio/alt queries
+    // added by cache invalidation. Keep eq chainable so
+    // select(...).eq(...).maybeSingle() works correctly.
     mockFrom.mockImplementation(() =>
       createQueryBuilder({
         maybeSingle: jest.fn().mockResolvedValue({
           data: { username: "test_user", main_alt_id: null },
           error: null,
         }),
-        eq: jest.fn().mockResolvedValue({ error: null }),
       })
     );
   });
@@ -521,6 +521,19 @@ describe("updateProfile", () => {
     });
 
     expect(result.success).toBe(true);
+  });
+
+  it("invalidates player cache on successful profile update", async () => {
+    mockUsernameQuery();
+    mockFrom.mockReturnValueOnce(
+      createQueryBuilder({
+        eq: jest.fn().mockResolvedValue({ error: null }),
+      })
+    );
+
+    await updateProfile({ country: "US" });
+
+    expect(mockUpdateTag).toHaveBeenCalledWith("player:test_user");
   });
 
   it("handles database update errors", async () => {

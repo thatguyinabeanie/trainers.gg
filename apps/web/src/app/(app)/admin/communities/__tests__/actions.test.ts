@@ -80,6 +80,13 @@ describe("approveCommunityAction", () => {
     );
   });
 
+  it("invalidates community cache tags on success", async () => {
+    await approveCommunityAction(ORG_ID);
+
+    expect(mockUpdateTag).toHaveBeenCalledWith("communities-list");
+    expect(mockUpdateTag).toHaveBeenCalledWith(`community:${ORG_ID}`);
+  });
+
   it("returns an error when auth check fails", async () => {
     mockRequireAdminWithSudo.mockResolvedValue({
       success: false,
@@ -90,6 +97,7 @@ describe("approveCommunityAction", () => {
 
     expect(result).toEqual({ success: false, error: "Not authenticated" });
     expect(mockApproveOrganization).not.toHaveBeenCalled();
+    expect(mockUpdateTag).not.toHaveBeenCalled();
   });
 
   it("returns a specific error when the query throws", async () => {

@@ -3,8 +3,9 @@
  */
 
 // Mock next/cache
+const mockUpdateTag = jest.fn();
 jest.mock("next/cache", () => ({
-  updateTag: jest.fn(),
+  updateTag: (...args: unknown[]) => mockUpdateTag(...args),
 }));
 
 // Mock Supabase client with auth.getUser and users query for invalidatePlayerCache
@@ -62,6 +63,14 @@ describe("createAltAction", () => {
     });
   });
 
+  it("invalidates player cache after creating an alt", async () => {
+    mockCreateAlt.mockResolvedValue({ id: 101 });
+
+    await createAltAction({ username: "ash_ketchum" });
+
+    expect(mockUpdateTag).toHaveBeenCalledWith("player:test_user");
+  });
+
   it("returns a validation error for an invalid username (special characters)", async () => {
     const result = await createAltAction({
       username: "InvalidUser!",
@@ -73,6 +82,7 @@ describe("createAltAction", () => {
     }
     // The mutation should never be called when validation fails
     expect(mockCreateAlt).not.toHaveBeenCalled();
+    expect(mockUpdateTag).not.toHaveBeenCalled();
   });
 
   it("returns an error when the mutation throws", async () => {

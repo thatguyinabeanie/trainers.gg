@@ -72,6 +72,13 @@ describe("grantCommunityRequestAction", () => {
     );
   });
 
+  it("invalidates community and request cache tags on approval", async () => {
+    await grantCommunityRequestAction(REQUEST_ID);
+
+    expect(mockUpdateTag).toHaveBeenCalledWith("communities-list");
+    expect(mockUpdateTag).toHaveBeenCalledWith("community-requests-list");
+  });
+
   it("sends email notification after approval", async () => {
     await grantCommunityRequestAction(REQUEST_ID);
 
@@ -91,6 +98,7 @@ describe("grantCommunityRequestAction", () => {
 
     expect(result).toEqual({ success: false, error: "Not authenticated" });
     expect(mockGrantCommunityRequest).not.toHaveBeenCalled();
+    expect(mockUpdateTag).not.toHaveBeenCalled();
   });
 
   it.each([
@@ -188,6 +196,12 @@ describe("rejectCommunityRequestAction", () => {
       ADMIN_USER_ID,
       "Incomplete application"
     );
+  });
+
+  it("invalidates request cache tag on rejection", async () => {
+    await rejectCommunityRequestAction(REQUEST_ID, "Spam");
+
+    expect(mockUpdateTag).toHaveBeenCalledWith("community-requests-list");
   });
 
   it("sends email notification after rejection", async () => {
