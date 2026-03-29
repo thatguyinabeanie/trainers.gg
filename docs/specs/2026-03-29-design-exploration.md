@@ -21,6 +21,7 @@
 | **Claude Code (Anthropic)** | https://claude.com/product/claude-code | Warm neutral base (cream, not white), serif headings + sans body, terracotta accent, generous whitespace, calm confidence. This is the closest single reference to our target feel. |
 | **Headspace** | https://www.headspace.com/ | Warm, calm, generous whitespace, serif headings with sans body, soft rounded elements. Similar to Claude's approach but even softer. |
 | **bored.com** | https://bored.com/ | Minimal color (black/white/yellow accent), dense but scannable card grid, personality through content not decoration. The card-based category pattern is interesting for community hub / resource directory. |
+| **Wholesome Bowl (Dribbble)** | https://dribbble.com/shots/20431831-Wholesome-Bowl-Noodle | Warm coral/salmon base, hand-drawn script mixed with clean sans, organic wavy shapes, warm palette. "Wholesome" without being childish. Mood board reference for warmth and playfulness. |
 
 ### Anti-References (what NOT to do)
 
