@@ -19,6 +19,7 @@ Domain-specific guidance lives in `.claude/skills/`. Invoke the relevant skill b
 | `posthog-analytics`   | PostHog event constants, adding new events                                 |
 | `atproto-bluesky`     | Bluesky/AT Protocol, DID resolution, public agent                          |
 | `design-tokens`       | OKLCH tokens, design tokens, web/mobile theme exports                      |
+| `design-system`       | Elevation, typography hierarchy, transitions, layout conventions           |
 | `writing-tests`       | Fishery factories, Supabase/AT Protocol mocks, Jest config                 |
 | `code-audit`          | Codebase audits for type safety, code reuse, architecture, maintainability |
 | `product-vision`      | Product vision, feature roadmap, differentiators, user types              |
