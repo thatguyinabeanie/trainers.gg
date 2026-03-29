@@ -11,18 +11,16 @@ import {
 import { cn } from "@/lib/utils";
 import { CalendarIcon, Clock } from "lucide-react";
 
-// Common tournament start times for quick selection
+// Common tournament start times for quick selection (8 presets = 4x2 grid)
 const TIME_PRESETS = [
-  { label: "9:00 AM", hours: 9, minutes: 0 },
-  { label: "10:00 AM", hours: 10, minutes: 0 },
-  { label: "11:00 AM", hours: 11, minutes: 0 },
-  { label: "12:00 PM", hours: 12, minutes: 0 },
-  { label: "1:00 PM", hours: 13, minutes: 0 },
-  { label: "2:00 PM", hours: 14, minutes: 0 },
-  { label: "3:00 PM", hours: 15, minutes: 0 },
-  { label: "5:00 PM", hours: 17, minutes: 0 },
-  { label: "6:00 PM", hours: 18, minutes: 0 },
-  { label: "7:00 PM", hours: 19, minutes: 0 },
+  { label: "9 AM", hours: 9, minutes: 0 },
+  { label: "10 AM", hours: 10, minutes: 0 },
+  { label: "11 AM", hours: 11, minutes: 0 },
+  { label: "12 PM", hours: 12, minutes: 0 },
+  { label: "1 PM", hours: 13, minutes: 0 },
+  { label: "2 PM", hours: 14, minutes: 0 },
+  { label: "5 PM", hours: 17, minutes: 0 },
+  { label: "7 PM", hours: 19, minutes: 0 },
 ] as const;
 
 /**
@@ -31,16 +29,6 @@ const TIME_PRESETS = [
  */
 function toTimeInputValue(hours: number, minutes: number): string {
   return `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}`;
-}
-
-/**
- * Formats hours/minutes into a 12h display string.
- * e.g. (14, 30) => "2:30 PM"
- */
-function formatTime12h(hours: number, minutes: number): string {
-  const period = hours >= 12 ? "PM" : "AM";
-  const displayHour = hours % 12 || 12;
-  return `${displayHour}:${minutes.toString().padStart(2, "0")} ${period}`;
 }
 
 export interface DateTimeFieldProps {
@@ -185,7 +173,7 @@ export function DateTimeField({
           />
 
           {/* Time selection */}
-          <div className="border-border space-y-2.5 border-t p-3">
+          <div className="border-border space-y-2 border-t p-3">
             <div className="flex items-center gap-2">
               <Clock className="text-muted-foreground h-4 w-4 shrink-0" />
               <input
@@ -197,13 +185,10 @@ export function DateTimeField({
                   "h-8 rounded-lg border px-2 py-1 text-sm outline-none focus-visible:ring-[3px]"
                 )}
               />
-              <span className="text-muted-foreground text-xs">
-                {formatTime12h(hours, minutes)}
-              </span>
             </div>
 
-            {/* Preset time slots in a compact grid */}
-            <div className="grid grid-cols-5 gap-1">
+            {/* Preset time slots */}
+            <div className="grid grid-cols-4 gap-1">
               {TIME_PRESETS.map((preset) => (
                 <Button
                   key={preset.label}
@@ -214,7 +199,7 @@ export function DateTimeField({
                       : "outline"
                   }
                   size="xs"
-                  className="px-1 text-[11px]"
+                  className="px-1 text-xs"
                   onClick={() =>
                     handlePresetClick(preset.hours, preset.minutes)
                   }
