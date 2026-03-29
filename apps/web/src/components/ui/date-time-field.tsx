@@ -126,14 +126,14 @@ export function DateTimeField({
 
   return (
     <div className="space-y-2">
-      <label className="flex items-center gap-2 text-sm leading-none font-medium select-none">
+      <label className="flex select-none items-center gap-2 text-sm font-medium leading-none">
         {label}
       </label>
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger
           disabled={disabled}
           className={cn(
-            "border-input bg-background hover:bg-accent hover:text-accent-foreground focus-visible:border-ring focus-visible:ring-ring/50 inline-flex h-9 w-full items-center justify-start gap-2 rounded-lg border px-3 py-2 text-sm font-normal whitespace-nowrap transition-colors outline-none focus-visible:ring-[3px]",
+            "border-input bg-background hover:bg-accent hover:text-accent-foreground focus-visible:border-ring focus-visible:ring-ring/50 inline-flex h-9 w-full items-center justify-start gap-2 whitespace-nowrap rounded-lg border px-3 py-2 text-sm font-normal outline-none transition-colors focus-visible:ring-[3px]",
             !date && "text-muted-foreground",
             disabled && "cursor-not-allowed opacity-50"
           )}

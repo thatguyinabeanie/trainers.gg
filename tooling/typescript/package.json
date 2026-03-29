@@ -3,10 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "license": "MIT",
-  "scripts": {
-    "format": "prettier --write \"*.json\"",
-    "format:check": "prettier --check \"*.json\""
-  },
+  "scripts": {},
   "files": [
     "base.json",
     "nextjs.json",

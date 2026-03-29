@@ -1,8 +1,6 @@
 import { test, expect } from "@playwright/test";
-import { createClient } from "@supabase/supabase-js";
 
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+const E2E_SECRET = process.env.VERCEL_AUTOMATION_BYPASS_SECRET || "";
 
 test.describe("Onboarding flow", () => {
   // Use clean storage state — we sign in manually with a fresh temp user
@@ -10,36 +8,37 @@ test.describe("Onboarding flow", () => {
 
   test("redirects temp user to onboarding and completes setup", async ({
     page,
+    baseURL,
   }) => {
-    const baseURL = process.env.PLAYWRIGHT_BASE_URL || "";
-    // Skip on Vercel preview deployments (no service role key / seeded users)
-    test.skip(
-      baseURL.includes("vercel.app") &&
-        !baseURL.includes("trainers-gg.vercel.app"),
-      "Service role key not available in preview environments"
-    );
+    // Onboarding submission includes PDS handle check + provisioning which
+    // can take several seconds on preview deployments — extend test timeout
+    test.setTimeout(90_000);
 
-    // --- Seed a user with a temp username via Supabase admin API ---
-    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
-    const testEmail = `e2e-onboarding-${Date.now()}@trainers.local`;
-    const testPassword = "Password123!";
+    test.skip(!baseURL, "PLAYWRIGHT_BASE_URL is required");
+    test.skip(!E2E_SECRET, "VERCEL_AUTOMATION_BYPASS_SECRET is required");
 
-    const { data: authData, error: createError } =
-      await supabase.auth.admin.createUser({
-        email: testEmail,
-        password: testPassword,
-        email_confirm: true,
-        user_metadata: {
-          username: `temp_${Date.now().toString(36)}`,
-        },
-      });
+    // --- Create a temp user via the preview deployment's API ---
+    // Routes through the preview which has the correct Supabase credentials
+    const createResponse = await fetch(`${baseURL}/api/e2e/temp-user`, {
+      method: "POST",
+      headers: {
+        "x-e2e-seed-secret": E2E_SECRET,
+        "x-vercel-protection-bypass": E2E_SECRET,
+      },
+    });
 
-    expect(createError).toBeNull();
-    expect(authData.user).toBeTruthy();
+    expect(createResponse.ok).toBe(true);
+    const {
+      userId,
+      email: testEmail,
+      password: testPassword,
+    } = await createResponse.json();
 
     try {
       // --- Sign in via the UI ---
-      await page.goto("/sign-in");
+      // Use redirect=/dashboard so after sign-in the user hits a protected
+      // route, which triggers the onboarding gate in proxy.ts
+      await page.goto("/sign-in?redirect=/dashboard");
       await page.getByRole("button", { name: /continue with email/i }).click();
 
       // Wait for the email form to be ready
@@ -78,13 +77,21 @@ test.describe("Onboarding flow", () => {
       await page.getByRole("button", { name: /complete setup/i }).click();
 
       // --- Should redirect to dashboard ---
-      await page.waitForURL("**/dashboard/overview", { timeout: 30000 });
+      // Server action includes PDS handle check (5s timeout) + PDS provisioning
+      // (30s timeout) which can take a while on preview deployments
+      await page.waitForURL("**/dashboard/overview", { timeout: 60000 });
       expect(page.url()).toContain("/dashboard/overview");
     } finally {
-      // --- Cleanup: delete the test user regardless of pass/fail ---
-      if (authData.user) {
-        await supabase.auth.admin.deleteUser(authData.user.id);
-      }
+      // --- Cleanup: delete the test user via the preview API ---
+      await fetch(`${baseURL}/api/e2e/temp-user`, {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+          "x-e2e-seed-secret": E2E_SECRET,
+          "x-vercel-protection-bypass": E2E_SECRET,
+        },
+        body: JSON.stringify({ userId }),
+      });
     }
   });
 });

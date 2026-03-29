@@ -21,15 +21,15 @@ Shared PostHog event name constants for all surfaces: web, mobile, and edge func
 
 ## Current Events
 
-| Constant | Value |
-|---|---|
-| `USER_SIGNED_UP` | `user_signed_up` |
+| Constant                 | Value                    |
+| ------------------------ | ------------------------ |
+| `USER_SIGNED_UP`         | `user_signed_up`         |
 | `USER_SIGNED_UP_BLUESKY` | `user_signed_up_bluesky` |
-| `BETA_INVITE_SENT` | `beta_invite_sent` |
-| `TOURNAMENT_CREATED` | `tournament_created` |
-| `TOURNAMENT_STARTED` | `tournament_started` |
-| `TOURNAMENT_REGISTERED` | `tournament_registered` |
-| `GAME_RESULT_SUBMITTED` | `game_result_submitted` |
+| `BETA_INVITE_SENT`       | `beta_invite_sent`       |
+| `TOURNAMENT_CREATED`     | `tournament_created`     |
+| `TOURNAMENT_STARTED`     | `tournament_started`     |
+| `TOURNAMENT_REGISTERED`  | `tournament_registered`  |
+| `GAME_RESULT_SUBMITTED`  | `game_result_submitted`  |
 
 Edge functions resolve `@trainers/posthog` via the Deno import map in `packages/supabase/supabase/functions/deno.json`.
 

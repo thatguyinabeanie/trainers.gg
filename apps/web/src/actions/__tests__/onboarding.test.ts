@@ -27,6 +27,12 @@ jest.mock("next/cache", () => ({
   revalidatePath: jest.fn(),
 }));
 
+jest.mock("next/headers", () => ({
+  headers: jest.fn(async () => ({
+    get: jest.fn(() => null),
+  })),
+}));
+
 // Mock global fetch for PDS handle check and provisioning
 const originalFetch = global.fetch;
 

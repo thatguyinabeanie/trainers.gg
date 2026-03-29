@@ -295,7 +295,7 @@ function MatchSections({
             <span className="bg-primary absolute inline-flex h-full w-full animate-ping rounded-full opacity-50" />
             <span className="bg-primary relative inline-flex h-full w-full rounded-full" />
           </span>
-          <h3 className="text-primary text-xs font-medium tracking-wide uppercase">
+          <h3 className="text-primary text-xs font-medium uppercase tracking-wide">
             In Progress ({ongoing.length})
           </h3>
         </div>
@@ -306,7 +306,7 @@ function MatchSections({
       <div>
         <div className="mb-2 flex items-center gap-2">
           <span className="h-2 w-2 rounded-full bg-emerald-500" />
-          <h3 className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+          <h3 className="text-muted-foreground text-xs font-medium uppercase tracking-wide">
             Completed ({completed.length})
           </h3>
         </div>
@@ -407,7 +407,7 @@ function SwissMatchRow({
       {/* Table number badge */}
       <div className="w-10 shrink-0 text-center">
         {isBye ? (
-          <span className="text-muted-foreground text-[10px] font-medium tracking-wider uppercase">
+          <span className="text-muted-foreground text-[10px] font-medium uppercase tracking-wider">
             bye
           </span>
         ) : (
@@ -557,7 +557,7 @@ function EliminationMatchCard({
       {isFinals && (
         <div className="flex items-center justify-center gap-1.5 bg-amber-500/10 py-1 dark:bg-amber-500/5">
           <Trophy className="h-3 w-3 text-amber-600 dark:text-amber-400" />
-          <span className="text-[10px] font-semibold tracking-widest text-amber-600 uppercase dark:text-amber-400">
+          <span className="text-[10px] font-semibold uppercase tracking-widest text-amber-600 dark:text-amber-400">
             Finals
           </span>
         </div>

@@ -44,6 +44,7 @@ const optionalUrl = z
 ```
 
 Key principles:
+
 - `.transform()` trims whitespace before `.pipe()` validates length/format
 - Empty strings are transformed to `undefined` so downstream code only handles `string | undefined`
 - Do not use `.preprocess()` — the project has standardized on transform+pipe
@@ -59,6 +60,7 @@ User-facing string fields use `.refine()` with `containsProfanity()` from `./pro
 ## Testing
 
 Tests live in `src/__tests__/`. Cover:
+
 - Valid input acceptance
 - Required field rejection
 - Constraint violations (max length, regex patterns)

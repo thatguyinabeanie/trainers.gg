@@ -4,12 +4,26 @@ pnpm = "latest"
 opencode = "latest"
 java = "zulu-21"
 android-sdk = "latest"
+lefthook = "latest"
+neovim = "0.11"
 
 [env]
 ANDROID_HOME = "{{env.HOME}}/Library/Android/sdk"
-_.path = ["{{env.HOME}}/Library/Android/sdk/platform-tools", "{{env.HOME}}/Library/Android/sdk/emulator"]
+_.path = [
+  "{{env.HOME}}/Library/Android/sdk/platform-tools",
+  "{{env.HOME}}/Library/Android/sdk/emulator",
+]
+
+[hooks]
+postinstall = """
+mise run install-lefthook ::: install-pnpm
+"""
+
+[tasks.install-lefthook]
+run = "lefthook install"
+
+[tasks.install-pnpm]
+run = "pnpm install"
 
 [settings]
 experimental = true
-
-

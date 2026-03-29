@@ -141,7 +141,7 @@ export default function AdminCommunitiesPage() {
           )}
         </h2>
         <div className="relative w-full sm:w-64">
-          <Search className="text-muted-foreground absolute top-1/2 left-2.5 size-4 -translate-y-1/2" />
+          <Search className="text-muted-foreground absolute left-2.5 top-1/2 size-4 -translate-y-1/2" />
           <Input
             placeholder="Search by name or slug..."
             value={search}

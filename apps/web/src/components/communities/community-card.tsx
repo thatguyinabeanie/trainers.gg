@@ -72,7 +72,7 @@ export function CommunityCard({ community }: CommunityCardProps) {
             <div className="flex flex-wrap items-center gap-2">
               <Link
                 href={`/communities/${community.slug}`}
-                className="hover:text-primary truncate leading-tight font-semibold hover:underline"
+                className="hover:text-primary truncate font-semibold leading-tight hover:underline"
               >
                 {community.name}
               </Link>
@@ -136,7 +136,7 @@ export function CommunityCard({ community }: CommunityCardProps) {
             className={cn(
               "flex w-full items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-medium",
               "bg-[#5865F2] text-white transition-colors hover:bg-[#4752C4]",
-              "focus-visible:ring-2 focus-visible:ring-[#5865F2]/50 focus-visible:outline-none"
+              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5865F2]/50"
             )}
           >
             <svg

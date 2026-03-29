@@ -20,23 +20,25 @@ Structured methodology for conducting comprehensive code audits of the trainers.
 
 Confirm the audit scope with the user. Default focus areas:
 
-| Area | What to Look For |
-|---|---|
-| **TypeScript Type Safety** | `as unknown as`, `as any`, `CallableFunction` casts, missing generics, weak return types, non-null assertions |
-| **Code Reuse** | Duplicated patterns, missed shared package extractions, underused utilities |
-| **Next.js 16 Architecture** | Server/client boundaries, server action patterns, data fetching, route organization |
-| **Package Architecture** | Package boundaries, export surfaces, cross-package types, dependency graph |
-| **Server Action Data Flow** | Return types, validation at boundaries, end-to-end type chains, error handling |
+| Area                        | What to Look For                                                                                              |
+| --------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| **TypeScript Type Safety**  | `as unknown as`, `as any`, `CallableFunction` casts, missing generics, weak return types, non-null assertions |
+| **Code Reuse**              | Duplicated patterns, missed shared package extractions, underused utilities                                   |
+| **Next.js 16 Architecture** | Server/client boundaries, server action patterns, data fetching, route organization                           |
+| **Package Architecture**    | Package boundaries, export surfaces, cross-package types, dependency graph                                    |
+| **Server Action Data Flow** | Return types, validation at boundaries, end-to-end type chains, error handling                                |
 
 ### 2. Dispatch Parallel Agents
 
 Launch 5 subagents simultaneously, one per focus area. Each agent:
+
 - Performs **research only** (no file modifications)
 - Searches for specific anti-patterns via Grep/Glob
 - Reads key files to understand patterns in context
 - Produces a structured report with file paths, line numbers, and severity
 
 **Agent prompts must include**:
+
 - The specific scope (directories and file patterns)
 - The project context (tech stack, conventions from CLAUDE.md)
 - Concrete patterns to search for (regex, glob)
@@ -50,20 +52,27 @@ After all agents complete, deduplicate overlapping findings and produce a single
 # Code Audit Report — YYYY-MM-DD
 
 ## Scoreboard
+
 [table of findings by category and severity]
 
 ## Critical Issues
+
 [must-fix: correctness, type safety gaps, architectural violations]
 
 ## Improvement Items
+
 [should-fix: better types, less duplication, clearer patterns]
 
 ## Observations
+
 [nice-to-have: emerging patterns, future considerations]
 
 ## Recommended Priority Order
+
 ### Phase 1 — Quick wins (high value, low effort)
+
 ### Phase 2 — Systematic improvements (medium effort)
+
 ### Phase 3 — Architectural alignment (larger effort)
 ```
 
@@ -166,11 +175,11 @@ rg "as unknown as" packages/supabase/src/ --type ts
 
 ## Severity Definitions
 
-| Severity | Criteria |
-|---|---|
-| **Critical** | Could cause runtime errors, silently hides bugs, violates architectural boundaries, or duplicates entire subsystems |
-| **Improvement** | Reduces type safety, increases maintenance burden, or violates established patterns — but works today |
-| **Observation** | Not broken, but worth tracking. Emerging duplication, future migration targets, design decisions to document |
+| Severity        | Criteria                                                                                                            |
+| --------------- | ------------------------------------------------------------------------------------------------------------------- |
+| **Critical**    | Could cause runtime errors, silently hides bugs, violates architectural boundaries, or duplicates entire subsystems |
+| **Improvement** | Reduces type safety, increases maintenance burden, or violates established patterns — but works today               |
+| **Observation** | Not broken, but worth tracking. Emerging duplication, future migration targets, design decisions to document        |
 
 ## Tips
 

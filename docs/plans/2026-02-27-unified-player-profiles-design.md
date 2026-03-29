@@ -12,13 +12,13 @@ The existing `/profile/[handle]` Bluesky profile page will be merged into this u
 
 ## URL Structure
 
-| URL | Tab | Notes |
-|-----|-----|-------|
-| `/players/[handle]` | Overview | Default landing tab — social-first highlight reel |
-| `/players/[handle]/posts` | Posts | Bluesky feed (posts, replies, media) |
-| `/players/[handle]/tournaments` | Tournaments | Full tournament history with filters |
-| `/players/[handle]/teams` | Teams | Pinned teams + tournament teams |
-| `/players/[handle]/likes` | Likes | Own profile only (Bluesky likes) |
+| URL                             | Tab         | Notes                                             |
+| ------------------------------- | ----------- | ------------------------------------------------- |
+| `/players/[handle]`             | Overview    | Default landing tab — social-first highlight reel |
+| `/players/[handle]/posts`       | Posts       | Bluesky feed (posts, replies, media)              |
+| `/players/[handle]/tournaments` | Tournaments | Full tournament history with filters              |
+| `/players/[handle]/teams`       | Teams       | Pinned teams + tournament teams                   |
+| `/players/[handle]/likes`       | Likes       | Own profile only (Bluesky likes)                  |
 
 - `[handle]` resolves via `users.username` first, then Bluesky handle fallback
 - `/profile/[handle]` redirects to `/players/[handle]` for backwards compatibility
@@ -49,22 +49,23 @@ Social-media-style header with:
 
 ### Data Sources
 
-| Field | Source | Notes |
-|-------|--------|-------|
-| Banner | Bluesky `ProfileView.banner` or custom | Gradient fallback if none set |
-| Avatar | User's choice (`avatar_preference` setting) | Sprite (`alts.avatar_url`) OR Bluesky photo |
-| Display name | `alts.display_name` or Bluesky `displayName` | Falls back to username |
-| Handle | `@username` from `users.username` | Trainers.gg handle |
-| Bio | `alts.bio` | Editable in settings |
-| Country flag | `users.country` | Optional, from ISO code |
-| Social links | `users.social_links` (new JSONB) | Predefined platforms + custom links |
-| Followers/Following | Bluesky `ProfileView` counts | ATProto social graph |
-| Tournament count | Aggregated from `tournament_registrations` | Completed tournaments |
-| Win rate | Aggregated from `tournament_player_stats` | Overall match win percentage |
+| Field               | Source                                       | Notes                                       |
+| ------------------- | -------------------------------------------- | ------------------------------------------- |
+| Banner              | Bluesky `ProfileView.banner` or custom       | Gradient fallback if none set               |
+| Avatar              | User's choice (`avatar_preference` setting)  | Sprite (`alts.avatar_url`) OR Bluesky photo |
+| Display name        | `alts.display_name` or Bluesky `displayName` | Falls back to username                      |
+| Handle              | `@username` from `users.username`            | Trainers.gg handle                          |
+| Bio                 | `alts.bio`                                   | Editable in settings                        |
+| Country flag        | `users.country`                              | Optional, from ISO code                     |
+| Social links        | `users.social_links` (new JSONB)             | Predefined platforms + custom links         |
+| Followers/Following | Bluesky `ProfileView` counts                 | ATProto social graph                        |
+| Tournament count    | Aggregated from `tournament_registrations`   | Completed tournaments                       |
+| Win rate            | Aggregated from `tournament_player_stats`    | Overall match win percentage                |
 
 ### Avatar Preference
 
 Users choose which avatar displays as their primary profile image:
+
 - **Sprite** — Pokemon/trainer sprite from `alts.avatar_url`
 - **Bluesky** — Profile photo from Bluesky account
 
@@ -88,6 +89,7 @@ Social-first ordering — posts lead, competitive data enriches:
 ### Posts Tab
 
 Merged from existing `/profile/[handle]` implementation:
+
 - Reuses existing `ProfileTabs` component (Posts, Replies, Media sub-tabs)
 - Reuses `useAuthorFeed` hook with infinite scroll
 - Content identical to current Bluesky profile page
@@ -95,6 +97,7 @@ Merged from existing `/profile/[handle]` implementation:
 ### Tournaments Tab
 
 Full tournament history:
+
 - Paginated list of all tournament participations
 - Filters: format, time period
 - Sort: date (default), placement, record
@@ -105,10 +108,12 @@ Full tournament history:
 ### Teams Tab
 
 Two sections:
+
 1. **Pinned Teams** — User-curated featured teams (from settings)
 2. **Tournament Teams** — Auto-populated from completed tournaments with open team sheets
 
 Each team card shows:
+
 - Team name (if set)
 - 6 Pokemon sprites in a row
 - Tournament context (where used, placement)
@@ -119,6 +124,7 @@ Respects `tournaments.open_team_sheets` visibility flag.
 ### Likes Tab
 
 Own profile only (same as current Bluesky implementation):
+
 - Reuses existing `useActorLikes` hook
 - Infinite scroll pagination
 
@@ -175,31 +181,31 @@ Predefined platforms get their own icons. "Custom" links display with a generic 
 
 New fields in `/dashboard/settings/profile`:
 
-| Field | Type | Notes |
-|-------|------|-------|
-| Bio | Textarea | Existing DB field, just needs UI |
-| Social links | Dynamic list with platform picker + URL input | Add/remove, drag to reorder |
-| Avatar preference | Toggle: Sprite vs Bluesky | Dropdown or radio buttons |
-| Pinned teams | Multi-select from past tournament teams | Ordered list, max ~3-5 |
+| Field             | Type                                          | Notes                            |
+| ----------------- | --------------------------------------------- | -------------------------------- |
+| Bio               | Textarea                                      | Existing DB field, just needs UI |
+| Social links      | Dynamic list with platform picker + URL input | Add/remove, drag to reorder      |
+| Avatar preference | Toggle: Sprite vs Bluesky                     | Dropdown or radio buttons        |
+| Pinned teams      | Multi-select from past tournament teams       | Ordered list, max ~3-5           |
 
 ## New Queries Needed
 
-| Query | Purpose | Location |
-|-------|---------|----------|
-| `getPlayerProfile(handle)` | Fetch user + alt + social links + Bluesky profile for public profile page | `packages/supabase/src/queries/users.ts` |
-| `getPlayerLifetimeStats(altIds)` | Aggregate stats across all `tournament_player_stats` rows | `packages/supabase/src/queries/tournaments.ts` |
-| `getPlayerTournamentHistory(altIds)` | Public version of `getUserTournamentHistory` (by alt IDs, not auth) | `packages/supabase/src/queries/tournaments.ts` |
-| `getPinnedTeams(userId)` | Fetch user's pinned teams with Pokemon data | `packages/supabase/src/queries/users.ts` |
+| Query                                | Purpose                                                                   | Location                                       |
+| ------------------------------------ | ------------------------------------------------------------------------- | ---------------------------------------------- |
+| `getPlayerProfile(handle)`           | Fetch user + alt + social links + Bluesky profile for public profile page | `packages/supabase/src/queries/users.ts`       |
+| `getPlayerLifetimeStats(altIds)`     | Aggregate stats across all `tournament_player_stats` rows                 | `packages/supabase/src/queries/tournaments.ts` |
+| `getPlayerTournamentHistory(altIds)` | Public version of `getUserTournamentHistory` (by alt IDs, not auth)       | `packages/supabase/src/queries/tournaments.ts` |
+| `getPinnedTeams(userId)`             | Fetch user's pinned teams with Pokemon data                               | `packages/supabase/src/queries/users.ts`       |
 
 ## Incremental Build Phases
 
-| Phase | Scope | What Ships |
-|-------|-------|-----------|
-| **Phase 1** | Profile header + bio editing + Overview tab (stats + recent tournaments) | Functional profile page with identity + competitive stats |
-| **Phase 2** | Social links (settings + display) + avatar preference toggle | Social identity layer |
-| **Phase 3** | Tournaments tab (full history with filters) | Deep tournament history |
-| **Phase 4** | Teams tab (tournament teams + pinned teams) | Team showcase |
-| **Phase 5** | Posts tab (merge Bluesky feed) + Likes tab + redirect from `/profile/[handle]` | Full social integration, route unification |
+| Phase       | Scope                                                                          | What Ships                                                |
+| ----------- | ------------------------------------------------------------------------------ | --------------------------------------------------------- |
+| **Phase 1** | Profile header + bio editing + Overview tab (stats + recent tournaments)       | Functional profile page with identity + competitive stats |
+| **Phase 2** | Social links (settings + display) + avatar preference toggle                   | Social identity layer                                     |
+| **Phase 3** | Tournaments tab (full history with filters)                                    | Deep tournament history                                   |
+| **Phase 4** | Teams tab (tournament teams + pinned teams)                                    | Team showcase                                             |
+| **Phase 5** | Posts tab (merge Bluesky feed) + Likes tab + redirect from `/profile/[handle]` | Full social integration, route unification                |
 
 Each phase is independently shippable. Phase 1 replaces the current placeholder page.
 

@@ -117,7 +117,7 @@ export function OnboardingForm() {
             value={username}
             onChange={(e) => setUsername(e.target.value)}
             placeholder="cooltrainer"
-            className="pr-20 pl-7"
+            className="pl-7 pr-20"
             autoFocus
           />
           <div className="pointer-events-none absolute inset-y-0 right-10 flex items-center text-xs text-zinc-500">

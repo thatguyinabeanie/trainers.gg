@@ -26,7 +26,7 @@ Coming Soon features use an amber badge and are teased rather than hidden — th
 
 ## Hero Banner
 
-**Headline:** Your home for competitive Pokémon *(unchanged)*
+**Headline:** Your home for competitive Pokémon _(unchanged)_
 
 **Subheading:** Build your competitive identity, keep your strategies secret, and connect with players who take the game as seriously as you do.
 
@@ -37,6 +37,7 @@ Coming Soon features use an amber badge and are teased rather than hidden — th
 ## Steps
 
 ### 01 — Identity
+
 **Headline:** One account. Every version of yourself.
 
 **Copy:** Create multiple alts and compete under any name — public or private, your choice. Each alt has its own teams, stats, and tournament history, so your strategies stay organized no matter how many identities you run. No juggling accounts.
@@ -46,6 +47,7 @@ Coming Soon features use an amber badge and are teased rather than hidden — th
 ---
 
 ### 02 — Teams
+
 **Headline:** Your strategies stay secret until you play them.
 
 **Copy:** Teams are private by default. They only go public once you've played them in a tournament — no meta leaks, no early reveals, no accidental scouting.
@@ -54,7 +56,8 @@ Coming Soon features use an amber badge and are teased rather than hidden — th
 
 ---
 
-### 03 — Build Smarter *(Coming Soon)*
+### 03 — Build Smarter _(Coming Soon)_
+
 **Headline:** Build with the meta, not against it.
 
 **Copy:** The team builder surfaces what's actually working — usage rates, win rates, and popular cores drawn from publicly played tournament teams on trainers.gg. Coming soon: full analytics including data from official regionals.
@@ -66,6 +69,7 @@ Coming Soon features use an amber badge and are teased rather than hidden — th
 ---
 
 ### 04 — Compete
+
 **Headline:** Run events built for competitive Pokémon.
 
 **Copy:** Organize tournaments with Swiss pairings, automatic standings, and bracket play. Players get results tracked to their profile automatically — no manual record keeping.
@@ -77,6 +81,7 @@ Coming Soon features use an amber badge and are teased rather than hidden — th
 ---
 
 ### 05 — Profile
+
 **Headline:** Your competitive story, one link.
 
 **Copy:** Every tournament, team, and result lives on your public profile. Share it with organizers, teammates, or opponents — one link that shows exactly how you play.
@@ -85,7 +90,8 @@ Coming Soon features use an amber badge and are teased rather than hidden — th
 
 ---
 
-### 06 — Articles *(Coming Soon)*
+### 06 — Articles _(Coming Soon)_
+
 **Headline:** Write. Share. Remember.
 
 **Copy:** Anyone can publish guides, team reports, and tournament recaps. Use articles as private notes for your own team, or share insights with the whole community.
@@ -94,7 +100,8 @@ Coming Soon features use an amber badge and are teased rather than hidden — th
 
 ---
 
-### 07 — Coaching *(Coming Soon)*
+### 07 — Coaching _(Coming Soon)_
+
 **Headline:** Level up with a personal coach.
 
 **Copy:** Coaches are discoverable in the player directory and on their profile — identified by a coach badge so you always know who's available to help. Coming soon: book sessions directly, share your teams for session prep without copy-pasting, and get personalized guidance from players who know the meta.
@@ -108,6 +115,7 @@ Coming Soon features use an amber badge and are teased rather than hidden — th
 ---
 
 ### 08 — Community
+
 **Headline:** Find who's competing — and where they hang out.
 
 **Copy:** Search players by format, country, or name and browse the leaderboard. Coming soon: a searchable index of competitive Pokémon Discord servers — find your community in one place.
@@ -131,6 +139,7 @@ Coming Soon features use an amber badge and are teased rather than hidden — th
 ## Implementation Notes
 
 ### Files to modify
+
 - `apps/web/src/app/page.tsx` — main hero page, replace feature card grid with journey sections
 - `apps/web/src/components/landing/feature-cards.tsx` — replace or repurpose for journey layout
 - `apps/web/src/components/landing/coming-soon-cards.tsx` — may be replaced by inline "coming soon" badges on journey steps
@@ -138,21 +147,25 @@ Coming Soon features use an amber badge and are teased rather than hidden — th
 **All per-step UI previews are static JSX** — hardcoded illustrative data only, no live queries. Do not wire real data to the preview panels.
 
 ### New components likely needed
+
 - `apps/web/src/components/landing/journey-section.tsx` — reusable left/right alternating section wrapper
 - Inline UI preview components per step (can be static/decorative, not real data)
 
 ### Existing components to keep
+
 - `apps/web/src/components/landing/hero-cta.tsx` — auth-aware CTA buttons, keep as-is
 - `apps/web/src/components/landing/upcoming-tournaments-preview.tsx` — consider whether to keep the live tournament preview below the journey sections or remove it
 - `apps/web/src/components/landing/upcoming-tournaments-skeleton.tsx` — keep if tournaments preview stays
 
 ### Styling
+
 - Step labels: small uppercase teal (`text-primary`) with step number
 - Coming Soon badge: amber (`text-amber-500 bg-amber-500/10`)
 - Alternating layout: odd steps text-left/preview-right, even steps preview-left/text-right
 - Follows existing minimal flat design: no borders, subtle background differentiation
 
 ### Tests
+
 - Update existing landing component tests
 - Add tests for journey section rendering and coming-soon badge display
 
@@ -160,8 +173,8 @@ Coming Soon features use an amber badge and are teased rather than hidden — th
 
 ## What This Replaces
 
-| Old | New |
-|-----|-----|
-| Feature card grid (Tournaments, Organizations, Analytics) | 8-step journey narrative |
-| Coming Soon cards (Team Builder, Coaching) | Inline "Coming soon" badges on Steps 03, 06, and 07 |
-| Generic subheading | Player-focused subheading emphasizing identity + secrecy + community |
+| Old                                                       | New                                                                  |
+| --------------------------------------------------------- | -------------------------------------------------------------------- |
+| Feature card grid (Tournaments, Organizations, Analytics) | 8-step journey narrative                                             |
+| Coming Soon cards (Team Builder, Coaching)                | Inline "Coming soon" badges on Steps 03, 06, and 07                  |
+| Generic subheading                                        | Player-focused subheading emphasizing identity + secrecy + community |

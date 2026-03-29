@@ -9,15 +9,15 @@ Shared utilities — formatting, countries, tiers, permissions, label mapping, e
 
 ## Key Modules
 
-| Module | Purpose |
-| ------ | ------- |
-| `labels.ts` | `getLabel()` — convert snake_case enum values to human-readable strings |
+| Module              | Purpose                                                                      |
+| ------------------- | ---------------------------------------------------------------------------- |
+| `labels.ts`         | `getLabel()` — convert snake_case enum values to human-readable strings      |
 | `error-handling.ts` | `getErrorMessage()` — extract message from Error, Supabase error, or unknown |
-| `permissions.ts` | `PERMISSIONS` constants + `PermissionKey` type — security-critical |
-| `tiers.ts` | User/org tier definitions, feature flags, pricing |
-| `countries.ts` | ISO 3166-1 country codes and display names |
-| `format.ts` | Date, number, and string formatters |
-| `notifications.ts` | Notification type helpers |
+| `permissions.ts`    | `PERMISSIONS` constants + `PermissionKey` type — security-critical           |
+| `tiers.ts`          | User/org tier definitions, feature flags, pricing                            |
+| `countries.ts`      | ISO 3166-1 country codes and display names                                   |
+| `format.ts`         | Date, number, and string formatters                                          |
+| `notifications.ts`  | Notification type helpers                                                    |
 
 ## Critical Usage Rules
 

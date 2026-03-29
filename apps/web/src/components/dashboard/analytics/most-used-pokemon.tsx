@@ -81,7 +81,7 @@ export function MostUsedPokemon({ altId: _altId }: MostUsedPokemonProps) {
           {pokemonUsage.map((pokemon, index) => (
             <div
               key={pokemon.species}
-              className="group bg-card hover:bg-muted/50 flex items-center gap-4 rounded-lg border p-3 transition-colors"
+              className="bg-card hover:bg-muted/50 group flex items-center gap-4 rounded-lg border p-3 transition-colors"
             >
               {/* Rank */}
               <div className="bg-primary/10 text-primary flex size-8 shrink-0 items-center justify-center rounded-full text-sm font-semibold">
