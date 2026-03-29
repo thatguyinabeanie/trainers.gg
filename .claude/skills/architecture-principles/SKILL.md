@@ -28,7 +28,7 @@ If a module has zero framework imports and could be useful across apps, it belon
 | Module | Location | Why |
 |--------|----------|-----|
 | Tournament pairing logic | `packages/tournaments/` | Pure logic, no framework deps |
-| Pokemon team parser | `packages/validators/` | Pure Zod schemas, shared by web + mobile + edge |
+| Pokemon team parser | `packages/pokemon/` | Pokemon data + team parsing logic, shared by web + mobile + edge |
 | TanStack Query hooks | `apps/web/src/lib/` | Framework-specific (React hooks) |
 | Expo SecureStore wrapper | `apps/mobile/src/lib/` | Framework-specific (Expo) |
 

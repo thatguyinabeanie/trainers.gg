@@ -14,7 +14,7 @@ The project uses a three-tier system for providing context to Claude:
 ### Tier 1: CLAUDE.md (Always-On)
 
 - **Location**: Project root `CLAUDE.md`
-- **Target size**: ~120 lines
+- **Target size**: Aim for roughly 180–200 lines (current CLAUDE.md is ~190 lines; treat this as an aspirational range, not a hard limit)
 - **Loaded**: Every conversation, every task
 - **Contains**: Project identity, monorepo structure, tech stack, commands, universal critical rules (push policy, parallel work, React Compiler), glossary
 - **Rule**: Only content that applies to EVERY task belongs here. Domain-specific knowledge goes in skills.
