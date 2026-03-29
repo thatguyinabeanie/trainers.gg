@@ -141,7 +141,10 @@ export function DateTimeField({
           <CalendarIcon className="h-4 w-4 shrink-0 opacity-50" />
           {date ? formatDisplay(date) : "Pick a date"}
         </PopoverTrigger>
-        <PopoverContent align="start" className="w-auto p-0">
+        <PopoverContent
+          align="start"
+          className="flex w-auto flex-col items-center p-0"
+        >
           <Calendar
             mode="single"
             selected={date}
@@ -177,7 +180,7 @@ export function DateTimeField({
           <div className="border-border flex items-center justify-center gap-2 border-t p-3">
             <Clock className="text-muted-foreground h-4 w-4 shrink-0" />
             <Select value={hour12.toString()} onValueChange={handleHourChange}>
-              <SelectTrigger size="sm" className="w-[52px]">
+              <SelectTrigger size="sm" className="w-[60px]">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -193,7 +196,7 @@ export function DateTimeField({
               value={minutes.toString()}
               onValueChange={handleMinuteChange}
             >
-              <SelectTrigger size="sm" className="w-[52px]">
+              <SelectTrigger size="sm" className="w-[60px]">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
