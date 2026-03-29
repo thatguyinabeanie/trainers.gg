@@ -258,7 +258,9 @@ test.describe("Admin panel — admin user with sudo mode", () => {
     await expect(main.getByText("Events (24h)")).toBeVisible();
 
     // Recent Activity section
-    await expect(page.getByText("Recent Activity")).toBeVisible();
+    await expect(
+      page.getByText("Recent Activity", { exact: true })
+    ).toBeVisible();
   });
 
   // ── Navigation ─────────────────────────────────────────────────

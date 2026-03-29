@@ -2968,7 +2968,11 @@ export type Database = {
         | "admin.org_request_rejected"
         | "admin.org_request_cancelled"
       billing_interval: "monthly" | "annual"
-      community_request_status: "pending" | "approved" | "rejected" | "cancelled"
+      community_request_status:
+        | "pending"
+        | "approved"
+        | "rejected"
+        | "cancelled"
       community_status: "pending" | "active" | "rejected" | "suspended"
       community_subscription_tier: "free" | "community_plus" | "enterprise"
       community_tier: "regular" | "verified" | "partner"
@@ -3203,9 +3207,15 @@ export const Constants = {
         "admin.announcement_deleted",
         "admin.org_request_approved",
         "admin.org_request_rejected",
+        "admin.org_request_cancelled",
       ],
       billing_interval: ["monthly", "annual"],
-      community_request_status: ["pending", "approved", "rejected", "cancelled"],
+      community_request_status: [
+        "pending",
+        "approved",
+        "rejected",
+        "cancelled",
+      ],
       community_status: ["pending", "active", "rejected", "suspended"],
       community_subscription_tier: ["free", "community_plus", "enterprise"],
       community_tier: ["regular", "verified", "partner"],
