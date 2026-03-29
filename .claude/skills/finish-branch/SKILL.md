@@ -112,14 +112,14 @@ After all checks pass:
 git push -u origin $(git branch --show-current)
 ```
 
-1. Generate PR title and body from the branch's commits:
+2. Generate PR title and body from the branch's commits:
 
 ```bash
 git log main..HEAD --oneline
 git diff main...HEAD --stat
 ```
 
-1. Create the PR using `gh`:
+3. Create the PR using `gh`:
 
 ```bash
 gh pr create --title "<title>" --body "<body>"
@@ -148,7 +148,7 @@ gh pr create --title "<title>" --body "<body>"
 <How to verify the changes work>
 ```
 
-1. Return the PR URL to the user.
+4. Return the PR URL to the user.
 
 ## Error Handling
 

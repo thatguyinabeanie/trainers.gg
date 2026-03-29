@@ -9,7 +9,6 @@ DECLARE
   v_user_id uuid;
   v_round record;
   v_phase record;
-  v_org_id bigint;
   v_best_of integer;
   v_non_bye_ids bigint[];
   v_match_count integer;

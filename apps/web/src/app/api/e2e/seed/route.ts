@@ -76,10 +76,10 @@ export async function POST(request: NextRequest) {
     const currentRef = projectRefMatch?.[1];
     const productionRef = process.env.SUPABASE_PRODUCTION_PROJECT_REF;
 
-    if (!productionRef) {
+    if (!productionRef || !currentRef) {
       console.error(
-        "[e2e/seed] BLOCKED: SUPABASE_PRODUCTION_PROJECT_REF not set — " +
-          "add it to Vercel env vars (Preview scope) with the production project ref"
+        `[e2e/seed] BLOCKED: ${!productionRef ? "SUPABASE_PRODUCTION_PROJECT_REF not set" : "could not extract project ref from Supabase URL"} — ` +
+          "add SUPABASE_PRODUCTION_PROJECT_REF to Vercel env vars (Preview scope)"
       );
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }

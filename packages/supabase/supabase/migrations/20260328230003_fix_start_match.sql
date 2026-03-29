@@ -9,7 +9,7 @@ DECLARE
   v_user_id uuid;
   v_match record;
   v_is_participant boolean;
-  v_org_id bigint;
+  v_community_id bigint;
   v_is_staff boolean;
 BEGIN
   v_user_id := (SELECT auth.uid());
@@ -33,20 +33,20 @@ BEGIN
   ) INTO v_is_participant;
 
   IF NOT v_is_participant THEN
-    SELECT t.community_id INTO v_org_id
+    SELECT t.community_id INTO v_community_id
     FROM public.tournament_rounds r
     JOIN public.tournament_phases p ON p.id = r.phase_id
     JOIN public.tournaments t ON t.id = p.tournament_id
     WHERE r.id = v_match.round_id;
 
-    IF v_org_id IS NULL THEN
+    IF v_community_id IS NULL THEN
       RAISE EXCEPTION 'Match not found';
     END IF;
 
-    SELECT public.has_community_permission(v_org_id, 'tournament.manage') INTO v_is_staff;
+    SELECT public.has_community_permission(v_community_id, 'tournament.manage') INTO v_is_staff;
 
     IF NOT v_is_staff THEN
-      RAISE EXCEPTION 'Only match participants or org staff can start a match';
+      RAISE EXCEPTION 'Only match participants or community staff can start a match';
     END IF;
   END IF;
 
