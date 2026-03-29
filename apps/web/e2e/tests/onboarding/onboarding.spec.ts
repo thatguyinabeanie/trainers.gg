@@ -10,6 +10,10 @@ test.describe("Onboarding flow", () => {
     page,
     baseURL,
   }) => {
+    // Onboarding submission includes PDS handle check + provisioning which
+    // can take several seconds on preview deployments — extend test timeout
+    test.setTimeout(90_000);
+
     test.skip(!baseURL, "PLAYWRIGHT_BASE_URL is required");
     test.skip(!E2E_SECRET, "VERCEL_AUTOMATION_BYPASS_SECRET is required");
 
@@ -73,7 +77,9 @@ test.describe("Onboarding flow", () => {
       await page.getByRole("button", { name: /complete setup/i }).click();
 
       // --- Should redirect to dashboard ---
-      await page.waitForURL("**/dashboard/overview", { timeout: 30000 });
+      // Server action includes PDS handle check (5s timeout) + PDS provisioning
+      // (30s timeout) which can take a while on preview deployments
+      await page.waitForURL("**/dashboard/overview", { timeout: 60000 });
       expect(page.url()).toContain("/dashboard/overview");
     } finally {
       // --- Cleanup: delete the test user via the preview API ---
