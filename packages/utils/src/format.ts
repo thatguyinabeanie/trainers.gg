@@ -9,6 +9,26 @@ export function getPlayerName(player: PlayerRef, fallback = "TBD"): string {
   return player?.display_name ?? player?.username ?? fallback;
 }
 
+/** Format a date string as "Mar 1, 2026". */
+export function formatDate(dateStr: string): string {
+  return new Date(dateStr).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
+/** Format a date string as "Mar 1, 2026, 3:45 PM". */
+export function formatDateTime(dateStr: string): string {
+  return new Date(dateStr).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
 /**
  * Format a date string as a human-readable "time ago" label.
  * Returns "Just now", "Xm ago", "Xh ago", "Xd ago", or a formatted date.

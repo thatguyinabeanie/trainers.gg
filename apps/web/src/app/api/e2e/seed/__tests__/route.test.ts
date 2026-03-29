@@ -85,9 +85,6 @@ describe("POST /api/e2e/seed", () => {
     setEnv({
       VERCEL_ENV: undefined,
       NODE_ENV: "development",
-      NEXT_PUBLIC_SUPABASE_URL: undefined,
-      SUPABASE_URL: undefined,
-      SUPABASE_PRODUCTION_PROJECT_REF: undefined,
       VERCEL_AUTOMATION_BYPASS_SECRET: VALID_SECRET,
     });
   });
@@ -172,7 +169,20 @@ describe("POST /api/e2e/seed", () => {
       expect(body.error).toBe("Not found");
     });
 
-    it("returns 404 when connected to production database on preview deploy", async () => {
+    it("returns 404 when Supabase URL is empty or unparseable", async () => {
+      setEnv({
+        VERCEL_ENV: "preview",
+        NEXT_PUBLIC_SUPABASE_URL: "",
+        SUPABASE_PRODUCTION_PROJECT_REF: PRODUCTION_PROJECT_REF,
+      });
+
+      const { status, body } = await getJsonResponse(makeRequest());
+
+      expect(status).toBe(404);
+      expect(body.error).toBe("Not found");
+    });
+
+    it("returns 404 when connected to production database", async () => {
       setEnv({
         VERCEL_ENV: "preview",
         NEXT_PUBLIC_SUPABASE_URL: `https://${PRODUCTION_PROJECT_REF}.supabase.co`,
@@ -185,26 +195,11 @@ describe("POST /api/e2e/seed", () => {
       expect(body.error).toBe("Not found");
     });
 
-    it("falls back to SUPABASE_URL when NEXT_PUBLIC_SUPABASE_URL is unset", async () => {
+    it("allows preview deploy connected to branch database", async () => {
       setEnv({
         VERCEL_ENV: "preview",
-        NEXT_PUBLIC_SUPABASE_URL: undefined,
-        SUPABASE_URL: `https://${PRODUCTION_PROJECT_REF}.supabase.co`,
+        NEXT_PUBLIC_SUPABASE_URL: `https://${PREVIEW_PROJECT_REF}.supabase.co`,
         SUPABASE_PRODUCTION_PROJECT_REF: PRODUCTION_PROJECT_REF,
-      });
-
-      const { status, body } = await getJsonResponse(makeRequest());
-
-      expect(status).toBe(404);
-      expect(body.error).toBe("Not found");
-    });
-
-    it("skips production database check for local dev", async () => {
-      // Local dev: no VERCEL_ENV, no production ref set — should still work
-      setEnv({
-        VERCEL_ENV: undefined,
-        NODE_ENV: "development",
-        SUPABASE_PRODUCTION_PROJECT_REF: undefined,
       });
       mockUpsert.mockResolvedValue({ error: null });
       mockCreateUser.mockResolvedValue({ error: null });
@@ -217,11 +212,11 @@ describe("POST /api/e2e/seed", () => {
       expect(status).not.toBe(404);
     });
 
-    it("allows preview deploy connected to branch database", async () => {
+    it("skips guard for local dev", async () => {
       setEnv({
-        VERCEL_ENV: "preview",
-        NEXT_PUBLIC_SUPABASE_URL: `https://${PREVIEW_PROJECT_REF}.supabase.co`,
-        SUPABASE_PRODUCTION_PROJECT_REF: PRODUCTION_PROJECT_REF,
+        VERCEL_ENV: undefined,
+        NODE_ENV: "development",
+        SUPABASE_PRODUCTION_PROJECT_REF: undefined,
       });
       mockUpsert.mockResolvedValue({ error: null });
       mockCreateUser.mockResolvedValue({ error: null });

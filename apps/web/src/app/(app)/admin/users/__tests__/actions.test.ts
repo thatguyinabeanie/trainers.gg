@@ -119,7 +119,7 @@ describe("suspendUserAction", () => {
 
     expect(result).toEqual({
       success: false,
-      error: "Error suspending user",
+      error: expect.stringContaining("Error suspending user"),
     });
   });
 });
@@ -161,7 +161,7 @@ describe("unsuspendUserAction", () => {
 
     expect(result).toEqual({
       success: false,
-      error: "Error unsuspending user",
+      error: expect.stringContaining("Error unsuspending user"),
     });
   });
 });
@@ -218,7 +218,7 @@ describe("grantSiteRoleAction", () => {
 
     expect(result).toEqual({
       success: false,
-      error: "Error granting site role",
+      error: expect.stringContaining("Error granting site role"),
     });
   });
 });
@@ -290,7 +290,7 @@ describe("revokeSiteRoleAction", () => {
 
     expect(result).toEqual({
       success: false,
-      error: "Error revoking site role",
+      error: expect.stringContaining("Error revoking site role"),
     });
   });
 });

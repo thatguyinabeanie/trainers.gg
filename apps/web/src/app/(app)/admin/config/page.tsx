@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from "react";
+import { formatDateTime } from "@trainers/utils";
 import { useRouter } from "next/navigation";
 import {
   Flag,
@@ -77,18 +78,6 @@ interface Announcement {
 }
 
 type AnnouncementTab = "all" | "active" | "scheduled" | "expired";
-
-// --- Helpers ---
-
-function formatDateTime(dateStr: string): string {
-  return new Date(dateStr).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  });
-}
 
 /**
  * Determine the display status of an announcement based on its

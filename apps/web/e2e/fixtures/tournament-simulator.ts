@@ -666,6 +666,12 @@ export class TournamentSimulator {
       throw new Error("TO client not initialized");
     }
 
+    // Refresh session — long-running simulations can outlast the JWT
+    const { error } = await this.toClient.auth.refreshSession();
+    if (error) {
+      throw new Error(`Failed to refresh TO session: ${error.message}`);
+    }
+
     await completeTournament(this.toClient, this.tournamentId);
     this.log("Tournament completed");
   }

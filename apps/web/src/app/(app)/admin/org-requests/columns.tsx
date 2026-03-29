@@ -4,6 +4,8 @@ import { createColumnHelper } from "@tanstack/react-table";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
+import { formatDate } from "@trainers/utils";
+import { type Enums } from "@trainers/supabase";
 
 // --- Types ---
 
@@ -14,7 +16,7 @@ export interface CommunityRequestRow {
   description: string | null;
   discord_invite_url: string;
   social_links: { platform: string; url: string }[] | null;
-  status: "pending" | "approved" | "rejected" | "cancelled";
+  status: Enums<"community_request_status">;
   admin_notes: string | null;
   reviewed_at: string | null;
   created_at: string;
@@ -41,7 +43,7 @@ export const communityRequestStatusLabels: Record<
   cancelled: "Cancelled",
 };
 
-const communityRequestStatusClasses: Record<
+export const communityRequestStatusClasses: Record<
   CommunityRequestRow["status"],
   string
 > = {
@@ -54,16 +56,6 @@ const communityRequestStatusClasses: Record<
   cancelled:
     "bg-gray-500/15 text-gray-600 dark:text-gray-400 border-gray-500/25",
 };
-
-// --- Helpers ---
-
-function formatDate(dateStr: string): string {
-  return new Date(dateStr).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
-}
 
 // --- Column definitions ---
 

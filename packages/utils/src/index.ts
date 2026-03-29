@@ -6,7 +6,13 @@
  */
 
 // format.ts — player name resolution and time formatting
-export { type PlayerRef, getPlayerName, formatTimeAgo } from "./format";
+export {
+  type PlayerRef,
+  getPlayerName,
+  formatDate,
+  formatDateTime,
+  formatTimeAgo,
+} from "./format";
 
 // countries.ts — ISO 3166-1 country codes and helpers
 export {
