@@ -1,11 +1,10 @@
 pre-commit:
   piped: true
-  exclude: '(^\.claude/worktrees/|^\.worktrees/)'
   commands:
     prettier:
       priority: 1
       glob: "*.{ts,tsx,js,jsx,mjs,json,css,md,yml,yaml,toml}"
-      run: pnpm prettier --write {staged_files}
+      run: ./node_modules/.bin/prettier --write {staged_files}
       stage_fixed: true
 
     typecheck:
@@ -20,7 +19,7 @@ pre-commit:
           for pkg in $AFFECTED; do
             FILTER="$FILTER --filter=$pkg"
           done
-          pnpm turbo run typecheck $FILTER
+          ./node_modules/.bin/turbo run typecheck $FILTER
         else
           echo "No packages affected, skipping typecheck"
         fi
