@@ -174,7 +174,7 @@ export function DateTimeField({
           />
 
           {/* Time: hour (1-12) + minute + AM/PM */}
-          <div className="border-border flex items-center gap-2 border-t p-3">
+          <div className="border-border flex items-center justify-center gap-2 border-t p-3">
             <Clock className="text-muted-foreground h-4 w-4 shrink-0" />
             <Select value={hour12.toString()} onValueChange={handleHourChange}>
               <SelectTrigger size="sm" className="w-[52px]">
@@ -225,7 +225,7 @@ export function DateTimeField({
           </div>
 
           {/* Actions */}
-          <div className="border-border flex justify-end gap-2 border-t p-2">
+          <div className="border-border flex justify-center gap-2 border-t p-2">
             {date && (
               <Button
                 variant="ghost"
