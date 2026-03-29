@@ -1,5 +1,6 @@
 pre-commit:
   piped: true
+  exclude: '(^\.claude/worktrees/|^\.worktrees/)'
   commands:
     prettier:
       priority: 1
