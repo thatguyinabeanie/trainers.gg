@@ -12,10 +12,7 @@
     "./factories": "./src/factories/index.ts",
     "./mocks": "./src/mocks/index.ts"
   },
-  "scripts": {
-    "format": "prettier --write \"**/*.{ts,js,json}\"",
-    "format:check": "prettier --check \"**/*.{ts,js,json}\""
-  },
+  "scripts": {},
   "dependencies": {
     "fishery": "^2.2.2"
   },

@@ -29,8 +29,8 @@
     "// quality": "",
     "lint": "turbo run lint",
     "typecheck": "turbo run typecheck",
-    "format": "turbo run format",
-    "format:check": "turbo run format:check",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
     "// db": "",
     "db:start": "turbo run db:start --filter=@trainers/supabase",
     "db:stop": "turbo run db:stop --filter=@trainers/supabase",
@@ -67,6 +67,7 @@
   "devDependencies": {
     "@trainers/prettier-config": "workspace:*",
     "prettier": "catalog:",
+    "prettier-plugin-tailwindcss": "catalog:",
     "turbo": "^2.8.21"
   },
   "pnpm": {

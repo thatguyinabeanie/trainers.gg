@@ -13,6 +13,7 @@ applyTo: "packages/supabase/**"
 Location: `supabase/migrations/YYYYMMDDHHMMSS_description.sql`
 
 Rules:
+
 - All migrations must be idempotent (preview branches replay all migrations on fresh DB)
 - Use `CREATE ... IF NOT EXISTS`, `DROP ... IF EXISTS`, `CREATE OR REPLACE FUNCTION`
 - For constraints: `DROP CONSTRAINT IF EXISTS` before `ADD CONSTRAINT`

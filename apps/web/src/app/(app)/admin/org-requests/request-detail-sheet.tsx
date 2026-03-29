@@ -237,7 +237,7 @@ export function RequestDetailSheet({
             {request.admin_notes && (
               <section className="space-y-2">
                 <h3 className="text-sm font-medium">Admin Notes</h3>
-                <p className="bg-muted rounded-lg p-3 text-sm whitespace-pre-wrap">
+                <p className="bg-muted whitespace-pre-wrap rounded-lg p-3 text-sm">
                   {request.admin_notes}
                 </p>
               </section>
@@ -313,7 +313,7 @@ export function RequestDetailSheet({
                 <Label className="text-muted-foreground text-xs">
                   Original rejection reason
                 </Label>
-                <p className="bg-muted rounded-lg p-3 text-sm whitespace-pre-wrap">
+                <p className="bg-muted whitespace-pre-wrap rounded-lg p-3 text-sm">
                   {request.admin_notes}
                 </p>
               </div>

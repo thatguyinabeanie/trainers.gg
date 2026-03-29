@@ -7,10 +7,7 @@
     ".": "./theme.ts",
     "./postcss": "./postcss.config.js"
   },
-  "scripts": {
-    "format": "prettier --write \"*.{ts,js}\"",
-    "format:check": "prettier --check \"*.{ts,js}\""
-  },
+  "scripts": {},
   "files": [
     "theme.ts",
     "postcss.config.js"

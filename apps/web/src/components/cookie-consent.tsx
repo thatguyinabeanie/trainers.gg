@@ -44,7 +44,7 @@ export function CookieConsent() {
       role="dialog"
       aria-label="Cookie consent"
       className={cn(
-        "bg-card border-border fixed right-4 bottom-4 left-4 z-50 flex flex-col gap-3 rounded-lg border p-4 shadow-lg sm:flex-row sm:items-center sm:justify-between",
+        "bg-card border-border fixed bottom-4 left-4 right-4 z-50 flex flex-col gap-3 rounded-lg border p-4 shadow-lg sm:flex-row sm:items-center sm:justify-between",
         "mx-auto max-w-lg"
       )}
     >

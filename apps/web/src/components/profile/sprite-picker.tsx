@@ -96,7 +96,7 @@ export function SpritePicker({
   return (
     <div className="flex w-72 flex-col gap-2">
       <div className="relative">
-        <Search className="text-muted-foreground pointer-events-none absolute top-1/2 left-2 size-3.5 -translate-y-1/2" />
+        <Search className="text-muted-foreground pointer-events-none absolute left-2 top-1/2 size-3.5 -translate-y-1/2" />
         <Input
           value={search}
           onChange={(e) => {
@@ -106,14 +106,14 @@ export function SpritePicker({
           placeholder={
             tab === "pokemon" ? "Search Pokemon..." : "Search trainers..."
           }
-          className="h-8 pr-7 pl-7 text-sm"
+          className="h-8 pl-7 pr-7 text-sm"
           disabled={isPending}
         />
         {search && (
           <button
             type="button"
             onClick={() => setSearch("")}
-            className="text-muted-foreground hover:text-foreground absolute top-1/2 right-2 -translate-y-1/2"
+            className="text-muted-foreground hover:text-foreground absolute right-2 top-1/2 -translate-y-1/2"
           >
             <X className="size-3.5" />
           </button>

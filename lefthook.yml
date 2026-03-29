@@ -12,8 +12,7 @@ pre-commit:
       stage_fixed: true
 
     eslint:
-      glob: "*.{ts,tsx,js,jsx}"
-      exclude: "^tooling/"
+      glob: "{apps,packages}/**/*.{ts,tsx,js,jsx}"
       run: |
         for pkg_dir in $(echo "{staged_files}" | tr ' ' '\n' | sed -n 's|\([^/]*/[^/]*\)/.*|\1|p' | sort -u); do
           pkg_files=$(echo "{staged_files}" | tr ' ' '\n' | grep "^$pkg_dir/" | sed "s|^$pkg_dir/||" | tr '\n' ' ')

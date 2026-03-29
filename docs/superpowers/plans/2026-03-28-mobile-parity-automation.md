@@ -12,18 +12,19 @@
 
 ## File Structure
 
-| File | Responsibility |
-|---|---|
-| `.claude/skills/mobile-parity/SKILL.md` | Core skill — analyze web changes, search Linear, converse, act |
-| `.claude/skills/mobile-parity/check-web-changes.sh` | Shared shell script — detect web changes on current branch |
-| `.claude/skills/finish-branch/SKILL.md` | Modify — add mobile parity step |
-| `.claude/settings.json` | Modify — add PostToolUse and SessionStart hooks |
+| File                                                | Responsibility                                                 |
+| --------------------------------------------------- | -------------------------------------------------------------- |
+| `.claude/skills/mobile-parity/SKILL.md`             | Core skill — analyze web changes, search Linear, converse, act |
+| `.claude/skills/mobile-parity/check-web-changes.sh` | Shared shell script — detect web changes on current branch     |
+| `.claude/skills/finish-branch/SKILL.md`             | Modify — add mobile parity step                                |
+| `.claude/settings.json`                             | Modify — add PostToolUse and SessionStart hooks                |
 
 ---
 
 ### Task 1: Create `check-web-changes.sh` helper script
 
 **Files:**
+
 - Create: `.claude/skills/mobile-parity/check-web-changes.sh`
 
 - [ ] **Step 1: Create the shell script**
@@ -57,9 +58,11 @@ Run: `chmod +x .claude/skills/mobile-parity/check-web-changes.sh`
 - [ ] **Step 3: Verify it works**
 
 Run from a branch with web changes:
+
 ```bash
 .claude/skills/mobile-parity/check-web-changes.sh
 ```
+
 Expected: List of `apps/web/` file paths, or empty output if on main or no web changes.
 
 - [ ] **Step 4: Commit**
@@ -74,11 +77,12 @@ git commit -m "feat: add web change detection script for mobile parity"
 ### Task 2: Create `mobile-parity` skill
 
 **Files:**
+
 - Create: `.claude/skills/mobile-parity/SKILL.md`
 
 - [ ] **Step 1: Write the SKILL.md**
 
-```markdown
+````markdown
 ---
 name: mobile-parity
 description: Use when developing web app features to check if equivalent mobile tickets exist in Linear. Analyzes apps/web/ changes, searches the Mobile App project for matching parity tickets, and guides creating, updating, or linking issues.
@@ -101,6 +105,7 @@ Run the helper script to get changed files:
 ```bash
 .claude/skills/mobile-parity/check-web-changes.sh
 ```
+````
 
 If no output, inform the user there are no `apps/web/` changes on this branch and stop.
 
@@ -108,27 +113,27 @@ If no output, inform the user there are no `apps/web/` changes on this branch an
 
 Group the changed files by feature area using this mapping:
 
-| Path contains | Feature Area | Known Parity Tickets |
-|---|---|---|
-| `admin/` | Admin (web-only) | **SKIP** — no mobile equivalent needed |
-| `dashboard/overview` or `dashboard/stats` | Player Dashboard | TGG-336 |
-| `dashboard/alts` | Alts Management | TGG-340 |
-| `dashboard/settings` | Settings | TGG-339 |
-| `dashboard/notifications` | Notifications | TGG-341 |
-| `dashboard/invitations` | Tournament Invitations | TGG-346 |
-| `players/` or `components/players/` | Player Directory | TGG-337 |
-| `u/[handle]` or `profile/` | Player Profile | TGG-338 |
-| `tournaments/` (listing/browse) | Tournament Directory | TGG-342 |
-| `tournaments/[slug]` (registration) | Registration Flow | TGG-343 |
-| `tournaments/[slug]/r/` or `components/match/` | Match Interface | TGG-344 |
-| `tournament/manage` (standings/bracket) | Bracket & Standings | TGG-345 |
-| `communities/` or `components/communities/` | Community Directory | TGG-348 |
-| `communities/create` | Community Creation | TGG-349 |
-| `to-dashboard/` | TO Dashboard | TGG-351 |
-| `to-dashboard/[slug]/staff` | Staff Management | TGG-352 |
-| `components/tournament/` | Tournament Experience | TGG-342, TGG-345 |
-| `components/notifications/` | Notifications | TGG-341 |
-| `components/settings/` | Settings | TGG-339 |
+| Path contains                                  | Feature Area           | Known Parity Tickets                   |
+| ---------------------------------------------- | ---------------------- | -------------------------------------- |
+| `admin/`                                       | Admin (web-only)       | **SKIP** — no mobile equivalent needed |
+| `dashboard/overview` or `dashboard/stats`      | Player Dashboard       | TGG-336                                |
+| `dashboard/alts`                               | Alts Management        | TGG-340                                |
+| `dashboard/settings`                           | Settings               | TGG-339                                |
+| `dashboard/notifications`                      | Notifications          | TGG-341                                |
+| `dashboard/invitations`                        | Tournament Invitations | TGG-346                                |
+| `players/` or `components/players/`            | Player Directory       | TGG-337                                |
+| `u/[handle]` or `profile/`                     | Player Profile         | TGG-338                                |
+| `tournaments/` (listing/browse)                | Tournament Directory   | TGG-342                                |
+| `tournaments/[slug]` (registration)            | Registration Flow      | TGG-343                                |
+| `tournaments/[slug]/r/` or `components/match/` | Match Interface        | TGG-344                                |
+| `tournament/manage` (standings/bracket)        | Bracket & Standings    | TGG-345                                |
+| `communities/` or `components/communities/`    | Community Directory    | TGG-348                                |
+| `communities/create`                           | Community Creation     | TGG-349                                |
+| `to-dashboard/`                                | TO Dashboard           | TGG-351                                |
+| `to-dashboard/[slug]/staff`                    | Staff Management       | TGG-352                                |
+| `components/tournament/`                       | Tournament Experience  | TGG-342, TGG-345                       |
+| `components/notifications/`                    | Notifications          | TGG-341                                |
+| `components/settings/`                         | Settings               | TGG-339                                |
 
 If ALL changes fall under `admin/`, inform the user: "All changes are in admin routes (web-only). No mobile parity needed." and stop.
 
@@ -166,7 +171,7 @@ mcp__plugin_linear_linear__list_issues(team: "trainers-gg", query: "<feature key
 
 Present what you found, grouped:
 
-- **Direct match:** "This maps to TGG-XXX (*title*). Options:"
+- **Direct match:** "This maps to TGG-XXX (_title_). Options:"
   - (a) Update it with details from this web work
   - (b) Skip — already covered
 - **Related tickets:** "These tickets are related: TGG-XXX, TGG-YYY. Options:"
@@ -182,6 +187,7 @@ Always include the skip option. Never create a ticket without user confirmation.
 ### 6. Take action
 
 **Update existing ticket:**
+
 - Fetch current description with `mcp__plugin_linear_linear__get_issue`
 - Append a new section (do NOT replace existing content):
 
@@ -196,12 +202,12 @@ Always include the skip option. Never create a ticket without user confirmation.
 
 **Create new ticket:**
 
-| Field | Value |
-|---|---|
-| Team | `trainers-gg` |
-| Project | `Mobile App` |
-| Label | `type:feature` |
-| Priority | 3 (Medium) |
+| Field     | Value                                   |
+| --------- | --------------------------------------- |
+| Team      | `trainers-gg`                           |
+| Project   | `Mobile App`                            |
+| Label     | `type:feature`                          |
+| Priority  | 3 (Medium)                              |
 | Milestone | Inferred from feature area, or ask user |
 
 Description:
@@ -233,24 +239,27 @@ If linking to related tickets, use the `relatedTo` field.
 ## Exclusions
 
 These changes never need mobile parity tickets:
+
 - `admin/` routes and components
 - Changes only in `packages/` (shared packages are already cross-platform)
 - Changes only in config files (next.config.ts, tailwind, etc.)
 - Changes only in test files under `apps/web/`
-```
+
+````
 
 - [ ] **Step 2: Commit**
 
 ```bash
 git add .claude/skills/mobile-parity/SKILL.md
 git commit -m "feat: add mobile-parity skill for Linear ticket automation"
-```
+````
 
 ---
 
 ### Task 3: Add PostToolUse hook for commit nudge
 
 **Files:**
+
 - Modify: `.claude/settings.json`
 
 - [ ] **Step 1: Read current settings.json**
@@ -290,6 +299,7 @@ git commit -m "feat: add PostToolUse hook for mobile parity commit nudge"
 ### Task 4: Add SessionStart hook for branch check
 
 **Files:**
+
 - Modify: `.claude/settings.json`
 
 - [ ] **Step 1: Read current settings.json**
@@ -333,6 +343,7 @@ git commit -m "feat: add SessionStart hook for mobile parity branch reminder"
 ### Task 5: Integrate into `finish-branch` skill
 
 **Files:**
+
 - Modify: `.claude/skills/finish-branch/SKILL.md`
 
 - [ ] **Step 1: Read the current finish-branch skill**
@@ -343,7 +354,7 @@ Read `.claude/skills/finish-branch/SKILL.md`.
 
 Insert after the "### 5. Check edge functions" section and before "### 6. Push and create PR":
 
-```markdown
+````markdown
 ### 5.5. Mobile parity check
 
 Check if the branch includes changes under `apps/web/`:
@@ -351,25 +362,28 @@ Check if the branch includes changes under `apps/web/`:
 ```bash
 git diff main --name-only -- apps/web/
 ```
+````
 
 - If web files were changed, invoke the `mobile-parity` skill to analyze changes and check for mobile parity tickets in Linear.
 - The skill will present findings and ask whether to create, update, or skip — it never acts without confirmation.
 - The user can skip to proceed directly to PR creation.
 - If no web files were changed, skip this step silently.
-```
+
+````
 
 - [ ] **Step 3: Commit**
 
 ```bash
 git add .claude/skills/finish-branch/SKILL.md
 git commit -m "feat: add mobile parity check to finish-branch workflow"
-```
+````
 
 ---
 
 ### Task 6: Update CLAUDE.md skill table
 
 **Files:**
+
 - Modify: `CLAUDE.md`
 
 - [ ] **Step 1: Read the workspace skills table in CLAUDE.md**

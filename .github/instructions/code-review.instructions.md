@@ -43,7 +43,9 @@ React Compiler is enabled in this project. Do not suggest adding `useMemo`, `use
 This project uses Zod's `.transform().pipe()` pattern to trim input before validation:
 
 ```ts
-z.string().transform((val) => val.trim()).pipe(z.string().max(100))
+z.string()
+  .transform((val) => val.trim())
+  .pipe(z.string().max(100));
 ```
 
 This ensures trimming happens before length/format checks. Do not suggest `.preprocess()` as an alternative — the project has standardized on transform+pipe.

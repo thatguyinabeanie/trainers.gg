@@ -12,21 +12,22 @@
 
 ## File Map
 
-| Action | File | Responsibility |
-|--------|------|----------------|
-| Modify | `packages/supabase/src/mutations/organization-requests.ts` | Rename `approveCommunityRequest` → `grantCommunityRequest`, relax status guard, add `reason` param, add duplicate cancellation |
-| Modify | `packages/supabase/src/mutations/index.ts` | Update barrel export name |
-| Modify | `apps/web/src/app/(app)/admin/org-requests/actions.ts` | Rename action, add optional `reason` parameter |
-| Modify | `apps/web/src/app/(app)/admin/org-requests/request-detail-sheet.tsx` | Show Approve on rejected requests, display rejection context in dialog |
-| Modify | `packages/supabase/src/mutations/__tests__/organization-requests.test.ts` | Rename references, add tests for rejected→approved + duplicate cancellation |
-| Modify | `apps/web/src/app/(app)/admin/org-requests/__tests__/actions.test.ts` | Rename references, add test for optional reason |
-| Regenerate | `packages/supabase/src/clients/server.ts`, `client.ts`, `mobile.ts` | Auto-generated — run `pnpm --filter @trainers/supabase generate-clients` |
+| Action     | File                                                                      | Responsibility                                                                                                                 |
+| ---------- | ------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| Modify     | `packages/supabase/src/mutations/organization-requests.ts`                | Rename `approveCommunityRequest` → `grantCommunityRequest`, relax status guard, add `reason` param, add duplicate cancellation |
+| Modify     | `packages/supabase/src/mutations/index.ts`                                | Update barrel export name                                                                                                      |
+| Modify     | `apps/web/src/app/(app)/admin/org-requests/actions.ts`                    | Rename action, add optional `reason` parameter                                                                                 |
+| Modify     | `apps/web/src/app/(app)/admin/org-requests/request-detail-sheet.tsx`      | Show Approve on rejected requests, display rejection context in dialog                                                         |
+| Modify     | `packages/supabase/src/mutations/__tests__/organization-requests.test.ts` | Rename references, add tests for rejected→approved + duplicate cancellation                                                    |
+| Modify     | `apps/web/src/app/(app)/admin/org-requests/__tests__/actions.test.ts`     | Rename references, add test for optional reason                                                                                |
+| Regenerate | `packages/supabase/src/clients/server.ts`, `client.ts`, `mobile.ts`       | Auto-generated — run `pnpm --filter @trainers/supabase generate-clients`                                                       |
 
 ---
 
 ## Task 1: Rename and extend the mutation
 
 **Files:**
+
 - Modify: `packages/supabase/src/mutations/organization-requests.ts:111-224`
 - Modify: `packages/supabase/src/mutations/index.ts:76-79`
 
@@ -152,74 +153,74 @@ export async function grantCommunityRequest(
 2. Replace the status guard (line 124-126) from:
 
 ```typescript
-  if (request.status !== "pending") {
-    throw new Error("Request is no longer pending");
-  }
+if (request.status !== "pending") {
+  throw new Error("Request is no longer pending");
+}
 ```
 
 to:
 
 ```typescript
-  if (request.status !== "pending" && request.status !== "rejected") {
-    throw new Error("Request has already been approved");
-  }
+if (request.status !== "pending" && request.status !== "rejected") {
+  throw new Error("Request has already been approved");
+}
 ```
 
 3. Update the audit log metadata (around line 212-221) to include `reason` and `from_status`:
 
 ```typescript
-  // Audit log
-  await supabase.from("audit_log").insert({
-    action: "admin.org_request_approved" as const,
-    actor_user_id: adminUserId,
+// Audit log
+await supabase.from("audit_log").insert({
+  action: "admin.org_request_approved" as const,
+  actor_user_id: adminUserId,
+  community_id: community.id,
+  metadata: {
+    request_id: requestId,
     community_id: community.id,
-    metadata: {
-      request_id: requestId,
-      community_id: community.id,
-      requester_user_id: request.user_id,
-      ...(reason && { reason }),
-      ...(request.status === "rejected" && { from_status: "rejected" }),
-    },
-  });
+    requester_user_id: request.user_id,
+    ...(reason && { reason }),
+    ...(request.status === "rejected" && { from_status: "rejected" }),
+  },
+});
 ```
 
 4. Add duplicate cancellation logic right before the `return` statement (after the audit log insert, before `return { request: updatedRequest, organization: community }`):
 
 ```typescript
-  // Cancel any other pending requests from the same user
-  if (request.status === "rejected") {
-    const { data: duplicates } = await supabase
-      .from("community_requests")
-      .select("id")
-      .eq("user_id", request.user_id)
-      .eq("status", "pending")
-      .neq("id", requestId);
+// Cancel any other pending requests from the same user
+if (request.status === "rejected") {
+  const { data: duplicates } = await supabase
+    .from("community_requests")
+    .select("id")
+    .eq("user_id", request.user_id)
+    .eq("status", "pending")
+    .neq("id", requestId);
 
-    if (duplicates && duplicates.length > 0) {
-      for (const dup of duplicates) {
-        await supabase
-          .from("community_requests")
-          .update({
-            status: "rejected" as const,
-            admin_notes: `Automatically closed — community granted via request #${requestId}`,
-            reviewed_by: adminUserId,
-            reviewed_at: new Date().toISOString(),
-          })
-          .eq("id", dup.id);
+  if (duplicates && duplicates.length > 0) {
+    for (const dup of duplicates) {
+      await supabase
+        .from("community_requests")
+        .update({
+          status: "rejected" as const,
+          admin_notes: `Automatically closed — community granted via request #${requestId}`,
+          reviewed_by: adminUserId,
+          reviewed_at: new Date().toISOString(),
+        })
+        .eq("id", dup.id);
 
-        await supabase.from("audit_log").insert({
-          action: "admin.org_request_rejected" as const,
-          actor_user_id: adminUserId,
-          metadata: {
-            request_id: dup.id,
-            requester_user_id: request.user_id,
-            reason: `Automatically closed — community granted via request #${requestId}`,
-            auto_cancelled: true,
-          },
-        });
-      }
+      await supabase.from("audit_log").insert({
+        action: "admin.org_request_rejected" as const,
+        actor_user_id: adminUserId,
+        metadata: {
+          request_id: dup.id,
+          requester_user_id: request.user_id,
+          reason: `Automatically closed — community granted via request #${requestId}`,
+          auto_cancelled: true,
+        },
+      });
     }
   }
+}
 ```
 
 - [ ] **Step 4: Update the barrel export**
@@ -227,6 +228,7 @@ to:
 In `packages/supabase/src/mutations/index.ts`, change line 77:
 
 From:
+
 ```typescript
 export {
   submitCommunityRequest,
@@ -236,6 +238,7 @@ export {
 ```
 
 To:
+
 ```typescript
 export {
   submitCommunityRequest,
@@ -305,6 +308,7 @@ Add duplicate pending request cancellation when granting a rejected request."
 ## Task 2: Add test for duplicate cancellation
 
 **Files:**
+
 - Modify: `packages/supabase/src/mutations/__tests__/organization-requests.test.ts`
 
 - [ ] **Step 1: Write the failing test — duplicate pending request gets cancelled**
@@ -415,6 +419,7 @@ git commit -m "test: add duplicate cancellation test for grantCommunityRequest"
 ## Task 3: Rename and extend the server action
 
 **Files:**
+
 - Modify: `apps/web/src/app/(app)/admin/org-requests/actions.ts`
 - Modify: `apps/web/src/app/(app)/admin/org-requests/__tests__/actions.test.ts`
 
@@ -565,11 +570,13 @@ Add optional reason parameter for audit trail context."
 ## Task 4: Update the UI to show Approve on rejected requests
 
 **Files:**
+
 - Modify: `apps/web/src/app/(app)/admin/org-requests/request-detail-sheet.tsx`
 
 - [ ] **Step 1: Update the action import**
 
 Change:
+
 ```typescript
 import {
   approveCommunityRequestAction,
@@ -578,6 +585,7 @@ import {
 ```
 
 To:
+
 ```typescript
 import {
   grantCommunityRequestAction,
@@ -606,11 +614,13 @@ useEffect(() => {
 - [ ] **Step 3: Update the `isPending` logic to show actions on rejected too**
 
 Change:
+
 ```typescript
 const isPending = request.status === "pending";
 ```
 
 To:
+
 ```typescript
 const isPending = request.status === "pending";
 const isRejected = request.status === "rejected";
@@ -622,44 +632,46 @@ const canApprove = isPending || isRejected;
 Replace the entire actions section (the `{isPending && ( ... )}` block, around lines 267-301) with:
 
 ```tsx
-{canApprove && (
-  <>
-    <Separator />
-    <section className="space-y-4">
-      <h3 className="text-sm font-medium">Actions</h3>
+{
+  canApprove && (
+    <>
+      <Separator />
+      <section className="space-y-4">
+        <h3 className="text-sm font-medium">Actions</h3>
 
-      <Button
-        className="w-full"
-        onClick={() => setConfirmAction({ type: "approve" })}
-      >
-        <Check className="size-4" />
-        Approve Request
-      </Button>
+        <Button
+          className="w-full"
+          onClick={() => setConfirmAction({ type: "approve" })}
+        >
+          <Check className="size-4" />
+          Approve Request
+        </Button>
 
-      {isPending && (
-        <div className="space-y-2">
-          <Label htmlFor="reject-reason">Rejection Reason</Label>
-          <Textarea
-            id="reject-reason"
-            placeholder="Explain why this request is being rejected..."
-            value={rejectReason}
-            onChange={(e) => setRejectReason(e.target.value)}
-            rows={3}
-          />
-          <Button
-            variant="destructive"
-            className="w-full"
-            onClick={() => setConfirmAction({ type: "reject" })}
-            disabled={!rejectReason.trim()}
-          >
-            <X className="size-4" />
-            Reject Request
-          </Button>
-        </div>
-      )}
-    </section>
-  </>
-)}
+        {isPending && (
+          <div className="space-y-2">
+            <Label htmlFor="reject-reason">Rejection Reason</Label>
+            <Textarea
+              id="reject-reason"
+              placeholder="Explain why this request is being rejected..."
+              value={rejectReason}
+              onChange={(e) => setRejectReason(e.target.value)}
+              rows={3}
+            />
+            <Button
+              variant="destructive"
+              className="w-full"
+              onClick={() => setConfirmAction({ type: "reject" })}
+              disabled={!rejectReason.trim()}
+            >
+              <X className="size-4" />
+              Reject Request
+            </Button>
+          </div>
+        )}
+      </section>
+    </>
+  );
+}
 ```
 
 - [ ] **Step 5: Update the `handleConfirm` function**
@@ -725,7 +737,7 @@ Replace the `AlertDialogContent` with:
       <Label className="text-muted-foreground text-xs">
         Original rejection reason
       </Label>
-      <p className="bg-muted rounded-lg p-3 text-sm whitespace-pre-wrap">
+      <p className="bg-muted whitespace-pre-wrap rounded-lg p-3 text-sm">
         {request.admin_notes}
       </p>
     </div>
@@ -746,15 +758,11 @@ Replace the `AlertDialogContent` with:
   )}
 
   <AlertDialogFooter>
-    <AlertDialogCancel disabled={isSubmitting}>
-      Cancel
-    </AlertDialogCancel>
+    <AlertDialogCancel disabled={isSubmitting}>Cancel</AlertDialogCancel>
     <AlertDialogAction
       onClick={handleConfirm}
       disabled={isSubmitting}
-      variant={
-        confirmAction?.type === "reject" ? "destructive" : "default"
-      }
+      variant={confirmAction?.type === "reject" ? "destructive" : "default"}
     >
       {isSubmitting
         ? "Processing..."
@@ -782,6 +790,7 @@ the confirmation dialog when approving a previously rejected request."
 ## Task 5: Regenerate client wrappers and run full checks
 
 **Files:**
+
 - Regenerate: `packages/supabase/src/clients/server.ts`, `client.ts`, `mobile.ts`
 
 - [ ] **Step 1: Regenerate auto-generated client wrappers**

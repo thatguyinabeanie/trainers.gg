@@ -38,7 +38,7 @@ export function ActiveMatchCard({ match }: ActiveMatchCardProps) {
       )}
 
       {/* Diagonal accent stripe */}
-      <div className="bg-primary/10 absolute top-0 right-0 h-32 w-32 translate-x-8 -translate-y-8 rotate-45" />
+      <div className="bg-primary/10 absolute right-0 top-0 h-32 w-32 -translate-y-8 translate-x-8 rotate-45" />
 
       <CardHeader className="relative">
         <div className="flex items-start justify-between">
@@ -48,7 +48,7 @@ export function ActiveMatchCard({ match }: ActiveMatchCardProps) {
             </div>
             <div>
               <CardTitle className="flex items-center gap-2 text-lg">
-                <span className="text-muted-foreground text-xs font-semibold tracking-wider uppercase">
+                <span className="text-muted-foreground text-xs font-semibold uppercase tracking-wider">
                   Active Match
                 </span>
               </CardTitle>
@@ -84,7 +84,7 @@ export function ActiveMatchCard({ match }: ActiveMatchCardProps) {
           <div className="border-primary/20 from-primary/5 relative overflow-hidden rounded-lg border bg-gradient-to-r to-transparent p-4">
             <div className="flex items-center gap-3">
               <div className="flex-1">
-                <p className="text-muted-foreground text-xs font-semibold tracking-wider uppercase">
+                <p className="text-muted-foreground text-xs font-semibold uppercase tracking-wider">
                   Opponent
                 </p>
                 <p className="mt-1 text-base font-bold">
@@ -105,7 +105,7 @@ export function ActiveMatchCard({ match }: ActiveMatchCardProps) {
         {match.table != null && (
           <div className="bg-muted/50 flex items-center gap-2 rounded-lg px-3 py-2">
             <MapPin className="text-muted-foreground size-4" />
-            <span className="text-muted-foreground text-xs font-semibold tracking-wider uppercase">
+            <span className="text-muted-foreground text-xs font-semibold uppercase tracking-wider">
               Table
             </span>
             <span className="ml-auto font-mono text-sm font-bold tabular-nums">
@@ -118,7 +118,7 @@ export function ActiveMatchCard({ match }: ActiveMatchCardProps) {
         <Link
           href={`/tournaments/${match.tournamentSlug}/r/${match.roundNumber}/t/${match.table ?? 0}`}
           className={cn(
-            "group bg-primary text-primary-foreground hover:bg-primary/90 relative inline-flex h-11 w-full items-center justify-center gap-2 overflow-hidden rounded-lg px-4 text-sm font-bold tracking-wide uppercase transition-all"
+            "bg-primary text-primary-foreground hover:bg-primary/90 group relative inline-flex h-11 w-full items-center justify-center gap-2 overflow-hidden rounded-lg px-4 text-sm font-bold uppercase tracking-wide transition-all"
           )}
         >
           <span>Enter Battle</span>

@@ -42,7 +42,10 @@ async function main() {
         .match(/packages:\s*\n([\s\S]*?)(?:\n\S|$)/)?.[1]
         .split("\n")
         .map((line) =>
-          line.trim().replace(/^-\s*['"]?/, "").replace(/['"]?$/, "")
+          line
+            .trim()
+            .replace(/^-\s*['"]?/, "")
+            .replace(/['"]?$/, "")
         )
         .filter(Boolean) || [];
 
@@ -68,7 +71,10 @@ async function main() {
             try {
               // Read package.json to get package name
               const pkgJson = JSON.parse(
-                await readFile(resolve(rootDir, pkgPath, "package.json"), "utf-8")
+                await readFile(
+                  resolve(rootDir, pkgPath, "package.json"),
+                  "utf-8"
+                )
               );
               if (pkgJson.name) {
                 affectedPackages.add(pkgJson.name);

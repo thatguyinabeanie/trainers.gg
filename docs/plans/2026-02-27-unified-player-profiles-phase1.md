@@ -13,6 +13,7 @@
 ### Task 1: Add `getPlayerProfileByHandle` query
 
 **Files:**
+
 - Modify: `packages/supabase/src/queries/users.ts` (append new function)
 - Test: `packages/supabase/src/queries/__tests__/users.test.ts` (create if not exists)
 
@@ -143,6 +144,7 @@ git commit -m "feat: add getPlayerProfileByHandle query for public player profil
 ### Task 2: Add `getPlayerTournamentHistory` query (public version)
 
 **Files:**
+
 - Modify: `packages/supabase/src/queries/tournaments.ts` (append new function)
 - Test: `packages/supabase/src/queries/__tests__/tournaments-player-history.test.ts` (create)
 
@@ -421,9 +423,7 @@ export async function getPlayerTournamentHistory(
         : null;
 
     const standing = standingsMap.get(`${tournament?.id}_${r.alt_id}`);
-    const teamPokemon = r.team_id
-      ? (teamPokemonMap.get(r.team_id) ?? [])
-      : [];
+    const teamPokemon = r.team_id ? (teamPokemonMap.get(r.team_id) ?? []) : [];
 
     return {
       id: r.id,
@@ -473,6 +473,7 @@ git commit -m "feat: add getPlayerTournamentHistory query for public player prof
 ### Task 3: Add `getPlayerLifetimeStats` query
 
 **Files:**
+
 - Modify: `packages/supabase/src/queries/tournaments.ts` (append new function)
 - Test: `packages/supabase/src/queries/__tests__/tournaments-player-stats.test.ts` (create)
 
@@ -667,6 +668,7 @@ git commit -m "feat: add getPlayerLifetimeStats query for profile overview"
 ### Task 4: Add `player` cache tag
 
 **Files:**
+
 - Modify: `apps/web/src/lib/cache.ts`
 
 **Step 1: Add the cache tag**
@@ -695,6 +697,7 @@ git commit -m "feat: add player cache tag for profile page caching"
 ### Task 5: Build the player profile page (Server Component)
 
 **Files:**
+
 - Replace: `apps/web/src/app/players/[handle]/page.tsx`
 
 **Step 1: Write the server page**
@@ -875,6 +878,7 @@ This depends on Task 6 (PlayerProfileTabs). Continue to next task.
 ### Task 6: Build the Overview tab and tab switcher
 
 **Files:**
+
 - Create: `apps/web/src/app/players/[handle]/player-profile-tabs.tsx`
 - Create: `apps/web/src/app/players/[handle]/overview-tab.tsx`
 
@@ -1190,6 +1194,7 @@ git commit -m "feat: build player profile page with header and overview tab"
 ### Task 7: Create API routes for player stats and tournaments
 
 **Files:**
+
 - Create: `apps/web/src/app/api/players/[altId]/stats/route.ts`
 - Create: `apps/web/src/app/api/players/[altId]/tournaments/route.ts`
 
@@ -1262,6 +1267,7 @@ git commit -m "feat: add API routes for player stats and tournament history"
 ### Task 8: Add bio field to profile settings page
 
 **Files:**
+
 - Modify: `apps/web/src/app/dashboard/settings/profile/page.tsx`
 - Modify: `apps/web/src/actions/profile.ts` (update `getCurrentUserProfile` + `updateProfile`)
 
@@ -1270,6 +1276,7 @@ git commit -m "feat: add API routes for player stats and tournament history"
 In `apps/web/src/actions/profile.ts`, find the `getCurrentUserProfile` function and ensure it returns the bio field from the alt. Check the existing code — if it already fetches the alt with `bio`, just ensure it's included in the return object.
 
 Update to include `bio`:
+
 ```typescript
 // In the return of getCurrentUserProfile, add:
 bio: alt?.bio ?? null,
@@ -1305,28 +1312,37 @@ if (data.bio !== undefined) {
 In `apps/web/src/app/dashboard/settings/profile/page.tsx`, add state for bio and the textarea field:
 
 Add state:
+
 ```typescript
 const [bio, setBio] = useState("");
 const [originalBio, setOriginalBio] = useState("");
 ```
 
 Load bio in the `loadProfile` effect:
+
 ```typescript
 setBio(profile.bio ?? "");
 setOriginalBio(profile.bio ?? "");
 ```
 
 Add change detection:
+
 ```typescript
 const hasBioChanged = bio !== originalBio;
 ```
 
 Update `hasAnyChange`:
+
 ```typescript
-const hasAnyChange = hasUsernameChanged || hasBirthDateChanged || hasCountryChanged || hasBioChanged;
+const hasAnyChange =
+  hasUsernameChanged ||
+  hasBirthDateChanged ||
+  hasCountryChanged ||
+  hasBioChanged;
 ```
 
 Add bio to save handler:
+
 ```typescript
 if (hasBioChanged) {
   updates.bio = bio;
@@ -1334,11 +1350,13 @@ if (hasBioChanged) {
 ```
 
 Update originals on success:
+
 ```typescript
 setOriginalBio(bio);
 ```
 
 Add textarea UI (place between username and birth date fields):
+
 ```html
 <div className="space-y-2">
   <Label htmlFor="bio">Bio</Label>
@@ -1374,6 +1392,7 @@ git commit -m "feat: add bio editing to profile settings page"
 ### Task 9: Export new queries from package index
 
 **Files:**
+
 - Modify: `packages/supabase/src/queries/index.ts`
 
 **Step 1: Verify exports**
@@ -1410,6 +1429,7 @@ git commit -m "feat: export player profile queries from package index"
 ### Task 10: Check COUNTRIES has `flag` field, and verify end-to-end
 
 **Files:**
+
 - Check: `packages/utils/src/countries.ts` for flag emoji field
 
 **Step 1: Verify COUNTRIES shape**
@@ -1448,6 +1468,7 @@ git commit -m "fix: address Phase 1 integration issues"
 ### Task 11: Write integration tests for the page
 
 **Files:**
+
 - Create: `apps/web/src/app/players/[handle]/__tests__/page.test.tsx`
 
 **Step 1: Write tests for the page rendering**
@@ -1489,8 +1510,7 @@ describe("PlayerPage", () => {
     user_id: mockUser.id,
     username: "ash_ketchum",
     bio: "Gotta catch em all",
-    avatar_url:
-      "https://play.pokemonshowdown.com/sprites/gen5/pikachu.png",
+    avatar_url: "https://play.pokemonshowdown.com/sprites/gen5/pikachu.png",
   });
 
   it("calls notFound when player does not exist", async () => {
@@ -1548,6 +1568,7 @@ git commit -m "test: add player profile page tests"
 ## Summary
 
 Phase 1 delivers:
+
 1. `getPlayerProfileByHandle` query — fetch alt + user by username
 2. `getPlayerTournamentHistory` query — public tournament history for a player
 3. `getPlayerLifetimeStats` query — aggregate win/loss/tournament stats

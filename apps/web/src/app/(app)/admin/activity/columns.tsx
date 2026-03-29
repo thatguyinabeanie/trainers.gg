@@ -132,7 +132,7 @@ export const columns: ColumnDef<AuditLogEntry>[] = [
       const dateStr = row.original.created_at;
       return (
         <Tooltip>
-          <TooltipTrigger className="text-muted-foreground text-sm whitespace-nowrap">
+          <TooltipTrigger className="text-muted-foreground whitespace-nowrap text-sm">
             {formatTimeAgo(dateStr)}
           </TooltipTrigger>
           <TooltipContent>{formatFullDate(dateStr)}</TooltipContent>
@@ -210,7 +210,7 @@ export const columns: ColumnDef<AuditLogEntry>[] = [
         return <span className="text-muted-foreground">-</span>;
       }
       return (
-        <span className="text-muted-foreground text-sm whitespace-nowrap">
+        <span className="text-muted-foreground whitespace-nowrap text-sm">
           {label}
         </span>
       );

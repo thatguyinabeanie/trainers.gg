@@ -242,16 +242,16 @@ export default function AltsPage() {
               <table className="w-full">
                 <thead>
                   <tr className="bg-muted/30 border-b">
-                    <th className="text-muted-foreground h-12 px-4 text-left align-middle text-xs font-medium tracking-wider uppercase">
+                    <th className="text-muted-foreground h-12 px-4 text-left align-middle text-xs font-medium uppercase tracking-wider">
                       Handle
                     </th>
-                    <th className="text-muted-foreground hidden h-12 px-4 text-left align-middle text-xs font-medium tracking-wider uppercase sm:table-cell">
+                    <th className="text-muted-foreground hidden h-12 px-4 text-left align-middle text-xs font-medium uppercase tracking-wider sm:table-cell">
                       Stats
                     </th>
-                    <th className="text-muted-foreground h-12 px-4 text-center align-middle text-xs font-medium tracking-wider uppercase">
+                    <th className="text-muted-foreground h-12 px-4 text-center align-middle text-xs font-medium uppercase tracking-wider">
                       Public
                     </th>
-                    <th className="text-muted-foreground h-12 px-4 text-right align-middle text-xs font-medium tracking-wider uppercase">
+                    <th className="text-muted-foreground h-12 px-4 text-right align-middle text-xs font-medium uppercase tracking-wider">
                       Actions
                     </th>
                   </tr>
@@ -263,7 +263,7 @@ export default function AltsPage() {
                     return (
                       <tr
                         key={alt.id}
-                        className="group hover:bg-muted/50 border-b transition-colors last:border-0"
+                        className="hover:bg-muted/50 group border-b transition-colors last:border-0"
                       >
                         {/* Alt Column */}
                         <td className="px-4 py-3 align-middle">
