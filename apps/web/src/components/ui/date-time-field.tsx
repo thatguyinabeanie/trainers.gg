@@ -11,42 +11,34 @@ import {
 import { cn } from "@/lib/utils";
 import { CalendarIcon, Clock } from "lucide-react";
 
-// Common tournament start times for quick selection (8 presets = 4x2 grid)
-const TIME_PRESETS = [
+// Time slots shown as the primary time picker
+const TIME_SLOTS = [
   { label: "9 AM", hours: 9, minutes: 0 },
   { label: "10 AM", hours: 10, minutes: 0 },
   { label: "11 AM", hours: 11, minutes: 0 },
   { label: "12 PM", hours: 12, minutes: 0 },
   { label: "1 PM", hours: 13, minutes: 0 },
   { label: "2 PM", hours: 14, minutes: 0 },
+  { label: "3 PM", hours: 15, minutes: 0 },
+  { label: "4 PM", hours: 16, minutes: 0 },
   { label: "5 PM", hours: 17, minutes: 0 },
+  { label: "6 PM", hours: 18, minutes: 0 },
   { label: "7 PM", hours: 19, minutes: 0 },
+  { label: "8 PM", hours: 20, minutes: 0 },
 ] as const;
 
-/**
- * Formats a 24h value into a time string for <input type="time">.
- * e.g. (14, 30) => "14:30"
- */
 function toTimeInputValue(hours: number, minutes: number): string {
   return `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}`;
 }
 
 export interface DateTimeFieldProps {
-  /** The label displayed above the field. */
   label: string;
-  /** Helper text displayed below the field. */
   description: string;
-  /** Unix timestamp in milliseconds, or undefined if no date is selected. */
   value?: number | string | null;
-  /** Called when the date/time changes. Receives a timestamp (number) or ISO string depending on the variant. */
   onChange: (value: number | string | undefined) => void;
-  /** Output format: "timestamp" returns epoch ms, "iso" returns ISO string. */
   outputFormat?: "timestamp" | "iso";
-  /** Earliest selectable date. */
   minDate?: Date;
-  /** Latest selectable date. */
   maxDate?: Date;
-  /** Disables all interaction. */
   disabled?: boolean;
 }
 
@@ -61,13 +53,17 @@ export function DateTimeField({
   disabled,
 }: DateTimeFieldProps) {
   const [open, setOpen] = React.useState(false);
+  const [showCustomTime, setShowCustomTime] = React.useState(false);
 
-  // Parse the incoming value into a Date
   const date = value ? new Date(value) : undefined;
   const hours = date ? date.getHours() : 12;
   const minutes = date ? date.getMinutes() : 0;
 
-  // Emit value in the correct format
+  // Check if current time matches any preset
+  const isCustomTime =
+    date !== undefined &&
+    !TIME_SLOTS.some((s) => s.hours === hours && s.minutes === minutes);
+
   const emit = (d: Date) => {
     if (outputFormat === "iso") {
       onChange(d.toISOString());
@@ -87,7 +83,17 @@ export function DateTimeField({
     emit(newDate);
   };
 
-  const handleTimeInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleSlotClick = (slotHours: number, slotMinutes: number) => {
+    const newDate = date ? new Date(date) : new Date();
+    newDate.setHours(slotHours);
+    newDate.setMinutes(slotMinutes);
+    newDate.setSeconds(0);
+    newDate.setMilliseconds(0);
+    emit(newDate);
+    setShowCustomTime(false);
+  };
+
+  const handleCustomTimeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const [h, m] = e.target.value.split(":").map(Number);
     if (h === undefined || m === undefined) return;
     const newDate = date ? new Date(date) : new Date();
@@ -98,17 +104,8 @@ export function DateTimeField({
     emit(newDate);
   };
 
-  const handlePresetClick = (presetHours: number, presetMinutes: number) => {
-    const newDate = date ? new Date(date) : new Date();
-    newDate.setHours(presetHours);
-    newDate.setMinutes(presetMinutes);
-    newDate.setSeconds(0);
-    newDate.setMilliseconds(0);
-    emit(newDate);
-  };
-
-  const isPresetActive = (presetHours: number, presetMinutes: number) => {
-    return hours === presetHours && minutes === presetMinutes;
+  const isSlotActive = (slotHours: number, slotMinutes: number) => {
+    return hours === slotHours && minutes === slotMinutes;
   };
 
   const formatDisplay = (d: Date) => {
@@ -140,93 +137,111 @@ export function DateTimeField({
           {date ? formatDisplay(date) : "Pick a date"}
         </PopoverTrigger>
         <PopoverContent align="start" className="w-auto p-0">
-          <Calendar
-            mode="single"
-            selected={date}
-            onSelect={handleDateSelect}
-            disabled={(d) => {
-              // Compare dates only (ignore time) so same-day selection works
-              const dayStart = new Date(
-                d.getFullYear(),
-                d.getMonth(),
-                d.getDate()
-              );
-              if (minDate) {
-                const minDay = new Date(
-                  minDate.getFullYear(),
-                  minDate.getMonth(),
-                  minDate.getDate()
-                );
-                if (dayStart < minDay) return true;
-              }
-              if (maxDate) {
-                const maxDay = new Date(
-                  maxDate.getFullYear(),
-                  maxDate.getMonth(),
-                  maxDate.getDate()
-                );
-                if (dayStart > maxDay) return true;
-              }
-              return false;
-            }}
-            defaultMonth={date}
-          />
-
-          {/* Time selection */}
-          <div className="border-border space-y-2 border-t p-3">
-            <div className="flex items-center gap-2">
-              <Clock className="text-muted-foreground h-4 w-4 shrink-0" />
-              <input
-                type="time"
-                value={toTimeInputValue(hours, minutes)}
-                onChange={handleTimeInputChange}
-                className={cn(
-                  "border-input bg-background focus-visible:border-ring focus-visible:ring-ring/50",
-                  "h-8 rounded-lg border px-2 py-1 text-sm outline-none focus-visible:ring-[3px]"
-                )}
-              />
-            </div>
-
-            {/* Preset time slots */}
-            <div className="grid grid-cols-4 gap-1">
-              {TIME_PRESETS.map((preset) => (
-                <Button
-                  key={preset.label}
-                  type="button"
-                  variant={
-                    isPresetActive(preset.hours, preset.minutes)
-                      ? "default"
-                      : "outline"
+          {/* Calendar + time side by side on wider screens, stacked on narrow */}
+          <div className="flex">
+            {/* Left: Calendar */}
+            <div>
+              <Calendar
+                mode="single"
+                selected={date}
+                onSelect={handleDateSelect}
+                disabled={(d) => {
+                  const dayStart = new Date(
+                    d.getFullYear(),
+                    d.getMonth(),
+                    d.getDate()
+                  );
+                  if (minDate) {
+                    const minDay = new Date(
+                      minDate.getFullYear(),
+                      minDate.getMonth(),
+                      minDate.getDate()
+                    );
+                    if (dayStart < minDay) return true;
                   }
-                  size="xs"
-                  className="px-1 text-xs"
-                  onClick={() =>
-                    handlePresetClick(preset.hours, preset.minutes)
+                  if (maxDate) {
+                    const maxDay = new Date(
+                      maxDate.getFullYear(),
+                      maxDate.getMonth(),
+                      maxDate.getDate()
+                    );
+                    if (dayStart > maxDay) return true;
                   }
-                >
-                  {preset.label}
-                </Button>
-              ))}
-            </div>
-          </div>
-
-          {/* Actions */}
-          <div className="border-border flex justify-end gap-2 border-t p-2">
-            {date && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => {
-                  onChange(undefined);
-                  setOpen(false);
+                  return false;
                 }}
-              >
-                Clear
-              </Button>
-            )}
-            <Button size="sm" onClick={() => setOpen(false)}>
-              Done
-            </Button>
+                defaultMonth={date}
+              />
+
+              {/* Footer: clear + done */}
+              <div className="flex justify-end gap-2 px-3 pb-3">
+                {date && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      onChange(undefined);
+                      setOpen(false);
+                    }}
+                  >
+                    Clear
+                  </Button>
+                )}
+                <Button size="sm" onClick={() => setOpen(false)}>
+                  Done
+                </Button>
+              </div>
+            </div>
+
+            {/* Right: Time slots as a scrollable list */}
+            <div className="border-border flex w-28 flex-col border-l">
+              <div className="text-muted-foreground flex items-center gap-1.5 px-3 pt-3 pb-2 text-xs font-medium">
+                <Clock className="h-3 w-3" />
+                Time
+              </div>
+              <div className="flex-1 overflow-y-auto px-1.5 pb-1.5">
+                <div className="flex flex-col gap-0.5">
+                  {TIME_SLOTS.map((slot) => (
+                    <button
+                      key={slot.label}
+                      type="button"
+                      onClick={() => handleSlotClick(slot.hours, slot.minutes)}
+                      className={cn(
+                        "rounded-md px-2 py-1.5 text-left text-sm transition-colors",
+                        isSlotActive(slot.hours, slot.minutes)
+                          ? "bg-primary text-primary-foreground"
+                          : "hover:bg-muted"
+                      )}
+                    >
+                      {slot.label}
+                    </button>
+                  ))}
+                  {/* Custom time option */}
+                  {!showCustomTime && !isCustomTime && (
+                    <button
+                      type="button"
+                      onClick={() => setShowCustomTime(true)}
+                      className="text-muted-foreground hover:bg-muted hover:text-foreground rounded-md px-2 py-1.5 text-left text-sm transition-colors"
+                    >
+                      Custom...
+                    </button>
+                  )}
+                  {(showCustomTime || isCustomTime) && (
+                    <div className="px-1 pt-1">
+                      <input
+                        type="time"
+                        value={toTimeInputValue(hours, minutes)}
+                        onChange={handleCustomTimeChange}
+                        className={cn(
+                          "border-input bg-background focus-visible:border-ring focus-visible:ring-ring/50",
+                          "h-8 w-full rounded-md border px-2 text-sm outline-none focus-visible:ring-[3px]",
+                          isCustomTime && "border-primary"
+                        )}
+                      />
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
           </div>
         </PopoverContent>
       </Popover>
