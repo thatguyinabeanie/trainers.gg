@@ -156,7 +156,7 @@ describe("POST /api/e2e/seed", () => {
   // --------------------------------------------------------------------------
 
   describe("production database guard", () => {
-    it("returns 404 when SUPABASE_PRODUCTION_PROJECT_REF is not set on Vercel", async () => {
+    it("returns 404 with reason when SUPABASE_PRODUCTION_PROJECT_REF is not set on Vercel", async () => {
       setEnv({
         VERCEL_ENV: "preview",
         NEXT_PUBLIC_SUPABASE_URL: `https://${PREVIEW_PROJECT_REF}.supabase.co`,
@@ -167,9 +167,10 @@ describe("POST /api/e2e/seed", () => {
 
       expect(status).toBe(404);
       expect(body.error).toBe("Not found");
+      expect(body.reason).toMatch(/SUPABASE_PRODUCTION_PROJECT_REF not set/);
     });
 
-    it("returns 404 when Supabase URL is empty or unparseable", async () => {
+    it("returns 404 with reason when Supabase URL is empty or unparseable", async () => {
       setEnv({
         VERCEL_ENV: "preview",
         NEXT_PUBLIC_SUPABASE_URL: "",
@@ -180,9 +181,10 @@ describe("POST /api/e2e/seed", () => {
 
       expect(status).toBe(404);
       expect(body.error).toBe("Not found");
+      expect(body.reason).toMatch(/project ref/i);
     });
 
-    it("returns 404 when connected to production database", async () => {
+    it("returns 404 with reason when connected to production database", async () => {
       setEnv({
         VERCEL_ENV: "preview",
         NEXT_PUBLIC_SUPABASE_URL: `https://${PRODUCTION_PROJECT_REF}.supabase.co`,
@@ -193,6 +195,7 @@ describe("POST /api/e2e/seed", () => {
 
       expect(status).toBe(404);
       expect(body.error).toBe("Not found");
+      expect(body.reason).toMatch(/production database/i);
     });
 
     it("allows preview deploy connected to branch database", async () => {
