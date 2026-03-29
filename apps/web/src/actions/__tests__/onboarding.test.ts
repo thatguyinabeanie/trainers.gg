@@ -377,7 +377,7 @@ describe("completeOnboarding", () => {
     expect(result).toEqual({ success: true, error: null });
   });
 
-  it("returns error when alt update fails", async () => {
+  it("succeeds even when alt update fails (non-blocking)", async () => {
     // 1. Username check in users — not found
     mockFrom.mockReturnValueOnce(
       createQueryBuilder({
@@ -409,7 +409,7 @@ describe("completeOnboarding", () => {
       })
     );
 
-    // 5. Update alts table — error
+    // 5. Update alts table — error (non-blocking, should continue)
     mockFrom.mockReturnValueOnce({
       update: jest.fn().mockReturnValue({
         eq: jest.fn().mockResolvedValue({
@@ -418,11 +418,14 @@ describe("completeOnboarding", () => {
       }),
     });
 
+    // Auth metadata update still succeeds
+    mockAuth.updateUser.mockResolvedValue({ error: null });
+
     const result = await completeOnboarding(validInput);
 
     expect(result).toEqual({
-      success: false,
-      error: "Failed to sync username",
+      success: true,
+      error: null,
     });
   });
 
