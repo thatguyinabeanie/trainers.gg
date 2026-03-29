@@ -180,7 +180,7 @@ export function DateTimeField({
           <div className="border-border flex items-center justify-center gap-2 border-t p-3">
             <Clock className="text-muted-foreground h-4 w-4 shrink-0" />
             <Select value={hour12.toString()} onValueChange={handleHourChange}>
-              <SelectTrigger size="sm" className="w-[60px]">
+              <SelectTrigger size="sm" className="w-[72px]">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -196,7 +196,7 @@ export function DateTimeField({
               value={minutes.toString()}
               onValueChange={handleMinuteChange}
             >
-              <SelectTrigger size="sm" className="w-[60px]">
+              <SelectTrigger size="sm" className="w-[72px]">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
