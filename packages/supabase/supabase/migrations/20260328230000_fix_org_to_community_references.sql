@@ -23,7 +23,7 @@ CREATE OR REPLACE FUNCTION public.advance_to_top_cut(p_tournament_id bigint, p_t
  LANGUAGE plpgsql
  SECURITY DEFINER
  SET search_path TO ''
-AS $function$
+AS $fn1$
 DECLARE
   v_user_id uuid;
   v_tournament record;
@@ -230,7 +230,7 @@ BEGIN
     'round_id', v_elim_round_id
   );
 END;
-$function$;
+$fn1$;
 
 -- 2. audit_match_events
 CREATE OR REPLACE FUNCTION public.audit_match_events()
@@ -238,7 +238,7 @@ CREATE OR REPLACE FUNCTION public.audit_match_events()
  LANGUAGE plpgsql
  SECURITY DEFINER
  SET search_path TO ''
-AS $function$
+AS $fn2$
 DECLARE
   v_tournament_id bigint;
   v_org_id bigint;
@@ -350,7 +350,7 @@ BEGIN
 
   RETURN NEW;
 END;
-$function$;
+$fn2$;
 
 -- 3. audit_registration_status_change
 CREATE OR REPLACE FUNCTION public.audit_registration_status_change()
@@ -358,7 +358,7 @@ CREATE OR REPLACE FUNCTION public.audit_registration_status_change()
  LANGUAGE plpgsql
  SECURITY DEFINER
  SET search_path TO ''
-AS $function$
+AS $fn3$
 DECLARE
   v_org_id bigint;
   v_actor_user_id uuid;
@@ -423,7 +423,7 @@ BEGIN
 
   RETURN NEW;
 END;
-$function$;
+$fn3$;
 
 -- 4. check_no_show_escalation
 CREATE OR REPLACE FUNCTION public.check_no_show_escalation()
@@ -431,7 +431,7 @@ CREATE OR REPLACE FUNCTION public.check_no_show_escalation()
  LANGUAGE plpgsql
  SECURITY DEFINER
  SET search_path TO ''
-AS $function$
+AS $fn4$
 DECLARE
   v_match record;
   v_check_in_minutes integer;
@@ -706,7 +706,7 @@ BEGIN
     END IF;
   END LOOP;
 END;
-$function$;
+$fn4$;
 
 -- 5. clear_judge_request
 CREATE OR REPLACE FUNCTION public.clear_judge_request(p_match_id bigint)
@@ -714,7 +714,7 @@ CREATE OR REPLACE FUNCTION public.clear_judge_request(p_match_id bigint)
  LANGUAGE plpgsql
  SECURITY DEFINER
  SET search_path TO ''
-AS $function$
+AS $fn5$
 DECLARE
   v_user_id uuid;
   v_org_id bigint;
@@ -757,7 +757,7 @@ BEGIN
   WHERE id = p_match_id
     AND staff_requested = true;
 END;
-$function$;
+$fn5$;
 
 -- 6. confirm_match_checkin
 CREATE OR REPLACE FUNCTION public.confirm_match_checkin(p_match_id bigint, p_alt_id bigint DEFAULT NULL::bigint)
@@ -765,7 +765,7 @@ CREATE OR REPLACE FUNCTION public.confirm_match_checkin(p_match_id bigint, p_alt
  LANGUAGE plpgsql
  SECURITY DEFINER
  SET search_path TO ''
-AS $function$
+AS $fn6$
 DECLARE
   v_user_id uuid;
   v_match record;
@@ -911,7 +911,7 @@ BEGIN
     'player_name', v_player_name
   );
 END;
-$function$;
+$fn6$;
 
 -- 7. notify_judge_call
 CREATE OR REPLACE FUNCTION public.notify_judge_call()
@@ -919,7 +919,7 @@ CREATE OR REPLACE FUNCTION public.notify_judge_call()
  LANGUAGE plpgsql
  SECURITY DEFINER
  SET search_path TO ''
-AS $function$
+AS $fn7$
 DECLARE
   v_tournament_id bigint;
   v_org_id bigint;
@@ -982,7 +982,7 @@ BEGIN
 
   RETURN NEW;
 END;
-$function$;
+$fn7$;
 
 -- 8. report_match_result
 CREATE OR REPLACE FUNCTION public.report_match_result(p_match_id bigint, p_winner_id bigint, p_score1 integer, p_score2 integer)
@@ -990,7 +990,7 @@ CREATE OR REPLACE FUNCTION public.report_match_result(p_match_id bigint, p_winne
  LANGUAGE plpgsql
  SECURITY DEFINER
  SET search_path TO ''
-AS $function$
+AS $fn8$
 DECLARE
   v_user_id uuid;
   v_match record;
@@ -1100,7 +1100,7 @@ BEGIN
       end_time = now()
   WHERE id = p_match_id;
 END;
-$function$;
+$fn8$;
 
 -- 9. request_judge
 CREATE OR REPLACE FUNCTION public.request_judge(p_match_id bigint)
@@ -1108,7 +1108,7 @@ CREATE OR REPLACE FUNCTION public.request_judge(p_match_id bigint)
  LANGUAGE plpgsql
  SECURITY DEFINER
  SET search_path TO ''
-AS $function$
+AS $fn9$
 DECLARE
   v_user_id uuid;
   v_org_id bigint;
@@ -1155,7 +1155,7 @@ BEGIN
   WHERE id = p_match_id
     AND staff_requested = false;
 END;
-$function$;
+$fn9$;
 
 -- 10. reset_match
 CREATE OR REPLACE FUNCTION public.reset_match(p_match_id bigint)
@@ -1163,7 +1163,7 @@ CREATE OR REPLACE FUNCTION public.reset_match(p_match_id bigint)
  LANGUAGE plpgsql
  SECURITY DEFINER
  SET search_path TO ''
-AS $function$
+AS $fn10$
 DECLARE
   v_user_id uuid;
   v_org_id bigint;
@@ -1214,7 +1214,7 @@ BEGIN
       end_time = NULL
   WHERE id = p_match_id;
 END;
-$function$;
+$fn10$;
 
 -- 11. send_tournament_invitations_atomic
 CREATE OR REPLACE FUNCTION public.send_tournament_invitations_atomic(p_tournament_id bigint, p_invited_alt_ids bigint[], p_invited_by_alt_id bigint, p_message text DEFAULT NULL::text)
@@ -1222,7 +1222,7 @@ CREATE OR REPLACE FUNCTION public.send_tournament_invitations_atomic(p_tournamen
  LANGUAGE plpgsql
  SECURITY DEFINER
  SET search_path TO ''
-AS $function$
+AS $fn11$
 DECLARE
   v_user_id uuid;
   v_tournament record;
@@ -1337,7 +1337,7 @@ EXCEPTION
   WHEN OTHERS THEN
     RAISE;
 END;
-$function$;
+$fn11$;
 
 -- 12. start_match
 CREATE OR REPLACE FUNCTION public.start_match(p_match_id bigint)
@@ -1345,7 +1345,7 @@ CREATE OR REPLACE FUNCTION public.start_match(p_match_id bigint)
  LANGUAGE plpgsql
  SECURITY DEFINER
  SET search_path TO ''
-AS $function$
+AS $fn12$
 DECLARE
   v_user_id uuid;
   v_match record;
@@ -1406,7 +1406,7 @@ BEGIN
       start_time = now()
   WHERE id = p_match_id;
 END;
-$function$;
+$fn12$;
 
 -- 13. start_round
 CREATE OR REPLACE FUNCTION public.start_round(p_round_id bigint, p_best_of_override integer DEFAULT NULL::integer)
@@ -1414,7 +1414,7 @@ CREATE OR REPLACE FUNCTION public.start_round(p_round_id bigint, p_best_of_overr
  LANGUAGE plpgsql
  SECURITY DEFINER
  SET search_path TO ''
-AS $function$
+AS $fn13$
 DECLARE
   v_user_id uuid;
   v_round record;
@@ -1542,7 +1542,7 @@ BEGIN
     'best_of', COALESCE(p_best_of_override, v_phase.best_of, 3)
   );
 END;
-$function$;
+$fn13$;
 
 -- =============================================================================
 -- Add missing audit_action enum value
