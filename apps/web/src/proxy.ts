@@ -6,6 +6,7 @@ import {
   isProtectedRoute,
   isAdminRoute,
   isNextInternal,
+  needsOnboarding,
 } from "@/lib/proxy-routes";
 
 /**
@@ -155,6 +156,27 @@ export default async function proxy(request: NextRequest) {
     const signInUrl = new URL("/sign-in", request.url);
     signInUrl.searchParams.set("redirect", pathname);
     return NextResponse.redirect(signInUrl);
+  }
+
+  // Onboarding gate: users with temp usernames must complete setup
+  // before accessing protected routes (except /onboarding itself)
+  if (
+    user &&
+    isProtectedRoute(pathname) &&
+    !pathname.startsWith("/onboarding") &&
+    needsOnboarding(user.user_metadata?.username)
+  ) {
+    return NextResponse.redirect(new URL("/onboarding", request.url));
+  }
+
+  // Reverse gate: if user is on /onboarding but already has a permanent
+  // username, redirect them to the dashboard
+  if (
+    user &&
+    pathname.startsWith("/onboarding") &&
+    !needsOnboarding(user.user_metadata?.username)
+  ) {
+    return NextResponse.redirect(new URL("/dashboard/overview", request.url));
   }
 
   return response;

@@ -7,6 +7,7 @@
 
 "use server";
 
+import { updateTag } from "next/cache";
 import { z } from "@trainers/validators";
 import { createClient } from "@/lib/supabase/server";
 import {
@@ -16,7 +17,28 @@ import {
   setMainAlt,
 } from "@trainers/supabase";
 import { type ActionResult } from "@trainers/validators";
+import { CacheTags } from "@/lib/cache";
 import { withAction } from "./utils";
+
+/**
+ * Helper: fetch the current user's username for cache invalidation.
+ */
+async function invalidatePlayerCache(
+  supabase: Awaited<ReturnType<typeof createClient>>
+): Promise<void> {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return;
+  const { data } = await supabase
+    .from("users")
+    .select("username")
+    .eq("id", user.id)
+    .maybeSingle();
+  if (data?.username) {
+    updateTag(CacheTags.player(data.username));
+  }
+}
 
 // --- Input Schemas ---
 
@@ -45,6 +67,7 @@ export async function createAltAction(data: {
     const alt = await createAlt(supabase, {
       username: validated.username,
     });
+    await invalidatePlayerCache(supabase);
     return { id: alt.id };
   }, "Failed to create alt");
 }
@@ -62,6 +85,7 @@ export async function updateAltAction(
     const validatedId = idSchema.parse(altId);
     const supabase = await createClient();
     await updateAlt(supabase, validatedId, updates);
+    await invalidatePlayerCache(supabase);
     return { success: true as const };
   }, "Failed to update alt");
 }
@@ -76,6 +100,7 @@ export async function deleteAltAction(
     const validatedId = idSchema.parse(altId);
     const supabase = await createClient();
     await deleteAlt(supabase, validatedId);
+    await invalidatePlayerCache(supabase);
     return { success: true as const };
   }, "Failed to delete alt");
 }
@@ -90,6 +115,7 @@ export async function setMainAltAction(
     const validatedId = idSchema.parse(altId);
     const supabase = await createClient();
     await setMainAlt(supabase, validatedId);
+    await invalidatePlayerCache(supabase);
     return { success: true as const };
   }, "Failed to set main alt");
 }
