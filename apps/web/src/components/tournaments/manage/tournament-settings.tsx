@@ -159,8 +159,28 @@ function DateTimeField({
             selected={date}
             onSelect={handleDateSelect}
             disabled={(d) => {
-              if (minDate && d < minDate) return true;
-              if (maxDate && d > maxDate) return true;
+              // Compare dates only (ignore time) so same-day selection works
+              const dayStart = new Date(
+                d.getFullYear(),
+                d.getMonth(),
+                d.getDate()
+              );
+              if (minDate) {
+                const minDay = new Date(
+                  minDate.getFullYear(),
+                  minDate.getMonth(),
+                  minDate.getDate()
+                );
+                if (dayStart < minDay) return true;
+              }
+              if (maxDate) {
+                const maxDay = new Date(
+                  maxDate.getFullYear(),
+                  maxDate.getMonth(),
+                  maxDate.getDate()
+                );
+                if (dayStart > maxDay) return true;
+              }
               return false;
             }}
             defaultMonth={date}
