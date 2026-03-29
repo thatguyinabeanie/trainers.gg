@@ -1,0 +1,25 @@
+pre-commit:
+  piped: true
+  commands:
+    prettier:
+      priority: 1
+      glob: "*.{ts,tsx,js,jsx,mjs,json,css,md,yml,yaml,toml}"
+      run: pnpm prettier --write {staged_files}
+      stage_fixed: true
+
+    typecheck:
+      priority: 2
+      env:
+        TURBO_UI: "false"
+      run: |
+        AFFECTED=$(node scripts/get-affected-packages.mjs)
+        if [ -n "$AFFECTED" ]; then
+          echo "Running typecheck on affected packages: $AFFECTED"
+          FILTER=""
+          for pkg in $AFFECTED; do
+            FILTER="$FILTER --filter=$pkg"
+          done
+          pnpm turbo run typecheck $FILTER
+        else
+          echo "No packages affected, skipping typecheck"
+        fi
