@@ -5,7 +5,7 @@ description: Use when conducting a codebase audit for type safety, code reuse, a
 
 # Code Audit
 
-Structured methodology for conducting comprehensive code audits of the trainers.gg monorepo. Produces a written report in `docs/superpowers/specs/` with prioritized findings.
+Structured methodology for conducting comprehensive code audits of the trainers.gg monorepo. Produces a written report in `.audit-reports/` (gitignored) with prioritized findings.
 
 ## When to Use
 
@@ -67,7 +67,7 @@ After all agents complete, deduplicate overlapping findings and produce a single
 ### Phase 3 — Architectural alignment (larger effort)
 ```
 
-Save to `docs/superpowers/specs/YYYY-MM-DD-code-audit-report.md`.
+Save to `.audit-reports/YYYY-MM-DD-code-audit-report.md` (gitignored, local reference only).
 
 ### 4. Do NOT Implement
 
@@ -90,7 +90,7 @@ rg "Record<string, unknown>" --type ts
 rg ": any[^)]" --type ts  # return types or params typed as any
 
 # Non-null assertions (excluding test files)
-rg "\w+!" --type ts --glob '!**/*.test.*' --glob '!**/__tests__/**'
+rg "\w+!(?!=)" --type ts --glob '!**/*.test.*' --glob '!**/__tests__/**'
 
 # Missing Database generic on Supabase client
 rg "createClient\(" --type ts  # check for missing <Database>
