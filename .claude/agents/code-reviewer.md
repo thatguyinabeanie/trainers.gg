@@ -2,9 +2,6 @@
 name: code-reviewer
 description: Review code changes for style, architecture, correctness, and domain conventions
 model: sonnet
-skills:
-  - code-style
-  - architecture-principles
 tools:
   - Read
   - Glob

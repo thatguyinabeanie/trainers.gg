@@ -1,6 +1,6 @@
 ---
-name: architecture-principles
-description: Use when deciding where code belongs (shared package vs app), extracting reusable logic, or reviewing package boundaries
+paths:
+  - "packages/**/*"
 ---
 
 # Architecture Principles
@@ -23,27 +23,18 @@ If a module has zero framework imports and could be useful across apps, it belon
 | No | No (but could be) | `packages/` |
 | Yes | N/A | `apps/*/src/lib/` |
 
-### Examples
-
-| Module | Location | Why |
-|--------|----------|-----|
-| Tournament pairing logic | `packages/tournaments/` | Pure logic, no framework deps |
-| Pokemon team parser | `packages/pokemon/` | Pokemon data + team parsing logic, shared by web + mobile + edge |
-| TanStack Query hooks | `apps/web/src/lib/` | Framework-specific (React hooks) |
-| Expo SecureStore wrapper | `apps/mobile/src/lib/` | Framework-specific (Expo) |
-
 ## Code Reuse
 
 Extract abstractions after 2-3 repetitions. Always check existing patterns before creating new ones.
 
 ### Reference Implementations
 
-- **TanStack Query factory**: `apps/mobile/src/lib/api/query-factory.ts` — query key factory pattern for consistent cache keys and targeted invalidation
-- **Error extraction**: `packages/utils/src/error-handling.ts` — `getErrorMessage()` for consistent error handling across all packages
+- **TanStack Query factory**: `apps/mobile/src/lib/api/query-factory.ts`
+- **Error extraction**: `packages/utils/src/error-handling.ts` — `getErrorMessage()`
 
 ### Extraction Checklist
 
 1. Is this logic repeated 2-3 times already?
 2. Does an existing utility in `@trainers/utils` or the relevant package already handle this?
 3. Does the extracted code have zero framework imports? If yes, it belongs in `packages/`.
-4. Will the extraction simplify tests? (Pure functions are easier to test than framework-coupled code.)
+4. Will the extraction simplify tests?

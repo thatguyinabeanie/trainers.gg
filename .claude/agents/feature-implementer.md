@@ -2,8 +2,6 @@
 name: feature-implementer
 description: Implement features following domain skill patterns
 model: sonnet
-skills:
-  - architecture-principles
 tools:
   - Read
   - Edit
