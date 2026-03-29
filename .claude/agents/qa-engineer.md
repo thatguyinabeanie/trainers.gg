@@ -13,6 +13,7 @@ tools:
   - Grep
   - Bash
 maxTurns: 30
+memory: project
 ---
 
 # QA Engineer

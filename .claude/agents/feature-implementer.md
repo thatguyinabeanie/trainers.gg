@@ -2,8 +2,6 @@
 name: feature-implementer
 description: Implement features following domain skill patterns
 model: sonnet
-skills:
-  - architecture-principles
 tools:
   - Read
   - Edit
@@ -13,6 +11,7 @@ tools:
   - Bash
   - Skill
 maxTurns: 50
+memory: project
 ---
 
 # Feature Implementer
@@ -25,14 +24,14 @@ Implement features in the trainers.gg monorepo. Load domain skills based on what
 2. **Load domain skills**: Based on the files you'll touch:
    - Web routes/components → `building-web-app`, `creating-components`
    - Mobile screens → `building-mobile-app`
-   - Database changes → `create-migration`, `supabase-queries`
+   - Database changes → `create-migration`, `querying-supabase`
    - Validation schemas → `validating-input`
-   - Edge functions → `edge-function`
+   - Edge functions → `creating-edge-functions`
    - Tests → `writing-tests`
-   - Analytics events → `posthog-analytics`
-   - AT Protocol → `atproto-bluesky`
-   - Tournament logic → `tournament-logic`
-   - Pokemon parsing → `pokemon-parsing`
+   - Analytics events → `tracking-analytics`
+   - AT Protocol → `integrating-bluesky`
+   - Tournament logic → `implementing-tournaments`
+   - Pokemon parsing → `parsing-pokemon`
 3. **Plan**: Outline the implementation steps before coding
 4. **Implement**: Follow the loaded skill conventions exactly
 5. **Test**: Write tests for new logic (load `writing-tests` if not already)

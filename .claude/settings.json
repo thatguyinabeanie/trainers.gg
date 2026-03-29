@@ -17,6 +17,18 @@
           {
             "type": "command",
             "command": "for f in $(echo \"$CLAUDE_FILE_PATHS\" | tr ',' ' '); do case \"$f\" in *.ts|*.tsx|*.js|*.jsx) npx eslint --fix --quiet \"$f\" 2>/dev/null || true;; esac; done"
+          },
+          {
+            "type": "command",
+            "command": "for f in $(echo \"$CLAUDE_FILE_PATHS\" | tr ',' ' '); do case \"$f\" in */packages/*/src/*.ts|*/packages/*/src/*.tsx) if grep -qE \"from ['\\\"](@?react|next/|expo)\" \"$f\" 2>/dev/null; then echo \"WARNING: Shared packages must have zero framework imports. Found React/Next/Expo import in $f\"; fi;; esac; done; exit 0"
+          },
+          {
+            "type": "command",
+            "command": "for f in $(echo \"$CLAUDE_FILE_PATHS\" | tr ',' ' '); do case \"$f\" in */supabase/migrations/*.sql) if grep -qi \"CREATE TABLE\" \"$f\" 2>/dev/null && ! grep -qi \"ENABLE ROW LEVEL SECURITY\" \"$f\" 2>/dev/null; then echo \"WARNING: New table detected without ENABLE ROW LEVEL SECURITY. All tables must have RLS enabled.\"; fi;; esac; done; exit 0"
+          },
+          {
+            "type": "command",
+            "command": "for f in $(echo \"$CLAUDE_FILE_PATHS\" | tr ',' ' '); do case \"$f\" in */supabase/migrations/*.sql) echo \"Remember: run 'pnpm generate-types' after applying this migration to update TypeScript types.\";; esac; done; exit 0"
           }
         ]
       },
@@ -45,10 +57,6 @@
           {
             "type": "command",
             "command": "for f in $(echo \"$CLAUDE_FILE_PATHS\" | tr ',' ' '); do case \"$f\" in */apps/web/middleware.ts) echo \"BLOCK: Next.js 16 uses proxy.ts for request interception. Creating middleware.ts will break all routes (404 on every page).\" && exit 2;; esac; done"
-          },
-          {
-            "type": "command",
-            "command": "SKILLS=''; for f in $(echo \"$CLAUDE_FILE_PATHS\" | tr ',' ' '); do case \"$f\" in */apps/web/*) SKILLS=\"$SKILLS building-web-app\";; esac; case \"$f\" in */apps/mobile/*) SKILLS=\"$SKILLS building-mobile-app\";; esac; case \"$f\" in */packages/supabase/supabase/functions/deno.json) SKILLS=\"$SKILLS edge-function-imports\";; esac; case \"$f\" in */packages/supabase/supabase/functions/*) SKILLS=\"$SKILLS edge-function\";; esac; case \"$f\" in */packages/supabase/supabase/migrations/*) SKILLS=\"$SKILLS create-migration\";; esac; case \"$f\" in */packages/supabase/src/*) SKILLS=\"$SKILLS supabase-queries\";; esac; case \"$f\" in */packages/validators/*) SKILLS=\"$SKILLS validating-input\";; esac; case \"$f\" in */packages/tournaments/*) SKILLS=\"$SKILLS tournament-logic\";; esac; case \"$f\" in */packages/pokemon/*) SKILLS=\"$SKILLS pokemon-parsing\";; esac; case \"$f\" in */packages/theme/*) SKILLS=\"$SKILLS creating-components\";; esac; case \"$f\" in */packages/posthog/*) SKILLS=\"$SKILLS posthog-analytics\";; esac; case \"$f\" in */packages/atproto/*) SKILLS=\"$SKILLS atproto-bluesky\";; esac; case \"$f\" in */packages/utils/*) SKILLS=\"$SKILLS shared-utils\";; esac; case \"$f\" in */infra/*) SKILLS=\"$SKILLS infrastructure\";; esac; case \"$f\" in */__tests__/*|*/e2e/*|*.test.ts|*.test.tsx|*.spec.ts|*.spec.tsx) SKILLS=\"$SKILLS writing-tests\";; esac; done; SKILLS=$(echo $SKILLS | tr ' ' '\\n' | sort -u | tr '\\n' ' ' | sed 's/ $//'); if [ -n \"$SKILLS\" ]; then echo \"Suggested skills for this file: $SKILLS\"; fi; exit 0"
           }
         ]
       }

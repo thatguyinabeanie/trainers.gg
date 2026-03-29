@@ -1,11 +1,11 @@
 ---
-name: edge-function-imports
+name: managing-edge-imports
 description: Use when managing deno.json import maps for Supabase edge functions, adding new package imports, or debugging import resolution failures
 ---
 
 # Edge Function Imports
 
-Manage the Deno import map for Supabase edge functions. See `edge-function` skill for core patterns (CORS, auth, response format).
+Manage the Deno import map for Supabase edge functions. See `creating-edge-functions` skill for core patterns (CORS, auth, response format).
 
 ## Import Map (`deno.json`)
 

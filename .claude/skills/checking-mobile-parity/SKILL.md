@@ -1,5 +1,5 @@
 ---
-name: mobile-parity
+name: checking-mobile-parity
 description: Use when developing web app features to check if equivalent mobile tickets exist in Linear. Analyzes apps/web/ changes, searches the Mobile App project for matching parity tickets, and guides creating, updating, or linking issues.
 ---
 
@@ -18,7 +18,7 @@ Analyze web app changes and ensure equivalent mobile work is tracked in Linear.
 Run the helper script to get changed files:
 
 ```bash
-.claude/skills/mobile-parity/check-web-changes.sh
+.claude/skills/checking-mobile-parity/check-web-changes.sh
 ```
 
 If no output, inform the user there are no `apps/web/` changes on this branch and stop.

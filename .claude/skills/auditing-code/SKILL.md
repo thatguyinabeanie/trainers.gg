@@ -1,5 +1,5 @@
 ---
-name: code-audit
+name: auditing-code
 description: Use when conducting a codebase audit for type safety, code reuse, architecture, and maintainability
 ---
 

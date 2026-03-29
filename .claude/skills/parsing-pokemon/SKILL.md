@@ -1,5 +1,5 @@
 ---
-name: pokemon-parsing
+name: parsing-pokemon
 description: Use when parsing Pokemon teams, validating team legality, calculating type effectiveness, or working with the pokemon package
 ---
 

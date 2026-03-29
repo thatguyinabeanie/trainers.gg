@@ -6,29 +6,37 @@ Pokemon community platform for competitive players. Monorepo: Next.js 16 web, Ex
 
 Domain-specific guidance lives in `.claude/skills/`. Invoke the relevant skill before working in an area.
 
-| Skill                    | When to Use                                                          |
-| ------------------------ | -------------------------------------------------------------------- |
-| `building-web-app`       | Web routes, components, Server Actions, data fetching, proxy.ts      |
-| `building-mobile-app`    | Mobile screens, Tamagui UI, Expo Router, SecureStore                 |
-| `supabase-queries`       | DB queries/mutations, client selection, Edge Functions                |
-| `validating-input`       | Zod schemas, Server Action return types, profanity filter            |
-| `creating-components`    | UI components, design tokens, design principles                      |
-| `mobile-parity`          | After developing web features, check for mobile parity tickets       |
-| `tournament-logic`       | Swiss pairings, standings, brackets, adapters                        |
-| `pokemon-parsing`        | Team parsing, legality validation, type effectiveness                |
-| `shared-utils`           | `getLabel()`, `getErrorMessage()`, permissions, formatting           |
-| `posthog-analytics`      | PostHog event constants, adding new events                           |
-| `atproto-bluesky`        | Bluesky/AT Protocol, DID resolution, public agent                    |
-| `writing-tests`          | Fishery factories, Supabase/AT Protocol mocks, Jest config           |
-| `code-style`             | TypeScript rules, naming conventions, Prettier, error handling       |
-| `architecture-principles`| Shared package vs app code, code reuse rules                         |
-| `infrastructure`         | PDS on Fly.io, ngrok tunnel for local dev                            |
-| `edge-function`          | Creating/updating Supabase edge functions                            |
-| `edge-function-imports`  | Deno import maps, `deno.json` management                             |
-| `code-audit`             | Codebase audits for type safety, architecture, maintainability       |
-| `writing-skills`         | Creating/editing skills, agents, maintaining the architecture        |
+| Skill                        | When to Use                                                          |
+| ---------------------------- | -------------------------------------------------------------------- |
+| `building-web-app`           | Web routes, components, Server Actions, data fetching, proxy.ts      |
+| `building-mobile-app`        | Mobile screens, Tamagui UI, Expo Router, SecureStore                 |
+| `querying-supabase`          | DB queries/mutations, client selection, Edge Functions                |
+| `validating-input`           | Zod schemas, Server Action return types, profanity filter            |
+| `creating-components`        | UI components, design tokens, design principles                      |
+| `checking-mobile-parity`     | After developing web features, check for mobile parity tickets       |
+| `implementing-tournaments`   | Swiss pairings, standings, brackets, adapters                        |
+| `parsing-pokemon`            | Team parsing, legality validation, type effectiveness                |
+| `using-utils`                | `getLabel()`, `getErrorMessage()`, permissions, formatting           |
+| `tracking-analytics`         | PostHog event constants, adding new events                           |
+| `integrating-bluesky`        | Bluesky/AT Protocol, DID resolution, public agent                    |
+| `writing-tests`              | Fishery factories, Supabase/AT Protocol mocks, Jest config           |
+| `managing-infrastructure`    | PDS on Fly.io, ngrok tunnel for local dev                            |
+| `creating-edge-functions`    | Creating/updating Supabase edge functions                            |
+| `managing-edge-imports`      | Deno import maps, `deno.json` management                             |
+| `auditing-code`              | Codebase audits for type safety, architecture, maintainability       |
+| `writing-skills`             | Creating/editing skills, agents, maintaining the architecture        |
 
 Slash-command skills (invoked directly, not listed above): `commit`, `create-migration`, `finish-branch`, `post-pr-monitoring`, `ticket`.
+
+## Project Rules
+
+Path-scoped rules in `.claude/rules/` load automatically when working with matching files.
+
+| Rule                     | Applies To                              |
+| ------------------------ | --------------------------------------- |
+| `code-style.md`          | All TypeScript/TSX files (`**/*.{ts,tsx}`) |
+| `architecture.md`        | All shared packages (`packages/**/*`)   |
+| `testing-philosophy.md`  | All test files (`**/*.test.*`, `**/__tests__/**`) |
 
 ## Workspace Agents
 
@@ -164,7 +172,7 @@ Multiple agents and humans may work on this codebase simultaneously. If you enco
 
 ### Edge Function Deployments
 
-**Never deploy edge functions manually.** They deploy automatically during the Vercel build. Never declare in `config.toml`. See `edge-function` skill for details.
+**Never deploy edge functions manually.** They deploy automatically during the Vercel build. Never declare in `config.toml`. See `creating-edge-functions` skill for details.
 
 ## Development Workflow
 

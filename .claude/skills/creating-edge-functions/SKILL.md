@@ -1,5 +1,5 @@
 ---
-name: edge-function
+name: creating-edge-functions
 description: Create or update a Supabase edge function following trainers.gg conventions
 disable-model-invocation: true
 ---
@@ -292,7 +292,7 @@ Deno.serve(async (req) => {
 
 ## Import Map (`deno.json`)
 
-See the `edge-function-imports` skill for full import map management, entry formats, and verification.
+See the `managing-edge-imports` skill for full import map management, entry formats, and verification.
 
 **Quick rule**: Every bare specifier import reachable from any edge function must be mapped in `packages/supabase/supabase/functions/deno.json`. Missing entries cause `failed to bundle function: exit status 1`.
 
@@ -310,11 +310,11 @@ Edge functions are deployed automatically during the Vercel build (`run-migratio
 4. **Never trust client input**: Validate and sanitize all request body fields.
 5. **Always use `satisfies`**: Type-check response objects with `satisfies FunctionNameResponse`.
 6. **Import from JSR**: Use `jsr:@supabase/supabase-js@2` (not npm imports).
-7. **Keep `deno.json` import map in sync**: Every bare specifier reachable from any edge function must be mapped. See the `edge-function-imports` skill.
+7. **Keep `deno.json` import map in sync**: Every bare specifier reachable from any edge function must be mapped. See the `managing-edge-imports` skill.
 
 ## After Creating
 
-1. **Verify import map**: Run the `deno cache` verification script to confirm all functions bundle, and verify import map (see `edge-function-imports` skill)
+1. **Verify import map**: Run the `deno cache` verification script to confirm all functions bundle, and verify import map (see `managing-edge-imports` skill)
 2. Test locally with `pnpm supabase functions serve <name>` (if local Supabase is running)
 3. Invoke the `edge-function-reviewer` agent to validate the function
 4. Commit to a feature branch — the function will deploy when merged to main

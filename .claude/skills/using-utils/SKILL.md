@@ -1,5 +1,5 @@
 ---
-name: shared-utils
+name: using-utils
 description: Use when displaying enum or DB values in UI, handling errors, checking permissions, or working with the utils package
 ---
 

@@ -1,6 +1,6 @@
 ---
-name: code-style
-description: Use when writing or reviewing TypeScript/TSX code — covers strict type rules, naming conventions, Prettier config, cn() usage, and error handling patterns
+paths:
+  - "**/*.{ts,tsx}"
 ---
 
 # Code Style
