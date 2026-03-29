@@ -43,6 +43,8 @@ jest.mock("@/lib/supabase/server", () => ({
 // ============================================================================
 
 const VALID_SECRET = "test-secret-123";
+const PREVIEW_PROJECT_REF = "previewref123";
+const PRODUCTION_PROJECT_REF = "prodref456";
 
 function makeRequest(): Request {
   return new Request("http://localhost:3000/api/e2e/seed", {
@@ -108,7 +110,11 @@ describe("POST /api/e2e/seed", () => {
     it.each(["development", "preview"])(
       "allows VERCEL_ENV=%s",
       async (vercelEnv) => {
-        setEnv({ VERCEL_ENV: vercelEnv });
+        setEnv({
+          VERCEL_ENV: vercelEnv,
+          NEXT_PUBLIC_SUPABASE_URL: `https://${PREVIEW_PROJECT_REF}.supabase.co`,
+          SUPABASE_PRODUCTION_PROJECT_REF: PRODUCTION_PROJECT_REF,
+        });
         // Mock successful seeding so we get past the guards
         mockUpsert.mockResolvedValue({ error: null });
         mockCreateUser.mockResolvedValue({ error: null });
@@ -142,6 +148,72 @@ describe("POST /api/e2e/seed", () => {
 
       expect(status).toBe(404);
       expect(body.error).toBe("Not found");
+    });
+  });
+
+  // --------------------------------------------------------------------------
+  // Production database guard
+  // --------------------------------------------------------------------------
+
+  describe("production database guard", () => {
+    it("returns 404 when SUPABASE_PRODUCTION_PROJECT_REF is not set on Vercel", async () => {
+      setEnv({
+        VERCEL_ENV: "preview",
+        NEXT_PUBLIC_SUPABASE_URL: `https://${PREVIEW_PROJECT_REF}.supabase.co`,
+        SUPABASE_PRODUCTION_PROJECT_REF: undefined,
+      });
+
+      const { status, body } = await getJsonResponse(makeRequest());
+
+      expect(status).toBe(404);
+      expect(body.error).toBe("Not found");
+    });
+
+    it("returns 404 when connected to production database", async () => {
+      setEnv({
+        VERCEL_ENV: "preview",
+        NEXT_PUBLIC_SUPABASE_URL: `https://${PRODUCTION_PROJECT_REF}.supabase.co`,
+        SUPABASE_PRODUCTION_PROJECT_REF: PRODUCTION_PROJECT_REF,
+      });
+
+      const { status, body } = await getJsonResponse(makeRequest());
+
+      expect(status).toBe(404);
+      expect(body.error).toBe("Not found");
+    });
+
+    it("allows preview deploy connected to branch database", async () => {
+      setEnv({
+        VERCEL_ENV: "preview",
+        NEXT_PUBLIC_SUPABASE_URL: `https://${PREVIEW_PROJECT_REF}.supabase.co`,
+        SUPABASE_PRODUCTION_PROJECT_REF: PRODUCTION_PROJECT_REF,
+      });
+      mockUpsert.mockResolvedValue({ error: null });
+      mockCreateUser.mockResolvedValue({ error: null });
+      mockUpdate.mockReturnValue({
+        eq: jest.fn().mockResolvedValue({ error: null }),
+      });
+
+      const { status } = await getJsonResponse(makeRequest());
+
+      expect(status).not.toBe(404);
+    });
+
+    it("skips guard for local dev", async () => {
+      setEnv({
+        VERCEL_ENV: undefined,
+        NODE_ENV: "development",
+        SUPABASE_PRODUCTION_PROJECT_REF: undefined,
+      });
+      mockUpsert.mockResolvedValue({ error: null });
+      mockCreateUser.mockResolvedValue({ error: null });
+      mockUpdate.mockReturnValue({
+        eq: jest.fn().mockResolvedValue({ error: null }),
+      });
+
+      const { status } = await getJsonResponse(makeRequest());
+
+      expect(status).not.toBe(404);
     });
   });
 

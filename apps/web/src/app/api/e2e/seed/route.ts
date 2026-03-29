@@ -62,6 +62,38 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
+  // SAFETY: On Vercel, verify we're NOT connected to the production database.
+  // Supabase branching assigns a different project ref to each branch database.
+  // If a preview deploy falls back to production (branch creation failed),
+  // the project refs will match and we block seeding.
+  // Skipped for local dev (no VERCEL_ENV) where SUPABASE_PRODUCTION_PROJECT_REF isn't set.
+  if (vercelEnv) {
+    const supabaseUrl =
+      process.env.NEXT_PUBLIC_SUPABASE_URL ?? process.env.SUPABASE_URL ?? "";
+    const projectRefMatch = supabaseUrl.match(
+      /https:\/\/([a-z0-9]+)\.supabase\.co/i
+    );
+    const currentRef = projectRefMatch?.[1];
+    const productionRef = process.env.SUPABASE_PRODUCTION_PROJECT_REF;
+
+    if (!productionRef) {
+      console.error(
+        "[e2e/seed] BLOCKED: SUPABASE_PRODUCTION_PROJECT_REF not set — " +
+          "add it to Vercel env vars (Preview scope) with the production project ref"
+      );
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
+
+    if (currentRef === productionRef) {
+      console.error(
+        `[e2e/seed] BLOCKED: connected to production database (ref: ${currentRef}). ` +
+          "This preview deployment may have fallen back to the production Supabase URL. " +
+          "Check that Supabase branching created a branch database for this PR."
+      );
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
+  }
+
   // Validate secret
   const secret = request.headers.get("x-e2e-seed-secret");
   const expectedSecret = process.env.VERCEL_AUTOMATION_BYPASS_SECRET;
