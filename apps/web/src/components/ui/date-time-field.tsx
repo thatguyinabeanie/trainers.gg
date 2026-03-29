@@ -146,6 +146,7 @@ export function DateTimeField({
           className="flex w-auto flex-col items-center p-0"
         >
           <Calendar
+            className="[--cell-size:--spacing(9)]"
             mode="single"
             selected={date}
             onSelect={handleDateSelect}
