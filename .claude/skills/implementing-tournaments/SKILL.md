@@ -18,19 +18,20 @@ const phaseConfig = toPhaseConfig(dbPhaseRow, dbRoundRows);
 
 ## Key Modules
 
-| Module | Purpose |
-| ------ | ------- |
-| `swiss-pairing.ts` | Generates pairings for a round. Input: standings + history. Output: match pairs. |
-| `standings.ts` | Calculates match wins, game wins, resistance (strength-of-schedule) |
-| `top-cut-bracket.ts` | Double-elimination bracket generation and winner advancement |
-| `drop-bye-handling.ts` | Player drop validation, bye assignment (tracks history to avoid double-byes) |
-| `tournament-flow.ts` | Round/phase progression, tournament completion detection |
-| `schedule.ts` | ETA calculation for rounds and phases |
-| `validation.ts` | Timing constraints, participant count checks, integrity validation |
+| Module                 | Purpose                                                                          |
+| ---------------------- | -------------------------------------------------------------------------------- |
+| `swiss-pairing.ts`     | Generates pairings for a round. Input: standings + history. Output: match pairs. |
+| `standings.ts`         | Calculates match wins, game wins, resistance (strength-of-schedule)              |
+| `top-cut-bracket.ts`   | Double-elimination bracket generation and winner advancement                     |
+| `drop-bye-handling.ts` | Player drop validation, bye assignment (tracks history to avoid double-byes)     |
+| `tournament-flow.ts`   | Round/phase progression, tournament completion detection                         |
+| `schedule.ts`          | ETA calculation for rounds and phases                                            |
+| `validation.ts`        | Timing constraints, participant count checks, integrity validation               |
 
 ## Swiss Pairing Inputs
 
 `generatePairings(standings, matchHistory, options)`:
+
 - `standings`: sorted player list with record (W/L/T) and resistance
 - `matchHistory`: Set of `"altId1-altId2"` strings (prevents rematches)
 - Returns: array of `[alt1Id, alt2Id]` pairs + bye (`null` alt2 = bye)

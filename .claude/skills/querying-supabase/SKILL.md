@@ -11,11 +11,11 @@ Supabase client, queries, mutations, generated types, and edge functions.
 
 **This is the most important decision when touching Supabase.**
 
-| Client | Import | When | RLS? |
-| ------ | ------ | ---- | ---- |
-| Server | `@trainers/supabase/server` | Server Components, Server Actions, edge functions | Bypassed (service role) |
-| Client | `@trainers/supabase/client` | Client Components (browser) | Enforced via auth.uid() |
-| Mobile | `@trainers/supabase/mobile` | Expo app | Enforced, session in SecureStore |
+| Client | Import                      | When                                              | RLS?                             |
+| ------ | --------------------------- | ------------------------------------------------- | -------------------------------- |
+| Server | `@trainers/supabase/server` | Server Components, Server Actions, edge functions | Bypassed (service role)          |
+| Client | `@trainers/supabase/client` | Client Components (browser)                       | Enforced via auth.uid()          |
+| Mobile | `@trainers/supabase/mobile` | Expo app                                          | Enforced, session in SecureStore |
 
 **Never use the server client in browser code.** It uses the service role key and bypasses all RLS.
 

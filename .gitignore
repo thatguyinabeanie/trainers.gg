@@ -2,6 +2,9 @@
 node_modules/
 .pnpm-store/
 
+# Lefthook local overrides
+lefthook-local.yml
+
 # Build outputs
 dist/
 .next/

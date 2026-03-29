@@ -36,6 +36,7 @@ React Compiler is enabled for the mobile app as well. Never use `useMemo`, `useC
 ## Shared Code
 
 Import shared logic from workspace packages:
+
 - `@trainers/validators` — Zod schemas and types
 - `@trainers/utils` — formatting, countries, tiers
 - `@trainers/tournaments` — tournament logic

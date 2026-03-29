@@ -22,7 +22,7 @@ function PasswordInput({
         type="button"
         tabIndex={-1}
         aria-label={visible ? "Hide password" : "Show password"}
-        className="text-muted-foreground hover:text-foreground absolute top-1/2 right-2.5 -translate-y-1/2 transition-colors"
+        className="text-muted-foreground hover:text-foreground absolute right-2.5 top-1/2 -translate-y-1/2 transition-colors"
         onClick={() => setVisible((v) => !v)}
       >
         {visible ? <EyeOff className="size-4" /> : <Eye className="size-4" />}

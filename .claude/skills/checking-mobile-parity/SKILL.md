@@ -27,27 +27,27 @@ If no output, inform the user there are no `apps/web/` changes on this branch an
 
 Group the changed files by feature area using this mapping:
 
-| Path contains | Feature Area | Known Parity Tickets |
-|---|---|---|
-| `admin/` | Admin (web-only) | **SKIP** — no mobile equivalent needed |
-| `dashboard/overview` or `dashboard/stats` | Player Dashboard | TGG-336 |
-| `dashboard/alts` | Alts Management | TGG-340 |
-| `dashboard/settings` | Settings | TGG-339 |
-| `dashboard/notifications` | Notifications | TGG-341 |
-| `dashboard/invitations` | Tournament Invitations | TGG-346 |
-| `players/` or `components/players/` | Player Directory | TGG-337 |
-| `u/[handle]` or `profile/` | Player Profile | TGG-338 |
-| `tournaments/` (listing/browse) | Tournament Directory | TGG-342 |
-| `tournaments/[tournamentSlug]` (registration) | Registration Flow | TGG-343 |
-| `tournaments/[tournamentSlug]/r/` or `components/match/` | Match Interface | TGG-344 |
-| both `tournaments/` and `/manage` (standings/bracket) | Bracket & Standings | TGG-345 |
-| `communities/` or `components/communities/` | Community Directory | TGG-348 |
-| `communities/create` | Community Creation | TGG-349 |
-| `to-dashboard/` | TO Dashboard | TGG-351 |
-| both `to-dashboard/` and `/staff` | Staff Management | TGG-352 |
-| `components/tournament/` | Tournament Experience | TGG-342, TGG-345 |
-| `components/notifications/` | Notifications | TGG-341 |
-| `components/settings/` | Settings | TGG-339 |
+| Path contains                                            | Feature Area           | Known Parity Tickets                   |
+| -------------------------------------------------------- | ---------------------- | -------------------------------------- |
+| `admin/`                                                 | Admin (web-only)       | **SKIP** — no mobile equivalent needed |
+| `dashboard/overview` or `dashboard/stats`                | Player Dashboard       | TGG-336                                |
+| `dashboard/alts`                                         | Alts Management        | TGG-340                                |
+| `dashboard/settings`                                     | Settings               | TGG-339                                |
+| `dashboard/notifications`                                | Notifications          | TGG-341                                |
+| `dashboard/invitations`                                  | Tournament Invitations | TGG-346                                |
+| `players/` or `components/players/`                      | Player Directory       | TGG-337                                |
+| `u/[handle]` or `profile/`                               | Player Profile         | TGG-338                                |
+| `tournaments/` (listing/browse)                          | Tournament Directory   | TGG-342                                |
+| `tournaments/[tournamentSlug]` (registration)            | Registration Flow      | TGG-343                                |
+| `tournaments/[tournamentSlug]/r/` or `components/match/` | Match Interface        | TGG-344                                |
+| both `tournaments/` and `/manage` (standings/bracket)    | Bracket & Standings    | TGG-345                                |
+| `communities/` or `components/communities/`              | Community Directory    | TGG-348                                |
+| `communities/create`                                     | Community Creation     | TGG-349                                |
+| `to-dashboard/`                                          | TO Dashboard           | TGG-351                                |
+| both `to-dashboard/` and `/staff`                        | Staff Management       | TGG-352                                |
+| `components/tournament/`                                 | Tournament Experience  | TGG-342, TGG-345                       |
+| `components/notifications/`                              | Notifications          | TGG-341                                |
+| `components/settings/`                                   | Settings               | TGG-339                                |
 
 If ALL changes fall under `admin/`, inform the user: "All changes are in admin routes (web-only). No mobile parity needed." and stop.
 
@@ -85,7 +85,7 @@ mcp__plugin_linear_linear__list_issues(team: "trainers-gg", query: "<feature key
 
 Present what you found, grouped:
 
-- **Direct match:** "This maps to TGG-XXX (*title*). Options:"
+- **Direct match:** "This maps to TGG-XXX (_title_). Options:"
   - (a) Update it with details from this web work
   - (b) Skip — already covered
 - **Related tickets:** "These tickets are related: TGG-XXX, TGG-YYY. Options:"
@@ -101,6 +101,7 @@ Always include the skip option. Never create a ticket without user confirmation.
 ### 6. Take action
 
 **Update existing ticket:**
+
 - Fetch current description with `mcp__plugin_linear_linear__get_issue`
 - Append a new section (do NOT replace existing content):
 
@@ -115,12 +116,12 @@ Always include the skip option. Never create a ticket without user confirmation.
 
 **Create new ticket:**
 
-| Field | Value |
-|---|---|
-| Team | `trainers-gg` |
-| Project | `Mobile App` |
-| Label | `type:feature` |
-| Priority | 3 (Medium) |
+| Field     | Value                                   |
+| --------- | --------------------------------------- |
+| Team      | `trainers-gg`                           |
+| Project   | `Mobile App`                            |
+| Label     | `type:feature`                          |
+| Priority  | 3 (Medium)                              |
 | Milestone | Inferred from feature area, or ask user |
 
 Description:
@@ -152,6 +153,7 @@ If linking to related tickets, use the `relatedTo` field.
 ## Exclusions
 
 These changes never need mobile parity tickets:
+
 - `admin/` routes and components
 - Changes only in `packages/` (shared packages are already cross-platform)
 - Changes only in config files (next.config.ts, tailwind, etc.)

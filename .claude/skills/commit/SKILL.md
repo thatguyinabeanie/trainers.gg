@@ -86,7 +86,7 @@ git commit -m "<message>"
 - Always use a HEREDOC for multi-line messages.
 - Never use `--no-verify` unless the user explicitly asks.
 - Never amend a previous commit unless the user explicitly asks.
-- If the pre-commit hook (Husky) fails, fix the issue, re-stage, and create a NEW commit.
+- If the pre-commit hook (Lefthook) fails, fix the issue, re-stage, and create a NEW commit.
 
 ### 6. Confirm
 

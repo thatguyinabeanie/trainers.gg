@@ -64,7 +64,7 @@ z.string()
   .max(200)
   .refine((val) => !containsProfanity(val), {
     message: PROFANITY_ERROR_MESSAGE,
-  })
+  });
 
 // Optional field — trim first:
 z.string()
@@ -73,7 +73,7 @@ z.string()
   .refine((val) => !containsProfanity(val), {
     message: PROFANITY_ERROR_MESSAGE,
   })
-  .optional()
+  .optional();
 
 // Optional field that could be empty string — trim first:
 z.string()
@@ -82,12 +82,13 @@ z.string()
   .refine((val) => !val || !containsProfanity(val), {
     message: PROFANITY_ERROR_MESSAGE,
   })
-  .optional()
+  .optional();
 ```
 
 ### When to Add Profanity Validation
 
 Add `.refine()` with `containsProfanity()` to any `z.string()` field where:
+
 - A **non-staff, non-admin user** provides the text
 - The text is **stored or displayed** to other users
 
@@ -96,6 +97,7 @@ This includes: usernames, display names, bios, locations, chat messages, team su
 ### When NOT to Add Profanity Validation
 
 Skip profanity validation for:
+
 - **Admin/staff-only inputs**: announcements, moderation reasons, judge notes, tournament invitations, feature flag descriptions
 - **Non-displayed inputs**: search queries, filter parameters, IDs, URLs, emails, passwords
 - **External data**: OAuth profile data from third-party providers

@@ -28,7 +28,7 @@ export function RecentAchievements({ achievements }: RecentAchievementsProps) {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Award className="size-5 text-amber-500" />
-          <span className="text-muted-foreground text-xs font-semibold tracking-wider uppercase">
+          <span className="text-muted-foreground text-xs font-semibold uppercase tracking-wider">
             Achievements
           </span>
         </CardTitle>
@@ -55,7 +55,7 @@ export function RecentAchievements({ achievements }: RecentAchievementsProps) {
                 return (
                   <div
                     key={achievement.id}
-                    className="group bg-card hover:bg-accent/50 relative overflow-hidden rounded-lg p-3 transition-all"
+                    className="bg-card hover:bg-accent/50 group relative overflow-hidden rounded-lg p-3 transition-all"
                   >
                     {/* Shimmer effect on hover */}
                     <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent opacity-0 transition-opacity group-hover:opacity-100" />

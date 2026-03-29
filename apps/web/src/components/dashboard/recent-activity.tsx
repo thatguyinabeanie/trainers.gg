@@ -63,12 +63,12 @@ export function RecentActivity({ activities }: RecentActivityProps) {
               return (
                 <div
                   key={activity.id}
-                  className="group bg-card relative cursor-pointer overflow-hidden rounded-lg border transition-all hover:shadow-md"
+                  className="bg-card group relative cursor-pointer overflow-hidden rounded-lg border transition-all hover:shadow-md"
                   onClick={() => setExpandedId(isExpanded ? null : activity.id)}
                 >
                   {/* Result indicator line */}
                   <div
-                    className={`absolute top-0 left-0 h-full w-1 ${
+                    className={`absolute left-0 top-0 h-full w-1 ${
                       isWin ? "bg-emerald-500" : "bg-red-500"
                     }`}
                   />
@@ -114,7 +114,7 @@ export function RecentActivity({ activities }: RecentActivityProps) {
 
                     {/* Expanded details */}
                     {isExpanded && (
-                      <div className="text-muted-foreground mt-3 space-y-2 border-t pt-3 pl-2 text-xs">
+                      <div className="text-muted-foreground mt-3 space-y-2 border-t pl-2 pt-3 text-xs">
                         <p>
                           Match ID:{" "}
                           <span className="text-foreground font-mono">

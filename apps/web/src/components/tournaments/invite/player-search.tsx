@@ -103,7 +103,7 @@ export function PlayerSearch({
               <Badge
                 key={player.id}
                 variant="secondary"
-                className="flex items-center gap-1 py-1 pr-1 pl-2"
+                className="flex items-center gap-1 py-1 pl-2 pr-1"
               >
                 <Avatar className="h-4 w-4">
                   <AvatarImage src={player.avatarUrl} />
@@ -131,7 +131,7 @@ export function PlayerSearch({
       <div className="space-y-2">
         <label className="text-sm font-medium">Search Players</label>
         <div className="relative">
-          <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
+          <Search className="text-muted-foreground absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2" />
           <Input
             type="text"
             placeholder={
@@ -147,7 +147,7 @@ export function PlayerSearch({
           {searchQuery && (
             <button
               onClick={() => setSearchQuery("")}
-              className="text-muted-foreground hover:text-foreground absolute top-1/2 right-3 -translate-y-1/2"
+              className="text-muted-foreground hover:text-foreground absolute right-3 top-1/2 -translate-y-1/2"
             >
               <X className="h-4 w-4" />
             </button>

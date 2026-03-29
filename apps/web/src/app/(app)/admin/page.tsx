@@ -107,13 +107,13 @@ function MetricCard({
       <CardContent className="pt-5">
         <div className="flex items-start justify-between gap-3">
           <div className="space-y-1.5">
-            <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+            <p className="text-muted-foreground text-xs font-medium uppercase tracking-wide">
               {title}
             </p>
             {isLoading ? (
               <Skeleton className="h-8 w-20" />
             ) : (
-              <p className="text-3xl font-semibold tracking-tight tabular-nums">
+              <p className="text-3xl font-semibold tabular-nums tracking-tight">
                 {formatNumber(value ?? 0)}
               </p>
             )}
@@ -152,7 +152,7 @@ function DonutBreakdownCard({
   return (
     <Card>
       <CardHeader className="pb-0">
-        <CardTitle className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+        <CardTitle className="text-muted-foreground text-xs font-medium uppercase tracking-wide">
           {title}
         </CardTitle>
       </CardHeader>

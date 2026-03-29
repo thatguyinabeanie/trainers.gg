@@ -1,0 +1,50 @@
+# Pre-commit hooks via Lefthook (managed by mise).
+# Prettier runs from root with the shared @trainers/prettier-config.
+# ESLint scoped to apps/ and packages/ (tooling/ has no ESLint configs).
+# Safe to run in parallel: eslint-config-prettier prevents overlapping fixes.
+# Typecheck runs on affected packages via Turbo.
+
+pre-commit:
+  parallel: true
+  commands:
+    prettier:
+      glob: "*.{ts,tsx,js,jsx,mjs,json,css,md,yml,yaml,toml}"
+      run: |
+        FILES=""
+        for f in {staged_files}; do
+          [ -f "$f" ] && FILES="$FILES $f"
+        done
+        if [ -n "$FILES" ]; then
+          pnpm --prefix . exec prettier --write $FILES
+        fi
+      stage_fixed: true
+
+    eslint:
+      glob: "{apps,packages}/**/*.{ts,tsx,js,jsx}"
+      run: |
+        FAILED=0
+        for pkg_dir in $(echo "{staged_files}" | tr ' ' '\n' | sed -n 's|\([^/]*/[^/]*\)/.*|\1|p' | sort -u); do
+          pkg_files=$(echo "{staged_files}" | tr ' ' '\n' | grep "^$pkg_dir/" | sed "s|^$pkg_dir/||" | tr '\n' ' ')
+          pnpm --prefix "$pkg_dir" exec eslint --fix --max-warnings 0 $pkg_files || FAILED=1
+        done
+        exit $FAILED
+      stage_fixed: true
+
+    typecheck:
+      env:
+        TURBO_UI: "false"
+      run: |
+        AFFECTED=$(node scripts/get-affected-packages.mjs) || {
+          echo "ERROR: Failed to detect affected packages"
+          exit 1
+        }
+        if [ -n "$AFFECTED" ]; then
+          echo "Running typecheck on affected packages: $AFFECTED"
+          FILTER=""
+          for pkg in $AFFECTED; do
+            FILTER="$FILTER --filter=$pkg"
+          done
+          pnpm --prefix . exec turbo run typecheck $FILTER
+        else
+          echo "No packages affected, skipping typecheck"
+        fi

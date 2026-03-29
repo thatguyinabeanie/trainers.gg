@@ -9,14 +9,14 @@ Pokemon data, team validation, stats calculation, type effectiveness, and Showdo
 
 ## Key Modules
 
-| Module | Purpose |
-| ------ | ------- |
-| `showdown-parser.ts` | Parse Showdown-format team text into `PokemonSet[]` |
-| `showdown-format.ts` | Convert `PokemonSet[]` back to Showdown text |
-| `team-validator.ts` | Validate team legality for a given format |
-| `type-effectiveness.ts` | Type matchup calculations |
-| `stats-calculator.ts` | Base stat / EV / IV calculations |
-| `format-rules.ts` | Format-specific rules (VGC, OU, etc.) |
+| Module                  | Purpose                                             |
+| ----------------------- | --------------------------------------------------- |
+| `showdown-parser.ts`    | Parse Showdown-format team text into `PokemonSet[]` |
+| `showdown-format.ts`    | Convert `PokemonSet[]` back to Showdown text        |
+| `team-validator.ts`     | Validate team legality for a given format           |
+| `type-effectiveness.ts` | Type matchup calculations                           |
+| `stats-calculator.ts`   | Base stat / EV / IV calculations                    |
+| `format-rules.ts`       | Format-specific rules (VGC, OU, etc.)               |
 
 ## Dual Parser System
 

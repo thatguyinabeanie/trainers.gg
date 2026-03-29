@@ -60,7 +60,7 @@ export default function HomePage() {
         {/* Hero content */}
         <section className="relative z-10 py-20 sm:py-28">
           <div className="mx-auto max-w-screen-xl px-4 text-center">
-            <p className="text-primary/50 mb-5 text-[11px] font-medium tracking-[6px] uppercase">
+            <p className="text-primary/50 mb-5 text-[11px] font-medium uppercase tracking-[6px]">
               trainers.gg
             </p>
             <h1 className="text-foreground mb-4 text-4xl font-extrabold tracking-tight sm:text-5xl dark:text-green-50">

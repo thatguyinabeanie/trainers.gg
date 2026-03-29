@@ -9,6 +9,7 @@ import { checkBotId } from "botid/server";
 import { createClient } from "@/lib/supabase/server";
 import { escapeLike } from "@trainers/utils";
 import { revalidatePath } from "next/cache";
+import { headers } from "next/headers";
 
 const PDS_HOST = process.env.PDS_HOST || "https://pds.trainers.gg";
 
@@ -25,8 +26,20 @@ export async function completeOnboarding(data: {
   bio: string;
   birthDate?: string;
 }) {
-  const { isBot } = await checkBotId();
-  if (isBot) return { success: false, error: "Access denied" };
+  // Skip BotID in E2E: headless Chromium is flagged as a bot
+  const headerStore = await headers();
+  const bypassSecret = headerStore.get("x-vercel-protection-bypass");
+  const expectedSecret = process.env.VERCEL_AUTOMATION_BYPASS_SECRET;
+  const isE2E = !!(
+    bypassSecret &&
+    expectedSecret &&
+    bypassSecret === expectedSecret
+  );
+
+  if (!isE2E) {
+    const { isBot } = await checkBotId();
+    if (isBot) return { success: false, error: "Access denied" };
+  }
 
   try {
     const validated = completeOnboardingSchema.parse(data);

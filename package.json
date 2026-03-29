@@ -8,7 +8,6 @@
     "setup": "pnpm --filter=@trainers/supabase run setup",
     "setup:pds": "./infra/pds/setup-local.sh",
     "postinstall": "./scripts/postinstall.sh",
-    "prepare": "husky",
     "// dev": "",
     "dev": "rm -rf apps/web/.next/dev && turbo run dev",
     "dev:web": "turbo run dev --filter=@trainers/web",
@@ -30,8 +29,8 @@
     "// quality": "",
     "lint": "turbo run lint",
     "typecheck": "turbo run typecheck",
-    "format": "turbo run format",
-    "format:check": "turbo run format:check",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
     "// db": "",
     "db:start": "turbo run db:start --filter=@trainers/supabase",
     "db:stop": "turbo run db:stop --filter=@trainers/supabase",
@@ -67,8 +66,8 @@
   },
   "devDependencies": {
     "@trainers/prettier-config": "workspace:*",
-    "husky": "^9.1.7",
-    "lint-staged": "^16.4.0",
+    "prettier": "catalog:",
+    "prettier-plugin-tailwindcss": "catalog:",
     "turbo": "^2.8.21"
   },
   "pnpm": {

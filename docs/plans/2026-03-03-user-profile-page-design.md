@@ -11,13 +11,13 @@ Migrate the existing competitive player profile from `/players/[handle]` to a ne
 
 ## Routing & Migration
 
-| Aspect | Decision |
-|---|---|
-| **New route** | `app/u/[handle]/page.tsx` → URL `/u/ash_ketchum` |
-| **Display format** | Show `@ash_ketchum` visually throughout the app (in the header, links, etc.) |
-| **Migration** | Move/rename `app/players/[handle]/` → `app/u/[handle]/` |
-| **Old `/players` directory** | Delete entirely after migration (no redirects — pre-release, no existing links) |
-| **Old `/players` index page** | Delete the "Coming Soon" placeholder |
+| Aspect                        | Decision                                                                        |
+| ----------------------------- | ------------------------------------------------------------------------------- |
+| **New route**                 | `app/u/[handle]/page.tsx` → URL `/u/ash_ketchum`                                |
+| **Display format**            | Show `@ash_ketchum` visually throughout the app (in the header, links, etc.)    |
+| **Migration**                 | Move/rename `app/players/[handle]/` → `app/u/[handle]/`                         |
+| **Old `/players` directory**  | Delete entirely after migration (no redirects — pre-release, no existing links) |
+| **Old `/players` index page** | Delete the "Coming Soon" placeholder                                            |
 
 No redirect from `/players/[handle]` to `/u/[handle]` is needed — the app is pre-release with no existing external links.
 
@@ -46,13 +46,13 @@ No redirect from `/players/[handle]` to `/u/[handle]` is needed — the app is p
 
 ## Tab Structure
 
-| Tab | Content |
-|---|---|
-| **Overview** | Stats summary card (wins, losses, win rate, best placement, main format) + last 5 recent tournaments |
-| **Tournaments** | Full tournament history, filterable by format/year |
-| **Teams** | Public registered team sheets from tournaments (Pokemon sprites, sets) |
-| **Social** | Bluesky posts + follower/following counts, sourced from AT Protocol (migrated from `/profile/[handle]`) |
-| **Achievements** | Badges, trophies, milestones, seasonal rankings |
+| Tab              | Content                                                                                                 |
+| ---------------- | ------------------------------------------------------------------------------------------------------- |
+| **Overview**     | Stats summary card (wins, losses, win rate, best placement, main format) + last 5 recent tournaments    |
+| **Tournaments**  | Full tournament history, filterable by format/year                                                      |
+| **Teams**        | Public registered team sheets from tournaments (Pokemon sprites, sets)                                  |
+| **Social**       | Bluesky posts + follower/following counts, sourced from AT Protocol (migrated from `/profile/[handle]`) |
+| **Achievements** | Badges, trophies, milestones, seasonal rankings                                                         |
 
 The tab structure reuses the existing `player-profile-tabs.tsx` pattern, migrated and extended.
 
@@ -95,6 +95,7 @@ The current user's `username` is available from the auth context (`getCurrentUse
 ## Files Affected
 
 ### New / Moved Files
+
 - `app/u/[handle]/page.tsx` — server component (migrated from `app/players/[handle]/page.tsx`)
 - `app/u/[handle]/overview-tab.tsx` — migrated
 - `app/u/[handle]/player-profile-tabs.tsx` — migrated and extended with new tabs
@@ -104,10 +105,12 @@ The current user's `username` is available from the auth context (`getCurrentUse
 - `app/u/[handle]/achievements-tab.tsx` — new
 
 ### Deleted Files
+
 - `app/players/` — entire directory removed
 - `app/profile/[handle]/` — social content merged into `/u/[handle]` social tab
 
 ### Modified Files
+
 - `apps/web/src/components/topnav-auth-section.tsx` — add "My Profile" link
 - `packages/supabase/supabase/migrations/YYYYMMDDHHMMSS_add_alt_is_public.sql` — add `is_public` column
 - `packages/supabase/src/queries/users.ts` — update `getPlayerProfileByHandle` to filter private alts

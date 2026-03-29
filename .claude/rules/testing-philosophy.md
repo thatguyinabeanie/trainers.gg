@@ -18,4 +18,4 @@ paths:
 
 **Prefer existing helpers over inline logic.** Check `@trainers/utils` and the package's own helpers before writing new code. Keep tests DRY and simple (KISS).
 
-Pre-commit: Husky runs lint-staged (Prettier auto-fix). Fix errors, re-stage, retry — never skip hooks.
+Pre-commit: Lefthook runs ESLint `--fix`, Prettier auto-fix, and typecheck on affected packages. Fix errors, re-stage, retry — never skip hooks.

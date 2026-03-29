@@ -9,16 +9,17 @@ AT Protocol / Bluesky utilities. Platform-agnostic — no Next.js, Expo, or fram
 
 ## Key Modules
 
-| Module | Purpose |
-| ------ | ------- |
-| `agent.ts` | Error-wrapped AT Protocol Agent with typed error classes |
-| `api/` | Feed, posts, interactions, social graph operations |
-| `config.ts` | `PDS_URL`, `POKEMON_KEYWORDS`, shared constants |
-| `handle-utils.ts` | Handle validation and formatting |
+| Module            | Purpose                                                  |
+| ----------------- | -------------------------------------------------------- |
+| `agent.ts`        | Error-wrapped AT Protocol Agent with typed error classes |
+| `api/`            | Feed, posts, interactions, social graph operations       |
+| `config.ts`       | `PDS_URL`, `POKEMON_KEYWORDS`, shared constants          |
+| `handle-utils.ts` | Handle validation and formatting                         |
 
 ## Auth Is Platform-Handled
 
 This package does not manage auth sessions — each platform handles it differently:
+
 - **Web**: OAuth via `@atproto/oauth-client-node`
 - **Mobile**: Session persistence in SecureStore
 
@@ -35,6 +36,7 @@ Pass an authenticated `Agent` instance into API functions — don't manage sessi
 ## Error Handling
 
 Custom typed error classes:
+
 - `BlueskyAuthError` — authentication failures
 - `BlueskyApiError` — API call failures
 - `withErrorHandling(fn)` — wraps functions with typed error catching

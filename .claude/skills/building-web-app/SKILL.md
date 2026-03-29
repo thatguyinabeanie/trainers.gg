@@ -15,7 +15,10 @@ export async function myAction(data: FormData) {
   try {
     return { success: true };
   } catch (e) {
-    return { success: false, error: getErrorMessage(e, "Something went wrong") };
+    return {
+      success: false,
+      error: getErrorMessage(e, "Something went wrong"),
+    };
   }
 }
 ```

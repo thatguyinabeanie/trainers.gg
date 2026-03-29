@@ -36,7 +36,11 @@ Shared test utilities: Fishery factories, mock builders, and Jest configuration.
 ## Factories (Fishery)
 
 ```typescript
-import { userFactory, altFactory, tournamentFactory } from "@trainers/test-utils/factories";
+import {
+  userFactory,
+  altFactory,
+  tournamentFactory,
+} from "@trainers/test-utils/factories";
 
 const user = userFactory.build({ username: "ash" });
 const users = userFactory.buildList(5);
@@ -45,17 +49,17 @@ const alt = altFactory.build({ user_id: user.id });
 
 ### Available Factories
 
-| Factory | Type |
-| ------- | ---- |
-| `userFactory` | `Tables<"users">` |
-| `altFactory` | `Tables<"alts">` |
-| `organizationFactory` | `Tables<"organizations">` |
-| `tournamentFactory` | `Tables<"tournaments">` |
-| `notificationFactory` | `Tables<"notifications">` |
-| `tournamentMatchFactory` | `Tables<"tournament_matches">` |
-| `matchGameFactory` | `Tables<"match_games">` |
-| `playerRecordFactory` | `PlayerRecord` (tournament domain) |
-| `bracketPlayerFactory` | `BracketPlayer` (tournament domain) |
+| Factory                  | Type                                |
+| ------------------------ | ----------------------------------- |
+| `userFactory`            | `Tables<"users">`                   |
+| `altFactory`             | `Tables<"alts">`                    |
+| `organizationFactory`    | `Tables<"organizations">`           |
+| `tournamentFactory`      | `Tables<"tournaments">`             |
+| `notificationFactory`    | `Tables<"notifications">`           |
+| `tournamentMatchFactory` | `Tables<"tournament_matches">`      |
+| `matchGameFactory`       | `Tables<"match_games">`             |
+| `playerRecordFactory`    | `PlayerRecord` (tournament domain)  |
+| `bracketPlayerFactory`   | `BracketPlayer` (tournament domain) |
 
 ### Adding a New Factory
 
@@ -71,10 +75,10 @@ import { createMockClient } from "@trainers/test-utils/mocks";
 // Terminal methods (single, maybeSingle) are plain jest.fn()
 
 import {
-  createMockAgent,        // social graph Agent (follow, block, mute)
-  createMockFeedAgent,    // feed Agent (timeline, author feed, likes)
-  createMockProfileView,  // basic profile
-  createMockPost,         // feed post (FeedViewPost)
+  createMockAgent, // social graph Agent (follow, block, mute)
+  createMockFeedAgent, // feed Agent (timeline, author feed, likes)
+  createMockProfileView, // basic profile
+  createMockPost, // feed post (FeedViewPost)
 } from "@trainers/test-utils/mocks";
 ```
 
