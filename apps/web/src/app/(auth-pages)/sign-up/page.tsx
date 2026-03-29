@@ -11,6 +11,7 @@ import { getRedirectParam } from "@/app/(auth-pages)/utils";
 export default function SignUpPage() {
   const searchParams = useSearchParams();
   const [showEmailForm, setShowEmailForm] = useState(false);
+  const [error, setError] = useState<string | null>(searchParams.get("error"));
 
   if (showEmailForm) {
     return (
@@ -56,11 +57,22 @@ export default function SignUpPage() {
         </div>
       </div>
 
+      {/* OAuth error display */}
+      {error && (
+        <div
+          role="alert"
+          className="bg-destructive/10 text-destructive w-full rounded-lg p-3 text-sm"
+        >
+          {error}
+        </div>
+      )}
+
       {/* Social login buttons */}
       <div className="w-full">
         <SocialAuthButtons
           onEmailClick={() => setShowEmailForm(true)}
           redirectTo={getRedirectParam(searchParams) ?? undefined}
+          onError={setError}
         />
       </div>
 

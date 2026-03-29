@@ -9,7 +9,7 @@ import { toast } from "sonner";
 import { LinkedIdentitiesSection } from "../linked-identities-section";
 
 // Mock dependencies
-const mockSignInWithOAuth = jest.fn();
+const mockSignInWithOAuth = jest.fn().mockResolvedValue({ error: null });
 const mockUnlinkIdentity = jest.fn();
 
 jest.mock("@/hooks/use-auth", () => ({

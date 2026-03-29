@@ -70,6 +70,8 @@ interface SocialAuthButtonsProps {
   onEmailClick?: () => void;
   /** Optional path to redirect to after auth (e.g. "/tournaments/slug") */
   redirectTo?: string;
+  /** Called when an OAuth error occurs */
+  onError?: (message: string) => void;
 }
 
 /**
@@ -84,6 +86,7 @@ interface SocialAuthButtonsProps {
 export function SocialAuthButtons({
   onEmailClick,
   redirectTo,
+  onError,
 }: SocialAuthButtonsProps) {
   const { signInWithOAuth } = useAuth();
   const [loadingProvider, setLoadingProvider] = useState<string | null>(null);
@@ -91,7 +94,10 @@ export function SocialAuthButtons({
   const handleOAuthSignIn = async (provider: OAuthProvider) => {
     setLoadingProvider(provider);
     try {
-      await signInWithOAuth(provider, redirectTo);
+      const { error } = await signInWithOAuth(provider, redirectTo);
+      if (error) {
+        onError?.(error.message);
+      }
     } finally {
       setLoadingProvider(null);
     }

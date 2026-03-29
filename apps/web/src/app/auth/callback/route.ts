@@ -13,10 +13,12 @@ export async function GET(request: NextRequest) {
   const type = searchParams.get("type");
   const next = searchParams.get("next") ?? "/";
   const error = searchParams.get("error");
+  const errorDescription = searchParams.get("error_description");
 
   // Handle OAuth error
   if (error) {
-    return redirect(`/sign-in?error=${encodeURIComponent(error)}`);
+    const message = errorDescription || error;
+    return redirect(`/sign-in?error=${encodeURIComponent(message)}`);
   }
 
   const supabase = await createClient();
@@ -50,7 +52,7 @@ export async function GET(request: NextRequest) {
     return redirect(`${origin}${next}`);
   }
 
-  // Handle OAuth code exchange (Google, Discord, etc.)
+  // Handle OAuth code exchange (X, Discord, Twitch, etc.)
   if (code) {
     const { error: exchangeError } =
       await supabase.auth.exchangeCodeForSession(code);

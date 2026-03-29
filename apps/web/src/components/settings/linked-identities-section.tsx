@@ -118,7 +118,13 @@ export function LinkedIdentitiesSection() {
       window.location.href = `/api/oauth/login?returnUrl=${returnUrl}`;
     } else {
       // Use standard Supabase OAuth
-      await signInWithOAuth(provider, "/dashboard/settings/account");
+      const { error } = await signInWithOAuth(
+        provider,
+        "/dashboard/settings/account"
+      );
+      if (error) {
+        toast.error(`Failed to link ${provider}: ${error.message}`);
+      }
     }
   };
 
