@@ -13,7 +13,7 @@ Supabase client, queries, mutations, edge functions, and migrations.
 
 ## Skills
 
-- `supabase-queries` — client selection, query conventions
+- `querying-supabase` — client selection, query conventions
 - `create-migration` — migration creation workflow
-- `edge-function` — edge function template and patterns
-- `edge-function-imports` — deno.json import map management
+- `creating-edge-functions` — edge function template and patterns
+- `managing-edge-imports` — deno.json import map management

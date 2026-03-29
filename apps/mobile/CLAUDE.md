@@ -13,4 +13,4 @@ Expo 54 (React 19) React Native app. Expo Router file-based routing.
 ## Skills
 
 - `building-mobile-app` — Tamagui UI, navigation, data fetching
-- After building features: run `mobile-parity` to check for parity tickets
+- After building features: run `checking-mobile-parity` to check for parity tickets

@@ -29,4 +29,4 @@ Auth differs from web: mobile uses SecureStore for session persistence. Hooks in
 
 ## After Building Features
 
-After developing a web feature, check if a matching mobile ticket exists. See `mobile-parity` skill.
+After developing a web feature, check if a matching mobile ticket exists. See `checking-mobile-parity` skill.

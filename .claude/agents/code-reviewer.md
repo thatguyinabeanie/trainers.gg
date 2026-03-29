@@ -24,11 +24,11 @@ Review changed files for correctness, style, architecture, and domain convention
 3. Load domain skills based on files touched:
    - `apps/web/` → load `building-web-app`
    - `apps/mobile/` → load `building-mobile-app`
-   - `packages/supabase/supabase/functions/` → load `edge-function`
+   - `packages/supabase/supabase/functions/` → load `creating-edge-functions`
    - `packages/supabase/supabase/migrations/` → load `create-migration`
    - `packages/validators/` → load `validating-input`
    - `**/*.test.*` or `**/__tests__/` → load `writing-tests`
-   - `packages/tournaments/` → load `tournament-logic`
+   - `packages/tournaments/` → load `implementing-tournaments`
 4. Check each file against the loaded skill rules and code-style rules
 5. Report findings
 

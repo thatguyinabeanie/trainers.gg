@@ -57,7 +57,7 @@ The project uses a three-tier system for providing context to Claude:
 
 - **Gerund** for auto-triggered skills: `building-web-app`, `writing-tests`, `building-mobile-app`
 - **Imperative** for slash commands: `commit`, `create-migration`, `finish-branch`
-- **Noun/adjective** for reference skills: `code-style`, `architecture-principles`, `infrastructure`
+- **Noun/adjective** for reference-only rules: `code-style`, `architecture-principles`
 
 ### Description
 
@@ -110,7 +110,7 @@ Reference other skills by name, not by file path:
 
 ```markdown
 <!-- Good -->
-See `edge-function` skill for core patterns (CORS, auth, response format).
+See `creating-edge-functions` skill for core patterns (CORS, auth, response format).
 
 <!-- Bad -->
 See `.claude/skills/edge-function/SKILL.md` for core patterns.
@@ -210,7 +210,7 @@ Hooks map file globs to skills. When Claude edits a file matching the glob, the 
 ```
 apps/web/**          -> building-web-app
 apps/mobile/**       -> building-mobile-app
-packages/supabase/** -> supabase-queries
+packages/supabase/** -> querying-supabase
 **/*.test.*          -> writing-tests
 ```
 

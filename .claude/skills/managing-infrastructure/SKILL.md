@@ -1,5 +1,5 @@
 ---
-name: infrastructure
+name: managing-infrastructure
 description: Use when working with PDS (Bluesky Personal Data Server on Fly.io) or ngrok tunnel configuration for local development
 ---
 
