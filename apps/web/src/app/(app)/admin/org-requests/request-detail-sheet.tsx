@@ -34,6 +34,7 @@ import { toast } from "sonner";
 import {
   type CommunityRequestRow,
   communityRequestStatusLabels,
+  communityRequestStatusClasses,
 } from "./columns";
 import {
   grantCommunityRequestAction,
@@ -43,30 +44,7 @@ import {
   SOCIAL_LINK_PLATFORMS,
   type SocialLinkPlatform,
 } from "@trainers/validators";
-
-const communityRequestStatusClasses: Record<
-  CommunityRequestRow["status"],
-  string
-> = {
-  pending:
-    "bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/25",
-  approved:
-    "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/25",
-  rejected:
-    "bg-gray-500/15 text-gray-600 dark:text-gray-400 border-gray-500/25",
-  cancelled:
-    "bg-gray-500/15 text-gray-600 dark:text-gray-400 border-gray-500/25",
-};
-
-function formatDateTime(dateStr: string): string {
-  return new Date(dateStr).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  });
-}
+import { formatDateTime } from "@trainers/utils";
 
 type ConfirmAction = { type: "approve" } | { type: "reject" };
 
@@ -160,11 +138,9 @@ export function RequestDetailSheet({
           </SheetHeader>
 
           <div className="flex flex-col gap-6 px-4 pb-4">
-            {/* Details section */}
             <section className="space-y-3">
               <h3 className="text-sm font-medium">Details</h3>
 
-              {/* Status + Requester row */}
               <div className="flex items-center justify-between">
                 <Badge
                   variant="outline"
@@ -195,14 +171,12 @@ export function RequestDetailSheet({
                 )}
               </div>
 
-              {/* Description */}
               {request.description && (
                 <p className="text-muted-foreground text-sm">
                   {request.description}
                 </p>
               )}
 
-              {/* Dates */}
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
                   <Label className="text-muted-foreground text-xs">
@@ -225,7 +199,6 @@ export function RequestDetailSheet({
               </div>
             </section>
 
-            {/* Community Links */}
             {allLinks.length > 0 && (
               <section className="space-y-2">
                 <h3 className="text-sm font-medium">Community Links</h3>
@@ -261,7 +234,6 @@ export function RequestDetailSheet({
               </section>
             )}
 
-            {/* Admin Notes */}
             {request.admin_notes && (
               <section className="space-y-2">
                 <h3 className="text-sm font-medium">Admin Notes</h3>
@@ -271,7 +243,6 @@ export function RequestDetailSheet({
               </section>
             )}
 
-            {/* Actions (for pending and rejected) */}
             {canApprove && (
               <>
                 <Separator />
@@ -314,7 +285,6 @@ export function RequestDetailSheet({
         </SheetContent>
       </Sheet>
 
-      {/* Confirmation dialog */}
       <AlertDialog
         open={!!confirmAction}
         onOpenChange={(open) => {

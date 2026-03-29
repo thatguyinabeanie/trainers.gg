@@ -12,7 +12,7 @@
  * - TOURNAMENT_SIM_SEED=N         → override random seed for match results
  */
 
-import { test, expect } from "@playwright/test";
+import { type Page, test, expect } from "@playwright/test";
 import { TEST_USERS, loginViaUI } from "../../fixtures/auth";
 import { TournamentSimulator } from "../../fixtures/tournament-simulator";
 
@@ -23,6 +23,28 @@ const hasSupabaseAdmin =
 
 // Use empty storage state — we'll log in explicitly as the TO
 test.use({ storageState: { cookies: [], origins: [] } });
+
+/**
+ * Reload the page, re-authenticating if the session expired.
+ * Long-running simulations can outlast the Supabase auth session,
+ * causing reloads to redirect to /sign-in.
+ */
+async function reloadWithReauth(page: Page, targetUrl: string): Promise<void> {
+  await page.reload();
+  await page.waitForLoadState("networkidle");
+
+  if (page.url().includes("/sign-in")) {
+    await loginViaUI(page, TEST_USERS.admin);
+    await page.goto(targetUrl);
+    await page.waitForLoadState("networkidle");
+
+    if (page.url().includes("/sign-in")) {
+      throw new Error(
+        `Re-authentication failed: still on sign-in page. Target: ${targetUrl}`
+      );
+    }
+  }
+}
 
 test.describe("Full Tournament Simulation", () => {
   test.skip(
@@ -134,8 +156,7 @@ test.describe("Full Tournament Simulation", () => {
 
       // Reload to pick up match completion state
       // (realtime subscriptions may not reliably fire in test environments)
-      await page.reload();
-      await page.waitForLoadState("networkidle");
+      await reloadWithReauth(page, sim.managementUrl);
 
       // Wait for "Complete Round" button to become enabled
       await expect(
@@ -171,8 +192,7 @@ test.describe("Full Tournament Simulation", () => {
     // --- TOP CUT ---
     // Advance to top 8 via admin client (no UI button for this yet)
     await sim.advanceToTopCut();
-    await page.reload();
-    await page.waitForLoadState("networkidle");
+    await reloadWithReauth(page, sim.managementUrl);
 
     // --- ELIMINATION ROUNDS (QF, SF, Finals = 3 rounds) ---
     for (let elimRound = 1; elimRound <= 3; elimRound++) {
@@ -233,8 +253,7 @@ test.describe("Full Tournament Simulation", () => {
       await sim.reportMatchResults(elimRound, { isElimination: true });
 
       // Reload to pick up match completion state
-      await page.reload();
-      await page.waitForLoadState("networkidle");
+      await reloadWithReauth(page, sim.managementUrl);
 
       // Complete round
       await expect(

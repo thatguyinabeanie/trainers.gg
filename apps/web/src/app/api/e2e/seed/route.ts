@@ -62,22 +62,33 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  // SAFETY: Even in preview mode, never seed the production database.
-  // Preview deploys can fall back to the production Supabase URL when
-  // branching isn't set up or the branch doesn't exist yet.
-  // Skip this check for local dev (no VERCEL_ENV) — production ref won't be set locally.
+  // SAFETY: On Vercel, verify we're NOT connected to the production database.
+  // Supabase branching assigns a different project ref to each branch database.
+  // If a preview deploy falls back to production (branch creation failed),
+  // the project refs will match and we block seeding.
+  // Skipped for local dev (no VERCEL_ENV) where SUPABASE_PRODUCTION_PROJECT_REF isn't set.
   if (vercelEnv) {
     const supabaseUrl =
       process.env.NEXT_PUBLIC_SUPABASE_URL ?? process.env.SUPABASE_URL ?? "";
     const projectRefMatch = supabaseUrl.match(
       /https:\/\/([a-z0-9]+)\.supabase\.co/i
     );
-    const projectRef = projectRefMatch?.[1];
-    const productionProjectRef = process.env.SUPABASE_PRODUCTION_PROJECT_REF;
+    const currentRef = projectRefMatch?.[1];
+    const productionRef = process.env.SUPABASE_PRODUCTION_PROJECT_REF;
 
-    if (!productionProjectRef || projectRef === productionProjectRef) {
+    if (!productionRef || !currentRef) {
       console.error(
-        `[e2e/seed] BLOCKED: ${!productionProjectRef ? "SUPABASE_PRODUCTION_PROJECT_REF not set" : `connected to production database (${projectRef})`}`
+        `[e2e/seed] BLOCKED: ${!productionRef ? "SUPABASE_PRODUCTION_PROJECT_REF not set" : "could not extract project ref from Supabase URL"} — ` +
+          "add SUPABASE_PRODUCTION_PROJECT_REF to Vercel env vars (Preview scope)"
+      );
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
+
+    if (currentRef === productionRef) {
+      console.error(
+        `[e2e/seed] BLOCKED: connected to production database (ref: ${currentRef}). ` +
+          "This preview deployment may have fallen back to the production Supabase URL. " +
+          "Check that Supabase branching created a branch database for this PR."
       );
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
