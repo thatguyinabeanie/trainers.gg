@@ -69,6 +69,7 @@ export function useAuth() {
     if (error) {
       console.error(`Error signing in with ${provider}:`, error);
     }
+    return { error };
   };
 
   const signInWithEmail = async (email: string, password: string) => {
