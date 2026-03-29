@@ -63,3 +63,7 @@ pnpm --filter @trainers/mobile prebuild:clean # Clean + regenerate native projec
 - **Environment**: `jest-expo` preset (React Native)
 - **Location**: `src/**/__tests__/**/*.test.{ts,tsx}`
 - **Setup**: `test-setup.ts`
+
+## After Building Features
+
+After developing a web feature, check if a matching mobile ticket exists. See `mobile-parity` skill.

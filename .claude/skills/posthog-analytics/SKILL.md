@@ -33,6 +33,46 @@ Shared PostHog event name constants for all surfaces: web, mobile, and edge func
 
 Edge functions resolve `@trainers/posthog` via the Deno import map in `packages/supabase/supabase/functions/deno.json`.
 
+## Integration Examples
+
+### Web (Server Actions)
+
+```typescript
+import { PostHogClient } from "posthog-node";
+import { TOURNAMENT_CREATED } from "@trainers/posthog";
+
+const posthog = new PostHogClient(process.env.NEXT_PUBLIC_POSTHOG_KEY!);
+posthog.capture({ distinctId: userId, event: TOURNAMENT_CREATED });
+```
+
+### Mobile
+
+```typescript
+import { usePostHog } from "posthog-react-native";
+import { TOURNAMENT_REGISTERED } from "@trainers/posthog";
+
+const posthog = usePostHog();
+posthog.capture(TOURNAMENT_REGISTERED, { tournamentId });
+```
+
+### Edge Functions
+
+```typescript
+import { BETA_INVITE_SENT } from "@trainers/posthog";
+
+// Edge functions use PostHog's capture API directly
+// Tag with $lib: "trainers-edge-functions" to distinguish surface
+await fetch("https://us.i.posthog.com/capture/", {
+  method: "POST",
+  body: JSON.stringify({
+    api_key: POSTHOG_KEY,
+    event: BETA_INVITE_SENT,
+    distinct_id: userId,
+    properties: { $lib: "trainers-edge-functions" },
+  }),
+});
+```
+
 ## Commands
 
 ```bash

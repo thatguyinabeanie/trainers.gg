@@ -75,6 +75,22 @@ Use `src/components/ui/status-badge.tsx` for semantic status colors. Never rende
 
 New player-related API routes live in `src/app/api/players/` — check here before building new endpoints.
 
+## Request Interception (proxy.ts)
+
+Next.js 16 uses `proxy.ts` — `middleware.ts` is deprecated. Must be at `src/proxy.ts` (not project root). Export a function named `proxy`. Verify it's loading by checking for `proxy.ts: XXms` in dev server output.
+
+## Client State Management (TanStack Query)
+
+TanStack Query v5 is the client state management layer. All server state flows through query keys, cached queries, and mutations — not local React state or context.
+
+- **Queries**: use query key factories for consistent cache keys and targeted invalidation
+- **Mutations**: use `useMutation` with `onMutate` for optimistic updates where UI should respond immediately (e.g., registration, check-in, roster changes)
+- **Invalidation**: invalidate related query keys in `onSettled` so the cache resyncs regardless of mutation outcome
+- **No client-side state duplication**: if data comes from the server, it lives in the query cache — don't mirror it into `useState`
+- **Query key factories**: define query keys via factory functions — mobile already follows this pattern (see `apps/mobile/src/lib/api/query-factory.ts`)
+
+See `creating-components` skill when building new UI components.
+
 ## Commands
 
 ```bash

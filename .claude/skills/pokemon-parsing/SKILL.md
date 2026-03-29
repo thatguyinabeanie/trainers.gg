@@ -25,6 +25,35 @@ Pokemon data, team validation, stats calculation, type effectiveness, and Showdo
 
 **Use `parseTeam()` for new code.** Uses `@pkmn/sets` for Showdown format compatibility.
 
+## Usage Examples
+
+### Parsing a Showdown Paste
+
+```typescript
+import { parseTeam } from "@trainers/pokemon";
+
+const paste = `Pikachu @ Light Ball
+Ability: Static
+EVs: 252 SpA / 4 SpD / 252 Spe
+Timid Nature
+- Thunderbolt
+- Volt Switch
+- Grass Knot
+- Hidden Power Ice`;
+
+const team = parseTeam(paste);
+// Returns PokemonSet[] with validated moves, abilities, items
+```
+
+### Type Effectiveness
+
+```typescript
+import { getTypeEffectiveness } from "@trainers/pokemon";
+
+getTypeEffectiveness("Electric", "Water");  // 2 (super effective)
+getTypeEffectiveness("Electric", "Ground"); // 0 (immune)
+```
+
 ## Key Subpaths
 
 - `@trainers/pokemon/sprites` — sprite URL generation (not in main export)

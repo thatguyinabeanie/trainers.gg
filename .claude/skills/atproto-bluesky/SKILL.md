@@ -39,6 +39,36 @@ Custom typed error classes:
 - `BlueskyApiError` — API call failures
 - `withErrorHandling(fn)` — wraps functions with typed error catching
 
+## Usage Examples
+
+### Reading Public Content
+
+```typescript
+import { getPublicAgent } from "@trainers/atproto";
+
+const agent = getPublicAgent();
+// Read any public profile, feed, or post without authentication
+```
+
+### Using API Subpath
+
+```typescript
+import { getAuthorFeed, getTimeline } from "@trainers/atproto/api";
+
+// Feed operations — pass an authenticated Agent instance
+const feed = await getAuthorFeed(agent, { actor: "did:plc:abc123" });
+const timeline = await getTimeline(agent, { limit: 50 });
+```
+
+### DID Resolution
+
+```typescript
+import { resolveHandle } from "@trainers/atproto";
+
+const did = await resolveHandle("ash.trainers.gg");
+// Returns: "did:plc:abc123..."
+```
+
 ## Commands
 
 ```bash

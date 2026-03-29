@@ -1,6 +1,6 @@
 ---
 name: create-migration
-description: Create a new Supabase database migration with proper naming and conventions
+description: Use when creating a new Supabase database migration — covers naming, RLS policies, idempotency rules, and common patterns
 ---
 
 # Create Migration

@@ -27,6 +27,52 @@ Shared utilities — formatting, countries, tiers, permissions, label mapping, e
 
 **`escapeLike(str)`** — escape special characters for PostgREST `like` queries.
 
+## Usage Examples
+
+### getLabel()
+
+```typescript
+import { getLabel } from "@trainers/utils";
+
+// Convert DB enum values to display strings
+getLabel("checked_in");    // "Checked In"
+getLabel("not_started");   // "Not Started"
+getLabel("in_progress");   // "In Progress"
+
+// Use in components:
+<span>{getLabel(tournament.status)}</span>
+```
+
+### getErrorMessage()
+
+```typescript
+import { getErrorMessage } from "@trainers/utils";
+
+// In Server Actions:
+catch (e) {
+  return { success: false, error: getErrorMessage(e, "Something went wrong") };
+}
+
+// Handles: Error objects, Supabase PostgrestError, strings, unknown
+```
+
+### Permissions
+
+```typescript
+import { PERMISSIONS, type PermissionKey } from "@trainers/utils";
+
+// Check user permissions against org/tournament roles
+// Read permissions.ts for the full permission matrix
+```
+
+### Formatting
+
+```typescript
+import { formatTimeAgo } from "@trainers/utils";
+
+formatTimeAgo(new Date("2024-01-01")); // "3 months ago"
+```
+
 ## Additional Exports
 
 - `COUNTRIES` — ISO country codes and display names
