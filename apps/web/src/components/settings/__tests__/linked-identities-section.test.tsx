@@ -9,7 +9,7 @@ import { toast } from "sonner";
 import { LinkedIdentitiesSection } from "../linked-identities-section";
 
 // Mock dependencies
-const mockSignInWithOAuth = jest.fn();
+const mockSignInWithOAuth = jest.fn().mockResolvedValue({ error: null });
 const mockUnlinkIdentity = jest.fn();
 
 jest.mock("@/hooks/use-auth", () => ({
@@ -40,7 +40,7 @@ jest.mock("@/actions/identities", () => ({
 
 jest.mock("@/lib/supabase/auth", () => ({
   oauthProviders: [
-    { name: "twitter", displayName: "X", icon: "twitter", type: "supabase" },
+    { name: "x", displayName: "X", icon: "x", type: "supabase" },
     {
       name: "discord",
       displayName: "Discord",
@@ -232,8 +232,8 @@ describe("LinkedIdentitiesSection", () => {
         {
           id: "identity-2",
           user_id: "user-123",
-          identity_id: "twitter-456",
-          provider: "twitter",
+          identity_id: "x-456",
+          provider: "x",
         },
       ];
       mockUnlinkIdentity.mockResolvedValue({ error: null });
@@ -257,7 +257,7 @@ describe("LinkedIdentitiesSection", () => {
         expect(mockUnlinkIdentity).toHaveBeenCalledWith(
           expect.objectContaining({
             id: "identity-2",
-            provider: "twitter",
+            provider: "x",
           })
         );
       });
@@ -275,8 +275,8 @@ describe("LinkedIdentitiesSection", () => {
         {
           id: "identity-2",
           user_id: "user-123",
-          identity_id: "twitter-456",
-          provider: "twitter",
+          identity_id: "x-456",
+          provider: "x",
         },
       ];
       mockUnlinkIdentity.mockResolvedValue({ error: null });
@@ -309,8 +309,8 @@ describe("LinkedIdentitiesSection", () => {
         {
           id: "identity-2",
           user_id: "user-123",
-          identity_id: "twitter-456",
-          provider: "twitter",
+          identity_id: "x-456",
+          provider: "x",
         },
       ];
       mockUnlinkIdentity.mockResolvedValue({
@@ -510,8 +510,8 @@ describe("LinkedIdentitiesSection", () => {
         {
           id: "identity-2",
           user_id: "user-123",
-          identity_id: "twitter-456",
-          provider: "twitter",
+          identity_id: "x-456",
+          provider: "x",
         },
       ];
 
@@ -550,8 +550,8 @@ describe("LinkedIdentitiesSection", () => {
         {
           id: "identity-2",
           user_id: "user-123",
-          identity_id: "twitter-456",
-          provider: "twitter",
+          identity_id: "x-456",
+          provider: "x",
         },
       ];
 
