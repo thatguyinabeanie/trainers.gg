@@ -43,9 +43,9 @@ export const getAuthUrls = () => {
  */
 export const oauthProviders = [
   {
-    name: "twitter",
+    name: "x",
     displayName: "X",
-    icon: "twitter",
+    icon: "x",
     type: "supabase",
   },
   {

@@ -12,7 +12,7 @@ jest.mock("@/hooks/use-auth", () => ({
 
 jest.mock("@/lib/supabase/auth", () => ({
   oauthProviders: [
-    { name: "twitter", displayName: "X", icon: "twitter", type: "supabase" },
+    { name: "x", displayName: "X", icon: "x", type: "supabase" },
     {
       name: "discord",
       displayName: "Discord",
