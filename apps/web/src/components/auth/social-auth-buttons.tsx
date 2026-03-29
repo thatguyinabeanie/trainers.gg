@@ -59,7 +59,7 @@ function MailIcon() {
 }
 
 const providerIcons: Record<string, () => React.ReactNode> = {
-  twitter: XIcon,
+  x: XIcon,
   discord: DiscordIcon,
   twitch: TwitchIcon,
   bluesky: () => <BlueskyIcon className="size-5" />,

@@ -61,7 +61,7 @@ interface UserIdentity {
 }
 
 const providerIcons: Record<string, () => React.JSX.Element> = {
-  twitter: XIcon,
+  x: XIcon,
   discord: DiscordIcon,
   twitch: TwitchIcon,
 };
