@@ -2,34 +2,36 @@
 
 import * as React from "react";
 import { Button } from "@/components/ui/button";
+import { ButtonGroup } from "@/components/ui/button-group";
 import { Calendar } from "@/components/ui/calendar";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { CalendarIcon, Clock } from "lucide-react";
 
-// Time slots shown as the primary time picker
-const TIME_SLOTS = [
-  { label: "9 AM", hours: 9, minutes: 0 },
-  { label: "10 AM", hours: 10, minutes: 0 },
-  { label: "11 AM", hours: 11, minutes: 0 },
-  { label: "12 PM", hours: 12, minutes: 0 },
-  { label: "1 PM", hours: 13, minutes: 0 },
-  { label: "2 PM", hours: 14, minutes: 0 },
-  { label: "3 PM", hours: 15, minutes: 0 },
-  { label: "4 PM", hours: 16, minutes: 0 },
-  { label: "5 PM", hours: 17, minutes: 0 },
-  { label: "6 PM", hours: 18, minutes: 0 },
-  { label: "7 PM", hours: 19, minutes: 0 },
-  { label: "8 PM", hours: 20, minutes: 0 },
-] as const;
-
-function toTimeInputValue(hours: number, minutes: number): string {
-  return `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}`;
+/** Convert 24h hours to 12h display hour (1-12). */
+function to12Hour(h: number): number {
+  return h % 12 || 12;
 }
+
+/** Convert 12h hour + period back to 24h. */
+function to24Hour(h12: number, period: "AM" | "PM"): number {
+  if (period === "AM") return h12 === 12 ? 0 : h12;
+  return h12 === 12 ? 12 : h12 + 12;
+}
+
+const HOURS_12 = Array.from({ length: 12 }, (_, i) => i + 1);
+const MINUTES = [0, 15, 30, 45];
 
 export interface DateTimeFieldProps {
   label: string;
@@ -53,16 +55,12 @@ export function DateTimeField({
   disabled,
 }: DateTimeFieldProps) {
   const [open, setOpen] = React.useState(false);
-  const [showCustomTime, setShowCustomTime] = React.useState(false);
 
   const date = value ? new Date(value) : undefined;
-  const hours = date ? date.getHours() : 12;
+  const hours24 = date ? date.getHours() : 12;
   const minutes = date ? date.getMinutes() : 0;
-
-  // Check if current time matches any preset
-  const isCustomTime =
-    date !== undefined &&
-    !TIME_SLOTS.some((s) => s.hours === hours && s.minutes === minutes);
+  const hour12 = to12Hour(hours24);
+  const period: "AM" | "PM" = hours24 >= 12 ? "PM" : "AM";
 
   const emit = (d: Date) => {
     if (outputFormat === "iso") {
@@ -78,34 +76,41 @@ export function DateTimeField({
       return;
     }
     const newDate = new Date(selected);
-    newDate.setHours(hours);
+    newDate.setHours(hours24);
     newDate.setMinutes(minutes);
     emit(newDate);
   };
 
-  const handleSlotClick = (slotHours: number, slotMinutes: number) => {
+  const handleHourChange = (val: string | null) => {
+    if (!val) return;
+    const h12 = parseInt(val, 10);
     const newDate = date ? new Date(date) : new Date();
-    newDate.setHours(slotHours);
-    newDate.setMinutes(slotMinutes);
+    newDate.setHours(to24Hour(h12, period));
+    newDate.setMinutes(minutes);
     newDate.setSeconds(0);
     newDate.setMilliseconds(0);
     emit(newDate);
-    setShowCustomTime(false);
   };
 
-  const handleCustomTimeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const [h, m] = e.target.value.split(":").map(Number);
-    if (h === undefined || m === undefined) return;
+  const handleMinuteChange = (val: string | null) => {
+    if (!val) return;
+    const m = parseInt(val, 10);
     const newDate = date ? new Date(date) : new Date();
-    newDate.setHours(h);
+    newDate.setHours(hours24);
     newDate.setMinutes(m);
     newDate.setSeconds(0);
     newDate.setMilliseconds(0);
     emit(newDate);
   };
 
-  const isSlotActive = (slotHours: number, slotMinutes: number) => {
-    return hours === slotHours && minutes === slotMinutes;
+  const handlePeriodChange = (newPeriod: "AM" | "PM") => {
+    if (newPeriod === period) return;
+    const newDate = date ? new Date(date) : new Date();
+    newDate.setHours(to24Hour(hour12, newPeriod));
+    newDate.setMinutes(minutes);
+    newDate.setSeconds(0);
+    newDate.setMilliseconds(0);
+    emit(newDate);
   };
 
   const formatDisplay = (d: Date) => {
@@ -137,111 +142,105 @@ export function DateTimeField({
           {date ? formatDisplay(date) : "Pick a date"}
         </PopoverTrigger>
         <PopoverContent align="start" className="w-auto p-0">
-          {/* Calendar + time side by side on wider screens, stacked on narrow */}
-          <div className="flex">
-            {/* Left: Calendar */}
-            <div>
-              <Calendar
-                mode="single"
-                selected={date}
-                onSelect={handleDateSelect}
-                disabled={(d) => {
-                  const dayStart = new Date(
-                    d.getFullYear(),
-                    d.getMonth(),
-                    d.getDate()
-                  );
-                  if (minDate) {
-                    const minDay = new Date(
-                      minDate.getFullYear(),
-                      minDate.getMonth(),
-                      minDate.getDate()
-                    );
-                    if (dayStart < minDay) return true;
-                  }
-                  if (maxDate) {
-                    const maxDay = new Date(
-                      maxDate.getFullYear(),
-                      maxDate.getMonth(),
-                      maxDate.getDate()
-                    );
-                    if (dayStart > maxDay) return true;
-                  }
-                  return false;
+          <Calendar
+            mode="single"
+            selected={date}
+            onSelect={handleDateSelect}
+            disabled={(d) => {
+              const dayStart = new Date(
+                d.getFullYear(),
+                d.getMonth(),
+                d.getDate()
+              );
+              if (minDate) {
+                const minDay = new Date(
+                  minDate.getFullYear(),
+                  minDate.getMonth(),
+                  minDate.getDate()
+                );
+                if (dayStart < minDay) return true;
+              }
+              if (maxDate) {
+                const maxDay = new Date(
+                  maxDate.getFullYear(),
+                  maxDate.getMonth(),
+                  maxDate.getDate()
+                );
+                if (dayStart > maxDay) return true;
+              }
+              return false;
+            }}
+            defaultMonth={date}
+          />
+
+          {/* Time: hour (1-12) + minute + AM/PM */}
+          <div className="border-border flex items-center gap-2 border-t p-3">
+            <Clock className="text-muted-foreground h-4 w-4 shrink-0" />
+            <Select value={hour12.toString()} onValueChange={handleHourChange}>
+              <SelectTrigger size="sm" className="w-[52px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {HOURS_12.map((h) => (
+                  <SelectItem key={h} value={h.toString()}>
+                    {h}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <span className="text-muted-foreground text-sm">:</span>
+            <Select
+              value={minutes.toString()}
+              onValueChange={handleMinuteChange}
+            >
+              <SelectTrigger size="sm" className="w-[52px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {MINUTES.map((m) => (
+                  <SelectItem key={m} value={m.toString()}>
+                    {m.toString().padStart(2, "0")}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <ButtonGroup>
+              <Button
+                type="button"
+                size="xs"
+                variant={period === "AM" ? "default" : "outline"}
+                onClick={() => handlePeriodChange("AM")}
+              >
+                AM
+              </Button>
+              <Button
+                type="button"
+                size="xs"
+                variant={period === "PM" ? "default" : "outline"}
+                onClick={() => handlePeriodChange("PM")}
+              >
+                PM
+              </Button>
+            </ButtonGroup>
+          </div>
+
+          {/* Actions */}
+          <div className="border-border flex justify-end gap-2 border-t p-2">
+            {date && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  onChange(undefined);
+                  setOpen(false);
                 }}
-                defaultMonth={date}
-              />
-
-              {/* Footer: clear + done */}
-              <div className="flex justify-end gap-2 px-3 pb-3">
-                {date && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => {
-                      onChange(undefined);
-                      setOpen(false);
-                    }}
-                  >
-                    Clear
-                  </Button>
-                )}
-                <Button size="sm" onClick={() => setOpen(false)}>
-                  Done
-                </Button>
-              </div>
-            </div>
-
-            {/* Right: Time slots as a scrollable list */}
-            <div className="border-border flex w-28 flex-col border-l">
-              <div className="text-muted-foreground flex items-center gap-1.5 px-3 pt-3 pb-2 text-xs font-medium">
-                <Clock className="h-3 w-3" />
-                Time
-              </div>
-              <div className="flex-1 overflow-y-auto px-1.5 pb-1.5">
-                <div className="flex flex-col gap-0.5">
-                  {TIME_SLOTS.map((slot) => (
-                    <button
-                      key={slot.label}
-                      type="button"
-                      onClick={() => handleSlotClick(slot.hours, slot.minutes)}
-                      className={cn(
-                        "rounded-md px-2 py-1.5 text-left text-sm transition-colors",
-                        isSlotActive(slot.hours, slot.minutes)
-                          ? "bg-primary text-primary-foreground"
-                          : "hover:bg-muted"
-                      )}
-                    >
-                      {slot.label}
-                    </button>
-                  ))}
-                  {/* Custom time option */}
-                  {!showCustomTime && !isCustomTime && (
-                    <button
-                      type="button"
-                      onClick={() => setShowCustomTime(true)}
-                      className="text-muted-foreground hover:bg-muted hover:text-foreground rounded-md px-2 py-1.5 text-left text-sm transition-colors"
-                    >
-                      Custom...
-                    </button>
-                  )}
-                  {(showCustomTime || isCustomTime) && (
-                    <div className="px-1 pt-1">
-                      <input
-                        type="time"
-                        value={toTimeInputValue(hours, minutes)}
-                        onChange={handleCustomTimeChange}
-                        className={cn(
-                          "border-input bg-background focus-visible:border-ring focus-visible:ring-ring/50",
-                          "h-8 w-full rounded-md border px-2 text-sm outline-none focus-visible:ring-[3px]",
-                          isCustomTime && "border-primary"
-                        )}
-                      />
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
+              >
+                Clear
+              </Button>
+            )}
+            <Button size="sm" onClick={() => setOpen(false)}>
+              Done
+            </Button>
           </div>
         </PopoverContent>
       </Popover>
