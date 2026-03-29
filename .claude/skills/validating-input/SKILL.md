@@ -27,6 +27,12 @@ import type { ActionResult } from "@trainers/validators/action-result";
 // { success: boolean, error?: string }
 ```
 
+## Usage Patterns
+
+- **In forms**: parse client-side before submitting; pair with TanStack Query mutations for optimistic updates with validated data
+- **In Server Actions**: validate input at the boundary with `.safeParse()` before any database calls
+- **In edge functions**: validate request body fields before processing
+
 ## Team Parsing
 
 `team.ts` exports `parseShowdownText()` and `parsePokepaseUrl()` — integrate with `@trainers/pokemon` for full validation.

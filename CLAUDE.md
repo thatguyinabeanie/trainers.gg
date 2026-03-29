@@ -28,6 +28,8 @@ Domain-specific guidance lives in `.claude/skills/`. Invoke the relevant skill b
 | `code-audit`             | Codebase audits for type safety, architecture, maintainability       |
 | `writing-skills`         | Creating/editing skills, agents, maintaining the architecture        |
 
+Slash-command skills (invoked directly, not listed above): `commit`, `create-migration`, `finish-branch`, `post-pr-monitoring`, `ticket`.
+
 ## Workspace Agents
 
 Custom agents in `.claude/agents/`. Invoke for isolated, focused work.

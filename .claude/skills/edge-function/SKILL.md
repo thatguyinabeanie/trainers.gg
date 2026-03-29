@@ -296,9 +296,15 @@ See the `edge-function-imports` skill for full import map management, entry form
 
 **Quick rule**: Every bare specifier import reachable from any edge function must be mapped in `packages/supabase/supabase/functions/deno.json`. Missing entries cause `failed to bundle function: exit status 1`.
 
+## Deployment Pipeline
+
+Edge functions are deployed automatically during the Vercel build (`run-migrations.mjs`) for both production and preview environments. Push to `main` to deploy to production; preview deploys happen automatically on PR branches.
+
+**Do NOT declare edge functions in `config.toml`.** The Supabase GitHub integration's remote bundler cannot resolve monorepo imports (relative paths outside the `supabase/` directory). Declaring functions in `config.toml` causes `failed to bundle function: exit status 1` on every preview branch. Edge functions are deployed solely through the Vercel build pipeline via `vendor-packages.ts` + `supabase functions deploy --use-api`.
+
 ## Critical Rules
 
-1. **Never deploy manually**: Edge functions deploy through git. Commit to a feature branch, merge to main.
+1. **Never deploy manually**: Edge functions deploy through the Vercel build pipeline. Never use `supabase functions deploy` directly.
 2. **Never use wildcard CORS**: Always use the shared `getCorsHeaders()` from `_shared/cors.ts`.
 3. **Never expose service role key**: The service role client is server-side only.
 4. **Never trust client input**: Validate and sanitize all request body fields.
