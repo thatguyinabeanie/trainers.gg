@@ -1,13 +1,27 @@
 {
   "permissions": {
     "allow": [
+      "Bash(bash ~/.claude/plugins/cache/claude-plugins-official/superpowers/*/skills/brainstorming/scripts/start-server.sh --project-dir /Users/beanie/source/trainers-gg-dashboard 2>&1)",
       "mcp__plugin_playwright_playwright__browser_navigate",
       "mcp__plugin_playwright_playwright__browser_click",
       "mcp__plugin_playwright_playwright__browser_fill_form",
       "mcp__plugin_playwright_playwright__browser_take_screenshot",
       "mcp__plugin_playwright_playwright__browser_snapshot",
+      "mcp__shadcn__get_add_command_for_items",
+      "mcp__shadcn__search_items_in_registries",
+      "mcp__shadcn__view_items_in_registries",
+      "mcp__shadcn__get_item_examples_from_registries",
       "Bash(pnpm typecheck:*)",
-      "Bash(bash ~/.claude/plugins/cache/claude-plugins-official/superpowers/*/skills/brainstorming/scripts/start-server.sh --project-dir /Users/beanie/source/trainers-gg-dashboard 2>&1)"
+      "Bash(ls:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git rm:*)",
+      "Bash(npx eslint:*)",
+      "Bash(pnpm exec:*)",
+      "Bash(git mv:*)",
+      "Bash(for f:*)",
+      "Bash(do echo:*)",
+      "Bash(python3:*)"
     ]
   },
   "hooks": {
