@@ -61,7 +61,7 @@
     "tamagui": "^1"
   },
   "devDependencies": {
-    "@babel/core": "^7",
+    "@babel/core": "catalog:expo",
     "@babel/runtime": "^7",
     "@testing-library/react-native": "^13",
     "@trainers/eslint-config": "workspace:*",
