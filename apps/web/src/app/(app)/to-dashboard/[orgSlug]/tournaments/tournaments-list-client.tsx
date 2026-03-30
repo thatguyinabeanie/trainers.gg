@@ -64,7 +64,7 @@ export function TournamentsListClient({
   ]);
 
   const tournaments = data?.tournaments ?? [];
-  const basePath = `/to-dashboard/${communitySlug}`;
+  const basePath = `/dashboard/community/${communitySlug}`;
   const hasError = !!error;
 
   const handleStatusChange = (status: string) => {

@@ -60,7 +60,9 @@ export function CommunityTabs({
             description="This community hasn't created any tournaments"
           >
             {canManage && (
-              <Link href={`/to-dashboard/${communitySlug}/tournaments/create`}>
+              <Link
+                href={`/dashboard/community/${communitySlug}/tournaments/create`}
+              >
                 <Button className="mt-4">
                   <Trophy className="mr-2 h-4 w-4" />
                   Create Tournament

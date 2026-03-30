@@ -23,7 +23,7 @@ export function TODashboardNav({
 }: TODashboardNavProps) {
   const pathname = usePathname();
 
-  const basePath = `/to-dashboard/${communitySlug}`;
+  const basePath = `/dashboard/community/${communitySlug}`;
 
   const tabs = [
     {

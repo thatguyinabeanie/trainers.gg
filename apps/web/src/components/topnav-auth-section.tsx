@@ -198,7 +198,7 @@ export function TopNavAuthSection() {
                     className="justify-between"
                   >
                     <Link
-                      href={`/to-dashboard/${community.slug}`}
+                      href={`/dashboard/community/${community.slug}`}
                       className="flex flex-1 items-center justify-between gap-1.5"
                     >
                       <div className="flex items-center">

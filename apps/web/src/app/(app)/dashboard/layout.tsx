@@ -1,10 +1,17 @@
 import type { ReactNode } from "react";
 import { redirect } from "next/navigation";
 import { createClient, getUser } from "@/lib/supabase/server";
-import { checkFeatureAccess } from "@/lib/feature-flags/check-flag";
-import { getTournamentInvitationsReceived } from "@trainers/supabase";
-import { PageContainer } from "@/components/layout/page-container";
-import { DashboardNav } from "./dashboard-nav";
+import {
+  listMyCommunities,
+  getUnreadNotificationCount,
+} from "@trainers/supabase";
+import {
+  SidebarInset,
+  SidebarProvider,
+  SidebarTrigger,
+} from "@/components/ui/sidebar";
+import { Separator } from "@/components/ui/separator";
+import { DashboardSidebar } from "@/components/dashboard/dashboard-sidebar";
 
 export default async function DashboardLayout({
   children,
@@ -18,37 +25,40 @@ export default async function DashboardLayout({
   }
 
   const supabase = await createClient();
-  const [showStats, invitations] = await Promise.all([
-    checkFeatureAccess("dashboard_stats", user.id),
-    getTournamentInvitationsReceived(supabase).catch((error) => {
-      console.error("[DashboardLayout] Failed to load invitations:", error);
-      return [] as Awaited<ReturnType<typeof getTournamentInvitationsReceived>>;
-    }),
+  const [communities, unreadInboxCount] = await Promise.all([
+    listMyCommunities(supabase, user.id).catch(() => []),
+    getUnreadNotificationCount(supabase).catch(() => 0),
   ]);
 
-  const now = new Date();
-  const pendingInvitationsCount =
-    invitations?.filter(
-      (inv) =>
-        inv.status === "pending" &&
-        (!inv.expires_at || new Date(inv.expires_at) > now)
-    ).length ?? 0;
+  const sidebarUser = {
+    id: user.id,
+    username: (user.user_metadata?.username as string) ?? "user",
+    avatarUrl: (user.user_metadata?.avatar_url as string | undefined) ?? null,
+  };
+
+  const sidebarCommunities = communities.map((c) => ({
+    id: c.id,
+    name: c.name,
+    slug: c.slug,
+    logoUrl: c.logo_url ?? null,
+    role: c.isOwner ? ("owner" as const) : ("staff" as const),
+    hasLiveTournament: false, // TODO: query active tournaments per community
+  }));
 
   return (
-    <PageContainer variant="wide">
-      <div className="mb-8 flex items-start justify-between">
-        <div>
-          <h1 className="mb-2 text-4xl font-bold">Dashboard</h1>
-          <p className="text-muted-foreground">
-            Manage your account, profiles, and tournament activity
-          </p>
-        </div>
-      </div>
-      <DashboardNav
-        showStats={showStats}
-        pendingInvitationsCount={pendingInvitationsCount}
+    <SidebarProvider>
+      <DashboardSidebar
+        user={sidebarUser}
+        communities={sidebarCommunities}
+        unreadInboxCount={unreadInboxCount}
       />
-      {children}
-    </PageContainer>
+      <SidebarInset>
+        <header className="flex h-12 shrink-0 items-center gap-2 border-b px-4">
+          <SidebarTrigger className="-ml-1" />
+          <Separator orientation="vertical" className="mr-2 h-4" />
+        </header>
+        <main className="flex-1 overflow-auto p-4 md:p-6">{children}</main>
+      </SidebarInset>
+    </SidebarProvider>
   );
 }

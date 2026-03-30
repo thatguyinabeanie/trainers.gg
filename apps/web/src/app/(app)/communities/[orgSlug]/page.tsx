@@ -169,7 +169,7 @@ function OrganizationHeader({
 
       <div className="flex gap-2">
         {canManage && (
-          <Link href={`/to-dashboard/${organization.slug}`}>
+          <Link href={`/dashboard/community/${organization.slug}`}>
             <Button variant="outline">
               <Settings className="mr-2 h-4 w-4" />
               Manage Community

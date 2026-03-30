@@ -30,7 +30,7 @@ import {
  *    - Impersonation requires an active sudo session
  *
  * 3. Protected routes (auth required, always enforced):
- *    - /dashboard, /to-dashboard, /communities/create
+ *    - /dashboard, /communities/create
  *    - /tournaments/[slug]/r/[round]/t/[table]
  *    - Unauthenticated users are redirected to /sign-in?redirect=<path>
  */

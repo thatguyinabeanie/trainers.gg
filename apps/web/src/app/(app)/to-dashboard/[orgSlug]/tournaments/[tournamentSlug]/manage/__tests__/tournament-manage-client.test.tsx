@@ -41,20 +41,49 @@ jest.mock("@/hooks/use-current-user", () => ({
 // Mock child components
 jest.mock("@/components/tournaments", () => ({
   TournamentOverview: () => <div data-testid="overview-tab">Overview</div>,
-  TournamentSettings: () => <div data-testid="settings-tab">Settings</div>,
-  TournamentRegistrations: () => (
-    <div data-testid="registrations-tab">Registrations</div>
+  TournamentRegistrations: () => <div data-testid="players-tab">Players</div>,
+  TournamentStandings: () => (
+    <div data-testid="standings-content">Standings</div>
   ),
-  TournamentStandings: () => <div data-testid="standings-tab">Standings</div>,
-  TournamentAuditLog: () => <div data-testid="audit-tab">Audit Log</div>,
+  TournamentAuditLog: () => <div data-testid="audit-content">Audit Log</div>,
 }));
 
 // Mock TournamentPairingsJudge separately (imported from different path)
 jest.mock("@/components/tournaments/manage/tournament-pairings-judge", () => ({
-  TournamentPairingsJudge: () => <div data-testid="pairings-tab">Pairings</div>,
+  TournamentPairingsJudge: () => (
+    <div data-testid="pairings-content">Pairings</div>
+  ),
 }));
 
-describe("TournamentManageClient - Deep Linkable Tabs", () => {
+// Mock Sheet components (Base UI Dialog-based)
+jest.mock("@/components/ui/sheet", () => ({
+  Sheet: ({
+    children,
+    open,
+  }: {
+    children: React.ReactNode;
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+  }) => (open ? <div data-testid="sheet">{children}</div> : null),
+  SheetContent: ({
+    children,
+  }: {
+    children: React.ReactNode;
+    side?: string;
+    className?: string;
+  }) => <div data-testid="sheet-content">{children}</div>,
+  SheetHeader: ({ children }: { children: React.ReactNode }) => (
+    <div>{children}</div>
+  ),
+  SheetTitle: ({ children }: { children: React.ReactNode }) => (
+    <div>{children}</div>
+  ),
+  SheetDescription: ({ children }: { children: React.ReactNode }) => (
+    <div>{children}</div>
+  ),
+}));
+
+describe("TournamentManageClient - Consolidated 3-Tab Layout", () => {
   const mockRouter = {
     push: jest.fn(),
     replace: jest.fn(),
@@ -73,7 +102,11 @@ describe("TournamentManageClient - Deep Linkable Tabs", () => {
     slug: "test-tournament",
     status: "draft",
     current_phase_id: null,
-    registrations: [],
+    registrations: [
+      { status: "registered" },
+      { status: "checked_in" },
+      { status: "dropped" },
+    ],
     max_participants: null,
     start_date: null,
     end_date: null,
@@ -104,13 +137,19 @@ describe("TournamentManageClient - Deep Linkable Tabs", () => {
   }> = [];
 
   // Helper function to setup useSupabaseQuery mocks
+  // Uses a persistent counter that resets at the start of each render cycle
+  // by tracking if the component is re-rendering (callIndex wraps around)
   const setupQueryMocks = () => {
-    let callIndex = 0;
     const mockResponses = [mockOrganization, mockTournament, mockPhases];
-    (useSupabaseQuery as jest.Mock).mockImplementation(() => ({
-      data: mockResponses[callIndex++],
-      isLoading: false,
-    }));
+    let callIndex = 0;
+    (useSupabaseQuery as jest.Mock).mockImplementation(() => {
+      const response = mockResponses[callIndex % mockResponses.length];
+      callIndex++;
+      return {
+        data: response,
+        isLoading: false,
+      };
+    });
   };
 
   beforeEach(() => {
@@ -125,8 +164,6 @@ describe("TournamentManageClient - Deep Linkable Tabs", () => {
       user: mockUser,
       isLoading: false,
     });
-
-    // Note: Each test must set up its own useSupabaseQuery mocks
   });
 
   describe("Tab Navigation", () => {
@@ -147,7 +184,7 @@ describe("TournamentManageClient - Deep Linkable Tabs", () => {
 
     it("should show the correct tab when tab parameter is in URL", async () => {
       (useSearchParams as jest.Mock).mockReturnValue(
-        new URLSearchParams("tab=pairings")
+        new URLSearchParams("tab=live")
       );
 
       setupQueryMocks();
@@ -160,7 +197,8 @@ describe("TournamentManageClient - Deep Linkable Tabs", () => {
       );
 
       await waitFor(() => {
-        expect(screen.getByTestId("pairings-tab")).toBeVisible();
+        expect(screen.getByTestId("pairings-content")).toBeVisible();
+        expect(screen.getByTestId("standings-content")).toBeVisible();
       });
     });
 
@@ -180,30 +218,26 @@ describe("TournamentManageClient - Deep Linkable Tabs", () => {
         expect(screen.getByTestId("overview-tab")).toBeVisible();
       });
 
-      // Click on the Registrations tab
-      const registrationsTab = screen.getByRole("tab", {
-        name: /registrations/i,
+      // Click on the Players tab
+      const playersTab = screen.getByRole("tab", {
+        name: /players/i,
       });
-      await user.click(registrationsTab);
+      await user.click(playersTab);
 
       // Check that router.replace was called with the correct URL
       expect(mockRouter.replace).toHaveBeenCalledWith(
-        expect.stringContaining("tab=registrations"),
+        expect.stringContaining("tab=players"),
         { scroll: false }
       );
     });
 
-    it("should handle all available tabs", async () => {
-      const tabs = [
-        { param: "overview", testId: "overview-tab" },
-        { param: "registrations", testId: "registrations-tab" },
-        { param: "pairings", testId: "pairings-tab" },
-        { param: "standings", testId: "standings-tab" },
-        { param: "audit", testId: "audit-tab" },
-        { param: "settings", testId: "settings-tab" },
-      ];
-
-      for (const { param, testId } of tabs) {
+    it.each([
+      { param: "overview", testId: "overview-tab" },
+      { param: "players", testId: "players-tab" },
+      { param: "live", testId: "pairings-content" },
+    ])(
+      "should render $param tab content when tab=$param",
+      async ({ param, testId }) => {
         jest.clearAllMocks();
 
         (useSearchParams as jest.Mock).mockReturnValue(
@@ -215,10 +249,7 @@ describe("TournamentManageClient - Deep Linkable Tabs", () => {
           isLoading: false,
         });
 
-        // Re-setup useSupabase mock after clearAllMocks
         (useSupabase as jest.Mock).mockReturnValue(mockSupabase);
-
-        // Setup query mocks for each iteration
         setupQueryMocks();
 
         const { unmount } = render(
@@ -234,7 +265,7 @@ describe("TournamentManageClient - Deep Linkable Tabs", () => {
 
         unmount();
       }
-    });
+    );
 
     it("should fall back to overview tab for invalid tab parameter", async () => {
       (useSearchParams as jest.Mock).mockReturnValue(
@@ -256,13 +287,35 @@ describe("TournamentManageClient - Deep Linkable Tabs", () => {
     });
   });
 
-  describe("Browser Navigation", () => {
-    it("should preserve tab state when navigating with browser back/forward", async () => {
-      const user = userEvent.setup();
-
+  describe("Header Actions", () => {
+    it("should render Settings link in header", async () => {
       setupQueryMocks();
 
-      const { rerender: _rerender, unmount } = render(
+      render(
+        <TournamentManageClient
+          communitySlug="test-org"
+          tournamentSlug="test-tournament"
+        />
+      );
+
+      await waitFor(() => {
+        // Settings is a link button in the header
+        const settingsLink = screen.getByRole("link", {
+          name: /settings/i,
+        });
+        expect(settingsLink).toBeVisible();
+        expect(settingsLink).toHaveAttribute(
+          "href",
+          "/dashboard/community/test-org/tournaments/test-tournament/manage/settings"
+        );
+      });
+    });
+
+    it("should open audit log sheet when Audit Log button is clicked", async () => {
+      const user = userEvent.setup();
+      setupQueryMocks();
+
+      render(
         <TournamentManageClient
           communitySlug="test-org"
           tournamentSlug="test-tournament"
@@ -273,9 +326,82 @@ describe("TournamentManageClient - Deep Linkable Tabs", () => {
         expect(screen.getByTestId("overview-tab")).toBeVisible();
       });
 
-      // Click on Pairings tab
-      const pairingsTab = screen.getByRole("tab", { name: /pairings/i });
-      await user.click(pairingsTab);
+      // Click the Audit Log button
+      const auditButton = screen.getByRole("button", {
+        name: /audit log/i,
+      });
+      await user.click(auditButton);
+
+      // Sheet should be open with audit content
+      await waitFor(() => {
+        expect(screen.getByTestId("sheet")).toBeVisible();
+        expect(screen.getByTestId("audit-content")).toBeVisible();
+      });
+    });
+  });
+
+  describe("Live Tab", () => {
+    it("should render both pairings and standings in the live tab", async () => {
+      (useSearchParams as jest.Mock).mockReturnValue(
+        new URLSearchParams("tab=live")
+      );
+
+      setupQueryMocks();
+
+      render(
+        <TournamentManageClient
+          communitySlug="test-org"
+          tournamentSlug="test-tournament"
+        />
+      );
+
+      await waitFor(() => {
+        expect(screen.getByTestId("pairings-content")).toBeVisible();
+        expect(screen.getByTestId("standings-content")).toBeVisible();
+      });
+    });
+  });
+
+  describe("Players Tab Badge", () => {
+    it("should display player count badge on the Players tab", async () => {
+      setupQueryMocks();
+
+      render(
+        <TournamentManageClient
+          communitySlug="test-org"
+          tournamentSlug="test-tournament"
+        />
+      );
+
+      await waitFor(() => {
+        // mockTournament has 2 active registrations (registered + checked_in)
+        // and 1 dropped, so badge should show "2"
+        const playersTab = screen.getByRole("tab", { name: /players/i });
+        expect(playersTab).toHaveTextContent("2");
+      });
+    });
+  });
+
+  describe("Browser Navigation", () => {
+    it("should preserve tab state when navigating with browser back/forward", async () => {
+      const user = userEvent.setup();
+
+      setupQueryMocks();
+
+      const { unmount } = render(
+        <TournamentManageClient
+          communitySlug="test-org"
+          tournamentSlug="test-tournament"
+        />
+      );
+
+      await waitFor(() => {
+        expect(screen.getByTestId("overview-tab")).toBeVisible();
+      });
+
+      // Click on Live tab
+      const liveTab = screen.getByRole("tab", { name: /live/i });
+      await user.click(liveTab);
 
       // Simulate browser back by changing the search params and remounting
       unmount();
@@ -310,7 +436,7 @@ describe("TournamentManageClient - Deep Linkable Tabs", () => {
     it("should allow sharing direct links to specific tabs", async () => {
       // Simulate user opening a shared link with tab parameter
       (useSearchParams as jest.Mock).mockReturnValue(
-        new URLSearchParams("tab=settings")
+        new URLSearchParams("tab=players")
       );
 
       setupQueryMocks();
@@ -322,10 +448,49 @@ describe("TournamentManageClient - Deep Linkable Tabs", () => {
         />
       );
 
-      // Settings tab should be immediately visible
+      // Players tab should be immediately visible
       await waitFor(() => {
-        expect(screen.getByTestId("settings-tab")).toBeVisible();
+        expect(screen.getByTestId("players-tab")).toBeVisible();
       });
+    });
+  });
+
+  describe("Removed tabs", () => {
+    it("should fall back to overview for old tab values (registrations, pairings, standings, audit, settings)", async () => {
+      const oldTabValues = [
+        "registrations",
+        "pairings",
+        "standings",
+        "audit",
+        "settings",
+      ];
+
+      for (const tabValue of oldTabValues) {
+        jest.clearAllMocks();
+
+        (useSearchParams as jest.Mock).mockReturnValue(
+          new URLSearchParams(`tab=${tabValue}`)
+        );
+        (useCurrentUser as jest.Mock).mockReturnValue({
+          user: mockUser,
+          isLoading: false,
+        });
+        (useSupabase as jest.Mock).mockReturnValue(mockSupabase);
+        setupQueryMocks();
+
+        const { unmount } = render(
+          <TournamentManageClient
+            communitySlug="test-org"
+            tournamentSlug="test-tournament"
+          />
+        );
+
+        await waitFor(() => {
+          expect(screen.getByTestId("overview-tab")).toBeVisible();
+        });
+
+        unmount();
+      }
     });
   });
 });

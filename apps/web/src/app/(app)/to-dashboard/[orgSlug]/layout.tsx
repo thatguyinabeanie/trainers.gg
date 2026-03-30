@@ -23,7 +23,7 @@ export default async function OrgDashboardLayout({
   } = await supabase.auth.getUser();
 
   if (!user) {
-    redirect(`/sign-in?redirect=/to-dashboard/${communitySlug}`);
+    redirect(`/sign-in?redirect=/dashboard/community/${communitySlug}`);
   }
 
   // Get organization

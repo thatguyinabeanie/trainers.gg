@@ -47,7 +47,7 @@ export function OrgSelectorClient({ organizations }: OrgSelectorClientProps) {
             <p className="text-muted-foreground mb-6 text-center">
               Create a community to start hosting tournaments
             </p>
-            <Link href="/communities/create">
+            <Link href="/dashboard/community/request">
               <Button>
                 <Plus className="mr-2 h-4 w-4" />
                 Request a Community
@@ -73,7 +73,7 @@ export function OrgSelectorClient({ organizations }: OrgSelectorClientProps) {
             Select a community to manage
           </p>
         </div>
-        <Link href="/communities/create" className="w-full sm:w-auto">
+        <Link href="/dashboard/community/request" className="w-full sm:w-auto">
           <Button className="w-full sm:w-auto">
             <Plus className="mr-2 h-4 w-4" />
             Request Community
@@ -85,7 +85,10 @@ export function OrgSelectorClient({ organizations }: OrgSelectorClientProps) {
         // Grid layout for 2-5 organizations
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {organizations.map((community) => (
-            <Link key={community.id} href={`/to-dashboard/${community.slug}`}>
+            <Link
+              key={community.id}
+              href={`/dashboard/community/${community.slug}`}
+            >
               <Card className="h-full transition-shadow hover:shadow-md">
                 <CardHeader className="pb-3">
                   <div className="flex items-start justify-between gap-2">
@@ -153,7 +156,7 @@ export function OrgSelectorClient({ organizations }: OrgSelectorClientProps) {
             {organizations.map((community) => (
               <Link
                 key={community.id}
-                href={`/to-dashboard/${community.slug}`}
+                href={`/dashboard/community/${community.slug}`}
                 className="hover:bg-muted flex items-center justify-between rounded-lg p-3 transition-colors"
               >
                 <div className="flex items-center gap-3">

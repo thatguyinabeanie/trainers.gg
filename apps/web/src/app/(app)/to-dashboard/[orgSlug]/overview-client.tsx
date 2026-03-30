@@ -72,7 +72,7 @@ export function OverviewClient({
   recentTournaments,
   communitySlug,
 }: OverviewClientProps) {
-  const basePath = `/to-dashboard/${communitySlug}`;
+  const basePath = `/dashboard/community/${communitySlug}`;
 
   return (
     <div className="space-y-6">

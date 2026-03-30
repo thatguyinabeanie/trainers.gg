@@ -351,10 +351,10 @@ export function CreateTournamentClient({
 
       if (tournament?.slug) {
         router.push(
-          `/to-dashboard/${communitySlug}/tournaments/${tournament.slug}/manage`
+          `/dashboard/community/${communitySlug}/tournaments/${tournament.slug}/manage`
         );
       } else {
-        router.push(`/to-dashboard/${communitySlug}/tournaments`);
+        router.push(`/dashboard/community/${communitySlug}/tournaments`);
       }
     } catch (error) {
       toast.error("Failed to create tournament", {
@@ -383,7 +383,7 @@ export function CreateTournamentClient({
           <p className="text-muted-foreground mb-4 text-center">
             This community doesn&apos;t exist or has been removed
           </p>
-          <Link href="/to-dashboard">
+          <Link href="/dashboard/community">
             <Button>
               <ArrowLeft className="mr-2 h-4 w-4" />
               Back to Communities
@@ -439,7 +439,7 @@ export function CreateTournamentClient({
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center gap-4">
-          <Link href={`/to-dashboard/${communitySlug}/tournaments`}>
+          <Link href={`/dashboard/community/${communitySlug}/tournaments`}>
             <Button variant="ghost" size="icon">
               <ArrowLeft className="h-5 w-5" />
             </Button>

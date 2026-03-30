@@ -1,10 +1,5 @@
-import type { Metadata } from "next";
-import { TournamentInvitationsView } from "@/components/tournaments/tournament-invitations-view";
+import { redirect } from "next/navigation";
 
-export const metadata: Metadata = {
-  title: "Invitations",
-};
-
-export default function InvitationsPage() {
-  return <TournamentInvitationsView />;
+export default function InvitationsRedirect() {
+  redirect("/dashboard/inbox");
 }

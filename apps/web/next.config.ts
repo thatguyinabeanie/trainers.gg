@@ -28,6 +28,23 @@ const nextConfig: NextConfig = {
   experimental: {
     authInterrupts: true,
   },
+  redirects: async () => [
+    {
+      source: "/to-dashboard",
+      destination: "/dashboard/community",
+      permanent: true,
+    },
+    {
+      source: "/to-dashboard/:slug",
+      destination: "/dashboard/community/:slug",
+      permanent: true,
+    },
+    {
+      source: "/to-dashboard/:slug/:path*",
+      destination: "/dashboard/community/:slug/:path*",
+      permanent: true,
+    },
+  ],
 };
 
 export default withBotId(nextConfig);

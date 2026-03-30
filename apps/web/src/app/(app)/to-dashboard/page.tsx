@@ -10,7 +10,7 @@ export default async function TODashboardPage() {
   } = await supabase.auth.getUser();
 
   if (!user) {
-    redirect("/sign-in?redirect=/to-dashboard");
+    redirect("/sign-in?redirect=/dashboard/community");
   }
 
   // Get all organizations where user is owner or staff
@@ -23,7 +23,7 @@ export default async function TODashboardPage() {
 
   // If user has exactly 1 organization, redirect directly to it
   if (organizations.length === 1 && organizations[0]) {
-    redirect(`/to-dashboard/${organizations[0].slug}`);
+    redirect(`/dashboard/community/${organizations[0].slug}`);
   }
 
   // Otherwise show the community selector
