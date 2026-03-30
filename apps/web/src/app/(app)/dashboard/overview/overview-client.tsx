@@ -5,6 +5,7 @@ import { useAuth } from "@/components/auth/auth-provider";
 import { useSupabaseQuery, useSupabase } from "@/lib/supabase";
 import { getMyDashboardData, getActiveMatch } from "@trainers/supabase";
 import { toast } from "sonner";
+import { Trophy } from "lucide-react";
 import {
   StatsOverview,
   ActiveMatchCard,
@@ -198,23 +199,20 @@ export function OverviewClient() {
 
   return (
     <div className="space-y-6">
-      {/* Header with battle-ready styling */}
-      <div className="relative">
-        <div className="from-primary/5 absolute inset-0 rounded-lg bg-gradient-to-r via-transparent to-transparent" />
-        <div className="relative px-6 py-8">
-          <h2 className="text-3xl font-bold tracking-tight">
-            Welcome back,{" "}
-            <span className="text-primary">
-              {user?.profile?.displayName ||
-                (user?.user_metadata?.full_name as string | undefined) ||
-                (user?.user_metadata?.name as string | undefined) ||
-                "Trainer"}
-            </span>
-          </h2>
-          <p className="text-muted-foreground mt-1 font-medium">
-            Battle Status • Competitive Overview
-          </p>
-        </div>
+      {/* Welcome header */}
+      <div className="from-primary/5 via-primary/[0.02] rounded-xl bg-gradient-to-br to-transparent px-6 py-8">
+        <h2 className="text-3xl font-bold tracking-tight">
+          Welcome back,{" "}
+          <span className="text-primary">
+            {user?.profile?.displayName ||
+              (user?.user_metadata?.full_name as string | undefined) ||
+              (user?.user_metadata?.name as string | undefined) ||
+              "Trainer"}
+          </span>
+        </h2>
+        <p className="text-muted-foreground mt-1.5 text-sm">
+          Here&apos;s your competitive overview
+        </p>
       </div>
 
       {/* Active Match - Hero section (only in active-competition mode) */}
@@ -291,12 +289,15 @@ export function OverviewClient() {
         // Idle/Discovery: Empty state guidance
         <div className="space-y-6">
           {transformedTournaments.length === 0 ? (
-            <div className="border-muted-foreground/25 bg-muted/20 rounded-lg border-2 border-dashed p-12 text-center">
-              <div className="mx-auto max-w-md space-y-4">
-                <h3 className="text-xl font-semibold">Ready to compete?</h3>
-                <p className="text-muted-foreground">
+            <div className="from-primary/5 via-background rounded-xl bg-gradient-to-br to-transparent p-10 text-center shadow-sm">
+              <div className="mx-auto max-w-sm space-y-3">
+                <div className="bg-primary/10 mx-auto flex size-12 items-center justify-center rounded-xl">
+                  <Trophy className="text-primary size-6" />
+                </div>
+                <h3 className="text-lg font-semibold">Ready to compete?</h3>
+                <p className="text-muted-foreground text-sm">
                   Join tournaments, build teams, and compete with trainers
-                  around the world. Your competitive journey starts here.
+                  around the world. Your journey starts here.
                 </p>
               </div>
             </div>

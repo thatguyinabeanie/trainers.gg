@@ -1,11 +1,5 @@
-import { Suspense } from "react";
-import { OverviewClient } from "./overview-client";
-import OverviewLoading from "./loading";
+import { redirect } from "next/navigation";
 
-export default function OverviewPage() {
-  return (
-    <Suspense fallback={<OverviewLoading />}>
-      <OverviewClient />
-    </Suspense>
-  );
+export default function OverviewRedirect() {
+  redirect("/dashboard");
 }
