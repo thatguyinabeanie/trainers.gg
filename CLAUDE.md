@@ -1,6 +1,6 @@
 # trainers.gg - Agent Guidelines
 
-All-in-one integrated platform for Pokemon fans. Current focus: competitive battling (VGC, Showdown, Pokemon Champions). Monorepo: Next.js 16 web, Expo 54 mobile, Supabase backend, Bluesky PDS integration.
+All-in-one integrated platform for Pokemon fans. Current focus: competitive battling (VGC, Showdown, Pokemon Champions). Monorepo: Next.js 16 web, Expo 55 mobile, Supabase backend, Bluesky PDS integration.
 
 ## Workspace Skills
 
@@ -60,7 +60,7 @@ Custom agents in `.claude/agents/`. Invoke for isolated, focused work.
 ```
 apps/
   web/          # Next.js 16 (React 19) - @trainers/web
-  mobile/       # Expo 54 (React 19) - @trainers/mobile
+  mobile/       # Expo 55 (React 19) - @trainers/mobile
 
 packages/
   pokemon/      # Pokemon data, validation, parsing
@@ -90,7 +90,7 @@ infra/
 | Validation         | Zod via `@trainers/validators` | Shared schemas for forms, Server Actions, edge functions        |
 | Client State (Web) | TanStack Query v5              | Cache, mutations, optimistic updates                            |
 | Web                | Next.js 16                     | React 19, App Router, Server Components                         |
-| Mobile             | Expo 54                        | React Native with Tamagui                                       |
+| Mobile             | Expo 55                        | React Native with Tamagui                                       |
 | UI (Web)           | shadcn/ui + Base UI            | Base UI primitives (NOT Radix), no `asChild`                    |
 | Styling (Web)      | Tailwind CSS 4                 | @tailwindcss/postcss                                            |
 | Styling (Mobile)   | Tamagui                        | Theme tokens from @trainers/theme                               |
