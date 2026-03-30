@@ -1,0 +1,58 @@
+name: Setup Node & Dependencies
+description: Shared setup for CI jobs — restores node_modules, configures pnpm/node, sets up Turbo cache.
+
+inputs:
+  node-modules-cache-key:
+    description: Cache key from the install job
+    required: true
+  turbo-prefix:
+    description: Job-specific prefix for the Turbo cache key (e.g. "quality", "test-web")
+    required: true
+  turbo-token:
+    description: Turbo remote cache token
+    required: false
+  turbo-team:
+    description: Turbo remote cache team
+    required: false
+
+runs:
+  using: composite
+  steps:
+    - uses: pnpm/action-setup@v4
+
+    - uses: actions/setup-node@v4
+      with:
+        node-version: 22
+        cache: pnpm
+
+    - name: Restore node_modules
+      uses: actions/cache/restore@v4
+      with:
+        path: |
+          node_modules
+          apps/*/node_modules
+          packages/*/node_modules
+          tooling/*/node_modules
+        key: ${{ inputs.node-modules-cache-key }}
+        fail-on-cache-miss: true
+
+    - name: Restore workspace links
+      shell: bash
+      run: pnpm install --frozen-lockfile
+      env:
+        CI: "true"
+
+    - name: Turbo cache
+      uses: actions/cache@v4
+      with:
+        path: .turbo
+        key: turbo-${{ inputs.turbo-prefix }}-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml', 'turbo.json', '**/tsconfig.json', '**/jest.config.*') }}
+        restore-keys: |
+          turbo-${{ inputs.turbo-prefix }}-${{ runner.os }}-
+
+    - name: Configure Turbo Remote Cache
+      if: inputs.turbo-token != ''
+      shell: bash
+      run: |
+        echo "TURBO_TOKEN=${{ inputs.turbo-token }}" >> "$GITHUB_ENV"
+        echo "TURBO_TEAM=${{ inputs.turbo-team }}" >> "$GITHUB_ENV"
