@@ -107,6 +107,7 @@ export function NotificationPreferencesForm({
                   </div>
                   <Switch
                     id={`pref-${type.key}`}
+                    aria-label={type.label}
                     checked={isEnabled}
                     onCheckedChange={(checked: boolean) =>
                       handleToggle(type.key, checked)

@@ -71,6 +71,11 @@
     "turbo": "^2.8.21"
   },
   "pnpm": {
+    "overrides": {
+      "lodash@<4.17.21": ">=4.17.21",
+      "tar@<=7.5.3": ">=7.5.4",
+      "@types/react": "~19.2.0"
+    },
     "ignoredBuiltDependencies": [
       "protobufjs"
     ],
