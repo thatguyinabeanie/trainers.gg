@@ -46,6 +46,7 @@ export function ScrollVisibilityProvider({
   headerHeight = 100, // Default: safe area (~50) + header content (~50)
   tabBarHeight = 88, // Default tab bar height
 }: ScrollVisibilityProviderProps) {
+  "use no memo"; // Reanimated shared value mutations are intentional
   // 1 = visible, 0 = hidden
   const isVisible = useSharedValue(1);
   const lastScrollY = useSharedValue(0);
