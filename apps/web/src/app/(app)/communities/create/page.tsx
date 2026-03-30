@@ -3,7 +3,7 @@ import { getUser, createClient } from "@/lib/supabase/server";
 import { getMyOrganizationRequest } from "@trainers/supabase";
 import Link from "next/link";
 import { ArrowLeft, Building2 } from "lucide-react";
-import { RequestOrganizationForm } from "./request-organization-form";
+import { RequestCommunityForm } from "./request-community-form";
 import { RequestStatus } from "./request-status";
 
 const COOLDOWN_DAYS = 7;
@@ -103,7 +103,7 @@ export default async function CreateOrganizationPage() {
               {request.admin_notes && <> Reason: {request.admin_notes}</>}
             </div>
           )}
-          <RequestOrganizationForm />
+          <RequestCommunityForm />
         </>
       )}
     </div>

@@ -102,3 +102,6 @@ packages/supabase/supabase/config.toml.slot-backup
 
 # Local mise overrides (personal tool versions)
 mise.local.toml
+
+# Android SDK (symlink to external or local install)
+.android-sdk/

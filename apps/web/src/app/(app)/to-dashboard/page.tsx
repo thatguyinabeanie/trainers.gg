@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { listMyCommunities } from "@trainers/supabase";
-import { OrgSelectorClient } from "./org-selector-client";
+import { CommunitySelectorClient } from "./community-selector-client";
 
 export default async function TODashboardPage() {
   const supabase = await createClient();
@@ -18,7 +18,7 @@ export default async function TODashboardPage() {
 
   // If user has no organizations, show empty state
   if (organizations.length === 0) {
-    return <OrgSelectorClient organizations={[]} />;
+    return <CommunitySelectorClient organizations={[]} />;
   }
 
   // If user has exactly 1 organization, redirect directly to it
@@ -27,5 +27,5 @@ export default async function TODashboardPage() {
   }
 
   // Otherwise show the community selector
-  return <OrgSelectorClient organizations={organizations} />;
+  return <CommunitySelectorClient organizations={organizations} />;
 }

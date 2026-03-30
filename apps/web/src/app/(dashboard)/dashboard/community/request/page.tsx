@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { getUser, createClient } from "@/lib/supabase/server";
 import { getMyOrganizationRequest } from "@trainers/supabase";
-import { RequestOrganizationForm } from "@/app/(app)/communities/create/request-organization-form";
+import { RequestCommunityForm } from "@/app/(app)/communities/create/request-community-form";
 import { RequestStatus } from "@/app/(app)/communities/create/request-status";
 import { PageHeader } from "@/components/dashboard/page-header";
 
@@ -99,7 +99,7 @@ export default async function DashboardCommunityRequestPage() {
                   {request.admin_notes && <> Reason: {request.admin_notes}</>}
                 </div>
               )}
-              <RequestOrganizationForm />
+              <RequestCommunityForm />
             </>
           )}
         </div>

@@ -67,7 +67,7 @@ describe("NotificationCenter", () => {
       />
     );
 
-    expect(screen.getByText("Notifications")).toBeInTheDocument();
+    expect(screen.getByText("Inbox")).toBeInTheDocument();
   });
 
   it("should show unread count badge when there are unread notifications", () => {

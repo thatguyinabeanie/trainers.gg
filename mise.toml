@@ -6,6 +6,7 @@ node = "22"
 pnpm = "latest"
 opencode = "latest"
 java = "zulu-21"
+ruby = "3.3"
 lefthook = "latest"
 neovim = "0.11"
 # Android SDK is NOT included here — most devs already have it via Android Studio.
@@ -14,7 +15,7 @@ neovim = "0.11"
 #   android-sdk = "latest"
 
 [hooks]
-postinstall = "mise run install-lefthook ::: install-pnpm ::: setup-android"
+postinstall = "mise run install-lefthook ::: install-pnpm"
 
 [tasks.install-lefthook]
 description = "Install lefthook git hooks into the local repo"
@@ -42,65 +43,247 @@ else
 fi
 """
 
-[tasks.setup-android]
-description = "Install Android SDK components and create an emulator AVD for Expo development"
+[tasks.setup-common]
+description = "Install shared mobile development tools (watchman)"
 run = """
-# Find ANDROID_HOME — check env, then common install locations
-if [ -z "$ANDROID_HOME" ]; then
-  for candidate in \
-    "$HOME/Library/Android/sdk" \
-    "$HOME/Android/Sdk" \
-    "$LOCALAPPDATA/Android/Sdk"; do
-    if [ -d "$candidate" ]; then
-      export ANDROID_HOME="$candidate"
+echo "Setting up shared mobile development tools..."
+
+# Install watchman (improves Metro file watching performance)
+if command -v watchman &>/dev/null; then
+  echo "✓ watchman already installed ($(watchman --version 2>/dev/null || echo 'unknown version'))"
+else
+  case "$(uname)" in
+    Darwin)
+      if command -v brew &>/dev/null; then
+        echo "Installing watchman via Homebrew..."
+        brew install watchman
+      else
+        echo "⚠️  Homebrew not found. Install watchman manually: brew install watchman"
+      fi
+      ;;
+    Linux)
+      if command -v snap &>/dev/null; then
+        echo "Installing watchman via snap..."
+        sudo snap install watchman
+      elif command -v apt-get &>/dev/null; then
+        echo "Installing watchman via apt..."
+        sudo apt-get update && sudo apt-get install -y watchman
+      else
+        echo "⚠️  No supported package manager found. Install watchman manually."
+        echo "See: https://facebook.github.io/watchman/docs/install"
+      fi
+      ;;
+    MINGW*|MSYS*|CYGWIN*)
+      echo "⚠️  Watchman is not easily available on Windows."
+      echo "Metro will work without it, but file watching may be slower."
+      ;;
+    *)
+      echo "⚠️  Unknown OS. Install watchman manually if needed."
+      ;;
+  esac
+fi
+
+echo ""
+echo "✅ Common mobile tools setup complete!"
+"""
+
+[tasks.setup-ios]
+description = "Set up iOS development environment (Xcode, CocoaPods)"
+depends = ["setup-common"]
+run = """
+# Exit early on non-macOS
+if [[ "$(uname)" != "Darwin" ]]; then
+  echo "⚠️  iOS development requires macOS. Skipping setup-ios."
+  exit 0
+fi
+
+echo "Setting up iOS development environment..."
+
+# 1. Verify Xcode is installed
+if ! command -v xcodebuild &>/dev/null; then
+  echo "❌ Xcode is not installed."
+  echo "Install it from the App Store: https://apps.apple.com/app/xcode/id497799835"
+  exit 1
+fi
+echo "✓ Xcode $(xcodebuild -version 2>/dev/null | head -1 | awk '{print $2}')"
+
+# 2. Verify Xcode Command Line Tools are configured
+if ! xcode-select -p &>/dev/null; then
+  echo "Installing Xcode Command Line Tools..."
+  xcode-select --install
+  echo ""
+  echo "⚠️  After installation completes, re-run: mise run setup-ios"
+  exit 1
+fi
+echo "✓ Xcode CLI Tools configured at $(xcode-select -p)"
+
+# 3. Accept Xcode license if needed
+if ! xcodebuild -checkFirstLaunchStatus &>/dev/null 2>&1; then
+  echo "Accepting Xcode license (may require sudo)..."
+  sudo xcodebuild -license accept
+fi
+
+# 4. Install CocoaPods
+if gem list cocoapods -i &>/dev/null 2>&1; then
+  echo "✓ CocoaPods $(pod --version 2>/dev/null)"
+else
+  echo "Installing CocoaPods..."
+  gem install cocoapods
+  echo "✓ CocoaPods installed"
+fi
+
+echo ""
+echo "✅ iOS development environment ready!"
+echo ""
+echo "Next steps:"
+echo "  cd apps/mobile"
+echo "  pnpm prebuild:ios"
+echo "  pnpm ios"
+"""
+
+[tasks.setup-android]
+description = "Set up Android development environment (SDK, NDK, emulator)"
+depends = ["setup-common"]
+run = """
+REPO_SDK=".android-sdk"
+
+echo "Setting up Android development environment..."
+
+# 1. Verify Java is available
+if ! command -v java &>/dev/null; then
+  echo "❌ Java not found. Run: mise install"
+  exit 1
+fi
+echo "✓ Java $(java -version 2>&1 | head -1)"
+
+# 2. Determine SDK candidate paths based on OS
+case "$(uname)" in
+  Darwin)
+    SDK_CANDIDATES=("$HOME/Library/Android/sdk")
+    ;;
+  Linux)
+    SDK_CANDIDATES=("$HOME/Android/Sdk" "$HOME/.android/sdk")
+    ;;
+  MINGW*|MSYS*|CYGWIN*)
+    SDK_CANDIDATES=("$LOCALAPPDATA/Android/Sdk")
+    ;;
+  *)
+    SDK_CANDIDATES=()
+    ;;
+esac
+
+# 3. Find existing SDK — check env vars first, then candidate paths
+EXTERNAL_SDK=""
+
+# Check ANDROID_HOME or ANDROID_SDK_ROOT env vars
+for env_var in "$ANDROID_HOME" "$ANDROID_SDK_ROOT"; do
+  if [ -n "$env_var" ] && [ -d "$env_var" ] && [ -f "$env_var/cmdline-tools/latest/bin/sdkmanager" ]; then
+    EXTERNAL_SDK="$env_var"
+    break
+  fi
+done
+
+# If not found via env, check candidate paths
+if [ -z "$EXTERNAL_SDK" ]; then
+  for candidate in "${SDK_CANDIDATES[@]}"; do
+    if [ -d "$candidate" ] && [ -f "$candidate/cmdline-tools/latest/bin/sdkmanager" ]; then
+      EXTERNAL_SDK="$candidate"
       break
     fi
   done
 fi
 
-if [ -z "$ANDROID_HOME" ]; then
-  echo "No Android SDK found."
-  echo "Install Android Studio, or add android-sdk to mise.local.toml:"
-  echo '  [tools]'
-  echo '  android-sdk = "latest"'
-  exit 0
+# 4. Set up .android-sdk symlink or install SDK
+if [ -n "$EXTERNAL_SDK" ]; then
+  echo "✓ Found Android SDK at $EXTERNAL_SDK"
+  
+  if [ -L "$REPO_SDK" ]; then
+    current_target="$(readlink "$REPO_SDK")"
+    if [ "$current_target" = "$EXTERNAL_SDK" ]; then
+      echo "✓ Symlink $REPO_SDK → $EXTERNAL_SDK"
+    else
+      echo "Updating symlink: $REPO_SDK → $EXTERNAL_SDK (was $current_target)"
+      rm "$REPO_SDK"
+      ln -s "$EXTERNAL_SDK" "$REPO_SDK"
+    fi
+  elif [ -d "$REPO_SDK" ]; then
+    echo "⚠️  $REPO_SDK is a directory (not a symlink). Using existing."
+  else
+    echo "Creating symlink: $REPO_SDK → $EXTERNAL_SDK"
+    ln -s "$EXTERNAL_SDK" "$REPO_SDK"
+  fi
+  export ANDROID_HOME="$EXTERNAL_SDK"
+else
+  echo "No Android SDK found. Installing via mise..."
+  mise use android-sdk@latest
+  
+  MISE_SDK="$(mise where android-sdk 2>/dev/null)"
+  if [ -z "$MISE_SDK" ] || [ ! -d "$MISE_SDK" ]; then
+    echo "❌ Failed to install Android SDK via mise."
+    echo ""
+    echo "Options:"
+    echo "  1. Install Android Studio: https://developer.android.com/studio"
+    echo "  2. Manually run: mise use android-sdk@latest"
+    exit 1
+  fi
+  
+  echo "✓ Installed Android SDK at $MISE_SDK"
+  
+  if [ ! -e "$REPO_SDK" ]; then
+    echo "Creating symlink: $REPO_SDK → $MISE_SDK"
+    ln -s "$MISE_SDK" "$REPO_SDK"
+  fi
+  export ANDROID_HOME="$MISE_SDK"
 fi
 
+# 5. Install SDK components
 SDKMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
 
 if [ ! -f "$SDKMANAGER" ]; then
-  echo "Android SDK found at $ANDROID_HOME but sdkmanager is missing."
+  echo "❌ sdkmanager not found at $SDKMANAGER"
   echo "Install cmdline-tools via Android Studio SDK Manager."
-  exit 0
+  exit 1
 fi
 
-echo "Using Android SDK at $ANDROID_HOME"
-
+echo ""
 echo "Accepting Android SDK licenses..."
-yes | "$SDKMANAGER" --licenses 2>/dev/null
+yes | "$SDKMANAGER" --licenses >/dev/null 2>&1
 
-echo "Installing SDK components..."
+echo "Installing SDK components (this may take a few minutes)..."
 "$SDKMANAGER" \
   "platform-tools" \
   "emulator" \
   "platforms;android-35" \
   "build-tools;35.0.0" \
+  "ndk;27.0.12077973" \
   "system-images;android-35;google_apis;arm64-v8a"
 
+# 6. Create AVD if missing
 AVD_NAME="trainers_gg"
 AVDMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/avdmanager"
 
 if "$AVDMANAGER" list avd -c 2>/dev/null | grep -q "$AVD_NAME"; then
-  echo "AVD '$AVD_NAME' already exists"
+  echo "✓ AVD '$AVD_NAME' exists"
 else
   echo "Creating AVD '$AVD_NAME'..."
   echo "no" | "$AVDMANAGER" create avd \
     --name "$AVD_NAME" \
     --package "system-images;android-35;google_apis;arm64-v8a" \
     --device "pixel_7"
-  echo "AVD '$AVD_NAME' created"
+  echo "✓ AVD '$AVD_NAME' created"
 fi
 
-echo "Android emulator setup complete. Run: emulator -avd $AVD_NAME"
+echo ""
+echo "✅ Android development environment ready!"
+echo "   ANDROID_HOME: $ANDROID_HOME"
+echo "   Repo symlink: $REPO_SDK"
+echo ""
+echo "Next steps:"
+echo "  cd apps/mobile"
+echo "  pnpm prebuild:android"
+echo "  pnpm android"
+echo ""
+echo "To launch emulator manually:"
+echo "  emulator -avd $AVD_NAME"
 """
 

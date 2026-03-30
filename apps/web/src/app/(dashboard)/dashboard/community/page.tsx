@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient, getUser } from "@/lib/supabase/server";
 import { listMyCommunities } from "@trainers/supabase";
-import { OrgSelectorClient } from "@/app/(app)/to-dashboard/org-selector-client";
+import { CommunitySelectorClient } from "@/app/(app)/to-dashboard/community-selector-client";
 import { PageHeader } from "@/components/dashboard/page-header";
 
 export default async function DashboardCommunityPage() {
@@ -22,7 +22,7 @@ export default async function DashboardCommunityPage() {
       <>
         <PageHeader title="Communities" />
         <div className="flex flex-1 flex-col gap-4 p-4 md:p-6">
-          <OrgSelectorClient organizations={[]} />
+          <CommunitySelectorClient organizations={[]} />
         </div>
       </>
     );
@@ -38,7 +38,7 @@ export default async function DashboardCommunityPage() {
     <>
       <PageHeader title="Communities" />
       <div className="flex flex-1 flex-col gap-4 p-4 md:p-6">
-        <OrgSelectorClient organizations={organizations} />
+        <CommunitySelectorClient organizations={organizations} />
       </div>
     </>
   );
