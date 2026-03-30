@@ -6,8 +6,8 @@ All-in-one integrated platform for Pokemon fans. Current focus: competitive batt
 
 | Layer                | Technology                          |
 | -------------------- | ----------------------------------- |
-| **Web**              | Next.js 16 (React 19, App Router)   |
-| **Mobile**           | Expo 54 (React Native, React 19)    |
+| **Web**              | Next.js 16 (React 19.2, App Router) |
+| **Mobile**           | Expo 55 (React Native 0.83)         |
 | **Database**         | Supabase (PostgreSQL + RLS)         |
 | **Auth**             | Supabase Auth + Bluesky PDS         |
 | **Social**           | AT Protocol (Bluesky)               |
@@ -23,7 +23,7 @@ All-in-one integrated platform for Pokemon fans. Current focus: competitive batt
 ```
 apps/
   web/                 # Next.js 16 web app (@trainers/web)
-  mobile/              # Expo 54 mobile app (@trainers/mobile)
+  mobile/              # Expo 55 mobile app (@trainers/mobile)
 
 packages/
   pokemon/             # Pokemon data, validation, parsing

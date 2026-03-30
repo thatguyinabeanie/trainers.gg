@@ -1,6 +1,6 @@
 # @trainers/web
 
-Next.js 16 (React 19) web app. App Router, Server Components by default.
+Next.js 16 (React 19.2) web app. App Router, Server Components by default.
 
 ## Key Files
 

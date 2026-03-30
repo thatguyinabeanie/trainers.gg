@@ -7,6 +7,16 @@ This document captures all design decisions made during the dashboard redesign b
 
 ---
 
+## Core Philosophy
+
+The dashboard is the player's **personal control center** — a launchpad + identity hub + mission control combined. It does everything, but as summaries with links to deeper views. Fixed layout with context provided by the alt switcher.
+
+**Not an esports site.** Clean, playful, community-driven. Data-rich where it matters, warm and friendly everywhere else. See `/product-vision` and `/competitive-landscape` skills for full context.
+
+**Design reference:** shadcn dashboard-01 block. Match its spacing, typography, alignment, and overall feel. Always view https://ui.shadcn.com/blocks before starting design work.
+
+---
+
 ## Sidebar Structure
 
 ### Navigation Items
@@ -28,35 +38,45 @@ This document captures all design decisions made during the dashboard redesign b
 - **No horizontal separator lines** — use spacing and group labels for visual separation (matches shadcn dashboard-01)
 - **Settings pinned at bottom** — above user footer, below communities
 - **History removed as top-level item** — lives under /dashboard/alts/history
-- **Messages is a future sidebar item** — separate from Inbox
-- **Notifications** — bell icon in the PageHeader bar (not a sidebar item, not a page). Dropdown/popover for quick view.
+- **Messages is a future sidebar item** — separate from Inbox (notifications ≠ messages)
+- **Notifications** — bell icon in the PageHeader bar (right side). Dropdown/popover for quick view. "View all" links to /dashboard/inbox.
 - **Sidebar collapses to icons** — `collapsible="icon"` with `variant="inset"`
 - **Sidebar width** — `calc(var(--spacing) * 56)` (~224px)
+- **No SidebarRail** — removed, resize cursor was misleading
+- **trainers.gg logo** — the alt switcher replaces the logo in the sidebar header. Logo is just "t" in a teal rounded square.
 
-### Alt Switcher
+### Alt Switcher (replaces logo header)
 
-- Replaces the logo header in the sidebar
 - Simple: avatar + name + subtitle ("Main alt" / "All alts") + chevron
 - Dropdown shows: "All Alts" option, list of alts (name + Main badge only), "+ Create new alt", "⚙ Manage alts"
-- **No stats in the switcher** — stats live on the pages
+- **No stats in the switcher** — stats live on the pages. Keep it simple.
 - Selecting an alt navigates to `/dashboard/alts/[username]`
 - Selecting "All Alts" navigates to `/dashboard/alts`
 - State derived from URL path, not client state
+- Uses the shadcn Team Switcher pattern
 
 ### NavUser Footer
 
 - Round avatar (`rounded-full`)
 - Username + role ("Player" / "Owner")
-- 3-dot menu (`MoreVertical`) → dropdown with Settings, Account, Sign out
+- 3-dot menu (`MoreVertical`) → dropdown with user info header, Settings, Account, Sign out
 - Matches shadcn dashboard-01 NavUser pattern
 
-### Notifications in Dashboard
+### Notifications Bell
 
-- Bell icon in PageHeader bar (right side, next to page title)
+- Bell icon in PageHeader bar (right side, next to page title) — Option A chosen
 - Badge count for unread notifications
-- Click opens dropdown/popover with recent notifications
-- "View all" link for full notification history
-- Dashboard has no TopNav, so this is the only place notifications surface
+- Click opens dropdown/popover with recent notifications (last 4-5 items)
+- "View all in Inbox →" link at bottom of dropdown
+- Dashboard has no TopNav, so this is the only place notifications surface in the dashboard
+
+### Community Sidebar Context
+
+- Clicking a community swaps sidebar content to community nav
+- "Back to Dashboard" link at top (with ArrowLeft icon)
+- Community nav: Overview, Tournaments, Staff, Settings (owner only)
+- Community header shows icon, name, role (Owner/Staff)
+- Live dot on community icon in player sidebar shows active tournament
 
 ---
 
@@ -68,7 +88,7 @@ This document captures all design decisions made during the dashboard redesign b
 /dashboard/alts/history                   → Aggregate tournament history across all alts
 /dashboard/alts/[username]                → Alt detail (stats, teams, management)
 /dashboard/alts/[username]/history        → Tournament history for this alt
-/dashboard/inbox                          → Actionable items + tournament activity feed
+/dashboard/inbox                          → Actionable items + tournament notifications feed
 /dashboard/messages                       → Chat/DMs (future)
 /dashboard/settings                       → Redirects to /dashboard/settings/profile
 /dashboard/settings/profile               → Profile settings
@@ -87,10 +107,10 @@ This document captures all design decisions made during the dashboard redesign b
 
 ### Key Routing Decisions
 
-- **All path-based** — no query params or headers. Compatible with SSR, PPR, ISR, `generateStaticParams`.
-- **"history" is a reserved username** — prevents route collision with `/dashboard/alts/history`
-- **Parallel routes** — `/dashboard/alts/history` could use Next.js parallel routes to show history alongside alt content. Pattern to explore across the site.
-- **Redirects in next.config.ts** — old paths (`/dashboard/overview`, `/dashboard/notifications`, `/to-dashboard/*`) redirect permanently.
+- **All path-based** — no query params or headers. Compatible with SSR, PPR, ISR, `generateStaticParams`. Query params and headers interfere with Next.js 16 rendering optimizations.
+- **"history" is a reserved username** — prevents route collision with `/dashboard/alts/history`. Add validation to alt creation.
+- **Parallel routes** — `/dashboard/alts/history` could use Next.js parallel routes and slots to show history alongside alt content. This pattern should be explored across the site wherever two pieces of content need to coexist.
+- **Redirects in next.config.ts** — old paths (`/dashboard/overview`, `/dashboard/notifications`, `/to-dashboard/*`) redirect permanently. No redirect page components.
 
 ---
 
@@ -112,12 +132,13 @@ This document captures all design decisions made during the dashboard redesign b
 - Aggregated stats at top (record, win rate, peak rating, tournament count)
 - "+ New Alt" button
 - Alt list as expandable rows
-- Click alt row → expands inline to show:
+- Click alt row → **expands inline** (does NOT auto-switch the alt switcher)
+- Expanded view shows:
   - Per-alt stats preview
   - Teams preview (first 2-3 teams with sprites)
-  - "View as this alt" button → changes switcher + navigates to `/dashboard/alts/[username]`
+  - "View as this alt" button → explicitly changes switcher + navigates to `/dashboard/alts/[username]`
   - "View history" link → `/dashboard/alts/[username]/history`
-- Clicking does NOT auto-switch — just expands. Explicit "View as" button to switch.
+- Alt management (create, delete, avatar, visibility) all happens here
 
 **Single Alt view (`/dashboard/alts/[username]`):**
 
@@ -127,40 +148,35 @@ This document captures all design decisions made during the dashboard redesign b
   - Each team: sprite row, name, version count, tournament usage, last played
   - Actions: Open in Builder (🔨), Share (↗), Archive (📦)
   - Archived teams at reduced opacity
-  - Click team row → opens in Team Builder
+  - Click team row → opens in Team Builder (future)
 - "View history" link → `/dashboard/alts/[username]/history`
 - Danger zone: delete alt (not for main alt)
 
-**Alt management happens at `/dashboard/alts`:**
-
-- Create new alts
-- Delete alts
-- Change avatar/sprite
-- Toggle public/private visibility
-- Set main alt
-- View and manage teams per alt
-
 **Teams are managed on the Alts page but edited in the Builder:**
 
-- Alts page: archive, share, open in builder
-- Team Builder (future sidebar item): actual team editing (Pokemon, EVs, moves, items)
+- Alts page: archive, share, open in builder — management actions only
+- Team Builder (future sidebar item): actual team editing (Pokemon, EVs, moves, items, abilities)
+- The team builder will have analytics integrated (like pikalytics/labmaus) — it's a major feature, not just a form
+- Team versioning and branching is a core differentiator — fork teams, track iterations, historical performance
 
 ### History
 
 - **Aggregate:** `/dashboard/alts/history` — tournament history across all alts
 - **Per-alt:** `/dashboard/alts/[username]/history` — filtered to specific alt
-- Could use Next.js parallel routes to show history alongside alt content
+- Could use Next.js parallel routes to show history alongside alt content on the same page
 - Sortable table with alt column (aggregate), format filter, date range
+- The URL `/dashboard/alts/history` is a real navigable route AND can be shown via parallel routes when viewing `/dashboard/alts`
 
 ### Inbox (`/dashboard/inbox`)
 
-- **Notifications and actionable items only** — no messages
-- Separate from the bell icon notifications (bell = quick alerts, inbox = full feed with actions)
+- **Notifications and actionable items only** — no messages (messages are separate)
+- Separate from the bell icon notifications (bell = quick alerts dropdown, inbox = full feed with actions)
 - **Tabs:** All, Unread, Actions, Matches, Tournaments
 - **Tournament notifications grouped** by tournament:
   - Group header: tournament name + update count
   - Latest notification always shown expanded
   - Older notifications collapsed into "N earlier" — click to reveal
+  - Keeps the feed tight even for tournaments with many rounds
 - **Actionable items never grouped** — always standalone with inline buttons + "Action needed" badge
 - **Actionable items float to top** regardless of timestamp
 - **One-off notifications** — standalone items (org approved, judge resolved)
@@ -172,9 +188,9 @@ This document captures all design decisions made during the dashboard redesign b
 - Separate sidebar item from Inbox
 - DMs between players
 - TO → player communications
-- Coach → student messaging
+- Coach → student messaging (future coaching marketplace)
 - Team share conversations
-- Potentially AT Protocol native (Bluesky DMs)
+- Potentially AT Protocol native (Bluesky DMs via self-hosted PDS)
 - Two-panel layout (conversation list + message thread)
 - Linear ticket to be created
 
@@ -188,74 +204,126 @@ This document captures all design decisions made during the dashboard redesign b
 
 ## Community Dashboard
 
-### Sidebar Context Switching
-
-- Clicking a community in the sidebar swaps sidebar content to community nav
-- "Back to Dashboard" link at top of community sidebar
-- Community nav: Overview, Tournaments, Staff, Settings (owner only)
-- Community header shows icon, name, role (Owner/Staff)
-
 ### Community Overview (`/dashboard/community/[slug]`)
 
-- Needs full redesign (currently moved from /to-dashboard as-is)
-- Stats grid, tournament status breakdown, recent tournaments, quick actions
-- TODO: Design in visual companion
+**Proposed redesign (from visual companion):**
+
+- Remove Quick Actions section — redundant with sidebar navigation
+- Remove Tournament Status breakdown cards — redundant with tournaments page
+- Keep stats row: Tournaments, Players, Staff, Founded
+- Add "Live Now" highlight card when active tournament exists — green accent, tournament name, round progress, "Manage →" button
+- Tournaments as a compact table (status badge + name + meta) instead of large cards
+- "+ Create" button inline with tournaments section heading
+- Bell icon in PageHeader
+
+**Open question:** Should the overview also show recent activity (staff joined, tournaments completed, registrations)?
 
 ### Community Staff (`/dashboard/community/[slug]/staff`)
 
-- Needs ground-up redesign
-- Drag-drop role assignment too large for sidebar layout
-- TODO: Design in visual companion
+**Proposed redesign (from visual companion):**
+
+- Replace giant colored drag-drop zones with compact grouped list
+- Role groups: Owner, Admins, Head Judges, Judges, Unassigned
+- Empty groups show "No X assigned" (one line) instead of giant "Drag staff here" areas
+- Role assignment via dropdown `<select>` (in addition to or instead of drag-drop)
+- Unassigned list truncated with "+ N more" to keep page tight
+- Remove button (✕) inline per staff member
+- Compact staff rows: avatar + name + role tag + actions
+- "+ Add Staff" button in section heading
 
 ### Community Settings (`/dashboard/community/[slug]/settings`)
 
-- Needs redesign
-- Form constrained to max-w-2xl
-- TODO: Design in visual companion
+**Proposed redesign (from visual companion):**
+
+- Minimal changes — already the cleanest page
+- Constrain form width with `max-w-md`
+- Group fields in cards (Community Profile, Social Links, URL)
+- Logo upload more compact
+- Social links section with "+ Add Social Link" button
 
 ### Community Request (`/dashboard/community/request`)
 
-- Needs design work
-- TODO: Design in visual companion
+**Proposed redesign (from visual companion):**
+
+- Compress disclaimer into a small callout (from full-width card with bullet points)
+- Constrain form to `max-w-md`
+- Social links in compact 2-column grid instead of stacked full-width
+- Discord field with platform prefix icon
+- Overall much tighter form
 
 ### Tournament Management
 
-- 3 tabs: Overview, Players, Live
-- Settings as route-based page (not a tab)
-- Audit Log as slide-out Sheet
+- 3 tabs: Overview, Players, Live (consolidated from 6)
+- Settings as route-based page at `.../manage/settings` (not a tab)
+- Audit Log as slide-out Sheet (not a tab)
 - All functionality preserved from 6-tab original
+- Overview tab: round state machine + judge queue preview + top 3 standings preview
+- Players tab: renamed from Registrations, filter chips instead of sub-tabs
+- Live tab: combines Pairings + Judge Queue + Standings
 
 ---
 
 ## Technical Decisions
 
-- **Dashboard lives in `(dashboard)` route group** — no TopNav, no footer
-- **Sidebar uses shadcn primitives** — `SidebarProvider`, `Sidebar`, `SidebarInset`, `SidebarMenuButton` with `render` prop (Base UI, not Radix)
+- **Dashboard lives in `(dashboard)` route group** — no TopNav, no footer, no announcement banner
+- **Sidebar uses shadcn primitives** — `SidebarProvider`, `Sidebar`, `SidebarInset`, `SidebarMenuButton` with `render` prop (Base UI's `useRender`, NOT Radix `asChild`)
 - **`variant="inset"`** — rounded content area with shadow
 - **`collapsible="icon"`** — collapses to icon rail
-- **PageHeader component** — each page renders its own header (trigger + separator + title)
+- **PageHeader component** — each page renders its own header (trigger + separator + title + bell icon)
 - **No `SidebarRail`** — removed, resize cursor was misleading
-- **Mobile** — sidebar as Sheet (hamburger drawer)
+- **Mobile** — sidebar as Sheet (hamburger drawer), same navigation pattern
+- **DropdownMenuTrigger** uses Base UI `render` prop, not Radix `asChild`
+- **DropdownMenuLabel** requires `Menu.Group` context in Base UI — use plain `div` for user info header in dropdown
+- **SidebarMenuButton tooltip** — modified to fix render prop + tooltip conflict. TooltipTrigger wraps as `<span className="contents">` to be layout-neutral.
 
 ### Implementation Notes (for future subagents)
 
-- **Layouts matter** — pay special attention to how `layout.tsx` files are structured, especially with parallel routes and route groups. The alts section (`/dashboard/alts/`) may use parallel routes for history alongside alt content.
-- **Parallel routes** — explore using Next.js parallel routes where content from different route segments needs to appear on the same page. Keep this pattern in mind across the site, not just for alts/history.
-- **Route groups** — dashboard already uses `(dashboard)` route group. Consider whether community pages benefit from a nested route group for shared layout concerns.
-- **Path-based everything** — no query params, no headers for state. All routing is path-based for SSR/PPR/ISR compatibility.
-- **Reserved usernames** — "history" is reserved under `/dashboard/alts/`. Future reserved words may include "new", "create", "settings" if those become route segments.
-- **Bell icon notifications** — the PageHeader component needs to accept a right-side slot/children for the bell icon. Each page renders PageHeader, and the bell should appear consistently.
+- **Layouts matter** — pay special attention to `layout.tsx` structure, especially with parallel routes and route groups. The alts section (`/dashboard/alts/`) should explore parallel routes for history alongside alt content.
+- **Parallel routes** — Next.js parallel routes allow content from different route segments to appear on the same page. `/dashboard/alts/history` can be both a standalone route AND a parallel slot visible on `/dashboard/alts`. Explore this pattern across the site.
+- **Route groups** — dashboard already uses `(dashboard)` route group. Consider nested route groups for community pages if they need shared layout concerns.
+- **Path-based everything** — no query params, no headers for routing state. All path-based for SSR/PPR/ISR compatibility. Query params and headers force dynamic rendering in Next.js 16.
+- **Reserved usernames** — "history" is reserved under `/dashboard/alts/`. Future reserved words may include "new", "create", "settings" if those become route segments. Add validation to alt creation.
+- **Bell icon notifications** — PageHeader component needs a right-side slot/children for the bell icon. Each page renders PageHeader, bell should appear consistently.
+- **Alt switcher state from URL** — the sidebar reads the current URL to determine which alt is selected. No client-side state management needed. When at `/dashboard/alts/ash_ketchum`, the switcher shows ash_ketchum. When at `/dashboard/alts`, it shows "All Alts".
+- **Team builder** — future sidebar item. Will have analytics integrated (pikalytics/labmaus style). Teams belong to alts in the database. The team builder is a separate, complex feature — not part of the alts page.
+- **Old /to-dashboard directory** — client components still live there. New community pages import from there. A future cleanup task should move components to a shared location. The old route pages are dead (next.config.ts redirects catch them).
+
+---
+
+## Process Notes
+
+- **Always use visual companion** for design decisions — never describe designs in text only
+- **Always use Playwright MCP** to view current pages before designing replacements
+- **Always view shadcn blocks** (https://ui.shadcn.com/blocks) before starting design work
+- **Don't ask the user design/layout questions** — ask about functionality, audience, behavior. Design decisions are delegated to the agent.
+- **Use /brainstorming skill** for all creative work — explore approaches, show options, get approval
+- **Match shadcn dashboard-01 exactly** — spacing, typography, alignment. Don't hand-write when block patterns exist.
 
 ---
 
 ## Outstanding Design Work
 
-- [ ] Community overview full redesign
-- [ ] Community staff ground-up redesign
-- [ ] Community settings redesign
-- [ ] Community request page design
-- [ ] Notifications bell icon in PageHeader
-- [ ] Tooltip positioning fix (collapsed sidebar)
+- [ ] Community overview — review proposal, decide on activity feed
+- [ ] Community staff — review compact list proposal
+- [ ] Community settings — review constrained form proposal
+- [ ] Community request — review compact form proposal
+- [ ] Notifications bell icon implementation in PageHeader
+- [ ] Tooltip positioning fix (collapsed sidebar icons)
 - [ ] Collapsed sidebar icon alignment verification
+- [ ] Alt switcher implementation
+- [ ] Alts page with expandable cards + teams
+- [ ] Inbox with grouped tournament notifications
+- [ ] History pages at new routes (/dashboard/alts/history, /dashboard/alts/[username]/history)
 - [ ] Messages page design (future — Linear ticket)
-- [ ] Team Builder sidebar item (future)
+- [ ] Team Builder sidebar item (future — major feature)
+- [ ] Remove "Alts & Teams" → rename to "Alts" in sidebar
+- [ ] Remove "History" from top-level sidebar
+
+## Linear Tickets to Create
+
+- [ ] Messaging system (DMs, team shares, coach conversations) — `/dashboard/messages`
+- [ ] Analytics-powered team builder — future sidebar item
+- [ ] AT Protocol social integration for messages
+- [ ] Data aggregation from external sources (RK9, Limitless)
+- [ ] Team versioning and branching system
+- [ ] Collaborative team building (websockets)

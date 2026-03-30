@@ -59,8 +59,8 @@ Custom agents in `.claude/agents/`. Invoke for isolated, focused work.
 
 ```
 apps/
-  web/          # Next.js 16 (React 19) - @trainers/web
-  mobile/       # Expo 55 (React 19) - @trainers/mobile
+  web/          # Next.js 16 (React 19.2) - @trainers/web
+  mobile/       # Expo 55 (React Native 0.83) - @trainers/mobile
 
 packages/
   pokemon/      # Pokemon data, validation, parsing
@@ -89,8 +89,8 @@ infra/
 | React Compiler     | React Compiler                 | Auto-memoization — do NOT manually use useMemo/useCallback/memo |
 | Validation         | Zod via `@trainers/validators` | Shared schemas for forms, Server Actions, edge functions        |
 | Client State (Web) | TanStack Query v5              | Cache, mutations, optimistic updates                            |
-| Web                | Next.js 16                     | React 19, App Router, Server Components                         |
-| Mobile             | Expo 55                        | React Native with Tamagui                                       |
+| Web                | Next.js 16                     | React 19.2, App Router, Server Components                       |
+| Mobile             | Expo 55                        | React Native 0.83 with Tamagui                                  |
 | UI (Web)           | shadcn/ui + Base UI            | Base UI primitives (NOT Radix), no `asChild`                    |
 | Styling (Web)      | Tailwind CSS 4                 | @tailwindcss/postcss                                            |
 | Styling (Mobile)   | Tamagui                        | Theme tokens from @trainers/theme                               |

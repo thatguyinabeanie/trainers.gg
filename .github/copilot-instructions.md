@@ -1,12 +1,12 @@
 # trainers.gg — Copilot Instructions
 
-Pokemon community platform for competitive players. Turborepo monorepo with Next.js 16 web app, Expo 54 mobile app, Supabase backend, and Bluesky PDS integration.
+Pokemon community platform for competitive players. Turborepo monorepo with Next.js 16 web app, Expo 55 mobile app, Supabase backend, and Bluesky PDS integration.
 
 ## Monorepo Structure
 
 ```
-apps/web/          — Next.js 16 (React 19, App Router)
-apps/mobile/       — Expo 54 (React Native, Tamagui)
+apps/web/          — Next.js 16 (React 19.2, App Router)
+apps/mobile/       — Expo 55 (React Native 0.83, Tamagui)
 packages/supabase/ — Supabase client, queries, migrations, edge functions
 packages/validators/ — Shared Zod schemas for forms, Server Actions, edge functions
 packages/utils/    — Shared utilities (formatting, countries, tiers, slug generation)

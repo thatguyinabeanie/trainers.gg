@@ -6,7 +6,7 @@ applyTo: "apps/mobile/**"
 
 ## Framework
 
-Expo 54 with React Native and React 19.
+Expo 55 with React Native 0.83 and React 19.2.
 
 ## UI Framework
 
