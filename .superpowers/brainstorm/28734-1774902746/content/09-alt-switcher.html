@@ -1,0 +1,130 @@
+<h2>Alt Switcher</h2>
+<p class="subtitle">Replaces the logo in sidebar header. shadcn Team Switcher pattern.</p>
+
+<div class="split">
+
+  <!-- Left: Closed state -->
+  <div class="mockup">
+    <div class="mockup-header">Closed State (in sidebar header)</div>
+    <div class="mockup-body" style="padding: 0; font-family: Inter, -apple-system, sans-serif; color: #111; width: 224px;">
+
+      <!-- Sidebar header area -->
+      <div style="padding: 12px; border-bottom: 1px solid #f0f0f0;">
+        <div style="display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 8px; cursor: pointer; transition: background 0.1s;" onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background='transparent'">
+          <div style="width: 28px; height: 28px; border-radius: 50%; background: #f0fdfa; border: 1px solid #d1fae5; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; color: #0d9488; flex-shrink: 0;">A</div>
+          <div style="flex: 1; min-width: 0;">
+            <div style="font-size: 13px; font-weight: 600; line-height: 1.2; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">admin_trainer</div>
+            <div style="font-size: 10px; color: #999; line-height: 1.2;">Main alt</div>
+          </div>
+          <div style="color: #999; font-size: 10px; flex-shrink: 0;">⇅</div>
+        </div>
+      </div>
+
+      <!-- Nav items preview -->
+      <div style="padding: 8px 12px;">
+        <div style="display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 6px; background: #f5f5f5; font-size: 13px; font-weight: 500;">
+          <span style="font-size: 14px;">🏠</span> Home
+        </div>
+        <div style="display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 6px; font-size: 13px; color: #555; margin-top: 2px;">
+          <span style="font-size: 14px;">👤</span> Alts
+        </div>
+        <div style="display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 6px; font-size: 13px; color: #555; margin-top: 2px;">
+          <span style="font-size: 14px;">📋</span> Inbox
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Right: Open dropdown -->
+  <div class="mockup">
+    <div class="mockup-header">Dropdown Open</div>
+    <div class="mockup-body" style="padding: 0; font-family: Inter, -apple-system, sans-serif; color: #111; width: 224px; position: relative;">
+
+      <!-- Sidebar header area (active) -->
+      <div style="padding: 12px; border-bottom: 1px solid #f0f0f0;">
+        <div style="display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 8px; background: #f5f5f5;">
+          <div style="width: 28px; height: 28px; border-radius: 50%; background: #f0fdfa; border: 1px solid #d1fae5; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; color: #0d9488; flex-shrink: 0;">A</div>
+          <div style="flex: 1; min-width: 0;">
+            <div style="font-size: 13px; font-weight: 600; line-height: 1.2;">admin_trainer</div>
+            <div style="font-size: 10px; color: #999; line-height: 1.2;">Main alt</div>
+          </div>
+          <div style="color: #999; font-size: 10px; flex-shrink: 0;">⇅</div>
+        </div>
+      </div>
+
+      <!-- Dropdown -->
+      <div style="position: absolute; top: 60px; left: 12px; right: 12px; background: white; border: 1px solid #e5e5e5; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); z-index: 10; overflow: hidden;">
+
+        <!-- All alts option -->
+        <div style="padding: 8px 12px; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 8px; border-bottom: 1px solid #f5f5f5;" onmouseover="this.style.background='#fafafa'" onmouseout="this.style.background='white'">
+          <div style="width: 24px; height: 24px; border-radius: 50%; background: #f0f0f0; display: flex; align-items: center; justify-content: center; font-size: 10px; color: #888; flex-shrink: 0;">✦</div>
+          <span style="font-weight: 500;">All Alts</span>
+        </div>
+
+        <!-- Alt list -->
+        <div style="padding: 4px 0;">
+          <!-- Current alt (checkmark) -->
+          <div style="padding: 6px 12px; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 8px; background: #f8fafb;" onmouseover="this.style.background='#f0fafa'" onmouseout="this.style.background='#f8fafb'">
+            <div style="width: 24px; height: 24px; border-radius: 50%; background: #f0fdfa; border: 1px solid #d1fae5; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 600; color: #0d9488; flex-shrink: 0;">A</div>
+            <span style="font-weight: 500; flex: 1;">admin_trainer</span>
+            <span style="font-size: 8px; font-weight: 600; padding: 1px 5px; border-radius: 3px; background: #fef3c7; color: #92400e; margin-right: 4px;">Main</span>
+            <span style="color: #0d9488; font-size: 13px;">✓</span>
+          </div>
+          <div style="padding: 6px 12px; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 8px;" onmouseover="this.style.background='#fafafa'" onmouseout="this.style.background='white'">
+            <div style="width: 24px; height: 24px; border-radius: 50%; background: #f0fdfa; border: 1px solid #d1fae5; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 600; color: #0d9488; flex-shrink: 0;">A</div>
+            <span style="flex: 1;">admin_trainer_vgc</span>
+          </div>
+          <div style="padding: 6px 12px; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 8px;" onmouseover="this.style.background='#fafafa'" onmouseout="this.style.background='white'">
+            <div style="width: 24px; height: 24px; border-radius: 50%; background: #f0fdfa; border: 1px solid #d1fae5; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 600; color: #0d9488; flex-shrink: 0;">A</div>
+            <span style="flex: 1;">admin_trainer_draft</span>
+          </div>
+        </div>
+
+        <!-- Separator + actions -->
+        <div style="border-top: 1px solid #f0f0f0; padding: 4px 0;">
+          <div style="padding: 6px 12px; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 8px; color: #666;" onmouseover="this.style.background='#fafafa'" onmouseout="this.style.background='white'">
+            <span style="font-size: 13px;">+</span>
+            <span>Create new alt</span>
+          </div>
+          <div style="padding: 6px 12px; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 8px; color: #666;" onmouseover="this.style.background='#fafafa'" onmouseout="this.style.background='white'">
+            <span style="font-size: 13px;">⚙</span>
+            <span>Manage alts</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Dimmed nav behind dropdown -->
+      <div style="padding: 8px 12px; opacity: 0.3;">
+        <div style="display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 6px; background: #f5f5f5; font-size: 13px; font-weight: 500;">
+          <span style="font-size: 14px;">🏠</span> Home
+        </div>
+        <div style="display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 6px; font-size: 13px; color: #555; margin-top: 2px;">
+          <span style="font-size: 14px;">👤</span> Alts
+        </div>
+        <div style="display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 6px; font-size: 13px; color: #555; margin-top: 2px;">
+          <span style="font-size: 14px;">📋</span> Inbox
+        </div>
+        <div style="height: 120px;"></div>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+<div class="section" style="margin-top: 1.5rem;">
+  <h3>Behavior</h3>
+  <ul>
+    <li><strong>Closed state:</strong> Avatar + alt name + "Main alt" subtitle + ⇅ chevron</li>
+    <li><strong>Dropdown:</strong> "All Alts" option at top, then list of alts with avatars, then separator + "Create new alt" + "Manage alts"</li>
+    <li><strong>Current alt</strong> gets teal checkmark + subtle background highlight</li>
+    <li><strong>Main badge</strong> shown on the main alt only</li>
+    <li><strong>Selecting an alt</strong> → navigates to /dashboard/alts/[username]</li>
+    <li><strong>Selecting "All Alts"</strong> → navigates to /dashboard/alts</li>
+    <li><strong>"Create new alt"</strong> → opens create alt flow</li>
+    <li><strong>"Manage alts"</strong> → navigates to /dashboard/alts</li>
+    <li><strong>State derived from URL</strong> — no client state management</li>
+    <li><strong>Collapsed sidebar:</strong> shows just the avatar circle, tooltip "Switch alt"</li>
+  </ul>
+</div>

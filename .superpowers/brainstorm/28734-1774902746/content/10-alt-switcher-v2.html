@@ -1,0 +1,113 @@
+<h2>Alt Switcher — v2</h2>
+<p class="subtitle">Popover menu, not inline dropdown. Nothing truncated.</p>
+
+<div class="split">
+
+  <!-- Left: Closed state -->
+  <div class="mockup">
+    <div class="mockup-header">Closed State</div>
+    <div class="mockup-body" style="padding: 0; font-family: Inter, -apple-system, sans-serif; color: #111; width: 240px; min-height: 260px;">
+      <div style="padding: 12px;">
+        <div style="display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 8px; cursor: pointer;" onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background='transparent'">
+          <div style="width: 28px; height: 28px; border-radius: 50%; background: #f0fdfa; border: 1px solid #d1fae5; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; color: #0d9488; flex-shrink: 0;">A</div>
+          <div style="flex: 1; min-width: 0;">
+            <div style="font-size: 13px; font-weight: 600; line-height: 1.2;">admin_trainer</div>
+            <div style="font-size: 10px; color: #999; line-height: 1.2;">Main alt</div>
+          </div>
+          <div style="color: #999; font-size: 10px; flex-shrink: 0;">⇅</div>
+        </div>
+      </div>
+
+      <div style="padding: 4px 12px;">
+        <div style="display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 6px; background: #f5f5f5; font-size: 13px; font-weight: 500;">
+          <span style="font-size: 14px;">🏠</span> Home
+        </div>
+        <div style="display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 6px; font-size: 13px; color: #555; margin-top: 2px;">
+          <span style="font-size: 14px;">👤</span> Alts
+        </div>
+        <div style="display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 6px; font-size: 13px; color: #555; margin-top: 2px;">
+          <span style="font-size: 14px;">📋</span> Inbox
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right: Popover menu open -->
+  <div style="position: relative; min-height: 400px;">
+    <div class="mockup" style="position: relative;">
+      <div class="mockup-header">Popover Menu Open</div>
+      <div class="mockup-body" style="padding: 0; font-family: Inter, -apple-system, sans-serif; color: #111; width: 240px; min-height: 100px; opacity: 0.4;">
+        <div style="padding: 12px;">
+          <div style="display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 8px; background: #f5f5f5;">
+            <div style="width: 28px; height: 28px; border-radius: 50%; background: #f0fdfa; border: 1px solid #d1fae5; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; color: #0d9488; flex-shrink: 0;">A</div>
+            <div style="flex: 1;">
+              <div style="font-size: 13px; font-weight: 600; line-height: 1.2;">admin_trainer</div>
+              <div style="font-size: 10px; color: #999; line-height: 1.2;">Main alt</div>
+            </div>
+            <div style="color: #999; font-size: 10px;">⇅</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Floating popover menu -->
+    <div style="position: absolute; top: 70px; left: 12px; width: 260px; background: white; border: 1px solid #e0e0e0; border-radius: 10px; box-shadow: 0 8px 24px rgba(0,0,0,0.12); z-index: 100; font-family: Inter, -apple-system, sans-serif; color: #111; overflow: hidden;">
+
+      <!-- Header -->
+      <div style="padding: 10px 14px 6px 14px; font-size: 10px; font-weight: 500; color: #999; text-transform: uppercase; letter-spacing: 0.04em;">Switch alt</div>
+
+      <!-- All alts -->
+      <div style="padding: 7px 14px; font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 10px;" onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background='white'">
+        <div style="width: 26px; height: 26px; border-radius: 50%; background: #f0f0f0; display: flex; align-items: center; justify-content: center; font-size: 11px; color: #888; flex-shrink: 0;">✦</div>
+        <span style="font-weight: 500;">All Alts</span>
+      </div>
+
+      <div style="border-top: 1px solid #f0f0f0; margin: 4px 14px;"></div>
+
+      <!-- Alt list -->
+      <div style="padding: 7px 14px; font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 10px; background: #f8fafb;">
+        <div style="width: 26px; height: 26px; border-radius: 50%; background: #f0fdfa; border: 1px solid #d1fae5; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 600; color: #0d9488; flex-shrink: 0;">A</div>
+        <span style="font-weight: 500; flex: 1;">admin_trainer</span>
+        <span style="font-size: 8px; font-weight: 600; padding: 1px 5px; border-radius: 3px; background: #fef3c7; color: #92400e;">Main</span>
+        <span style="color: #0d9488; font-size: 14px;">✓</span>
+      </div>
+
+      <div style="padding: 7px 14px; font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 10px;" onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background='white'">
+        <div style="width: 26px; height: 26px; border-radius: 50%; background: #f0fdfa; border: 1px solid #d1fae5; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 600; color: #0d9488; flex-shrink: 0;">A</div>
+        <span style="flex: 1;">admin_trainer_vgc</span>
+      </div>
+
+      <div style="padding: 7px 14px; font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 10px;" onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background='white'">
+        <div style="width: 26px; height: 26px; border-radius: 50%; background: #f0fdfa; border: 1px solid #d1fae5; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 600; color: #0d9488; flex-shrink: 0;">A</div>
+        <span style="flex: 1;">admin_trainer_draft</span>
+      </div>
+
+      <div style="border-top: 1px solid #f0f0f0; margin: 4px 14px;"></div>
+
+      <!-- Actions -->
+      <div style="padding: 7px 14px; font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 10px; color: #666;" onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background='white'">
+        <span style="font-size: 14px; width: 26px; text-align: center;">+</span>
+        <span>Create new alt</span>
+      </div>
+
+      <div style="padding: 7px 14px 10px 14px; font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 10px; color: #666;" onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background='white'">
+        <span style="font-size: 14px; width: 26px; text-align: center;">⚙</span>
+        <span>Manage alts</span>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+<div class="section" style="margin-top: 1.5rem;">
+  <h3>Changes from v1</h3>
+  <ul>
+    <li><strong>Popover menu</strong> — floats over the sidebar, not constrained by sidebar width</li>
+    <li><strong>260px wide</strong> — enough room for long alt names without truncation</li>
+    <li><strong>"Switch alt" header</strong> — small label at top for context</li>
+    <li><strong>Separator lines</strong> are inset (margin on sides) not full-width</li>
+    <li><strong>Nothing truncated</strong> — all alt names fully visible</li>
+    <li><strong>Sidebar dims</strong> behind the popover to show it's a layer on top</li>
+  </ul>
+</div>

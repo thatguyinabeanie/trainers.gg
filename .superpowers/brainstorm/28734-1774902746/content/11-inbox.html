@@ -1,0 +1,137 @@
+<h2>Inbox — Redesign</h2>
+<p class="subtitle">Grouped tournament notifications, actionable items float to top, type-specific icons.</p>
+
+<div class="mockup">
+  <div class="mockup-header">Inbox</div>
+  <div class="mockup-body" style="padding: 20px; font-family: Inter, -apple-system, sans-serif; color: #111; max-width: 720px;">
+
+    <!-- Header -->
+    <div style="margin-bottom: 16px;">
+      <h3 style="font-size: 18px; font-weight: 700; margin: 0 0 4px 0;">Inbox</h3>
+    </div>
+
+    <!-- Tabs -->
+    <div style="display: flex; gap: 0; border-bottom: 1px solid #eee; margin-bottom: 16px;">
+      <div style="padding: 8px 14px; font-size: 13px; font-weight: 500; color: #111; border-bottom: 2px solid #111; margin-bottom: -1px; cursor: pointer;">All</div>
+      <div style="padding: 8px 14px; font-size: 13px; color: #888; cursor: pointer;">Unread <span style="font-size: 10px; background: #0d9488; color: white; padding: 1px 5px; border-radius: 10px; margin-left: 2px;">3</span></div>
+      <div style="padding: 8px 14px; font-size: 13px; color: #888; cursor: pointer;">Actions <span style="font-size: 10px; background: #ef4444; color: white; padding: 1px 5px; border-radius: 10px; margin-left: 2px;">1</span></div>
+      <div style="padding: 8px 14px; font-size: 13px; color: #888; cursor: pointer;">Matches</div>
+      <div style="padding: 8px 14px; font-size: 13px; color: #888; cursor: pointer;">Tournaments</div>
+    </div>
+
+    <!-- Notification list -->
+    <div style="display: flex; flex-direction: column; gap: 0;">
+
+      <!-- ACTION ITEM (floats to top) -->
+      <div style="display: flex; align-items: flex-start; gap: 12px; padding: 12px 14px; border: 1px solid #fde68a; background: #fffbeb; border-radius: 8px; margin-bottom: 8px;">
+        <div style="width: 6px; height: 6px; border-radius: 50%; background: #3b82f6; margin-top: 6px; flex-shrink: 0;"></div>
+        <div style="width: 28px; height: 28px; border-radius: 6px; background: #fef3c7; display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0;">📋</div>
+        <div style="flex: 1; min-width: 0;">
+          <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 2px;">
+            <span style="font-size: 13px; font-weight: 600;">Submit your team sheet</span>
+            <span style="font-size: 9px; font-weight: 600; padding: 1px 6px; border-radius: 3px; background: #fef3c7; color: #92400e;">Action needed</span>
+          </div>
+          <div style="font-size: 12px; color: #666;">Spring Cup 2026 — team sheets due in 2 hours</div>
+          <div style="display: flex; gap: 6px; margin-top: 8px;">
+            <button style="padding: 4px 12px; font-size: 11px; font-weight: 500; border-radius: 5px; border: none; background: #0d9488; color: white; cursor: pointer;">Submit team</button>
+            <button style="padding: 4px 12px; font-size: 11px; font-weight: 500; border-radius: 5px; border: 1px solid #e5e7eb; background: white; cursor: pointer; color: #333;">Dismiss</button>
+          </div>
+        </div>
+        <div style="font-size: 10px; color: #999; flex-shrink: 0; white-space: nowrap;">2h ago</div>
+      </div>
+
+      <!-- TOURNAMENT GROUP: Spring Cup 2026 -->
+      <div style="border: 1px solid #f0f0f0; border-radius: 8px; margin-bottom: 8px; overflow: hidden;">
+        <!-- Group header -->
+        <div style="display: flex; align-items: center; justify-content: space-between; padding: 8px 14px; background: #fafafa; border-bottom: 1px solid #f0f0f0;">
+          <div style="display: flex; align-items: center; gap: 6px;">
+            <span style="font-size: 13px;">🏆</span>
+            <span style="font-size: 12px; font-weight: 600;">Spring Cup 2026</span>
+          </div>
+          <span style="font-size: 10px; color: #999;">3 updates</span>
+        </div>
+
+        <!-- Latest notification (expanded) -->
+        <div style="display: flex; align-items: flex-start; gap: 12px; padding: 10px 14px; border-bottom: 1px solid #f5f5f5;">
+          <div style="width: 6px; height: 6px; border-radius: 50%; background: #3b82f6; margin-top: 6px; flex-shrink: 0;"></div>
+          <div style="width: 28px; height: 28px; border-radius: 6px; background: #dbeafe; display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0;">⚔</div>
+          <div style="flex: 1;">
+            <div style="font-size: 13px; font-weight: 500;">Round 3 pairings posted</div>
+            <div style="font-size: 12px; color: #666;">You're matched against <span style="font-weight: 500;">ash_ketchum</span> — Table 4</div>
+          </div>
+          <div style="font-size: 10px; color: #999; flex-shrink: 0;">15m ago</div>
+        </div>
+
+        <!-- Collapsed older notifications -->
+        <div style="padding: 8px 14px; font-size: 12px; color: #888; cursor: pointer; display: flex; align-items: center; gap: 6px;" onmouseover="this.style.background='#fafafa'" onmouseout="this.style.background='white'">
+          <span style="font-size: 10px;">▸</span> 2 earlier updates
+        </div>
+      </div>
+
+      <!-- ONE-OFF: Community approved -->
+      <div style="display: flex; align-items: flex-start; gap: 12px; padding: 12px 14px; border: 1px solid #f0f0f0; border-radius: 8px; margin-bottom: 8px;">
+        <div style="width: 6px; height: 6px; border-radius: 50%; background: #3b82f6; margin-top: 6px; flex-shrink: 0;"></div>
+        <div style="width: 28px; height: 28px; border-radius: 6px; background: #d1fae5; display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0;">✓</div>
+        <div style="flex: 1;">
+          <div style="font-size: 13px; font-weight: 500;">Your community request was approved</div>
+          <div style="font-size: 12px; color: #666;"><span style="font-weight: 500;">Pallet Town VGC</span> is now live on trainers.gg</div>
+        </div>
+        <div style="font-size: 10px; color: #999; flex-shrink: 0;">1h ago</div>
+      </div>
+
+      <!-- TOURNAMENT GROUP: Weekly #12 (read) -->
+      <div style="border: 1px solid #f0f0f0; border-radius: 8px; margin-bottom: 8px; overflow: hidden;">
+        <div style="display: flex; align-items: center; justify-content: space-between; padding: 8px 14px; background: #fafafa; border-bottom: 1px solid #f0f0f0;">
+          <div style="display: flex; align-items: center; gap: 6px;">
+            <span style="font-size: 13px;">🏆</span>
+            <span style="font-size: 12px; font-weight: 600;">Weekly #12</span>
+          </div>
+          <span style="font-size: 10px; color: #999;">5 updates</span>
+        </div>
+
+        <!-- Latest (read — no blue dot) -->
+        <div style="display: flex; align-items: flex-start; gap: 12px; padding: 10px 14px; border-bottom: 1px solid #f5f5f5;">
+          <div style="width: 6px; height: 6px; margin-top: 6px; flex-shrink: 0;"></div>
+          <div style="width: 28px; height: 28px; border-radius: 6px; background: #f3f4f6; display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0;">🏆</div>
+          <div style="flex: 1;">
+            <div style="font-size: 13px; font-weight: 500; color: #666;">Tournament completed — you placed 5th</div>
+            <div style="font-size: 12px; color: #999;">Final standings are available</div>
+          </div>
+          <div style="font-size: 10px; color: #bbb; flex-shrink: 0;">2d ago</div>
+        </div>
+
+        <div style="padding: 8px 14px; font-size: 12px; color: #888; cursor: pointer; display: flex; align-items: center; gap: 6px;" onmouseover="this.style.background='#fafafa'" onmouseout="this.style.background='white'">
+          <span style="font-size: 10px;">▸</span> 4 earlier updates
+        </div>
+      </div>
+
+      <!-- ONE-OFF: Match result (read) -->
+      <div style="display: flex; align-items: flex-start; gap: 12px; padding: 12px 14px; border: 1px solid #f0f0f0; border-radius: 8px; margin-bottom: 8px;">
+        <div style="width: 6px; height: 6px; margin-top: 6px; flex-shrink: 0;"></div>
+        <div style="width: 28px; height: 28px; border-radius: 6px; background: #f3f4f6; display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0;">⚔</div>
+        <div style="flex: 1;">
+          <div style="font-size: 13px; font-weight: 500; color: #666;">Judge resolved your dispute</div>
+          <div style="font-size: 12px; color: #999;">Round 2 vs gary_oak — result confirmed as Win</div>
+        </div>
+        <div style="font-size: 10px; color: #bbb; flex-shrink: 0;">3d ago</div>
+      </div>
+
+    </div>
+
+  </div>
+</div>
+
+<div class="section" style="margin-top: 1.5rem;">
+  <h3>Design decisions</h3>
+  <ul>
+    <li><strong>Action items float to top</strong> — amber border + "Action needed" badge + inline buttons</li>
+    <li><strong>Tournament groups</strong> — header with trophy icon + name + update count; latest expanded, older collapsed as "N earlier updates"</li>
+    <li><strong>One-off notifications</strong> — standalone cards (community approved, judge resolved)</li>
+    <li><strong>Unread indicator</strong> — blue dot on left</li>
+    <li><strong>Read items</strong> — muted text color, no blue dot</li>
+    <li><strong>Type icons</strong> — ⚔ match, 🏆 tournament, 📋 submission, ✓ approval</li>
+    <li><strong>Tabs</strong> — All, Unread (with count badge), Actions (with count badge), Matches, Tournaments</li>
+    <li><strong>Max-width 720px</strong> — feed doesn't stretch full page width</li>
+    <li><strong>Timestamps</strong> — relative (15m ago, 2h ago, 2d ago)</li>
+  </ul>
+</div>

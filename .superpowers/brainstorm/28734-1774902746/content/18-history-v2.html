@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>History — v2</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: Inter, -apple-system, sans-serif; background: #fff; color: #111; line-height: 1.5; }
+
+  .page-header { display: flex; align-items: center; gap: 8px; padding: 0 24px; height: 44px; border-bottom: 1px solid #f0f0f0; font-size: 13px; }
+  .page-header .trigger { width: 20px; height: 20px; border: 1px solid #ddd; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 9px; color: #888; }
+  .page-header .sep { width: 1px; height: 14px; background: #d4d4d4; }
+  .page-header .title { font-weight: 500; }
+  .page-header .bell { margin-left: auto; font-size: 13px; }
+
+  .content { padding: 24px; }
+
+  .heading-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+  .heading-row h1 { font-size: 18px; font-weight: 700; }
+  .filters { display: flex; gap: 8px; }
+  .filter { display: flex; align-items: center; gap: 6px; padding: 5px 10px; border: 1px solid #e5e7eb; border-radius: 6px; font-size: 12px; cursor: pointer; color: #555; }
+  .filter .chev { color: #ccc; font-size: 10px; }
+  .filter-icon { width: 16px; height: 16px; border-radius: 50%; background: #f0fdfa; border: 1px solid #d1fae5; display: flex; align-items: center; justify-content: center; font-size: 7px; font-weight: 600; color: #0d9488; }
+
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 20px; }
+  .stat { background: #f8f8f8; border-radius: 8px; padding: 10px 12px; }
+  .stat-label { font-size: 9px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #888; }
+  .stat-value { font-size: 18px; font-weight: 700; font-family: 'Geist Mono', monospace; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { text-align: left; padding: 8px 12px; font-size: 11px; font-weight: 500; color: #888; text-transform: uppercase; letter-spacing: 0.03em; border-bottom: 1px solid #eee; }
+  th.r { text-align: right; }
+  td { padding: 10px 12px; }
+  td.r { text-align: right; }
+  td.mono { font-family: 'Geist Mono', monospace; font-size: 12px; }
+  .row { border-bottom: 1px solid #f5f5f5; cursor: pointer; }
+  .row:hover { background: #fafafa; }
+  .row-expanded { background: #f8fafb; }
+  .alt-link { color: #0d9488; cursor: pointer; text-decoration: underline; text-decoration-color: #d1fae5; text-underline-offset: 2px; }
+  .place-1st { color: #0d9488; font-weight: 600; }
+  .date { color: #888; font-size: 12px; }
+  .chev { color: #ccc; text-align: center; }
+
+  .expand-card { background: white; border: 1px solid #eee; border-radius: 8px; padding: 14px 16px; }
+  .expand-row { display: flex; align-items: center; gap: 16px; }
+  .expand-section-label { font-size: 10px; font-weight: 500; color: #aaa; text-transform: uppercase; letter-spacing: 0.03em; margin-bottom: 4px; }
+  .sprites { display: flex; gap: 0; }
+  .sprites img { width: 28px; height: 28px; image-rendering: pixelated; object-fit: contain; }
+  .team-name { font-size: 12px; font-weight: 500; margin-left: 8px; }
+  .summary-text { font-size: 12px; color: #666; }
+  .view-link { font-size: 12px; color: #0d9488; font-weight: 500; text-decoration: none; cursor: pointer; white-space: nowrap; margin-left: auto; }
+</style>
+</head>
+<body>
+
+<div class="page-header">
+  <div class="trigger">☰</div>
+  <div class="sep"></div>
+  <div class="title">History</div>
+  <div class="bell">🔔</div>
+</div>
+
+<div class="content">
+
+  <div class="heading-row">
+    <h1>Tournament History</h1>
+    <div class="filters">
+      <div class="filter">
+        <div class="filter-icon">✦</div>
+        All alts
+        <span class="chev">▾</span>
+      </div>
+      <div class="filter">
+        All formats <span class="chev">▾</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="stats">
+    <div class="stat">
+      <div class="stat-label">Played</div>
+      <div class="stat-value">12</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Win Rate</div>
+      <div class="stat-value">57.1%</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Best Finish</div>
+      <div class="stat-value">1st</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Avg Place</div>
+      <div class="stat-value">4.2</div>
+    </div>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Tournament</th>
+        <th>Alt</th>
+        <th>Format</th>
+        <th class="r">Place</th>
+        <th class="r">Record</th>
+        <th class="r">Date</th>
+        <th style="width: 28px;"></th>
+      </tr>
+    </thead>
+    <tbody>
+      <!-- Expanded row -->
+      <tr class="row-expanded">
+        <td style="font-weight: 500;">Spring Cup 2026</td>
+        <td><span class="alt-link">admin_trainer_vgc</span></td>
+        <td style="color: #666;">VGC Reg H</td>
+        <td class="r mono" style="font-weight: 600;">3rd</td>
+        <td class="r mono">5-1</td>
+        <td class="r date">Mar 28</td>
+        <td class="chev">▾</td>
+      </tr>
+      <tr>
+        <td colspan="7" style="padding: 0 12px 12px 12px; background: #f8fafb; border-bottom: 1px solid #eee;">
+          <div class="expand-card">
+            <div class="expand-row">
+              <div>
+                <div class="expand-section-label">Team</div>
+                <div style="display: flex; align-items: center;">
+                  <div class="sprites">
+                    <img src="https://play.pokemonshowdown.com/sprites/gen5/kyogre.png" />
+                    <img src="https://play.pokemonshowdown.com/sprites/gen5/pelipper.png" />
+                    <img src="https://play.pokemonshowdown.com/sprites/gen5/rillaboom.png" />
+                    <img src="https://play.pokemonshowdown.com/sprites/gen5/urshifu.png" />
+                    <img src="https://play.pokemonshowdown.com/sprites/gen5/tornadus.png" />
+                    <img src="https://play.pokemonshowdown.com/sprites/gen5/amoonguss.png" />
+                  </div>
+                  <span class="team-name">Rain Balance</span>
+                </div>
+              </div>
+              <div>
+                <div class="expand-section-label">Details</div>
+                <div class="summary-text">Swiss · 24 players · 6 rounds</div>
+              </div>
+              <a class="view-link">View tournament →</a>
+            </div>
+          </div>
+        </td>
+      </tr>
+
+      <!-- Collapsed rows -->
+      <tr class="row">
+        <td style="font-weight: 500;">Weekly #12</td>
+        <td><span class="alt-link">admin_trainer</span></td>
+        <td style="color: #666;">VGC Reg H</td>
+        <td class="r mono">5th</td>
+        <td class="r mono">3-2</td>
+        <td class="r date">Mar 25</td>
+        <td class="chev">▸</td>
+      </tr>
+
+      <tr class="row">
+        <td style="font-weight: 500;">Monthly Finals</td>
+        <td><span class="alt-link">admin_trainer_vgc</span></td>
+        <td style="color: #666;">VGC Reg H</td>
+        <td class="r mono place-1st">1st 🏆</td>
+        <td class="r mono">6-0</td>
+        <td class="r date">Mar 20</td>
+        <td class="chev">▸</td>
+      </tr>
+
+      <tr class="row">
+        <td style="font-weight: 500;">Weekly #11</td>
+        <td><span class="alt-link">admin_trainer</span></td>
+        <td style="color: #666;">VGC Reg H</td>
+        <td class="r mono">8th</td>
+        <td class="r mono">2-3</td>
+        <td class="r date">Mar 18</td>
+        <td class="chev">▸</td>
+      </tr>
+
+      <tr class="row">
+        <td style="font-weight: 500;">Ladder Series</td>
+        <td><span class="alt-link">admin_trainer_vgc</span></td>
+        <td style="color: #666;">VGC Reg G</td>
+        <td class="r mono">3rd</td>
+        <td class="r mono">4-2</td>
+        <td class="r date">Mar 12</td>
+        <td class="chev">▸</td>
+      </tr>
+
+      <tr class="row">
+        <td style="font-weight: 500;">Winter Open</td>
+        <td><span class="alt-link">admin_trainer_vgc</span></td>
+        <td style="color: #666;">VGC Reg G</td>
+        <td class="r mono">2nd</td>
+        <td class="r mono">5-1</td>
+        <td class="r date">Feb 28</td>
+        <td class="chev">▸</td>
+      </tr>
+    </tbody>
+  </table>
+
+</div>
+
+</body>
+</html>

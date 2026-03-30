@@ -1,0 +1,125 @@
+<h2>Inbox — v2</h2>
+<p class="subtitle">Stripped back. No borders on items, spacing does the work.</p>
+
+<div class="mockup">
+  <div class="mockup-header">Inbox</div>
+  <div class="mockup-body" style="padding: 20px; font-family: Inter, -apple-system, sans-serif; color: #111; max-width: 640px;">
+
+    <!-- Header -->
+    <div style="margin-bottom: 16px;">
+      <h3 style="font-size: 18px; font-weight: 700; margin: 0;">Inbox</h3>
+    </div>
+
+    <!-- Tabs -->
+    <div style="display: flex; gap: 0; border-bottom: 1px solid #eee; margin-bottom: 20px;">
+      <div style="padding: 8px 14px; font-size: 13px; font-weight: 500; color: #111; border-bottom: 2px solid #111; margin-bottom: -1px; cursor: pointer;">All</div>
+      <div style="padding: 8px 14px; font-size: 13px; color: #888; cursor: pointer;">Unread <span style="font-size: 10px; color: #0d9488; font-weight: 600; margin-left: 1px;">3</span></div>
+      <div style="padding: 8px 14px; font-size: 13px; color: #888; cursor: pointer;">Actions <span style="font-size: 10px; color: #ef4444; font-weight: 600; margin-left: 1px;">1</span></div>
+      <div style="padding: 8px 14px; font-size: 13px; color: #888; cursor: pointer;">Matches</div>
+      <div style="padding: 8px 14px; font-size: 13px; color: #888; cursor: pointer;">Tournaments</div>
+    </div>
+
+    <!-- Notification list -->
+    <div style="display: flex; flex-direction: column;">
+
+      <!-- ACTION ITEM -->
+      <div style="display: flex; align-items: flex-start; gap: 10px; padding: 12px 0; border-bottom: 1px solid #f5f5f5;">
+        <div style="width: 6px; height: 6px; border-radius: 50%; background: #3b82f6; margin-top: 7px; flex-shrink: 0;"></div>
+        <div style="font-size: 16px; margin-top: 1px; flex-shrink: 0;">📋</div>
+        <div style="flex: 1; min-width: 0;">
+          <div style="font-size: 13px; font-weight: 600;">Submit your team sheet <span style="font-size: 10px; font-weight: 500; color: #ef4444;">· Action needed</span></div>
+          <div style="font-size: 12px; color: #888; margin-top: 1px;">Spring Cup 2026 — due in 2 hours</div>
+          <div style="display: flex; gap: 6px; margin-top: 8px;">
+            <button style="padding: 4px 12px; font-size: 11px; font-weight: 500; border-radius: 5px; border: none; background: #0d9488; color: white; cursor: pointer;">Submit team</button>
+            <button style="padding: 4px 12px; font-size: 11px; font-weight: 500; border-radius: 5px; border: 1px solid #e5e7eb; background: white; cursor: pointer; color: #666;">Dismiss</button>
+          </div>
+        </div>
+        <div style="font-size: 10px; color: #bbb; flex-shrink: 0;">2h</div>
+      </div>
+
+      <!-- TOURNAMENT GROUP: Spring Cup 2026 -->
+      <div style="padding: 12px 0; border-bottom: 1px solid #f5f5f5;">
+        <!-- Group label -->
+        <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 8px; margin-left: 16px;">
+          <span style="font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: #aaa;">🏆 Spring Cup 2026</span>
+        </div>
+
+        <!-- Latest notification -->
+        <div style="display: flex; align-items: flex-start; gap: 10px;">
+          <div style="width: 6px; height: 6px; border-radius: 50%; background: #3b82f6; margin-top: 7px; flex-shrink: 0;"></div>
+          <div style="font-size: 16px; margin-top: 1px; flex-shrink: 0;">⚔️</div>
+          <div style="flex: 1;">
+            <div style="font-size: 13px; font-weight: 500;">Round 3 pairings posted</div>
+            <div style="font-size: 12px; color: #888; margin-top: 1px;">You vs <span style="font-weight: 500; color: #666;">ash_ketchum</span> — Table 4</div>
+          </div>
+          <div style="font-size: 10px; color: #bbb; flex-shrink: 0;">15m</div>
+        </div>
+
+        <!-- Collapsed -->
+        <div style="margin-left: 16px; margin-top: 6px; font-size: 11px; color: #aaa; cursor: pointer;" onmouseover="this.style.color='#666'" onmouseout="this.style.color='#aaa'">
+          2 earlier
+        </div>
+      </div>
+
+      <!-- ONE-OFF: Community approved -->
+      <div style="display: flex; align-items: flex-start; gap: 10px; padding: 12px 0; border-bottom: 1px solid #f5f5f5;">
+        <div style="width: 6px; height: 6px; border-radius: 50%; background: #3b82f6; margin-top: 7px; flex-shrink: 0;"></div>
+        <div style="font-size: 16px; margin-top: 1px; flex-shrink: 0;">✅</div>
+        <div style="flex: 1;">
+          <div style="font-size: 13px; font-weight: 500;">Community request approved</div>
+          <div style="font-size: 12px; color: #888; margin-top: 1px;">Pallet Town VGC is now live</div>
+        </div>
+        <div style="font-size: 10px; color: #bbb; flex-shrink: 0;">1h</div>
+      </div>
+
+      <!-- TOURNAMENT GROUP: Weekly #12 (read) -->
+      <div style="padding: 12px 0; border-bottom: 1px solid #f5f5f5;">
+        <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 8px; margin-left: 16px;">
+          <span style="font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: #ccc;">🏆 Weekly #12</span>
+        </div>
+
+        <div style="display: flex; align-items: flex-start; gap: 10px;">
+          <div style="width: 6px; height: 6px; margin-top: 7px; flex-shrink: 0;"></div>
+          <div style="font-size: 16px; margin-top: 1px; flex-shrink: 0; opacity: 0.5;">🏆</div>
+          <div style="flex: 1;">
+            <div style="font-size: 13px; font-weight: 500; color: #999;">Tournament completed — you placed 5th</div>
+            <div style="font-size: 12px; color: #bbb; margin-top: 1px;">Final standings available</div>
+          </div>
+          <div style="font-size: 10px; color: #ccc; flex-shrink: 0;">2d</div>
+        </div>
+
+        <div style="margin-left: 16px; margin-top: 6px; font-size: 11px; color: #ccc; cursor: pointer;" onmouseover="this.style.color='#888'" onmouseout="this.style.color='#ccc'">
+          4 earlier
+        </div>
+      </div>
+
+      <!-- ONE-OFF: Judge resolved (read) -->
+      <div style="display: flex; align-items: flex-start; gap: 10px; padding: 12px 0; border-bottom: 1px solid #f5f5f5;">
+        <div style="width: 6px; height: 6px; margin-top: 7px; flex-shrink: 0;"></div>
+        <div style="font-size: 16px; margin-top: 1px; flex-shrink: 0; opacity: 0.5;">⚖️</div>
+        <div style="flex: 1;">
+          <div style="font-size: 13px; font-weight: 500; color: #999;">Judge resolved your dispute</div>
+          <div style="font-size: 12px; color: #bbb; margin-top: 1px;">Round 2 vs gary_oak — confirmed as Win</div>
+        </div>
+        <div style="font-size: 10px; color: #ccc; flex-shrink: 0;">3d</div>
+      </div>
+
+    </div>
+
+  </div>
+</div>
+
+<div class="section" style="margin-top: 1.5rem;">
+  <h3>What changed</h3>
+  <ul>
+    <li><strong>No borders on items</strong> — just thin bottom separators between items</li>
+    <li><strong>No colored icon backgrounds</strong> — plain emoji icons, no squares</li>
+    <li><strong>Tab counts are plain text</strong> — teal for unread, red for actions, no pill badges</li>
+    <li><strong>Action indicator inline</strong> — "· Action needed" in red after the title, no separate badge</li>
+    <li><strong>Tournament groups are lighter</strong> — small uppercase label instead of heavy header bar</li>
+    <li><strong>"2 earlier"</strong> — plain text link, no chevron or box</li>
+    <li><strong>Timestamps shorter</strong> — "15m" not "15m ago"</li>
+    <li><strong>Read items</strong> — muted text + faded icon, no blue dot</li>
+    <li><strong>640px max-width</strong> — tighter than before</li>
+  </ul>
+</div>

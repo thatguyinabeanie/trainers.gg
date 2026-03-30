@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>History — All States</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: Inter, -apple-system, sans-serif; background: #0a0a0a; color: #e5e5e5; padding: 2rem; line-height: 1.5; }
+  .wrap { max-width: 1000px; margin: 0 auto; }
+  h1 { font-size: 1.5rem; font-weight: 700; margin-bottom: 0.25rem; }
+  .subtitle { color: #888; font-size: 0.9rem; margin-bottom: 2rem; }
+  .state-label { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #0d9488; margin-bottom: 8px; margin-top: 32px; }
+  hr { border: none; border-top: 1px solid #1a1a1a; margin: 2rem 0; }
+
+  .mock { background: #fff; border: 1px solid #ddd; border-radius: 10px; overflow: hidden; color: #111; margin-bottom: 0; }
+  .mock-header { display: flex; align-items: center; gap: 8px; padding: 0 24px; height: 44px; border-bottom: 1px solid #f0f0f0; font-size: 13px; }
+  .mock-header .trigger { width: 20px; height: 20px; border: 1px solid #ddd; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 9px; color: #888; }
+  .mock-header .sep { width: 1px; height: 14px; background: #d4d4d4; }
+  .mock-header .title { font-weight: 500; }
+  .mock-header .bell { margin-left: auto; font-size: 13px; }
+
+  .content { padding: 24px; }
+  .heading-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+  .heading-row h2 { font-size: 18px; font-weight: 700; }
+  .filters { display: flex; gap: 8px; }
+  .filter { display: flex; align-items: center; gap: 6px; padding: 5px 10px; border: 1px solid #e5e7eb; border-radius: 6px; font-size: 12px; cursor: pointer; color: #555; }
+  .filter .chev { color: #ccc; font-size: 10px; }
+  .filter-icon { width: 16px; height: 16px; border-radius: 50%; background: #f0fdfa; border: 1px solid #d1fae5; display: flex; align-items: center; justify-content: center; font-size: 7px; font-weight: 600; color: #0d9488; }
+
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 20px; }
+  .stat { background: #f8f8f8; border-radius: 8px; padding: 10px 12px; }
+  .stat-label { font-size: 9px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #888; }
+  .stat-value { font-size: 18px; font-weight: 700; font-family: 'Geist Mono', monospace; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { text-align: left; padding: 8px 12px; font-size: 11px; font-weight: 500; color: #888; text-transform: uppercase; letter-spacing: 0.03em; border-bottom: 1px solid #eee; }
+  th.r { text-align: right; }
+  td { padding: 10px 12px; }
+  td.r { text-align: right; }
+  td.mono { font-family: 'Geist Mono', monospace; font-size: 12px; }
+  .row { border-bottom: 1px solid #f5f5f5; cursor: pointer; }
+  .row:hover { background: #fafafa; }
+  .row-exp { background: #f8fafb; cursor: pointer; }
+  .alt-link { color: #0d9488; cursor: pointer; text-decoration: underline; text-decoration-color: #d1fae5; text-underline-offset: 2px; }
+  .place-1st { color: #0d9488; font-weight: 600; }
+  .date { color: #888; font-size: 12px; }
+  .chev-cell { color: #ccc; text-align: center; width: 28px; }
+
+  .expand-card { background: white; border: 1px solid #eee; border-radius: 8px; padding: 14px 16px; }
+  .expand-inner { display: flex; align-items: center; gap: 16px; }
+  .section-label { font-size: 10px; font-weight: 500; color: #aaa; text-transform: uppercase; letter-spacing: 0.03em; margin-bottom: 4px; }
+  .sprites { display: flex; gap: 0; }
+  .sprites img { width: 28px; height: 28px; image-rendering: pixelated; object-fit: contain; }
+  .team-name { font-size: 12px; font-weight: 500; margin-left: 8px; }
+  .summary-text { font-size: 12px; color: #666; }
+  .view-link { font-size: 12px; color: #0d9488; font-weight: 500; cursor: pointer; white-space: nowrap; margin-left: auto; }
+
+  .empty-state { text-align: center; padding: 48px 24px; color: #bbb; }
+  .empty-state .icon { font-size: 32px; margin-bottom: 8px; }
+  .empty-state .msg { font-size: 14px; font-weight: 500; color: #999; margin-bottom: 4px; }
+  .empty-state .sub { font-size: 12px; color: #ccc; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>History — All States</h1>
+<p class="subtitle">Every state the history page can be in.</p>
+
+<hr>
+
+<!-- ============================================================ -->
+<!-- STATE 1: Default — all collapsed -->
+<!-- ============================================================ -->
+<div class="state-label">State 1: Default — all rows collapsed</div>
+<div class="mock">
+  <div class="mock-header">
+    <div class="trigger">☰</div><div class="sep"></div><div class="title">History</div><div class="bell">🔔</div>
+  </div>
+  <div class="content">
+    <div class="heading-row">
+      <h2>Tournament History</h2>
+      <div class="filters">
+        <div class="filter"><div class="filter-icon">✦</div> All alts <span class="chev">▾</span></div>
+        <div class="filter">All formats <span class="chev">▾</span></div>
+      </div>
+    </div>
+    <div class="stats">
+      <div class="stat"><div class="stat-label">Played</div><div class="stat-value">12</div></div>
+      <div class="stat"><div class="stat-label">Win Rate</div><div class="stat-value">57.1%</div></div>
+      <div class="stat"><div class="stat-label">Best Finish</div><div class="stat-value">1st</div></div>
+      <div class="stat"><div class="stat-label">Avg Place</div><div class="stat-value">4.2</div></div>
+    </div>
+    <table>
+      <thead><tr>
+        <th>Tournament</th><th>Alt</th><th>Format</th><th class="r">Place</th><th class="r">Record</th><th class="r">Date</th><th style="width:28px"></th>
+      </tr></thead>
+      <tbody>
+        <tr class="row"><td style="font-weight:500">Spring Cup 2026</td><td><span class="alt-link">admin_trainer_vgc</span></td><td style="color:#666">VGC Reg H</td><td class="r mono" style="font-weight:600">3rd</td><td class="r mono">5-1</td><td class="r date">Mar 28</td><td class="chev-cell">▸</td></tr>
+        <tr class="row"><td style="font-weight:500">Weekly #12</td><td><span class="alt-link">admin_trainer</span></td><td style="color:#666">VGC Reg H</td><td class="r mono">5th</td><td class="r mono">3-2</td><td class="r date">Mar 25</td><td class="chev-cell">▸</td></tr>
+        <tr class="row"><td style="font-weight:500">Monthly Finals</td><td><span class="alt-link">admin_trainer_vgc</span></td><td style="color:#666">VGC Reg H</td><td class="r mono place-1st">1st 🏆</td><td class="r mono">6-0</td><td class="r date">Mar 20</td><td class="chev-cell">▸</td></tr>
+        <tr class="row"><td style="font-weight:500">Weekly #11</td><td><span class="alt-link">admin_trainer</span></td><td style="color:#666">VGC Reg H</td><td class="r mono">8th</td><td class="r mono">2-3</td><td class="r date">Mar 18</td><td class="chev-cell">▸</td></tr>
+        <tr class="row"><td style="font-weight:500">Ladder Series</td><td><span class="alt-link">admin_trainer_vgc</span></td><td style="color:#666">VGC Reg G</td><td class="r mono">3rd</td><td class="r mono">4-2</td><td class="r date">Mar 12</td><td class="chev-cell">▸</td></tr>
+        <tr class="row"><td style="font-weight:500">Winter Open</td><td><span class="alt-link">admin_trainer_vgc</span></td><td style="color:#666">VGC Reg G</td><td class="r mono">2nd</td><td class="r mono">5-1</td><td class="r date">Feb 28</td><td class="chev-cell">▸</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- STATE 2: One row expanded -->
+<!-- ============================================================ -->
+<div class="state-label">State 2: Row expanded — shows team + summary + link</div>
+<div class="mock">
+  <div class="mock-header">
+    <div class="trigger">☰</div><div class="sep"></div><div class="title">History</div><div class="bell">🔔</div>
+  </div>
+  <div class="content">
+    <div class="heading-row">
+      <h2>Tournament History</h2>
+      <div class="filters">
+        <div class="filter"><div class="filter-icon">✦</div> All alts <span class="chev">▾</span></div>
+        <div class="filter">All formats <span class="chev">▾</span></div>
+      </div>
+    </div>
+    <div class="stats">
+      <div class="stat"><div class="stat-label">Played</div><div class="stat-value">12</div></div>
+      <div class="stat"><div class="stat-label">Win Rate</div><div class="stat-value">57.1%</div></div>
+      <div class="stat"><div class="stat-label">Best Finish</div><div class="stat-value">1st</div></div>
+      <div class="stat"><div class="stat-label">Avg Place</div><div class="stat-value">4.2</div></div>
+    </div>
+    <table>
+      <thead><tr>
+        <th>Tournament</th><th>Alt</th><th>Format</th><th class="r">Place</th><th class="r">Record</th><th class="r">Date</th><th style="width:28px"></th>
+      </tr></thead>
+      <tbody>
+        <tr class="row"><td style="font-weight:500">Spring Cup 2026</td><td><span class="alt-link">admin_trainer_vgc</span></td><td style="color:#666">VGC Reg H</td><td class="r mono" style="font-weight:600">3rd</td><td class="r mono">5-1</td><td class="r date">Mar 28</td><td class="chev-cell">▸</td></tr>
+        <tr class="row"><td style="font-weight:500">Weekly #12</td><td><span class="alt-link">admin_trainer</span></td><td style="color:#666">VGC Reg H</td><td class="r mono">5th</td><td class="r mono">3-2</td><td class="r date">Mar 25</td><td class="chev-cell">▸</td></tr>
+
+        <!-- EXPANDED -->
+        <tr class="row-exp"><td style="font-weight:500">Monthly Finals</td><td><span class="alt-link">admin_trainer_vgc</span></td><td style="color:#666">VGC Reg H</td><td class="r mono place-1st">1st 🏆</td><td class="r mono">6-0</td><td class="r date">Mar 20</td><td class="chev-cell" style="color:#999">▾</td></tr>
+        <tr><td colspan="7" style="padding: 0 12px 12px 12px; background: #f8fafb; border-bottom: 1px solid #eee;">
+          <div class="expand-card">
+            <div class="expand-inner">
+              <div>
+                <div class="section-label">Team</div>
+                <div style="display:flex;align-items:center;">
+                  <div class="sprites">
+                    <img src="https://play.pokemonshowdown.com/sprites/gen5/koraidon.png" />
+                    <img src="https://play.pokemonshowdown.com/sprites/gen5/fluttermane.png" />
+                    <img src="https://play.pokemonshowdown.com/sprites/gen5/incineroar.png" />
+                    <img src="https://play.pokemonshowdown.com/sprites/gen5/landorus.png" />
+                    <img src="https://play.pokemonshowdown.com/sprites/gen5/farigiraf.png" />
+                    <img src="https://play.pokemonshowdown.com/sprites/gen5/ragingbolt.png" />
+                  </div>
+                  <span class="team-name">Sun Room</span>
+                </div>
+              </div>
+              <div>
+                <div class="section-label">Details</div>
+                <div class="summary-text">Swiss · 16 players · 5 rounds</div>
+              </div>
+              <a class="view-link">View tournament →</a>
+            </div>
+          </div>
+        </td></tr>
+
+        <tr class="row"><td style="font-weight:500">Weekly #11</td><td><span class="alt-link">admin_trainer</span></td><td style="color:#666">VGC Reg H</td><td class="r mono">8th</td><td class="r mono">2-3</td><td class="r date">Mar 18</td><td class="chev-cell">▸</td></tr>
+        <tr class="row"><td style="font-weight:500">Ladder Series</td><td><span class="alt-link">admin_trainer_vgc</span></td><td style="color:#666">VGC Reg G</td><td class="r mono">3rd</td><td class="r mono">4-2</td><td class="r date">Mar 12</td><td class="chev-cell">▸</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- STATE 3: Filtered to one alt -->
+<!-- ============================================================ -->
+<div class="state-label">State 3: Filtered to one alt — stats update, fewer rows</div>
+<div class="mock">
+  <div class="mock-header">
+    <div class="trigger">☰</div><div class="sep"></div><div class="title">History</div><div class="bell">🔔</div>
+  </div>
+  <div class="content">
+    <div class="heading-row">
+      <h2>Tournament History</h2>
+      <div class="filters">
+        <div class="filter" style="border-color: #0d9488; color: #0d9488;">
+          <div style="width:16px;height:16px;border-radius:50%;background:#f0fdfa;border:1px solid #d1fae5;display:flex;align-items:center;justify-content:center;font-size:7px;font-weight:600;color:#0d9488;">A</div>
+          admin_trainer_vgc
+          <span style="color:#0d9488;font-size:10px;cursor:pointer;">✕</span>
+        </div>
+        <div class="filter">All formats <span class="chev">▾</span></div>
+      </div>
+    </div>
+    <div class="stats">
+      <div class="stat"><div class="stat-label">Played</div><div class="stat-value">7</div></div>
+      <div class="stat"><div class="stat-label">Win Rate</div><div class="stat-value">66.7%</div></div>
+      <div class="stat"><div class="stat-label">Best Finish</div><div class="stat-value">1st</div></div>
+      <div class="stat"><div class="stat-label">Avg Place</div><div class="stat-value">2.4</div></div>
+    </div>
+    <table>
+      <thead><tr>
+        <th>Tournament</th><th>Format</th><th class="r">Place</th><th class="r">Record</th><th class="r">Date</th><th style="width:28px"></th>
+      </tr></thead>
+      <tbody>
+        <tr class="row"><td style="font-weight:500">Spring Cup 2026</td><td style="color:#666">VGC Reg H</td><td class="r mono" style="font-weight:600">3rd</td><td class="r mono">5-1</td><td class="r date">Mar 28</td><td class="chev-cell">▸</td></tr>
+        <tr class="row"><td style="font-weight:500">Monthly Finals</td><td style="color:#666">VGC Reg H</td><td class="r mono place-1st">1st 🏆</td><td class="r mono">6-0</td><td class="r date">Mar 20</td><td class="chev-cell">▸</td></tr>
+        <tr class="row"><td style="font-weight:500">Ladder Series</td><td style="color:#666">VGC Reg G</td><td class="r mono">3rd</td><td class="r mono">4-2</td><td class="r date">Mar 12</td><td class="chev-cell">▸</td></tr>
+        <tr class="row"><td style="font-weight:500">Winter Open</td><td style="color:#666">VGC Reg G</td><td class="r mono">2nd</td><td class="r mono">5-1</td><td class="r date">Feb 28</td><td class="chev-cell">▸</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- STATE 4: Empty — no tournaments yet -->
+<!-- ============================================================ -->
+<div class="state-label">State 4: Empty — no tournament history</div>
+<div class="mock">
+  <div class="mock-header">
+    <div class="trigger">☰</div><div class="sep"></div><div class="title">History</div><div class="bell">🔔</div>
+  </div>
+  <div class="content">
+    <div class="heading-row">
+      <h2>Tournament History</h2>
+      <div class="filters">
+        <div class="filter"><div class="filter-icon">✦</div> All alts <span class="chev">▾</span></div>
+        <div class="filter">All formats <span class="chev">▾</span></div>
+      </div>
+    </div>
+    <div class="empty-state">
+      <div class="icon">🏆</div>
+      <div class="msg">No tournament history yet</div>
+      <div class="sub">Your results will appear here after you compete in a tournament</div>
+      <div style="margin-top: 16px;">
+        <a style="padding: 6px 16px; font-size: 12px; font-weight: 500; border-radius: 6px; background: #0d9488; color: white; cursor: pointer; text-decoration: none;">Browse tournaments</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div>
+</body>
+</html>

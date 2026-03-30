@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>History — Final</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: Inter, -apple-system, sans-serif; background: #0a0a0a; color: #e5e5e5; padding: 2rem; line-height: 1.5; }
+  .wrap { max-width: 1000px; margin: 0 auto; }
+  h1 { font-size: 1.5rem; font-weight: 700; margin-bottom: 0.25rem; }
+  .subtitle { color: #888; font-size: 0.9rem; margin-bottom: 2rem; }
+  hr { border: none; border-top: 1px solid #1a1a1a; margin: 2rem 0; }
+
+  .mock { background: #fff; border: 1px solid #ddd; border-radius: 10px; overflow: hidden; color: #111; }
+  .mock-header { display: flex; align-items: center; gap: 8px; padding: 0 24px; height: 44px; border-bottom: 1px solid #f0f0f0; font-size: 13px; }
+  .mock-header .trigger { width: 20px; height: 20px; border: 1px solid #ddd; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 9px; color: #888; }
+  .mock-header .sep { width: 1px; height: 14px; background: #d4d4d4; }
+  .mock-header .title { font-weight: 500; }
+  .mock-header .bell { margin-left: auto; font-size: 13px; }
+
+  .content { padding: 24px; }
+  .heading-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+  .heading-row h2 { font-size: 18px; font-weight: 700; }
+  .filters { display: flex; gap: 8px; }
+  .filter { display: flex; align-items: center; gap: 6px; padding: 5px 10px; border: 1px solid #e5e7eb; border-radius: 6px; font-size: 12px; cursor: pointer; color: #555; }
+  .filter .chev { color: #ccc; font-size: 10px; }
+  .filter-icon { width: 16px; height: 16px; border-radius: 50%; background: #f0fdfa; border: 1px solid #d1fae5; display: flex; align-items: center; justify-content: center; font-size: 7px; font-weight: 600; color: #0d9488; }
+
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 20px; }
+  .stat { background: #f8f8f8; border-radius: 8px; padding: 10px 12px; }
+  .stat-label { font-size: 9px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #888; }
+  .stat-value { font-size: 18px; font-weight: 700; font-family: 'Geist Mono', monospace; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { text-align: left; padding: 8px 12px; font-size: 11px; font-weight: 500; color: #888; text-transform: uppercase; letter-spacing: 0.03em; border-bottom: 1px solid #eee; }
+  th.r { text-align: right; }
+  td { padding: 10px 12px; vertical-align: middle; }
+  td.r { text-align: right; }
+  .row { border-bottom: 1px solid #f5f5f5; cursor: pointer; }
+  .row:hover { background: #fafafa; }
+  .row-exp { background: #f8fafb; cursor: pointer; }
+  .alt-link { color: #0d9488; cursor: pointer; text-decoration: underline; text-decoration-color: #d1fae5; text-underline-offset: 2px; }
+  .chev-cell { color: #ccc; text-align: center; width: 28px; }
+
+  .tourney-link { font-weight: 500; color: #111; text-decoration: none; cursor: pointer; }
+  .tourney-link:hover { color: #0d9488; }
+  .tourney-date { font-size: 11px; color: #aaa; margin-top: 1px; }
+
+  .result { text-align: right; }
+  .result-place { font-size: 13px; font-weight: 600; font-family: 'Geist Mono', monospace; }
+  .result-record { font-size: 11px; color: #888; font-family: 'Geist Mono', monospace; margin-top: 1px; }
+  .place-1st { color: #0d9488; }
+
+  .sprites { display: flex; gap: 0; }
+  .sprites img { width: 24px; height: 24px; image-rendering: pixelated; object-fit: contain; }
+
+  .expand-card { background: white; border: 1px solid #eee; border-radius: 8px; padding: 14px 16px; }
+  .expand-inner { display: flex; align-items: center; gap: 16px; }
+  .section-label { font-size: 10px; font-weight: 500; color: #aaa; text-transform: uppercase; letter-spacing: 0.03em; margin-bottom: 4px; }
+  .sprites-lg { display: flex; gap: 0; }
+  .sprites-lg img { width: 32px; height: 32px; image-rendering: pixelated; object-fit: contain; }
+  .team-name { font-size: 12px; font-weight: 500; margin-left: 8px; }
+  .summary-text { font-size: 12px; color: #666; }
+  .view-link { font-size: 12px; color: #0d9488; font-weight: 500; cursor: pointer; white-space: nowrap; margin-left: auto; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>History — Final</h1>
+<p class="subtitle">Tournament (link + date), Alt, Team, Result (place + record combined).</p>
+
+<hr>
+
+<div class="mock">
+  <div class="mock-header">
+    <div class="trigger">☰</div><div class="sep"></div><div class="title">History</div><div class="bell">🔔</div>
+  </div>
+  <div class="content">
+    <div class="heading-row">
+      <h2>Tournament History</h2>
+      <div class="filters">
+        <div class="filter"><div class="filter-icon">✦</div> All alts <span class="chev">▾</span></div>
+        <div class="filter">All formats <span class="chev">▾</span></div>
+      </div>
+    </div>
+    <div class="stats">
+      <div class="stat"><div class="stat-label">Played</div><div class="stat-value">12</div></div>
+      <div class="stat"><div class="stat-label">Win Rate</div><div class="stat-value">57.1%</div></div>
+      <div class="stat"><div class="stat-label">Best Finish</div><div class="stat-value">1st</div></div>
+      <div class="stat"><div class="stat-label">Avg Place</div><div class="stat-value">4.2</div></div>
+    </div>
+    <table>
+      <thead><tr>
+        <th>Tournament</th>
+        <th>Alt</th>
+        <th>Team</th>
+        <th class="r">Result</th>
+        <th style="width:28px"></th>
+      </tr></thead>
+      <tbody>
+        <tr class="row">
+          <td><a class="tourney-link">Spring Cup 2026</a><div class="tourney-date">Mar 28, 2026</div></td>
+          <td><span class="alt-link">admin_trainer_vgc</span></td>
+          <td><div class="sprites"><img src="https://play.pokemonshowdown.com/sprites/gen5/kyogre.png"/><img src="https://play.pokemonshowdown.com/sprites/gen5/pelipper.png"/><img src="https://play.pokemonshowdown.com/sprites/gen5/rillaboom.png"/><img src="https://play.pokemonshowdown.com/sprites/gen5/urshifu.png"/><img src="https://play.pokemonshowdown.com/sprites/gen5/tornadus.png"/><img src="https://play.pokemonshowdown.com/sprites/gen5/amoonguss.png"/></div></td>
+          <td class="result"><div class="result-place">3rd</div><div class="result-record">5-1</div></td>
+          <td class="chev-cell">▸</td>
+        </tr>
+        <tr class="row">
+          <td><a class="tourney-link">Weekly #12</a><div class="tourney-date">Mar 25, 2026</div></td>
+          <td><span class="alt-link">admin_trainer</span></td>
+          <td><div class="sprites"><img src="https://play.pokemonshowdown.com/sprites/gen5/kyogre.png"/><img src="https://play.pokemonshowdown.com/sprites/gen5/pelipper.png"/><img src="https://play.pokemonshowdown.com/sprites/gen5/rillaboom.png"/><img src="https://play.pokemonshowdown.com/sprites/gen5/urshifu.png"/><img src="https://play.pokemonshowdown.com/sprites/gen5/tornadus.png"/><img src="https://play.pokemonshowdown.com/sprites/gen5/amoonguss.png"/></div></td>
+          <td class="result"><div class="result-place">5th</div><div class="result-record">3-2</div></td>
+          <td class="chev-cell">▸</td>
+        </tr>
+
+        <!-- EXPANDED -->
+        <tr class="row-exp">
+          <td><a class="tourney-link">Monthly Finals</a><div class="tourney-date">Mar 20, 2026</div></td>
+          <td><span class="alt-link">admin_trainer_vgc</span></td>
+          <td><div class="sprites"><img src="https://play.pokemonshowdown.com/sprites/gen5/koraidon.png"/><img src="https://play.pokemonshowdown.com/sprites/gen5/fluttermane.png"/><img src="https://play.pokemonshowdown.com/sprites/gen5/incineroar.png"/><img src="https://play.pokemonshowdown.com/sprites/gen5/landorus.png"/><img src="https://play.pokemonshowdown.com/sprites/gen5/farigiraf.png"/><img src="https://play.pokemonshowdown.com/sprites/gen5/ragingbolt.png"/></div></td>
+          <td class="result"><div class="result-place place-1st">1st 🏆</div><div class="result-record">6-0</div></td>
+          <td class="chev-cell" style="color:#999">▾</td>
+        </tr>
+        <tr><td colspan="5" style="padding: 0 12px 12px 12px; background: #f8fafb; border-bottom: 1px solid #eee;">
+          <div class="expand-card">
+            <div class="expand-inner">
+              <div>
+                <div class="section-label">Team</div>
+                <div style="display:flex;align-items:center;">
+                  <div class="sprites-lg">
+                    <img src="https://play.pokemonshowdown.com/sprites/gen5/koraidon.png"/>
+                    <img src="https://play.pokemonshowdown.com/sprites/gen5/fluttermane.png"/>
+                    <img src="https://play.pokemonshowdown.com/sprites/gen5/incineroar.png"/>
+                    <img src="https://play.pokemonshowdown.com/sprites/gen5/landorus.png"/>
+                    <img src="https://play.pokemonshowdown.com/sprites/gen5/farigiraf.png"/>
+                    <img src="https://play.pokemonshowdown.com/sprites/gen5/ragingbolt.png"/>
+                  </div>
+                  <span class="team-name">Sun Room</span>
+                </div>
+              </div>
+              <div>
+                <div class="section-label">Details</div>
+                <div class="summary-text">Swiss · 16 players · 5 rounds · VGC Reg H</div>
+              </div>
+              <a class="view-link">View tournament →</a>
+            </div>
+          </div>
+        </td></tr>
+
+        <tr class="row">
+          <td><a class="tourney-link">Weekly #11</a><div class="tourney-date">Mar 18, 2026</div></td>
+          <td><span class="alt-link">admin_trainer</span></td>
+          <td><div class="sprites"><img src="https://play.pokemonshowdown.com/sprites/gen5/rillaboom.png"/><img src="https://play.pokemonshowdown.com/sprites/gen5/incineroar.png"/><img src="https://play.pokemonshowdown.com/sprites/gen5/kyogre.png"/><img src="https://play.pokemonshowdown.com/sprites/gen5/tornadus.png"/><img src="https://play.pokemonshowdown.com/sprites/gen5/amoonguss.png"/><img src="https://play.pokemonshowdown.com/sprites/gen5/farigiraf.png"/></div></td>
+          <td class="result"><div class="result-place">8th</div><div class="result-record">2-3</div></td>
+          <td class="chev-cell">▸</td>
+        </tr>
+        <tr class="row">
+          <td><a class="tourney-link">Ladder Series</a><div class="tourney-date">Mar 12, 2026</div></td>
+          <td><span class="alt-link">admin_trainer_vgc</span></td>
+          <td><div class="sprites"><img src="https://play.pokemonshowdown.com/sprites/gen5/koraidon.png"/><img src="https://play.pokemonshowdown.com/sprites/gen5/fluttermane.png"/><img src="https://play.pokemonshowdown.com/sprites/gen5/incineroar.png"/><img src="https://play.pokemonshowdown.com/sprites/gen5/landorus.png"/><img src="https://play.pokemonshowdown.com/sprites/gen5/farigiraf.png"/><img src="https://play.pokemonshowdown.com/sprites/gen5/ragingbolt.png"/></div></td>
+          <td class="result"><div class="result-place">3rd</div><div class="result-record">4-2</div></td>
+          <td class="chev-cell">▸</td>
+        </tr>
+        <tr class="row">
+          <td><a class="tourney-link">Winter Open</a><div class="tourney-date">Feb 28, 2026</div></td>
+          <td><span class="alt-link">admin_trainer_vgc</span></td>
+          <td><div class="sprites"><img src="https://play.pokemonshowdown.com/sprites/gen5/kyogre.png"/><img src="https://play.pokemonshowdown.com/sprites/gen5/pelipper.png"/><img src="https://play.pokemonshowdown.com/sprites/gen5/rillaboom.png"/><img src="https://play.pokemonshowdown.com/sprites/gen5/urshifu.png"/><img src="https://play.pokemonshowdown.com/sprites/gen5/tornadus.png"/><img src="https://play.pokemonshowdown.com/sprites/gen5/amoonguss.png"/></div></td>
+          <td class="result"><div class="result-place">2nd</div><div class="result-record">5-1</div></td>
+          <td class="chev-cell">▸</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+</div>
+</body>
+</html>

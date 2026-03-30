@@ -25,7 +25,6 @@ The dashboard is the player's **personal control center** — a launchpad + iden
 [Alt Switcher]         ⇅     ← navigates between /dashboard/alts and /dashboard/alts/[username]
 🏠  Home                     → /dashboard
 👤  Alts                     → /dashboard/alts
-📋  Inbox                    → /dashboard/inbox
 💬  Messages                 → /dashboard/messages (future)
 ─── Communities ──── [+]
     [P] Pallet Town   🟢    → /dashboard/community/pallet-town
@@ -54,6 +53,11 @@ The dashboard is the player's **personal control center** — a launchpad + iden
 - Selecting "All Alts" navigates to `/dashboard/alts`
 - State derived from URL path, not client state
 - Uses the shadcn Team Switcher pattern
+- **Popover menu** (not inline dropdown) — floats over the sidebar at 260px width
+- "Switch alt" label header at top of popover
+- Sidebar dims behind the popover
+- Inset separator lines between sections
+- **Mockup:** `.superpowers/brainstorm/28734-1774902746/content/10-alt-switcher-v2.html`
 
 ### NavUser Footer
 
@@ -88,8 +92,7 @@ The dashboard is the player's **personal control center** — a launchpad + iden
 /dashboard/alts/history                   → Aggregate tournament history across all alts
 /dashboard/alts/[username]                → Alt detail (stats, teams, management)
 /dashboard/alts/[username]/history        → Tournament history for this alt
-/dashboard/inbox                          → Actionable items + tournament notifications feed
-/dashboard/messages                       → Chat/DMs (future)
+/dashboard/messages                       → Chat/DMs (future, will become inbox when messaging ships)
 /dashboard/settings                       → Redirects to /dashboard/settings/profile
 /dashboard/settings/profile               → Profile settings
 /dashboard/settings/account               → Account settings
@@ -125,20 +128,26 @@ The dashboard is the player's **personal control center** — a launchpad + iden
 - What's Next section
 - Clean heading: "Welcome back, [name]"
 
-### Alts (`/dashboard/alts`)
+### Alts (`/dashboard/alts`) ✅ Approved
 
-**All Alts view (aggregate):**
+**All Alts view (aggregate) — table layout:**
 
-- Aggregated stats at top (record, win rate, peak rating, tournament count)
-- "+ New Alt" button
-- Alt list as expandable rows
+- Aggregated stats row at top (record, win rate, peak rating, tournament count)
+- "+ New Alt" button inline with heading
+- **Alt table** with columns: Handle (200px), Record, Win %, Rating, Events, Teams, Public (dot), chevron
+- Stats visible on every row without expanding — scannable across all alts
+- Public column: green dot = public, gray dot = private
+- Main badge (amber) on the main alt's handle
+- Empty alts show dashes and muted text
 - Click alt row → **expands inline** (does NOT auto-switch the alt switcher)
-- Expanded view shows:
-  - Per-alt stats preview
-  - Teams preview (first 2-3 teams with sprites)
-  - "View as this alt" button → explicitly changes switcher + navigates to `/dashboard/alts/[username]`
-  - "View history" link → `/dashboard/alts/[username]/history`
-- Alt management (create, delete, avatar, visibility) all happens here
+- Expanded row stats get bolded, win % highlighted in teal
+- **Expanded view is a contained card** (white card with border inside tinted background):
+  - **Teams sub-table** with columns: Team (name first), Pokemon (Gen 5 sprites from Showdown CDN, 28px, pixelated), Record, Win %, Events, Actions
+  - Per-team record and win rate — see which teams perform best
+  - Archived teams: reduced opacity + grayscale sprites, only ↩ Restore action
+  - **Team actions** (icon buttons 24×24): 🔨 Open in Builder, ↗ Share (coming soon), ⊕ Clone (coming soon)
+  - **Footer** with separator: "View as this alt" (primary) + "View history" (secondary) on left, "Delete alt" (red text) on right
+- **Mockup:** `.superpowers/brainstorm/28734-1774902746/content/08-alts-table-v6.html`
 
 **Single Alt view (`/dashboard/alts/[username]`):**
 
@@ -159,29 +168,67 @@ The dashboard is the player's **personal control center** — a launchpad + iden
 - The team builder will have analytics integrated (like pikalytics/labmaus) — it's a major feature, not just a form
 - Team versioning and branching is a core differentiator — fork teams, track iterations, historical performance
 
-### History
+### History ✅ Approved
 
-- **Aggregate:** `/dashboard/alts/history` — tournament history across all alts
-- **Per-alt:** `/dashboard/alts/[username]/history` — filtered to specific alt
-- Could use Next.js parallel routes to show history alongside alt content on the same page
-- Sortable table with alt column (aggregate), format filter, date range
-- The URL `/dashboard/alts/history` is a real navigable route AND can be shown via parallel routes when viewing `/dashboard/alts`
+**Routes:**
 
-### Inbox (`/dashboard/inbox`)
+- **Aggregate:** `/dashboard/alts/history` — all alts
+- **Per-alt:** `/dashboard/alts/[username]/history` — pre-filtered, no Alt column
 
-- **Notifications and actionable items only** — no messages (messages are separate)
-- Separate from the bell icon notifications (bell = quick alerts dropdown, inbox = full feed with actions)
-- **Tabs:** All, Unread, Actions, Matches, Tournaments
-- **Tournament notifications grouped** by tournament:
-  - Group header: tournament name + update count
-  - Latest notification always shown expanded
-  - Older notifications collapsed into "N earlier" — click to reveal
-  - Keeps the feed tight even for tournaments with many rounds
-- **Actionable items never grouped** — always standalone with inline buttons + "Action needed" badge
-- **Actionable items float to top** regardless of timestamp
-- **One-off notifications** — standalone items (org approved, judge resolved)
-- **Unread indicators** — blue dot on left
-- **Type-specific icons** — match (⚔), tournament (🏆), invite (📨), submission (📋), system (🔔)
+**Summary stats row** — played, win rate, best finish, avg place (respond to alt/format filters)
+
+**Filters** — Alt dropdown ("All alts" default, clickable ✕ to clear), Format dropdown ("All formats" default)
+
+**Table columns:** Tournament (name as link to `/tournaments/[slug]` · date inline), Alt (clickable → per-alt history), Format, Team (24px Gen 5 sprites), Record, Place (e.g., "3rd / 24" — placement out of total players)
+
+- No vertical stacking in cells — everything single-line
+- Tournament name is a teal link to the tournament page
+- Alt names are clickable links to per-alt history
+- 1st place highlighted teal + 🏆
+- Per-alt view removes Alt column
+
+**Expansion** — opponent schedule only (no duplicated team/detail info):
+
+- Descending order (latest round at top, R1 at bottom)
+- Sub-table with `table-layout: fixed` and `<col>` widths for proper proportioning
+- Columns left to right: **RND** (36px) | **SCORE** (W 2-0, 60px) | **MATCHUP** (40%) | **OPP TEAM** (auto, sprites fill rest)
+- **Seat order matters:** P1 shows "You vs opponent", P2 shows "opponent vs You" — reflects who had player 1 seat
+- "You" is bolded, opponent name is a teal clickable link
+- Opponent Pokemon sprites at 20px, reduced opacity (0.7)
+- W in teal, L in red
+- No "View tournament →" link — tournament name on the row is already a link
+- Contained in a white card with border inside tinted background
+
+**Empty state** — trophy icon + "No tournament history yet" + "Browse tournaments" CTA
+
+**Implementation notes:**
+
+- Team name in alts page expansion should be a link to builder page (leave code comment for future)
+- Seat order (P1/P2) needs to be stored in match data — ensure the tournament system captures this
+
+**Mockup:** `.superpowers/brainstorm/28734-1774902746/content/36-history-seat.html`
+
+### Notifications (popover, no dedicated page) ✅ Approved
+
+**No /dashboard/inbox page for now.** Notifications live entirely in a bell icon popover in the PageHeader. A full inbox page will be built when user-to-user messaging ships.
+
+**Notification types by lifecycle:**
+
+- **Persistent action** — stays until completed or irrelevant (e.g., "Submit team sheet", "Accept tournament invite", "Accept staff invite")
+- **Persistent shortcut** — stays until no longer useful (e.g., "Round 3 started — go to your match" stays until match resolves)
+- **Informational** — read and done (e.g., "Tournament completed — 5th place", "Community approved", "Added as Judge")
+
+**Popover design (380px wide, max 520px tall, scrollable):**
+
+- **Header:** "Notifications" title + "Mark all read" link
+- **"Needs attention" section:** persistent items on subtle `bg-muted/50` cards with inline action buttons (Accept/Decline, Submit team, Go to match →). Includes: team sheet deadlines, tournament invites, staff invites, active match shortcuts.
+- **"Recent" section:** informational feed below. Blue dot for unread, faded text + icon for read.
+- Completed/dismissed persistent items archived (not visible, but retrievable if needed later)
+- **No tabs** — just the two sections
+- **Badge count on bell icon** — red circle, counts persistent + unread items
+- **Type icons:** ⚔️ match, 🏆 tournament, 📋 submission, 📨 invite, ✅ approval, ⚖️ dispute, 👥 staff
+- Includes staff invites (Accept/Decline) alongside tournament invites
+- **Mockup:** `.superpowers/brainstorm/28734-1774902746/content/16-notifications-popover.html`
 
 ### Messages (`/dashboard/messages`) — FUTURE
 
@@ -359,12 +406,12 @@ Never just copy existing UI and make it "cleaner." Always rethink from purpose.
 
 ### Designs still needed
 
-- [ ] Alt switcher — design decisions made (see Sidebar section), needs mockup review
-- [ ] Alts page — design decisions made (see Page Designs section), needs mockup
-- [ ] Inbox — design decisions made (see Page Designs section), needs mockup
-- [ ] History page — route decisions made, page design TBD
+- [x] Alt switcher — approved (popover menu, 260px, "Switch alt" header, no truncation)
+- [x] Alts page — approved (table layout, expandable team sub-table with sprites + records)
+- [x] Notifications popover — approved (no inbox page, bell popover with pinned + recent sections)
+- [x] History page — approved (table with sprites, expandable opponent schedule, filters)
 - [ ] Home page (`/dashboard`) — outline exists, needs full design pass
-- [ ] Notifications bell icon — behavior spec exists, needs implementation design
+- [x] Notifications bell icon — approved (merged with inbox into popover design)
 
 ### Bugs (fixed)
 
@@ -380,6 +427,23 @@ Never just copy existing UI and make it "cleaner." Always rethink from purpose.
 
 - [ ] Messages page design (`/dashboard/messages`)
 - [ ] Team Builder sidebar item
+
+## Mockup Index
+
+All mockups live in `.superpowers/brainstorm/` directories. The latest approved version for each design:
+
+| Design                         | Mockup File                                                                      | Session   |
+| ------------------------------ | -------------------------------------------------------------------------------- | --------- |
+| Community settings             | `.superpowers/brainstorm/39571-1774889724/content/21-settings-fixed.html`        | Session 1 |
+| Community request              | `.superpowers/brainstorm/39571-1774889724/content/22-request-fixed.html`         | Session 1 |
+| Community overview             | `.superpowers/brainstorm/39571-1774889724/content/14-community-overview-v2.html` | Session 1 |
+| Community staff                | `.superpowers/brainstorm/39571-1774889724/content/16-staff-two-column.html`      | Session 1 |
+| Alts page (table + expansion)  | `.superpowers/brainstorm/28734-1774902746/content/08-alts-table-v6.html`         | Session 2 |
+| Alt switcher (popover)         | `.superpowers/brainstorm/28734-1774902746/content/10-alt-switcher-v2.html`       | Session 2 |
+| Notifications popover          | `.superpowers/brainstorm/28734-1774902746/content/16-notifications-popover.html` | Session 2 |
+| History page (with seat order) | `.superpowers/brainstorm/28734-1774902746/content/36-history-seat.html`          | Session 2 |
+
+Earlier iterations are preserved in the same directories for reference.
 
 ## Linear Tickets to Create
 
