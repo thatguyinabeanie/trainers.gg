@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Community Settings + Request — Proposals</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: Inter, -apple-system, sans-serif; background: #0a0a0a; color: #e5e5e5; padding: 2rem; line-height: 1.5; }
+  .wrap { max-width: 1000px; margin: 0 auto; }
+  h1 { font-size: 1.5rem; font-weight: 700; margin-bottom: 0.25rem; }
+  .subtitle { color: #888; font-size: 0.9rem; margin-bottom: 2rem; }
+  h2 { font-size: 1.1rem; font-weight: 700; margin-bottom: 0.5rem; color: #fff; }
+  p { color: #a3a3a3; font-size: 0.85rem; margin-bottom: 0.5rem; }
+  hr { border: none; border-top: 1px solid #1a1a1a; margin: 2rem 0; }
+
+  .label { font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; padding: 0.3rem 0.6rem; border-radius: 4px; display: inline-block; margin-bottom: 0.75rem; }
+  .label-page { background: rgba(59,130,246,0.1); color: #3b82f6; }
+
+  .mockup { background: #fff; border: 1px solid #ddd; border-radius: 10px; overflow: hidden; color: #111; margin-bottom: 1rem; }
+  .page-header-mock { display: flex; align-items: center; gap: 8px; padding: 10px 16px; border-bottom: 1px solid #f0f0f0; font-size: 12px; }
+  .page-header-mock .trigger { width: 18px; height: 18px; border: 1px solid #ddd; border-radius: 3px; display: flex; align-items: center; justify-content: center; font-size: 8px; color: #888; }
+  .page-header-mock .sep { width: 1px; height: 12px; background: #d4d4d4; margin: 0 2px; }
+  .page-header-mock .title { font-weight: 500; color: #111; }
+  .page-header-mock .bell { margin-left: auto; font-size: 12px; }
+
+  .content-area { padding: 16px; }
+
+  .card { background: #fafafa; border: 1px solid #f0f0f0; border-radius: 6px; padding: 12px; margin-bottom: 8px; }
+  .card h4 { font-size: 11px; font-weight: 600; color: #555; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 6px; }
+
+  .form-group { margin-bottom: 12px; }
+  .form-label { font-size: 11px; font-weight: 500; color: #333; margin-bottom: 3px; }
+  .form-input { width: 100%; border: 1px solid #e0e0e0; border-radius: 5px; padding: 7px 10px; font-size: 12px; outline: none; }
+  .form-textarea { width: 100%; border: 1px solid #e0e0e0; border-radius: 5px; padding: 7px 10px; font-size: 12px; outline: none; min-height: 60px; resize: vertical; }
+  .form-hint { font-size: 10px; color: #999; margin-top: 2px; }
+
+  .btn-sm { padding: 5px 10px; font-size: 11px; font-weight: 500; border-radius: 5px; border: none; cursor: pointer; }
+  .btn-primary { background: #0d9488; color: white; }
+  .btn-outline { background: white; border: 1px solid #e0e0e0; color: #555; }
+
+  .callout { background: rgba(45,212,191,0.05); border: 1px solid rgba(45,212,191,0.15); border-radius: 8px; padding: 1rem; font-size: 0.8rem; color: #888; }
+  .callout strong { color: #2dd4bf; }
+
+  .split { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+  @media (max-width: 800px) { .split { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>Community Settings + Request — Review</h1>
+<p class="subtitle">Two remaining community pages. Both are form-focused — mainly need width constraint and cleaner styling.</p>
+
+<hr>
+
+<div class="split">
+  <!-- SETTINGS -->
+  <div>
+    <div class="label label-page">Community Settings</div>
+    <div class="mockup">
+      <div class="page-header-mock">
+        <div class="trigger">☰</div>
+        <div class="sep"></div>
+        <div class="title">Settings</div>
+        <div class="bell">🔔</div>
+      </div>
+      <div class="content-area" style="max-width:420px">
+        <div class="card">
+          <h4>Community Profile</h4>
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+            <div style="width:48px;height:48px;border-radius:10px;background:#e8f5f4;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;color:#0d9488;cursor:pointer">P</div>
+            <div>
+              <div style="font-size:12px;font-weight:500">Community Logo</div>
+              <div style="font-size:10px;color:#888">Click to upload · JPEG, PNG, WebP, GIF up to 2MB</div>
+            </div>
+          </div>
+          <div class="form-group">
+            <div class="form-label">Community Name</div>
+            <input class="form-input" value="Pallet Town Trainers">
+          </div>
+          <div class="form-group">
+            <div class="form-label">Description</div>
+            <textarea class="form-textarea">Pokemon VGC Tournament Organization</textarea>
+          </div>
+        </div>
+
+        <div class="card">
+          <h4>Social Links</h4>
+          <div style="font-size:10px;color:#888;margin-bottom:8px">No social links added yet.</div>
+          <button class="btn-sm btn-outline" style="font-size:10px">+ Add Social Link</button>
+        </div>
+
+        <div class="card" style="background:white">
+          <h4>URL</h4>
+          <div style="font-size:11px;color:#555;font-family:monospace;background:#fafafa;padding:6px 8px;border-radius:4px;border:1px solid #f0f0f0">trainers.gg/communities/pallet-town</div>
+          <div class="form-hint">Cannot be changed after creation</div>
+        </div>
+
+        <button class="btn-sm btn-primary" style="margin-top:8px">Save Changes</button>
+      </div>
+    </div>
+    <div class="callout">
+      <strong>Changes:</strong> Constrain form to ~420px. Group in cards. Compact logo upload. Social links with add button. Slug read-only.
+    </div>
+  </div>
+
+  <!-- REQUEST -->
+  <div>
+    <div class="label label-page">Community Request</div>
+    <div class="mockup">
+      <div class="page-header-mock">
+        <div class="trigger">☰</div>
+        <div class="sep"></div>
+        <div class="title">Request a Community</div>
+        <div class="bell">🔔</div>
+      </div>
+      <div class="content-area" style="max-width:420px">
+        <!-- Compact disclaimer -->
+        <div style="background:#fafafa;border:1px solid #f0f0f0;border-radius:6px;padding:10px 12px;margin-bottom:16px;font-size:11px;color:#666;line-height:1.6">
+          <div style="font-weight:600;color:#333;margin-bottom:4px">Before you apply</div>
+          We review every request. We check your community spaces for a welcoming, inclusive environment.
+          <span style="font-weight:500;color:#111">Don't be a bigot, don't be a jerk, be kind to others.</span>
+          Follower count does not matter.
+        </div>
+
+        <div class="card">
+          <h4>About your community</h4>
+          <div class="form-group">
+            <div class="form-label">Community Name</div>
+            <input class="form-input" placeholder="My Community">
+          </div>
+          <div class="form-group">
+            <div class="form-label">Description</div>
+            <textarea class="form-textarea" placeholder="What events do you run? Who do you serve?"></textarea>
+            <div class="form-hint">Help us understand your community</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h4>Community Links</h4>
+          <div class="form-group">
+            <div class="form-label">Discord Server Invite <span style="color:#ef4444">*</span></div>
+            <div style="display:flex;gap:0">
+              <div style="background:#fafafa;border:1px solid #e0e0e0;border-right:none;border-radius:5px 0 0 5px;padding:7px 8px;font-size:11px;color:#888;display:flex;align-items:center;gap:4px;white-space:nowrap">🟣 Discord</div>
+              <input class="form-input" placeholder="invite-code" style="border-radius:0 5px 5px 0">
+            </div>
+            <div class="form-hint">Paste a link or just the code</div>
+          </div>
+          <div style="font-size:10px;color:#888;margin-bottom:8px">Optional social accounts:</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+            <div style="display:flex;gap:0">
+              <div style="background:#fafafa;border:1px solid #e0e0e0;border-right:none;border-radius:5px 0 0 5px;padding:5px 6px;font-size:9px;color:#888;white-space:nowrap">X</div>
+              <input class="form-input" placeholder="handle" style="border-radius:0 5px 5px 0;padding:5px 6px;font-size:10px">
+            </div>
+            <div style="display:flex;gap:0">
+              <div style="background:#fafafa;border:1px solid #e0e0e0;border-right:none;border-radius:5px 0 0 5px;padding:5px 6px;font-size:9px;color:#888;white-space:nowrap">Bluesky</div>
+              <input class="form-input" placeholder="handle" style="border-radius:0 5px 5px 0;padding:5px 6px;font-size:10px">
+            </div>
+            <div style="display:flex;gap:0">
+              <div style="background:#fafafa;border:1px solid #e0e0e0;border-right:none;border-radius:5px 0 0 5px;padding:5px 6px;font-size:9px;color:#888;white-space:nowrap">YouTube</div>
+              <input class="form-input" placeholder="handle" style="border-radius:0 5px 5px 0;padding:5px 6px;font-size:10px">
+            </div>
+            <div style="display:flex;gap:0">
+              <div style="background:#fafafa;border:1px solid #e0e0e0;border-right:none;border-radius:5px 0 0 5px;padding:5px 6px;font-size:9px;color:#888;white-space:nowrap">Twitch</div>
+              <input class="form-input" placeholder="handle" style="border-radius:0 5px 5px 0;padding:5px 6px;font-size:10px">
+            </div>
+          </div>
+        </div>
+
+        <button class="btn-sm btn-primary" style="width:100%;padding:8px;font-size:12px;margin-top:4px">Submit Request</button>
+      </div>
+    </div>
+    <div class="callout">
+      <strong>Changes:</strong> Disclaimer compressed to small callout. Form constrained to ~420px. Social links in 2-column grid. Discord with platform prefix. Tighter overall.
+    </div>
+  </div>
+</div>
+
+</div>
+</body>
+</html>

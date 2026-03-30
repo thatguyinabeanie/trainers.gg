@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Staff Management — Two Column Layout</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: Inter, -apple-system, sans-serif; background: #0a0a0a; color: #e5e5e5; padding: 2rem; line-height: 1.5; }
+  .wrap { max-width: 1000px; margin: 0 auto; }
+  h1 { font-size: 1.5rem; font-weight: 700; margin-bottom: 0.25rem; }
+  .subtitle { color: #888; font-size: 0.9rem; margin-bottom: 2rem; }
+  hr { border: none; border-top: 1px solid #1a1a1a; margin: 2rem 0; }
+
+  .mockup { background: #fff; border: 1px solid #ddd; border-radius: 10px; overflow: hidden; color: #111; margin-bottom: 1rem; }
+  .page-header-mock { display: flex; align-items: center; gap: 8px; padding: 10px 16px; border-bottom: 1px solid #f0f0f0; font-size: 12px; }
+  .page-header-mock .trigger { width: 18px; height: 18px; border: 1px solid #ddd; border-radius: 3px; display: flex; align-items: center; justify-content: center; font-size: 8px; color: #888; }
+  .page-header-mock .sep { width: 1px; height: 12px; background: #d4d4d4; margin: 0 2px; }
+  .page-header-mock .title { font-weight: 500; color: #111; }
+  .page-header-mock .bell { margin-left: auto; font-size: 12px; }
+
+  .content-area { padding: 16px; }
+
+  .section-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+  .section-head h3 { font-size: 14px; font-weight: 600; color: #111; margin: 0; }
+  .btn-sm { padding: 5px 10px; font-size: 11px; font-weight: 500; border-radius: 5px; border: none; cursor: pointer; }
+  .btn-primary { background: #0d9488; color: white; }
+
+  /* Two column layout */
+  .staff-layout { display: grid; grid-template-columns: 280px 1fr; gap: 16px; min-height: 400px; }
+
+  /* Left: Unassigned pool */
+  .unassigned-panel { border: 1px solid #f0f0f0; border-radius: 8px; display: flex; flex-direction: column; }
+  .panel-header { padding: 10px 12px; background: #fafafa; border-bottom: 1px solid #f0f0f0; border-radius: 8px 8px 0 0; display: flex; align-items: center; justify-content: space-between; }
+  .panel-header h4 { font-size: 12px; font-weight: 600; color: #333; }
+  .panel-header .count { font-size: 10px; color: #888; }
+  .panel-search { padding: 8px; border-bottom: 1px solid #f0f0f0; }
+  .panel-search input { width: 100%; border: 1px solid #e0e0e0; border-radius: 5px; padding: 5px 8px; font-size: 11px; outline: none; }
+  .panel-list { flex: 1; overflow-y: auto; padding: 4px; }
+
+  /* Staff row */
+  .staff-row { display: flex; align-items: center; gap: 6px; padding: 5px 8px; border-radius: 5px; font-size: 11px; cursor: grab; transition: background 0.1s; }
+  .staff-row:hover { background: #f5f5f5; }
+  .drag-handle { color: #ccc; font-size: 9px; cursor: grab; flex-shrink: 0; }
+  .staff-avatar { width: 22px; height: 22px; border-radius: 50%; background: #e8e8e8; display: flex; align-items: center; justify-content: center; font-size: 8px; font-weight: 600; color: #888; flex-shrink: 0; }
+  .staff-name { flex: 1; font-weight: 500; color: #333; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .staff-remove { width: 18px; height: 18px; border-radius: 3px; border: 1px solid transparent; background: transparent; display: flex; align-items: center; justify-content: center; font-size: 9px; cursor: pointer; color: transparent; flex-shrink: 0; }
+  .staff-row:hover .staff-remove { color: #ccc; }
+  .staff-row:hover .staff-remove:hover { color: #ef4444; border-color: #fecaca; }
+
+  /* Right: Role groups */
+  .roles-panel { display: flex; flex-direction: column; gap: 8px; }
+
+  .role-group { border: 1px solid #f0f0f0; border-radius: 8px; overflow: hidden; }
+  .role-header { display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; background: #fafafa; border-bottom: 1px solid #f0f0f0; }
+  .role-name { font-size: 11px; font-weight: 600; color: #333; display: flex; align-items: center; gap: 5px; }
+  .role-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+  .role-count { font-size: 10px; color: #999; }
+  .role-desc { font-size: 9px; color: #aaa; }
+
+  .role-members { padding: 4px; min-height: 32px; }
+  .role-empty { padding: 8px; text-align: center; font-size: 10px; color: #ccc; border: 1px dashed #e8e8e8; border-radius: 4px; margin: 4px; }
+
+  /* Owner */
+  .owner-group { border: 1px solid #f0f0f0; border-radius: 8px; overflow: hidden; }
+  .owner-header { padding: 8px 12px; background: #fefce8; border-bottom: 1px solid #fef3c7; display: flex; align-items: center; gap: 5px; }
+  .owner-row { display: flex; align-items: center; gap: 8px; padding: 8px 12px; font-size: 11px; }
+  .owner-avatar { width: 24px; height: 24px; border-radius: 50%; background: #e8f5f4; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 700; color: #0d9488; flex-shrink: 0; }
+
+  .callout { background: rgba(45,212,191,0.05); border: 1px solid rgba(45,212,191,0.15); border-radius: 8px; padding: 1rem; font-size: 0.8rem; color: #888; }
+  .callout strong { color: #2dd4bf; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>Staff Management — Two Column</h1>
+<p class="subtitle">Unassigned pool on the left. Role groups on the right. Drag from left to right to assign. Drag between groups to reassign.</p>
+
+<hr>
+
+<div class="mockup">
+  <div class="page-header-mock">
+    <div class="trigger">☰</div>
+    <div class="sep"></div>
+    <div class="title">Staff</div>
+    <div class="bell">🔔</div>
+  </div>
+  <div class="content-area">
+    <div class="section-head">
+      <h3>Staff Management</h3>
+      <button class="btn-sm btn-primary">+ Add Staff</button>
+    </div>
+
+    <div class="staff-layout">
+      <!-- LEFT: Unassigned pool -->
+      <div class="unassigned-panel">
+        <div class="panel-header">
+          <h4>Unassigned</h4>
+          <div class="count">10 staff</div>
+        </div>
+        <div class="panel-search">
+          <input placeholder="Search staff..." type="text">
+        </div>
+        <div class="panel-list">
+          <div class="staff-row">
+            <div class="drag-handle">⠿</div>
+            <div class="staff-avatar">BL</div>
+            <div class="staff-name">blank_trainer_642</div>
+            <div class="staff-remove">✕</div>
+          </div>
+          <div class="staff-row">
+            <div class="drag-handle">⠿</div>
+            <div class="staff-avatar">CH</div>
+            <div class="staff-name">chad_friesen</div>
+            <div class="staff-remove">✕</div>
+          </div>
+          <div class="staff-row">
+            <div class="drag-handle">⠿</div>
+            <div class="staff-avatar">CH</div>
+            <div class="staff-name">charlotteschoen99</div>
+            <div class="staff-remove">✕</div>
+          </div>
+          <div class="staff-row">
+            <div class="drag-handle">⠿</div>
+            <div class="staff-avatar">EA</div>
+            <div class="staff-name">early_master</div>
+            <div class="staff-remove">✕</div>
+          </div>
+          <div class="staff-row">
+            <div class="drag-handle">⠿</div>
+            <div class="staff-avatar">EM</div>
+            <div class="staff-name">eminent_ranger</div>
+            <div class="staff-remove">✕</div>
+          </div>
+          <div class="staff-row">
+            <div class="drag-handle">⠿</div>
+            <div class="staff-avatar">FA</div>
+            <div class="staff-name">faint_trainer_713</div>
+            <div class="staff-remove">✕</div>
+          </div>
+          <div class="staff-row">
+            <div class="drag-handle">⠿</div>
+            <div class="staff-avatar">HI</div>
+            <div class="staff-name">hilbert38</div>
+            <div class="staff-remove">✕</div>
+          </div>
+          <div class="staff-row">
+            <div class="drag-handle">⠿</div>
+            <div class="staff-avatar">IN</div>
+            <div class="staff-name">insistent_ranger</div>
+            <div class="staff-remove">✕</div>
+          </div>
+          <div class="staff-row">
+            <div class="drag-handle">⠿</div>
+            <div class="staff-avatar">MA</div>
+            <div class="staff-name">mallory39</div>
+            <div class="staff-remove">✕</div>
+          </div>
+          <div class="staff-row">
+            <div class="drag-handle">⠿</div>
+            <div class="staff-avatar">RO</div>
+            <div class="staff-name">ronny_koss27</div>
+            <div class="staff-remove">✕</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT: Role groups -->
+      <div class="roles-panel">
+        <!-- Owner -->
+        <div class="owner-group">
+          <div class="owner-header">
+            <span style="font-size:11px">👑</span>
+            <span style="font-size:11px;font-weight:600;color:#92400e">Owner</span>
+          </div>
+          <div class="owner-row">
+            <div class="owner-avatar">AD</div>
+            <div>
+              <div style="font-weight:600;font-size:11px;color:#111">admin_trainer</div>
+              <div style="font-size:9px;color:#888">@admin_trainer</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Admins -->
+        <div class="role-group">
+          <div class="role-header">
+            <div>
+              <div class="role-name"><div class="role-dot" style="background:#8b5cf6"></div> Admins</div>
+              <div class="role-desc">Administrative privileges</div>
+            </div>
+            <div class="role-count">0</div>
+          </div>
+          <div class="role-members">
+            <div class="role-empty">Drop here</div>
+          </div>
+        </div>
+
+        <!-- Head Judges -->
+        <div class="role-group">
+          <div class="role-header">
+            <div>
+              <div class="role-name"><div class="role-dot" style="background:#3b82f6"></div> Head Judges</div>
+              <div class="role-desc">Manage judges and tournament ops</div>
+            </div>
+            <div class="role-count">0</div>
+          </div>
+          <div class="role-members">
+            <div class="role-empty">Drop here</div>
+          </div>
+        </div>
+
+        <!-- Judges -->
+        <div class="role-group">
+          <div class="role-header">
+            <div>
+              <div class="role-name"><div class="role-dot" style="background:#10b981"></div> Judges</div>
+              <div class="role-desc">Can resolve match disputes</div>
+            </div>
+            <div class="role-count">0</div>
+          </div>
+          <div class="role-members">
+            <div class="role-empty">Drop here</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="callout">
+  <strong>Two-column layout:</strong>
+  <ul style="margin-top:0.5rem;padding-left:1.25rem">
+    <li style="margin-bottom:0.25rem"><strong>Left: Unassigned pool</strong> — scrollable list of all unassigned staff with search. Source for drag-drop.</li>
+    <li style="margin-bottom:0.25rem"><strong>Right: Role groups</strong> — Owner (non-draggable) + Admins + Head Judges + Judges. Drop targets.</li>
+    <li style="margin-bottom:0.25rem"><strong>Drag left → right</strong> to assign a role. Drag between right groups to reassign.</li>
+    <li style="margin-bottom:0.25rem"><strong>Drag right → left</strong> to unassign (move back to pool).</li>
+    <li style="margin-bottom:0.25rem"><strong>Search in unassigned</strong> — useful when you have many unassigned staff.</li>
+    <li style="margin-bottom:0.25rem"><strong>Empty role groups</strong> — thin "Drop here" zone. Not giant empty areas.</li>
+    <li style="margin-bottom:0.25rem"><strong>Remove (✕)</strong> — removes from community entirely (not just unassigns).</li>
+    <li style="margin-bottom:0.25rem"><strong>Mobile</strong> — stacks vertically (unassigned on top, groups below).</li>
+  </ul>
+</div>
+
+</div>
+</body>
+</html>

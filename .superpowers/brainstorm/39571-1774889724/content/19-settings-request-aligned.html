@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Community Settings + Request — Aligned</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: Inter, -apple-system, sans-serif; background: #0a0a0a; color: #e5e5e5; padding: 2rem; line-height: 1.5; }
+  .wrap { max-width: 1100px; margin: 0 auto; }
+  h1 { font-size: 1.5rem; font-weight: 700; margin-bottom: 0.25rem; }
+  .subtitle { color: #888; font-size: 0.9rem; margin-bottom: 2rem; }
+  hr { border: none; border-top: 1px solid #1a1a1a; margin: 2rem 0; }
+  .label { font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; padding: 0.3rem 0.6rem; border-radius: 4px; display: inline-block; margin-bottom: 0.75rem; }
+  .label-page { background: rgba(59,130,246,0.1); color: #3b82f6; }
+
+  .mockup { background: #fff; border: 1px solid #ddd; border-radius: 10px; overflow: hidden; color: #111; margin-bottom: 1rem; }
+  .header-bar { display: flex; align-items: center; gap: 8px; padding: 0 20px; height: 44px; border-bottom: 1px solid #f0f0f0; font-size: 12px; }
+  .header-bar .trigger { width: 20px; height: 20px; border: 1px solid #ddd; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 9px; color: #888; }
+  .header-bar .sep { width: 1px; height: 14px; background: #d4d4d4; }
+  .header-bar .title { font-weight: 500; color: #111; font-size: 13px; }
+  .header-bar .bell { margin-left: auto; font-size: 13px; }
+
+  .page { padding: 24px; }
+
+  /* ============================================ */
+  /* SETTINGS — label/field grid                  */
+  /* ============================================ */
+  .settings-layout { max-width: 640px; }
+
+  .s-section { padding: 24px 0; border-bottom: 1px solid #f0f0f0; }
+  .s-section:first-child { padding-top: 0; }
+  .s-section:last-child { border-bottom: none; }
+
+  .s-grid { display: grid; grid-template-columns: 160px 1fr; gap: 20px; align-items: start; }
+
+  .s-label h3 { font-size: 13px; font-weight: 600; color: #111; }
+  .s-label p { font-size: 11px; color: #888; margin-top: 2px; }
+
+  .s-fields { display: flex; flex-direction: column; gap: 14px; }
+
+  .f-group { }
+  .f-label { font-size: 11px; font-weight: 500; color: #444; margin-bottom: 4px; display: block; }
+  .f-input { width: 100%; border: 1px solid #d4d4d4; border-radius: 6px; padding: 8px 12px; font-size: 13px; outline: none; color: #111; }
+  .f-input:focus { border-color: #0d9488; box-shadow: 0 0 0 3px rgba(13,148,136,0.08); }
+  .f-textarea { width: 100%; border: 1px solid #d4d4d4; border-radius: 6px; padding: 8px 12px; font-size: 13px; outline: none; min-height: 72px; resize: vertical; color: #111; }
+  .f-textarea:focus { border-color: #0d9488; box-shadow: 0 0 0 3px rgba(13,148,136,0.08); }
+  .f-hint { font-size: 10px; color: #999; margin-top: 4px; }
+  .f-readonly { background: #fafafa; color: #888; border-color: #e8e8e8; }
+
+  /* Logo */
+  .logo-row { display: flex; align-items: center; gap: 14px; }
+  .logo-box { width: 52px; height: 52px; border-radius: 10px; background: #f0fdfa; border: 2px dashed #d1d5db; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 700; color: #0d9488; cursor: pointer; flex-shrink: 0; }
+  .logo-box:hover { border-color: #0d9488; }
+  .logo-meta { }
+  .logo-meta .name { font-size: 12px; font-weight: 500; color: #333; }
+  .logo-meta .hint { font-size: 10px; color: #999; margin-top: 1px; }
+  .logo-btns { display: flex; gap: 6px; margin-top: 6px; }
+
+  /* Social link */
+  .social-row { display: flex; align-items: center; gap: 0; margin-bottom: 6px; }
+  /* Fixed prefix width for alignment */
+  .social-pre { width: 96px; background: #fafafa; border: 1px solid #d4d4d4; border-right: none; border-radius: 6px 0 0 6px; padding: 8px 10px; font-size: 12px; color: #555; display: flex; align-items: center; gap: 5px; flex-shrink: 0; }
+  .social-in { flex: 1; border: 1px solid #d4d4d4; border-radius: 0 6px 6px 0; padding: 8px 12px; font-size: 13px; outline: none; }
+  .social-in:focus { border-color: #0d9488; }
+  .social-x { width: 32px; display: flex; align-items: center; justify-content: center; color: #d4d4d4; cursor: pointer; font-size: 14px; flex-shrink: 0; }
+  .social-x:hover { color: #ef4444; }
+
+  .add-link { font-size: 11px; color: #0d9488; cursor: pointer; display: inline-flex; align-items: center; gap: 3px; padding: 4px 0; }
+  .add-link:hover { text-decoration: underline; }
+
+  /* Buttons */
+  .btn { padding: 8px 16px; font-size: 12px; font-weight: 500; border-radius: 6px; border: none; cursor: pointer; }
+  .btn-primary { background: #0d9488; color: white; }
+  .btn-outline { background: white; border: 1px solid #d4d4d4; color: #555; }
+  .btn-sm { padding: 5px 10px; font-size: 11px; }
+  .btn-danger-outline { background: white; border: 1px solid #fca5a5; color: #ef4444; }
+
+  .btn-row { display: flex; justify-content: flex-end; padding-top: 16px; }
+
+  .danger-section { margin-top: 24px; padding: 16px; border: 1px solid #fecaca; border-radius: 8px; }
+  .danger-section h4 { font-size: 12px; font-weight: 600; color: #dc2626; margin-bottom: 4px; }
+  .danger-section p { font-size: 11px; color: #888; margin-bottom: 10px; }
+
+  /* ============================================ */
+  /* REQUEST — stepped form                       */
+  /* ============================================ */
+  .request-layout { max-width: 520px; }
+
+  .disclaimer { background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px; padding: 14px 16px; margin-bottom: 24px; }
+  .disclaimer .d-title { font-size: 12px; font-weight: 600; color: #92400e; margin-bottom: 6px; }
+  .disclaimer p { font-size: 11px; color: #78716c; margin: 0; line-height: 1.7; }
+  .disclaimer strong { color: #44403c; }
+
+  .step { margin-bottom: 28px; }
+  .step-head { display: flex; align-items: baseline; gap: 8px; margin-bottom: 14px; }
+  .step-num { width: 22px; height: 22px; border-radius: 50%; background: #f3f4f6; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; color: #555; flex-shrink: 0; }
+  .step-title { font-size: 14px; font-weight: 600; color: #111; }
+  .step-tag { font-size: 10px; font-weight: 400; color: #999; margin-left: 4px; }
+  .step-tag.required { color: #ef4444; }
+
+  .step-fields { padding-left: 30px; display: flex; flex-direction: column; gap: 14px; }
+
+  /* Discord standalone */
+  .discord-row { display: flex; gap: 0; }
+  .discord-pre { width: 96px; background: #f5f3ff; border: 1px solid #d4d4d4; border-right: none; border-radius: 6px 0 0 6px; padding: 8px 10px; font-size: 12px; color: #7c3aed; display: flex; align-items: center; gap: 5px; flex-shrink: 0; font-weight: 500; }
+  .discord-in { flex: 1; border: 1px solid #d4d4d4; border-radius: 0 6px 6px 0; padding: 8px 12px; font-size: 13px; outline: none; }
+  .discord-in:focus { border-color: #7c3aed; box-shadow: 0 0 0 3px rgba(124,58,237,0.08); }
+
+  /* Social grid — fixed prefix widths */
+  .sg { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .sg-item { display: flex; gap: 0; }
+  .sg-pre { width: 80px; background: #fafafa; border: 1px solid #d4d4d4; border-right: none; border-radius: 6px 0 0 6px; padding: 7px 8px; font-size: 11px; color: #666; display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
+  .sg-in { flex: 1; border: 1px solid #d4d4d4; border-radius: 0 6px 6px 0; padding: 7px 8px; font-size: 12px; outline: none; min-width: 0; }
+  .sg-in:focus { border-color: #0d9488; }
+
+  .submit-btn { width: 100%; padding: 10px; font-size: 13px; font-weight: 500; border-radius: 6px; border: none; cursor: pointer; background: #0d9488; color: white; }
+  .submit-btn:hover { background: #0f766e; }
+  .submit-hint { font-size: 10px; color: #999; text-align: center; margin-top: 8px; }
+
+  .callout { background: rgba(45,212,191,0.05); border: 1px solid rgba(45,212,191,0.15); border-radius: 8px; padding: 1rem; font-size: 0.8rem; color: #888; }
+  .callout strong { color: #2dd4bf; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>Settings + Request — Aligned & Polished</h1>
+<p class="subtitle">Fixed-width prefixes for alignment. Consistent padding. Proper vertical rhythm.</p>
+
+<hr>
+
+<!-- ============================================ -->
+<!-- SETTINGS -->
+<!-- ============================================ -->
+<div class="label label-page">Community Settings</div>
+
+<div class="mockup">
+  <div class="header-bar">
+    <div class="trigger">☰</div>
+    <div class="sep"></div>
+    <div class="title">Settings</div>
+    <div class="bell">🔔</div>
+  </div>
+  <div class="page">
+    <div class="settings-layout">
+      <!-- Profile -->
+      <div class="s-section">
+        <div class="s-grid">
+          <div class="s-label">
+            <h3>Profile</h3>
+            <p>Public info about your community</p>
+          </div>
+          <div class="s-fields">
+            <div class="f-group">
+              <div class="logo-row">
+                <div class="logo-box">V</div>
+                <div class="logo-meta">
+                  <div class="name">Community Logo</div>
+                  <div class="hint">JPEG, PNG, WebP, GIF · Max 2MB</div>
+                  <div class="logo-btns">
+                    <button class="btn btn-sm btn-outline">Upload</button>
+                    <button class="btn btn-sm btn-outline" style="color:#bbb">Remove</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="f-group">
+              <div class="f-label">Community Name</div>
+              <input class="f-input" value="VGC League">
+            </div>
+            <div class="f-group">
+              <div class="f-label">Description</div>
+              <textarea class="f-textarea">Pokemon VGC Tournament Organization</textarea>
+              <div class="f-hint">Shown on your community's public page</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Social -->
+      <div class="s-section">
+        <div class="s-grid">
+          <div class="s-label">
+            <h3>Social Links</h3>
+            <p>Displayed on your profile</p>
+          </div>
+          <div class="s-fields">
+            <div class="social-row">
+              <div class="social-pre">🟣 Discord</div>
+              <input class="social-in" value="discord.gg/vgcleague">
+              <div class="social-x">✕</div>
+            </div>
+            <div class="social-row">
+              <div class="social-pre">𝕏 X</div>
+              <input class="social-in" value="@vgcleague">
+              <div class="social-x">✕</div>
+            </div>
+            <div class="add-link">+ Add link</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- URL -->
+      <div class="s-section">
+        <div class="s-grid">
+          <div class="s-label">
+            <h3>URL</h3>
+            <p>Permanent address</p>
+          </div>
+          <div class="s-fields">
+            <div class="f-group">
+              <input class="f-input f-readonly" value="trainers.gg/communities/vgc-league" readonly>
+              <div class="f-hint">Cannot be changed</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn btn-primary">Save Changes</button>
+      </div>
+
+      <div class="danger-section">
+        <h4>Danger Zone</h4>
+        <p>Permanently delete this community and all its data.</p>
+        <button class="btn btn-sm btn-danger-outline">Delete Community</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<hr>
+
+<!-- ============================================ -->
+<!-- REQUEST -->
+<!-- ============================================ -->
+<div class="label label-page">Community Request</div>
+
+<div class="mockup">
+  <div class="header-bar">
+    <div class="trigger">☰</div>
+    <div class="sep"></div>
+    <div class="title">Request a Community</div>
+    <div class="bell">🔔</div>
+  </div>
+  <div class="page">
+    <div class="request-layout">
+      <div class="disclaimer">
+        <div class="d-title">Before you apply</div>
+        <p>
+          Every request is reviewed by our team. We check your community spaces — especially Discord — for a welcoming, inclusive environment.
+          <strong>Don't be a bigot, don't be a jerk, be kind to others.</strong>
+          Follower count does not affect our decision.
+        </p>
+      </div>
+
+      <!-- Step 1 -->
+      <div class="step">
+        <div class="step-head">
+          <div class="step-num">1</div>
+          <div class="step-title">About your community</div>
+        </div>
+        <div class="step-fields">
+          <div class="f-group">
+            <div class="f-label">Community Name</div>
+            <input class="f-input" placeholder="My Community">
+            <div class="f-hint">Your community's display name on trainers.gg</div>
+          </div>
+          <div class="f-group">
+            <div class="f-label">Description</div>
+            <textarea class="f-textarea" placeholder="What events do you run? Who do you serve?"></textarea>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 2 -->
+      <div class="step">
+        <div class="step-head">
+          <div class="step-num">2</div>
+          <div class="step-title">Discord Server</div>
+          <span class="step-tag required">required</span>
+        </div>
+        <div class="step-fields">
+          <div class="f-group">
+            <div class="discord-row">
+              <div class="discord-pre">🟣 Discord</div>
+              <input class="discord-in" placeholder="Invite code or full URL">
+            </div>
+            <div class="f-hint">We'll review your Discord as part of the application</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 3 -->
+      <div class="step">
+        <div class="step-head">
+          <div class="step-num">3</div>
+          <div class="step-title">Social accounts</div>
+          <span class="step-tag">optional</span>
+        </div>
+        <div class="step-fields">
+          <p style="font-size:11px;color:#888;margin-bottom:8px">Link other accounts your community uses.</p>
+          <div class="sg">
+            <div class="sg-item">
+              <div class="sg-pre">𝕏 X</div>
+              <input class="sg-in" placeholder="handle">
+            </div>
+            <div class="sg-item">
+              <div class="sg-pre">🦋 Bluesky</div>
+              <input class="sg-in" placeholder="handle">
+            </div>
+            <div class="sg-item">
+              <div class="sg-pre">📺 YouTube</div>
+              <input class="sg-in" placeholder="handle">
+            </div>
+            <div class="sg-item">
+              <div class="sg-pre">🟣 Twitch</div>
+              <input class="sg-in" placeholder="handle">
+            </div>
+            <div class="sg-item">
+              <div class="sg-pre">📷 Insta</div>
+              <input class="sg-in" placeholder="handle">
+            </div>
+            <div class="sg-item">
+              <div class="sg-pre">🔗 Other</div>
+              <input class="sg-in" placeholder="https://...">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <button class="submit-btn">Submit Request</button>
+      <div class="submit-hint">Requests are typically reviewed within 48 hours</div>
+    </div>
+  </div>
+</div>
+
+<div class="callout">
+  <strong>Alignment fixes:</strong>
+  <ul style="margin-top:0.5rem;padding-left:1.25rem">
+    <li style="margin-bottom:0.2rem"><strong>Fixed-width prefixes</strong> — social link prefixes are 96px (settings) and 80px (request grid). Inputs align vertically.</li>
+    <li style="margin-bottom:0.2rem"><strong>Consistent padding</strong> — 24px page padding, 20px grid gap, 14px field gap throughout.</li>
+    <li style="margin-bottom:0.2rem"><strong>Header height matches</strong> — 44px header bar, consistent with PageHeader component.</li>
+    <li style="margin-bottom:0.2rem"><strong>Step fields indented</strong> — 30px left padding aligns content under the step title, not the step number.</li>
+    <li style="margin-bottom:0.2rem"><strong>Form inputs same height</strong> — 8px padding + 13px font = consistent input height across both forms.</li>
+    <li style="margin-bottom:0.2rem"><strong>Settings grid 160px/1fr</strong> — label column fixed, field column flexible. Collapses on mobile.</li>
+  </ul>
+</div>
+
+</div>
+</body>
+</html>
