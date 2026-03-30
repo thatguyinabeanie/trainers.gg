@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Inbox — Grouped Notifications</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: Inter, -apple-system, sans-serif; background: #0a0a0a; color: #e5e5e5; padding: 2rem; line-height: 1.5; }
+  .wrap { max-width: 900px; margin: 0 auto; }
+  h1 { font-size: 1.5rem; font-weight: 700; margin-bottom: 0.25rem; }
+  .subtitle { color: #888; font-size: 0.9rem; margin-bottom: 2rem; }
+  h2 { font-size: 1.05rem; font-weight: 700; margin-bottom: 0.5rem; color: #fff; }
+  p { color: #a3a3a3; font-size: 0.85rem; margin-bottom: 0.5rem; }
+  hr { border: none; border-top: 1px solid #1a1a1a; margin: 2rem 0; }
+
+  .mockup { background: #fff; border: 1px solid #ddd; border-radius: 10px; overflow: hidden; color: #111; margin-bottom: 1rem; }
+  .page-header-mock { display: flex; align-items: center; gap: 8px; padding: 12px 20px; border-bottom: 1px solid #f0f0f0; font-size: 13px; }
+  .page-header-mock .trigger { width: 20px; height: 20px; border: 1px solid #ddd; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 9px; color: #888; }
+  .page-header-mock .sep { width: 1px; height: 14px; background: #d4d4d4; margin: 0 2px; }
+  .page-header-mock .title { font-weight: 500; color: #111; }
+
+  .tabs { display: flex; gap: 0; border-bottom: 1px solid #f0f0f0; padding: 0 20px; }
+  .tab { padding: 10px 14px; font-size: 12px; color: #888; font-weight: 500; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; display: flex; align-items: center; gap: 5px; }
+  .tab.active { color: #111; border-bottom-color: #111; }
+  .tab .count { background: #ef4444; color: white; padding: 1px 5px; border-radius: 10px; font-size: 10px; }
+
+  /* Inbox items */
+  .inbox-list { padding: 0; }
+
+  /* Grouped tournament notification */
+  .inbox-group { border-bottom: 1px solid #f8f8f8; }
+  .inbox-group-header { display: flex; gap: 12px; padding: 14px 20px; cursor: pointer; transition: background 0.1s; align-items: center; }
+  .inbox-group-header:hover { background: #fafafa; }
+  .inbox-group.unread .inbox-group-header { background: #fafbff; }
+
+  .unread-dot { width: 6px; height: 6px; border-radius: 50%; background: #3b82f6; flex-shrink: 0; }
+  .dot-spacer { width: 6px; flex-shrink: 0; }
+
+  .icon-col { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0; }
+  .icon-match { background: #dbeafe; }
+  .icon-tournament { background: #d1fae5; }
+  .icon-invite { background: #fef3c7; }
+  .icon-message { background: #ede9fe; }
+  .icon-system { background: #f3f4f6; }
+
+  .item-content { flex: 1; min-width: 0; }
+  .title-row { font-size: 13px; color: #111; display: flex; align-items: center; gap: 6px; }
+  .title-text { font-weight: 500; }
+  .unread .title-text { font-weight: 600; }
+  .desc { font-size: 12px; color: #888; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .time { font-size: 11px; color: #bbb; flex-shrink: 0; }
+
+  .group-count { font-size: 10px; color: #888; background: #f3f4f6; padding: 1px 6px; border-radius: 10px; }
+  .chevron { font-size: 12px; color: #ccc; flex-shrink: 0; transition: transform 0.15s; }
+  .chevron.open { transform: rotate(90deg); color: #888; }
+
+  /* Expanded group items */
+  .group-items { background: #fafafa; border-top: 1px solid #f0f0f0; }
+  .group-item { display: flex; gap: 10px; padding: 10px 20px 10px 58px; border-bottom: 1px solid #f3f3f3; font-size: 12px; align-items: center; cursor: pointer; }
+  .group-item:hover { background: #f5f5f5; }
+  .group-item:last-child { border-bottom: none; }
+  .group-item .gi-icon { width: 24px; height: 24px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 11px; flex-shrink: 0; }
+  .group-item .gi-content { flex: 1; min-width: 0; }
+  .group-item .gi-title { font-weight: 500; color: #333; }
+  .group-item .gi-desc { font-size: 11px; color: #999; margin-top: 1px; }
+  .group-item .gi-time { font-size: 10px; color: #bbb; flex-shrink: 0; }
+
+  /* Standalone items */
+  .inbox-item { display: flex; gap: 12px; padding: 14px 20px; border-bottom: 1px solid #f8f8f8; cursor: pointer; transition: background 0.1s; align-items: flex-start; }
+  .inbox-item:hover { background: #fafafa; }
+  .inbox-item.unread { background: #fafbff; }
+
+  .actions-inline { display: flex; gap: 4px; margin-top: 6px; }
+  .action-btn { padding: 3px 8px; font-size: 10px; border-radius: 4px; border: 1px solid #e0e0e0; background: white; cursor: pointer; font-weight: 500; }
+  .action-btn.primary { background: #0d9488; color: white; border-color: #0d9488; }
+  .action-btn.danger { color: #ef4444; border-color: #fecaca; }
+
+  .action-badge { font-size: 10px; background: #fef3c7; color: #92400e; padding: 1px 5px; border-radius: 3px; }
+
+  .callout { background: rgba(45,212,191,0.05); border: 1px solid rgba(45,212,191,0.15); border-radius: 8px; padding: 1rem; font-size: 0.8rem; color: #888; }
+  .callout strong { color: #2dd4bf; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>Inbox — Grouped & Clean</h1>
+<p class="subtitle">Tournament notifications grouped by tournament. Actionable items surfaced with badges. Messages as collapsed threads. Quiet and organized.</p>
+
+<hr>
+
+<div class="mockup">
+  <div class="page-header-mock">
+    <div class="trigger">☰</div>
+    <div class="sep"></div>
+    <div class="title">Inbox</div>
+    <div style="margin-left:auto;font-size:11px;color:#0d9488;cursor:pointer">Mark all read</div>
+  </div>
+  <div class="tabs">
+    <div class="tab active">All <span class="count">3</span></div>
+    <div class="tab">Unread</div>
+    <div class="tab">Actions</div>
+    <div class="tab">Messages</div>
+  </div>
+
+  <div class="inbox-list">
+    <!-- Actionable: invitation (standalone, not grouped) -->
+    <div class="inbox-item unread">
+      <div class="unread-dot" style="margin-top:5px"></div>
+      <div class="icon-col icon-invite">📨</div>
+      <div class="item-content">
+        <div class="title-row">
+          <span class="title-text">Tournament Invitation</span>
+          <span class="action-badge">Action needed</span>
+        </div>
+        <div class="desc">Champions League Qualifier — Pallet Town Trainers</div>
+        <div class="actions-inline">
+          <div class="action-btn primary">Accept</div>
+          <div class="action-btn danger">Decline</div>
+        </div>
+      </div>
+      <div class="time">2h ago</div>
+    </div>
+
+    <!-- Grouped: VGC Weekly #42 (EXPANDED) -->
+    <div class="inbox-group unread">
+      <div class="inbox-group-header">
+        <div class="unread-dot"></div>
+        <div class="icon-col icon-tournament">🏆</div>
+        <div class="item-content">
+          <div class="title-row">
+            <span class="title-text">VGC Weekly #42</span>
+            <span class="group-count">4 updates</span>
+          </div>
+          <div class="desc">Latest: Match Ready — Round 4, Table 7 vs halliefay16</div>
+        </div>
+        <div class="time">3h ago</div>
+        <div class="chevron open">▸</div>
+      </div>
+      <div class="group-items">
+        <div class="group-item">
+          <div class="gi-icon icon-match">⚔</div>
+          <div class="gi-content">
+            <div class="gi-title">Match Ready — Round 4</div>
+            <div class="gi-desc">Table 7 — vs halliefay16</div>
+          </div>
+          <div class="gi-time">3h ago</div>
+        </div>
+        <div class="group-item">
+          <div class="gi-icon icon-match">⚔</div>
+          <div class="gi-content">
+            <div class="gi-title">Match Result — Round 3</div>
+            <div class="gi-desc">Won vs karen (2-1)</div>
+          </div>
+          <div class="gi-time">4h ago</div>
+        </div>
+        <div class="group-item">
+          <div class="gi-icon icon-system">🔔</div>
+          <div class="gi-content">
+            <div class="gi-title">Round 2 — Bye</div>
+            <div class="gi-desc">You have a bye this round</div>
+          </div>
+          <div class="gi-time">5h ago</div>
+        </div>
+        <div class="group-item">
+          <div class="gi-icon icon-match">⚔</div>
+          <div class="gi-content">
+            <div class="gi-title">Match Ready — Round 1</div>
+            <div class="gi-desc">Table 7 — vs lance</div>
+          </div>
+          <div class="gi-time">6h ago</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Actionable: team submission (standalone) -->
+    <div class="inbox-item unread">
+      <div class="unread-dot" style="margin-top:5px"></div>
+      <div class="icon-col icon-tournament">📋</div>
+      <div class="item-content">
+        <div class="title-row">
+          <span class="title-text">Team Submission Required</span>
+          <span class="action-badge">Action needed</span>
+        </div>
+        <div class="desc">VGC Weekly #43 starts in 6 hours</div>
+        <div class="actions-inline">
+          <div class="action-btn primary">Submit Team</div>
+        </div>
+      </div>
+      <div class="time">5h ago</div>
+    </div>
+
+    <!-- Grouped: Sim Tournament (COLLAPSED) -->
+    <div class="inbox-group">
+      <div class="inbox-group-header">
+        <div class="dot-spacer"></div>
+        <div class="icon-col icon-tournament">🏆</div>
+        <div class="item-content">
+          <div class="title-row">
+            <span class="title-text">Showdown Open #8</span>
+            <span class="group-count">2 updates</span>
+          </div>
+          <div class="desc">Latest: Match Result — Won vs brock (2-0)</div>
+        </div>
+        <div class="time">1d ago</div>
+        <div class="chevron">▸</div>
+      </div>
+    </div>
+
+    <!-- Message thread (collapsed) — future -->
+    <div class="inbox-item" style="opacity:0.5">
+      <div class="dot-spacer"></div>
+      <div class="icon-col icon-message">💬</div>
+      <div class="item-content">
+        <div class="title-row">
+          <span class="title-text">red</span>
+          <span style="font-size:10px;color:#888">· 3 messages</span>
+        </div>
+        <div class="desc">Perfect, I'll set up a room on Showdown</div>
+      </div>
+      <div class="time">2h ago</div>
+    </div>
+
+    <!-- Team share — future -->
+    <div class="inbox-item" style="opacity:0.5">
+      <div class="dot-spacer"></div>
+      <div class="icon-col" style="background:#e8f5f4">🔗</div>
+      <div class="item-content">
+        <div class="title-row"><span class="title-text">Team Shared</span></div>
+        <div class="desc">cynthia shared "Rain Offense" with you</div>
+        <div class="actions-inline">
+          <div class="action-btn primary">View Team</div>
+        </div>
+      </div>
+      <div class="time">2d ago</div>
+    </div>
+  </div>
+</div>
+
+<p style="font-size:0.75rem;color:#555;margin-bottom:1.5rem">Items at 50% opacity are future features — shown here to demonstrate how messages and team shares will slot into the same feed.</p>
+
+<div class="callout">
+  <strong>Grouping rules:</strong>
+  <ul style="margin-top:0.5rem;padding-left:1.25rem">
+    <li style="margin-bottom:0.25rem"><strong>Tournament notifications</strong> — grouped by tournament. Shows tournament name, update count, latest item as preview. Click to expand all items.</li>
+    <li style="margin-bottom:0.25rem"><strong>Actionable items</strong> — NEVER grouped. Invitations, team submissions, check-in reminders always show as standalone items with inline action buttons + "Action needed" badge.</li>
+    <li style="margin-bottom:0.25rem"><strong>Messages</strong> (future) — grouped as conversation threads. Shows sender name, message count, latest message preview.</li>
+    <li style="margin-bottom:0.25rem"><strong>One-off notifications</strong> — org request approved, system announcements — shown as standalone items.</li>
+    <li style="margin-bottom:0.25rem"><strong>Sort order</strong> — most recent first, but actionable items float to top regardless of timestamp.</li>
+    <li style="margin-bottom:0.25rem"><strong>"Actions" tab</strong> — filters to only items with "Action needed" badge. Quick way to see what needs attention.</li>
+  </ul>
+</div>
+
+</div>
+</body>
+</html>

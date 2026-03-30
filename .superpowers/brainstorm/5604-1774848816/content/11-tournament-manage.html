@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tournament Management — Design Options</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: Inter, -apple-system, sans-serif; background: #0a0a0a; color: #e5e5e5; padding: 2rem; line-height: 1.5; }
+  .wrap { max-width: 1200px; margin: 0 auto; }
+  h1 { font-size: 1.5rem; font-weight: 700; margin-bottom: 0.25rem; }
+  .subtitle { color: #888; font-size: 0.9rem; margin-bottom: 2rem; }
+  h2 { font-size: 1.1rem; font-weight: 700; margin-bottom: 0.5rem; color: #fff; }
+  p { color: #a3a3a3; font-size: 0.85rem; margin-bottom: 0.5rem; }
+  hr { border: none; border-top: 1px solid #1a1a1a; margin: 2.5rem 0; }
+
+  .option-header { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem; }
+  .option-letter {
+    width: 32px; height: 32px; border-radius: 8px; background: rgba(45,212,191,0.1);
+    color: #2dd4bf; display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 0.9rem; flex-shrink: 0;
+  }
+  .option-desc { font-size: 0.8rem; color: #888; margin-top: 0.25rem; }
+
+  .mockup-frame {
+    background: #111; border: 1px solid #262626; border-radius: 12px;
+    overflow: hidden; margin-bottom: 1rem;
+  }
+  .mockup-bar {
+    background: #1a1a1a; padding: 0.4rem 0.75rem; display: flex; align-items: center; gap: 0.4rem;
+    border-bottom: 1px solid #262626; font-size: 0.65rem;
+  }
+  .dot { width: 8px; height: 8px; border-radius: 50%; }
+  .dot-r { background: #ef4444; } .dot-y { background: #eab308; } .dot-g { background: #22c55e; }
+  .mockup-url {
+    background: #0f0f0f; border-radius: 3px; padding: 0.2rem 0.5rem;
+    color: #555; flex: 1; margin-left: 0.35rem; font-family: 'Geist Mono', monospace;
+  }
+  .mockup-body { display: flex; min-height: 520px; }
+
+  /* Sidebar */
+  .sidebar {
+    width: 220px; background: #0d0d0d; border-right: 1px solid #1a1a1a;
+    padding: 0; flex-shrink: 0; display: flex; flex-direction: column; font-size: 0.8rem;
+  }
+  .sidebar-top {
+    padding: 0.6rem 0.75rem; display: flex; align-items: center; gap: 0.5rem;
+    border-bottom: 1px solid #1a1a1a;
+  }
+  .sidebar-top .logo { font-weight: 700; color: #2dd4bf; font-size: 0.85rem; }
+  .sidebar-top .back { font-size: 0.65rem; color: #555; margin-left: auto; }
+  .nav-item {
+    display: flex; align-items: center; gap: 0.6rem;
+    padding: 0.4rem 0.75rem; margin: 0 0.4rem 0.1rem; border-radius: 6px; color: #888;
+  }
+  .nav-item.active { background: rgba(45,212,191,0.08); color: #2dd4bf; font-weight: 600; }
+  .nav-item .i { width: 16px; text-align: center; font-size: 0.75rem; flex-shrink: 0; }
+  .nav-item .badge {
+    margin-left: auto; background: rgba(239,68,68,0.15); color: #ef4444;
+    font-size: 0.55rem; padding: 0.1rem 0.35rem; border-radius: 10px; font-weight: 700;
+  }
+  .nav-label {
+    padding: 0.5rem 1.15rem 0.2rem; font-size: 0.6rem; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.05em; color: #444;
+  }
+  .nav-sep { border: none; border-top: 1px solid #1a1a1a; margin: 0.35rem 0.75rem; }
+  .community-icon {
+    width: 20px; height: 20px; border-radius: 5px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.55rem; font-weight: 700; flex-shrink: 0;
+  }
+  .live-dot {
+    width: 6px; height: 6px; border-radius: 50%; background: #22c55e;
+    animation: pulse 2s infinite; flex-shrink: 0;
+  }
+  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+  .sidebar-footer {
+    margin-top: auto; padding: 0.5rem 0.75rem; border-top: 1px solid #1a1a1a;
+    display: flex; align-items: center; gap: 0.5rem;
+  }
+  .avatar-sm {
+    width: 26px; height: 26px; border-radius: 50%;
+    background: rgba(45,212,191,0.15); display: flex; align-items: center;
+    justify-content: center; font-weight: 700; font-size: 0.6rem; color: #2dd4bf;
+  }
+
+  /* Content */
+  .content { flex: 1; overflow: hidden; display: flex; flex-direction: column; }
+  .content-header {
+    padding: 0.75rem 1.25rem; border-bottom: 1px solid #1a1a1a;
+    display: flex; align-items: center; gap: 0.5rem; flex-shrink: 0;
+  }
+  .breadcrumb { font-size: 0.75rem; color: #555; }
+  .breadcrumb a { color: #888; text-decoration: none; }
+  .content-body { flex: 1; padding: 1.25rem; overflow-y: auto; }
+  .tab-bar {
+    display: flex; gap: 0; border-bottom: 1px solid #262626; margin-bottom: 1rem;
+  }
+  .tab {
+    padding: 0.45rem 0.75rem; font-size: 0.78rem; color: #555;
+    border-bottom: 2px solid transparent; margin-bottom: -1px;
+  }
+  .tab.active { color: #2dd4bf; border-bottom-color: #2dd4bf; font-weight: 600; }
+
+  .card-sm { background: #171717; border-radius: 8px; padding: 0.75rem; }
+  .card-sm h4 {
+    font-size: 0.7rem; font-weight: 600; color: #666;
+    text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 0.4rem;
+  }
+  .stat-val { font-size: 1.2rem; font-weight: 700; font-family: monospace; color: #fff; }
+  .stat-label { font-size: 0.65rem; color: #555; }
+  .tag-sm {
+    font-size: 0.6rem; padding: 0.15rem 0.4rem; border-radius: 4px; font-weight: 600;
+    display: inline-flex; align-items: center; gap: 0.25rem;
+  }
+
+  .pros-cons { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 0.75rem; }
+  .pros h4, .cons h4 { font-size: 0.75rem; font-weight: 600; margin-bottom: 0.35rem; }
+  .pros h4 { color: #22c55e; } .cons h4 { color: #ef4444; }
+  .pros li, .cons li { font-size: 0.78rem; color: #888; margin-bottom: 0.2rem; list-style: none; }
+  .pros li::before { content: "+ "; color: #22c55e; }
+  .cons li::before { content: "− "; color: #ef4444; }
+  .recommend {
+    background: rgba(45,212,191,0.08); border: 1px solid rgba(45,212,191,0.2);
+    border-radius: 8px; padding: 0.75rem 1rem; margin-top: 0.75rem; font-size: 0.8rem; color: #2dd4bf;
+  }
+
+  .issue-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin: 1rem 0; }
+  .issue-card {
+    background: #141414; border: 1px solid #262626; border-radius: 8px; padding: 0.75rem;
+  }
+  .issue-card h4 { font-size: 0.8rem; font-weight: 600; color: #ef4444; margin-bottom: 0.25rem; }
+  .issue-card p { font-size: 0.75rem; color: #888; margin: 0; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>Tournament Management Page — Redesign</h1>
+<p class="subtitle">Currently 6 tabs nested inside the community dashboard. With the sidebar, the community nav moves out — but the tournament tabs remain. How should this page work?</p>
+
+<!-- Current issues -->
+<h2>Current issues</h2>
+<div class="issue-grid">
+  <div class="issue-card">
+    <h4>Triple navigation</h4>
+    <p>Site nav + community tabs + tournament tabs. Three levels of horizontal navigation stacked vertically, eating ~200px before any content appears.</p>
+  </div>
+  <div class="issue-card">
+    <h4>Heavy header</h4>
+    <p>Tournament name + status badge + "Hosted by" + back arrow + "View Public Page" + community header above. Lots of chrome, little content.</p>
+  </div>
+  <div class="issue-card">
+    <h4>Empty states dominate</h4>
+    <p>Before Round 1 starts, the Overview, Pairings, and Standings tabs are mostly empty space with placeholder messages.</p>
+  </div>
+  <div class="issue-card">
+    <h4>Settings is a mile long</h4>
+    <p>Tournament settings is one massive scrolling form. During a live tournament, most of it is disabled anyway.</p>
+  </div>
+</div>
+
+<hr>
+
+<!-- ============================================ -->
+<!-- OPTION A: Keep horizontal tabs, simplify -->
+<!-- ============================================ -->
+<div class="option-header">
+  <div class="option-letter">A</div>
+  <div>
+    <h2>Keep horizontal tabs — simplify the chrome</h2>
+    <div class="option-desc">The sidebar handles community nav, so we only need one tab bar for tournament tabs. Slim down the header. Same tab structure, less chrome.</div>
+  </div>
+</div>
+
+<div class="mockup-frame">
+  <div class="mockup-bar">
+    <div class="dot dot-r"></div><div class="dot dot-y"></div><div class="dot dot-g"></div>
+    <div class="mockup-url">trainers.gg/dashboard/community/pallet-town/tournaments/week-02/manage</div>
+  </div>
+  <div class="mockup-body">
+    <div class="sidebar">
+      <div class="sidebar-top">
+        <span class="logo">trainers.gg</span>
+        <span class="back">← Dashboard</span>
+      </div>
+      <div style="padding:0.5rem 0.5rem 0.4rem;display:flex;align-items:center;gap:0.4rem;margin:0 0.4rem;border-bottom:1px solid #1a1a1a;padding-bottom:0.5rem">
+        <div class="community-icon" style="width:24px;height:24px;background:rgba(59,130,246,0.15);color:#3b82f6;font-size:0.65rem;border-radius:6px">P</div>
+        <div><div style="font-weight:700;font-size:0.8rem;color:#ccc">Pallet Town</div><div style="font-size:0.55rem;color:#555">Owner</div></div>
+      </div>
+      <div style="padding:0.35rem 0"></div>
+      <div class="nav-item"><span class="i">📊</span> Overview</div>
+      <div class="nav-item active"><span class="i">🏆</span> Tournaments</div>
+      <div class="nav-item"><span class="i">👥</span> Staff</div>
+      <div class="nav-item"><span class="i">⚙️</span> Settings</div>
+      <hr class="nav-sep">
+      <div class="nav-label" style="display:flex;align-items:center;gap:0.3rem"><div class="live-dot"></div> Live Now</div>
+      <div class="nav-item" style="color:#ccc;font-weight:600;font-size:0.75rem">
+        <div class="live-dot"></div> Week 2 Champ
+        <span class="badge">2</span>
+      </div>
+      <div class="sidebar-footer">
+        <div class="avatar-sm">A</div>
+        <div style="font-size:0.7rem;color:#ccc;font-family:monospace;font-weight:600">ash_ketchum</div>
+      </div>
+    </div>
+    <div class="content">
+      <div class="content-header">
+        <div class="breadcrumb">
+          <a>Tournaments</a> <span style="color:#333"> / </span>
+          <span style="color:#ccc">Week 2 Championship</span>
+        </div>
+        <span class="tag-sm" style="background:rgba(34,197,94,0.1);color:#22c55e;margin-left:0.5rem">● Live</span>
+        <span style="font-size:0.7rem;color:#555;margin-left:0.25rem">Round 3 of 6</span>
+        <a style="margin-left:auto;font-size:0.7rem;color:#555;text-decoration:none">View Public Page ↗</a>
+      </div>
+      <div class="content-body">
+        <div class="tab-bar">
+          <div class="tab active">Overview</div>
+          <div class="tab">Registrations</div>
+          <div class="tab">Pairings</div>
+          <div class="tab">Standings</div>
+          <div class="tab">Audit Log</div>
+          <div class="tab">Settings</div>
+        </div>
+        <!-- Overview content -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-bottom:0.75rem">
+          <div class="card-sm" style="border:1px solid rgba(34,197,94,0.15)">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.5rem">
+              <h4 style="margin:0">Round Control</h4>
+              <span class="tag-sm" style="background:rgba(34,197,94,0.1);color:#22c55e">Active</span>
+            </div>
+            <div style="font-size:0.85rem;color:#ccc;font-weight:600;margin-bottom:0.35rem">Round 3 — 28/32 matches done</div>
+            <div style="background:#262626;height:4px;border-radius:2px;overflow:hidden;margin-bottom:0.5rem">
+              <div style="background:#2dd4bf;height:100%;width:87%;border-radius:2px"></div>
+            </div>
+            <button style="background:#2dd4bf;color:#000;border:none;padding:0.35rem 0.75rem;border-radius:6px;font-size:0.75rem;font-weight:600;cursor:pointer">Complete Round 3</button>
+          </div>
+          <div class="card-sm" style="border:1px solid rgba(239,68,68,0.15)">
+            <div style="display:flex;align-items:center;gap:0.35rem;margin-bottom:0.5rem">
+              <h4 style="margin:0;color:#ef4444">Judge Queue</h4>
+              <span class="tag-sm" style="background:rgba(239,68,68,0.15);color:#ef4444">2</span>
+            </div>
+            <div style="font-size:0.78rem;color:#888;padding:0.3rem 0;border-bottom:1px solid #1a1a1a">T7 — ash vs red <span style="color:#ef4444">🛡️</span></div>
+            <div style="font-size:0.78rem;color:#888;padding:0.3rem 0">T3 — brock vs misty <span style="color:#ef4444">🛡️</span></div>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0.75rem">
+          <div class="card-sm">
+            <h4>Registrations</h4>
+            <div class="stat-val">63</div>
+            <div class="stat-label">checked in · 100% ready</div>
+          </div>
+          <div class="card-sm">
+            <h4>Format</h4>
+            <div style="font-size:0.85rem;color:#ccc;font-weight:600">VGC — Swiss With Cut</div>
+            <div class="stat-label">Bo3 · 50min rounds · Top 8</div>
+          </div>
+          <div class="card-sm">
+            <h4>Schedule</h4>
+            <div style="font-size:0.8rem;color:#ccc">Mar 28, 5:12 PM</div>
+            <div class="stat-label">→ Mar 29, 1:12 AM</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="pros-cons">
+  <div class="pros"><h4>Strengths</h4><ul>
+    <li>Familiar — same 6 tabs, TOs already know where everything is</li>
+    <li>Sidebar eliminates one tab layer (community nav is gone)</li>
+    <li>Compact header with breadcrumbs — tournament name + status in one line</li>
+    <li>Judge queue surfaced on Overview — no need to navigate to Pairings</li>
+    <li>Lowest implementation effort — mostly moving existing components</li>
+  </ul></div>
+  <div class="cons"><h4>Weaknesses</h4><ul>
+    <li>Still 6 tabs — could be simplified</li>
+    <li>Audit Log and Settings rarely used during live tournament</li>
+  </ul></div>
+</div>
+
+<hr>
+
+<!-- ============================================ -->
+<!-- OPTION B: Consolidated — fewer tabs -->
+<!-- ============================================ -->
+<div class="option-header">
+  <div class="option-letter">B</div>
+  <div>
+    <h2>Consolidated — 3 tabs + slide-out settings</h2>
+    <div class="option-desc">Merge related concerns. Overview absorbs round control + stats. "Live" tab combines Pairings + Judge Queue + Standings (the things you need during a live tournament). Settings becomes a slide-out panel, not a tab. Audit Log moves to a button/dropdown.</div>
+  </div>
+</div>
+
+<div class="mockup-frame">
+  <div class="mockup-bar">
+    <div class="dot dot-r"></div><div class="dot dot-y"></div><div class="dot dot-g"></div>
+    <div class="mockup-url">trainers.gg/dashboard/community/pallet-town/tournaments/week-02/manage</div>
+  </div>
+  <div class="mockup-body">
+    <div class="sidebar">
+      <div class="sidebar-top">
+        <span class="logo">trainers.gg</span>
+        <span class="back">← Dashboard</span>
+      </div>
+      <div style="padding:0.5rem 0.5rem 0.4rem;display:flex;align-items:center;gap:0.4rem;margin:0 0.4rem;border-bottom:1px solid #1a1a1a;padding-bottom:0.5rem">
+        <div class="community-icon" style="width:24px;height:24px;background:rgba(59,130,246,0.15);color:#3b82f6;font-size:0.65rem;border-radius:6px">P</div>
+        <div><div style="font-weight:700;font-size:0.8rem;color:#ccc">Pallet Town</div><div style="font-size:0.55rem;color:#555">Owner</div></div>
+      </div>
+      <div style="padding:0.35rem 0"></div>
+      <div class="nav-item"><span class="i">📊</span> Overview</div>
+      <div class="nav-item active"><span class="i">🏆</span> Tournaments</div>
+      <div class="nav-item"><span class="i">👥</span> Staff</div>
+      <div class="nav-item"><span class="i">⚙️</span> Settings</div>
+      <hr class="nav-sep">
+      <div class="nav-label" style="display:flex;align-items:center;gap:0.3rem"><div class="live-dot"></div> Live Now</div>
+      <div class="nav-item" style="color:#ccc;font-weight:600;font-size:0.75rem">
+        <div class="live-dot"></div> Week 2 Champ
+        <span class="badge">2</span>
+      </div>
+      <div class="sidebar-footer">
+        <div class="avatar-sm">A</div>
+        <div style="font-size:0.7rem;color:#ccc;font-family:monospace;font-weight:600">ash_ketchum</div>
+      </div>
+    </div>
+    <div class="content">
+      <div class="content-header">
+        <div class="breadcrumb">
+          <a>Tournaments</a> <span style="color:#333"> / </span>
+          <span style="color:#ccc">Week 2 Championship</span>
+        </div>
+        <span class="tag-sm" style="background:rgba(34,197,94,0.1);color:#22c55e;margin-left:0.5rem">● Live</span>
+        <div style="margin-left:auto;display:flex;gap:0.5rem;align-items:center">
+          <span style="font-size:0.7rem;color:#555;cursor:pointer">⚙ Settings</span>
+          <span style="font-size:0.7rem;color:#555;cursor:pointer">📋 Audit</span>
+          <a style="font-size:0.7rem;color:#555;text-decoration:none">↗ Public</a>
+        </div>
+      </div>
+      <div class="content-body">
+        <!-- Only 3 tabs -->
+        <div class="tab-bar">
+          <div class="tab active">Overview</div>
+          <div class="tab">Players <span style="font-size:0.65rem;color:#555;margin-left:0.25rem">63</span></div>
+          <div class="tab">Live <span style="font-size:0.65rem;color:#ef4444;margin-left:0.25rem">● 2</span></div>
+        </div>
+
+        <!-- Overview = round control + stats combined -->
+        <div style="display:grid;grid-template-columns:2fr 1fr;gap:0.75rem;margin-bottom:0.75rem">
+          <div class="card-sm" style="border:1px solid rgba(34,197,94,0.15)">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.5rem">
+              <h4 style="margin:0">Round 3 of 6</h4>
+              <span class="tag-sm" style="background:rgba(34,197,94,0.1);color:#22c55e">Active</span>
+            </div>
+            <div style="font-size:0.85rem;color:#ccc;margin-bottom:0.35rem">28 of 32 matches completed</div>
+            <div style="background:#262626;height:6px;border-radius:3px;overflow:hidden;margin-bottom:0.75rem">
+              <div style="background:#2dd4bf;height:100%;width:87%;border-radius:3px"></div>
+            </div>
+            <div style="display:flex;gap:0.5rem">
+              <button style="background:#2dd4bf;color:#000;border:none;padding:0.4rem 0.85rem;border-radius:6px;font-size:0.78rem;font-weight:600;cursor:pointer">Complete Round</button>
+            </div>
+          </div>
+          <div class="card-sm" style="border:1px solid rgba(239,68,68,0.15)">
+            <div style="display:flex;align-items:center;gap:0.35rem;margin-bottom:0.5rem">
+              <span style="font-size:0.75rem">🛡️</span>
+              <h4 style="margin:0;color:#ef4444">Judge Queue</h4>
+              <span class="tag-sm" style="background:rgba(239,68,68,0.15);color:#ef4444">2</span>
+            </div>
+            <div style="font-size:0.78rem;color:#ccc;padding:0.3rem 0;border-bottom:1px solid #1a1a1a;cursor:pointer">T7 — ash vs red</div>
+            <div style="font-size:0.78rem;color:#ccc;padding:0.3rem 0;cursor:pointer">T3 — brock vs misty</div>
+          </div>
+        </div>
+
+        <!-- Stats row -->
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:0.75rem;margin-bottom:0.75rem">
+          <div class="card-sm" style="text-align:center">
+            <div class="stat-val">63</div>
+            <div class="stat-label">Players</div>
+          </div>
+          <div class="card-sm" style="text-align:center">
+            <div class="stat-val">3/6</div>
+            <div class="stat-label">Rounds</div>
+          </div>
+          <div class="card-sm" style="text-align:center">
+            <div class="stat-val" style="color:#fbbf24">87%</div>
+            <div class="stat-label">Round Progress</div>
+          </div>
+          <div class="card-sm" style="text-align:center">
+            <div class="stat-val">0</div>
+            <div class="stat-label">Dropped</div>
+          </div>
+        </div>
+
+        <!-- Quick standings preview -->
+        <div class="card-sm">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.5rem">
+            <h4 style="margin:0">Top Standings</h4>
+            <span style="font-size:0.7rem;color:#2dd4bf;cursor:pointer">View full →</span>
+          </div>
+          <div style="font-size:0.78rem">
+            <div style="display:flex;padding:0.3rem 0;border-bottom:1px solid #1a1a1a;color:#ccc">
+              <span style="width:30px;color:#fbbf24">1.</span><span style="flex:1">cynthia</span><span style="color:#888">3-0 (9pts)</span>
+            </div>
+            <div style="display:flex;padding:0.3rem 0;border-bottom:1px solid #1a1a1a;color:#ccc">
+              <span style="width:30px;color:#c0c0c0">2.</span><span style="flex:1">lance</span><span style="color:#888">2-1 (7pts)</span>
+            </div>
+            <div style="display:flex;padding:0.3rem 0;color:#ccc">
+              <span style="width:30px;color:#cd7f32">3.</span><span style="flex:1">ash_ketchum</span><span style="color:#888">2-1 (6pts)</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="pros-cons">
+  <div class="pros"><h4>Strengths</h4><ul>
+    <li>3 tabs instead of 6 — focused on what TOs actually do</li>
+    <li>Overview shows everything at a glance — round control, judge queue, stats, top standings</li>
+    <li>"Live" tab = pairings + judge queue + full standings (the live ops view)</li>
+    <li>"Players" tab = registrations + drops (player management)</li>
+    <li>Settings as slide-out panel — not a tab you accidentally click during a live tournament</li>
+    <li>Audit Log as a button — rarely needed, shouldn't occupy tab space</li>
+    <li>Judge queue badge count visible on the "Live" tab label</li>
+  </ul></div>
+  <div class="cons"><h4>Weaknesses</h4><ul>
+    <li>More work to restructure — merging tab content</li>
+    <li>TOs familiar with current structure need to relearn</li>
+    <li>"Live" tab does a lot — needs careful sub-section design</li>
+  </ul></div>
+</div>
+
+<div class="recommend">💡 <strong>My recommendation: Option A for now, evolve toward B later.</strong> The sidebar already eliminates the triple-nav problem. Option A gives us a clean tournament management page with minimal restructuring — the 6 tabs work, they just need less chrome around them. The judge queue on the Overview tab is the key improvement. We can consolidate to 3 tabs in a future iteration once TOs have feedback on the sidebar layout.</div>
+
+</div>
+</body>
+</html>

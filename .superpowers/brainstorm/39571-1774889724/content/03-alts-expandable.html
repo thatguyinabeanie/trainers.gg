@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Alts Page — Expandable Alt Cards with Teams</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: Inter, -apple-system, sans-serif; background: #0a0a0a; color: #e5e5e5; padding: 2rem; line-height: 1.5; }
+  .wrap { max-width: 1000px; margin: 0 auto; }
+  h1 { font-size: 1.5rem; font-weight: 700; margin-bottom: 0.25rem; }
+  .subtitle { color: #888; font-size: 0.9rem; margin-bottom: 2rem; }
+  p { color: #a3a3a3; font-size: 0.85rem; margin-bottom: 0.5rem; }
+  hr { border: none; border-top: 1px solid #1a1a1a; margin: 2rem 0; }
+
+  .mockup-frame { background: #fff; border: 1px solid #262626; border-radius: 12px; overflow: hidden; color: #111; }
+  .content-area { padding: 24px; }
+  .page-header-mock { display: flex; align-items: center; gap: 8px; padding: 12px 24px; border-bottom: 1px solid #f0f0f0; font-size: 13px; color: #888; }
+  .page-header-mock .trigger { width: 24px; height: 24px; border: 1px solid #e0e0e0; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 10px; }
+  .page-header-mock .sep { width: 1px; height: 16px; background: #d4d4d4; margin: 0 4px; }
+  .page-header-mock .title { font-weight: 500; color: #111; }
+
+  /* Aggregated stats */
+  .agg-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 24px; }
+  .stat-card { background: #fafafa; border: 1px solid #f0f0f0; border-radius: 8px; padding: 14px; }
+  .stat-card .label { font-size: 10px; color: #888; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 500; margin-bottom: 4px; }
+  .stat-card .value { font-size: 22px; font-weight: 700; font-family: 'Geist Mono', monospace; color: #111; }
+  .stat-card .sub { font-size: 10px; color: #888; margin-top: 2px; }
+  .stat-card .trend { color: #10b981; font-size: 10px; font-family: monospace; }
+
+  /* Section */
+  .section-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+  .section-head h3 { font-size: 14px; font-weight: 600; color: #111; }
+  .btn-sm { padding: 6px 12px; font-size: 12px; font-weight: 500; border-radius: 6px; border: none; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; }
+  .btn-primary { background: #0d9488; color: white; }
+
+  /* Alt cards */
+  .alt-list { display: flex; flex-direction: column; gap: 8px; }
+
+  .alt-card { border: 1px solid #f0f0f0; border-radius: 8px; overflow: hidden; }
+  .alt-card.main { border-color: #fbbf2440; }
+
+  .alt-header { padding: 14px 16px; display: flex; align-items: center; gap: 14px; cursor: pointer; transition: background 0.1s; }
+  .alt-header:hover { background: #fafafa; }
+  .alt-card.main .alt-header { background: #fefce808; }
+
+  .alt-avatar { width: 36px; height: 36px; border-radius: 50%; background: #e8f5f4; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px; color: #0d9488; flex-shrink: 0; }
+
+  .alt-info { flex: 1; min-width: 0; }
+  .alt-name { font-size: 13px; font-weight: 600; font-family: 'Geist Mono', monospace; color: #111; display: flex; align-items: center; gap: 6px; }
+  .alt-meta { font-size: 11px; color: #888; margin-top: 1px; }
+
+  .alt-stats-inline { display: flex; gap: 12px; font-size: 12px; color: #555; }
+  .alt-stats-inline .val { font-weight: 600; font-family: monospace; color: #111; }
+
+  .chevron { font-size: 14px; color: #ccc; transition: transform 0.15s; flex-shrink: 0; }
+  .chevron.open { transform: rotate(90deg); color: #888; }
+
+  .badge { font-size: 9px; font-weight: 600; padding: 2px 5px; border-radius: 3px; }
+  .badge-main { background: #fef3c7; color: #92400e; }
+  .badge-public { background: #d1fae5; color: #065f46; }
+  .badge-private { background: #f3f4f6; color: #6b7280; }
+
+  /* Expanded content */
+  .alt-expanded { border-top: 1px solid #f0f0f0; padding: 16px; background: #fafafa; }
+
+  .alt-detail-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 16px; }
+  .detail-stat { background: white; border: 1px solid #f0f0f0; border-radius: 6px; padding: 10px; text-align: center; }
+  .detail-stat .val { font-size: 16px; font-weight: 700; font-family: monospace; color: #111; }
+  .detail-stat .lbl { font-size: 9px; color: #888; text-transform: uppercase; letter-spacing: 0.04em; margin-top: 2px; }
+
+  /* Teams section inside expanded */
+  .teams-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+  .teams-header h4 { font-size: 12px; font-weight: 600; color: #555; text-transform: uppercase; letter-spacing: 0.04em; }
+
+  .team-row { display: flex; align-items: center; gap: 12px; padding: 10px 12px; background: white; border: 1px solid #f0f0f0; border-radius: 6px; margin-bottom: 6px; cursor: pointer; transition: border-color 0.1s; }
+  .team-row:hover { border-color: #0d948840; }
+
+  .team-sprites { display: flex; gap: 2px; }
+  .sprite-placeholder { width: 24px; height: 24px; border-radius: 4px; background: #f3f4f6; }
+
+  .team-info { flex: 1; min-width: 0; }
+  .team-name { font-size: 12px; font-weight: 500; color: #111; }
+  .team-meta { font-size: 10px; color: #888; margin-top: 1px; }
+
+  .team-actions { display: flex; gap: 4px; }
+  .team-action-btn { width: 24px; height: 24px; border-radius: 4px; border: 1px solid #e0e0e0; background: white; display: flex; align-items: center; justify-content: center; font-size: 10px; cursor: pointer; color: #888; }
+  .team-action-btn:hover { background: #f9f9f9; color: #555; }
+
+  .team-badge { font-size: 9px; padding: 1px 4px; border-radius: 3px; font-weight: 500; }
+  .team-badge-active { background: #d1fae5; color: #065f46; }
+  .team-badge-archived { background: #f3f4f6; color: #9ca3af; }
+
+  /* Alt actions row */
+  .alt-actions-row { display: flex; gap: 8px; margin-top: 12px; padding-top: 12px; border-top: 1px solid #f0f0f0; }
+  .action-link { font-size: 11px; color: #0d9488; cursor: pointer; display: flex; align-items: center; gap: 4px; }
+  .action-link:hover { text-decoration: underline; }
+  .action-link.danger { color: #ef4444; }
+
+  .callout { background: rgba(45,212,191,0.05); border: 1px solid rgba(45,212,191,0.15); border-radius: 8px; padding: 1rem; margin-top: 1.5rem; font-size: 0.8rem; color: #888; }
+  .callout strong { color: #2dd4bf; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>Alts Page — Expandable Cards with Teams</h1>
+<p class="subtitle">Click an alt to expand and see its teams, stats, and management actions. Click a team to open it in the builder.</p>
+
+<hr>
+
+<div class="mockup-frame">
+  <div class="page-header-mock">
+    <div class="trigger">☰</div>
+    <div class="sep"></div>
+    <div class="title">Alts</div>
+  </div>
+
+  <div class="content-area">
+    <!-- Aggregated stats -->
+    <div class="agg-stats">
+      <div class="stat-card">
+        <div class="label">Record</div>
+        <div class="value">48-23</div>
+        <div class="sub">across all alts</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">Win Rate</div>
+        <div class="value">67.6%</div>
+        <div class="trend">↑ 3.2%</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">Peak Rating</div>
+        <div class="value">1,847</div>
+        <div class="sub">ash_ketchum</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">Tournaments</div>
+        <div class="value">12</div>
+        <div class="sub">3 active</div>
+      </div>
+    </div>
+
+    <!-- Alt list -->
+    <div class="section-head">
+      <h3>Your Alts</h3>
+      <button class="btn-sm btn-primary">+ New Alt</button>
+    </div>
+
+    <div class="alt-list">
+      <!-- Alt 1: EXPANDED (main alt) -->
+      <div class="alt-card main">
+        <div class="alt-header">
+          <div class="alt-avatar">A</div>
+          <div class="alt-info">
+            <div class="alt-name">
+              @ash_ketchum
+              <span class="badge badge-main">★ Main</span>
+              <span class="badge badge-public">Public</span>
+            </div>
+            <div class="alt-meta">12 tournaments · 48-23 · 1,847 ELO</div>
+          </div>
+          <div class="alt-stats-inline">
+            <span><span class="val">67%</span> WR</span>
+            <span><span class="val" style="color:#eab308">240</span> CP</span>
+          </div>
+          <div class="chevron open">▸</div>
+        </div>
+
+        <!-- Expanded section -->
+        <div class="alt-expanded">
+          <!-- Detail stats -->
+          <div class="alt-detail-stats">
+            <div class="detail-stat">
+              <div class="val">48-23</div>
+              <div class="lbl">Record</div>
+            </div>
+            <div class="detail-stat">
+              <div class="val">1,847</div>
+              <div class="lbl">Current ELO</div>
+            </div>
+            <div class="detail-stat">
+              <div class="val">67.6%</div>
+              <div class="lbl">Win Rate</div>
+            </div>
+            <div class="detail-stat">
+              <div class="val" style="color:#eab308">240</div>
+              <div class="lbl">Champion Pts</div>
+            </div>
+          </div>
+
+          <!-- Teams -->
+          <div class="teams-header">
+            <h4>Teams (3)</h4>
+          </div>
+
+          <div class="team-row">
+            <div class="team-sprites">
+              <div class="sprite-placeholder"></div>
+              <div class="sprite-placeholder"></div>
+              <div class="sprite-placeholder"></div>
+              <div class="sprite-placeholder"></div>
+              <div class="sprite-placeholder"></div>
+              <div class="sprite-placeholder"></div>
+            </div>
+            <div class="team-info">
+              <div class="team-name">Sun Series Core <span class="team-badge team-badge-active">Active</span></div>
+              <div class="team-meta">3 versions · Used in 4 tournaments · Last played 2d ago</div>
+            </div>
+            <div class="team-actions">
+              <div class="team-action-btn" title="Open in Builder">🔨</div>
+              <div class="team-action-btn" title="Share">↗</div>
+              <div class="team-action-btn" title="Archive">📦</div>
+            </div>
+          </div>
+
+          <div class="team-row">
+            <div class="team-sprites">
+              <div class="sprite-placeholder"></div>
+              <div class="sprite-placeholder"></div>
+              <div class="sprite-placeholder"></div>
+              <div class="sprite-placeholder"></div>
+              <div class="sprite-placeholder"></div>
+              <div class="sprite-placeholder"></div>
+            </div>
+            <div class="team-info">
+              <div class="team-name">Rain Offense</div>
+              <div class="team-meta">1 version · Used in 1 tournament · Last played 1w ago</div>
+            </div>
+            <div class="team-actions">
+              <div class="team-action-btn" title="Open in Builder">🔨</div>
+              <div class="team-action-btn" title="Share">↗</div>
+              <div class="team-action-btn" title="Archive">📦</div>
+            </div>
+          </div>
+
+          <div class="team-row" style="opacity:0.6">
+            <div class="team-sprites">
+              <div class="sprite-placeholder"></div>
+              <div class="sprite-placeholder"></div>
+              <div class="sprite-placeholder"></div>
+              <div class="sprite-placeholder"></div>
+              <div class="sprite-placeholder"></div>
+              <div class="sprite-placeholder"></div>
+            </div>
+            <div class="team-info">
+              <div class="team-name">Old Trick Room <span class="team-badge team-badge-archived">Archived</span></div>
+              <div class="team-meta">2 versions · Used in 3 tournaments · Archived</div>
+            </div>
+            <div class="team-actions">
+              <div class="team-action-btn" title="Open in Builder">🔨</div>
+              <div class="team-action-btn" title="Unarchive">📤</div>
+            </div>
+          </div>
+
+          <!-- Actions -->
+          <div class="alt-actions-row">
+            <span class="action-link">📊 View tournament history</span>
+            <span class="action-link">✏️ Change avatar</span>
+            <span class="action-link">🔒 Toggle visibility</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Alt 2: COLLAPSED -->
+      <div class="alt-card">
+        <div class="alt-header">
+          <div class="alt-avatar">S</div>
+          <div class="alt-info">
+            <div class="alt-name">
+              @secret_trainer
+              <span class="badge badge-private">Private</span>
+            </div>
+            <div class="alt-meta">4 tournaments · 8-2 · 1,692 ELO</div>
+          </div>
+          <div class="alt-stats-inline">
+            <span><span class="val">80%</span> WR</span>
+            <span><span class="val" style="color:#eab308">80</span> CP</span>
+          </div>
+          <div class="chevron">▸</div>
+        </div>
+      </div>
+
+      <!-- Alt 3: COLLAPSED -->
+      <div class="alt-card">
+        <div class="alt-header">
+          <div class="alt-avatar" style="background:#f3f4f6;color:#9ca3af">D</div>
+          <div class="alt-info">
+            <div class="alt-name">
+              @draft_practice
+              <span class="badge badge-private">Private</span>
+            </div>
+            <div class="alt-meta">0 tournaments · 0-0 · Unrated</div>
+          </div>
+          <div class="alt-stats-inline">
+            <span style="color:#ccc">— WR</span>
+            <span style="color:#ccc">0 CP</span>
+          </div>
+          <div class="chevron">▸</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="callout">
+  <strong>Key interactions:</strong>
+  <ul style="margin-top:0.5rem;padding-left:1.25rem">
+    <li style="margin-bottom:0.25rem"><strong>Click alt row</strong> → expands to show detail stats + teams list + management actions</li>
+    <li style="margin-bottom:0.25rem"><strong>Click team row</strong> → navigates to Team Builder with that team loaded</li>
+    <li style="margin-bottom:0.25rem"><strong>🔨 Open in Builder</strong> → same as clicking the team row</li>
+    <li style="margin-bottom:0.25rem"><strong>↗ Share</strong> → share dialog (not implemented yet, but the UI slot exists)</li>
+    <li style="margin-bottom:0.25rem"><strong>📦 Archive / 📤 Unarchive</strong> → toggle team archived status. Archived teams shown at reduced opacity.</li>
+    <li style="margin-bottom:0.25rem"><strong>📊 View tournament history</strong> → navigates to History page filtered by this alt</li>
+    <li style="margin-bottom:0.25rem"><strong>Team versioning info</strong> → "3 versions" shown inline. Full version history visible in the builder.</li>
+    <li style="margin-bottom:0.25rem"><strong>Collapsed row</strong> shows: avatar, name, badges, meta line (tournaments/record/ELO), win rate + CP</li>
+  </ul>
+</div>
+
+</div>
+</body>
+</html>

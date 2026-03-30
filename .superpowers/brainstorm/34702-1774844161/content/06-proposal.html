@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard Redesign Proposal</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: Inter, -apple-system, sans-serif; background: #0a0a0a; color: #e5e5e5; padding: 2rem; line-height: 1.5; }
+  .proposal { max-width: 900px; margin: 0 auto; }
+  h1 { font-size: 1.75rem; font-weight: 700; margin-bottom: 0.5rem; }
+  .subtitle { color: #888; font-size: 0.95rem; margin-bottom: 2rem; }
+  h2 { font-size: 1.2rem; font-weight: 600; margin-bottom: 0.75rem; color: #fff; }
+  h3 { font-size: 1rem; font-weight: 600; margin-bottom: 0.5rem; color: #e5e5e5; }
+  p { color: #a3a3a3; font-size: 0.9rem; margin-bottom: 0.75rem; }
+  .section { margin-bottom: 2.5rem; }
+  .nav-mockup {
+    display: flex; gap: 0; border-bottom: 2px solid #262626; margin-bottom: 2rem;
+  }
+  .nav-tab {
+    padding: 0.75rem 1.25rem; font-size: 0.875rem; font-weight: 500; color: #666;
+    border-bottom: 2px solid transparent; margin-bottom: -2px; cursor: default;
+  }
+  .nav-tab.active { color: #2dd4bf; border-bottom-color: #2dd4bf; }
+  .grid { display: grid; gap: 1rem; }
+  .grid-2 { grid-template-columns: 1fr 1fr; }
+  .grid-3 { grid-template-columns: 1fr 1fr 1fr; }
+  .grid-8-4 { grid-template-columns: 2fr 1fr; }
+  .card {
+    background: #171717; border-radius: 12px; padding: 1.25rem;
+    border: 1px solid #262626;
+  }
+  .card-label {
+    font-size: 0.7rem; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.05em; color: #666; margin-bottom: 0.5rem;
+  }
+  .card-value { font-size: 1.5rem; font-weight: 700; font-family: 'Geist Mono', monospace; color: #fff; }
+  .card-sub { font-size: 0.8rem; color: #555; margin-top: 0.25rem; }
+  .teal { color: #2dd4bf; }
+  .amber { color: #fbbf24; }
+  .divider { border: none; border-top: 1px solid #1a1a1a; margin: 2rem 0; }
+  .tag { display: inline-block; padding: 0.2rem 0.5rem; border-radius: 6px; font-size: 0.7rem; font-weight: 600; }
+  .tag-teal { background: rgba(45,212,191,0.1); color: #2dd4bf; }
+  .tag-amber { background: rgba(251,191,36,0.1); color: #fbbf24; }
+  .tag-gray { background: rgba(255,255,255,0.05); color: #888; }
+  .alt-row {
+    display: flex; align-items: center; gap: 1rem; padding: 0.75rem 0;
+    border-bottom: 1px solid #1a1a1a;
+  }
+  .alt-row:last-child { border-bottom: none; }
+  .alt-avatar {
+    width: 36px; height: 36px; border-radius: 50%; background: rgba(45,212,191,0.15);
+    display: flex; align-items: center; justify-content: center; font-weight: 700;
+    font-size: 0.8rem; color: #2dd4bf; flex-shrink: 0;
+  }
+  .alt-name { font-weight: 600; font-family: 'Geist Mono', monospace; font-size: 0.9rem; }
+  .alt-stats { font-size: 0.8rem; color: #666; }
+  .alt-meta { margin-left: auto; text-align: right; }
+  .action-item {
+    display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem;
+    background: #1a1a1a; border-radius: 8px; margin-bottom: 0.5rem;
+  }
+  .action-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .action-dot.urgent { background: #ef4444; }
+  .action-dot.info { background: #2dd4bf; }
+  .action-text { font-size: 0.85rem; color: #ccc; }
+  .action-text strong { color: #fff; }
+  .team-pill {
+    display: inline-flex; gap: 0.35rem; padding: 0.4rem 0.6rem;
+    background: #1a1a1a; border-radius: 8px; margin: 0.25rem;
+  }
+  .team-sprite { width: 24px; height: 24px; border-radius: 4px; background: #262626; }
+  .wireframe-note {
+    background: rgba(45,212,191,0.05); border: 1px solid rgba(45,212,191,0.15);
+    border-radius: 8px; padding: 1rem; margin-top: 1rem; font-size: 0.8rem; color: #888;
+  }
+  .wireframe-note strong { color: #2dd4bf; }
+  .page-header { margin-bottom: 1.5rem; }
+  .page-header h1 { font-size: 1.5rem; }
+  .page-header p { color: #666; font-size: 0.85rem; margin: 0; }
+  @media (max-width: 700px) {
+    .grid-2, .grid-3, .grid-8-4 { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="proposal">
+
+<h1>Dashboard Redesign Proposal</h1>
+<p class="subtitle">Personal control center — fixed layout, everything glanceable, details one click away</p>
+
+<hr class="divider">
+
+<!-- NAVIGATION -->
+<div class="section">
+  <h2>Navigation: 4 tabs</h2>
+  <p>Each tab is a distinct concern. No overlap, no dead ends.</p>
+
+  <div class="nav-mockup">
+    <div class="nav-tab active">Home</div>
+    <div class="nav-tab">Alts & Teams</div>
+    <div class="nav-tab">History</div>
+    <div class="nav-tab">Settings</div>
+  </div>
+
+  <div class="grid grid-2">
+    <div class="card">
+      <h3>Home</h3>
+      <p>Glanceable overview. Stats, active actions, recent activity. The "what's going on right now" view. What you see when you first land.</p>
+    </div>
+    <div class="card">
+      <h3>Alts & Teams</h3>
+      <p>The core management tab. Create/manage alts, view per-alt analytics, see teams owned by each alt, team usage history. The identity + strategy hub.</p>
+    </div>
+    <div class="card">
+      <h3>History</h3>
+      <p>Tournament history + achievements + competitive record. Your progression over time. The "look back" tab. Also exists on public profile, this is the private management view.</p>
+    </div>
+    <div class="card">
+      <h3>Settings</h3>
+      <p>Account, social identity (linked accounts, Bluesky), display preferences, notification preferences. Auto-redirects to Profile sub-tab (no dead end).</p>
+    </div>
+  </div>
+
+  <div class="wireframe-note">
+    <strong>Why these 4?</strong> "Home" replaces "Overview" — friendlier name for a control center. "Alts & Teams" elevates alts from a flat list to a rich management view with analytics and teams. "History" consolidates tournament history + achievements (two paths to same data). "Settings" absorbs social identity and notification config. "Invitations" and "Notifications" fold into the Home tab as action items / inbox.
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- HOME TAB -->
+<div class="section">
+  <h2>Home Tab — Wireframe</h2>
+  <p>Fixed layout. Everything visible at a glance. No scrolling needed for the essentials.</p>
+
+  <div class="page-header">
+    <h1 style="color:#fff">Welcome back, <span class="teal">ash_ketchum</span></h1>
+    <p>Here's your competitive overview</p>
+  </div>
+
+  <!-- Stats Row -->
+  <div class="grid grid-3" style="margin-bottom:1rem">
+    <div class="card">
+      <div class="card-label">Aggregated Win Rate</div>
+      <div class="card-value">67.2<span style="font-size:1rem;color:#666">%</span></div>
+      <div class="card-sub teal">↑ 3.1% this month</div>
+    </div>
+    <div class="card">
+      <div class="card-label">Peak Rating</div>
+      <div class="card-value">1,847</div>
+      <div class="card-sub">Global Rank #142</div>
+    </div>
+    <div class="card">
+      <div class="card-label">Champion Points</div>
+      <div class="card-value amber">320</div>
+      <div class="card-sub">Season 2026</div>
+    </div>
+  </div>
+
+  <!-- Inbox + Tournaments -->
+  <div class="grid grid-8-4">
+    <div>
+      <!-- Inbox / Action Items -->
+      <div class="card" style="margin-bottom:1rem">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.75rem">
+          <h3>Inbox</h3>
+          <span class="tag tag-teal">3 new</span>
+        </div>
+        <div class="action-item">
+          <div class="action-dot urgent"></div>
+          <div class="action-text"><strong>Team submission required</strong> — VGC Weekly #42 starts in 6 hours</div>
+        </div>
+        <div class="action-item">
+          <div class="action-dot info"></div>
+          <div class="action-text"><strong>Tournament invitation</strong> — Champions League Qualifier</div>
+        </div>
+        <div class="action-item">
+          <div class="action-dot info"></div>
+          <div class="action-text"><strong>Match result</strong> — You won vs. red (Round 3)</div>
+        </div>
+        <div style="text-align:right;margin-top:0.5rem">
+          <span style="font-size:0.8rem;color:#2dd4bf;cursor:pointer">View all →</span>
+        </div>
+      </div>
+
+      <!-- Active Tournaments -->
+      <div class="card">
+        <h3 style="margin-bottom:0.75rem">Active Tournaments</h3>
+        <div class="alt-row">
+          <div style="flex:1">
+            <div style="font-weight:600;font-size:0.9rem;color:#fff">VGC Weekly #42</div>
+            <div style="font-size:0.8rem;color:#666">Round 3 of 5 · Table 4</div>
+          </div>
+          <span class="tag tag-amber">Needs team</span>
+        </div>
+        <div class="alt-row">
+          <div style="flex:1">
+            <div style="font-weight:600;font-size:0.9rem;color:#fff">Showdown Open #8</div>
+            <div style="font-size:0.8rem;color:#666">Starts tomorrow · 32 players</div>
+          </div>
+          <span class="tag tag-teal">Ready</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sidebar: Quick Alt Summary -->
+    <div>
+      <div class="card">
+        <h3 style="margin-bottom:0.75rem">Your Alts</h3>
+        <div class="alt-row">
+          <div class="alt-avatar">A</div>
+          <div>
+            <div class="alt-name">ash_ketchum</div>
+            <div class="alt-stats">12-4 · 1847 ELO</div>
+          </div>
+          <div class="alt-meta"><span class="tag tag-amber">Main</span></div>
+        </div>
+        <div class="alt-row">
+          <div class="alt-avatar">S</div>
+          <div>
+            <div class="alt-name">secret_trainer</div>
+            <div class="alt-stats">8-2 · 1692 ELO</div>
+          </div>
+        </div>
+        <div class="alt-row">
+          <div class="alt-avatar">D</div>
+          <div>
+            <div class="alt-name">draft_alt</div>
+            <div class="alt-stats">0-0 · Unrated</div>
+          </div>
+        </div>
+        <div style="text-align:right;margin-top:0.5rem">
+          <span style="font-size:0.8rem;color:#2dd4bf;cursor:pointer">Manage alts →</span>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:1rem">
+        <h3 style="margin-bottom:0.5rem">Recent Teams</h3>
+        <div style="font-size:0.8rem;color:#888;margin-bottom:0.5rem">ash_ketchum · VGC Weekly #41</div>
+        <div class="team-pill">
+          <div class="team-sprite"></div>
+          <div class="team-sprite"></div>
+          <div class="team-sprite"></div>
+          <div class="team-sprite"></div>
+          <div class="team-sprite"></div>
+          <div class="team-sprite"></div>
+        </div>
+        <div style="font-size:0.75rem;color:#555;margin-top:0.5rem">3 versions · Used in 4 tournaments</div>
+        <div style="text-align:right;margin-top:0.5rem">
+          <span style="font-size:0.8rem;color:#2dd4bf;cursor:pointer">All teams →</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- ALTS & TEAMS TAB -->
+<div class="section">
+  <h2>Alts & Teams Tab — Concept</h2>
+  <p>This is the rich management view. Each alt expands to show its analytics, teams, and tournament history.</p>
+
+  <div class="card" style="margin-bottom:1rem">
+    <div style="display:flex;align-items:center;gap:1rem;margin-bottom:1rem">
+      <div class="alt-avatar" style="width:48px;height:48px;font-size:1.1rem">A</div>
+      <div>
+        <div style="display:flex;align-items:center;gap:0.5rem">
+          <span class="alt-name" style="font-size:1.1rem">ash_ketchum</span>
+          <span class="tag tag-amber">Main</span>
+          <span class="tag tag-teal">Public</span>
+        </div>
+        <div style="font-size:0.85rem;color:#666;margin-top:0.25rem">12 tournaments · 67% win rate · Peak 1847 ELO</div>
+      </div>
+    </div>
+
+    <!-- Mini analytics -->
+    <div class="grid grid-3" style="margin-bottom:1rem">
+      <div style="background:#0f0f0f;padding:0.75rem;border-radius:8px;text-align:center">
+        <div style="font-size:0.7rem;color:#666;text-transform:uppercase;letter-spacing:0.05em">Record</div>
+        <div style="font-size:1.1rem;font-weight:700;font-family:monospace;color:#fff">48-23</div>
+      </div>
+      <div style="background:#0f0f0f;padding:0.75rem;border-radius:8px;text-align:center">
+        <div style="font-size:0.7rem;color:#666;text-transform:uppercase;letter-spacing:0.05em">Current ELO</div>
+        <div style="font-size:1.1rem;font-weight:700;font-family:monospace;color:#fff">1,847</div>
+      </div>
+      <div style="background:#0f0f0f;padding:0.75rem;border-radius:8px;text-align:center">
+        <div style="font-size:0.7rem;color:#666;text-transform:uppercase;letter-spacing:0.05em">CP</div>
+        <div style="font-size:1.1rem;font-weight:700;font-family:monospace;color:#fff;color:#fbbf24">240</div>
+      </div>
+    </div>
+
+    <!-- Teams for this alt -->
+    <div style="margin-bottom:0.5rem">
+      <div style="font-size:0.8rem;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:0.5rem">Teams</div>
+      <div class="alt-row">
+        <div class="team-pill">
+          <div class="team-sprite"></div><div class="team-sprite"></div><div class="team-sprite"></div>
+          <div class="team-sprite"></div><div class="team-sprite"></div><div class="team-sprite"></div>
+        </div>
+        <div style="flex:1">
+          <div style="font-size:0.85rem;color:#ccc">Sun Series Core</div>
+          <div style="font-size:0.75rem;color:#555">3 versions · Used in 4 tournaments · Last: 2d ago</div>
+        </div>
+        <span style="font-size:0.8rem;color:#2dd4bf;cursor:pointer">View →</span>
+      </div>
+      <div class="alt-row">
+        <div class="team-pill">
+          <div class="team-sprite"></div><div class="team-sprite"></div><div class="team-sprite"></div>
+          <div class="team-sprite"></div><div class="team-sprite"></div><div class="team-sprite"></div>
+        </div>
+        <div style="flex:1">
+          <div style="font-size:0.85rem;color:#ccc">Rain Offense</div>
+          <div style="font-size:0.75rem;color:#555">1 version · Used in 1 tournament · Last: 1w ago</div>
+        </div>
+        <span style="font-size:0.8rem;color:#2dd4bf;cursor:pointer">View →</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="wireframe-note">
+    <strong>Key concept:</strong> Each alt is an expandable card showing inline analytics, team list, and quick actions. Teams show sprite previews, version count, and tournament usage. "View" navigates to a detailed team page (eventually the team builder). Aggregated cross-alt stats shown at the top of the tab. New alt creation is a button at the top, not buried.
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- DESIGN NOTES -->
+<div class="section">
+  <h2>Design Decisions</h2>
+  <div class="grid grid-2">
+    <div class="card">
+      <h3>Inbox replaces Notifications</h3>
+      <p>Not just alerts — it's where tournament invitations, match results, action items, and system messages live. Urgent items (team submissions, active matches) surface at the top with red dots. Non-urgent below.</p>
+    </div>
+    <div class="card">
+      <h3>Two paths to the same data</h3>
+      <p>Teams accessible from Alts tab (alt → its teams) AND from History tab (tournament → team used). Tournament history accessible from History tab AND from Alts tab (alt → its tournaments). No dead ends.</p>
+    </div>
+    <div class="card">
+      <h3>Aggregated + per-alt analytics</h3>
+      <p>Home tab shows aggregated stats across all alts. Alts & Teams tab shows per-alt breakdowns. Both are important — aggregate tells you how you're doing overall, per-alt tells you how each identity is performing.</p>
+    </div>
+    <div class="card">
+      <h3>Settings auto-redirects</h3>
+      <p>Clicking Settings always lands on Profile sub-tab. No more "Select a settings tab to continue" dead end. Sub-tabs: Profile, Account, Display, Notifications (inbox preferences).</p>
+    </div>
+  </div>
+</div>
+
+</div>
+</body>
+</html>

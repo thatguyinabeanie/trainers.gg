@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Alts Page — Two States</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: Inter, -apple-system, sans-serif; background: #0a0a0a; color: #e5e5e5; padding: 2rem; line-height: 1.5; }
+  .wrap { max-width: 1100px; margin: 0 auto; }
+  h1 { font-size: 1.5rem; font-weight: 700; margin-bottom: 0.25rem; }
+  .subtitle { color: #888; font-size: 0.9rem; margin-bottom: 2rem; }
+  h2 { font-size: 1.05rem; font-weight: 700; margin-bottom: 0.75rem; color: #fff; }
+  p { color: #a3a3a3; font-size: 0.85rem; margin-bottom: 0.5rem; }
+  hr { border: none; border-top: 1px solid #1a1a1a; margin: 2rem 0; }
+
+  .label { font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; padding: 0.3rem 0.6rem; border-radius: 4px; display: inline-block; margin-bottom: 0.75rem; }
+  .label-agg { background: rgba(99,102,241,0.1); color: #818cf8; }
+  .label-alt { background: rgba(45,212,191,0.1); color: #2dd4bf; }
+
+  .mockup { background: #fff; border: 1px solid #ddd; border-radius: 10px; overflow: hidden; color: #111; }
+  .page-header-mock { display: flex; align-items: center; gap: 8px; padding: 12px 20px; border-bottom: 1px solid #f0f0f0; font-size: 13px; }
+  .page-header-mock .trigger { width: 20px; height: 20px; border: 1px solid #ddd; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 9px; color: #888; }
+  .page-header-mock .sep { width: 1px; height: 14px; background: #d4d4d4; margin: 0 2px; }
+  .page-header-mock .title { font-weight: 500; color: #111; }
+  .content-area { padding: 20px; }
+
+  /* Stats grid */
+  .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 20px; }
+  .stat-card { background: #fafafa; border: 1px solid #f0f0f0; border-radius: 8px; padding: 12px; }
+  .stat-card .lbl { font-size: 10px; color: #888; text-transform: uppercase; letter-spacing: 0.04em; font-weight: 500; margin-bottom: 3px; }
+  .stat-card .val { font-size: 20px; font-weight: 700; font-family: 'Geist Mono', monospace; color: #111; }
+  .stat-card .sub { font-size: 10px; color: #888; margin-top: 2px; }
+  .stat-card .trend { color: #10b981; font-size: 10px; font-family: monospace; }
+
+  /* Section */
+  .section-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+  .section-head h3 { font-size: 13px; font-weight: 600; color: #111; }
+  .btn-sm { padding: 5px 10px; font-size: 11px; font-weight: 500; border-radius: 6px; border: none; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; }
+  .btn-primary { background: #0d9488; color: white; }
+  .btn-outline { background: white; border: 1px solid #e0e0e0; color: #555; }
+
+  /* Alt card row (for aggregate view) */
+  .alt-row { border: 1px solid #f0f0f0; border-radius: 8px; padding: 12px 14px; display: flex; align-items: center; gap: 12px; margin-bottom: 6px; cursor: pointer; transition: background 0.1s; }
+  .alt-row:hover { background: #fafafa; }
+  .alt-row.main { border-color: #fbbf2430; }
+  .alt-row .avatar { width: 32px; height: 32px; border-radius: 50%; background: #e8f5f4; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 12px; color: #0d9488; flex-shrink: 0; }
+  .alt-row .info { flex: 1; min-width: 0; }
+  .alt-row .name { font-size: 13px; font-weight: 600; font-family: monospace; display: flex; align-items: center; gap: 5px; }
+  .alt-row .meta { font-size: 11px; color: #888; margin-top: 1px; }
+  .alt-row .chevron { color: #ccc; font-size: 13px; }
+  .badge { font-size: 9px; font-weight: 600; padding: 1px 5px; border-radius: 3px; }
+  .badge-main { background: #fef3c7; color: #92400e; }
+  .badge-public { background: #d1fae5; color: #065f46; }
+  .badge-private { background: #f3f4f6; color: #6b7280; }
+
+  /* Single alt detail view */
+  .alt-profile { display: flex; align-items: center; gap: 16px; margin-bottom: 20px; padding: 16px; background: #fafafa; border: 1px solid #f0f0f0; border-radius: 8px; }
+  .alt-profile .avatar-lg { width: 56px; height: 56px; border-radius: 50%; background: #e8f5f4; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 20px; color: #0d9488; flex-shrink: 0; cursor: pointer; position: relative; }
+  .alt-profile .avatar-lg .edit-hint { position: absolute; inset: 0; background: rgba(0,0,0,0.3); border-radius: 50%; display: none; align-items: center; justify-content: center; color: white; font-size: 14px; }
+  .alt-profile .avatar-lg:hover .edit-hint { display: flex; }
+  .alt-profile .profile-info { flex: 1; }
+  .alt-profile .profile-name { font-size: 16px; font-weight: 700; font-family: monospace; display: flex; align-items: center; gap: 6px; }
+  .alt-profile .profile-meta { font-size: 12px; color: #888; margin-top: 2px; }
+  .alt-profile .profile-actions { display: flex; gap: 6px; }
+
+  /* Team rows */
+  .team-row { display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: white; border: 1px solid #f0f0f0; border-radius: 6px; margin-bottom: 5px; cursor: pointer; transition: border-color 0.1s; }
+  .team-row:hover { border-color: #0d948840; }
+  .team-sprites { display: flex; gap: 2px; }
+  .sprite-ph { width: 22px; height: 22px; border-radius: 3px; background: #f3f4f6; }
+  .team-info { flex: 1; min-width: 0; }
+  .team-name { font-size: 12px; font-weight: 500; color: #111; }
+  .team-meta { font-size: 10px; color: #888; margin-top: 1px; }
+  .team-actions { display: flex; gap: 3px; }
+  .team-btn { width: 22px; height: 22px; border-radius: 4px; border: 1px solid #e0e0e0; background: white; display: flex; align-items: center; justify-content: center; font-size: 9px; cursor: pointer; color: #888; }
+  .team-badge { font-size: 8px; padding: 1px 4px; border-radius: 3px; font-weight: 500; }
+  .team-badge-active { background: #d1fae5; color: #065f46; }
+  .team-badge-archived { background: #f3f4f6; color: #9ca3af; }
+
+  .toggle-sm { width: 28px; height: 16px; border-radius: 8px; background: #d4d4d4; position: relative; cursor: pointer; display: inline-block; }
+  .toggle-sm.on { background: #0d9488; }
+  .toggle-sm .knob { width: 12px; height: 12px; border-radius: 50%; background: white; position: absolute; top: 2px; left: 2px; }
+  .toggle-sm.on .knob { left: 14px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>Alts Page — Respects the Switcher</h1>
+<p class="subtitle">When "All Alts" is selected, shows all alts in a list. When a specific alt is selected, shows that alt's detail view.</p>
+
+<hr>
+
+<!-- STATE 1: ALL ALTS -->
+<div class="label label-agg">Switcher: All Alts (Aggregate)</div>
+
+<div class="mockup" style="margin-bottom:2rem">
+  <div class="page-header-mock">
+    <div class="trigger">☰</div>
+    <div class="sep"></div>
+    <div class="title">Alts</div>
+  </div>
+  <div class="content-area">
+    <!-- Aggregated stats -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="lbl">Record</div>
+        <div class="val">48-23</div>
+        <div class="sub">across all alts</div>
+      </div>
+      <div class="stat-card">
+        <div class="lbl">Win Rate</div>
+        <div class="val">67.6%</div>
+        <div class="trend">↑ 3.2%</div>
+      </div>
+      <div class="stat-card">
+        <div class="lbl">Peak Rating</div>
+        <div class="val">1,847</div>
+        <div class="sub">ash_ketchum</div>
+      </div>
+      <div class="stat-card">
+        <div class="lbl">Tournaments</div>
+        <div class="val">12</div>
+        <div class="sub">3 active</div>
+      </div>
+    </div>
+
+    <div class="section-head">
+      <h3>All Alts</h3>
+      <button class="btn-sm btn-primary">+ New Alt</button>
+    </div>
+
+    <!-- Alt rows — click to select in switcher OR expand -->
+    <div class="alt-row main">
+      <div class="avatar">A</div>
+      <div class="info">
+        <div class="name">@ash_ketchum <span class="badge badge-main">★ Main</span> <span class="badge badge-public">Public</span></div>
+        <div class="meta">12 tournaments · 48-23 · 1,847 ELO · 3 teams</div>
+      </div>
+      <div class="chevron">→</div>
+    </div>
+    <div class="alt-row">
+      <div class="avatar" style="background:#ede9fe;color:#7c3aed">S</div>
+      <div class="info">
+        <div class="name">@secret_trainer <span class="badge badge-private">Private</span></div>
+        <div class="meta">4 tournaments · 8-2 · 1,692 ELO · 1 team</div>
+      </div>
+      <div class="chevron">→</div>
+    </div>
+    <div class="alt-row">
+      <div class="avatar" style="background:#f3f4f6;color:#9ca3af">D</div>
+      <div class="info">
+        <div class="name">@draft_practice <span class="badge badge-private">Private</span></div>
+        <div class="meta">0 tournaments · Unrated · 0 teams</div>
+      </div>
+      <div class="chevron">→</div>
+    </div>
+  </div>
+</div>
+
+<hr>
+
+<!-- STATE 2: SPECIFIC ALT -->
+<div class="label label-alt">Switcher: @ash_ketchum</div>
+
+<div class="mockup">
+  <div class="page-header-mock">
+    <div class="trigger">☰</div>
+    <div class="sep"></div>
+    <div class="title">Alts</div>
+  </div>
+  <div class="content-area">
+    <!-- Alt profile card -->
+    <div class="alt-profile">
+      <div class="avatar-lg">
+        A
+        <div class="edit-hint">✏</div>
+      </div>
+      <div class="profile-info">
+        <div class="profile-name">
+          @ash_ketchum
+          <span class="badge badge-main">★ Main</span>
+          <span class="badge badge-public">Public</span>
+        </div>
+        <div class="profile-meta">Created Mar 2026 · 12 tournaments played</div>
+      </div>
+      <div class="profile-actions">
+        <div style="display:flex;align-items:center;gap:6px;font-size:11px;color:#888">
+          Public <div class="toggle-sm on"><div class="knob"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Per-alt stats -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="lbl">Record</div>
+        <div class="val">48-23</div>
+      </div>
+      <div class="stat-card">
+        <div class="lbl">Win Rate</div>
+        <div class="val">67.6%</div>
+        <div class="trend">↑ 3.2%</div>
+      </div>
+      <div class="stat-card">
+        <div class="lbl">Rating</div>
+        <div class="val">1,847</div>
+        <div class="sub">Peak: 1,892</div>
+      </div>
+      <div class="stat-card">
+        <div class="lbl">Champion Pts</div>
+        <div class="val" style="color:#eab308">240</div>
+        <div class="sub">Season 2026</div>
+      </div>
+    </div>
+
+    <!-- Teams for this alt -->
+    <div class="section-head">
+      <h3>Teams (3)</h3>
+    </div>
+
+    <div class="team-row">
+      <div class="team-sprites">
+        <div class="sprite-ph"></div><div class="sprite-ph"></div><div class="sprite-ph"></div>
+        <div class="sprite-ph"></div><div class="sprite-ph"></div><div class="sprite-ph"></div>
+      </div>
+      <div class="team-info">
+        <div class="team-name">Sun Series Core <span class="team-badge team-badge-active">Active</span></div>
+        <div class="team-meta">3 versions · Used in 4 tournaments · Last played 2d ago</div>
+      </div>
+      <div class="team-actions">
+        <div class="team-btn" title="Open in Builder">🔨</div>
+        <div class="team-btn" title="Share">↗</div>
+        <div class="team-btn" title="Archive">📦</div>
+      </div>
+    </div>
+
+    <div class="team-row">
+      <div class="team-sprites">
+        <div class="sprite-ph"></div><div class="sprite-ph"></div><div class="sprite-ph"></div>
+        <div class="sprite-ph"></div><div class="sprite-ph"></div><div class="sprite-ph"></div>
+      </div>
+      <div class="team-info">
+        <div class="team-name">Rain Offense</div>
+        <div class="team-meta">1 version · Used in 1 tournament · Last played 1w ago</div>
+      </div>
+      <div class="team-actions">
+        <div class="team-btn" title="Open in Builder">🔨</div>
+        <div class="team-btn" title="Share">↗</div>
+        <div class="team-btn" title="Archive">📦</div>
+      </div>
+    </div>
+
+    <div class="team-row" style="opacity:0.5">
+      <div class="team-sprites">
+        <div class="sprite-ph"></div><div class="sprite-ph"></div><div class="sprite-ph"></div>
+        <div class="sprite-ph"></div><div class="sprite-ph"></div><div class="sprite-ph"></div>
+      </div>
+      <div class="team-info">
+        <div class="team-name">Old Trick Room <span class="team-badge team-badge-archived">Archived</span></div>
+        <div class="team-meta">2 versions · Used in 3 tournaments</div>
+      </div>
+      <div class="team-actions">
+        <div class="team-btn" title="Open in Builder">🔨</div>
+        <div class="team-btn" title="Unarchive">📤</div>
+      </div>
+    </div>
+
+    <!-- Danger zone -->
+    <div style="margin-top:24px;padding-top:16px;border-top:1px solid #f0f0f0">
+      <div style="font-size:11px;color:#ef4444;font-weight:500;margin-bottom:4px">Danger Zone</div>
+      <button class="btn-sm" style="background:white;border:1px solid #fecaca;color:#ef4444;font-size:11px">Delete this alt</button>
+    </div>
+  </div>
+</div>
+
+<div style="background:rgba(45,212,191,0.05);border:1px solid rgba(45,212,191,0.15);border-radius:8px;padding:1rem;margin-top:1.5rem;font-size:0.8rem;color:#888">
+  <strong style="color:#2dd4bf">Summary:</strong>
+  <ul style="margin-top:0.5rem;padding-left:1.25rem">
+    <li style="margin-bottom:0.25rem"><strong>"All Alts" view</strong> — aggregated stats + list of all alts. Click an alt row → selects it in the switcher and navigates to its detail view.</li>
+    <li style="margin-bottom:0.25rem"><strong>Specific alt view</strong> — profile card (avatar, name, badges, visibility toggle), per-alt stats grid, teams list with management actions, danger zone for deletion.</li>
+    <li style="margin-bottom:0.25rem"><strong>Teams are managed here</strong> — archive, share, open in builder. Actual team editing happens in the builder.</li>
+    <li style="margin-bottom:0.25rem"><strong>Avatar change</strong> — hover over the avatar in the profile card to edit (sprite picker popover).</li>
+    <li style="margin-bottom:0.25rem"><strong>Clicking an alt in the "All Alts" list</strong> — changes the switcher to that alt AND shows its detail view.</li>
+  </ul>
+</div>
+
+</div>
+</body>
+</html>

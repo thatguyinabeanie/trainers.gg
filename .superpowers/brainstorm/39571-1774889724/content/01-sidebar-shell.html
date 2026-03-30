@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sidebar Shell — Current Issues & Fixes</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: Inter, -apple-system, sans-serif; background: #0a0a0a; color: #e5e5e5; padding: 2rem; line-height: 1.5; }
+  .wrap { max-width: 1200px; margin: 0 auto; }
+  h1 { font-size: 1.5rem; font-weight: 700; margin-bottom: 0.25rem; }
+  .subtitle { color: #888; font-size: 0.9rem; margin-bottom: 2rem; }
+  h2 { font-size: 1.1rem; font-weight: 700; margin-bottom: 0.75rem; color: #fff; }
+  p { color: #a3a3a3; font-size: 0.85rem; margin-bottom: 0.5rem; }
+  hr { border: none; border-top: 1px solid #1a1a1a; margin: 2rem 0; }
+
+  .split { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem; }
+  @media (max-width: 900px) { .split { grid-template-columns: 1fr; } }
+
+  .label { font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; padding: 0.3rem 0.6rem; border-radius: 4px; display: inline-block; margin-bottom: 0.75rem; }
+  .label-bad { background: rgba(239,68,68,0.1); color: #ef4444; }
+  .label-ref { background: rgba(59,130,246,0.1); color: #3b82f6; }
+  .label-fix { background: rgba(34,197,94,0.1); color: #22c55e; }
+
+  .mockup { background: #fff; border: 1px solid #262626; border-radius: 8px; overflow: hidden; }
+  .sidebar-mock { width: 48px; background: #fafafa; border-right: 1px solid #e5e5e5; display: flex; flex-direction: column; align-items: center; padding: 8px 0; gap: 2px; }
+  .sidebar-expanded { width: 200px; background: #fafafa; border-right: 1px solid #e5e5e5; display: flex; flex-direction: column; padding: 8px 0; }
+
+  .icon-box { width: 32px; height: 32px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 14px; color: #666; }
+  .icon-box.logo { background: #0d9488; color: white; font-size: 11px; font-weight: 700; margin-bottom: 8px; }
+  .icon-box.active { background: #f0f0f0; color: #111; }
+
+  /* Issue callout */
+  .issue { background: rgba(239,68,68,0.05); border: 1px solid rgba(239,68,68,0.15); border-radius: 6px; padding: 0.6rem 0.8rem; margin-top: 0.5rem; font-size: 0.78rem; color: #ef4444; }
+  .fix-note { background: rgba(34,197,94,0.05); border: 1px solid rgba(34,197,94,0.15); border-radius: 6px; padding: 0.6rem 0.8rem; margin-top: 0.5rem; font-size: 0.78rem; color: #22c55e; }
+
+  /* NavUser mocks */
+  .nav-user { display: flex; align-items: center; gap: 8px; padding: 8px 12px; margin: 4px 8px; border-radius: 6px; }
+  .nav-user:hover { background: #f0f0f0; }
+  .avatar { width: 32px; height: 32px; border-radius: 6px; background: #e0e0e0; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; color: #666; flex-shrink: 0; }
+  .user-info { min-width: 0; flex: 1; }
+  .user-name { font-size: 13px; font-weight: 500; color: #111; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .user-role { font-size: 11px; color: #888; }
+  .dots { color: #888; font-size: 16px; flex-shrink: 0; }
+
+  /* Nav items */
+  .nav-item { display: flex; align-items: center; gap: 8px; padding: 6px 12px; margin: 1px 8px; border-radius: 6px; font-size: 13px; color: #666; }
+  .nav-item.active { background: #f0f0f0; color: #111; font-weight: 500; }
+  .nav-item .icon { width: 16px; height: 16px; display: flex; align-items: center; justify-content: center; font-size: 14px; }
+  .group-label { font-size: 11px; color: #999; font-weight: 500; padding: 12px 12px 4px 20px; text-transform: capitalize; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>Sidebar Shell — Issues & Proposed Fixes</h1>
+<p class="subtitle">Comparing current state, shadcn reference, and proposed fix for collapsed alignment and NavUser footer</p>
+
+<hr>
+
+<h2>Issue 1: Collapsed Sidebar Alignment</h2>
+<p>When collapsed to icon mode, the logo and nav icons need to be perfectly centered in the 48px rail.</p>
+
+<div class="split">
+  <!-- Current (broken) -->
+  <div>
+    <div class="label label-bad">Current — Misaligned</div>
+    <div class="mockup" style="display:flex;height:350px">
+      <div class="sidebar-mock">
+        <div class="icon-box logo" style="margin-left:-4px">t</div>
+        <div style="height:8px"></div>
+        <div class="icon-box active" style="margin-left:-2px">🏠</div>
+        <div class="icon-box" style="margin-left:2px">👤</div>
+        <div class="icon-box" style="margin-left:-1px">📋</div>
+        <div class="icon-box" style="margin-left:3px">🏆</div>
+        <div style="flex:1"></div>
+        <div class="icon-box" style="margin-left:-2px">⚙</div>
+        <div style="height:4px"></div>
+        <div class="avatar" style="width:28px;height:28px;font-size:10px;margin-left:2px">A</div>
+      </div>
+      <div style="flex:1;background:#fff;padding:12px">
+        <div style="font-size:11px;color:#999">Content area</div>
+      </div>
+    </div>
+    <div class="issue">Icons drift left/right, not centered on the vertical axis. Logo offset from nav icons.</div>
+  </div>
+
+  <!-- shadcn reference -->
+  <div>
+    <div class="label label-ref">shadcn Reference — Centered</div>
+    <div class="mockup" style="display:flex;height:350px">
+      <div class="sidebar-mock">
+        <div class="icon-box logo">⊙</div>
+        <div style="height:8px"></div>
+        <div class="icon-box active">📊</div>
+        <div class="icon-box">📋</div>
+        <div class="icon-box">📈</div>
+        <div class="icon-box">📁</div>
+        <div class="icon-box">👥</div>
+        <div style="flex:1"></div>
+        <div class="icon-box">⚙</div>
+        <div class="icon-box">❓</div>
+        <div class="icon-box">🔍</div>
+        <div style="height:4px"></div>
+        <div class="avatar" style="width:28px;height:28px;font-size:10px">S</div>
+      </div>
+      <div style="flex:1;background:#fff;padding:12px">
+        <div style="font-size:11px;color:#999">Content area</div>
+      </div>
+    </div>
+    <div class="fix-note">Every icon perfectly centered. Logo same width as nav icons. Avatar centered at bottom.</div>
+  </div>
+
+  <!-- Proposed fix -->
+  <div>
+    <div class="label label-fix">Proposed Fix</div>
+    <div class="mockup" style="display:flex;height:350px">
+      <div class="sidebar-mock">
+        <div class="icon-box logo">t</div>
+        <div style="height:8px"></div>
+        <div class="icon-box active">🏠</div>
+        <div class="icon-box">👤</div>
+        <div class="icon-box">📋</div>
+        <div class="icon-box">🏆</div>
+        <div style="flex:1"></div>
+        <div class="icon-box">⚙</div>
+        <div style="height:4px"></div>
+        <div class="avatar" style="width:28px;height:28px;font-size:10px">A</div>
+      </div>
+      <div style="flex:1;background:#fff;padding:12px">
+        <div style="font-size:11px;color:#999">Content area</div>
+      </div>
+    </div>
+    <div class="fix-note">Fix: Remove custom padding overrides on logo SidebarMenuButton. Let the CVA size="lg" collapsed styles handle centering (size-8! p-0!). All icons use the same 32×32 centered box.</div>
+  </div>
+</div>
+
+<hr>
+
+<h2>Issue 2: NavUser Footer</h2>
+<p>Username truncates ("admin_trai..."), styling doesn't match shadcn dashboard-01 pattern.</p>
+
+<div class="split">
+  <!-- Current -->
+  <div>
+    <div class="label label-bad">Current</div>
+    <div class="mockup" style="padding:0">
+      <div style="background:#fafafa;padding:8px">
+        <div class="nav-user">
+          <div class="avatar">A</div>
+          <div class="user-info">
+            <div class="user-name">admin_trai...</div>
+            <div class="user-role">Owner</div>
+          </div>
+          <div class="dots">⋮</div>
+        </div>
+      </div>
+    </div>
+    <div class="issue">Username truncated. Role text below name. Doesn't match shadcn pattern.</div>
+  </div>
+
+  <!-- shadcn reference -->
+  <div>
+    <div class="label label-ref">shadcn dashboard-01</div>
+    <div class="mockup" style="padding:0">
+      <div style="background:#fafafa;padding:8px">
+        <div class="nav-user">
+          <div class="avatar" style="border-radius:50%">
+            <img src="" alt="" style="display:none">S
+          </div>
+          <div class="user-info">
+            <div class="user-name">shadcn</div>
+            <div class="user-role">m@example.com</div>
+          </div>
+          <div class="dots">⋮</div>
+        </div>
+      </div>
+    </div>
+    <div class="fix-note">Clean layout. Name + email (not role). Round avatar. 3-dot menu. Full username visible.</div>
+  </div>
+
+  <!-- Proposed fix -->
+  <div>
+    <div class="label label-fix">Proposed Fix</div>
+    <div class="mockup" style="padding:0">
+      <div style="background:#fafafa;padding:8px">
+        <div class="nav-user">
+          <div class="avatar" style="border-radius:50%">A</div>
+          <div class="user-info">
+            <div class="user-name">admin_trainer</div>
+            <div class="user-role">Player</div>
+          </div>
+          <div class="dots">⋮</div>
+        </div>
+      </div>
+    </div>
+    <div class="fix-note">
+      Fix:<br>
+      • Round avatar (border-radius: 50%) matching shadcn<br>
+      • Show full username — sidebar width accommodates it<br>
+      • Keep "Player" / "Owner" as role (not email — we don't show emails in this app)<br>
+      • 3-dot menu opens dropdown with Settings, Account, Sign out
+    </div>
+  </div>
+</div>
+
+<hr>
+
+<h2>Issue 3: Expanded Sidebar Structure</h2>
+<p>Comparing the current expanded sidebar to the shadcn reference structure.</p>
+
+<div class="split" style="grid-template-columns:1fr 1fr">
+  <!-- shadcn reference expanded -->
+  <div>
+    <div class="label label-ref">shadcn dashboard-01 — Expanded</div>
+    <div class="mockup" style="display:flex;height:500px">
+      <div class="sidebar-expanded">
+        <!-- Logo -->
+        <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;margin:4px 8px;border-radius:6px">
+          <div style="width:28px;height:28px;background:#111;border-radius:6px;display:flex;align-items:center;justify-content:center;color:white;font-size:11px;font-weight:700">⊙</div>
+          <div>
+            <div style="font-size:13px;font-weight:600;color:#111">Acme Inc.</div>
+            <div style="font-size:10px;color:#888">Enterprise</div>
+          </div>
+          <div style="margin-left:auto;color:#888;font-size:12px">⌃</div>
+        </div>
+
+        <!-- Quick Create -->
+        <div style="display:flex;gap:4px;padding:4px 12px;margin:4px 8px">
+          <div style="flex:1;background:#111;color:white;font-size:12px;padding:6px 10px;border-radius:6px;display:flex;align-items:center;gap:4px">● Quick Create</div>
+          <div style="width:32px;height:32px;border:1px solid #e0e0e0;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:12px">✉</div>
+        </div>
+
+        <!-- Nav items — NO SEPARATORS between groups -->
+        <div class="nav-item active"><span class="icon">📊</span> Dashboard</div>
+        <div class="nav-item"><span class="icon">📋</span> Lifecycle</div>
+        <div class="nav-item"><span class="icon">📈</span> Analytics</div>
+        <div class="nav-item"><span class="icon">📁</span> Projects</div>
+        <div class="nav-item"><span class="icon">👥</span> Team</div>
+
+        <!-- Group label provides visual separation — no line! -->
+        <div class="group-label">Documents</div>
+        <div class="nav-item"><span class="icon">📚</span> Data Library</div>
+        <div class="nav-item"><span class="icon">📊</span> Reports</div>
+        <div class="nav-item"><span class="icon">📝</span> Word Assistant</div>
+        <div class="nav-item" style="color:#aaa"><span class="icon">···</span> More</div>
+
+        <div style="flex:1"></div>
+
+        <!-- Bottom pinned — same style as nav items, no separator! -->
+        <div class="nav-item"><span class="icon">⚙</span> Settings</div>
+        <div class="nav-item"><span class="icon">❓</span> Get Help</div>
+        <div class="nav-item"><span class="icon">🔍</span> Search</div>
+
+        <!-- User footer -->
+        <div class="nav-user" style="margin-top:4px;border-top:1px solid #f0f0f0;padding-top:12px">
+          <div class="avatar" style="border-radius:50%">S</div>
+          <div class="user-info">
+            <div class="user-name">shadcn</div>
+            <div class="user-role">m@example.com</div>
+          </div>
+          <div class="dots">⋮</div>
+        </div>
+      </div>
+      <div style="flex:1;background:#fff;padding:12px">
+        <div style="font-size:11px;color:#999">Content</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Our proposed sidebar -->
+  <div>
+    <div class="label label-fix">Proposed trainers.gg — Expanded</div>
+    <div class="mockup" style="display:flex;height:500px">
+      <div class="sidebar-expanded">
+        <!-- Logo -->
+        <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;margin:4px 8px;border-radius:6px">
+          <div style="width:28px;height:28px;background:#0d9488;border-radius:6px;display:flex;align-items:center;justify-content:center;color:white;font-size:12px;font-weight:700">t</div>
+          <div>
+            <div style="font-size:13px;font-weight:600;color:#111">trainers.gg</div>
+            <div style="font-size:10px;color:#888">Dashboard</div>
+          </div>
+        </div>
+
+        <!-- Nav items — no separators -->
+        <div class="nav-item active"><span class="icon">🏠</span> Home</div>
+        <div class="nav-item"><span class="icon">👤</span> Alts & Teams</div>
+        <div class="nav-item"><span class="icon">📋</span> Inbox</div>
+        <div class="nav-item"><span class="icon">🏆</span> History</div>
+
+        <!-- Communities group label -->
+        <div class="group-label" style="display:flex;justify-content:space-between;padding-right:20px">Communities <span style="color:#0d9488;cursor:pointer">+</span></div>
+        <div class="nav-item"><span class="icon" style="font-size:11px;background:#e8e8e8;width:18px;height:18px;border-radius:4px;display:flex;align-items:center;justify-content:center;font-weight:600">P</span> Pallet Town <span style="margin-left:auto;width:6px;height:6px;border-radius:50%;background:#10b981"></span></div>
+
+        <div style="flex:1"></div>
+
+        <!-- Bottom pinned -->
+        <div class="nav-item"><span class="icon">⚙</span> Settings</div>
+
+        <!-- User footer -->
+        <div class="nav-user" style="margin-top:4px">
+          <div class="avatar" style="border-radius:50%">A</div>
+          <div class="user-info">
+            <div class="user-name">ash_ketchum</div>
+            <div class="user-role">Player</div>
+          </div>
+          <div class="dots">⋮</div>
+        </div>
+      </div>
+      <div style="flex:1;background:#fff;padding:12px">
+        <div style="font-size:11px;color:#999">Content</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div style="text-align:center;padding:1rem 0">
+  <p style="color:#888">Does this direction look right? Respond in the terminal.</p>
+</div>
+
+</div>
+</body>
+</html>

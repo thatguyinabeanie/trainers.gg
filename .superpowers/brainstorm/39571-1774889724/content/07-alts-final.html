@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Alts — Final Design Summary</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: Inter, -apple-system, sans-serif; background: #0a0a0a; color: #e5e5e5; padding: 2rem; line-height: 1.5; }
+  .wrap { max-width: 1000px; margin: 0 auto; }
+  h1 { font-size: 1.5rem; font-weight: 700; margin-bottom: 0.25rem; }
+  .subtitle { color: #888; font-size: 0.9rem; margin-bottom: 2rem; }
+  h2 { font-size: 1.1rem; font-weight: 700; margin-bottom: 0.75rem; color: #fff; }
+  h3 { font-size: 0.95rem; font-weight: 600; color: #ccc; margin-bottom: 0.5rem; }
+  p { color: #a3a3a3; font-size: 0.85rem; margin-bottom: 0.5rem; }
+  hr { border: none; border-top: 1px solid #1a1a1a; margin: 2rem 0; }
+  code { background: #1a1a1a; padding: 2px 6px; border-radius: 4px; font-size: 0.8rem; color: #2dd4bf; font-family: 'Geist Mono', monospace; }
+  table { width: 100%; border-collapse: collapse; font-size: 0.82rem; margin-bottom: 1.5rem; }
+  th { text-align: left; padding: 8px 10px; background: #141414; color: #888; font-weight: 600; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.04em; border-bottom: 1px solid #262626; }
+  td { padding: 8px 10px; border-bottom: 1px solid #1a1a1a; color: #ccc; }
+
+  .card { background: #141414; border: 1px solid #262626; border-radius: 8px; padding: 1rem; margin-bottom: 1rem; }
+  .card h3 { margin-bottom: 0.5rem; }
+
+  .callout { background: rgba(45,212,191,0.05); border: 1px solid rgba(45,212,191,0.15); border-radius: 8px; padding: 1rem; font-size: 0.8rem; color: #888; margin-bottom: 1rem; }
+  .callout strong { color: #2dd4bf; }
+  .warn { background: rgba(251,191,36,0.05); border: 1px solid rgba(251,191,36,0.15); border-radius: 8px; padding: 1rem; font-size: 0.8rem; color: #888; margin-bottom: 1rem; }
+  .warn strong { color: #fbbf24; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>Alts System — Final Design Summary</h1>
+<p class="subtitle">Alt switcher + route structure + page designs. Ready for spec writing.</p>
+
+<hr>
+
+<h2>1. Route Structure</h2>
+
+<table>
+  <tr><th>Path</th><th>Page</th><th>Description</th></tr>
+  <tr><td><code>/dashboard</code></td><td>Home</td><td>Always aggregate overview</td></tr>
+  <tr><td><code>/dashboard/alts</code></td><td>All Alts</td><td>Aggregate stats + expandable alt list</td></tr>
+  <tr><td><code>/dashboard/alts/history</code></td><td>Aggregate History</td><td>Tournament history across all alts</td></tr>
+  <tr><td><code>/dashboard/alts/[username]</code></td><td>Alt Detail</td><td>Per-alt stats, teams, management</td></tr>
+  <tr><td><code>/dashboard/alts/[username]/history</code></td><td>Alt History</td><td>Tournament history for specific alt</td></tr>
+  <tr><td><code>/dashboard/inbox</code></td><td>Inbox</td><td>Account-level notifications</td></tr>
+  <tr><td><code>/dashboard/settings/*</code></td><td>Settings</td><td>Account settings (4 sub-tabs)</td></tr>
+  <tr><td><code>/dashboard/community/[slug]/*</code></td><td>Community</td><td>Unaffected by alt selection</td></tr>
+</table>
+
+<div class="warn">
+  <strong>Reserved username:</strong> "history" is reserved and cannot be used as an alt username. This prevents route collision between <code>/dashboard/alts/history</code> (aggregate history page) and <code>/dashboard/alts/[username]</code> (alt detail page).
+</div>
+
+<hr>
+
+<h2>2. Sidebar Navigation</h2>
+
+<div class="card">
+  <h3>Sidebar Structure</h3>
+  <pre style="font-family:'Geist Mono',monospace;font-size:12px;color:#999;line-height:1.8">
+┌─────────────────────────┐
+│ [Alt Switcher]       ⇅  │  ← navigates between alts
+├─────────────────────────┤
+│ 🏠  Home                │  → /dashboard
+│ 👤  Alts                │  → /dashboard/alts
+│ 📋  Inbox               │  → /dashboard/inbox
+├─────────────────────────┤
+│ COMMUNITIES          [+]│
+│ [P] Pallet Town      🟢 │
+├─────────────────────────┤
+│ ⚙  Settings             │  → /dashboard/settings
+├─────────────────────────┤
+│ [A] ash_ketchum      ⋮  │  ← user footer
+└─────────────────────────┘</pre>
+  <p style="font-size:0.78rem;color:#666;margin-top:0.5rem">
+    History is NOT a top-level sidebar item. It's accessed from within the Alts section.
+  </p>
+</div>
+
+<hr>
+
+<h2>3. Alt Switcher</h2>
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+  <div class="card">
+    <h3>Closed State</h3>
+    <p>Shows current selection: avatar + name + subtitle ("Main alt" or "All alts")</p>
+    <p>Clicking opens the dropdown.</p>
+  </div>
+  <div class="card">
+    <h3>Dropdown</h3>
+    <pre style="font-family:'Geist Mono',monospace;font-size:11px;color:#999;line-height:1.8">
+View as
+────────────────
+⊕  All Alts
+────────────────
+A  ash_ketchum    ★ Main  ✓
+S  secret_trainer
+D  draft_practice
+────────────────
++ Create new alt
+⚙ Manage alts</pre>
+    <p style="font-size:0.78rem;color:#666;margin-top:0.5rem">
+      Selecting an alt → navigates to <code>/dashboard/alts/[username]</code><br>
+      Selecting "All Alts" → navigates to <code>/dashboard/alts</code><br>
+      "Manage alts" → same as "All Alts"<br>
+      Simple. No stats. Just names.
+    </p>
+  </div>
+</div>
+
+<hr>
+
+<h2>4. Alts Page — All Alts View</h2>
+<p style="margin-bottom:1rem">Route: <code>/dashboard/alts</code></p>
+
+<div class="card">
+  <h3>Layout</h3>
+  <ul style="font-size:0.82rem;color:#999;padding-left:1.25rem">
+    <li style="margin-bottom:0.3rem"><strong style="color:#ccc">Aggregated stats at top</strong> — record, win rate, peak rating, tournament count</li>
+    <li style="margin-bottom:0.3rem"><strong style="color:#ccc">"+ New Alt" button</strong> — next to section heading</li>
+    <li style="margin-bottom:0.3rem"><strong style="color:#ccc">Alt list</strong> — each alt as a collapsible row</li>
+    <li style="margin-bottom:0.3rem"><strong style="color:#ccc">Click alt row → expands</strong> to show:
+      <ul style="padding-left:1rem;margin-top:0.2rem">
+        <li>Per-alt stats preview (record, win rate, ELO, CP)</li>
+        <li>Teams preview (first 2-3 teams with sprites)</li>
+        <li>"View as this alt" button → changes switcher + navigates to <code>/dashboard/alts/[username]</code></li>
+        <li>"View history" link → navigates to <code>/dashboard/alts/[username]/history</code></li>
+      </ul>
+    </li>
+    <li style="margin-bottom:0.3rem"><strong style="color:#ccc">Clicking does NOT auto-switch</strong> — just expands. Explicit "View as" button to switch.</li>
+    <li style="margin-bottom:0.3rem"><strong style="color:#ccc">"View all history" link</strong> → navigates to <code>/dashboard/alts/history</code></li>
+  </ul>
+</div>
+
+<hr>
+
+<h2>5. Alts Page — Single Alt View</h2>
+<p style="margin-bottom:1rem">Route: <code>/dashboard/alts/[username]</code></p>
+
+<div class="card">
+  <h3>Layout</h3>
+  <ul style="font-size:0.82rem;color:#999;padding-left:1.25rem">
+    <li style="margin-bottom:0.3rem"><strong style="color:#ccc">Alt profile card</strong> — large avatar (click to change), name, badges (Main, Public/Private), visibility toggle, creation date</li>
+    <li style="margin-bottom:0.3rem"><strong style="color:#ccc">Per-alt stats</strong> — record, win rate, rating (current + peak), champion points</li>
+    <li style="margin-bottom:0.3rem"><strong style="color:#ccc">Teams section</strong> — list of teams owned by this alt
+      <ul style="padding-left:1rem;margin-top:0.2rem">
+        <li>Each team: sprite row, name, version count, tournament usage, last played</li>
+        <li>Actions: Open in Builder (🔨), Share (↗), Archive (📦)</li>
+        <li>Archived teams shown at reduced opacity</li>
+        <li>Click team row → opens in Team Builder</li>
+      </ul>
+    </li>
+    <li style="margin-bottom:0.3rem"><strong style="color:#ccc">"View history" link</strong> → <code>/dashboard/alts/[username]/history</code></li>
+    <li style="margin-bottom:0.3rem"><strong style="color:#ccc">Danger zone</strong> — delete alt (not for main alt)</li>
+  </ul>
+</div>
+
+<hr>
+
+<h2>6. History Pages</h2>
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+  <div class="card">
+    <h3>Aggregate History</h3>
+    <p>Route: <code>/dashboard/alts/history</code></p>
+    <p>Tournament history across all alts. Sortable table with alt column. Same content as current History page but at new path.</p>
+  </div>
+  <div class="card">
+    <h3>Per-Alt History</h3>
+    <p>Route: <code>/dashboard/alts/[username]/history</code></p>
+    <p>Tournament history filtered to specific alt. No alt column needed. Linked from alt detail page.</p>
+  </div>
+</div>
+
+<hr>
+
+<div class="callout">
+  <strong>What changes from current implementation:</strong>
+  <ul style="margin-top:0.5rem;padding-left:1.25rem">
+    <li style="margin-bottom:0.25rem">Sidebar "Alts & Teams" → renamed to "Alts"</li>
+    <li style="margin-bottom:0.25rem">Sidebar "History" → removed as top-level item (lives under Alts)</li>
+    <li style="margin-bottom:0.25rem">New: Alt Switcher in sidebar header (replaces logo header)</li>
+    <li style="margin-bottom:0.25rem">New route: <code>/dashboard/alts/[username]</code> — alt detail page</li>
+    <li style="margin-bottom:0.25rem">New route: <code>/dashboard/alts/[username]/history</code> — per-alt history</li>
+    <li style="margin-bottom:0.25rem">Moved route: <code>/dashboard/history</code> → <code>/dashboard/alts/history</code></li>
+    <li style="margin-bottom:0.25rem">Reserved username: "history" cannot be an alt name</li>
+    <li style="margin-bottom:0.25rem">Switcher state derived from URL path, not client state</li>
+    <li style="margin-bottom:0.25rem">SSR/PPR/ISR compatible — all path-based, no query params</li>
+  </ul>
+</div>
+
+<div style="text-align:center;padding:1.5rem 0;color:#555;font-size:0.85rem">
+  Does this look ready to write as a spec?
+</div>
+
+</div>
+</body>
+</html>

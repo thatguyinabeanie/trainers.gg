@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Single Sidebar — No Double Panel</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: Inter, -apple-system, sans-serif; background: #0a0a0a; color: #e5e5e5; padding: 2rem; line-height: 1.5; }
+  .wrap { max-width: 1200px; margin: 0 auto; }
+  h1 { font-size: 1.5rem; font-weight: 700; margin-bottom: 0.25rem; }
+  .subtitle { color: #888; font-size: 0.9rem; margin-bottom: 2rem; }
+  h2 { font-size: 1.1rem; font-weight: 700; margin-bottom: 0.5rem; color: #fff; }
+  p { color: #a3a3a3; font-size: 0.85rem; margin-bottom: 0.5rem; }
+  hr { border: none; border-top: 1px solid #1a1a1a; margin: 2.5rem 0; }
+
+  .option-header {
+    display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem;
+  }
+  .option-letter {
+    width: 32px; height: 32px; border-radius: 8px; background: rgba(45,212,191,0.1);
+    color: #2dd4bf; display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 0.9rem; flex-shrink: 0;
+  }
+  .option-desc { font-size: 0.8rem; color: #888; margin-top: 0.25rem; }
+  .pros-cons { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 0.75rem; }
+  .pros h4, .cons h4 { font-size: 0.75rem; font-weight: 600; margin-bottom: 0.35rem; }
+  .pros h4 { color: #22c55e; } .cons h4 { color: #ef4444; }
+  .pros li, .cons li { font-size: 0.78rem; color: #888; margin-bottom: 0.2rem; list-style: none; }
+  .pros li::before { content: "+ "; color: #22c55e; }
+  .cons li::before { content: "− "; color: #ef4444; }
+  .recommend {
+    background: rgba(45,212,191,0.08); border: 1px solid rgba(45,212,191,0.2);
+    border-radius: 8px; padding: 0.75rem 1rem; margin-top: 0.75rem;
+    font-size: 0.8rem; color: #2dd4bf;
+  }
+
+  .mockup-frame {
+    background: #111; border: 1px solid #262626; border-radius: 12px;
+    overflow: hidden; margin-bottom: 1rem;
+  }
+  .mockup-bar {
+    background: #1a1a1a; padding: 0.4rem 0.75rem; display: flex; align-items: center; gap: 0.4rem;
+    border-bottom: 1px solid #262626; font-size: 0.65rem;
+  }
+  .dot { width: 8px; height: 8px; border-radius: 50%; }
+  .dot-r { background: #ef4444; } .dot-y { background: #eab308; } .dot-g { background: #22c55e; }
+  .mockup-url {
+    background: #0f0f0f; border-radius: 3px; padding: 0.2rem 0.5rem;
+    color: #555; flex: 1; margin-left: 0.35rem; font-family: 'Geist Mono', monospace;
+  }
+  .mockup-body { display: flex; min-height: 520px; }
+
+  /* Single sidebar */
+  .sidebar {
+    width: 240px; background: #0d0d0d; border-right: 1px solid #1a1a1a;
+    padding: 0; flex-shrink: 0; display: flex; flex-direction: column;
+    font-size: 0.8rem; overflow-y: auto;
+  }
+  .sidebar-top {
+    padding: 0.75rem; display: flex; align-items: center; gap: 0.5rem;
+    border-bottom: 1px solid #1a1a1a;
+  }
+  .sidebar-top .logo {
+    font-weight: 700; color: #2dd4bf; font-size: 0.9rem; cursor: pointer;
+  }
+  .sidebar-top .logo:hover { text-decoration: underline; }
+  .sidebar-top .back-link {
+    font-size: 0.7rem; color: #555; margin-left: auto; cursor: pointer;
+  }
+  .sidebar-top .back-link:hover { color: #888; }
+  .sidebar-body { flex: 1; overflow-y: auto; padding: 0.5rem 0; }
+  .nav-item {
+    display: flex; align-items: center; gap: 0.6rem;
+    padding: 0.45rem 0.75rem; margin: 0 0.5rem 0.1rem;
+    border-radius: 6px; color: #888; font-size: 0.8rem;
+  }
+  .nav-item.active { background: rgba(45,212,191,0.08); color: #2dd4bf; font-weight: 600; }
+  .nav-item .i { width: 18px; text-align: center; font-size: 0.8rem; flex-shrink: 0; }
+  .nav-item .badge {
+    margin-left: auto; background: rgba(239,68,68,0.15); color: #ef4444;
+    font-size: 0.55rem; padding: 0.1rem 0.35rem; border-radius: 10px; font-weight: 700;
+  }
+  .nav-item .badge-amber {
+    margin-left: auto; background: rgba(251,191,36,0.1); color: #fbbf24;
+    font-size: 0.55rem; padding: 0.1rem 0.35rem; border-radius: 10px; font-weight: 700;
+  }
+  .nav-label {
+    padding: 0.6rem 1.25rem 0.25rem; font-size: 0.6rem; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.05em; color: #444;
+  }
+  .nav-label-flex {
+    padding: 0.6rem 1.25rem 0.25rem; font-size: 0.6rem; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.05em; color: #444;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .nav-sep { border: none; border-top: 1px solid #1a1a1a; margin: 0.4rem 0.75rem; }
+  .community-icon {
+    width: 20px; height: 20px; border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.6rem; font-weight: 700; flex-shrink: 0;
+  }
+  .live-dot {
+    width: 6px; height: 6px; border-radius: 50%; background: #22c55e;
+    animation: pulse 2s infinite; flex-shrink: 0;
+  }
+  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+  .sidebar-footer {
+    padding: 0.6rem 0.75rem; border-top: 1px solid #1a1a1a;
+    display: flex; align-items: center; gap: 0.5rem;
+  }
+  .avatar-sm {
+    width: 28px; height: 28px; border-radius: 50%;
+    background: rgba(45,212,191,0.15); display: flex; align-items: center;
+    justify-content: center; font-weight: 700; font-size: 0.65rem; color: #2dd4bf;
+  }
+
+  /* Content area */
+  .content-area { flex: 1; background: #0f0f0f; overflow: hidden; }
+  .content-mock {
+    padding: 1.25rem; height: 100%;
+    display: flex; align-items: center; justify-content: center;
+    flex-direction: column; gap: 0.5rem;
+  }
+  .content-mock .page-title { font-size: 0.9rem; font-weight: 600; color: #ccc; }
+  .content-mock .page-desc { font-size: 0.75rem; color: #555; text-align: center; max-width: 220px; }
+
+  .split { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+  @media (max-width: 900px) { .split { grid-template-columns: 1fr; } }
+  .state-label {
+    display: inline-flex; align-items: center; gap: 0.5rem;
+    font-size: 0.75rem; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.05em; padding: 0.35rem 0.75rem; border-radius: 6px;
+    margin-bottom: 0.75rem;
+  }
+  .state-label.player { background: rgba(45,212,191,0.1); color: #2dd4bf; }
+  .state-label.community { background: rgba(59,130,246,0.1); color: #3b82f6; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>Single sidebar — no double panel</h1>
+<p class="subtitle">One sidebar that swaps its content based on context. The logo links back to the main site. Three "back to site" approaches compared.</p>
+
+<hr>
+
+<!-- ============================================ -->
+<!-- Show player + community side by side first -->
+<!-- ============================================ -->
+
+<h2 style="margin-bottom:1.5rem">The two states of the sidebar</h2>
+
+<div class="split" style="margin-bottom:2rem">
+  <!-- Player state -->
+  <div>
+    <div class="state-label player">Player Dashboard</div>
+    <div class="mockup-frame">
+      <div class="mockup-bar">
+        <div class="dot dot-r"></div><div class="dot dot-y"></div><div class="dot dot-g"></div>
+        <div class="mockup-url">trainers.gg/dashboard</div>
+      </div>
+      <div class="mockup-body">
+        <div class="sidebar">
+          <div class="sidebar-top">
+            <span class="logo">trainers.gg</span>
+          </div>
+          <div class="sidebar-body">
+            <div style="padding:0.25rem 0"></div>
+            <div class="nav-item active"><span class="i">🏠</span> Home</div>
+            <div class="nav-item"><span class="i">👤</span> Alts & Teams</div>
+            <div class="nav-item"><span class="i">📋</span> Inbox <span class="badge">3</span></div>
+            <div class="nav-item"><span class="i">🏆</span> History</div>
+            <div class="nav-item"><span class="i">⚙️</span> Settings</div>
+
+            <hr class="nav-sep">
+
+            <div class="nav-label-flex">
+              <span>Communities</span>
+              <span style="color:#2dd4bf;cursor:pointer;font-size:0.75rem">+</span>
+            </div>
+            <div class="nav-item" style="color:#ccc">
+              <div class="community-icon" style="background:rgba(59,130,246,0.15);color:#3b82f6">V</div>
+              VGC Masters
+              <div class="live-dot" style="margin-left:auto"></div>
+            </div>
+            <div class="nav-item">
+              <div class="community-icon" style="background:rgba(168,85,247,0.15);color:#a855f7">S</div>
+              Showdown League
+            </div>
+          </div>
+          <div class="sidebar-footer">
+            <div class="avatar-sm">A</div>
+            <div>
+              <div style="font-size:0.73rem;font-weight:600;color:#ccc;font-family:monospace">ash_ketchum</div>
+              <div style="font-size:0.6rem;color:#555">⚙ Settings</div>
+            </div>
+          </div>
+        </div>
+        <div class="content-area">
+          <div class="content-mock">
+            <div class="page-title">Welcome back, <span style="color:#2dd4bf">Ash</span></div>
+            <div class="page-desc">Stats, inbox preview, active tournaments, recent teams</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Community state -->
+  <div>
+    <div class="state-label community">Community: VGC Masters</div>
+    <div class="mockup-frame">
+      <div class="mockup-bar">
+        <div class="dot dot-r"></div><div class="dot dot-y"></div><div class="dot dot-g"></div>
+        <div class="mockup-url">trainers.gg/dashboard/community/vgc-masters</div>
+      </div>
+      <div class="mockup-body">
+        <div class="sidebar">
+          <div class="sidebar-top">
+            <span class="logo">trainers.gg</span>
+            <span class="back-link">← Dashboard</span>
+          </div>
+          <div class="sidebar-body">
+            <!-- Community header -->
+            <div style="padding:0.5rem 0.75rem 0.5rem;display:flex;align-items:center;gap:0.5rem;margin:0 0.5rem;border-bottom:1px solid #1a1a1a;margin-bottom:0.4rem;padding-bottom:0.6rem">
+              <div class="community-icon" style="width:28px;height:28px;background:rgba(59,130,246,0.15);color:#3b82f6;font-size:0.7rem;border-radius:8px">V</div>
+              <div>
+                <div style="font-weight:700;font-size:0.85rem;color:#ccc">VGC Masters</div>
+                <div style="font-size:0.6rem;color:#555">Owner</div>
+              </div>
+            </div>
+
+            <div class="nav-item active"><span class="i">📊</span> Overview</div>
+            <div class="nav-item"><span class="i">🏆</span> Tournaments</div>
+            <div class="nav-item"><span class="i">👥</span> Staff</div>
+            <div class="nav-item"><span class="i">⚙️</span> Settings</div>
+
+            <hr class="nav-sep">
+
+            <div class="nav-label" style="display:flex;align-items:center;gap:0.35rem">
+              <div class="live-dot"></div> Live Now
+            </div>
+            <div class="nav-item" style="color:#ccc;font-weight:600;font-size:0.78rem">
+              <div class="live-dot"></div>
+              Weekly #42
+              <span class="badge">2</span>
+            </div>
+
+            <hr class="nav-sep">
+
+            <div class="nav-label">Recent</div>
+            <div class="nav-item" style="font-size:0.75rem;color:#555"><span class="i" style="font-size:0.7rem">✓</span> Weekly #41</div>
+            <div class="nav-item" style="font-size:0.75rem;color:#555"><span class="i" style="font-size:0.7rem">✓</span> Monthly #6</div>
+          </div>
+          <div class="sidebar-footer">
+            <div class="avatar-sm">A</div>
+            <div>
+              <div style="font-size:0.73rem;font-weight:600;color:#ccc;font-family:monospace">ash_ketchum</div>
+              <div style="font-size:0.6rem;color:#555">Owner</div>
+            </div>
+          </div>
+        </div>
+        <div class="content-area">
+          <div class="content-mock">
+            <div class="page-title">VGC Masters</div>
+            <div class="page-desc">Community overview, tournament stats, staff count, recent activity</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<hr>
+
+<!-- ============================================ -->
+<!-- Back to site — 3 approaches -->
+<!-- ============================================ -->
+
+<h2 style="margin-bottom:0.5rem">Getting back to the main site</h2>
+<p style="margin-bottom:1.5rem">Three approaches for the "escape hatch" from /dashboard back to the main trainers.gg site.</p>
+
+<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem">
+
+  <!-- Approach 1: Logo links to site -->
+  <div>
+    <div class="option-header">
+      <div class="option-letter" style="width:28px;height:28px;font-size:0.8rem">1</div>
+      <div>
+        <h2 style="font-size:0.95rem">Logo → main site</h2>
+        <div class="option-desc">Logo is a link to /</div>
+      </div>
+    </div>
+    <div style="background:#0d0d0d;border:1px solid #262626;border-radius:8px;padding:0.75rem;margin-bottom:0.5rem">
+      <div style="display:flex;align-items:center;gap:0.5rem;padding-bottom:0.6rem;border-bottom:1px solid #1a1a1a">
+        <span style="font-weight:700;color:#2dd4bf;font-size:0.85rem;text-decoration:underline;cursor:pointer">trainers.gg</span>
+      </div>
+      <div style="padding-top:0.5rem">
+        <div class="nav-item active" style="margin:0;padding:0.35rem 0.5rem"><span class="i">🏠</span> Home</div>
+        <div class="nav-item" style="margin:0;padding:0.35rem 0.5rem"><span class="i">👤</span> Alts & Teams</div>
+        <div class="nav-item" style="margin:0;padding:0.35rem 0.5rem"><span class="i">📋</span> Inbox</div>
+      </div>
+    </div>
+    <p style="font-size:0.75rem;color:#666">Clicking the logo always takes you to the main site homepage. Simple, familiar pattern.</p>
+  </div>
+
+  <!-- Approach 2: Quick links (rejected) -->
+  <div style="opacity:0.4">
+    <div class="option-header">
+      <div class="option-letter" style="width:28px;height:28px;font-size:0.8rem;background:rgba(239,68,68,0.1);color:#ef4444">2</div>
+      <div>
+        <h2 style="font-size:0.95rem;color:#666">Quick links section</h2>
+        <div class="option-desc">❌ Not a fan of this</div>
+      </div>
+    </div>
+    <div style="background:#0d0d0d;border:1px solid #262626;border-radius:8px;padding:0.75rem;margin-bottom:0.5rem">
+      <div style="padding-top:0.25rem">
+        <div style="font-size:0.6rem;color:#333;text-transform:uppercase;padding:0.25rem 0.5rem;font-weight:600">Quick Links</div>
+        <div class="nav-item" style="margin:0;padding:0.35rem 0.5rem;color:#555"><span class="i">🔍</span> <s>Tournaments</s></div>
+        <div class="nav-item" style="margin:0;padding:0.35rem 0.5rem;color:#555"><span class="i">🔨</span> <s>Team Builder</s></div>
+      </div>
+    </div>
+    <p style="font-size:0.75rem;color:#444">Rejected — feels like clutter.</p>
+  </div>
+
+  <!-- Approach 3: Explicit back link -->
+  <div>
+    <div class="option-header">
+      <div class="option-letter" style="width:28px;height:28px;font-size:0.8rem">3</div>
+      <div>
+        <h2 style="font-size:0.95rem">Explicit "Back to site" link</h2>
+        <div class="option-desc">Small text link near the top</div>
+      </div>
+    </div>
+    <div style="background:#0d0d0d;border:1px solid #262626;border-radius:8px;padding:0.75rem;margin-bottom:0.5rem">
+      <div style="display:flex;align-items:center;gap:0.5rem;padding-bottom:0.6rem;border-bottom:1px solid #1a1a1a">
+        <span style="font-weight:700;color:#2dd4bf;font-size:0.85rem">trainers.gg</span>
+        <span style="margin-left:auto;font-size:0.65rem;color:#555;cursor:pointer">← Back to site</span>
+      </div>
+      <div style="padding-top:0.5rem">
+        <div class="nav-item active" style="margin:0;padding:0.35rem 0.5rem"><span class="i">🏠</span> Home</div>
+        <div class="nav-item" style="margin:0;padding:0.35rem 0.5rem"><span class="i">👤</span> Alts & Teams</div>
+        <div class="nav-item" style="margin:0;padding:0.35rem 0.5rem"><span class="i">📋</span> Inbox</div>
+      </div>
+    </div>
+    <p style="font-size:0.75rem;color:#666">Both logo AND a text link. Logo for people who intuit it, text link for people who don't.</p>
+  </div>
+</div>
+
+<div class="recommend" style="margin-top:1.5rem">💡 <strong>My recommendation: Option 3 (both).</strong> The logo linking to the site is intuitive for power users, but not everyone will discover it. A small "← Back to site" text link next to the logo makes it explicit without adding clutter. When in a community context, this same spot shows "← Dashboard" to go back to the player view.</div>
+
+<hr>
+
+<h2 style="margin-bottom:0.5rem">How community switching works (no icon rail)</h2>
+<p style="margin-bottom:1rem">Communities listed in the player sidebar. Clicking one swaps the sidebar to community context. "← Dashboard" in the header takes you back.</p>
+
+<div style="display:flex;align-items:center;gap:1rem;justify-content:center;padding:1rem 0">
+  <div style="background:#0d0d0d;border:1px solid #262626;border-radius:8px;padding:0.75rem;width:200px">
+    <div style="font-size:0.7rem;color:#444;text-transform:uppercase;font-weight:600;margin-bottom:0.35rem">Communities</div>
+    <div class="nav-item" style="margin:0;padding:0.35rem 0.5rem;color:#ccc;cursor:pointer;background:rgba(59,130,246,0.05);border-radius:4px">
+      <div class="community-icon" style="background:rgba(59,130,246,0.15);color:#3b82f6">V</div>
+      VGC Masters
+      <div class="live-dot" style="margin-left:auto"></div>
+    </div>
+  </div>
+
+  <div style="font-size:1.5rem;color:#555">→</div>
+
+  <div style="background:#0d0d0d;border:1px solid #262626;border-radius:8px;padding:0.75rem;width:200px">
+    <div style="display:flex;align-items:center;gap:0.5rem;padding-bottom:0.5rem;border-bottom:1px solid #1a1a1a;margin-bottom:0.35rem">
+      <div class="community-icon" style="width:24px;height:24px;background:rgba(59,130,246,0.15);color:#3b82f6;font-size:0.65rem;border-radius:6px">V</div>
+      <span style="font-weight:700;font-size:0.8rem;color:#ccc">VGC Masters</span>
+    </div>
+    <div class="nav-item active" style="margin:0;padding:0.35rem 0.5rem;font-size:0.78rem"><span class="i">📊</span> Overview</div>
+    <div class="nav-item" style="margin:0;padding:0.35rem 0.5rem;font-size:0.78rem"><span class="i">🏆</span> Tournaments</div>
+    <div class="nav-item" style="margin:0;padding:0.35rem 0.5rem;font-size:0.78rem"><span class="i">👥</span> Staff</div>
+  </div>
+</div>
+
+<p style="text-align:center;font-size:0.8rem;color:#666;margin-top:0.5rem">Click a community in the player sidebar → sidebar swaps to that community's nav.<br>"← Dashboard" in the top header takes you back to the player sidebar.</p>
+
+</div>
+</body>
+</html>

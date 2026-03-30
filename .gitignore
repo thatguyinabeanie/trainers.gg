@@ -93,7 +93,7 @@ apps/web/public/oauth/jwks.json
 # Claude Code local overrides
 .claude.local.md
 !docs
-.superpowers
+# .superpowers
 .audit-reports/
 
 # Dev slot port management

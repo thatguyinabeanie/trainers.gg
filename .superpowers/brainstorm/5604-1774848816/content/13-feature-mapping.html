@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Feature Mapping — 6 Tabs → 3 Tabs</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: Inter, -apple-system, sans-serif; background: #0a0a0a; color: #e5e5e5; padding: 2rem; line-height: 1.6; }
+  .wrap { max-width: 1000px; margin: 0 auto; }
+  h1 { font-size: 1.5rem; font-weight: 700; margin-bottom: 0.25rem; }
+  .subtitle { color: #888; font-size: 0.9rem; margin-bottom: 2rem; }
+  h2 { font-size: 1.1rem; font-weight: 700; margin-bottom: 0.75rem; color: #fff; }
+  h3 { font-size: 0.9rem; font-weight: 600; color: #ccc; margin-bottom: 0.35rem; }
+  p { color: #a3a3a3; font-size: 0.85rem; margin-bottom: 0.5rem; }
+  hr { border: none; border-top: 1px solid #1a1a1a; margin: 2rem 0; }
+  table { width: 100%; border-collapse: collapse; font-size: 0.78rem; margin-bottom: 1.5rem; }
+  th { text-align: left; padding: 0.5rem 0.6rem; background: #141414; color: #888; font-weight: 600; text-transform: uppercase; font-size: 0.65rem; letter-spacing: 0.04em; border-bottom: 1px solid #262626; }
+  td { padding: 0.4rem 0.6rem; border-bottom: 1px solid #141414; color: #ccc; vertical-align: top; }
+  tr:hover td { background: #111; }
+  .old { color: #ef4444; font-weight: 600; font-size: 0.7rem; }
+  .new { font-weight: 600; font-size: 0.7rem; }
+  .new-overview { color: #2dd4bf; }
+  .new-players { color: #a855f7; }
+  .new-live { color: #ef4444; }
+  .new-settings { color: #fbbf24; }
+  .new-audit { color: #3b82f6; }
+  .new-header { color: #888; }
+  .check { color: #22c55e; }
+  .tag {
+    display: inline-block; padding: 0.1rem 0.35rem; border-radius: 4px;
+    font-size: 0.6rem; font-weight: 600; margin-right: 0.2rem;
+  }
+  .tag-overview { background: rgba(45,212,191,0.1); color: #2dd4bf; }
+  .tag-players { background: rgba(168,85,247,0.1); color: #a855f7; }
+  .tag-live { background: rgba(239,68,68,0.1); color: #ef4444; }
+  .tag-settings { background: rgba(251,191,36,0.1); color: #fbbf24; }
+  .tag-audit { background: rgba(59,130,246,0.1); color: #3b82f6; }
+  .tag-header { background: rgba(255,255,255,0.05); color: #888; }
+
+  .callout {
+    background: rgba(45,212,191,0.05); border: 1px solid rgba(45,212,191,0.15);
+    border-radius: 8px; padding: 1rem; font-size: 0.8rem; color: #888;
+  }
+  .callout strong { color: #2dd4bf; }
+  .warn {
+    background: rgba(251,191,36,0.05); border: 1px solid rgba(251,191,36,0.15);
+    border-radius: 8px; padding: 1rem; font-size: 0.8rem; color: #888;
+  }
+  .warn strong { color: #fbbf24; }
+  .legend { display: flex; gap: 0.75rem; flex-wrap: wrap; margin-bottom: 1.5rem; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>Feature Mapping — Nothing Gets Lost</h1>
+<p class="subtitle">Every feature in the current 6-tab tournament management page, mapped to exactly where it lives in the 3-tab + header actions redesign.</p>
+
+<div class="legend">
+  <span class="tag tag-overview">Overview tab</span>
+  <span class="tag tag-players">Players tab</span>
+  <span class="tag tag-live">Live tab</span>
+  <span class="tag tag-settings">⚙ Settings sheet</span>
+  <span class="tag tag-audit">📋 Audit sheet</span>
+  <span class="tag tag-header">Header</span>
+</div>
+
+<hr>
+
+<h2>Old Tab 1: Overview → <span class="tag tag-overview">Overview</span></h2>
+
+<table>
+  <tr><th>Feature</th><th>New Location</th><th>Notes</th></tr>
+  <tr><td>Round state machine (idle → generating → preview → starting → active → completing)</td><td><span class="tag tag-overview">Overview</span></td><td>Same component, same position — this IS the Overview</td></tr>
+  <tr><td>"Start Round X" button</td><td><span class="tag tag-overview">Overview</span></td><td>Unchanged</td></tr>
+  <tr><td>Preview table (matchups before confirming)</td><td><span class="tag tag-overview">Overview</span></td><td>Unchanged — shown inline during preview state</td></tr>
+  <tr><td>"Cancel" / "Confirm & Start" buttons</td><td><span class="tag tag-overview">Overview</span></td><td>Unchanged</td></tr>
+  <tr><td>"Complete Round" button</td><td><span class="tag tag-overview">Overview</span></td><td>Unchanged — enabled when all matches done</td></tr>
+  <tr><td>Round progress bar</td><td><span class="tag tag-overview">Overview</span></td><td>Unchanged</td></tr>
+  <tr><td>In Progress / Completed / Remaining match counts</td><td><span class="tag tag-overview">Overview</span></td><td>Unchanged</td></tr>
+  <tr><td>Registration Status card (registered, checked in, capacity)</td><td><span class="tag tag-overview">Overview</span></td><td>Condensed into stats row</td></tr>
+  <tr><td>Round Progress card (current/total rounds)</td><td><span class="tag tag-overview">Overview</span></td><td>Condensed into stats row</td></tr>
+  <tr><td>Tournament Format card (type, round time, top cut)</td><td><span class="tag tag-overview">Overview</span></td><td>Condensed into format info card</td></tr>
+  <tr><td>Schedule card (start/end time)</td><td><span class="tag tag-overview">Overview</span></td><td>Merged into format info card</td></tr>
+  <tr><td>"Live" status badge</td><td><span class="tag tag-header">Header</span></td><td>Moves to breadcrumb header</td></tr>
+  <tr><td>Real-time subscriptions (registrations, matches, rounds)</td><td><span class="tag tag-overview">Overview</span></td><td>Unchanged</td></tr>
+</table>
+
+<p><strong>Added to Overview:</strong> Judge queue preview (from old Pairings tab), top 3 standings preview (from old Standings tab). These surface the most critical live info without tab-switching.</p>
+
+<hr>
+
+<h2>Old Tab 2: Registrations → <span class="tag tag-players">Players</span></h2>
+
+<table>
+  <tr><th>Feature</th><th>New Location</th><th>Notes</th></tr>
+  <tr><td>Stats cards (registered, checked in, not checked in, dropped)</td><td><span class="tag tag-players">Players</span></td><td>Unchanged</td></tr>
+  <tr><td>Registered sub-tab — player table</td><td><span class="tag tag-players">Players</span></td><td>Same table, filter chips replace sub-tabs</td></tr>
+  <tr><td>Search input (filter by username)</td><td><span class="tag tag-players">Players</span></td><td>Unchanged</td></tr>
+  <tr><td>Select All / individual checkboxes</td><td><span class="tag tag-players">Players</span></td><td>Unchanged</td></tr>
+  <tr><td>"Force Check-in (N)" bulk action</td><td><span class="tag tag-players">Players</span></td><td>Unchanged</td></tr>
+  <tr><td>"Remove (N)" bulk action</td><td><span class="tag tag-players">Players</span></td><td>Unchanged</td></tr>
+  <tr><td>Row action: "Force Check-in" (per player)</td><td><span class="tag tag-players">Players</span></td><td>Unchanged</td></tr>
+  <tr><td>Row action: "Drop Player" (opens dialog)</td><td><span class="tag tag-players">Players</span></td><td>Unchanged</td></tr>
+  <tr><td>Drop category selector + notes field</td><td><span class="tag tag-players">Players</span></td><td>Unchanged — same dialog</td></tr>
+  <tr><td>Invitations sub-tab — sent invitations table</td><td><span class="tag tag-players">Players</span></td><td>Filter chip "Invitations" replaces sub-tab</td></tr>
+  <tr><td>Invite form (player search + send)</td><td><span class="tag tag-players">Players</span></td><td>Shows when "Invitations" filter is active</td></tr>
+  <tr><td>Capacity bar (spots filled/available)</td><td><span class="tag tag-players">Players</span></td><td>Shown above invite form</td></tr>
+  <tr><td>Real-time subscriptions (registrations, invitations)</td><td><span class="tag tag-players">Players</span></td><td>Unchanged</td></tr>
+  <tr><td>Realtime status badge</td><td><span class="tag tag-players">Players</span></td><td>Unchanged</td></tr>
+</table>
+
+<hr>
+
+<h2>Old Tab 3: Pairings (Admin) + Pairings Judge → <span class="tag tag-live">Live</span></h2>
+
+<table>
+  <tr><th>Feature</th><th>New Location</th><th>Notes</th></tr>
+  <tr><td>Phase selector dropdown</td><td><span class="tag tag-live">Live</span></td><td>Unchanged</td></tr>
+  <tr><td>Round selector dropdown</td><td><span class="tag tag-live">Live</span></td><td>Unchanged</td></tr>
+  <tr><td>Realtime status badge (🟢 Live / 🟡 Reconnecting / 🔴 Error)</td><td><span class="tag tag-live">Live</span> + <span class="tag tag-header">Header</span></td><td>Badge in header, reconnect alert stays</td></tr>
+  <tr><td>"Needs Attention" section (staff_requested matches)</td><td><span class="tag tag-live">Live</span></td><td>At top of page, red styling — most prominent</td></tr>
+  <tr><td>"Active" section (ongoing matches)</td><td><span class="tag tag-live">Live</span></td><td>Below judge queue</td></tr>
+  <tr><td>"Completed" section (finished matches)</td><td><span class="tag tag-live">Live</span></td><td>Collapsed by default — "Show ▸" to expand</td></tr>
+  <tr><td>Match table columns (Table, Player 1, Player 2, Status, Actions)</td><td><span class="tag tag-live">Live</span></td><td>Unchanged</td></tr>
+  <tr><td>Match status display (Ready/Score/Judge Call/Waiting)</td><td><span class="tag tag-live">Live</span></td><td>Unchanged</td></tr>
+  <tr><td>Click row → navigate to match detail</td><td><span class="tag tag-live">Live</span></td><td>Unchanged</td></tr>
+  <tr><td>External link icon → match page</td><td><span class="tag tag-live">Live</span></td><td>Unchanged</td></tr>
+  <tr><td>Judge Queue sub-tab</td><td><span class="tag tag-live">Live</span></td><td>No sub-tab needed — judge queue is at top of Live tab always</td></tr>
+  <tr><td>"Respond" button on judge queue items</td><td><span class="tag tag-live">Live</span></td><td>Unchanged — navigates to match detail</td></tr>
+  <tr><td>Judge queue badge count</td><td><span class="tag tag-live">Live</span> tab label</td><td>Shows as "● 2" on the Live tab</td></tr>
+  <tr><td>Real-time subscriptions (rounds, matches)</td><td><span class="tag tag-live">Live</span></td><td>Unchanged</td></tr>
+</table>
+
+<p><strong>Added to Live:</strong> Full standings table (from old Standings tab) appended below the match sections.</p>
+
+<hr>
+
+<h2>Old Tab 4: Standings → <span class="tag tag-live">Live</span> (bottom section)</h2>
+
+<table>
+  <tr><th>Feature</th><th>New Location</th><th>Notes</th></tr>
+  <tr><td>Top 3 highlight cards (gold/silver/bronze styling)</td><td><span class="tag tag-overview">Overview</span> (preview) + <span class="tag tag-live">Live</span> (full)</td><td>Top 3 preview on Overview, full cards on Live tab</td></tr>
+  <tr><td>Complete standings table (rank, player, record, match pts, game win %, opp win %)</td><td><span class="tag tag-live">Live</span></td><td>Full table at bottom of Live tab</td></tr>
+  <tr><td>Dropped players section (at bottom, reduced opacity)</td><td><span class="tag tag-live">Live</span></td><td>Same treatment in standings section</td></tr>
+  <tr><td>Empty state ("No standings yet")</td><td><span class="tag tag-live">Live</span></td><td>Unchanged</td></tr>
+</table>
+
+<hr>
+
+<h2>Old Tab 5: Audit Log → <span class="tag tag-audit">📋 Audit sheet</span></h2>
+
+<table>
+  <tr><th>Feature</th><th>New Location</th><th>Notes</th></tr>
+  <tr><td>Category filter (All/Match/Judge/Tournament/Team/Registration)</td><td><span class="tag tag-audit">Audit sheet</span></td><td>Same filter, in sheet header</td></tr>
+  <tr><td>Refresh button</td><td><span class="tag tag-audit">Audit sheet</span></td><td>In sheet header</td></tr>
+  <tr><td>Chronological event feed</td><td><span class="tag tag-audit">Audit sheet</span></td><td>Scrollable list in sheet</td></tr>
+  <tr><td>Event icons by category (Swords, ShieldAlert, Gavel, Trophy, Lock, UserMinus)</td><td><span class="tag tag-audit">Audit sheet</span></td><td>Unchanged</td></tr>
+  <tr><td>Event badges (action labels)</td><td><span class="tag tag-audit">Audit sheet</span></td><td>Unchanged</td></tr>
+  <tr><td>Event metadata (match ID, game number, table number)</td><td><span class="tag tag-audit">Audit sheet</span></td><td>Unchanged</td></tr>
+  <tr><td>Timestamps (time ago format)</td><td><span class="tag tag-audit">Audit sheet</span></td><td>Unchanged</td></tr>
+</table>
+
+<hr>
+
+<h2>Old Tab 6: Settings → <span class="tag tag-settings">⚙ Settings sheet</span></h2>
+
+<table>
+  <tr><th>Feature</th><th>New Location</th><th>Notes</th></tr>
+  <tr><td>"Edit Settings" / "Cancel" / "Save Changes" buttons</td><td><span class="tag tag-settings">Settings sheet</span></td><td>Sheet header actions</td></tr>
+  <tr><td>Lock warnings (active tournament restrictions)</td><td><span class="tag tag-settings">Settings sheet</span></td><td>Alert at top of sheet</td></tr>
+  <tr><td>Basic Information (name, description)</td><td><span class="tag tag-settings">Settings sheet</span></td><td>Unchanged</td></tr>
+  <tr><td>Game Settings (game, regulation, platform, battle format)</td><td><span class="tag tag-settings">Settings sheet</span></td><td>Unchanged</td></tr>
+  <tr><td>Schedule (start date, end date pickers)</td><td><span class="tag tag-settings">Settings sheet</span></td><td>Unchanged</td></tr>
+  <tr><td>Registration (type, player cap, check-in, late registration)</td><td><span class="tag tag-settings">Settings sheet</span></td><td>Unchanged</td></tr>
+  <tr><td>Tournament Structure (preset selector, phases editor)</td><td><span class="tag tag-settings">Settings sheet</span></td><td>Unchanged — sheet is wide enough</td></tr>
+  <tr><td>Danger Zone — Delete Tournament (draft only)</td><td><span class="tag tag-settings">Settings sheet</span></td><td>At bottom of sheet with red styling</td></tr>
+  <tr><td>Phase locking rules (active phases can't be removed)</td><td><span class="tag tag-settings">Settings sheet</span></td><td>Unchanged</td></tr>
+</table>
+
+<hr>
+
+<h2>Header (shared across all tabs)</h2>
+
+<table>
+  <tr><th>Feature</th><th>New Location</th><th>Notes</th></tr>
+  <tr><td>Back button → tournaments list</td><td><span class="tag tag-header">Header</span> breadcrumb</td><td>"Tournaments" link in breadcrumb</td></tr>
+  <tr><td>Tournament name (h1)</td><td><span class="tag tag-header">Header</span> breadcrumb</td><td>In breadcrumb, not a giant h1</td></tr>
+  <tr><td>Status badge (In Progress / Draft / etc.)</td><td><span class="tag tag-header">Header</span></td><td>Small tag next to breadcrumb</td></tr>
+  <tr><td>"Hosted by" organization name</td><td>Sidebar</td><td>Visible in sidebar community header — no need to repeat</td></tr>
+  <tr><td>"View Public Page" button</td><td><span class="tag tag-header">Header</span></td><td>Small "↗ Public" link in header</td></tr>
+</table>
+
+<hr>
+
+<div class="callout" style="margin-bottom:1rem">
+  <strong>✅ Every feature accounted for.</strong> All 6 tabs map cleanly to 3 tabs + 2 header actions (Settings sheet, Audit sheet). No functionality is lost. The key improvements:
+  <ul style="margin-top:0.5rem;padding-left:1.25rem">
+    <li>Judge queue visible from Overview (no need to tab-switch during live tournament)</li>
+    <li>Top standings visible from Overview (quick glance without leaving)</li>
+    <li>Pairings + Standings + Judge Queue unified in "Live" tab (everything for live ops in one place)</li>
+    <li>Settings and Audit Log as sheets keep them accessible but out of the way</li>
+    <li>Registrations → "Players" with filter chips instead of sub-tabs</li>
+  </ul>
+</div>
+
+<div class="warn">
+  <strong>⚠️ One design consideration:</strong> The Settings sheet needs to be wide enough for the Tournament Structure phases editor (which has inline phase configuration with Best Of / Rounds / Timer controls). A standard Sheet width (~480px) may be tight. Options: (1) use a wider sheet (~640px), (2) use a full-screen modal instead of a sheet, or (3) keep Settings as a route-based page accessed from the header rather than a sheet. Given the form complexity, option 3 (route-based page) may be more practical — it would be at <code>/dashboard/community/[orgSlug]/tournaments/[slug]/manage/settings</code> and the header button navigates there directly. The key point is it's not a tab competing with Overview/Players/Live.
+</div>
+
+</div>
+</body>
+</html>

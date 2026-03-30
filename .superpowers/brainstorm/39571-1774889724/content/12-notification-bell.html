@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Notification Bell — Placement Options</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: Inter, -apple-system, sans-serif; background: #0a0a0a; color: #e5e5e5; padding: 2rem; line-height: 1.5; }
+  .wrap { max-width: 1100px; margin: 0 auto; }
+  h1 { font-size: 1.5rem; font-weight: 700; margin-bottom: 0.25rem; }
+  .subtitle { color: #888; font-size: 0.9rem; margin-bottom: 2rem; }
+  h2 { font-size: 1.05rem; font-weight: 700; margin-bottom: 0.5rem; color: #fff; }
+  p { color: #a3a3a3; font-size: 0.85rem; margin-bottom: 0.5rem; }
+  hr { border: none; border-top: 1px solid #1a1a1a; margin: 2rem 0; }
+
+  .label { font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; padding: 0.3rem 0.6rem; border-radius: 4px; display: inline-block; margin-bottom: 0.75rem; }
+  .label-a { background: rgba(59,130,246,0.1); color: #3b82f6; }
+  .label-b { background: rgba(168,85,247,0.1); color: #a855f7; }
+  .label-rec { background: rgba(34,197,94,0.1); color: #22c55e; }
+
+  .mockup { background: #fff; border: 1px solid #ddd; border-radius: 10px; overflow: hidden; color: #111; margin-bottom: 1rem; }
+
+  /* Page header mocks */
+  .header-bar { display: flex; align-items: center; gap: 8px; padding: 12px 20px; border-bottom: 1px solid #f0f0f0; font-size: 13px; }
+  .trigger { width: 24px; height: 24px; border: 1px solid #ddd; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 10px; color: #888; cursor: pointer; }
+  .sep-v { width: 1px; height: 16px; background: #d4d4d4; margin: 0 2px; }
+  .header-title { font-weight: 500; color: #111; }
+
+  .bell-btn { width: 28px; height: 28px; border-radius: 6px; border: 1px solid #e0e0e0; background: white; display: flex; align-items: center; justify-content: center; font-size: 14px; cursor: pointer; position: relative; }
+  .bell-btn:hover { background: #f5f5f5; }
+  .bell-badge { position: absolute; top: -4px; right: -4px; width: 16px; height: 16px; border-radius: 50%; background: #ef4444; color: white; font-size: 9px; font-weight: 700; display: flex; align-items: center; justify-content: center; border: 2px solid white; }
+
+  /* Content placeholder */
+  .content-placeholder { padding: 20px; color: #ccc; font-size: 12px; min-height: 120px; }
+
+  /* Sidebar mock */
+  .sidebar-m { width: 200px; background: #fafafa; border-right: 1px solid #f0f0f0; font-size: 12px; padding: 8px 0; display: flex; flex-direction: column; }
+  .nav-item { display: flex; align-items: center; gap: 8px; padding: 6px 12px; margin: 1px 8px; border-radius: 6px; color: #666; }
+  .nav-item.active { background: #f0f0f0; color: #111; font-weight: 500; }
+  .nav-item .icon { width: 14px; text-align: center; font-size: 12px; }
+
+  /* Notification dropdown */
+  .notif-dropdown { position: absolute; right: 0; top: 36px; width: 340px; background: white; border: 1px solid #e5e5e5; border-radius: 10px; box-shadow: 0 4px 20px rgba(0,0,0,0.12); z-index: 10; overflow: hidden; }
+  .nd-header { display: flex; align-items: center; justify-content: space-between; padding: 12px 14px; border-bottom: 1px solid #f0f0f0; }
+  .nd-header h3 { font-size: 13px; font-weight: 600; }
+  .nd-header a { font-size: 11px; color: #0d9488; text-decoration: none; }
+  .nd-item { display: flex; gap: 10px; padding: 10px 14px; border-bottom: 1px solid #f8f8f8; cursor: pointer; font-size: 12px; }
+  .nd-item:hover { background: #fafafa; }
+  .nd-item.unread { background: #fafbff; }
+  .nd-icon { width: 28px; height: 28px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 12px; flex-shrink: 0; }
+  .nd-content { flex: 1; min-width: 0; }
+  .nd-title { font-weight: 500; color: #111; font-size: 12px; }
+  .nd-desc { font-size: 11px; color: #888; margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .nd-time { font-size: 10px; color: #bbb; flex-shrink: 0; }
+  .nd-footer { padding: 10px 14px; text-align: center; border-top: 1px solid #f0f0f0; }
+  .nd-footer a { font-size: 11px; color: #0d9488; text-decoration: none; font-weight: 500; }
+
+  .split { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+  @media (max-width: 800px) { .split { grid-template-columns: 1fr; } }
+
+  .callout { background: rgba(45,212,191,0.05); border: 1px solid rgba(45,212,191,0.15); border-radius: 8px; padding: 1rem; font-size: 0.8rem; color: #888; }
+  .callout strong { color: #2dd4bf; }
+  .recommend { background: rgba(34,197,94,0.08); border: 1px solid rgba(34,197,94,0.2); border-radius: 8px; padding: 0.75rem 1rem; margin-top: 0.75rem; font-size: 0.8rem; color: #22c55e; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>Notification Bell — Where does it go?</h1>
+<p class="subtitle">Dashboard has no TopNav. Notifications need to surface somewhere in the dashboard UI.</p>
+
+<hr>
+
+<div class="split">
+  <!-- Option A: Bell in PageHeader -->
+  <div>
+    <div class="label label-rec">Option A: Bell in PageHeader (Recommended)</div>
+    <div class="mockup">
+      <div style="display:flex">
+        <div class="sidebar-m" style="height:300px">
+          <div style="padding:8px 12px;font-weight:600;font-size:12px;display:flex;align-items:center;gap:6px">
+            <div style="width:24px;height:24px;border-radius:6px;background:#0d9488;color:white;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700">A</div>
+            ash_ketchum
+          </div>
+          <div class="nav-item active"><span class="icon">🏠</span> Home</div>
+          <div class="nav-item"><span class="icon">👤</span> Alts</div>
+          <div class="nav-item"><span class="icon">📋</span> Inbox</div>
+          <div style="flex:1"></div>
+          <div class="nav-item"><span class="icon">⚙</span> Settings</div>
+        </div>
+        <div style="flex:1">
+          <div class="header-bar" style="position:relative">
+            <div class="trigger">☰</div>
+            <div class="sep-v"></div>
+            <span class="header-title">Home</span>
+            <div style="margin-left:auto">
+              <div class="bell-btn">
+                🔔
+                <div class="bell-badge">3</div>
+              </div>
+            </div>
+          </div>
+          <div class="content-placeholder">Dashboard content...</div>
+        </div>
+      </div>
+    </div>
+    <p style="font-size:0.78rem;color:#888"><span style="color:#22c55e">+</span> Visible on every page. Matches where apps put notification bells. Clean.</p>
+  </div>
+
+  <!-- Option B: Bell in sidebar -->
+  <div>
+    <div class="label label-a">Option B: Bell in sidebar</div>
+    <div class="mockup">
+      <div style="display:flex">
+        <div class="sidebar-m" style="height:300px">
+          <div style="padding:8px 12px;font-weight:600;font-size:12px;display:flex;align-items:center;gap:6px">
+            <div style="width:24px;height:24px;border-radius:6px;background:#0d9488;color:white;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700">A</div>
+            ash_ketchum
+          </div>
+          <div class="nav-item active"><span class="icon">🏠</span> Home</div>
+          <div class="nav-item"><span class="icon">👤</span> Alts</div>
+          <div class="nav-item"><span class="icon">📋</span> Inbox</div>
+          <div class="nav-item">
+            <span class="icon">🔔</span> Notifications
+            <span style="margin-left:auto;background:#ef4444;color:white;font-size:9px;padding:0 4px;border-radius:8px">3</span>
+          </div>
+          <div style="flex:1"></div>
+          <div class="nav-item"><span class="icon">⚙</span> Settings</div>
+        </div>
+        <div style="flex:1">
+          <div class="header-bar">
+            <div class="trigger">☰</div>
+            <div class="sep-v"></div>
+            <span class="header-title">Home</span>
+          </div>
+          <div class="content-placeholder">Dashboard content...</div>
+        </div>
+      </div>
+    </div>
+    <p style="font-size:0.78rem;color:#888"><span style="color:#ef4444">−</span> Adds another sidebar item. Hidden when sidebar collapsed. Competes with Inbox for attention.</p>
+  </div>
+</div>
+
+<hr>
+
+<h2>Bell dropdown (when clicked)</h2>
+
+<div class="mockup" style="max-width:700px">
+  <div style="display:flex">
+    <div class="sidebar-m" style="height:380px;width:160px">
+      <div style="padding:8px 10px;font-weight:600;font-size:11px;display:flex;align-items:center;gap:5px">
+        <div style="width:20px;height:20px;border-radius:5px;background:#0d9488;color:white;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700">A</div>
+        ash_ketchum
+      </div>
+      <div class="nav-item active" style="font-size:11px"><span class="icon">🏠</span> Home</div>
+      <div class="nav-item" style="font-size:11px"><span class="icon">👤</span> Alts</div>
+      <div class="nav-item" style="font-size:11px"><span class="icon">📋</span> Inbox</div>
+    </div>
+    <div style="flex:1;position:relative">
+      <div class="header-bar" style="position:relative">
+        <div class="trigger">☰</div>
+        <div class="sep-v"></div>
+        <span class="header-title">Home</span>
+        <div style="margin-left:auto">
+          <div class="bell-btn" style="background:#f5f5f5">
+            🔔
+            <div class="bell-badge">3</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Dropdown -->
+      <div class="notif-dropdown" style="position:absolute;right:20px;top:44px">
+        <div class="nd-header">
+          <h3>Notifications</h3>
+          <a href="#">Mark all read</a>
+        </div>
+        <div class="nd-item unread">
+          <div class="nd-icon" style="background:#fef3c7">📨</div>
+          <div class="nd-content">
+            <div class="nd-title">Tournament Invitation</div>
+            <div class="nd-desc">Champions League Qualifier</div>
+          </div>
+          <div class="nd-time">2h</div>
+        </div>
+        <div class="nd-item unread">
+          <div class="nd-icon" style="background:#dbeafe">⚔</div>
+          <div class="nd-content">
+            <div class="nd-title">Match Ready — Round 4</div>
+            <div class="nd-desc">VGC Weekly #42 · Table 7</div>
+          </div>
+          <div class="nd-time">3h</div>
+        </div>
+        <div class="nd-item unread">
+          <div class="nd-icon" style="background:#d1fae5">🏆</div>
+          <div class="nd-content">
+            <div class="nd-title">Team Submission Required</div>
+            <div class="nd-desc">VGC Weekly #43 starts in 6h</div>
+          </div>
+          <div class="nd-time">5h</div>
+        </div>
+        <div class="nd-item">
+          <div class="nd-icon" style="background:#dbeafe">⚔</div>
+          <div class="nd-content">
+            <div class="nd-title">Match Result</div>
+            <div class="nd-desc">Won vs red (2-1)</div>
+          </div>
+          <div class="nd-time">1d</div>
+        </div>
+        <div class="nd-footer">
+          <a href="/dashboard/inbox">View all in Inbox →</a>
+        </div>
+      </div>
+
+      <div class="content-placeholder" style="min-height:200px">Dashboard content...</div>
+    </div>
+  </div>
+</div>
+
+<div class="callout">
+  <strong>How notifications + inbox work together:</strong>
+  <ul style="margin-top:0.5rem;padding-left:1.25rem">
+    <li style="margin-bottom:0.25rem"><strong>Bell icon (PageHeader)</strong> — quick glance at recent notifications. Dropdown shows last 4-5 items. Badge count.</li>
+    <li style="margin-bottom:0.25rem"><strong>Inbox page (/dashboard/inbox)</strong> — full feed with grouping, filters, inline actions. The "deep dive" view.</li>
+    <li style="margin-bottom:0.25rem"><strong>"View all in Inbox →"</strong> link at bottom of dropdown navigates to the full inbox page.</li>
+    <li style="margin-bottom:0.25rem"><strong>Bell dropdown is a quick preview</strong> — not a full notification center. Just recent items to glance at.</li>
+    <li style="margin-bottom:0.25rem"><strong>Badge count</strong> — shows unread notification count. Clears when items are read (either via dropdown or inbox page).</li>
+  </ul>
+</div>
+
+</div>
+</body>
+</html>

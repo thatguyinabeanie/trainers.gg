@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Alt Switcher — Sidebar Header Concept</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: Inter, -apple-system, sans-serif; background: #0a0a0a; color: #e5e5e5; padding: 2rem; line-height: 1.5; }
+  .wrap { max-width: 1100px; margin: 0 auto; }
+  h1 { font-size: 1.5rem; font-weight: 700; margin-bottom: 0.25rem; }
+  .subtitle { color: #888; font-size: 0.9rem; margin-bottom: 2rem; }
+  h2 { font-size: 1.1rem; font-weight: 700; margin-bottom: 0.75rem; color: #fff; }
+  p { color: #a3a3a3; font-size: 0.85rem; margin-bottom: 0.5rem; }
+  hr { border: none; border-top: 1px solid #1a1a1a; margin: 2rem 0; }
+
+  .split { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem; }
+  @media (max-width: 800px) { .split { grid-template-columns: 1fr; } }
+
+  .label { font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; padding: 0.3rem 0.6rem; border-radius: 4px; display: inline-block; margin-bottom: 0.75rem; }
+  .label-ref { background: rgba(59,130,246,0.1); color: #3b82f6; }
+  .label-fix { background: rgba(34,197,94,0.1); color: #22c55e; }
+
+  .mockup { background: #fff; border: 1px solid #ddd; border-radius: 10px; overflow: hidden; color: #111; }
+
+  /* Sidebar mock */
+  .sidebar-m { width: 220px; background: #fafafa; display: flex; flex-direction: column; font-size: 13px; }
+
+  /* Switcher header */
+  .switcher { display: flex; align-items: center; gap: 10px; padding: 10px 14px; cursor: pointer; border-radius: 6px; margin: 8px; transition: background 0.1s; }
+  .switcher:hover { background: #f0f0f0; }
+  .switcher .avatar { width: 32px; height: 32px; border-radius: 8px; background: #0d9488; color: white; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 12px; flex-shrink: 0; }
+  .switcher .avatar.aggregate { background: linear-gradient(135deg, #0d9488 50%, #6366f1 50%); }
+  .switcher .info { flex: 1; min-width: 0; }
+  .switcher .name { font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .switcher .sub { font-size: 10px; color: #888; }
+  .switcher .chevron { color: #aaa; font-size: 11px; }
+
+  /* Dropdown */
+  .dropdown { background: white; border: 1px solid #e5e5e5; border-radius: 8px; box-shadow: 0 4px 16px rgba(0,0,0,0.1); padding: 4px; width: 220px; margin: 0 8px; }
+  .dropdown-label { font-size: 10px; color: #999; font-weight: 500; padding: 6px 10px 2px; text-transform: uppercase; letter-spacing: 0.04em; }
+  .dropdown-item { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 6px; cursor: pointer; font-size: 12px; color: #333; }
+  .dropdown-item:hover { background: #f5f5f5; }
+  .dropdown-item.active { background: #f0fdf4; }
+  .dropdown-item .av { width: 24px; height: 24px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 600; flex-shrink: 0; }
+  .dropdown-item .av.teal { background: #e8f5f4; color: #0d9488; }
+  .dropdown-item .av.purple { background: #ede9fe; color: #7c3aed; }
+  .dropdown-item .av.gray { background: #f3f4f6; color: #9ca3af; }
+  .dropdown-item .av.multi { background: linear-gradient(135deg, #e8f5f4 50%, #ede9fe 50%); color: #555; font-size: 9px; }
+  .dropdown-item .meta { flex: 1; }
+  .dropdown-item .label-text { font-weight: 500; }
+  .dropdown-item .sub-text { font-size: 10px; color: #999; }
+  .dropdown-item .badge-mini { font-size: 9px; background: #fef3c7; color: #92400e; padding: 1px 4px; border-radius: 3px; margin-left: 4px; }
+  .dropdown-item .check { color: #0d9488; font-size: 14px; margin-left: auto; }
+  .dropdown-sep { height: 1px; background: #f0f0f0; margin: 4px 8px; }
+  .dropdown-action { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 6px; cursor: pointer; font-size: 12px; color: #888; }
+  .dropdown-action:hover { background: #f5f5f5; color: #555; }
+
+  /* Nav items */
+  .nav-item { display: flex; align-items: center; gap: 8px; padding: 6px 12px; margin: 1px 8px; border-radius: 6px; font-size: 13px; color: #666; }
+  .nav-item.active { background: #f0f0f0; color: #111; font-weight: 500; }
+  .nav-item .icon { width: 16px; text-align: center; font-size: 13px; }
+  .group-label { font-size: 10px; color: #999; font-weight: 500; padding: 12px 12px 4px 20px; }
+
+  .callout { background: rgba(45,212,191,0.05); border: 1px solid rgba(45,212,191,0.15); border-radius: 8px; padding: 1rem; margin-top: 1rem; font-size: 0.8rem; color: #888; }
+  .callout strong { color: #2dd4bf; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>Alt Switcher in Sidebar Header</h1>
+<p class="subtitle">Like shadcn's Team Switcher — but for switching which alt's perspective you're viewing the dashboard through.</p>
+
+<hr>
+
+<div class="split">
+  <!-- shadcn reference -->
+  <div>
+    <div class="label label-ref">shadcn Team Switcher Pattern</div>
+    <div class="mockup" style="display:inline-block">
+      <div class="sidebar-m" style="padding-bottom:16px">
+        <div class="switcher" style="border:1px solid #e5e5e5;background:white">
+          <div class="avatar" style="background:#111;border-radius:6px;font-size:11px">⊙</div>
+          <div class="info">
+            <div class="name">Acme Inc</div>
+            <div class="sub">Enterprise</div>
+          </div>
+          <div class="chevron">⇅</div>
+        </div>
+        <div class="dropdown">
+          <div class="dropdown-label">Teams</div>
+          <div class="dropdown-item active">
+            <div class="av" style="background:#111;color:white;border-radius:4px">⊙</div>
+            <div class="meta"><div class="label-text">Acme Inc</div></div>
+            <div class="check">✓</div>
+          </div>
+          <div class="dropdown-item">
+            <div class="av" style="background:#7c3aed;color:white;border-radius:4px">◈</div>
+            <div class="meta"><div class="label-text">Acme Corp.</div></div>
+          </div>
+          <div class="dropdown-item">
+            <div class="av" style="background:#ef4444;color:white;border-radius:4px">✧</div>
+            <div class="meta"><div class="label-text">Evil Corp.</div></div>
+          </div>
+          <div class="dropdown-sep"></div>
+          <div class="dropdown-action">+ Add team</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Our alt switcher -->
+  <div>
+    <div class="label label-fix">trainers.gg Alt Switcher</div>
+    <div class="mockup" style="display:inline-block">
+      <div class="sidebar-m" style="padding-bottom:16px">
+        <div class="switcher" style="border:1px solid #e5e5e5;background:white">
+          <div class="avatar">A</div>
+          <div class="info">
+            <div class="name">ash_ketchum</div>
+            <div class="sub">1,847 ELO · 67% WR</div>
+          </div>
+          <div class="chevron">⇅</div>
+        </div>
+        <div class="dropdown">
+          <div class="dropdown-label">View dashboard as</div>
+          <div class="dropdown-item">
+            <div class="av multi">All</div>
+            <div class="meta">
+              <div class="label-text">All Alts</div>
+              <div class="sub-text">Aggregated view</div>
+            </div>
+          </div>
+          <div class="dropdown-sep"></div>
+          <div class="dropdown-item active">
+            <div class="av teal">A</div>
+            <div class="meta">
+              <div class="label-text">ash_ketchum <span class="badge-mini">★ Main</span></div>
+              <div class="sub-text">1,847 ELO · 48-23</div>
+            </div>
+            <div class="check">✓</div>
+          </div>
+          <div class="dropdown-item">
+            <div class="av purple">S</div>
+            <div class="meta">
+              <div class="label-text">secret_trainer</div>
+              <div class="sub-text">1,692 ELO · 8-2</div>
+            </div>
+          </div>
+          <div class="dropdown-item">
+            <div class="av gray">D</div>
+            <div class="meta">
+              <div class="label-text">draft_practice</div>
+              <div class="sub-text">Unrated · 0-0</div>
+            </div>
+          </div>
+          <div class="dropdown-sep"></div>
+          <div class="dropdown-action">+ Create new alt</div>
+          <div class="dropdown-action">⚙ Manage alts</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<hr>
+
+<h2>How the dashboard changes based on selection</h2>
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:1.5rem">
+  <div style="background:#141414;border:1px solid #262626;border-radius:8px;padding:16px">
+    <h3 style="font-size:13px;color:#2dd4bf;margin-bottom:8px">Viewing as: All Alts (Aggregate)</h3>
+    <ul style="font-size:12px;color:#999;padding-left:16px">
+      <li style="margin-bottom:4px"><strong style="color:#ccc">Home</strong> — aggregated stats across all alts</li>
+      <li style="margin-bottom:4px"><strong style="color:#ccc">Alts page</strong> — shows all alts with expandable teams per alt</li>
+      <li style="margin-bottom:4px"><strong style="color:#ccc">History</strong> — all tournament history, all alts</li>
+      <li style="margin-bottom:4px"><strong style="color:#ccc">Inbox</strong> — all notifications (always unfiltered)</li>
+      <li style="margin-bottom:4px"><strong style="color:#ccc">Header subtitle</strong> — "All Alts · 48-23 · 67% WR"</li>
+    </ul>
+  </div>
+  <div style="background:#141414;border:1px solid #262626;border-radius:8px;padding:16px">
+    <h3 style="font-size:13px;color:#a78bfa;margin-bottom:8px">Viewing as: @ash_ketchum</h3>
+    <ul style="font-size:12px;color:#999;padding-left:16px">
+      <li style="margin-bottom:4px"><strong style="color:#ccc">Home</strong> — stats for ash_ketchum only</li>
+      <li style="margin-bottom:4px"><strong style="color:#ccc">Alts page</strong> — focused on ash_ketchum's teams + management</li>
+      <li style="margin-bottom:4px"><strong style="color:#ccc">History</strong> — tournament history filtered to ash_ketchum</li>
+      <li style="margin-bottom:4px"><strong style="color:#ccc">Inbox</strong> — still all notifications (account-level)</li>
+      <li style="margin-bottom:4px"><strong style="color:#ccc">Header subtitle</strong> — "1,847 ELO · 67% WR"</li>
+    </ul>
+  </div>
+</div>
+
+<hr>
+
+<h2>Full sidebar with alt switcher</h2>
+
+<div style="display:grid;grid-template-columns:220px 1fr;gap:0;background:#fff;border:1px solid #ddd;border-radius:10px;overflow:hidden;color:#111;max-width:700px">
+  <div class="sidebar-m" style="height:450px">
+    <!-- Alt switcher replaces the old logo header -->
+    <div class="switcher">
+      <div class="avatar">A</div>
+      <div class="info">
+        <div class="name">ash_ketchum</div>
+        <div class="sub">1,847 ELO · 67% WR</div>
+      </div>
+      <div class="chevron">⇅</div>
+    </div>
+
+    <div class="nav-item active"><span class="icon">🏠</span> Home</div>
+    <div class="nav-item"><span class="icon">👤</span> Alts</div>
+    <div class="nav-item"><span class="icon">📋</span> Inbox</div>
+    <div class="nav-item"><span class="icon">🏆</span> History</div>
+
+    <div class="group-label" style="display:flex;justify-content:space-between;padding-right:20px">Communities <span style="color:#0d9488">+</span></div>
+    <div class="nav-item">
+      <span class="icon" style="font-size:10px;background:#e8e8e8;width:16px;height:16px;border-radius:3px;display:inline-flex;align-items:center;justify-content:center;font-weight:600">P</span>
+      Pallet Town
+      <span style="margin-left:auto;width:6px;height:6px;border-radius:50%;background:#10b981"></span>
+    </div>
+
+    <div style="flex:1"></div>
+
+    <div class="nav-item"><span class="icon">⚙</span> Settings</div>
+
+    <div style="display:flex;align-items:center;gap:8px;padding:10px 14px;margin:4px 8px;border-top:1px solid #f0f0f0">
+      <div style="width:28px;height:28px;border-radius:50%;background:#e8e8e8;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;color:#666">A</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:12px;font-weight:500;color:#111">ash_ketchum</div>
+        <div style="font-size:10px;color:#888">Player</div>
+      </div>
+      <div style="color:#aaa;font-size:14px">⋮</div>
+    </div>
+  </div>
+
+  <div style="flex:1;padding:16px;background:white;border-left:1px solid #f0f0f0">
+    <div style="display:flex;align-items:center;gap:8px;padding-bottom:12px;border-bottom:1px solid #f0f0f0;margin-bottom:16px">
+      <div style="width:20px;height:20px;border:1px solid #ddd;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:9px">☰</div>
+      <div style="width:1px;height:14px;background:#ddd"></div>
+      <span style="font-size:13px;font-weight:500">Home</span>
+    </div>
+    <div style="font-size:14px;font-weight:600;margin-bottom:4px">Welcome back, ash_ketchum</div>
+    <div style="font-size:11px;color:#888;margin-bottom:16px">Viewing as @ash_ketchum</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      <div style="background:#fafafa;border:1px solid #f0f0f0;border-radius:6px;padding:12px">
+        <div style="font-size:9px;color:#888;text-transform:uppercase;letter-spacing:0.04em">Win Rate</div>
+        <div style="font-size:20px;font-weight:700;font-family:monospace">67.6%</div>
+      </div>
+      <div style="background:#fafafa;border:1px solid #f0f0f0;border-radius:6px;padding:12px">
+        <div style="font-size:9px;color:#888;text-transform:uppercase;letter-spacing:0.04em">Rating</div>
+        <div style="font-size:20px;font-weight:700;font-family:monospace">1,847</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="callout">
+  <strong>Key decisions:</strong>
+  <ul style="margin-top:0.5rem;padding-left:1.25rem">
+    <li style="margin-bottom:0.25rem"><strong>Alt switcher replaces the logo header</strong> — the "trainers.gg / Dashboard" logo becomes the alt switcher. The logo moves... where? Options: (a) remove it entirely from sidebar, site logo lives on the main site only; (b) keep it small above the switcher; (c) the switcher IS the branding.</li>
+    <li style="margin-bottom:0.25rem"><strong>"All Alts" is the default view</strong> — shows aggregated data. Selecting a specific alt filters Home, History, and Alts pages.</li>
+    <li style="margin-bottom:0.25rem"><strong>Inbox is always unfiltered</strong> — notifications are account-level.</li>
+    <li style="margin-bottom:0.25rem"><strong>Community dashboard is unaffected</strong> — alt selection only changes the player dashboard.</li>
+    <li style="margin-bottom:0.25rem"><strong>"Manage alts" link in dropdown</strong> → navigates to the Alts page for full management (create, delete, visibility, avatar, teams).</li>
+    <li style="margin-bottom:0.25rem"><strong>Where does the trainers.gg logo go?</strong> This needs your input.</li>
+  </ul>
+</div>
+
+</div>
+</body>
+</html>

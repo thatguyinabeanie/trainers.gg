@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Community Section — Sidebar Options</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: Inter, -apple-system, sans-serif; background: #0a0a0a; color: #e5e5e5; padding: 2rem; line-height: 1.5; }
+  .wrap { max-width: 1100px; margin: 0 auto; }
+  h1 { font-size: 1.5rem; font-weight: 700; margin-bottom: 0.25rem; }
+  .subtitle { color: #888; font-size: 0.9rem; margin-bottom: 2.5rem; }
+  h2 { font-size: 1.15rem; font-weight: 700; margin-bottom: 0.5rem; color: #fff; }
+  p { color: #a3a3a3; font-size: 0.85rem; margin-bottom: 0.5rem; }
+  hr { border: none; border-top: 1px solid #1a1a1a; margin: 2.5rem 0; }
+
+  .mockup-frame {
+    background: #111; border: 1px solid #262626; border-radius: 12px;
+    overflow: hidden; margin-bottom: 1rem;
+  }
+  .mockup-browser-bar {
+    background: #1a1a1a; padding: 0.5rem 1rem; display: flex; align-items: center; gap: 0.5rem;
+    border-bottom: 1px solid #262626;
+  }
+  .dot { width: 10px; height: 10px; border-radius: 50%; }
+  .dot-r { background: #ef4444; } .dot-y { background: #eab308; } .dot-g { background: #22c55e; }
+  .mockup-url {
+    background: #0f0f0f; border-radius: 4px; padding: 0.25rem 0.75rem;
+    font-size: 0.7rem; color: #555; flex: 1; margin-left: 0.5rem;
+    font-family: 'Geist Mono', monospace;
+  }
+  .mockup-body { display: flex; min-height: 480px; }
+
+  .teal { color: #2dd4bf; }
+  .amber { color: #fbbf24; }
+
+  /* Sidebar styles */
+  .sidebar {
+    width: 240px; background: #0d0d0d; border-right: 1px solid #1a1a1a;
+    padding: 1rem 0; flex-shrink: 0; display: flex; flex-direction: column;
+    font-size: 0.8rem; overflow-y: auto;
+  }
+  .sidebar-logo { padding: 0 1rem 1rem; font-weight: 700; color: #2dd4bf; font-size: 0.9rem; }
+  .sidebar-section {
+    padding: 0 0.75rem; margin-bottom: 0.25rem;
+  }
+  .sidebar-label {
+    padding: 0.4rem 0.75rem; font-size: 0.65rem; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.05em; color: #444;
+  }
+  .sidebar-item {
+    display: flex; align-items: center; gap: 0.6rem;
+    padding: 0.45rem 0.75rem; border-radius: 8px; margin-bottom: 0.1rem; color: #888;
+  }
+  .sidebar-item.active { background: rgba(45,212,191,0.08); color: #2dd4bf; font-weight: 600; }
+  .sidebar-item .icon { width: 18px; text-align: center; font-size: 0.85rem; flex-shrink: 0; }
+  .sidebar-item .badge {
+    margin-left: auto; background: rgba(239,68,68,0.15); color: #ef4444;
+    font-size: 0.6rem; padding: 0.1rem 0.4rem; border-radius: 10px; font-weight: 700;
+  }
+  .sidebar-item .badge-amber {
+    margin-left: auto; background: rgba(251,191,36,0.1); color: #fbbf24;
+    font-size: 0.6rem; padding: 0.1rem 0.4rem; border-radius: 10px; font-weight: 700;
+  }
+  .sidebar-sub {
+    padding-left: 2.25rem;
+  }
+  .sidebar-sub .sidebar-item {
+    font-size: 0.78rem; padding: 0.35rem 0.75rem;
+  }
+  .sidebar-divider {
+    border: none; border-top: 1px solid #1a1a1a; margin: 0.75rem 0.75rem;
+  }
+  .sidebar-user {
+    margin-top: auto; padding: 0.75rem 1rem; border-top: 1px solid #1a1a1a;
+    display: flex; align-items: center; gap: 0.5rem;
+  }
+  .sidebar-avatar {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: rgba(45,212,191,0.15); display: flex; align-items: center;
+    justify-content: center; font-weight: 700; font-size: 0.75rem; color: #2dd4bf;
+  }
+  .community-icon {
+    width: 20px; height: 20px; border-radius: 6px; background: #262626;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.6rem; font-weight: 700; color: #888; flex-shrink: 0;
+  }
+  .live-dot {
+    width: 6px; height: 6px; border-radius: 50%; background: #22c55e;
+    animation: pulse 2s infinite; flex-shrink: 0;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+
+  /* Content area */
+  .content { flex: 1; padding: 1.5rem; overflow: hidden; }
+  .content-header {
+    display: flex; align-items: center; gap: 0.5rem;
+    padding-bottom: 1rem; border-bottom: 1px solid #1a1a1a; margin-bottom: 1.5rem;
+  }
+  .breadcrumb { font-size: 0.8rem; color: #555; }
+  .breadcrumb span { color: #888; }
+
+  .option-header {
+    display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem;
+  }
+  .option-letter {
+    width: 32px; height: 32px; border-radius: 8px; background: rgba(45,212,191,0.1);
+    color: #2dd4bf; display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 0.9rem; flex-shrink: 0;
+  }
+  .option-desc { font-size: 0.8rem; color: #888; margin-top: 0.25rem; }
+  .pros-cons { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 0.75rem; }
+  .pros h4, .cons h4 { font-size: 0.75rem; font-weight: 600; margin-bottom: 0.35rem; }
+  .pros h4 { color: #22c55e; } .cons h4 { color: #ef4444; }
+  .pros li, .cons li { font-size: 0.78rem; color: #888; margin-bottom: 0.2rem; list-style: none; }
+  .pros li::before { content: "+ "; color: #22c55e; }
+  .cons li::before { content: "− "; color: #ef4444; }
+  .recommend {
+    background: rgba(45,212,191,0.08); border: 1px solid rgba(45,212,191,0.2);
+    border-radius: 8px; padding: 0.75rem 1rem; margin-top: 0.75rem;
+    font-size: 0.8rem; color: #2dd4bf;
+  }
+  .card-sm { background: #171717; border-radius: 8px; padding: 0.75rem; }
+  .card-sm h4 { font-size: 0.75rem; font-weight: 600; color: #888; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 0.5rem; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>How does the community section fit in the sidebar?</h1>
+<p class="subtitle">The sidebar needs to handle: player dashboard + community management + live tournament ops. Here are two approaches.</p>
+
+<hr>
+
+<!-- ============================================ -->
+<!-- OPTION A: Flat sidebar with expandable communities -->
+<!-- ============================================ -->
+<div class="option-header">
+  <div class="option-letter">A</div>
+  <div>
+    <h2>Expandable communities in the sidebar</h2>
+    <div class="option-desc">Each community is a collapsible group in the sidebar. Sub-items (Overview, Tournaments, Staff, Settings) appear when expanded. Active tournament shows inline with a live indicator.</div>
+  </div>
+</div>
+
+<div class="mockup-frame">
+  <div class="mockup-browser-bar">
+    <div class="dot dot-r"></div><div class="dot dot-y"></div><div class="dot dot-g"></div>
+    <div class="mockup-url">trainers.gg/dashboard/community/vgc-masters/tournaments/weekly-42/manage</div>
+  </div>
+  <div class="mockup-body">
+    <div class="sidebar">
+      <div class="sidebar-logo">trainers.gg</div>
+
+      <!-- Player section -->
+      <div class="sidebar-section">
+        <div class="sidebar-item"><span class="icon">🏠</span> Home</div>
+        <div class="sidebar-item"><span class="icon">👤</span> Alts & Teams</div>
+        <div class="sidebar-item"><span class="icon">📋</span> Inbox <span class="badge">3</span></div>
+        <div class="sidebar-item"><span class="icon">🏆</span> History</div>
+      </div>
+
+      <hr class="sidebar-divider">
+
+      <!-- Communities section -->
+      <div class="sidebar-label" style="display:flex;align-items:center;justify-content:space-between">
+        <span>Communities</span>
+        <span style="color:#2dd4bf;font-size:0.7rem;cursor:pointer">+</span>
+      </div>
+
+      <div class="sidebar-section">
+        <!-- Community 1: Expanded, has active tournament -->
+        <div class="sidebar-item" style="color:#ccc;font-weight:600">
+          <div class="community-icon" style="background:rgba(59,130,246,0.15);color:#3b82f6">V</div>
+          VGC Masters
+          <span style="margin-left:auto;font-size:0.7rem;color:#555">▾</span>
+        </div>
+        <div class="sidebar-sub">
+          <div class="sidebar-item"><span class="icon" style="font-size:0.75rem">📊</span> Overview</div>
+          <div class="sidebar-item"><span class="icon" style="font-size:0.75rem">🏆</span> Tournaments</div>
+
+          <!-- Active tournament nested -->
+          <div style="padding-left:1rem">
+            <div class="sidebar-item active" style="font-size:0.75rem">
+              <div class="live-dot"></div>
+              Weekly #42
+              <span class="badge">2</span>
+            </div>
+          </div>
+
+          <div class="sidebar-item"><span class="icon" style="font-size:0.75rem">👥</span> Staff</div>
+          <div class="sidebar-item"><span class="icon" style="font-size:0.75rem">⚙️</span> Settings</div>
+        </div>
+
+        <!-- Community 2: Collapsed -->
+        <div class="sidebar-item" style="margin-top:0.25rem">
+          <div class="community-icon" style="background:rgba(168,85,247,0.15);color:#a855f7">S</div>
+          <span style="color:#888">Showdown League</span>
+          <span style="margin-left:auto;font-size:0.7rem;color:#555">▸</span>
+        </div>
+      </div>
+
+      <hr class="sidebar-divider">
+
+      <!-- Quick links -->
+      <div class="sidebar-label">Quick Links</div>
+      <div class="sidebar-section">
+        <div class="sidebar-item"><span class="icon">🔍</span> Tournaments</div>
+        <div class="sidebar-item"><span class="icon">🔨</span> Team Builder</div>
+      </div>
+
+      <!-- User -->
+      <div class="sidebar-user">
+        <div class="sidebar-avatar">A</div>
+        <div>
+          <div style="font-size:0.78rem;font-weight:600;color:#ccc;font-family:monospace">ash_ketchum</div>
+          <div style="font-size:0.65rem;color:#555">⚙ Settings</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Content area showing tournament management -->
+    <div class="content">
+      <div class="content-header">
+        <div class="breadcrumb">
+          VGC Masters <span style="color:#444"> / </span>
+          <span>Weekly #42</span> <span style="color:#444"> / </span>
+          <span style="color:#2dd4bf">Manage</span>
+        </div>
+        <div style="margin-left:auto;display:flex;align-items:center;gap:0.5rem">
+          <div class="live-dot"></div>
+          <span style="font-size:0.75rem;color:#22c55e">Live — Round 3 of 5</span>
+        </div>
+      </div>
+
+      <!-- Tournament manage tabs (inside content, not sidebar) -->
+      <div style="display:flex;gap:0;border-bottom:1px solid #262626;margin-bottom:1.25rem">
+        <div style="padding:0.5rem 0.75rem;font-size:0.78rem;color:#555">Overview</div>
+        <div style="padding:0.5rem 0.75rem;font-size:0.78rem;color:#555">Registrations</div>
+        <div style="padding:0.5rem 0.75rem;font-size:0.78rem;color:#2dd4bf;border-bottom:2px solid #2dd4bf;margin-bottom:-1px;font-weight:600">Pairings</div>
+        <div style="padding:0.5rem 0.75rem;font-size:0.78rem;color:#555">Standings</div>
+        <div style="padding:0.5rem 0.75rem;font-size:0.78rem;color:#555">Audit</div>
+        <div style="padding:0.5rem 0.75rem;font-size:0.78rem;color:#555">Settings</div>
+      </div>
+
+      <!-- Judge queue preview -->
+      <div style="display:flex;gap:0.75rem;margin-bottom:1rem">
+        <div class="card-sm" style="flex:1;border:1px solid rgba(239,68,68,0.2)">
+          <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.5rem">
+            <span style="font-size:0.75rem">⚠️</span>
+            <span style="font-size:0.8rem;font-weight:600;color:#ef4444">Judge Queue</span>
+            <span style="margin-left:auto;background:rgba(239,68,68,0.15);color:#ef4444;font-size:0.6rem;padding:0.1rem 0.4rem;border-radius:10px;font-weight:700">2</span>
+          </div>
+          <div style="font-size:0.78rem;color:#888;border-bottom:1px solid #1a1a1a;padding:0.35rem 0">Table 7 — ash vs red <span style="color:#ef4444;margin-left:0.5rem">🛡️</span></div>
+          <div style="font-size:0.78rem;color:#888;padding:0.35rem 0">Table 3 — brock vs misty <span style="color:#ef4444;margin-left:0.5rem">🛡️</span></div>
+        </div>
+        <div class="card-sm" style="flex:1">
+          <div style="font-size:0.8rem;font-weight:600;color:#888;margin-bottom:0.5rem">Round Progress</div>
+          <div style="font-size:1.5rem;font-weight:700;color:#fff;font-family:monospace">12/16</div>
+          <div style="font-size:0.75rem;color:#555">matches completed</div>
+          <div style="background:#262626;height:4px;border-radius:2px;margin-top:0.5rem;overflow:hidden">
+            <div style="background:#2dd4bf;height:100%;width:75%;border-radius:2px"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Match list -->
+      <div class="card-sm">
+        <h4>Active Matches</h4>
+        <div style="display:flex;align-items:center;gap:0.5rem;padding:0.4rem 0;border-bottom:1px solid #1a1a1a;font-size:0.78rem">
+          <span style="color:#555;width:30px">T7</span>
+          <span style="color:#ccc;flex:1">ash_ketchum vs red</span>
+          <span style="color:#2dd4bf;font-family:monospace">1-1</span>
+          <span style="background:rgba(239,68,68,0.1);color:#ef4444;font-size:0.6rem;padding:0.1rem 0.4rem;border-radius:4px">Judge</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:0.5rem;padding:0.4rem 0;border-bottom:1px solid #1a1a1a;font-size:0.78rem">
+          <span style="color:#555;width:30px">T3</span>
+          <span style="color:#ccc;flex:1">brock vs misty</span>
+          <span style="color:#2dd4bf;font-family:monospace">0-0</span>
+          <span style="background:rgba(239,68,68,0.1);color:#ef4444;font-size:0.6rem;padding:0.1rem 0.4rem;border-radius:4px">Judge</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:0.5rem;padding:0.4rem 0;border-bottom:1px solid #1a1a1a;font-size:0.78rem">
+          <span style="color:#555;width:30px">T1</span>
+          <span style="color:#ccc;flex:1">cynthia vs lance</span>
+          <span style="color:#2dd4bf;font-family:monospace">1-0</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:0.5rem;padding:0.4rem 0;font-size:0.78rem">
+          <span style="color:#555;width:30px">T5</span>
+          <span style="color:#ccc;flex:1">gary vs leaf</span>
+          <span style="color:#2dd4bf;font-family:monospace">0-1</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="pros-cons">
+  <div class="pros"><h4>Strengths</h4><ul>
+    <li>Full hierarchy visible — always know where you are</li>
+    <li>Active tournaments with live dot + judge badge count in sidebar</li>
+    <li>Can jump between communities without losing context</li>
+    <li>Tournament manage tabs stay in content area (not sidebar)</li>
+    <li>"Request a Community" via + button in section header</li>
+  </ul></div>
+  <div class="cons"><h4>Weaknesses</h4><ul>
+    <li>Sidebar can get long with multiple communities expanded</li>
+    <li>3+ levels of nesting (community → tournaments → active tournament)</li>
+    <li>Collapsing sidebar to icons loses the community hierarchy</li>
+  </ul></div>
+</div>
+
+<hr>
+
+<!-- ============================================ -->
+<!-- OPTION B: Context-switching sidebar -->
+<!-- ============================================ -->
+<div class="option-header">
+  <div class="option-letter">B</div>
+  <div>
+    <h2>Context-switching sidebar</h2>
+    <div class="option-desc">The sidebar adapts based on where you are. Player dashboard shows player nav. Clicking a community replaces the sidebar content with that community's nav. A "back" link returns to the player view. Like how Discord/Slack switch between workspaces.</div>
+  </div>
+</div>
+
+<div class="mockup-frame">
+  <div class="mockup-browser-bar">
+    <div class="dot dot-r"></div><div class="dot dot-y"></div><div class="dot dot-g"></div>
+    <div class="mockup-url">trainers.gg/dashboard/community/vgc-masters/tournaments/weekly-42/manage</div>
+  </div>
+  <div class="mockup-body">
+    <!-- Org switcher rail -->
+    <div style="width:52px;background:#080808;border-right:1px solid #1a1a1a;display:flex;flex-direction:column;align-items:center;padding:0.75rem 0;gap:0.5rem;flex-shrink:0">
+      <!-- Home icon -->
+      <div style="width:36px;height:36px;border-radius:10px;background:rgba(45,212,191,0.08);display:flex;align-items:center;justify-content:center;font-size:0.85rem;cursor:pointer" title="Player Dashboard">🏠</div>
+
+      <div style="width:24px;border-top:1px solid #1a1a1a;margin:0.25rem 0"></div>
+
+      <!-- Community icons -->
+      <div style="width:36px;height:36px;border-radius:10px;background:rgba(59,130,246,0.15);display:flex;align-items:center;justify-content:center;font-size:0.7rem;font-weight:700;color:#3b82f6;border:2px solid #3b82f6;position:relative" title="VGC Masters">
+        V
+        <div style="position:absolute;bottom:-1px;right:-1px;width:8px;height:8px;border-radius:50%;background:#22c55e;border:2px solid #080808"></div>
+      </div>
+      <div style="width:36px;height:36px;border-radius:10px;background:rgba(168,85,247,0.15);display:flex;align-items:center;justify-content:center;font-size:0.7rem;font-weight:700;color:#a855f7" title="Showdown League">S</div>
+
+      <div style="width:24px;border-top:1px solid #1a1a1a;margin:0.25rem 0"></div>
+
+      <!-- Add community -->
+      <div style="width:36px;height:36px;border-radius:10px;background:#141414;display:flex;align-items:center;justify-content:center;font-size:1rem;color:#555;border:1px dashed #333" title="Request a Community">+</div>
+
+      <!-- Settings at bottom -->
+      <div style="margin-top:auto">
+        <div style="width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:0.85rem;color:#555" title="Settings">⚙️</div>
+        <div style="width:32px;height:32px;border-radius:50%;background:rgba(45,212,191,0.15);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.65rem;color:#2dd4bf;margin-top:0.5rem">A</div>
+      </div>
+    </div>
+
+    <!-- Context sidebar (community-specific) -->
+    <div class="sidebar" style="width:200px;border-left:none">
+      <div style="padding:0 1rem 0.75rem;display:flex;align-items:center;gap:0.5rem">
+        <div class="community-icon" style="width:24px;height:24px;background:rgba(59,130,246,0.15);color:#3b82f6;font-size:0.7rem">V</div>
+        <span style="font-weight:700;color:#ccc;font-size:0.85rem">VGC Masters</span>
+      </div>
+
+      <div class="sidebar-section">
+        <div class="sidebar-item"><span class="icon" style="font-size:0.75rem">📊</span> Overview</div>
+        <div class="sidebar-item"><span class="icon" style="font-size:0.75rem">🏆</span> Tournaments</div>
+        <div class="sidebar-item"><span class="icon" style="font-size:0.75rem">👥</span> Staff</div>
+        <div class="sidebar-item"><span class="icon" style="font-size:0.75rem">⚙️</span> Settings</div>
+      </div>
+
+      <hr class="sidebar-divider">
+
+      <div class="sidebar-label">Live Now</div>
+      <div class="sidebar-section">
+        <div class="sidebar-item active">
+          <div class="live-dot"></div>
+          Weekly #42
+          <span class="badge">2</span>
+        </div>
+      </div>
+
+      <div class="sidebar-label" style="margin-top:0.5rem">Recent</div>
+      <div class="sidebar-section">
+        <div class="sidebar-item" style="font-size:0.75rem;color:#555"><span class="icon" style="font-size:0.7rem">✓</span> Weekly #41</div>
+        <div class="sidebar-item" style="font-size:0.75rem;color:#555"><span class="icon" style="font-size:0.7rem">✓</span> Monthly #6</div>
+      </div>
+    </div>
+
+    <!-- Content area -->
+    <div class="content">
+      <div class="content-header">
+        <div class="breadcrumb">
+          Weekly #42 <span style="color:#444"> / </span>
+          <span style="color:#2dd4bf">Manage</span>
+        </div>
+        <div style="margin-left:auto;display:flex;align-items:center;gap:0.5rem">
+          <div class="live-dot"></div>
+          <span style="font-size:0.75rem;color:#22c55e">Live — Round 3 of 5</span>
+        </div>
+      </div>
+
+      <!-- Same tournament manage tabs -->
+      <div style="display:flex;gap:0;border-bottom:1px solid #262626;margin-bottom:1.25rem">
+        <div style="padding:0.5rem 0.75rem;font-size:0.78rem;color:#555">Overview</div>
+        <div style="padding:0.5rem 0.75rem;font-size:0.78rem;color:#555">Registrations</div>
+        <div style="padding:0.5rem 0.75rem;font-size:0.78rem;color:#2dd4bf;border-bottom:2px solid #2dd4bf;margin-bottom:-1px;font-weight:600">Pairings</div>
+        <div style="padding:0.5rem 0.75rem;font-size:0.78rem;color:#555">Standings</div>
+        <div style="padding:0.5rem 0.75rem;font-size:0.78rem;color:#555">Audit</div>
+        <div style="padding:0.5rem 0.75rem;font-size:0.78rem;color:#555">Settings</div>
+      </div>
+
+      <!-- Same content as A -->
+      <div style="display:flex;gap:0.75rem;margin-bottom:1rem">
+        <div class="card-sm" style="flex:1;border:1px solid rgba(239,68,68,0.2)">
+          <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.5rem">
+            <span style="font-size:0.75rem">⚠️</span>
+            <span style="font-size:0.8rem;font-weight:600;color:#ef4444">Judge Queue</span>
+            <span style="margin-left:auto;background:rgba(239,68,68,0.15);color:#ef4444;font-size:0.6rem;padding:0.1rem 0.4rem;border-radius:10px;font-weight:700">2</span>
+          </div>
+          <div style="font-size:0.78rem;color:#888;border-bottom:1px solid #1a1a1a;padding:0.35rem 0">Table 7 — ash vs red <span style="color:#ef4444;margin-left:0.5rem">🛡️</span></div>
+          <div style="font-size:0.78rem;color:#888;padding:0.35rem 0">Table 3 — brock vs misty <span style="color:#ef4444;margin-left:0.5rem">🛡️</span></div>
+        </div>
+        <div class="card-sm" style="flex:1">
+          <div style="font-size:0.8rem;font-weight:600;color:#888;margin-bottom:0.5rem">Round Progress</div>
+          <div style="font-size:1.5rem;font-weight:700;color:#fff;font-family:monospace">12/16</div>
+          <div style="font-size:0.75rem;color:#555">matches completed</div>
+          <div style="background:#262626;height:4px;border-radius:2px;margin-top:0.5rem;overflow:hidden">
+            <div style="background:#2dd4bf;height:100%;width:75%;border-radius:2px"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="pros-cons">
+  <div class="pros"><h4>Strengths</h4><ul>
+    <li>Clean separation — player context and community context never compete for space</li>
+    <li>Discord/Slack mental model — users already know this pattern</li>
+    <li>Community sidebar has room for "Live Now" and "Recent" tournament sections</li>
+    <li>Icon rail works perfectly when collapsed — each community is one icon</li>
+    <li>Green dot on community icon shows live tournament at a glance</li>
+    <li>Scales well — 10 communities is just 10 icons in the rail</li>
+  </ul></div>
+  <div class="cons"><h4>Weaknesses</h4><ul>
+    <li>Two sidebar columns eats more horizontal space (~252px total)</li>
+    <li>Switching between player dashboard and community is a context switch, not just scrolling</li>
+    <li>More complex to implement (icon rail + contextual sidebar)</li>
+  </ul></div>
+</div>
+
+<div class="recommend">💡 <strong>My recommendation: Option B.</strong> The Discord/Slack workspace pattern is a natural fit here. A community leader might be staff in 5+ communities — Option A's expandable list would become unwieldy. Option B's icon rail scales elegantly. The green live dot on the community icon is an instant signal. And when the sidebar collapses, the icon rail IS the collapsed state — it maps perfectly to the collapsible sidebar you asked for.</div>
+
+<hr>
+
+<div style="text-align:center;padding:2rem 0">
+  <p style="color:#888;font-size:0.9rem">Which approach feels right? Or mix elements?</p>
+  <p style="color:#555;font-size:0.8rem">Respond in the terminal</p>
+</div>
+
+</div>
+</body>
+</html>
