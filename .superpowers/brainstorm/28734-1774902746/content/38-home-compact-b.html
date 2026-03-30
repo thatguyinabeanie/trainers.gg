@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Home — Compact B</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: Inter, -apple-system, sans-serif; background: #0a0a0a; color: #e5e5e5; padding: 2rem; line-height: 1.5; }
+  .wrap { max-width: 1060px; margin: 0 auto; }
+  h1 { font-size: 1.5rem; font-weight: 700; margin-bottom: 0.25rem; }
+  .subtitle { color: #888; font-size: 0.9rem; margin-bottom: 2rem; }
+  hr { border: none; border-top: 1px solid #1a1a1a; margin: 2rem 0; }
+
+  .mock { background: #fff; border: 1px solid #ddd; border-radius: 10px; overflow: hidden; color: #111; }
+  .ph { display: flex; align-items: center; gap: 8px; padding: 0 24px; height: 44px; border-bottom: 1px solid #f0f0f0; font-size: 13px; }
+  .ph .t { width: 20px; height: 20px; border: 1px solid #ddd; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 9px; color: #888; }
+  .ph .s { width: 1px; height: 14px; background: #d4d4d4; }
+  .ph .n { font-weight: 500; }
+  .ph .b { margin-left: auto; font-size: 13px; }
+
+  .c { padding: 24px; }
+
+  .live { background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 10px 14px; margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between; }
+  .live-left { }
+  .live-title { font-size: 13px; font-weight: 600; color: #166534; }
+  .live-dot { width: 6px; height: 6px; border-radius: 50%; background: #22c55e; display: inline-block; margin-right: 4px; }
+  .live-sub { font-size: 11px; color: #4ade80; margin-top: 1px; }
+  .live-btn { padding: 5px 12px; font-size: 11px; font-weight: 500; border-radius: 5px; border: none; background: #166534; color: white; cursor: pointer; }
+
+  .attention { margin-bottom: 16px; }
+  .att-head { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: #aaa; margin-bottom: 6px; }
+  .att-row { display: flex; align-items: center; gap: 8px; padding: 7px 10px; background: #fafafa; border-radius: 6px; margin-bottom: 4px; font-size: 12px; }
+  .att-row:last-child { margin-bottom: 0; }
+  .att-icon { font-size: 14px; flex-shrink: 0; }
+  .att-body { flex: 1; min-width: 0; }
+  .att-title { font-weight: 500; }
+  .att-sub { font-size: 10px; color: #888; }
+  .att-btn { padding: 3px 8px; font-size: 10px; font-weight: 500; border-radius: 4px; border: none; background: #0d9488; color: white; cursor: pointer; flex-shrink: 0; }
+  .att-btn-sec { padding: 3px 8px; font-size: 10px; font-weight: 500; border-radius: 4px; border: 1px solid #e5e7eb; background: white; color: #666; cursor: pointer; flex-shrink: 0; }
+  .att-time { font-size: 9px; color: #bbb; flex-shrink: 0; }
+
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 16px; }
+  .stat { background: #f8f8f8; border-radius: 6px; padding: 8px 10px; }
+  .stat-l { font-size: 9px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #888; }
+  .stat-v { font-size: 16px; font-weight: 700; font-family: 'Geist Mono', monospace; }
+  .stat-s { font-size: 8px; color: #aaa; }
+
+  .section-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+  .section-title { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: #aaa; }
+  .section-link { font-size: 11px; color: #0d9488; cursor: pointer; }
+
+  .result-row { display: flex; align-items: center; gap: 8px; padding: 6px 0; border-bottom: 1px solid #f5f5f5; font-size: 12px; }
+  .result-row:last-child { border-bottom: none; }
+  .result-name { font-weight: 500; flex-shrink: 0; }
+  .result-place { font-family: 'Geist Mono', monospace; font-size: 11px; color: #666; flex-shrink: 0; }
+  .result-place.first { color: #0d9488; font-weight: 600; }
+  .result-date { font-size: 10px; color: #bbb; flex-shrink: 0; }
+  .sp { display: flex; gap: 0; flex-shrink: 0; margin-left: auto; margin-right: 8px; }
+  .sp img { width: 18px; height: 18px; image-rendering: pixelated; object-fit: contain; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>Home — Compact B</h1>
+<p class="subtitle">All of B's content, C's compactness. Dense but scannable.</p>
+
+<hr>
+
+<div class="mock">
+  <div class="ph"><div class="t">☰</div><div class="s"></div><div class="n">Home</div><div class="b">🔔</div></div>
+  <div class="c">
+
+    <!-- Welcome -->
+    <div style="font-size: 16px; font-weight: 700; margin-bottom: 14px;">Welcome back, admin_trainer</div>
+
+    <!-- Live tournament -->
+    <div class="live">
+      <div class="live-left">
+        <div class="live-title"><span class="live-dot"></span>Spring Cup 2026 — Round 3</div>
+        <div class="live-sub">You vs ash_ketchum · Table 4</div>
+      </div>
+      <button class="live-btn">Go to match →</button>
+    </div>
+
+    <!-- Needs attention -->
+    <div class="attention">
+      <div class="att-head">Needs attention</div>
+      <div class="att-row">
+        <div class="att-icon">📋</div>
+        <div class="att-body">
+          <div class="att-title">Submit team sheet</div>
+          <div class="att-sub">Monthly Finals · due in 2h</div>
+        </div>
+        <button class="att-btn">Submit</button>
+      </div>
+      <div class="att-row">
+        <div class="att-icon">📨</div>
+        <div class="att-body">
+          <div class="att-title">Tournament invite</div>
+          <div class="att-sub">Summer Series · from VGC League</div>
+        </div>
+        <button class="att-btn">Accept</button>
+        <button class="att-btn-sec">Decline</button>
+      </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats">
+      <div class="stat"><div class="stat-l">Win Rate</div><div class="stat-v">57.1%</div><div class="stat-s">+3.2% this month</div></div>
+      <div class="stat"><div class="stat-l">Rating</div><div class="stat-v">1,247</div><div class="stat-s">Peak: 1,302</div></div>
+      <div class="stat"><div class="stat-l">Record</div><div class="stat-v">24-18</div><div class="stat-s">across all alts</div></div>
+      <div class="stat"><div class="stat-l">Tournaments</div><div class="stat-v">12</div><div class="stat-s">3 active</div></div>
+    </div>
+
+    <!-- Recent results -->
+    <div class="section-head">
+      <div class="section-title">Recent results</div>
+      <div class="section-link">View history →</div>
+    </div>
+    <div class="result-row">
+      <div class="result-name">Spring Cup 2026</div>
+      <div class="sp">
+        <img src="https://play.pokemonshowdown.com/sprites/gen5/kyogre.png"/>
+        <img src="https://play.pokemonshowdown.com/sprites/gen5/pelipper.png"/>
+        <img src="https://play.pokemonshowdown.com/sprites/gen5/rillaboom.png"/>
+        <img src="https://play.pokemonshowdown.com/sprites/gen5/urshifu.png"/>
+        <img src="https://play.pokemonshowdown.com/sprites/gen5/tornadus.png"/>
+        <img src="https://play.pokemonshowdown.com/sprites/gen5/amoonguss.png"/>
+      </div>
+      <div class="result-place">3rd / 24</div>
+      <div class="result-date">Mar 28</div>
+    </div>
+    <div class="result-row">
+      <div class="result-name">Weekly #12</div>
+      <div class="sp">
+        <img src="https://play.pokemonshowdown.com/sprites/gen5/kyogre.png"/>
+        <img src="https://play.pokemonshowdown.com/sprites/gen5/pelipper.png"/>
+        <img src="https://play.pokemonshowdown.com/sprites/gen5/rillaboom.png"/>
+        <img src="https://play.pokemonshowdown.com/sprites/gen5/urshifu.png"/>
+        <img src="https://play.pokemonshowdown.com/sprites/gen5/tornadus.png"/>
+        <img src="https://play.pokemonshowdown.com/sprites/gen5/amoonguss.png"/>
+      </div>
+      <div class="result-place">5th / 12</div>
+      <div class="result-date">Mar 25</div>
+    </div>
+    <div class="result-row">
+      <div class="result-name">Monthly Finals</div>
+      <div class="sp">
+        <img src="https://play.pokemonshowdown.com/sprites/gen5/koraidon.png"/>
+        <img src="https://play.pokemonshowdown.com/sprites/gen5/fluttermane.png"/>
+        <img src="https://play.pokemonshowdown.com/sprites/gen5/incineroar.png"/>
+        <img src="https://play.pokemonshowdown.com/sprites/gen5/landorus.png"/>
+        <img src="https://play.pokemonshowdown.com/sprites/gen5/farigiraf.png"/>
+        <img src="https://play.pokemonshowdown.com/sprites/gen5/ragingbolt.png"/>
+      </div>
+      <div class="result-place first">1st 🏆 / 16</div>
+      <div class="result-date">Mar 20</div>
+    </div>
+
+  </div>
+</div>
+
+</div>
+</body>
+</html>

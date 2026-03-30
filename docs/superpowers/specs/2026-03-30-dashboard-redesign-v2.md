@@ -25,6 +25,7 @@ The dashboard is the player's **personal control center** — a launchpad + iden
 [Alt Switcher]         ⇅     ← navigates between /dashboard/alts and /dashboard/alts/[username]
 🏠  Home                     → /dashboard
 👤  Alts                     → /dashboard/alts
+🏆  Tournaments              → /dashboard/tournaments
 💬  Messages                 → /dashboard/messages (future)
 ─── Communities ──── [+]
     [P] Pallet Town   🟢    → /dashboard/community/pallet-town
@@ -89,9 +90,9 @@ The dashboard is the player's **personal control center** — a launchpad + iden
 ```
 /dashboard                                → Home (always aggregate)
 /dashboard/alts                           → All alts list (aggregate stats, expandable cards)
-/dashboard/alts/history                   → Aggregate tournament history across all alts
+/dashboard/tournaments                    → All tournaments (upcoming, live, completed)
 /dashboard/alts/[username]                → Alt detail (stats, teams, management)
-/dashboard/alts/[username]/history        → Tournament history for this alt
+/dashboard/alts/[username]/tournaments    → Tournaments for this alt
 /dashboard/messages                       → Chat/DMs (future, will become inbox when messaging ships)
 /dashboard/settings                       → Redirects to /dashboard/settings/profile
 /dashboard/settings/profile               → Profile settings
@@ -119,14 +120,16 @@ The dashboard is the player's **personal control center** — a launchpad + iden
 
 ## Page Designs
 
-### Home (`/dashboard`)
+### Home (`/dashboard`) ✅ Approved
 
 - Always shows aggregate data (not filtered by alt)
-- Stats cards: win rate, rating, tournaments, champion points
-- Inbox preview (2-3 actionable items)
-- Active tournaments
-- What's Next section
-- Clean heading: "Welcome back, [name]"
+- **Compact layout, three sections:**
+  1. **Live tournament card** (conditional) — single-line green accent bar with dot, tournament name, round, matchup info, "Go to match →" link. Only shows during active events.
+  2. **Stats row** — 4 cards: Win Rate (+trend), Rating (+ peak), Record (across all alts), Tournaments (+ active count)
+  3. **Recent results** — compact rows with tournament name (link), Pokemon sprites (18px), place/total, date. "View history →" link to tournaments page.
+- **No "needs attention" section** — that lives in the bell popover, no duplication
+- **No "What's Next" or CTA sections** — the sidebar handles navigation
+- **Mockup:** `.superpowers/brainstorm/28734-1774902746/content/40-home-no-attention.html`
 
 ### Alts (`/dashboard/alts`) ✅ Approved
 
@@ -168,12 +171,23 @@ The dashboard is the player's **personal control center** — a launchpad + iden
 - The team builder will have analytics integrated (like pikalytics/labmaus) — it's a major feature, not just a form
 - Team versioning and branching is a core differentiator — fork teams, track iterations, historical performance
 
-### History ✅ Approved
+### Tournaments (renamed from History) ✅ Approved
+
+**Renamed:** "History" → "Tournaments" in sidebar, page title, and routes. Covers full tournament lifecycle: upcoming, live, late reg, completed.
 
 **Routes:**
 
-- **Aggregate:** `/dashboard/alts/history` — all alts
-- **Per-alt:** `/dashboard/alts/[username]/history` — pre-filtered, no Alt column
+- **Aggregate:** `/dashboard/tournaments` — all alts (renamed from `/dashboard/alts/history`)
+- **Per-alt:** `/dashboard/alts/[username]/tournaments` — pre-filtered, no Alt column
+
+**Filter chips** — All (count), Live (count), Upcoming (count), Completed (count)
+
+**Status badges** on each row:
+
+- **Live** (green) — tournament in progress, shows current record, no place yet
+- **Registered** (blue) — signed up, hasn't started, dashes for team/record/place
+- **Late Reg** (amber) — tournament started, user can still join or hasn't checked in
+- **Completed** (gray) — finished, full results
 
 **Summary stats row** — played, win rate, best finish, avg place (respond to alt/format filters)
 
@@ -410,7 +424,8 @@ Never just copy existing UI and make it "cleaner." Always rethink from purpose.
 - [x] Alts page — approved (table layout, expandable team sub-table with sprites + records)
 - [x] Notifications popover — approved (no inbox page, bell popover with pinned + recent sections)
 - [x] History page — approved (table with sprites, expandable opponent schedule, filters)
-- [ ] Home page (`/dashboard`) — outline exists, needs full design pass
+- [x] Home page — approved (live tournament card + stats + recent results, compact)
+- [x] History → Tournaments rename — approved (full lifecycle with status badges + filter chips)
 - [x] Notifications bell icon — approved (merged with inbox into popover design)
 
 ### Bugs (fixed)
@@ -420,8 +435,10 @@ Never just copy existing UI and make it "cleaner." Always rethink from purpose.
 
 ### Sidebar changes (implement with designs)
 
-- [ ] Remove "Alts & Teams" → rename to "Alts" in sidebar
-- [ ] Remove "History" from top-level sidebar
+- [ ] Rename "Alts & Teams" → "Alts" in sidebar
+- [ ] Rename "History" → "Tournaments" in sidebar
+- [ ] Remove "Inbox" from sidebar (notifications in bell popover only)
+- [ ] Add alt switcher to sidebar header (replaces logo)
 
 ### Future (Linear tickets, not this branch)
 
@@ -432,16 +449,17 @@ Never just copy existing UI and make it "cleaner." Always rethink from purpose.
 
 All mockups live in `.superpowers/brainstorm/` directories. The latest approved version for each design:
 
-| Design                         | Mockup File                                                                      | Session   |
-| ------------------------------ | -------------------------------------------------------------------------------- | --------- |
-| Community settings             | `.superpowers/brainstorm/39571-1774889724/content/21-settings-fixed.html`        | Session 1 |
-| Community request              | `.superpowers/brainstorm/39571-1774889724/content/22-request-fixed.html`         | Session 1 |
-| Community overview             | `.superpowers/brainstorm/39571-1774889724/content/14-community-overview-v2.html` | Session 1 |
-| Community staff                | `.superpowers/brainstorm/39571-1774889724/content/16-staff-two-column.html`      | Session 1 |
-| Alts page (table + expansion)  | `.superpowers/brainstorm/28734-1774902746/content/08-alts-table-v6.html`         | Session 2 |
-| Alt switcher (popover)         | `.superpowers/brainstorm/28734-1774902746/content/10-alt-switcher-v2.html`       | Session 2 |
-| Notifications popover          | `.superpowers/brainstorm/28734-1774902746/content/16-notifications-popover.html` | Session 2 |
-| History page (with seat order) | `.superpowers/brainstorm/28734-1774902746/content/36-history-seat.html`          | Session 2 |
+| Design                        | Mockup File                                                                      | Session   |
+| ----------------------------- | -------------------------------------------------------------------------------- | --------- |
+| Community settings            | `.superpowers/brainstorm/39571-1774889724/content/21-settings-fixed.html`        | Session 1 |
+| Community request             | `.superpowers/brainstorm/39571-1774889724/content/22-request-fixed.html`         | Session 1 |
+| Community overview            | `.superpowers/brainstorm/39571-1774889724/content/14-community-overview-v2.html` | Session 1 |
+| Community staff               | `.superpowers/brainstorm/39571-1774889724/content/16-staff-two-column.html`      | Session 1 |
+| Alts page (table + expansion) | `.superpowers/brainstorm/28734-1774902746/content/08-alts-table-v6.html`         | Session 2 |
+| Alt switcher (popover)        | `.superpowers/brainstorm/28734-1774902746/content/10-alt-switcher-v2.html`       | Session 2 |
+| Notifications popover         | `.superpowers/brainstorm/28734-1774902746/content/16-notifications-popover.html` | Session 2 |
+| Tournaments (with seat order) | `.superpowers/brainstorm/28734-1774902746/content/41-tournaments-page.html`      | Session 2 |
+| Home page (compact)           | `.superpowers/brainstorm/28734-1774902746/content/40-home-no-attention.html`     | Session 2 |
 
 Earlier iterations are preserved in the same directories for reference.
 
