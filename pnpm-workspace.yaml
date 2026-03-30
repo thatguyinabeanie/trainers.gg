@@ -29,6 +29,7 @@ catalogs:
     jest: ^29
     "@types/jest": ^29
     ts-jest: ^29
+    ts-node: ^10
     jest-junit: ^16
     "@testing-library/jest-dom": ^6
     "@testing-library/react": ^16
