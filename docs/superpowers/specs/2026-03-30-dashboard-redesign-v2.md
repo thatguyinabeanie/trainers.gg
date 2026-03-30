@@ -204,32 +204,33 @@ The dashboard is the player's **personal control center** — a launchpad + iden
 
 ## Community Dashboard
 
-### Community Overview (`/dashboard/community/[slug]`)
+### Community Overview (`/dashboard/community/[slug]`) ✅ Approved
 
-**Proposed redesign (from visual companion):**
+**Redesign:**
 
 - Remove Quick Actions section — redundant with sidebar navigation
 - Remove Tournament Status breakdown cards — redundant with tournaments page
-- Keep stats row: Tournaments, Players, Staff, Founded
-- Add "Live Now" highlight card when active tournament exists — green accent, tournament name, round progress, "Manage →" button
-- Tournaments as a compact table (status badge + name + meta) instead of large cards
+- Stats row: Tournaments, Players, Staff, Founded
+- "Live Now" highlight card (full width, green accent) when active tournament exists — tournament name, round progress, "Manage →" button
+- **Two-column layout below stats:** tournaments table (left) + community activity feed (right)
+- Tournaments as compact table rows (status badge + name + compact meta)
 - "+ Create" button inline with tournaments section heading
+- **Community activity feed** — community-scoped (not same as player inbox). Shows: player registrations (batched), round starts, staff joins, tournament completions. Batches similar events ("12 players registered" not 12 separate items).
 - Bell icon in PageHeader
 
-**Open question:** Should the overview also show recent activity (staff joined, tournaments completed, registrations)?
+### Community Staff (`/dashboard/community/[slug]/staff`) ✅ Approved
 
-### Community Staff (`/dashboard/community/[slug]/staff`)
+**Redesign — Two-column drag-drop layout:**
 
-**Proposed redesign (from visual companion):**
-
-- Replace giant colored drag-drop zones with compact grouped list
-- Role groups: Owner, Admins, Head Judges, Judges, Unassigned
-- Empty groups show "No X assigned" (one line) instead of giant "Drag staff here" areas
-- Role assignment via dropdown `<select>` (in addition to or instead of drag-drop)
-- Unassigned list truncated with "+ N more" to keep page tight
-- Remove button (✕) inline per staff member
-- Compact staff rows: avatar + name + role tag + actions
-- "+ Add Staff" button in section heading
+- **Left column: Unassigned pool** — scrollable list of all unassigned staff with search bar. Source for drag-drop.
+- **Right column: Role groups** — Owner (non-draggable, crown badge) + Admins + Head Judges + Judges as compact bordered cards with color dots.
+- **Drag left → right** to assign a role. Drag between right groups to reassign. Drag right → left to unassign.
+- **Empty role groups** show thin "Drop here" dashed zone (one line, not giant empty areas).
+- **Staff rows are compact** — drag handle (⠿) + avatar + name + remove button (✕, appears on hover).
+- **Search in unassigned** — useful when many unassigned staff.
+- **Remove (✕)** removes from community entirely.
+- **"+ Add Staff" button** in section heading.
+- **Mobile** stacks vertically (unassigned on top, groups below).
 
 ### Community Settings (`/dashboard/community/[slug]/settings`)
 
@@ -292,12 +293,48 @@ The dashboard is the player's **personal control center** — a launchpad + iden
 
 ## Process Notes
 
+### Design Checklist (ask before every design)
+
+1. **What is the purpose of this page?** — Why does it exist? What problem does it solve?
+2. **Who is the audience?** — Who uses this and when? What are they trying to accomplish?
+3. **Is the information salient?** — Is the most important content immediately visible and clear?
+4. **Is it intuitive?** — Can someone understand what to do without instructions?
+5. **How should information be presented?** — What format best serves the content (table, cards, form, feed)?
+6. **How to organize elements on the screen?** — Layout, alignment, centering, hierarchy, grouping.
+
+Never just copy existing UI and make it "cleaner." Always rethink from purpose.
+
+### Design Decision Patterns (from this session)
+
+1. Match shadcn dashboard-01 — clean, minimal, consistent spacing
+2. No redundancy — if it's in the sidebar, don't repeat on the page
+3. Compact over spacious — tight rows over large cards, two-column over single column
+4. Cards for grouping — bordered cards to group related fields/content
+5. Constrain form width — forms don't stretch full width
+6. Action buttons inline with headings — not in separate sections
+7. Type-specific icons — visual indicators for different content types
+8. Subtle color dots over full backgrounds — role colors, status
+9. "+ N more" truncation — don't show everything, let users expand
+10. Two-column layouts — use horizontal space not just vertical
+11. Collapsible/expandable patterns — show latest, hide older
+12. No gradient backgrounds — flat, clean
+13. Platform prefixes on form inputs — Discord, X, Bluesky icons with fixed widths for alignment
+14. Warm, community-first, NOT esports — clean, playful
+15. Path-based routing — no query params
+16. Simple switchers — no stats in compact controls
+
+### Workflow Rules
+
 - **Always use visual companion** for design decisions — never describe designs in text only
 - **Always use Playwright MCP** to view current pages before designing replacements
 - **Always view shadcn blocks** (https://ui.shadcn.com/blocks) before starting design work
 - **Don't ask the user design/layout questions** — ask about functionality, audience, behavior. Design decisions are delegated to the agent.
-- **Use /brainstorming skill** for all creative work — explore approaches, show options, get approval
-- **Match shadcn dashboard-01 exactly** — spacing, typography, alignment. Don't hand-write when block patterns exist.
+- **Use /brainstorming skill** for all creative work
+- **Reference /product-vision and /competitive-landscape and /design-system skills** for context
+- **Always update docs/** with every important decision
+- **Link to .superpowers/ mockup files** instead of taking redundant screenshots
+- **Use Playwright MCP** to view rendered pages as a supplement to reading code
+- **At checkpoints, review docs/** to make sure everything is captured
 
 ---
 
