@@ -15,7 +15,7 @@ catalog:
   next: ~16.1
   obscenity: ^0.4
   prettier: ^3
-  prettier-plugin-tailwindcss: ^0
+  prettier-plugin-tailwindcss: ^0.7
   tailwindcss: ^4
   tsx: ^4
   typescript: ^5

@@ -50,7 +50,7 @@ catalogs:
       specifier: ^3
       version: 3.8.1
     prettier-plugin-tailwindcss:
-      specifier: ^0
+      specifier: ^0.7
       version: 0.7.2
     tailwindcss:
       specifier: ^4
