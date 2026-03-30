@@ -8,10 +8,6 @@ inputs:
   turbo-prefix:
     description: Job-specific prefix for the Turbo cache key (e.g. "quality", "test-web")
     required: true
-  turbo-hash-files:
-    description: Newline-separated glob patterns to hash for the Turbo cache key
-    required: false
-    default: "**/pnpm-lock.yaml\nturbo.json"
   turbo-token:
     description: Turbo remote cache token
     required: false
@@ -50,7 +46,7 @@ runs:
       uses: actions/cache@v4
       with:
         path: .turbo
-        key: turbo-${{ inputs.turbo-prefix }}-${{ runner.os }}-${{ hashFiles(inputs.turbo-hash-files) }}
+        key: turbo-${{ inputs.turbo-prefix }}-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml', 'turbo.json', '**/tsconfig.json', '**/jest.config.*') }}
         restore-keys: |
           turbo-${{ inputs.turbo-prefix }}-${{ runner.os }}-
 

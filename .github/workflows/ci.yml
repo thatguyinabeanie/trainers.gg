@@ -92,10 +92,6 @@ jobs:
         with:
           node-modules-cache-key: ${{ needs.install.outputs.cache-key }}
           turbo-prefix: quality
-          turbo-hash-files: |
-            **/pnpm-lock.yaml
-            turbo.json
-            **/tsconfig.json
           turbo-token: ${{ secrets.TURBO_TOKEN }}
           turbo-team: ${{ secrets.TURBO_TEAM }}
 
@@ -151,10 +147,6 @@ jobs:
         with:
           node-modules-cache-key: ${{ needs.install.outputs.cache-key }}
           turbo-prefix: test-web
-          turbo-hash-files: |
-            **/pnpm-lock.yaml
-            turbo.json
-            **/jest.config.*
           turbo-token: ${{ secrets.TURBO_TOKEN }}
           turbo-team: ${{ secrets.TURBO_TEAM }}
 
@@ -208,10 +200,6 @@ jobs:
         with:
           node-modules-cache-key: ${{ needs.install.outputs.cache-key }}
           turbo-prefix: test-mobile
-          turbo-hash-files: |
-            **/pnpm-lock.yaml
-            turbo.json
-            **/jest.config.*
           turbo-token: ${{ secrets.TURBO_TOKEN }}
           turbo-team: ${{ secrets.TURBO_TEAM }}
 
@@ -265,10 +253,6 @@ jobs:
         with:
           node-modules-cache-key: ${{ needs.install.outputs.cache-key }}
           turbo-prefix: test-packages
-          turbo-hash-files: |
-            **/pnpm-lock.yaml
-            turbo.json
-            **/jest.config.*
           turbo-token: ${{ secrets.TURBO_TOKEN }}
           turbo-team: ${{ secrets.TURBO_TEAM }}
 
