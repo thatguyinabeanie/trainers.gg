@@ -20,7 +20,7 @@ export function OrganizerAccess({ organizations }: OrganizerAccessProps) {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Shield className="size-5" />
-          Tournament Organizer Access
+          Community Access
         </CardTitle>
         <p className="text-muted-foreground text-sm">
           Your roles and permissions within communities

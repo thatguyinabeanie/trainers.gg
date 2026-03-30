@@ -187,7 +187,7 @@ The dashboard is the player's **personal control center** — a launchpad + iden
 
 - Separate sidebar item from Inbox
 - DMs between players
-- TO → player communications
+- Community Leader → player communications
 - Coach → student messaging (future coaching marketplace)
 - Team share conversations
 - Potentially AT Protocol native (Bluesky DMs via self-hosted PDS)

@@ -69,7 +69,7 @@ export default async function OrgDashboardLayout({
           <div>
             <h1 className="text-2xl font-bold">{organization.name}</h1>
             <p className="text-muted-foreground text-sm">
-              Tournament Organizer Dashboard
+              Community Leader Dashboard
             </p>
           </div>
         </div>

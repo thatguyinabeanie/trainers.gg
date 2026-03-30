@@ -210,14 +210,14 @@ Linear for issue tracking (MCP server available). **Team**: `trainers-gg`. **Def
 
 ## Glossary
 
-| Term                | Definition                                                                        |
-| ------------------- | --------------------------------------------------------------------------------- |
-| **Alt**             | Player identity linked to a user. Users can have multiple alts. Stored in `alts`. |
-| **Staff**           | Organization personnel who run events — NOT tournament participants.              |
-| **TO**              | Tournament Organizer — staff role with create/manage permissions.                 |
-| **DID**             | Decentralized Identifier — AT Protocol identity (`did:plc:abc123`).               |
-| **PDS**             | Personal Data Server — self-hosted Bluesky at `pds.trainers.gg`.                  |
-| **Handle**          | Human-readable Bluesky identity (`@username.trainers.gg`).                        |
-| **RLS**             | Row Level Security — PostgreSQL access control via `auth.uid()`.                  |
-| **Team Sheet**      | Player's Pokemon team for a tournament. Parsed via `@trainers/validators`.        |
-| **Protected Route** | Route requiring auth regardless of maintenance mode. Enforced in `proxy.ts`.      |
+| Term                 | Definition                                                                        |
+| -------------------- | --------------------------------------------------------------------------------- |
+| **Alt**              | Player identity linked to a user. Users can have multiple alts. Stored in `alts`. |
+| **Staff**            | Community personnel who run events — NOT tournament participants.                 |
+| **Community Leader** | Staff role with create/manage permissions for tournaments and events.             |
+| **DID**              | Decentralized Identifier — AT Protocol identity (`did:plc:abc123`).               |
+| **PDS**              | Personal Data Server — self-hosted Bluesky at `pds.trainers.gg`.                  |
+| **Handle**           | Human-readable Bluesky identity (`@username.trainers.gg`).                        |
+| **RLS**              | Row Level Security — PostgreSQL access control via `auth.uid()`.                  |
+| **Team Sheet**       | Player's Pokemon team for a tournament. Parsed via `@trainers/validators`.        |
+| **Protected Route**  | Route requiring auth regardless of maintenance mode. Enforced in `proxy.ts`.      |
