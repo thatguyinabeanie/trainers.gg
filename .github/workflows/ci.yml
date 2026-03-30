@@ -57,7 +57,7 @@ jobs:
 
       - name: Install dependencies
         if: steps.node-modules-cache.outputs.cache-hit != 'true'
-        run: pnpm install --frozen-lockfile --prefer-offline
+        run: pnpm install --frozen-lockfile
         env:
           CI: true
           GITHUB_ACTIONS: true
@@ -92,7 +92,7 @@ jobs:
           fail-on-cache-miss: true
 
       - name: Restore workspace links
-        run: pnpm install --frozen-lockfile --offline --prefer-offline
+        run: pnpm install --frozen-lockfile
         env:
           CI: true
 
@@ -180,7 +180,7 @@ jobs:
           fail-on-cache-miss: true
 
       - name: Restore workspace links
-        run: pnpm install --frozen-lockfile --offline --prefer-offline
+        run: pnpm install --frozen-lockfile
         env:
           CI: true
 
@@ -270,7 +270,7 @@ jobs:
           fail-on-cache-miss: true
 
       - name: Restore workspace links
-        run: pnpm install --frozen-lockfile --offline --prefer-offline
+        run: pnpm install --frozen-lockfile
         env:
           CI: true
 
@@ -447,7 +447,7 @@ jobs:
           fail-on-cache-miss: true
 
       - name: Restore workspace links
-        run: pnpm install --frozen-lockfile --offline --prefer-offline
+        run: pnpm install --frozen-lockfile
         env:
           CI: true
 
