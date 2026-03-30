@@ -66,6 +66,8 @@
   },
   "devDependencies": {
     "@babel/core": "^7.26.0",
+    "@babel/runtime": "^7",
+    "@babel/types": "^7",
     "@testing-library/react-native": "catalog:testing",
     "@trainers/eslint-config": "workspace:*",
     "@trainers/test-utils": "workspace:*",
@@ -81,6 +83,7 @@
     "jest": "catalog:testing",
     "jest-expo": "catalog:expo",
     "prettier": "catalog:",
+    "react-test-renderer": "catalog:react",
     "typescript": "catalog:"
   },
   "prettier": "@trainers/prettier-config"
