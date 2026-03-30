@@ -162,9 +162,7 @@ export function NotificationCenter({
       <div className="flex items-center justify-between pt-4">
         <div>
           <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-semibold tracking-tight">
-              Notifications
-            </h1>
+            <h1 className="text-2xl font-semibold tracking-tight">Inbox</h1>
             {displayUnreadCount > 0 && (
               <span className="bg-primary text-primary-foreground rounded-full px-2 py-0.5 text-xs font-medium">
                 {displayUnreadCount} unread

@@ -104,7 +104,9 @@ export default function OrgSettingsPage({ params }: PageProps) {
   if (!org) {
     return (
       <div className="space-y-6">
-        <h2 className="text-2xl font-bold">Community Settings</h2>
+        <h1 className="text-2xl font-semibold tracking-tight">
+          Community Settings
+        </h1>
         <p className="text-muted-foreground">Community not found.</p>
       </div>
     );
@@ -113,13 +115,17 @@ export default function OrgSettingsPage({ params }: PageProps) {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-bold">Community Settings</h2>
+        <h1 className="text-2xl font-semibold tracking-tight">
+          Community Settings
+        </h1>
         <p className="text-muted-foreground text-sm">
           Configure your community&apos;s profile and settings
         </p>
       </div>
 
-      <OrgProfileForm org={org} onSaved={refetch} />
+      <div className="max-w-2xl">
+        <OrgProfileForm org={org} onSaved={refetch} />
+      </div>
     </div>
   );
 }

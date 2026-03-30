@@ -21,6 +21,7 @@ import {
   XCircle,
   ArrowRight,
 } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface OrganizationWithStats {
   id: number;
@@ -76,65 +77,65 @@ export function OverviewClient({
 
   return (
     <div className="space-y-6">
-      {/* Stats Grid - compact 2x2 on mobile */}
-      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
-        <div className="bg-card rounded-lg p-3 sm:p-4">
-          <div className="flex items-center gap-2 sm:gap-3">
-            <div className="bg-primary/10 rounded-full p-2 sm:p-3">
-              <Trophy className="text-primary h-4 w-4 sm:h-5 sm:w-5" />
+      {/* Page Heading */}
+      <div>
+        <h1 className="text-2xl font-semibold tracking-tight">Overview</h1>
+        <p className="text-muted-foreground text-sm">{organization.name}</p>
+      </div>
+
+      {/* Stats Grid - compact */}
+      <div className="grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-4">
+        <div className="bg-card rounded-lg p-3">
+          <div className="flex items-center gap-2">
+            <div className="bg-primary/10 rounded-full p-2">
+              <Trophy className="text-primary h-4 w-4" />
             </div>
             <div>
-              <p className="text-lg font-bold sm:text-2xl">
+              <p className="text-lg font-bold">
                 {organization.totalTournaments}
               </p>
-              <p className="text-muted-foreground text-xs sm:text-sm">
-                Tournaments
-              </p>
+              <p className="text-muted-foreground text-xs">Tournaments</p>
             </div>
           </div>
         </div>
 
-        <div className="bg-card rounded-lg p-3 sm:p-4">
-          <div className="flex items-center gap-2 sm:gap-3">
-            <div className="bg-primary/10 rounded-full p-2 sm:p-3">
-              <Clock className="text-primary h-4 w-4 sm:h-5 sm:w-5" />
+        <div className="bg-card rounded-lg p-3">
+          <div className="flex items-center gap-2">
+            <div className="bg-primary/10 rounded-full p-2">
+              <Clock className="text-primary h-4 w-4" />
             </div>
             <div>
-              <p className="text-lg font-bold sm:text-2xl">
+              <p className="text-lg font-bold">
                 {(organization.tournamentCounts.upcoming ?? 0) +
                   (organization.tournamentCounts.active ?? 0)}
               </p>
-              <p className="text-muted-foreground text-xs sm:text-sm">Active</p>
+              <p className="text-muted-foreground text-xs">Active</p>
             </div>
           </div>
         </div>
 
-        <div className="bg-card rounded-lg p-3 sm:p-4">
-          <div className="flex items-center gap-2 sm:gap-3">
-            <div className="bg-primary/10 rounded-full p-2 sm:p-3">
-              <Users className="text-primary h-4 w-4 sm:h-5 sm:w-5" />
+        <div className="bg-card rounded-lg p-3">
+          <div className="flex items-center gap-2">
+            <div className="bg-primary/10 rounded-full p-2">
+              <Users className="text-primary h-4 w-4" />
             </div>
             <div>
-              <p className="text-lg font-bold sm:text-2xl">
+              <p className="text-lg font-bold">
                 {organization.totalParticipants}
               </p>
-              <p className="text-muted-foreground text-xs sm:text-sm">
-                Registrations
-              </p>
+              <p className="text-muted-foreground text-xs">Registrations</p>
             </div>
           </div>
         </div>
 
-        <div className="bg-card rounded-lg p-3 sm:p-4">
-          <div className="flex items-center gap-2 sm:gap-3">
-            <div className="bg-primary/10 rounded-full p-2 sm:p-3">
-              <Users className="text-primary h-4 w-4 sm:h-5 sm:w-5" />
+        <div className="bg-card rounded-lg p-3">
+          <div className="flex items-center gap-2">
+            <div className="bg-primary/10 rounded-full p-2">
+              <Users className="text-primary h-4 w-4" />
             </div>
             <div>
-              <p className="text-lg font-bold sm:text-2xl">
-                {organization.staffCount}
-              </p>
-              <p className="text-muted-foreground text-xs sm:text-sm">Staff</p>
+              <p className="text-lg font-bold">{organization.staffCount}</p>
+              <p className="text-muted-foreground text-xs">Staff</p>
             </div>
           </div>
         </div>
@@ -142,28 +143,25 @@ export function OverviewClient({
 
       {/* Quick Actions */}
       <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base sm:text-lg">Quick Actions</CardTitle>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base">Quick Actions</CardTitle>
         </CardHeader>
-        <CardContent className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:gap-3">
-          <Link
-            href={`${basePath}/tournaments/create`}
-            className="w-full sm:w-auto"
-          >
-            <Button className="w-full gap-2 sm:w-auto">
-              <Plus className="h-4 w-4" />
+        <CardContent className="flex flex-wrap gap-2">
+          <Link href={`${basePath}/tournaments/create`}>
+            <Button size="sm" className="gap-2">
+              <Plus className="h-3.5 w-3.5" />
               Create Tournament
             </Button>
           </Link>
-          <Link href={`${basePath}/tournaments`} className="w-full sm:w-auto">
-            <Button variant="outline" className="w-full gap-2 sm:w-auto">
-              <Trophy className="h-4 w-4" />
+          <Link href={`${basePath}/tournaments`}>
+            <Button variant="outline" size="sm" className="gap-2">
+              <Trophy className="h-3.5 w-3.5" />
               View Tournaments
             </Button>
           </Link>
-          <Link href={`${basePath}/staff`} className="w-full sm:w-auto">
-            <Button variant="outline" className="w-full gap-2 sm:w-auto">
-              <Users className="h-4 w-4" />
+          <Link href={`${basePath}/staff`}>
+            <Button variant="outline" size="sm" className="gap-2">
+              <Users className="h-3.5 w-3.5" />
               Manage Staff
             </Button>
           </Link>
@@ -172,13 +170,11 @@ export function OverviewClient({
 
       {/* Tournament Status Breakdown */}
       <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base sm:text-lg">
-            Tournament Status
-          </CardTitle>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base">Tournament Status</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="scrollbar-hide -mx-1 flex gap-2 overflow-x-auto px-1 pb-1 sm:mx-0 sm:grid sm:grid-cols-5 sm:gap-3 sm:overflow-visible sm:px-0">
+          <div className="scrollbar-hide -mx-1 flex gap-2 overflow-x-auto px-1 pb-1 sm:mx-0 sm:grid sm:grid-cols-5 sm:gap-2 sm:overflow-visible sm:px-0">
             {(
               ["draft", "upcoming", "active", "completed", "cancelled"] as const
             ).map((status) => {
@@ -190,14 +186,12 @@ export function OverviewClient({
                 <Link
                   key={status}
                   href={`${basePath}/tournaments?status=${status}`}
-                  className="hover:bg-muted flex min-w-[72px] shrink-0 flex-col items-center rounded-lg border p-3 text-center transition-colors sm:min-w-0 sm:p-4"
+                  className="hover:bg-muted flex min-w-[64px] shrink-0 flex-col items-center rounded-lg border p-2.5 text-center transition-colors sm:min-w-0 sm:p-3"
                 >
-                  <div
-                    className={`mb-1.5 rounded-full p-1.5 sm:mb-2 sm:p-2 ${config.color}`}
-                  >
-                    <Icon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                  <div className={cn("mb-1 rounded-full p-1.5", config.color)}>
+                    <Icon className="h-3.5 w-3.5" />
                   </div>
-                  <p className="text-lg font-bold sm:text-2xl">{count}</p>
+                  <p className="text-lg font-bold">{count}</p>
                   <p className="text-muted-foreground text-[10px] capitalize sm:text-xs">
                     {status}
                   </p>
@@ -210,35 +204,39 @@ export function OverviewClient({
 
       {/* Recent Tournaments */}
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
+        <CardHeader className="flex flex-row items-center justify-between pb-2">
           <div>
-            <CardTitle>Recent Tournaments</CardTitle>
-            <CardDescription>Your latest tournaments</CardDescription>
+            <CardTitle className="text-base">Recent Tournaments</CardTitle>
+            <CardDescription className="text-xs">
+              Your latest tournaments
+            </CardDescription>
           </div>
           <Link href={`${basePath}/tournaments`}>
             <Button variant="ghost" size="sm" className="gap-1">
               View All
-              <ArrowRight className="h-4 w-4" />
+              <ArrowRight className="h-3.5 w-3.5" />
             </Button>
           </Link>
         </CardHeader>
         <CardContent>
           {recentTournaments.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-8">
-              <Trophy className="text-muted-foreground mb-4 h-12 w-12" />
-              <h3 className="mb-2 text-lg font-semibold">No tournaments yet</h3>
-              <p className="text-muted-foreground mb-4 text-center">
+            <div className="flex flex-col items-center justify-center py-6">
+              <Trophy className="text-muted-foreground mb-3 h-10 w-10" />
+              <h3 className="mb-1 text-base font-semibold">
+                No tournaments yet
+              </h3>
+              <p className="text-muted-foreground mb-3 text-center text-sm">
                 Create your first tournament to get started
               </p>
               <Link href={`${basePath}/tournaments/create`}>
-                <Button>
-                  <Plus className="mr-2 h-4 w-4" />
+                <Button size="sm">
+                  <Plus className="mr-2 h-3.5 w-3.5" />
                   Create Tournament
                 </Button>
               </Link>
             </div>
           ) : (
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-3 sm:grid-cols-2">
               {recentTournaments.map((tournament) => {
                 const status = tournament.status as TournamentStatus;
                 const config = statusConfig[status] ?? statusConfig.draft;
@@ -249,21 +247,23 @@ export function OverviewClient({
                     href={`${basePath}/tournaments/${tournament.slug}/manage`}
                   >
                     <Card className="h-full transition-shadow hover:shadow-md">
-                      <CardHeader className="pb-3">
-                        <div className="flex items-start justify-between">
-                          <CardTitle className="line-clamp-1 text-base">
+                      <CardHeader className="p-3 pb-2">
+                        <div className="flex items-start justify-between gap-2">
+                          <CardTitle className="line-clamp-1 text-sm">
                             {tournament.name}
                           </CardTitle>
-                          <Badge className={config.color}>
+                          <Badge
+                            className={cn("shrink-0 text-[10px]", config.color)}
+                          >
                             {tournament.status}
                           </Badge>
                         </div>
                       </CardHeader>
-                      <CardContent>
-                        <div className="text-muted-foreground space-y-2 text-sm">
+                      <CardContent className="px-3 pt-0 pb-3">
+                        <div className="text-muted-foreground space-y-1 text-xs">
                           {tournament.start_date && (
-                            <div className="flex items-center gap-2">
-                              <Calendar className="h-4 w-4" />
+                            <div className="flex items-center gap-1.5">
+                              <Calendar className="h-3 w-3" />
                               <span>
                                 {new Date(
                                   tournament.start_date
@@ -271,8 +271,8 @@ export function OverviewClient({
                               </span>
                             </div>
                           )}
-                          <div className="flex items-center gap-2">
-                            <Users className="h-4 w-4" />
+                          <div className="flex items-center gap-1.5">
+                            <Users className="h-3 w-3" />
                             <span>
                               {tournament.registrationCount}
                               {tournament.max_participants

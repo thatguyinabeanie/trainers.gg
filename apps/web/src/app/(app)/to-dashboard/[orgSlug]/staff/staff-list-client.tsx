@@ -164,7 +164,7 @@ function DraggableStaffCard({
       ref={setNodeRef}
       style={style}
       className={cn(
-        "bg-card flex items-center gap-3 rounded-lg border p-3 transition-shadow",
+        "bg-card flex items-center gap-2.5 rounded-md border p-2.5 transition-shadow",
         isDragging && "shadow-lg",
         canDrag && !member.isOwner && "cursor-grab active:cursor-grabbing"
       )}
@@ -283,26 +283,26 @@ function DroppableGroup({
         !canDrop && "opacity-60"
       )}
     >
-      <CardHeader className="pb-3">
+      <CardHeader className="px-4 pt-4 pb-2">
         <div className="flex items-center justify-between">
           <div>
-            <CardTitle className="text-base">{title}</CardTitle>
+            <CardTitle className="text-sm">{title}</CardTitle>
             {description && (
               <p className="text-muted-foreground text-xs">{description}</p>
             )}
           </div>
-          <span className="text-muted-foreground text-sm">
+          <span className="text-muted-foreground text-xs">
             {members.length} {members.length === 1 ? "member" : "members"}
           </span>
         </div>
       </CardHeader>
-      <CardContent className="pt-0">
+      <CardContent className="px-4 pt-0 pb-4">
         {members.length === 0 ? (
-          <div className="text-muted-foreground rounded-lg border-2 border-dashed py-6 text-center text-sm">
+          <div className="text-muted-foreground rounded-md border-2 border-dashed py-3 text-center text-xs">
             {canDrop ? "Drag staff here" : "No members"}
           </div>
         ) : (
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             {members.map((member) => (
               <DraggableStaffCard
                 key={member.user_id}
@@ -509,10 +509,12 @@ export function StaffListClient({
 
   return (
     <div className="space-y-6">
-      {/* Header */}
+      {/* Page Heading */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="text-2xl font-bold">Staff Management</h2>
+          <h1 className="text-2xl font-semibold tracking-tight">
+            Staff Management
+          </h1>
           <p className="text-muted-foreground text-sm">
             {canDragAny
               ? "Drag and drop staff between groups to assign roles"
@@ -520,8 +522,12 @@ export function StaffListClient({
           </p>
         </div>
         {isOwner && (
-          <Button className="gap-2" onClick={() => setIsInviteOpen(true)}>
-            <Plus className="h-4 w-4" />
+          <Button
+            size="sm"
+            className="gap-2"
+            onClick={() => setIsInviteOpen(true)}
+          >
+            <Plus className="h-3.5 w-3.5" />
             Add Staff
           </Button>
         )}
@@ -529,20 +535,20 @@ export function StaffListClient({
 
       {/* Loading State */}
       {isLoading && staff.length === 0 ? (
-        <div className="flex min-h-[40vh] items-center justify-center">
-          <Loader2 className="text-muted-foreground h-8 w-8 animate-spin" />
+        <div className="flex min-h-[30vh] items-center justify-center">
+          <Loader2 className="text-muted-foreground h-6 w-6 animate-spin" />
         </div>
       ) : staff.length === 0 ? (
         <Card>
-          <CardContent className="flex flex-col items-center justify-center py-12">
-            <Users className="text-muted-foreground mb-4 h-12 w-12" />
-            <h3 className="mb-2 text-lg font-semibold">No staff members</h3>
-            <p className="text-muted-foreground mb-4 text-center">
+          <CardContent className="flex flex-col items-center justify-center py-8">
+            <Users className="text-muted-foreground mb-3 h-10 w-10" />
+            <h3 className="mb-1 text-base font-semibold">No staff members</h3>
+            <p className="text-muted-foreground mb-3 text-center text-sm">
               Add staff members to help manage your community
             </p>
             {isOwner && (
-              <Button onClick={() => setIsInviteOpen(true)}>
-                <Plus className="mr-2 h-4 w-4" />
+              <Button size="sm" onClick={() => setIsInviteOpen(true)}>
+                <Plus className="mr-2 h-3.5 w-3.5" />
                 Add Staff
               </Button>
             )}
@@ -556,18 +562,18 @@ export function StaffListClient({
           onDragEnd={handleDragEnd}
           onDragCancel={handleDragCancel}
         >
-          <div className="space-y-4">
+          <div className="space-y-3">
             {/* Owner Section (not droppable) */}
             {ownerStaff.length > 0 && (
               <Card className="border-yellow-200 bg-yellow-50 dark:border-yellow-900 dark:bg-yellow-950">
-                <CardHeader className="pb-3">
+                <CardHeader className="px-4 pt-4 pb-2">
                   <div className="flex items-center gap-2">
-                    <Crown className="h-4 w-4 text-yellow-500" />
-                    <CardTitle className="text-base">Owner</CardTitle>
+                    <Crown className="h-3.5 w-3.5 text-yellow-500" />
+                    <CardTitle className="text-sm">Owner</CardTitle>
                   </div>
                 </CardHeader>
-                <CardContent className="pt-0">
-                  <div className="space-y-2">
+                <CardContent className="px-4 pt-0 pb-4">
+                  <div className="space-y-1.5">
                     {ownerStaff.map((member) => (
                       <DraggableStaffCard
                         key={member.user_id}

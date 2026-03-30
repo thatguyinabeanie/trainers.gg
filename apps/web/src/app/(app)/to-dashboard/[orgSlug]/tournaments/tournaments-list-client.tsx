@@ -88,17 +88,17 @@ export function TournamentsListClient({
 
   return (
     <div className="space-y-6">
-      {/* Header */}
+      {/* Page Heading */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="text-2xl font-bold">Tournaments</h2>
+          <h1 className="text-2xl font-semibold tracking-tight">Tournaments</h1>
           <p className="text-muted-foreground text-sm">
             Manage your community&apos;s tournaments
           </p>
         </div>
         <Link href={`${basePath}/tournaments/create`}>
-          <Button className="gap-2">
-            <Plus className="h-4 w-4" />
+          <Button size="sm" className="gap-2">
+            <Plus className="h-3.5 w-3.5" />
             Create Tournament
           </Button>
         </Link>
@@ -117,114 +117,126 @@ export function TournamentsListClient({
 
       {/* Content */}
       {isLoading ? (
-        <div className="flex min-h-[40vh] items-center justify-center">
-          <Loader2 className="text-muted-foreground h-8 w-8 animate-spin" />
+        <div className="flex min-h-[30vh] items-center justify-center">
+          <Loader2 className="text-muted-foreground h-6 w-6 animate-spin" />
         </div>
       ) : hasError ? (
         <Card>
-          <CardContent className="flex flex-col items-center justify-center py-12">
-            <XCircle className="mb-4 h-12 w-12 text-red-500" />
-            <h3 className="mb-2 text-lg font-semibold">
+          <CardContent className="flex flex-col items-center justify-center py-8">
+            <XCircle className="mb-3 h-10 w-10 text-red-500" />
+            <h3 className="mb-1 text-base font-semibold">
               Failed to load tournaments
             </h3>
-            <p className="text-muted-foreground mb-4 text-center">
+            <p className="text-muted-foreground mb-3 text-center text-sm">
               There was a problem fetching your tournaments. Please try again.
             </p>
-            <Button onClick={() => window.location.reload()}>Retry</Button>
+            <Button size="sm" onClick={() => window.location.reload()}>
+              Retry
+            </Button>
           </CardContent>
         </Card>
       ) : tournaments.length === 0 ? (
-        <TournamentListEmpty
-          title="No tournaments found"
-          description={
-            currentStatus === "all"
-              ? "Create your first tournament to get started"
-              : `No ${currentStatus} tournaments`
-          }
-        />
+        <Card>
+          <CardContent className="pt-6">
+            <TournamentListEmpty
+              title="No tournaments found"
+              description={
+                currentStatus === "all"
+                  ? "Create your first tournament to get started"
+                  : `No ${currentStatus} tournaments`
+              }
+            />
+          </CardContent>
+        </Card>
       ) : currentStatus === "all" ? (
         // Show grouped view when "all" is selected
-        <div className="space-y-2">
-          {groupedTournaments.active.length > 0 && (
-            <>
-              <SectionHeader
-                title="In Progress"
-                count={groupedTournaments.active.length}
-              />
-              <ActiveTournaments
-                tournaments={groupedTournaments.active}
-                linkPath={(t) => `${basePath}/tournaments/${t.slug}/manage`}
-                showOrganization={false}
-              />
-            </>
-          )}
+        <Card>
+          <CardContent className="space-y-4 pt-6">
+            {groupedTournaments.active.length > 0 && (
+              <div>
+                <SectionHeader
+                  title="In Progress"
+                  count={groupedTournaments.active.length}
+                />
+                <ActiveTournaments
+                  tournaments={groupedTournaments.active}
+                  linkPath={(t) => `${basePath}/tournaments/${t.slug}/manage`}
+                  showOrganization={false}
+                />
+              </div>
+            )}
 
-          {groupedTournaments.upcoming.length > 0 && (
-            <>
-              <SectionHeader
-                title="Upcoming"
-                count={groupedTournaments.upcoming.length}
-              />
-              <UpcomingTournaments
-                tournaments={groupedTournaments.upcoming}
-                linkPath={(t) => `${basePath}/tournaments/${t.slug}/manage`}
-                showOrganization={false}
-              />
-            </>
-          )}
+            {groupedTournaments.upcoming.length > 0 && (
+              <div>
+                <SectionHeader
+                  title="Upcoming"
+                  count={groupedTournaments.upcoming.length}
+                />
+                <UpcomingTournaments
+                  tournaments={groupedTournaments.upcoming}
+                  linkPath={(t) => `${basePath}/tournaments/${t.slug}/manage`}
+                  showOrganization={false}
+                />
+              </div>
+            )}
 
-          {groupedTournaments.draft.length > 0 && (
-            <>
-              <SectionHeader
-                title="Draft"
-                count={groupedTournaments.draft.length}
-              />
-              <TournamentCardGrid
-                tournaments={groupedTournaments.draft}
-                linkPath={(t) => `${basePath}/tournaments/${t.slug}/manage`}
-                showStatus
-                showOrganization={false}
-              />
-            </>
-          )}
+            {groupedTournaments.draft.length > 0 && (
+              <div>
+                <SectionHeader
+                  title="Draft"
+                  count={groupedTournaments.draft.length}
+                />
+                <TournamentCardGrid
+                  tournaments={groupedTournaments.draft}
+                  linkPath={(t) => `${basePath}/tournaments/${t.slug}/manage`}
+                  showStatus
+                  showOrganization={false}
+                />
+              </div>
+            )}
 
-          {groupedTournaments.completed.length > 0 && (
-            <>
-              <SectionHeader
-                title="Completed"
-                count={groupedTournaments.completed.length}
-              />
-              <CompletedTournaments
-                tournaments={groupedTournaments.completed}
-                linkPath={(t) => `${basePath}/tournaments/${t.slug}/manage`}
-                showOrganization={false}
-              />
-            </>
-          )}
+            {groupedTournaments.completed.length > 0 && (
+              <div>
+                <SectionHeader
+                  title="Completed"
+                  count={groupedTournaments.completed.length}
+                />
+                <CompletedTournaments
+                  tournaments={groupedTournaments.completed}
+                  linkPath={(t) => `${basePath}/tournaments/${t.slug}/manage`}
+                  showOrganization={false}
+                />
+              </div>
+            )}
 
-          {groupedTournaments.cancelled.length > 0 && (
-            <>
-              <SectionHeader
-                title="Cancelled"
-                count={groupedTournaments.cancelled.length}
-              />
-              <TournamentCardGrid
-                tournaments={groupedTournaments.cancelled}
-                linkPath={(t) => `${basePath}/tournaments/${t.slug}/manage`}
-                showStatus
-                showOrganization={false}
-              />
-            </>
-          )}
-        </div>
+            {groupedTournaments.cancelled.length > 0 && (
+              <div>
+                <SectionHeader
+                  title="Cancelled"
+                  count={groupedTournaments.cancelled.length}
+                />
+                <TournamentCardGrid
+                  tournaments={groupedTournaments.cancelled}
+                  linkPath={(t) => `${basePath}/tournaments/${t.slug}/manage`}
+                  showStatus
+                  showOrganization={false}
+                />
+              </div>
+            )}
+          </CardContent>
+        </Card>
       ) : (
         // Show filtered view for specific status
-        <TournamentCardGrid
-          tournaments={tournaments}
-          linkPath={(t) => `${basePath}/tournaments/${t.slug}/manage`}
-          showStatus
-          showOrganization={false}
-        />
+        <Card>
+          <CardContent className="pt-6">
+            <TournamentCardGrid
+              tournaments={tournaments}
+              linkPath={(t) => `${basePath}/tournaments/${t.slug}/manage`}
+              showStatus
+              showOrganization={false}
+            />
+          </CardContent>
+        </Card>
       )}
     </div>
   );
