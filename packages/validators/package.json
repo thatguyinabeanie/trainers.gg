@@ -20,7 +20,7 @@
     "@pkmn/dex": "catalog:pkmn",
     "@pkmn/sets": "catalog:pkmn",
     "@pkmn/sim": "catalog:pkmn",
-    "obscenity": "^0.4",
+    "obscenity": "catalog:",
     "zod": "catalog:"
   },
   "devDependencies": {

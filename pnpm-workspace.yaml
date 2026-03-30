@@ -6,11 +6,14 @@ packages:
 
 catalog:
   "@types/node": ^22
+  "@faker-js/faker": ^10
   babel-plugin-react-compiler: ^1
+  esbuild: ^0.27
   eslint: ^9
   eslint-plugin-react-compiler: 19.1.0-rc.2
   jose: ^5
   next: ~16.1
+  obscenity: ^0.4
   prettier: ^3
   prettier-plugin-tailwindcss: ^0
   tailwindcss: ^4
@@ -27,6 +30,7 @@ catalogs:
 
   testing:
     jest: ^29
+    "@jest/globals": ^29
     "@types/jest": ^29
     ts-jest: ^29
     ts-node: ^10
