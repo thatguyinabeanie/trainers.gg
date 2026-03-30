@@ -27,18 +27,15 @@ export default async function DashboardLayout({
 
   // Check which communities have active (live) tournaments
   const communityIds = communities.map((c) => c.id);
-  const { data: activeTournaments } =
-    communityIds.length > 0
-      ? await supabase
-          .from("tournaments")
-          .select("community_id")
-          .in("community_id", communityIds)
-          .eq("status", "active")
-      : { data: [] };
-
-  const activeCommunityIds = new Set(
-    (activeTournaments ?? []).map((t) => t.community_id)
-  );
+  let activeCommunityIds = new Set<number>();
+  if (communityIds.length > 0) {
+    const { data } = await supabase
+      .from("tournaments")
+      .select("community_id")
+      .in("community_id", communityIds)
+      .eq("status", "active");
+    activeCommunityIds = new Set((data ?? []).map((t) => t.community_id));
+  }
 
   const sidebarUser = {
     id: user.id,
