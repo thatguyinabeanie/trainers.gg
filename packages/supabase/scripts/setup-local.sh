@@ -14,6 +14,22 @@ SUPABASE_DIR="$(dirname "$SCRIPT_DIR")"
 ROOT_DIR="$SUPABASE_DIR/../.."
 ENV_FILE="$ROOT_DIR/.env.local"
 
+# Source dev slot library for port-aware configuration
+if [ -f "$ROOT_DIR/scripts/lib/dev-slots.sh" ]; then
+  source "$ROOT_DIR/scripts/lib/dev-slots.sh"
+  SLOT=$(read_slot)
+else
+  SLOT=0
+fi
+
+SUPABASE_API_PORT=$(slot_port "${PORT_BASE_SUPABASE_API:-54321}" "$SLOT")
+SUPABASE_DB_PORT=$(slot_port "${PORT_BASE_SUPABASE_DB:-54322}" "$SLOT")
+SUPABASE_STUDIO_PORT=$(slot_port "${PORT_BASE_SUPABASE_STUDIO:-54323}" "$SLOT")
+SUPABASE_INBUCKET_PORT=$(slot_port "${PORT_BASE_SUPABASE_INBUCKET:-54324}" "$SLOT")
+WEB_PORT=$(slot_port "${PORT_BASE_WEB:-3000}" "$SLOT")
+PDS_PORT=$(slot_port "${PORT_BASE_PDS:-3001}" "$SLOT")
+EXPO_PORT_VAL=$(slot_port "${PORT_BASE_EXPO:-8081}" "$SLOT")
+
 # =============================================================================
 # Skip in CI/Production environments
 # =============================================================================
@@ -256,12 +272,12 @@ create_env_file() {
 # =============================================================================
 
 # Web app (Next.js) - uses localhost for browser access
-NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321
+NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:$SUPABASE_API_PORT
 NEXT_PUBLIC_SUPABASE_ANON_KEY=$ANON_KEY
 
 # Mobile app (Expo) - uses local IP for physical device access
 # If testing on physical device, ensure your device is on the same network
-EXPO_PUBLIC_SUPABASE_URL=http://$LOCAL_IP:54321
+EXPO_PUBLIC_SUPABASE_URL=http://$LOCAL_IP:$SUPABASE_API_PORT
 EXPO_PUBLIC_SUPABASE_ANON_KEY=$ANON_KEY
 
 # Server-side only (never expose to client)
@@ -368,10 +384,10 @@ print_success() {
   echo -e "${GREEN}  Local Supabase is ready!             ${NC}"
   echo -e "${GREEN}========================================${NC}"
   echo ""
-  echo -e "${BLUE}Supabase Studio:${NC} http://127.0.0.1:54323"
-  echo -e "${BLUE}API URL (web):${NC}   http://127.0.0.1:54321"
-  echo -e "${BLUE}API URL (mobile):${NC} http://$LOCAL_IP:54321"
-  echo -e "${BLUE}Database:${NC}        postgresql://postgres:postgres@127.0.0.1:54322/postgres"
+  echo -e "${BLUE}Supabase Studio:${NC} http://127.0.0.1:$SUPABASE_STUDIO_PORT"
+  echo -e "${BLUE}API URL (web):${NC}   http://127.0.0.1:$SUPABASE_API_PORT"
+  echo -e "${BLUE}API URL (mobile):${NC} http://$LOCAL_IP:$SUPABASE_API_PORT"
+  echo -e "${BLUE}Database:${NC}        postgresql://postgres:postgres@127.0.0.1:$SUPABASE_DB_PORT/postgres"
   echo ""
 }
 
@@ -381,7 +397,7 @@ print_success() {
 check_fast_path() {
   # .env.local must exist with local Supabase URL
   [ -f "$ENV_FILE" ] || return 1
-  grep -q "NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321" "$ENV_FILE" || return 1
+  grep -q "NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:${SUPABASE_API_PORT}" "$ENV_FILE" || return 1
 
   # Key symlinks must exist
   [ -L "$ROOT_DIR/apps/web/.env.local" ] || return 1
