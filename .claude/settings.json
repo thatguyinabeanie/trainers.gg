@@ -9,11 +9,23 @@
         "hooks": [
           {
             "type": "command",
-            "command": "npx prettier --write $CLAUDE_FILE_PATHS 2>/dev/null || true"
+            "command": "if [ -n \"$CLAUDE_FILE_PATHS\" ]; then npx prettier --write $(echo \"$CLAUDE_FILE_PATHS\" | tr ',' ' '); fi"
           },
           {
             "type": "command",
-            "command": "for f in $(echo \"$CLAUDE_FILE_PATHS\" | tr ',' ' '); do case \"$f\" in *.ts|*.tsx|*.js|*.jsx) npx eslint --fix --quiet \"$f\" 2>/dev/null || true;; esac; done"
+            "command": "for f in $(echo \"$CLAUDE_FILE_PATHS\" | tr ',' ' '); do case \"$f\" in *.ts|*.tsx|*.js|*.jsx) npx eslint --fix --quiet \"$f\";; esac; done"
+          },
+          {
+            "type": "command",
+            "command": "for f in $(echo \"$CLAUDE_FILE_PATHS\" | tr ',' ' '); do case \"$f\" in *.ts|*.tsx) if echo \"$f\" | grep -qE '.*/packages/.*/src/'; then if grep -qE \"from ['\\\"](@?react|next/|expo)\" \"$f\" 2>/dev/null; then echo \"WARNING: Shared packages must have zero framework imports. Found React/Next/Expo import in $f\"; fi; fi;; esac; done; exit 0"
+          },
+          {
+            "type": "command",
+            "command": "for f in $(echo \"$CLAUDE_FILE_PATHS\" | tr ',' ' '); do case \"$f\" in */supabase/migrations/*.sql) if grep -qi \"CREATE TABLE\" \"$f\" 2>/dev/null && ! grep -qi \"ENABLE ROW LEVEL SECURITY\" \"$f\" 2>/dev/null; then echo \"WARNING: New table detected without ENABLE ROW LEVEL SECURITY. All tables must have RLS enabled.\"; fi;; esac; done; exit 0"
+          },
+          {
+            "type": "command",
+            "command": "for f in $(echo \"$CLAUDE_FILE_PATHS\" | tr ',' ' '); do case \"$f\" in */supabase/migrations/*.sql) echo \"Remember: run 'pnpm generate-types' after applying this migration to update TypeScript types.\";; esac; done; exit 0"
           }
         ]
       },
@@ -22,7 +34,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "CMD=$(python3 -c \"import json,os,sys; data=os.environ.get('CLAUDE_TOOL_INPUT','') or sys.stdin.read(); print(json.loads(data).get('command','') if data else '')\" 2>/dev/null); case \"$CMD\" in *'git commit'*) WEB_CHANGES=$(git diff HEAD~1 --name-only -- apps/web/ 2>/dev/null); if [ -n \"$WEB_CHANGES\" ]; then echo 'This commit touched apps/web/. If this is a new feature or significant change, consider running /mobile-parity to check for mobile parity tickets.'; fi;; esac; exit 0"
+            "command": "CMD=$(python3 -c \"import json,os,sys; data=os.environ.get('CLAUDE_TOOL_INPUT','') or sys.stdin.read(); print(json.loads(data).get('command','') if data else '')\" 2>/dev/null); case \"$CMD\" in *'git commit'*) WEB_CHANGES=$(git diff HEAD~1 --name-only -- apps/web/ 2>/dev/null); if [ -n \"$WEB_CHANGES\" ]; then echo 'This commit touched apps/web/. If this is a new feature or significant change, consider running /checking-mobile-parity to check for mobile parity tickets.'; fi;; esac; exit 0"
           }
         ]
       }
@@ -52,7 +64,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "REPO_ROOT=$(git rev-parse --show-toplevel 2>/dev/null || echo ''); if [ -n \"$REPO_ROOT\" ]; then cd \"$REPO_ROOT\" || exit 0; BRANCH=$(git branch --show-current 2>/dev/null); if [ -n \"$BRANCH\" ] && [ \"$BRANCH\" != 'main' ] && [ \"$BRANCH\" != 'master' ]; then if git rev-parse --verify main >/dev/null 2>&1; then BASE_BRANCH=main; elif git rev-parse --verify master >/dev/null 2>&1; then BASE_BRANCH=master; else BASE_BRANCH=; fi; if [ -n \"$BASE_BRANCH\" ]; then WEB_CHANGES=$(git diff --name-only \"$BASE_BRANCH\"...HEAD -- apps/web/ 2>/dev/null); if [ -n \"$WEB_CHANGES\" ]; then echo 'This branch has apps/web/ changes. If you have added new features, run /mobile-parity to check for mobile parity tickets.'; fi; fi; fi; fi; exit 0"
+            "command": "REPO_ROOT=$(git rev-parse --show-toplevel 2>/dev/null || echo ''); if [ -n \"$REPO_ROOT\" ]; then cd \"$REPO_ROOT\" || exit 0; BRANCH=$(git branch --show-current 2>/dev/null); if [ -n \"$BRANCH\" ] && [ \"$BRANCH\" != 'main' ] && [ \"$BRANCH\" != 'master' ]; then if git rev-parse --verify main >/dev/null 2>&1; then BASE_BRANCH=main; elif git rev-parse --verify master >/dev/null 2>&1; then BASE_BRANCH=master; else BASE_BRANCH=; fi; if [ -n \"$BASE_BRANCH\" ]; then WEB_CHANGES=$(git diff --name-only \"$BASE_BRANCH\"...HEAD -- apps/web/ 2>/dev/null); if [ -n \"$WEB_CHANGES\" ]; then echo 'This branch has apps/web/ changes. If you have added new features, run /checking-mobile-parity to check for mobile parity tickets.'; fi; fi; fi; fi; exit 0"
           }
         ]
       }

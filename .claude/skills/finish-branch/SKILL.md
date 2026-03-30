@@ -97,7 +97,7 @@ Check if the branch includes changes under `apps/web/`:
 git diff --name-only main...HEAD -- apps/web/
 ```
 
-- If web files were changed, invoke the `mobile-parity` skill to analyze changes and check for mobile parity tickets in Linear.
+- If web files were changed, invoke the `checking-mobile-parity` skill to analyze changes and check for mobile parity tickets in Linear.
 - The skill will present findings and ask whether to create, update, or skip — it never acts without confirmation.
 - The user can skip to proceed directly to PR creation.
 - If no web files were changed, skip this step silently.

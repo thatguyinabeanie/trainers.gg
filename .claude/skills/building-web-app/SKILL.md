@@ -3,38 +3,7 @@ name: building-web-app
 description: Use when building web routes, components, Server Actions, data fetching, or any feature in apps/web
 ---
 
-# @trainers/web
-
-Next.js 16 (React 19) web app. App Router, Server Components by default.
-
-## Route Groups
-
-| Group              | Path                               | Purpose                                                   |
-| ------------------ | ---------------------------------- | --------------------------------------------------------- |
-| `(auth-pages)`     | /sign-in, /sign-up, etc.           | Unauthenticated auth flows                                |
-| `(dashboard)`      | /dashboard, /settings, /onboarding | Protected — requires auth                                 |
-| `(org)`            | /organizations/[orgSlug]           | Org hub pages                                             |
-| `tournaments/[id]` | /tournaments/[id]                  | Tournament detail, matches, standings                     |
-| `admin`            | /admin/\*                          | Site admin only (site_admin role)                         |
-| `players`          | /players                           | Public player directory                                   |
-| `u/[handle]`       | /u/[handle]                        | Public player profile (overview, teams, tournaments tabs) |
-
-## Component Organization
-
-```
-src/components/
-  ui/           # shadcn/ui + Base UI primitives — check here first before building custom
-  auth/         # Auth forms, providers
-  tournament/   # Tournament views, match tables, standings
-  match/        # Match scoring, blind selection, dispute resolution
-  organizations/# Org management
-  layout/       # Shell, nav, header
-  players/      # Player card, player grid, player search
-  landing/      # Hero page components (feature cards, upcoming tournaments, coming soon)
-  profile/      # Profile display components
-```
-
-Always check `components/ui/` first. Add missing shadcn components via `npx shadcn@latest add <name>`.
+See `apps/web/CLAUDE.md` for directory structure, key files, and commands.
 
 ## Server Actions
 
@@ -54,16 +23,6 @@ export async function myAction(data: FormData) {
 }
 ```
 
-## Key Files
-
-| File                           | Purpose                                                                |
-| ------------------------------ | ---------------------------------------------------------------------- |
-| `src/proxy.ts`                 | Request interception — auth checks, route protection, maintenance mode |
-| `src/lib/supabase/server.ts`   | Server-side Supabase client (RSC + Server Actions)                     |
-| `src/lib/supabase/client.ts`   | Browser Supabase client (client components)                            |
-| `src/lib/feature-flags/`       | Feature gating — check before building gated features                  |
-| `src/components/providers.tsx` | TanStack Query client setup                                            |
-
 ## Data Fetching
 
 **Server Components** — fetch directly via `src/lib/supabase/server.ts`. No TanStack Query needed.
@@ -78,29 +37,18 @@ Use `src/components/ui/status-badge.tsx` for semantic status colors. Never rende
 
 New player-related API routes live in `src/app/api/players/` — check here before building new endpoints.
 
-## Commands
+## Request Interception (proxy.ts)
 
-```bash
-pnpm --filter @trainers/web dev           # Start dev server (Turbopack)
-pnpm --filter @trainers/web build         # Production build
-pnpm --filter @trainers/web test          # Run unit tests
-pnpm --filter @trainers/web test:watch    # Watch mode
-pnpm --filter @trainers/web test:e2e      # Playwright E2E tests
-pnpm --filter @trainers/web lint          # ESLint
-pnpm --filter @trainers/web typecheck     # TypeScript type checking
-```
+Next.js 16 uses `proxy.ts` — `middleware.ts` is deprecated. Must be at `src/proxy.ts` (not project root). Export a function named `proxy`. Verify it's loading by checking for `proxy.ts: XXms` in dev server output.
 
-## Testing
+## Client State Management (TanStack Query)
 
-- **Environment**: `jsdom`
-- **Location**: `src/**/__tests__/**/*.test.{ts,tsx}`
-- **Setup**: `src/test-setup.ts`
-- **Coverage excludes**: `components/ui/**`, `generated/**`, type files
-- **Module alias**: `@/` maps to `src/`
+TanStack Query v5 is the client state management layer. All server state flows through query keys, cached queries, and mutations — not local React state or context.
 
-## Environment Variables
+- **Queries**: use query key factories for consistent cache keys and targeted invalidation
+- **Mutations**: use `useMutation` with `onMutate` for optimistic updates where UI should respond immediately (e.g., registration, check-in, roster changes)
+- **Invalidation**: invalidate related query keys in `onSettled` so the cache resyncs regardless of mutation outcome
+- **No client-side state duplication**: if data comes from the server, it lives in the query cache — don't mirror it into `useState`
+- **Query key factories**: define query keys via factory functions — mobile already follows this pattern (see `apps/mobile/src/lib/api/query-factory.ts`)
 
-- `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` — client-side Supabase
-- `SUPABASE_SERVICE_ROLE_KEY` — server-side only (bypasses RLS)
-- `NEXT_PUBLIC_SITE_URL` — required for AT Protocol OAuth (must be tunnel URL, not localhost)
-- `ATPROTO_PRIVATE_KEY` — JWT signing for AT Protocol
+See `creating-components` skill when building new UI components.
