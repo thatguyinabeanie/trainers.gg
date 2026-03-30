@@ -303,7 +303,7 @@ jobs:
     name: Wait for Preview
     # Skip for Dependabot PRs — they can't access secrets needed for bypass auth,
     # and dependency bumps don't need E2E/Lighthouse validation
-    if: github.event_name == 'pull_request' && github.actor != 'dependabot[bot]'
+    if: github.event_name == 'pull_request' && github.event.pull_request.user.login != 'dependabot[bot]'
     runs-on: ubuntu-latest
     timeout-minutes: 12
     outputs:
@@ -392,7 +392,7 @@ jobs:
   e2e-tests:
     name: E2E Tests
     # Skip for Dependabot PRs — no access to secrets for bypass auth
-    if: github.event_name == 'pull_request' && github.actor != 'dependabot[bot]'
+    if: github.event_name == 'pull_request' && github.event.pull_request.user.login != 'dependabot[bot]'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     needs: [install, wait-for-preview]
@@ -494,7 +494,7 @@ jobs:
   lighthouse:
     name: Lighthouse
     # Skip for Dependabot PRs — no access to secrets for bypass auth
-    if: github.event_name == 'pull_request' && github.actor != 'dependabot[bot]'
+    if: github.event_name == 'pull_request' && github.event.pull_request.user.login != 'dependabot[bot]'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     needs: [wait-for-preview]
