@@ -36,7 +36,6 @@ import {
   SidebarMenuBadge,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarSeparator,
   useSidebar,
 } from "@/components/ui/sidebar";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -338,7 +337,6 @@ function PlayerNav({
       {/* Communities section */}
       {communities.length > 0 && (
         <>
-          <SidebarSeparator />
           <SidebarGroup className="group-data-[collapsible=icon]:hidden">
             <SidebarGroupLabel>
               Communities
@@ -460,8 +458,6 @@ function CommunityNav({ community, pathname }: CommunityNavProps) {
         </SidebarGroupContent>
       </SidebarGroup>
 
-      <SidebarSeparator />
-
       {/* Community header */}
       <SidebarGroup className="group-data-[collapsible=icon]:hidden">
         <div className="flex items-center gap-3 px-2 py-1">
@@ -475,8 +471,6 @@ function CommunityNav({ community, pathname }: CommunityNavProps) {
           {community.hasLiveTournament && <LiveDot />}
         </div>
       </SidebarGroup>
-
-      <SidebarSeparator className="group-data-[collapsible=icon]:hidden" />
 
       {/* Community nav items */}
       <SidebarGroup>
