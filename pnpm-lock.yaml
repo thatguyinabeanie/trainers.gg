@@ -225,7 +225,7 @@ catalogs:
       specifier: ^10
       version: 10.9.2
 
-packageExtensionsChecksum: sha256-lW86B66/OVv00lHm+w86yaYhTDl/6WcFanbYJFUO6BA=
+packageExtensionsChecksum: sha256-g+6EssLWZ9195qdclqIFJRE+s2EyyZTqQJ0sOD7sLt8=
 
 importers:
 
@@ -16729,6 +16729,7 @@ snapshots:
 
   react-native@0.81.6(@babel/core@7.29.0)(@types/react@19.1.17)(react@19.1.5):
     dependencies:
+      '@babel/runtime': 7.29.2
       '@jest/create-cache-key-function': 29.7.0
       '@react-native/assets-registry': 0.81.6
       '@react-native/codegen': 0.81.6(@babel/core@7.29.0)
