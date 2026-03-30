@@ -63,28 +63,28 @@ catalogs:
       specifier: ^54
       version: 54.0.33
     expo-constants:
-      specifier: ~18.0
+      specifier: ^18
       version: 18.0.13
     expo-font:
-      specifier: ~14.0
+      specifier: ^14
       version: 14.0.11
     expo-linking:
-      specifier: ~8.0
+      specifier: ^8
       version: 8.0.11
     expo-router:
-      specifier: ~6.0
+      specifier: ^6
       version: 6.0.23
     expo-secure-store:
-      specifier: ~15.0
+      specifier: ^15
       version: 15.0.8
     expo-splash-screen:
-      specifier: ~31.0
+      specifier: ^31
       version: 31.0.13
     expo-status-bar:
-      specifier: ~3.0
+      specifier: ^3
       version: 3.0.9
     expo-system-ui:
-      specifier: ~6.0
+      specifier: ^6
       version: 6.0.9
     jest-expo:
       specifier: ^54
@@ -102,7 +102,7 @@ catalogs:
       specifier: ~4.16
       version: 4.16.0
     react-native-svg:
-      specifier: ~15.12
+      specifier: ^15
       version: 15.12.1
     react-native-url-polyfill:
       specifier: ^2
