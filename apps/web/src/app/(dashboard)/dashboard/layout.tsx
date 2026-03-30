@@ -10,7 +10,6 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "@/components/ui/sidebar";
-import { Separator } from "@/components/ui/separator";
 import { DashboardSidebar } from "@/components/dashboard/dashboard-sidebar";
 
 export default async function DashboardLayout({
@@ -46,18 +45,26 @@ export default async function DashboardLayout({
   }));
 
   return (
-    <SidebarProvider>
+    <SidebarProvider
+      style={
+        {
+          "--sidebar-width": "calc(var(--spacing) * 56)",
+        } as React.CSSProperties
+      }
+    >
       <DashboardSidebar
         user={sidebarUser}
         communities={sidebarCommunities}
         unreadInboxCount={unreadInboxCount}
+        variant="inset"
       />
       <SidebarInset>
-        <header className="flex h-12 shrink-0 items-center gap-2 border-b px-4">
+        <header className="flex h-12 shrink-0 items-center gap-2 px-4">
           <SidebarTrigger className="-ml-1" />
-          <Separator orientation="vertical" className="mr-2 h-4" />
         </header>
-        <main className="flex-1 overflow-auto p-4 md:p-6">{children}</main>
+        <main className="flex flex-1 flex-col p-4 pt-0 md:p-6 md:pt-0">
+          {children}
+        </main>
       </SidebarInset>
     </SidebarProvider>
   );

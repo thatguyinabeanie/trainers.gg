@@ -1,23 +1,28 @@
 "use client";
 
+import type React from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   Home,
   Users,
   Inbox,
   History,
-  Settings,
   LayoutDashboard,
   Trophy,
   UserCog,
   Plus,
-  ChevronLeft,
+  ArrowLeft,
   Circle,
+  MoreVertical,
+  LogOut,
+  Settings,
+  User,
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
+import { createClient } from "@/lib/supabase/client";
 import {
   Sidebar,
   SidebarContent,
@@ -32,8 +37,18 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarSeparator,
+  useSidebar,
 } from "@/components/ui/sidebar";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -64,22 +79,11 @@ interface DashboardSidebarProps {
 // Helpers
 // ---------------------------------------------------------------------------
 
-/** Extract the community slug when the path is under /dashboard/community/[slug] */
 function getCommunitySlug(pathname: string): string | null {
   const match = /^\/dashboard\/community\/([^/]+)/.exec(pathname);
   return match?.[1] ?? null;
 }
 
-/** First letter used as a fallback icon for a community */
-function communityInitial(name: string): string {
-  return name.charAt(0).toUpperCase();
-}
-
-// ---------------------------------------------------------------------------
-// Sub-components
-// ---------------------------------------------------------------------------
-
-/** Emerald dot indicating a live tournament is happening in this community */
 function LiveDot() {
   return (
     <Circle className="ml-auto size-2 shrink-0 fill-emerald-500 text-emerald-500" />
@@ -94,57 +98,43 @@ export function DashboardSidebar({
   user,
   communities,
   unreadInboxCount,
-}: DashboardSidebarProps) {
+  ...props
+}: DashboardSidebarProps & React.ComponentProps<typeof Sidebar>) {
   const pathname = usePathname();
   const communitySlug = getCommunitySlug(pathname);
   const isCommunityContext = communitySlug !== null;
 
-  // Find the active community object when in community context
   const activeCommunity = isCommunityContext
     ? (communities.find((c) => c.slug === communitySlug) ?? null)
     : null;
 
   return (
-    <Sidebar collapsible="none">
-      {/* ------------------------------------------------------------------ */}
-      {/* Header — logo + back link                                           */}
-      {/* ------------------------------------------------------------------ */}
-      <SidebarHeader className="px-4 py-3">
-        <div className="flex items-center justify-between gap-2">
-          {/* Logo */}
-          <Link
-            href="/"
-            className="text-foreground text-sm font-semibold tracking-tight transition-opacity hover:opacity-80"
-          >
-            trainers.gg
-          </Link>
-
-          {/* Back link */}
-          {isCommunityContext ? (
-            <Link
-              href="/dashboard"
-              className="text-muted-foreground hover:text-foreground flex items-center gap-1 text-xs transition-colors"
+    <Sidebar collapsible="icon" {...props}>
+      {/* Header — logo */}
+      <SidebarHeader>
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton
+              render={<Link href="/" />}
+              size="lg"
+              tooltip="trainers.gg"
+              className="data-[slot=sidebar-menu-button]:!p-1.5"
             >
-              <ChevronLeft className="size-3" />
-              Dashboard
-            </Link>
-          ) : (
-            <Link
-              href="/"
-              className="text-muted-foreground hover:text-foreground flex items-center gap-1 text-xs transition-colors"
-            >
-              <ChevronLeft className="size-3" />
-              Back to site
-            </Link>
-          )}
-        </div>
+              <div className="bg-primary text-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg text-xs font-bold">
+                t.gg
+              </div>
+              <div className="grid flex-1 text-left text-sm leading-tight">
+                <span className="truncate font-semibold">trainers.gg</span>
+                <span className="text-muted-foreground truncate text-xs">
+                  Dashboard
+                </span>
+              </div>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
       </SidebarHeader>
 
-      <SidebarSeparator />
-
-      {/* ------------------------------------------------------------------ */}
-      {/* Content — context-switches between player and community nav         */}
-      {/* ------------------------------------------------------------------ */}
+      {/* Content — context-switches between player and community nav */}
       <SidebarContent>
         {isCommunityContext && activeCommunity ? (
           <CommunityNav community={activeCommunity} pathname={pathname} />
@@ -157,54 +147,134 @@ export function DashboardSidebar({
         )}
       </SidebarContent>
 
-      <SidebarSeparator />
-
-      {/* ------------------------------------------------------------------ */}
-      {/* Footer — user info                                                  */}
-      {/* ------------------------------------------------------------------ */}
-      <SidebarFooter className="px-2 py-3">
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarMenuButton
-              render={<Link href="/dashboard/settings" />}
-              size="lg"
-              isActive={pathname === "/dashboard/settings"}
-              className="gap-3"
-            >
-              <Avatar size="sm">
-                <AvatarImage
-                  src={user.avatarUrl ?? undefined}
-                  alt={user.username}
-                />
-                <AvatarFallback>
-                  {user.username.charAt(0).toUpperCase()}
-                </AvatarFallback>
-              </Avatar>
-              <div className="flex min-w-0 flex-col">
-                <span className="truncate text-sm font-medium">
-                  {user.username}
-                </span>
-                {isCommunityContext && activeCommunity ? (
-                  <span className="text-muted-foreground truncate text-xs capitalize">
-                    {activeCommunity.role}
-                  </span>
-                ) : (
-                  <span className="text-muted-foreground flex items-center gap-1 text-xs">
-                    <Settings className="size-3" />
-                    Settings
-                  </span>
-                )}
-              </div>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        </SidebarMenu>
+      {/* Footer — NavUser with dropdown */}
+      <SidebarFooter>
+        <NavUser
+          user={user}
+          activeCommunity={
+            isCommunityContext && activeCommunity ? activeCommunity : null
+          }
+        />
       </SidebarFooter>
     </Sidebar>
   );
 }
 
 // ---------------------------------------------------------------------------
-// Player nav
+// NavUser — shadcn dashboard-01 pattern with 3-dot menu
+// ---------------------------------------------------------------------------
+
+interface NavUserProps {
+  user: UserInfo;
+  activeCommunity: CommunityInfo | null;
+}
+
+function NavUser({ user, activeCommunity }: NavUserProps) {
+  const { isMobile } = useSidebar();
+  const router = useRouter();
+
+  const handleSignOut = async () => {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    router.push("/");
+  };
+
+  return (
+    <SidebarMenu>
+      <SidebarMenuItem>
+        <DropdownMenu>
+          <DropdownMenuTrigger
+            render={
+              <SidebarMenuButton
+                size="lg"
+                className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+              />
+            }
+          >
+            <Avatar className="size-8 rounded-lg">
+              <AvatarImage
+                src={user.avatarUrl ?? undefined}
+                alt={user.username}
+              />
+              <AvatarFallback className="rounded-lg">
+                {user.username.charAt(0).toUpperCase()}
+              </AvatarFallback>
+            </Avatar>
+            <div className="grid flex-1 text-left text-sm leading-tight">
+              <span className="truncate font-medium">{user.username}</span>
+              <span className="text-muted-foreground truncate text-xs">
+                {activeCommunity
+                  ? `${activeCommunity.role.charAt(0).toUpperCase()}${activeCommunity.role.slice(1)}`
+                  : "Player"}
+              </span>
+            </div>
+            <MoreVertical className="ml-auto size-4" />
+          </DropdownMenuTrigger>
+          <DropdownMenuContent
+            className="w-56 rounded-lg"
+            side={isMobile ? "bottom" : "right"}
+            align="end"
+            sideOffset={4}
+          >
+            <DropdownMenuLabel className="p-0 font-normal">
+              <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
+                <Avatar className="size-8 rounded-lg">
+                  <AvatarImage
+                    src={user.avatarUrl ?? undefined}
+                    alt={user.username}
+                  />
+                  <AvatarFallback className="rounded-lg">
+                    {user.username.charAt(0).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="grid flex-1 text-left text-sm leading-tight">
+                  <span className="truncate font-medium">{user.username}</span>
+                  <span className="text-muted-foreground truncate text-xs">
+                    {activeCommunity
+                      ? `${activeCommunity.role.charAt(0).toUpperCase()}${activeCommunity.role.slice(1)}`
+                      : "Player"}
+                  </span>
+                </div>
+              </div>
+            </DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuGroup>
+              <DropdownMenuItem>
+                <Link
+                  href="/dashboard/settings"
+                  className="flex w-full items-center gap-2"
+                >
+                  <User className="size-4" />
+                  Profile
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem>
+                <Link
+                  href="/dashboard/settings/account"
+                  className="flex w-full items-center gap-2"
+                >
+                  <Settings className="size-4" />
+                  Account
+                </Link>
+              </DropdownMenuItem>
+            </DropdownMenuGroup>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              onClick={handleSignOut}
+              className="text-destructive focus:text-destructive"
+            >
+              <LogOut className="size-4" />
+              Sign out
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </SidebarMenuItem>
+    </SidebarMenu>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Player nav — no Settings item (Settings is in user dropdown only)
 // ---------------------------------------------------------------------------
 
 interface PlayerNavProps {
@@ -223,7 +293,6 @@ function PlayerNav({
       label: "Home",
       href: "/dashboard",
       icon: Home,
-      // Exact match only — do not highlight for sub-routes
       isActive: pathname === "/dashboard",
     },
     {
@@ -244,12 +313,6 @@ function PlayerNav({
       icon: History,
       isActive: pathname.startsWith("/dashboard/history"),
     },
-    {
-      label: "Settings",
-      href: "/dashboard/settings",
-      icon: Settings,
-      isActive: pathname.startsWith("/dashboard/settings"),
-    },
   ] as const;
 
   return (
@@ -263,12 +326,12 @@ function PlayerNav({
                 <SidebarMenuButton
                   render={<Link href={item.href} />}
                   isActive={item.isActive}
+                  tooltip={item.label}
                 >
                   <item.icon className="size-4 shrink-0" />
                   <span>{item.label}</span>
                 </SidebarMenuButton>
 
-                {/* Unread badge rendered only for Inbox */}
                 {item.label === "Inbox" && unreadInboxCount > 0 && (
                   <SidebarMenuBadge>{unreadInboxCount}</SidebarMenuBadge>
                 )}
@@ -278,11 +341,11 @@ function PlayerNav({
         </SidebarGroupContent>
       </SidebarGroup>
 
-      {/* Communities section — only rendered when user has at least one */}
+      {/* Communities section */}
       {communities.length > 0 && (
         <>
           <SidebarSeparator />
-          <SidebarGroup>
+          <SidebarGroup className="group-data-[collapsible=icon]:hidden">
             <SidebarGroupLabel>
               Communities
               <SidebarGroupAction
@@ -323,7 +386,7 @@ function PlayerNav({
 }
 
 // ---------------------------------------------------------------------------
-// Community nav
+// Community nav — back button uses the logo area pattern
 // ---------------------------------------------------------------------------
 
 interface CommunityNavProps {
@@ -339,7 +402,6 @@ function CommunityNav({ community, pathname }: CommunityNavProps) {
       label: "Overview",
       href: base,
       icon: LayoutDashboard,
-      // Exact match for overview
       isActive: pathname === base,
     },
     {
@@ -356,7 +418,6 @@ function CommunityNav({ community, pathname }: CommunityNavProps) {
     },
   ] as const;
 
-  // Settings is owner-only
   const settingsItem =
     community.role === "owner"
       ? {
@@ -369,8 +430,28 @@ function CommunityNav({ community, pathname }: CommunityNavProps) {
 
   return (
     <>
-      {/* Community header */}
+      {/* Back to dashboard */}
       <SidebarGroup>
+        <SidebarGroupContent>
+          <SidebarMenu>
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                render={<Link href="/dashboard" />}
+                tooltip="Back to Dashboard"
+                className="text-muted-foreground"
+              >
+                <ArrowLeft className="size-4 shrink-0" />
+                <span>Back to Dashboard</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          </SidebarMenu>
+        </SidebarGroupContent>
+      </SidebarGroup>
+
+      <SidebarSeparator />
+
+      {/* Community header */}
+      <SidebarGroup className="group-data-[collapsible=icon]:hidden">
         <div className="flex items-center gap-3 px-2 py-1">
           <CommunityIcon community={community} size="md" />
           <div className="min-w-0 flex-1">
@@ -383,7 +464,7 @@ function CommunityNav({ community, pathname }: CommunityNavProps) {
         </div>
       </SidebarGroup>
 
-      <SidebarSeparator />
+      <SidebarSeparator className="group-data-[collapsible=icon]:hidden" />
 
       {/* Community nav items */}
       <SidebarGroup>
@@ -394,6 +475,7 @@ function CommunityNav({ community, pathname }: CommunityNavProps) {
                 <SidebarMenuButton
                   render={<Link href={item.href} />}
                   isActive={item.isActive}
+                  tooltip={item.label}
                 >
                   <item.icon className="size-4 shrink-0" />
                   <span>{item.label}</span>
@@ -406,6 +488,7 @@ function CommunityNav({ community, pathname }: CommunityNavProps) {
                 <SidebarMenuButton
                   render={<Link href={settingsItem.href} />}
                   isActive={settingsItem.isActive}
+                  tooltip={settingsItem.label}
                 >
                   <settingsItem.icon className="size-4 shrink-0" />
                   <span>{settingsItem.label}</span>
@@ -420,7 +503,7 @@ function CommunityNav({ community, pathname }: CommunityNavProps) {
 }
 
 // ---------------------------------------------------------------------------
-// Community icon — logo image or letter fallback
+// Community icon
 // ---------------------------------------------------------------------------
 
 interface CommunityIconProps {
@@ -452,7 +535,7 @@ function CommunityIcon({ community, size = "sm" }: CommunityIconProps) {
       )}
       aria-hidden
     >
-      {communityInitial(community.name)}
+      {community.name.charAt(0).toUpperCase()}
     </div>
   );
 }

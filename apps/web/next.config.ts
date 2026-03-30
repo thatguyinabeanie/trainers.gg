@@ -29,6 +29,33 @@ const nextConfig: NextConfig = {
     authInterrupts: true,
   },
   redirects: async () => [
+    // Old dashboard tab routes
+    {
+      source: "/dashboard/overview",
+      destination: "/dashboard",
+      permanent: true,
+    },
+    {
+      source: "/dashboard/notifications",
+      destination: "/dashboard/inbox",
+      permanent: true,
+    },
+    {
+      source: "/dashboard/invitations",
+      destination: "/dashboard/inbox",
+      permanent: true,
+    },
+    {
+      source: "/dashboard/stats",
+      destination: "/dashboard/history",
+      permanent: true,
+    },
+    {
+      source: "/dashboard/settings",
+      destination: "/dashboard/settings/profile",
+      permanent: false,
+    },
+    // Old TO-dashboard routes
     {
       source: "/to-dashboard",
       destination: "/dashboard/community",
