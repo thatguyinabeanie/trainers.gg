@@ -20,6 +20,19 @@ set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+
+# Source dev slot library
+if [ -f "$REPO_ROOT/scripts/lib/dev-slots.sh" ]; then
+  source "$REPO_ROOT/scripts/lib/dev-slots.sh"
+  SLOT=$(read_slot)
+else
+  SLOT=0
+  # Fallback slot_port if library not available
+  slot_port() { echo "$1"; }
+fi
+PDS_HOST_PORT=$(slot_port "${PORT_BASE_PDS:-3001}" "$SLOT")
+WEB_PORT=$(slot_port "${PORT_BASE_WEB:-3000}" "$SLOT")
+
 NGROK_PID_FILE="$SCRIPT_DIR/.ngrok.pid"
 NGROK_LOG_FILE="$SCRIPT_DIR/.ngrok.log"
 PDS_ENV_FILE="$SCRIPT_DIR/.pds-local.env"
@@ -62,7 +75,7 @@ get_static_domain() {
 }
 
 start_ngrok() {
-    log_info "Starting ngrok tunnel for web app (port 3000)..."
+    log_info "Starting ngrok tunnel for web app (port $WEB_PORT)..."
 
     # Kill any existing ngrok process
     if [ -f "$NGROK_PID_FILE" ]; then
@@ -76,11 +89,11 @@ start_ngrok() {
 
     if [ -n "$NGROK_DOMAIN" ]; then
         log_info "Using static domain: $NGROK_DOMAIN"
-        ngrok http --url="$NGROK_DOMAIN" 3000 --log=stdout > "$NGROK_LOG_FILE" 2>&1 &
+        ngrok http --url="$NGROK_DOMAIN" "$WEB_PORT" --log=stdout > "$NGROK_LOG_FILE" 2>&1 &
     else
         log_warn "No static domain found in .env.ngrok, using random ngrok URL"
         log_warn "Copy .env.ngrok.example to .env.ngrok and set your static domain"
-        ngrok http 3000 --log=stdout > "$NGROK_LOG_FILE" 2>&1 &
+        ngrok http "$WEB_PORT" --log=stdout > "$NGROK_LOG_FILE" 2>&1 &
     fi
     echo $! > "$NGROK_PID_FILE"
 
@@ -136,18 +149,19 @@ PDS_HANDLE_DOMAINS=.trainers.gg,.bsky.social
 EOF
 
     # Start PDS with the env file
-    docker compose -f "$SCRIPT_DIR/docker-compose.yml" --env-file "$PDS_ENV_FILE" up -d
+    PDS_HOST_PORT="$PDS_HOST_PORT" PDS_SLOT_SUFFIX="${SLOT:+"-slot-${SLOT}"}" \
+      docker compose -f "$SCRIPT_DIR/docker-compose.yml" --env-file "$PDS_ENV_FILE" up -d
 
     log_info "Waiting for PDS to start..."
     for i in {1..30}; do
         sleep 1
-        if curl -s "http://localhost:3001/xrpc/_health" 2>/dev/null | grep -q "version"; then
+        if curl -s "http://localhost:${PDS_HOST_PORT}/xrpc/_health" 2>/dev/null | grep -q "version"; then
             break
         fi
     done
 
-    if curl -s "http://localhost:3001/xrpc/_health" 2>/dev/null | grep -q "version"; then
-        log_success "PDS is running on http://localhost:3001"
+    if curl -s "http://localhost:${PDS_HOST_PORT}/xrpc/_health" 2>/dev/null | grep -q "version"; then
+        log_success "PDS is running on http://localhost:${PDS_HOST_PORT}"
     else
         log_error "PDS failed to start. Check logs with: docker logs trainers-pds-local"
         exit 1
@@ -170,9 +184,9 @@ show_status() {
     fi
 
     # PDS status
-    if curl -s "http://localhost:3001/xrpc/_health" 2>/dev/null | grep -q "version"; then
-        PDS_VERSION=$(curl -s "http://localhost:3001/xrpc/_health" | jq -r '.version')
-        log_success "PDS: running (v$PDS_VERSION) at http://localhost:3001"
+    if curl -s "http://localhost:${PDS_HOST_PORT}/xrpc/_health" 2>/dev/null | grep -q "version"; then
+        PDS_VERSION=$(curl -s "http://localhost:${PDS_HOST_PORT}/xrpc/_health" | jq -r '.version')
+        log_success "PDS: running (v$PDS_VERSION) at http://localhost:${PDS_HOST_PORT}"
     else
         log_warn "PDS: not running"
     fi
@@ -188,8 +202,8 @@ show_status() {
 
     echo ""
 
-    echo "  Edge functions reach PDS at: http://host.docker.internal:3001"
-    echo "  Test PDS health: curl http://localhost:3001/xrpc/_health"
+    echo "  Edge functions reach PDS at: http://host.docker.internal:${PDS_HOST_PORT}"
+    echo "  Test PDS health: curl http://localhost:${PDS_HOST_PORT}/xrpc/_health"
     echo ""
 }
 
