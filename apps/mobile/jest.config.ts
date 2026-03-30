@@ -43,6 +43,17 @@ const config: Config = {
       ")/)",
   ],
 
+  // babel-preset-expo uses @babel/plugin-transform-runtime which injects
+  // require('@babel/runtime/helpers/...') into every transformed file.
+  // In pnpm's virtual store, that require is evaluated from within
+  // .pnpm/react-native@.../node_modules/ — a path where @babel/runtime is
+  // not resolvable by Node. Mapping it through this package's own
+  // node_modules symlink (created because @babel/runtime is a direct dep)
+  // lets Jest intercept the require before Node resolution runs.
+  moduleNameMapper: {
+    "^@babel/runtime/(.*)$": "<rootDir>/node_modules/@babel/runtime/$1",
+  },
+
   collectCoverageFrom: [
     "src/**/*.{ts,tsx}",
     "!src/**/__tests__/**",

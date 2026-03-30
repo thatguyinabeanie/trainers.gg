@@ -31,6 +31,10 @@ catalogs:
     "@types/jest": ^29
     ts-jest: ^29
     jest-junit: ^16
+    "@testing-library/jest-dom": ^6
+    "@testing-library/react": ^16
+    "@testing-library/user-event": ^14
+    "@testing-library/react-native": ^13
 
   expo:
     react-native: ~0.83
@@ -57,15 +61,17 @@ catalogs:
     jest-expo: ~55.0
 
   atproto:
-    "@atproto/api": ^0
-    "@atproto/jwk-jose": ^0
+    "@atproto/api": ^0.19
+    "@atproto/jwk-jose": ^0.1
+    "@atproto/oauth-client-expo": ^0.0
+    "@atproto/oauth-client-node": ^0.3
 
   pkmn:
-    "@pkmn/data": ^0
-    "@pkmn/dex": ^0
-    "@pkmn/img": ^0
+    "@pkmn/data": ^0.10
+    "@pkmn/dex": ^0.10
+    "@pkmn/img": ^0.3
     "@pkmn/sets": ^5
-    "@pkmn/sim": ^0
+    "@pkmn/sim": ^0.10
 
   supabase:
     "@supabase/ssr": ^0
@@ -74,6 +80,11 @@ catalogs:
 
   tanstack:
     "@tanstack/react-query": ^5
+
+  tamagui:
+    tamagui: ^2.0.0-rc.0
+    "@tamagui/config": ^2.0.0-rc.0
+    "@tamagui/web": ^2.0.0-rc.0
 
 onlyBuiltDependencies:
   - browser-tabs-lock
