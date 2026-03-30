@@ -153,7 +153,7 @@ jobs:
 
   # ── Per-package unit tests (Jest) ─────────────────────────
   tests:
-    name: Test / ${{ matrix.name }}
+    name: Test @trainers/${{ matrix.name }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     needs: [install]
@@ -259,7 +259,7 @@ jobs:
         if: always()
         with:
           files: "**/test-results/**/*.xml"
-          check_name: Test Results / ${{ matrix.name }}
+          # check_name: Test Results / ${{ matrix.name }}
           comment_mode: ${{ github.event_name == 'pull_request' && 'always' || 'off' }}
 
       - name: Upload coverage to Codecov
