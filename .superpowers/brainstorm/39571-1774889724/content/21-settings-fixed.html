@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Community Settings — Fixed</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: Inter, -apple-system, sans-serif; background: #0a0a0a; color: #e5e5e5; padding: 2rem; line-height: 1.5; }
+  .wrap { max-width: 900px; margin: 0 auto; }
+  h1 { font-size: 1.5rem; font-weight: 700; margin-bottom: 0.25rem; }
+  .subtitle { color: #888; font-size: 0.9rem; margin-bottom: 2rem; }
+  hr { border: none; border-top: 1px solid #1a1a1a; margin: 2rem 0; }
+
+  .mockup { background: #fff; border: 1px solid #ddd; border-radius: 10px; overflow: hidden; color: #111; margin-bottom: 1rem; }
+  .header-bar { display: flex; align-items: center; gap: 8px; padding: 0 24px; height: 44px; border-bottom: 1px solid #f0f0f0; font-size: 13px; }
+  .header-bar .trigger { width: 20px; height: 20px; border: 1px solid #ddd; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 9px; color: #888; }
+  .header-bar .sep { width: 1px; height: 14px; background: #d4d4d4; }
+  .header-bar .title { font-weight: 500; color: #111; }
+  .header-bar .bell { margin-left: auto; font-size: 13px; }
+
+  .page { padding: 24px; max-width: 520px; }
+
+  /* Tabs */
+  .tabs { display: flex; gap: 0; border-bottom: 1px solid #f0f0f0; margin-bottom: 24px; }
+  .tab { padding: 8px 16px; font-size: 13px; color: #888; font-weight: 500; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; }
+  .tab.active { color: #111; border-bottom-color: #111; }
+  .tab.disabled { color: #d4d4d4; cursor: default; }
+
+  /* Profile preview */
+  .profile-preview { display: flex; align-items: center; gap: 16px; padding: 16px; background: #fafafa; border: 1px solid #f0f0f0; border-radius: 10px; margin-bottom: 24px; }
+  .pp-logo { width: 56px; height: 56px; border-radius: 12px; background: #f0fdfa; border: 2px dashed #a7f3d0; display: flex; align-items: center; justify-content: center; font-size: 22px; font-weight: 700; color: #0d9488; cursor: pointer; flex-shrink: 0; }
+  .pp-logo:hover { border-color: #0d9488; }
+  .pp-info { flex: 1; min-width: 0; }
+  .pp-name { font-size: 15px; font-weight: 600; color: #111; }
+  .pp-url { font-size: 11px; color: #999; font-family: 'Geist Mono', monospace; margin-top: 1px; }
+
+  /* Fields */
+  .field { margin-bottom: 20px; }
+  .field-label { font-size: 12px; font-weight: 500; color: #333; margin-bottom: 5px; display: block; }
+  .field-input { width: 100%; border: 1px solid #d4d4d4; border-radius: 6px; padding: 9px 12px; font-size: 13px; outline: none; color: #111; }
+  .field-input:focus { border-color: #0d9488; box-shadow: 0 0 0 3px rgba(13,148,136,0.08); }
+  .field-textarea { width: 100%; border: 1px solid #d4d4d4; border-radius: 6px; padding: 9px 12px; font-size: 13px; outline: none; min-height: 80px; resize: vertical; color: #111; }
+  .field-textarea:focus { border-color: #0d9488; box-shadow: 0 0 0 3px rgba(13,148,136,0.08); }
+  .field-meta { display: flex; justify-content: space-between; margin-top: 4px; }
+  .field-hint { font-size: 10px; color: #999; }
+  .field-count { font-size: 10px; color: #ccc; }
+
+  /* Social links */
+  .social-section { margin-bottom: 20px; }
+  .social-row { display: flex; align-items: center; margin-bottom: 6px; }
+  .s-prefix { width: 100px; background: #fafafa; border: 1px solid #d4d4d4; border-right: none; border-radius: 6px 0 0 6px; padding: 9px 12px; font-size: 12px; color: #555; display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+  .s-input { flex: 1; border: 1px solid #d4d4d4; border-radius: 0 6px 6px 0; padding: 9px 12px; font-size: 13px; outline: none; }
+  .s-input:focus { border-color: #0d9488; }
+  .s-remove { width: 36px; display: flex; align-items: center; justify-content: center; color: #e0e0e0; cursor: pointer; font-size: 16px; flex-shrink: 0; }
+  .s-remove:hover { color: #ef4444; }
+  .add-link { display: inline-flex; align-items: center; gap: 3px; font-size: 12px; color: #0d9488; cursor: pointer; }
+  .add-link:hover { text-decoration: underline; }
+
+  /* Save */
+  .save-row { display: flex; justify-content: flex-end; padding-top: 8px; }
+  .btn-save { padding: 9px 20px; font-size: 13px; font-weight: 500; border-radius: 6px; border: none; cursor: pointer; background: #0d9488; color: white; }
+  .btn-save:hover { background: #0f766e; }
+
+  .callout { background: rgba(45,212,191,0.05); border: 1px solid rgba(45,212,191,0.15); border-radius: 8px; padding: 1rem; font-size: 0.8rem; color: #888; }
+  .callout strong { color: #2dd4bf; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>Community Settings — Polished</h1>
+<p class="subtitle">Delete removed. Alignment fixed. Everything shares the same content width.</p>
+
+<hr>
+
+<div class="mockup">
+  <div class="header-bar">
+    <div class="trigger">☰</div>
+    <div class="sep"></div>
+    <div class="title">Settings</div>
+    <div class="bell">🔔</div>
+  </div>
+  <div class="page">
+    <div class="tabs">
+      <div class="tab active">Profile</div>
+      <div class="tab disabled">Permissions</div>
+      <div class="tab disabled">Notifications</div>
+    </div>
+
+    <!-- Preview -->
+    <div class="profile-preview">
+      <div class="pp-logo">V</div>
+      <div class="pp-info">
+        <div class="pp-name">VGC League</div>
+        <div class="pp-url">trainers.gg/communities/vgc-league</div>
+      </div>
+    </div>
+
+    <!-- Fields -->
+    <div class="field">
+      <div class="field-label">Community Name</div>
+      <input class="field-input" value="VGC League">
+    </div>
+
+    <div class="field">
+      <div class="field-label">Description</div>
+      <textarea class="field-textarea">Pokemon VGC Tournament Organization for competitive players</textarea>
+      <div class="field-meta">
+        <div class="field-hint">Shown on your public community page</div>
+        <div class="field-count">54 / 500</div>
+      </div>
+    </div>
+
+    <!-- Social links -->
+    <div class="social-section">
+      <div class="field-label">Social Links</div>
+      <div class="social-row">
+        <div class="s-prefix">🟣 Discord</div>
+        <input class="s-input" value="discord.gg/vgcleague">
+        <div class="s-remove">×</div>
+      </div>
+      <div class="social-row">
+        <div class="s-prefix">𝕏 X</div>
+        <input class="s-input" value="@vgcleague">
+        <div class="s-remove">×</div>
+      </div>
+      <div class="add-link">+ Add link</div>
+    </div>
+
+    <!-- Save -->
+    <div class="save-row">
+      <button class="btn-save">Save changes</button>
+    </div>
+  </div>
+</div>
+
+<div class="callout">
+  <strong>Fixes applied:</strong>
+  <ul style="margin-top:0.5rem;padding-left:1.25rem">
+    <li style="margin-bottom:0.2rem"><strong>Delete removed</strong> — rare action doesn't belong on everyday settings page</li>
+    <li style="margin-bottom:0.2rem"><strong>All content same width</strong> — preview, fields, social links, save button all share max-width: 520px</li>
+    <li style="margin-bottom:0.2rem"><strong>Social prefixes fixed width (100px)</strong> — inputs align vertically regardless of platform name length</li>
+    <li style="margin-bottom:0.2rem"><strong>"Social Links" uses same label style</strong> as other fields — not uppercase/heavy</li>
+    <li style="margin-bottom:0.2rem"><strong>Tabs full width</strong> — underline spans the content area</li>
+    <li style="margin-bottom:0.2rem"><strong>Save right-aligned</strong> — single primary action, no competing delete button</li>
+    <li style="margin-bottom:0.2rem"><strong>Remove (×) on social links</strong> — larger hit target, visible but subtle</li>
+  </ul>
+</div>
+
+</div>
+</body>
+</html>

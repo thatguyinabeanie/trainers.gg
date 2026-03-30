@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Community Request — Polished</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: Inter, -apple-system, sans-serif; background: #0a0a0a; color: #e5e5e5; padding: 2rem; line-height: 1.5; }
+  .wrap { max-width: 900px; margin: 0 auto; }
+  h1 { font-size: 1.5rem; font-weight: 700; margin-bottom: 0.25rem; }
+  .subtitle { color: #888; font-size: 0.9rem; margin-bottom: 2rem; }
+  hr { border: none; border-top: 1px solid #1a1a1a; margin: 2rem 0; }
+
+  .mockup { background: #fff; border: 1px solid #ddd; border-radius: 10px; overflow: hidden; color: #111; margin-bottom: 1rem; }
+  .header-bar { display: flex; align-items: center; gap: 8px; padding: 0 24px; height: 44px; border-bottom: 1px solid #f0f0f0; font-size: 13px; }
+  .header-bar .trigger { width: 20px; height: 20px; border: 1px solid #ddd; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 9px; color: #888; }
+  .header-bar .sep { width: 1px; height: 14px; background: #d4d4d4; }
+  .header-bar .title { font-weight: 500; color: #111; }
+  .header-bar .bell { margin-left: auto; font-size: 13px; }
+
+  .page { padding: 24px; max-width: 520px; }
+
+  /* Welcome */
+  .welcome { text-align: center; margin-bottom: 28px; }
+  .welcome-icon { width: 52px; height: 52px; border-radius: 12px; background: #f0fdfa; display: flex; align-items: center; justify-content: center; font-size: 22px; margin: 0 auto 10px; }
+  .welcome h2 { font-size: 18px; font-weight: 700; color: #111; margin-bottom: 4px; }
+  .welcome p { font-size: 13px; color: #888; margin: 0; }
+
+  /* Guidelines */
+  .guidelines { background: #fafafa; border: 1px solid #f0f0f0; border-radius: 8px; padding: 14px 16px; margin-bottom: 28px; }
+  .guidelines .g-title { font-size: 12px; font-weight: 600; color: #333; margin-bottom: 10px; }
+  .g-list { display: flex; flex-direction: column; gap: 6px; }
+  .g-item { display: flex; align-items: center; gap: 8px; font-size: 12px; color: #555; }
+  .g-check { width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; flex-shrink: 0; }
+  .g-check.yes { background: #d1fae5; color: #065f46; }
+  .g-check.no { background: #fef2f2; color: #991b1b; }
+
+  /* Form sections */
+  .form-section { margin-bottom: 24px; }
+  .section-title { font-size: 13px; font-weight: 600; color: #111; margin-bottom: 14px; }
+
+  .field { margin-bottom: 16px; }
+  .field:last-child { margin-bottom: 0; }
+  .field-label { font-size: 12px; font-weight: 500; color: #333; margin-bottom: 5px; display: block; }
+  .field-input { width: 100%; border: 1px solid #d4d4d4; border-radius: 6px; padding: 9px 12px; font-size: 13px; outline: none; color: #111; }
+  .field-input:focus { border-color: #0d9488; box-shadow: 0 0 0 3px rgba(13,148,136,0.08); }
+  .field-textarea { width: 100%; border: 1px solid #d4d4d4; border-radius: 6px; padding: 9px 12px; font-size: 13px; outline: none; min-height: 80px; resize: vertical; color: #111; }
+  .field-textarea:focus { border-color: #0d9488; box-shadow: 0 0 0 3px rgba(13,148,136,0.08); }
+  .field-hint { font-size: 10px; color: #999; margin-top: 4px; }
+
+  /* Discord — highlighted field */
+  .discord-field { background: #faf5ff; border: 1px solid #e9d5ff; border-radius: 8px; padding: 14px; }
+  .discord-label { font-size: 11px; font-weight: 600; color: #7c3aed; margin-bottom: 8px; display: flex; align-items: center; gap: 5px; }
+  .discord-row { display: flex; gap: 0; }
+  .discord-pre { width: 44px; background: #ede9fe; border: 1px solid #d4d4d4; border-right: none; border-radius: 6px 0 0 6px; padding: 9px; display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0; }
+  .discord-in { flex: 1; border: 1px solid #d4d4d4; border-radius: 0 6px 6px 0; padding: 9px 12px; font-size: 13px; outline: none; }
+  .discord-in:focus { border-color: #7c3aed; box-shadow: 0 0 0 3px rgba(124,58,237,0.08); }
+
+  /* Social grid */
+  .social-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .sg-item { display: flex; gap: 0; }
+  .sg-pre { width: 84px; background: #fafafa; border: 1px solid #d4d4d4; border-right: none; border-radius: 6px 0 0 6px; padding: 8px 10px; font-size: 11px; color: #555; display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
+  .sg-in { flex: 1; border: 1px solid #d4d4d4; border-radius: 0 6px 6px 0; padding: 8px 10px; font-size: 12px; outline: none; min-width: 0; }
+  .sg-in:focus { border-color: #0d9488; }
+
+  /* Submit */
+  .submit-btn { width: 100%; padding: 11px; font-size: 14px; font-weight: 500; border-radius: 6px; border: none; cursor: pointer; background: #0d9488; color: white; margin-top: 4px; }
+  .submit-btn:hover { background: #0f766e; }
+  .submit-note { font-size: 10px; color: #999; text-align: center; margin-top: 8px; }
+
+  .callout { background: rgba(45,212,191,0.05); border: 1px solid rgba(45,212,191,0.15); border-radius: 8px; padding: 1rem; font-size: 0.8rem; color: #888; }
+  .callout strong { color: #2dd4bf; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>Community Request — Polished</h1>
+<p class="subtitle">Warm onboarding. Aligned. Fixed-width prefixes. Consistent spacing.</p>
+
+<hr>
+
+<div class="mockup">
+  <div class="header-bar">
+    <div class="trigger">☰</div>
+    <div class="sep"></div>
+    <div class="title">Request a Community</div>
+    <div class="bell">🔔</div>
+  </div>
+  <div class="page">
+    <!-- Welcome -->
+    <div class="welcome">
+      <div class="welcome-icon">🏠</div>
+      <h2>Start your community</h2>
+      <p>Tell us about your community and we'll get you set up on trainers.gg</p>
+    </div>
+
+    <!-- Guidelines -->
+    <div class="guidelines">
+      <div class="g-title">What we look for</div>
+      <div class="g-list">
+        <div class="g-item"><div class="g-check yes">✓</div> Welcoming, inclusive community space</div>
+        <div class="g-item"><div class="g-check yes">✓</div> Active Discord with real members</div>
+        <div class="g-item"><div class="g-check yes">✓</div> Zero tolerance for bigotry or harassment</div>
+        <div class="g-item"><div class="g-check no">✕</div> Server size and follower count don't matter</div>
+      </div>
+    </div>
+
+    <!-- Your community -->
+    <div class="form-section">
+      <div class="section-title">Your community</div>
+      <div class="field">
+        <div class="field-label">Name</div>
+        <input class="field-input" placeholder="e.g. Pallet Town VGC">
+      </div>
+      <div class="field">
+        <div class="field-label">What's your community about?</div>
+        <textarea class="field-textarea" placeholder="What events do you run? Who does your community serve? What makes it special?"></textarea>
+      </div>
+    </div>
+
+    <!-- Discord -->
+    <div class="form-section">
+      <div class="section-title">Discord</div>
+      <div class="discord-field">
+        <div class="discord-label">🟣 Server invite link <span style="color:#ef4444;font-size:10px">required</span></div>
+        <div class="discord-row">
+          <div class="discord-pre">🔗</div>
+          <input class="discord-in" placeholder="discord.gg/your-invite or just the code">
+        </div>
+        <div class="field-hint" style="margin-top:6px">We'll check your Discord to make sure it's a welcoming space</div>
+      </div>
+    </div>
+
+    <!-- Social -->
+    <div class="form-section">
+      <div class="section-title">Other accounts <span style="font-size:10px;color:#999;font-weight:400">optional</span></div>
+      <div class="social-grid">
+        <div class="sg-item">
+          <div class="sg-pre">𝕏 X</div>
+          <input class="sg-in" placeholder="handle">
+        </div>
+        <div class="sg-item">
+          <div class="sg-pre">🦋 Bluesky</div>
+          <input class="sg-in" placeholder="handle">
+        </div>
+        <div class="sg-item">
+          <div class="sg-pre">📺 YouTube</div>
+          <input class="sg-in" placeholder="handle">
+        </div>
+        <div class="sg-item">
+          <div class="sg-pre">🟣 Twitch</div>
+          <input class="sg-in" placeholder="handle">
+        </div>
+      </div>
+    </div>
+
+    <button class="submit-btn">Submit Request</button>
+    <div class="submit-note">We typically review requests within 48 hours</div>
+  </div>
+</div>
+
+<div class="callout">
+  <strong>Alignment fixes:</strong>
+  <ul style="margin-top:0.5rem;padding-left:1.25rem">
+    <li style="margin-bottom:0.2rem"><strong>Same max-width (520px)</strong> as settings page — consistent across community pages</li>
+    <li style="margin-bottom:0.2rem"><strong>Social grid prefixes fixed at 84px</strong> — inputs align vertically</li>
+    <li style="margin-bottom:0.2rem"><strong>Section titles consistent</strong> — 13px semibold, same as settings field labels</li>
+    <li style="margin-bottom:0.2rem"><strong>Field padding consistent</strong> — 9px 12px on all inputs, same as settings</li>
+    <li style="margin-bottom:0.2rem"><strong>Guidelines use circles with check/cross</strong> — cleaner than emoji, properly aligned</li>
+    <li style="margin-bottom:0.2rem"><strong>Discord field stands out</strong> — purple highlight card, clear required label</li>
+    <li style="margin-bottom:0.2rem"><strong>Welcome centered</strong> — icon + title + subtitle set the tone before the form</li>
+  </ul>
+</div>
+
+</div>
+</body>
+</html>
