@@ -32,6 +32,7 @@ catalogs:
     jest-junit: ^16
 
   expo:
+    "@babel/runtime": ^7
     react-native: ~0.81
     react-native-reanimated: ~4.1
     react-native-safe-area-context: ~5.6
@@ -60,11 +61,11 @@ catalogs:
     "@atproto/oauth-client-expo": ^0.0
 
   pkmn:
-    "@pkmn/data": ^0
-    "@pkmn/dex": ^0
-    "@pkmn/img": ^0
+    "@pkmn/data": ^0.10
+    "@pkmn/dex": ^0.10
+    "@pkmn/img": ^0.3
     "@pkmn/sets": ^5
-    "@pkmn/sim": ^0
+    "@pkmn/sim": ^0.10
 
   supabase:
     "@supabase/ssr": ^0

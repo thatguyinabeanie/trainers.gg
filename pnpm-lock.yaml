@@ -53,6 +53,9 @@ catalogs:
       specifier: ^3
       version: 3.25.76
   expo:
+    '@babel/runtime':
+      specifier: ^7
+      version: 7.29.2
     '@expo/metro-runtime':
       specifier: ~6.1
       version: 6.1.2
@@ -118,19 +121,19 @@ catalogs:
       version: 0.5.1
   pkmn:
     '@pkmn/data':
-      specifier: ^0
+      specifier: ^0.10
       version: 0.10.7
     '@pkmn/dex':
-      specifier: ^0
+      specifier: ^0.10
       version: 0.10.7
     '@pkmn/img':
-      specifier: ^0
+      specifier: ^0.3
       version: 0.3.3
     '@pkmn/sets':
       specifier: ^5
       version: 5.2.0
     '@pkmn/sim':
-      specifier: ^0
+      specifier: ^0.10
       version: 0.10.7
   react:
     '@types/react-dom':
@@ -322,6 +325,9 @@ importers:
       '@babel/core':
         specifier: ^7.26.0
         version: 7.28.6
+      '@babel/runtime':
+        specifier: catalog:expo
+        version: 7.29.2
       '@testing-library/react-native':
         specifier: ^13
         version: 13.3.3(jest@29.7.0(@types/node@22.19.7)(babel-plugin-macros@3.1.0)(ts-node@10.9.2(@types/node@22.19.7)(typescript@5.9.3)))(react-native@0.81.5(@babel/core@7.28.6)(@types/react@19.1.17)(bufferutil@4.1.0)(react@19.1.0)(utf-8-validate@5.0.10))(react-test-renderer@19.1.0(react@19.1.0))(react@19.1.0)
