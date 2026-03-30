@@ -105,27 +105,23 @@ export function PostMatchSummary({
           setNextMatch(null);
         }
 
-        // Check current round status if we have roundNumber
-        if (roundNumber != null) {
-          const { data: round } = await supabase
-            .from("tournament_rounds")
-            .select("id")
-            .eq("tournament_id", tournamentId)
-            .eq("round_number", roundNumber)
-            .maybeSingle();
+        // Check current round status by deriving round_id from the current match
+        const currentMatch = matches.find((m) => m.id === matchId);
+        const currentRound = currentMatch?.round as {
+          id: number;
+          round_number: number;
+        } | null;
 
-          if (isCancelled) return;
+        if (currentRound?.id) {
+          const { count, error: countError } = await supabase
+            .from("tournament_matches")
+            .select("*", { count: "exact", head: true })
+            .eq("round_id", currentRound.id)
+            .eq("status", "active");
 
-          if (round) {
-            // Check if there are any active matches in this round
-            const { count } = await supabase
-              .from("tournament_matches")
-              .select("*", { count: "exact", head: true })
-              .eq("round_id", round.id)
-              .eq("status", "active");
-
-            if (isCancelled) return;
-
+          if (countError) {
+            console.error("Error checking round status:", countError);
+          } else if (!isCancelled) {
             setRoundStatus((count ?? 0) > 0 ? "active" : "completed");
           }
         }
@@ -190,7 +186,7 @@ export function PostMatchSummary({
       <div className="flex flex-col gap-2 sm:flex-row">
         <Link
           href={`/tournaments/${tournamentSlug}/standings`}
-          className="hover:bg-accent hover:text-accent-foreground border-input bg-background ring-offset-background focus-visible:ring-ring inline-flex h-10 flex-1 items-center justify-center gap-2 rounded-md border px-4 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
+          className="hover:bg-accent hover:text-accent-foreground border-input bg-background ring-offset-background focus-visible:ring-ring inline-flex h-10 flex-1 items-center justify-center gap-2 rounded-md border px-4 py-2 text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50"
         >
           <TrendingUp className="h-4 w-4" />
           View Standings
@@ -199,7 +195,7 @@ export function PostMatchSummary({
         {!isLoading && nextMatch && (
           <Link
             href={`/tournaments/${tournamentSlug}/r/${nextMatch.roundNumber}/t/${nextMatch.tableNumber}`}
-            className="bg-primary text-primary-foreground hover:bg-primary/90 ring-offset-background focus-visible:ring-ring inline-flex h-10 flex-1 items-center justify-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
+            className="bg-primary text-primary-foreground hover:bg-primary/90 ring-offset-background focus-visible:ring-ring inline-flex h-10 flex-1 items-center justify-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50"
           >
             Next Match (Round {nextMatch.roundNumber})
             <ArrowRight className="h-4 w-4" />

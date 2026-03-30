@@ -58,7 +58,7 @@ jobs:
 
       - name: Install dependencies
         if: steps.node-modules-cache.outputs.cache-hit != 'true'
-        run: pnpm install --frozen-lockfile --prefer-offline
+        run: pnpm install --frozen-lockfile
         env:
           CI: true
           GITHUB_ACTIONS: true
@@ -93,7 +93,7 @@ jobs:
           fail-on-cache-miss: true
 
       - name: Restore workspace links
-        run: pnpm install --frozen-lockfile --offline --prefer-offline
+        run: pnpm install --frozen-lockfile
         env:
           CI: true
 
@@ -110,8 +110,9 @@ jobs:
         uses: actions/cache@v4
         with:
           path: |
-            **/.eslintcache
-            node_modules/.cache/eslint
+            apps/*/.eslintcache
+            packages/*/.eslintcache
+            tooling/*/.eslintcache
           key: eslint-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml', '**/.eslintrc.*', '**/eslint.config.*') }}
           restore-keys: |
             eslint-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml') }}-
@@ -121,8 +122,9 @@ jobs:
         uses: actions/cache@v4
         with:
           path: |
-            **/.tsbuildinfo
-            **/tsconfig.tsbuildinfo
+            apps/*/tsconfig.tsbuildinfo
+            packages/*/tsconfig.tsbuildinfo
+            packages/*/dist/tsconfig.tsbuildinfo
           key: tsc-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml', '**/tsconfig*.json') }}
           restore-keys: |
             tsc-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml') }}-
@@ -151,9 +153,9 @@ jobs:
       - name: Typecheck
         run: pnpm turbo run typecheck --log-prefix=none
 
-  # ── Unit tests (Jest) ──────────────────────────────────────
-  unit-tests:
-    name: Unit Tests
+  # ── Unit tests (Jest) — 3 jobs: web, mobile, packages ─────
+  test-web:
+    name: Test @trainers/web
     runs-on: ubuntu-latest
     timeout-minutes: 10
     needs: [install]
@@ -181,7 +183,7 @@ jobs:
           fail-on-cache-miss: true
 
       - name: Restore workspace links
-        run: pnpm install --frozen-lockfile --offline --prefer-offline
+        run: pnpm install --frozen-lockfile
         env:
           CI: true
 
@@ -189,22 +191,19 @@ jobs:
         uses: actions/cache@v4
         with:
           path: .turbo
-          key: turbo-test-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml', 'turbo.json', '**/jest.config.*') }}
+          key: turbo-test-web-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml', 'turbo.json', '**/jest.config.*') }}
           restore-keys: |
-            turbo-test-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml') }}-
-            turbo-test-${{ runner.os }}-
+            turbo-test-web-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml') }}-
+            turbo-test-web-${{ runner.os }}-
 
       - name: Jest cache
         uses: actions/cache@v4
         with:
-          path: |
-            apps/web/.jest-cache
-            apps/mobile/.jest-cache
-            packages/**/.jest-cache
-          key: jest-${{ runner.os }}-${{ github.ref }}-${{ hashFiles('**/pnpm-lock.yaml', '**/jest.config.*', 'tooling/test-utils/jest-config.cjs') }}
+          path: apps/web/.jest-cache
+          key: jest-web-${{ runner.os }}-${{ github.ref }}-${{ hashFiles('**/pnpm-lock.yaml', '**/jest.config.*', 'tooling/test-utils/jest-config.cjs') }}
           restore-keys: |
-            jest-${{ runner.os }}-${{ github.ref }}-
-            jest-${{ runner.os }}-refs/heads/main-
+            jest-web-${{ runner.os }}-${{ github.ref }}-
+            jest-web-${{ runner.os }}-refs/heads/main-
 
       - name: Configure Turbo Remote Cache
         run: |
@@ -216,8 +215,8 @@ jobs:
           TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
           TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
 
-      - name: Run unit tests with coverage
-        run: pnpm test:ci
+      - name: Run tests
+        run: pnpm turbo run test --filter=@trainers/web --ui stream
         env:
           CI: true
           JEST_JUNIT_OUTPUT_DIR: test-results
@@ -226,12 +225,13 @@ jobs:
           JEST_JUNIT_ANCESTOR_SEPARATOR: " › "
           JEST_JUNIT_ADD_FILE_ATTRIBUTE: "true"
 
-      - name: Publish unit test results
+      - name: Publish test results
         uses: EnricoMi/publish-unit-test-result-action@v2
         if: always()
         with:
-          files: test-results/**/*.xml
-          check_name: Unit Test Results
+          files: "**/test-results/**/*.xml"
+          check_name: Test Results / web
+          comment_title: "Test Results / web"
           comment_mode: ${{ github.event_name == 'pull_request' && 'always' || 'off' }}
 
       - name: Upload coverage to Codecov
@@ -240,6 +240,189 @@ jobs:
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: coverage/lcov.info
+          fail_ci_if_error: false
+
+  test-mobile:
+    name: Test @trainers/mobile
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: [install]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Restore node_modules
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            node_modules
+            apps/*/node_modules
+            packages/*/node_modules
+            tooling/*/node_modules
+          key: ${{ needs.install.outputs.cache-key }}
+          fail-on-cache-miss: true
+
+      - name: Restore workspace links
+        run: pnpm install --frozen-lockfile
+        env:
+          CI: true
+
+      - name: Turbo cache
+        uses: actions/cache@v4
+        with:
+          path: .turbo
+          key: turbo-test-mobile-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml', 'turbo.json', '**/jest.config.*') }}
+          restore-keys: |
+            turbo-test-mobile-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml') }}-
+            turbo-test-mobile-${{ runner.os }}-
+
+      - name: Jest cache
+        uses: actions/cache@v4
+        with:
+          path: apps/mobile/.jest-cache
+          key: jest-mobile-${{ runner.os }}-${{ github.ref }}-${{ hashFiles('**/pnpm-lock.yaml', '**/jest.config.*', 'tooling/test-utils/jest-config.cjs') }}
+          restore-keys: |
+            jest-mobile-${{ runner.os }}-${{ github.ref }}-
+            jest-mobile-${{ runner.os }}-refs/heads/main-
+
+      - name: Configure Turbo Remote Cache
+        run: |
+          if [ -n "$TURBO_TOKEN" ]; then
+            echo "TURBO_TOKEN=$TURBO_TOKEN" >> "$GITHUB_ENV"
+            echo "TURBO_TEAM=$TURBO_TEAM" >> "$GITHUB_ENV"
+          fi
+        env:
+          TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+          TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
+
+      - name: Run tests
+        run: pnpm turbo run test --filter=@trainers/mobile --ui stream
+        env:
+          CI: true
+          JEST_JUNIT_OUTPUT_DIR: test-results
+          JEST_JUNIT_CLASSNAME: "{classname}"
+          JEST_JUNIT_TITLE: "{title}"
+          JEST_JUNIT_ANCESTOR_SEPARATOR: " › "
+          JEST_JUNIT_ADD_FILE_ATTRIBUTE: "true"
+
+      - name: Publish test results
+        uses: EnricoMi/publish-unit-test-result-action@v2
+        if: always()
+        with:
+          files: "**/test-results/**/*.xml"
+          check_name: Test Results / mobile
+          comment_title: "Test Results / mobile"
+          comment_mode: ${{ github.event_name == 'pull_request' && 'always' || 'off' }}
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v5
+        if: always()
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: coverage/lcov.info
+          fail_ci_if_error: false
+
+  test-packages:
+    name: Test packages
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: [install]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Restore node_modules
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            node_modules
+            apps/*/node_modules
+            packages/*/node_modules
+            tooling/*/node_modules
+          key: ${{ needs.install.outputs.cache-key }}
+          fail-on-cache-miss: true
+
+      - name: Restore workspace links
+        run: pnpm install --frozen-lockfile
+        env:
+          CI: true
+
+      - name: Turbo cache
+        uses: actions/cache@v4
+        with:
+          path: .turbo
+          key: turbo-test-packages-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml', 'turbo.json', '**/jest.config.*') }}
+          restore-keys: |
+            turbo-test-packages-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml') }}-
+            turbo-test-packages-${{ runner.os }}-
+
+      - name: Jest cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            packages/atproto/.jest-cache
+            packages/pokemon/.jest-cache
+            packages/posthog/.jest-cache
+            packages/supabase/.jest-cache
+            packages/tournaments/.jest-cache
+            packages/utils/.jest-cache
+            packages/validators/.jest-cache
+          key: jest-packages-${{ runner.os }}-${{ github.ref }}-${{ hashFiles('**/pnpm-lock.yaml', '**/jest.config.*', 'tooling/test-utils/jest-config.cjs') }}
+          restore-keys: |
+            jest-packages-${{ runner.os }}-${{ github.ref }}-
+            jest-packages-${{ runner.os }}-refs/heads/main-
+
+      - name: Configure Turbo Remote Cache
+        run: |
+          if [ -n "$TURBO_TOKEN" ]; then
+            echo "TURBO_TOKEN=$TURBO_TOKEN" >> "$GITHUB_ENV"
+            echo "TURBO_TEAM=$TURBO_TEAM" >> "$GITHUB_ENV"
+          fi
+        env:
+          TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+          TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
+
+      - name: Run tests
+        run: pnpm turbo run test --filter='./packages/*' --ui stream
+        env:
+          CI: true
+          JEST_JUNIT_OUTPUT_DIR: test-results
+          JEST_JUNIT_CLASSNAME: "{classname}"
+          JEST_JUNIT_TITLE: "{title}"
+          JEST_JUNIT_ANCESTOR_SEPARATOR: " › "
+          JEST_JUNIT_ADD_FILE_ATTRIBUTE: "true"
+
+      - name: Publish test results
+        uses: EnricoMi/publish-unit-test-result-action@v2
+        if: always()
+        with:
+          files: "**/test-results/**/*.xml"
+          check_name: Test Results / packages
+          comment_title: "Test Results / packages"
+          comment_mode: ${{ github.event_name == 'pull_request' && 'always' || 'off' }}
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v5
+        if: always()
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: "**/coverage/lcov.info"
           fail_ci_if_error: false
 
   # ── Wait for Vercel preview (shared by E2E + Lighthouse) ───
@@ -361,7 +544,7 @@ jobs:
           fail-on-cache-miss: true
 
       - name: Restore workspace links
-        run: pnpm install --frozen-lockfile --offline --prefer-offline
+        run: pnpm install --frozen-lockfile
         env:
           CI: true
 

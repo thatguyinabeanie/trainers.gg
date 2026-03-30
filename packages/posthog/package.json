@@ -13,16 +13,17 @@
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
-    "@types/jest": "catalog:",
+    "@types/jest": "catalog:testing",
     "@trainers/eslint-config": "workspace:*",
     "@trainers/test-utils": "workspace:*",
     "@trainers/prettier-config": "workspace:*",
     "@trainers/typescript-config": "workspace:*",
     "eslint": "catalog:",
-    "jest": "catalog:",
-    "jest-junit": "catalog:",
+    "jest": "catalog:testing",
+    "jest-junit": "catalog:testing",
     "prettier": "catalog:",
-    "ts-jest": "catalog:",
+    "ts-jest": "catalog:testing",
+    "ts-node": "catalog:testing",
     "typescript": "catalog:"
   },
   "prettier": "@trainers/prettier-config"
