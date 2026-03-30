@@ -78,6 +78,20 @@
     },
     "ignoredBuiltDependencies": [
       "protobufjs"
-    ]
+    ],
+    "packageExtensions": {
+      "react-native": {
+        "dependencies": {
+          "@babel/runtime": "*"
+        }
+      },
+      "react-native-worklets": {
+        "dependencies": {
+          "@babel/generator": "*",
+          "@babel/traverse": "*",
+          "@babel/types": "*"
+        }
+      }
+    }
   }
 }

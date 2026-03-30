@@ -230,6 +230,8 @@ overrides:
   tar@<=7.5.3: '>=7.5.4'
   '@types/react': ~19.2.0
 
+packageExtensionsChecksum: sha256-g+6EssLWZ9195qdclqIFJRE+s2EyyZTqQJ0sOD7sLt8=
+
 importers:
 
   .:
@@ -18233,6 +18235,7 @@ snapshots:
   react-native-worklets@0.7.4(@babel/core@7.29.0)(react-native@0.83.4(@babel/core@7.29.0)(@react-native/metro-config@0.84.1(@babel/core@7.29.0))(@types/react@19.2.14)(bufferutil@4.1.0)(react@19.2.4)(utf-8-validate@5.0.10))(react@19.2.4):
     dependencies:
       '@babel/core': 7.29.0
+      '@babel/generator': 7.29.1
       '@babel/plugin-transform-arrow-functions': 7.27.1(@babel/core@7.29.0)
       '@babel/plugin-transform-class-properties': 7.27.1(@babel/core@7.29.0)
       '@babel/plugin-transform-classes': 7.28.4(@babel/core@7.29.0)
@@ -18242,6 +18245,8 @@ snapshots:
       '@babel/plugin-transform-template-literals': 7.27.1(@babel/core@7.29.0)
       '@babel/plugin-transform-unicode-regex': 7.27.1(@babel/core@7.29.0)
       '@babel/preset-typescript': 7.27.1(@babel/core@7.29.0)
+      '@babel/traverse': 7.29.0
+      '@babel/types': 7.29.0
       convert-source-map: 2.0.0
       react: 19.2.4
       react-native: 0.83.4(@babel/core@7.29.0)(@react-native/metro-config@0.84.1(@babel/core@7.29.0))(@types/react@19.2.14)(bufferutil@4.1.0)(react@19.2.4)(utf-8-validate@5.0.10)
@@ -18251,6 +18256,7 @@ snapshots:
 
   react-native@0.83.4(@babel/core@7.29.0)(@react-native/metro-config@0.84.1(@babel/core@7.29.0))(@types/react@19.2.14)(bufferutil@4.1.0)(react@19.2.4)(utf-8-validate@5.0.10):
     dependencies:
+      '@babel/runtime': 7.29.2
       '@jest/create-cache-key-function': 29.7.0
       '@react-native/assets-registry': 0.83.4
       '@react-native/codegen': 0.83.4(@babel/core@7.29.0)

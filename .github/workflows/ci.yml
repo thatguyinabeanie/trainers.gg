@@ -109,8 +109,9 @@ jobs:
         uses: actions/cache@v4
         with:
           path: |
-            **/.eslintcache
-            node_modules/.cache/eslint
+            apps/*/.eslintcache
+            packages/*/.eslintcache
+            tooling/*/.eslintcache
           key: eslint-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml', '**/.eslintrc.*', '**/eslint.config.*') }}
           restore-keys: |
             eslint-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml') }}-
@@ -120,8 +121,9 @@ jobs:
         uses: actions/cache@v4
         with:
           path: |
-            **/.tsbuildinfo
-            **/tsconfig.tsbuildinfo
+            apps/*/tsconfig.tsbuildinfo
+            packages/*/tsconfig.tsbuildinfo
+            packages/*/dist/tsconfig.tsbuildinfo
           key: tsc-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml', '**/tsconfig*.json') }}
           restore-keys: |
             tsc-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml') }}-
