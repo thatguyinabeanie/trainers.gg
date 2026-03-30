@@ -141,7 +141,7 @@ export class TournamentSimulator {
 
   /** Management URL for the TO dashboard */
   get managementUrl(): string {
-    return `/to-dashboard/${this.communitySlug}/tournaments/${this.tournamentSlug}/manage`;
+    return `/dashboard/community/${this.communitySlug}/tournaments/${this.tournamentSlug}/manage`;
   }
 
   /** Tournament ID getter */
