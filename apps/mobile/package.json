@@ -83,7 +83,6 @@
     "eslint-plugin-react-compiler": "catalog:",
     "jest": "catalog:testing",
     "jest-expo": "catalog:expo",
-    "react-test-renderer": "catalog:react",
     "prettier": "catalog:",
     "react-test-renderer": "catalog:react",
     "typescript": "catalog:"
