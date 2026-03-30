@@ -24,6 +24,7 @@
   "dependencies": {
     "@atproto/api": "catalog:atproto",
     "@atproto/oauth-client-expo": "^0",
+    "@expo/dom-webview": "catalog:expo",
     "@expo/metro-runtime": "catalog:expo",
     "@expo/vector-icons": "catalog:expo",
     "@pkmn/data": "catalog:pkmn",

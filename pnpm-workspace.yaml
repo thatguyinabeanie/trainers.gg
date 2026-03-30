@@ -43,6 +43,7 @@ catalogs:
     react-native-url-polyfill: ^2
     expo: ~55.0
     babel-preset-expo: ~55.0
+    "@expo/dom-webview": ~55.0
     "@expo/metro-runtime": ~55.0
     "@expo/vector-icons": ^15
     expo-constants: ~55.0
