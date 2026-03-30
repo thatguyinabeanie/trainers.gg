@@ -19,7 +19,7 @@ export function PageHeader({ title, children }: PageHeaderProps) {
       <SidebarTrigger className="-ml-1" />
       <Separator
         orientation="vertical"
-        className="mx-1 h-4 !bg-neutral-300 dark:!bg-neutral-600"
+        className="mx-1 !h-4 !self-center !bg-neutral-300 dark:!bg-neutral-600"
       />
       {title && <span className="text-sm font-medium">{title}</span>}
       {children}
