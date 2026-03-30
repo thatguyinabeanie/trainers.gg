@@ -94,29 +94,23 @@ export default function AltsPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="relative">
-        <div className="from-primary/5 absolute inset-0 rounded-lg bg-gradient-to-r via-transparent to-transparent" />
-        <div className="relative px-6 py-8">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-3xl font-bold tracking-tight">
-                Player Identities
-              </h2>
-              <p className="text-muted-foreground mt-1 font-medium">
-                Manage your alts • Tournament Registration
-              </p>
-            </div>
-            <Button
-              size="lg"
-              onClick={() => setShowCreateForm(true)}
-              disabled={showCreateForm}
-              className="gap-2"
-            >
-              <Plus className="size-4" />
-              New Alt
-            </Button>
-          </div>
+      <div className="flex items-center justify-between pt-4">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">
+            Alts & Teams
+          </h1>
+          <p className="text-muted-foreground text-sm">
+            Manage your player identities
+          </p>
         </div>
+        <Button
+          onClick={() => setShowCreateForm(true)}
+          disabled={showCreateForm}
+          className="gap-2"
+        >
+          <Plus className="size-4" />
+          New Alt
+        </Button>
       </div>
 
       {/* Create Form */}

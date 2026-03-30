@@ -200,19 +200,19 @@ export function OverviewClient() {
   return (
     <div className="space-y-6">
       {/* Welcome header */}
-      <div className="from-primary/5 via-primary/[0.02] rounded-xl bg-gradient-to-br to-transparent px-6 py-8">
-        <h2 className="text-3xl font-bold tracking-tight">
-          Welcome back,{" "}
-          <span className="text-primary">
+      <div className="flex items-center justify-between pt-4">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">
+            Welcome back,{" "}
             {user?.profile?.displayName ||
               (user?.user_metadata?.full_name as string | undefined) ||
               (user?.user_metadata?.name as string | undefined) ||
               "Trainer"}
-          </span>
-        </h2>
-        <p className="text-muted-foreground mt-1.5 text-sm">
-          Here&apos;s your competitive overview
-        </p>
+          </h1>
+          <p className="text-muted-foreground text-sm">
+            Here&apos;s your competitive overview
+          </p>
+        </div>
       </div>
 
       {/* Active Match - Hero section (only in active-competition mode) */}
@@ -289,7 +289,7 @@ export function OverviewClient() {
         // Idle/Discovery: Empty state guidance
         <div className="space-y-6">
           {transformedTournaments.length === 0 ? (
-            <div className="from-primary/5 via-background rounded-xl bg-gradient-to-br to-transparent p-10 text-center shadow-sm">
+            <div className="rounded-xl border p-10 text-center">
               <div className="mx-auto max-w-sm space-y-3">
                 <div className="bg-primary/10 mx-auto flex size-12 items-center justify-center rounded-xl">
                   <Trophy className="text-primary size-6" />

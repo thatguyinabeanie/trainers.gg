@@ -52,9 +52,11 @@ export function StatsClient() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between pt-4">
         <div>
-          <h1 className="text-2xl font-bold">Stats & History</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">
+            Stats & History
+          </h1>
           <p className="text-muted-foreground text-sm">
             View your performance analytics and tournament history
           </p>

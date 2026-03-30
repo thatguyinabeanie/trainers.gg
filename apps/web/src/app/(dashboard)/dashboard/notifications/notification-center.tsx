@@ -159,14 +159,21 @@ export function NotificationCenter({
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <h2 className="text-2xl font-bold">Notifications</h2>
-          {displayUnreadCount > 0 && (
-            <span className="bg-primary text-primary-foreground rounded-full px-2 py-0.5 text-xs font-medium">
-              {displayUnreadCount} unread
-            </span>
-          )}
+      <div className="flex items-center justify-between pt-4">
+        <div>
+          <div className="flex items-center gap-3">
+            <h1 className="text-2xl font-semibold tracking-tight">
+              Notifications
+            </h1>
+            {displayUnreadCount > 0 && (
+              <span className="bg-primary text-primary-foreground rounded-full px-2 py-0.5 text-xs font-medium">
+                {displayUnreadCount} unread
+              </span>
+            )}
+          </div>
+          <p className="text-muted-foreground text-sm">
+            Stay up to date with your tournaments and matches
+          </p>
         </div>
         {displayUnreadCount > 0 && (
           <Button variant="outline" size="sm" onClick={handleMarkAllRead}>

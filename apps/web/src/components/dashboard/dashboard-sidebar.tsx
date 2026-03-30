@@ -116,9 +116,9 @@ export function DashboardSidebar({
               render={<Link href="/" />}
               size="lg"
               tooltip="trainers.gg"
-              className="data-[slot=sidebar-menu-button]:!p-1.5"
+              className="p-1.5 group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:items-center group-data-[collapsible=icon]:justify-center"
             >
-              <div className="bg-primary text-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg text-sm font-bold">
+              <div className="bg-primary text-primary-foreground flex aspect-square size-8 shrink-0 items-center justify-center rounded-lg text-sm font-bold">
                 t
               </div>
               <div className="grid flex-1 text-left text-sm leading-tight">
