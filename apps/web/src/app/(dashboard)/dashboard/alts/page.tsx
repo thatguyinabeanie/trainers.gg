@@ -242,16 +242,16 @@ export default function AltsPage() {
               <table className="w-full">
                 <thead>
                   <tr className="bg-muted/30 border-b">
-                    <th className="text-muted-foreground h-12 px-4 text-left align-middle text-xs font-medium uppercase tracking-wider">
+                    <th className="text-muted-foreground h-12 px-4 text-left align-middle text-xs font-medium tracking-wider uppercase">
                       Handle
                     </th>
-                    <th className="text-muted-foreground hidden h-12 px-4 text-left align-middle text-xs font-medium uppercase tracking-wider sm:table-cell">
+                    <th className="text-muted-foreground hidden h-12 px-4 text-left align-middle text-xs font-medium tracking-wider uppercase sm:table-cell">
                       Stats
                     </th>
-                    <th className="text-muted-foreground h-12 px-4 text-center align-middle text-xs font-medium uppercase tracking-wider">
+                    <th className="text-muted-foreground h-12 px-4 text-center align-middle text-xs font-medium tracking-wider uppercase">
                       Public
                     </th>
-                    <th className="text-muted-foreground h-12 px-4 text-right align-middle text-xs font-medium uppercase tracking-wider">
+                    <th className="text-muted-foreground h-12 px-4 text-right align-middle text-xs font-medium tracking-wider uppercase">
                       Actions
                     </th>
                   </tr>

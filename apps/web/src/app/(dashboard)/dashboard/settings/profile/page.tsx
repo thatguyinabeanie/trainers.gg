@@ -249,13 +249,13 @@ export default function ProfileSettingsPage() {
               className="pr-10"
             />
             {usernameStatus === "checking" && (
-              <Loader2 className="text-muted-foreground absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin" />
+              <Loader2 className="text-muted-foreground absolute top-1/2 right-3 h-4 w-4 -translate-y-1/2 animate-spin" />
             )}
             {usernameStatus === "available" && (
-              <Check className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-emerald-500" />
+              <Check className="absolute top-1/2 right-3 h-4 w-4 -translate-y-1/2 text-emerald-500" />
             )}
             {(usernameStatus === "taken" || usernameStatus === "error") && (
-              <X className="text-destructive absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2" />
+              <X className="text-destructive absolute top-1/2 right-3 h-4 w-4 -translate-y-1/2" />
             )}
           </div>
           {usernameError && (
