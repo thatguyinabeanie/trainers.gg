@@ -161,7 +161,6 @@ Store all Playwright MCP screenshots in `.playwright-mcp/screenshots/`. This dir
 2. `pnpm typecheck` — TypeScript type checking
 3. `pnpm test` — Full unit test suite
 4. `pnpm test:e2e` — Playwright E2E tests
-5. `pnpm format:check` — Prettier formatting
 
 If any check fails, fix the issue and re-run before pushing. Never push with known failures.
 
