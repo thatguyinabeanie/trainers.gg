@@ -115,7 +115,6 @@ export function DashboardSidebar({
               render={<Link href="/" />}
               size="lg"
               tooltip="trainers.gg"
-              className="p-1.5 group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:items-center group-data-[collapsible=icon]:justify-center"
             >
               <div className="bg-primary text-primary-foreground flex aspect-square size-8 shrink-0 items-center justify-center rounded-lg text-sm font-bold">
                 t
@@ -188,12 +187,12 @@ function NavUser({ user, activeCommunity }: NavUserProps) {
               />
             }
           >
-            <Avatar className="size-8 rounded-lg">
+            <Avatar className="size-8 rounded-full">
               <AvatarImage
                 src={user.avatarUrl ?? undefined}
                 alt={user.username}
               />
-              <AvatarFallback className="rounded-lg">
+              <AvatarFallback className="rounded-full">
                 {user.username.charAt(0).toUpperCase()}
               </AvatarFallback>
             </Avatar>
@@ -214,12 +213,12 @@ function NavUser({ user, activeCommunity }: NavUserProps) {
             sideOffset={4}
           >
             <div className="flex items-center gap-2 px-2 py-1.5 text-left text-sm">
-              <Avatar className="size-8 rounded-lg">
+              <Avatar className="size-8 rounded-full">
                 <AvatarImage
                   src={user.avatarUrl ?? undefined}
                   alt={user.username}
                 />
-                <AvatarFallback className="rounded-lg">
+                <AvatarFallback className="rounded-full">
                   {user.username.charAt(0).toUpperCase()}
                 </AvatarFallback>
               </Avatar>
