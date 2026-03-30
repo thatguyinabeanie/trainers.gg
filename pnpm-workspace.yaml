@@ -33,6 +33,7 @@ catalogs:
     "@testing-library/jest-dom": ^6
     "@testing-library/react": ^16
     "@testing-library/user-event": ^14
+    "@testing-library/react-native": ^13
 
   expo:
     react-native: ~0.81
