@@ -33,40 +33,40 @@ The platform is built community-first. It is not an esports site. It is a warm, 
 
 ## Feature Pillars & Roadmap
 
-| Pillar | Status | Description |
-|--------|--------|-------------|
-| **Tournaments & Competitive** | **Live** | Swiss pairings, brackets, standings, check-in, match reporting. Supports VGC formats. Tournament creation and management for community organizers. |
-| **Team Builder** | **Live** | Team sheet parsing, validation, legality checking. Integrated with tournament registration. |
-| **Communities** | **Live** | Formerly "Organizations / Tournament Organizers" — rebranded to support both competitive and non-competitive groups. Community listings at `/communities`. Staff roles for event management. |
-| **Player Identity & Alts** | **Live** | Multiple player identities per account. Each alt can register independently for tournaments. Main alt matches account username. |
-| **User Profiles & Settings** | **Live** | Pokemon sprite avatars, bio, birth date, country. Linked accounts (Bluesky, X, Discord, Twitch). Display preferences for sprite styles. |
-| **Notifications & Invitations** | **Live** | Tournament invitations and notification system with category filters. Invitations may merge into notifications in a future redesign. |
-| **Analytics** | **Under Construction** | Format-specific meta data tracked over time. Usage stats, trend analysis, and predictive insights on a per-format basis. Will feed directly into the team builder. |
-| **Social Integration (AT Protocol)** | **Under Construction** | Infrastructure deployed (self-hosted PDS, automatic account creation, `@username.trainers.gg` handles). User-facing social features descoped from initial launch but the foundation is ready. |
-| **Analytics-Powered Team Builder** | **Coming Soon** | Extends the existing team builder with analytics integration — trending picks, falling usage, emerging threats. Collaborative real-time editing via websockets. Private sharing with revocable access. Team versioning and branching with historical performance tracking across iterations. |
-| **Data Aggregation** | **Coming Soon** | Import tournament data from RK9.gg, Limitless, and official Pokemon tournament sources. Display standings and team sheets natively. Feed all imported data into analytics and the team builder. |
-| **Articles / Editorial** | **Coming Soon** | Open publishing platform — no gatekeeping. Team reports, format guides, tournament recaps, beginner content. Private mode for personal team journals. |
-| **Coaching Marketplace** | **Coming Soon** | Coaches list services, players browse and book. Coach badge visible in tournament results, match lists, and profiles for organic discovery. Undercuts Metafy/Patreon on fees. Starts with VGC, expandable to other games. |
-| **Shiny Dex / Collection Tracking** | **Coming Soon** | Personal collection tracker inspired by shinydex.com / shinyhunt.com. First non-competitive feature pillar — signals the platform is for all Pokemon fans. |
-| **Achievements & Progression** | **Coming Soon** | Badges for milestones, seasonal rankings/leaderboards, profile flair/cosmetics earned through participation. |
-| **Pokemon GO Support** | **Planned** | Similar tournament structure to VGC makes this the natural next game to support. |
-| **Pokemon TCG Support** | **Not Planned** | play.limitlesstcg.com handles TCG well. No need to compete — direct players to Limitless for TCG needs. |
+| Pillar                               | Status                 | Description                                                                                                                                                                                                                                                                                  |
+| ------------------------------------ | ---------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Tournaments & Competitive**        | **Live**               | Swiss pairings, brackets, standings, check-in, match reporting. Supports VGC formats. Tournament creation and management for community organizers.                                                                                                                                           |
+| **Team Builder**                     | **Live**               | Team sheet parsing, validation, legality checking. Integrated with tournament registration.                                                                                                                                                                                                  |
+| **Communities**                      | **Live**               | Formerly "Organizations / Tournament Organizers" — rebranded to support both competitive and non-competitive groups. Community listings at `/communities`. Staff roles for event management.                                                                                                 |
+| **Player Identity & Alts**           | **Live**               | Multiple player identities per account. Each alt can register independently for tournaments. Main alt matches account username.                                                                                                                                                              |
+| **User Profiles & Settings**         | **Live**               | Pokemon sprite avatars, bio, birth date, country. Linked accounts (Bluesky, X, Discord, Twitch). Display preferences for sprite styles.                                                                                                                                                      |
+| **Notifications & Invitations**      | **Live**               | Tournament invitations and notification system with category filters. Invitations may merge into notifications in a future redesign.                                                                                                                                                         |
+| **Analytics**                        | **Under Construction** | Format-specific meta data tracked over time. Usage stats, trend analysis, and predictive insights on a per-format basis. Will feed directly into the team builder.                                                                                                                           |
+| **Social Integration (AT Protocol)** | **Under Construction** | Infrastructure deployed (self-hosted PDS, automatic account creation, `@username.trainers.gg` handles). User-facing social features descoped from initial launch but the foundation is ready.                                                                                                |
+| **Analytics-Powered Team Builder**   | **Coming Soon**        | Extends the existing team builder with analytics integration — trending picks, falling usage, emerging threats. Collaborative real-time editing via websockets. Private sharing with revocable access. Team versioning and branching with historical performance tracking across iterations. |
+| **Data Aggregation**                 | **Coming Soon**        | Import tournament data from RK9.gg, Limitless, and official Pokemon tournament sources. Display standings and team sheets natively. Feed all imported data into analytics and the team builder.                                                                                              |
+| **Articles / Editorial**             | **Coming Soon**        | Open publishing platform — no gatekeeping. Team reports, format guides, tournament recaps, beginner content. Private mode for personal team journals.                                                                                                                                        |
+| **Coaching Marketplace**             | **Coming Soon**        | Coaches list services, players browse and book. Coach badge visible in tournament results, match lists, and profiles for organic discovery. Undercuts Metafy/Patreon on fees. Starts with VGC, expandable to other games.                                                                    |
+| **Shiny Dex / Collection Tracking**  | **Coming Soon**        | Personal collection tracker inspired by shinydex.com / shinyhunt.com. First non-competitive feature pillar — signals the platform is for all Pokemon fans.                                                                                                                                   |
+| **Achievements & Progression**       | **Coming Soon**        | Badges for milestones, seasonal rankings/leaderboards, profile flair/cosmetics earned through participation.                                                                                                                                                                                 |
+| **Pokemon GO Support**               | **Planned**            | Similar tournament structure to VGC makes this the natural next game to support.                                                                                                                                                                                                             |
+| **Pokemon TCG Support**              | **Not Planned**        | play.limitlesstcg.com handles TCG well. No need to compete — direct players to Limitless for TCG needs.                                                                                                                                                                                      |
 
 ## User Types
 
-| User Type | What they get from trainers.gg |
-|-----------|-------------------------------|
-| **Competitive player** | Tournament entry, team building with analytics, match history, performance tracking across team iterations, rating/standings, achievements |
-| **Casual fan** | Shiny Dex collection tracking, articles, community membership, Pokemon content, achievements |
-| **Coach** | Marketplace listing with organic discovery (badge in tournament results/match lists/profiles), client management, lower fees than Metafy/Patreon |
-| **Content creator** | Open editorial platform for articles, team reports, guides — no gatekeeping, reach the community directly |
-| **Tournament organizer** | Tournament creation and management tools, community hub, player management, staff roles |
-| **Community organizer** | Non-competitive community listings, member management, community presence on the platform |
+| User Type                | What they get from trainers.gg                                                                                                                   |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Competitive player**   | Tournament entry, team building with analytics, match history, performance tracking across team iterations, rating/standings, achievements       |
+| **Casual fan**           | Shiny Dex collection tracking, articles, community membership, Pokemon content, achievements                                                     |
+| **Coach**                | Marketplace listing with organic discovery (badge in tournament results/match lists/profiles), client management, lower fees than Metafy/Patreon |
+| **Content creator**      | Open editorial platform for articles, team reports, guides — no gatekeeping, reach the community directly                                        |
+| **Tournament organizer** | Tournament creation and management tools, community hub, player management, staff roles                                                          |
+| **Community organizer**  | Non-competitive community listings, member management, community presence on the platform                                                        |
 
 ## Monetization
 
-| Revenue stream | Status | Details |
-|---------------|--------|---------|
-| **Coaching marketplace fees** | **Coming Soon** | Platform takes a cut on coaching transactions. Fees undercut Metafy/Patreon to attract top coaches. |
-| **Advertising** | **Planned** | General site ads. Not a priority — will be added once the community is established. |
-| **Premium features** | **Not yet defined** | Community-first approach — monetization follows adoption. Premium tiers may emerge naturally as features mature. |
+| Revenue stream                | Status              | Details                                                                                                          |
+| ----------------------------- | ------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| **Coaching marketplace fees** | **Coming Soon**     | Platform takes a cut on coaching transactions. Fees undercut Metafy/Patreon to attract top coaches.              |
+| **Advertising**               | **Planned**         | General site ads. Not a priority — will be added once the community is established.                              |
+| **Premium features**          | **Not yet defined** | Community-first approach — monetization follows adoption. Premium tiers may emerge naturally as features mature. |

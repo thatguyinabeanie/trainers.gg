@@ -99,3 +99,6 @@ apps/web/public/oauth/jwks.json
 # Dev slot port management
 .dev-slot
 packages/supabase/supabase/config.toml.slot-backup
+
+# Local mise overrides (personal tool versions)
+mise.local.toml

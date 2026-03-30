@@ -1,29 +1,106 @@
+[settings]
+experimental = true
+
 [tools]
 node = "22"
 pnpm = "latest"
 opencode = "latest"
 java = "zulu-21"
-android-sdk = "latest"
 lefthook = "latest"
 neovim = "0.11"
-
-[env]
-ANDROID_HOME = "{{env.HOME}}/Library/Android/sdk"
-_.path = [
-  "{{env.HOME}}/Library/Android/sdk/platform-tools",
-  "{{env.HOME}}/Library/Android/sdk/emulator",
-]
+# Android SDK is NOT included here — most devs already have it via Android Studio.
+# If you don't, create a mise.local.toml with:
+#   [tools]
+#   android-sdk = "latest"
 
 [hooks]
-postinstall = """
-mise run install-lefthook ::: install-pnpm
-"""
+postinstall = "mise run install-lefthook ::: install-pnpm ::: setup-android"
 
 [tasks.install-lefthook]
+description = "Install lefthook git hooks into the local repo"
 run = "lefthook install"
 
 [tasks.install-pnpm]
+description = "Install all pnpm dependencies across the monorepo"
 run = "pnpm install"
 
-[settings]
-experimental = true
+[tasks.install-ngrok]
+description = "Install ngrok for Bluesky OAuth local development"
+run = """
+if command -v ngrok &>/dev/null; then
+  echo "ngrok is already installed"
+elif command -v brew &>/dev/null; then
+  brew install ngrok
+elif command -v choco &>/dev/null; then
+  choco install ngrok
+elif command -v snap &>/dev/null; then
+  sudo snap install ngrok
+else
+  echo "Could not detect a supported package manager (brew, choco, snap)."
+  echo "Install ngrok manually: https://ngrok.com/download"
+  exit 1
+fi
+"""
+
+[tasks.setup-android]
+description = "Install Android SDK components and create an emulator AVD for Expo development"
+run = """
+# Find ANDROID_HOME — check env, then common install locations
+if [ -z "$ANDROID_HOME" ]; then
+  for candidate in \
+    "$HOME/Library/Android/sdk" \
+    "$HOME/Android/Sdk" \
+    "$LOCALAPPDATA/Android/Sdk"; do
+    if [ -d "$candidate" ]; then
+      export ANDROID_HOME="$candidate"
+      break
+    fi
+  done
+fi
+
+if [ -z "$ANDROID_HOME" ]; then
+  echo "No Android SDK found."
+  echo "Install Android Studio, or add android-sdk to mise.local.toml:"
+  echo '  [tools]'
+  echo '  android-sdk = "latest"'
+  exit 0
+fi
+
+SDKMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+
+if [ ! -f "$SDKMANAGER" ]; then
+  echo "Android SDK found at $ANDROID_HOME but sdkmanager is missing."
+  echo "Install cmdline-tools via Android Studio SDK Manager."
+  exit 0
+fi
+
+echo "Using Android SDK at $ANDROID_HOME"
+
+echo "Accepting Android SDK licenses..."
+yes | "$SDKMANAGER" --licenses 2>/dev/null
+
+echo "Installing SDK components..."
+"$SDKMANAGER" \
+  "platform-tools" \
+  "emulator" \
+  "platforms;android-35" \
+  "build-tools;35.0.0" \
+  "system-images;android-35;google_apis;arm64-v8a"
+
+AVD_NAME="trainers_gg"
+AVDMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/avdmanager"
+
+if "$AVDMANAGER" list avd -c 2>/dev/null | grep -q "$AVD_NAME"; then
+  echo "AVD '$AVD_NAME' already exists"
+else
+  echo "Creating AVD '$AVD_NAME'..."
+  echo "no" | "$AVDMANAGER" create avd \
+    --name "$AVD_NAME" \
+    --package "system-images;android-35;google_apis;arm64-v8a" \
+    --device "pixel_7"
+  echo "AVD '$AVD_NAME' created"
+fi
+
+echo "Android emulator setup complete. Run: emulator -avd $AVD_NAME"
+"""
+

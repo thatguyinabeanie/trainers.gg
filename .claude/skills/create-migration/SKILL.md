@@ -1,6 +1,6 @@
 ---
 name: create-migration
-description: Create a new Supabase database migration with proper naming and conventions
+description: Use when creating a new Supabase database migration — covers naming, RLS policies, idempotency rules, and common patterns
 ---
 
 # Create Migration
@@ -24,10 +24,19 @@ Create a new Supabase database migration following trainers.gg project conventio
    - Understand what tables/policies already exist
 
 3. **Write the migration SQL** following these rules:
+
+   > 🚨🛡️ **RLS REQUIRED** 🛡️🚨
+   >
+   > Every `CREATE TABLE` **MUST** be followed by:
+   >
+   > 1. `ALTER TABLE ... ENABLE ROW LEVEL SECURITY;`
+   > 2. `CREATE POLICY` statements for SELECT, INSERT, UPDATE, DELETE as appropriate
+   >
+   > ⚠️ A table without RLS is **open to all users** through the Supabase API — anyone can read/write any row. This is a **security vulnerability**.
+   >
+   > 🔍 **Self-check before writing**: Does your migration have `CREATE TABLE`? Then it **must** also have `ENABLE ROW LEVEL SECURITY` and at least one `CREATE POLICY`.
    - Always wrap `auth.uid()` in `(select auth.uid())` for RLS performance (prevents initplan issues)
-   - New tables MUST have `ALTER TABLE ... ENABLE ROW LEVEL SECURITY`
-   - Include CREATE POLICY statements for SELECT, INSERT, UPDATE, DELETE as appropriate
-   - Use `IF NOT EXISTS` / `IF EXISTS` guards for safety
+   - **All migrations must be idempotent** — preview branches replay all migrations on a fresh DB. Use `IF NOT EXISTS` / `IF EXISTS` guards, `CREATE OR REPLACE FUNCTION`, `DROP POLICY IF EXISTS`
    - Add SQL comments explaining non-obvious policy logic
    - Use `bigint` generated always as identity for non-auth primary keys
    - Use `uuid` for columns referencing `auth.users.id`

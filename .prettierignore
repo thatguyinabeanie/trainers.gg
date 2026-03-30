@@ -17,6 +17,9 @@ pnpm-lock.yaml
 package-lock.json
 yarn.lock
 
+# TOML (no Prettier parser)
+*.toml
+
 # IDE
 .idea/
 .vscode/
@@ -29,3 +32,8 @@ coverage/
 
 # Clerk local dev files
 apps/web/.clerk/
+
+# ai stuff
+.claude/worktrees
+.worktrees
+
