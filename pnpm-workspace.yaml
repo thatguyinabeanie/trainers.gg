@@ -30,6 +30,9 @@ catalogs:
     "@types/jest": ^29
     ts-jest: ^29
     jest-junit: ^16
+    "@testing-library/jest-dom": ^6
+    "@testing-library/react": ^16
+    "@testing-library/user-event": ^14
 
   expo:
     react-native: ~0.81

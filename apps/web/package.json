@@ -72,9 +72,9 @@
   "devDependencies": {
     "@playwright/test": "^1",
     "@tailwindcss/postcss": "^4",
-    "@testing-library/jest-dom": "^6",
-    "@testing-library/react": "^16",
-    "@testing-library/user-event": "^14",
+    "@testing-library/jest-dom": "catalog:testing",
+    "@testing-library/react": "catalog:testing",
+    "@testing-library/user-event": "catalog:testing",
     "@trainers/eslint-config": "workspace:*",
     "@trainers/prettier-config": "workspace:*",
     "@trainers/tailwind-config": "workspace:*",

@@ -63,7 +63,7 @@
   },
   "devDependencies": {
     "@babel/core": "^7.26.0",
-    "@testing-library/react-native": "^13",
+    "@testing-library/react-native": "catalog:testing",
     "@trainers/eslint-config": "workspace:*",
     "@trainers/test-utils": "workspace:*",
     "@trainers/prettier-config": "workspace:*",
