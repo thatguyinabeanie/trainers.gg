@@ -40,13 +40,13 @@ jobs:
     outputs:
       cache-key: ${{ steps.cache-key.outputs.key }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 1
 
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v5
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: 22
           cache: pnpm
@@ -57,7 +57,7 @@ jobs:
           echo "key=node-modules-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml') }}" >> "$GITHUB_OUTPUT"
 
       - name: Cache node_modules
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         id: node-modules-cache
         with:
           path: |
@@ -83,7 +83,7 @@ jobs:
     timeout-minutes: 10
     needs: [install]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 1
 
@@ -95,7 +95,7 @@ jobs:
           turbo-team: ${{ secrets.TURBO_TEAM }}
 
       - name: ESLint cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             apps/*/.eslintcache
@@ -107,7 +107,7 @@ jobs:
             eslint-${{ runner.os }}-
 
       - name: TypeScript cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             apps/*/tsconfig.tsbuildinfo
@@ -138,7 +138,7 @@ jobs:
     timeout-minutes: 10
     needs: [install]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 1
 
@@ -150,7 +150,7 @@ jobs:
           turbo-team: ${{ secrets.TURBO_TEAM }}
 
       - name: Jest cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: apps/web/.jest-cache
           key: jest-web-${{ runner.os }}-${{ github.ref }}-${{ hashFiles('**/pnpm-lock.yaml', '**/jest.config.*', 'tooling/test-utils/jest-config.cjs') }}
@@ -178,7 +178,7 @@ jobs:
           comment_mode: ${{ github.event_name == 'pull_request' && 'always' || 'off' }}
 
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v5
+        uses: codecov/codecov-action@v6
         if: always()
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
@@ -191,7 +191,7 @@ jobs:
     timeout-minutes: 10
     needs: [install]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 1
 
@@ -203,7 +203,7 @@ jobs:
           turbo-team: ${{ secrets.TURBO_TEAM }}
 
       - name: Jest cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: apps/mobile/.jest-cache
           key: jest-mobile-${{ runner.os }}-${{ github.ref }}-${{ hashFiles('**/pnpm-lock.yaml', '**/jest.config.*', 'tooling/test-utils/jest-config.cjs') }}
@@ -231,7 +231,7 @@ jobs:
           comment_mode: ${{ github.event_name == 'pull_request' && 'always' || 'off' }}
 
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v5
+        uses: codecov/codecov-action@v6
         if: always()
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
@@ -244,7 +244,7 @@ jobs:
     timeout-minutes: 10
     needs: [install]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 1
 
@@ -256,7 +256,7 @@ jobs:
           turbo-team: ${{ secrets.TURBO_TEAM }}
 
       - name: Jest cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             packages/atproto/.jest-cache
@@ -291,7 +291,7 @@ jobs:
           comment_mode: ${{ github.event_name == 'pull_request' && 'always' || 'off' }}
 
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v5
+        uses: codecov/codecov-action@v6
         if: always()
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
@@ -301,7 +301,9 @@ jobs:
   # ── Wait for Vercel preview (shared by E2E + Lighthouse) ───
   wait-for-preview:
     name: Wait for Preview
-    if: github.event_name == 'pull_request'
+    # Skip for Dependabot PRs — they can't access secrets needed for bypass auth,
+    # and dependency bumps don't need E2E/Lighthouse validation
+    if: github.event_name == 'pull_request' && github.event.pull_request.user.login != 'dependabot[bot]'
     runs-on: ubuntu-latest
     timeout-minutes: 12
     outputs:
@@ -389,12 +391,13 @@ jobs:
   # ── E2E tests (Playwright) ─────────────────────────────────
   e2e-tests:
     name: E2E Tests
-    if: github.event_name == 'pull_request'
+    # Skip for Dependabot PRs — no access to secrets for bypass auth
+    if: github.event_name == 'pull_request' && github.event.pull_request.user.login != 'dependabot[bot]'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     needs: [install, wait-for-preview]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 1
 
@@ -410,7 +413,7 @@ jobs:
         run: echo "version=$(pnpm --filter=@trainers/web exec playwright --version | awk '{print $2}')" >> "$GITHUB_OUTPUT"
 
       - name: Cache Playwright browsers
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         id: playwright-cache
         with:
           path: ~/.cache/ms-playwright
@@ -452,7 +455,7 @@ jobs:
         run: pnpm --filter=@trainers/web exec playwright test
 
       - name: Upload Playwright HTML report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: playwright-report
@@ -460,7 +463,7 @@ jobs:
           retention-days: 7
 
       - name: Upload JUnit XML report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: junit-report
@@ -468,7 +471,7 @@ jobs:
           retention-days: 7
 
       - name: Upload test traces (on failure)
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: failure()
         with:
           name: playwright-traces
@@ -490,12 +493,13 @@ jobs:
   # ── Lighthouse CI (performance audit against preview) ──────
   lighthouse:
     name: Lighthouse
-    if: github.event_name == 'pull_request'
+    # Skip for Dependabot PRs — no access to secrets for bypass auth
+    if: github.event_name == 'pull_request' && github.event.pull_request.user.login != 'dependabot[bot]'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     needs: [wait-for-preview]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 1
 
