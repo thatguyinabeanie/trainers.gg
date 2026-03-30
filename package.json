@@ -74,8 +74,7 @@
     "overrides": {
       "lodash@<4.17.21": ">=4.17.21",
       "tar@<=7.5.3": ">=7.5.4",
-      "@types/react": "~19.1.10",
-      "@babel/runtime": "^7.29.2"
+      "@types/react": "~19.1.10"
     },
     "ignoredBuiltDependencies": [
       "protobufjs"
