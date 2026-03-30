@@ -77,6 +77,8 @@
     "packageExtensions": {
       "react-native-worklets": {
         "dependencies": {
+          "@babel/generator": "*",
+          "@babel/traverse": "*",
           "@babel/types": "*"
         }
       }

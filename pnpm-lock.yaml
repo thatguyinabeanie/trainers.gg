@@ -225,7 +225,7 @@ catalogs:
       specifier: ^10
       version: 10.9.2
 
-packageExtensionsChecksum: sha256-6t1X1Dvi+IcakOqG04fa79yOC2D/EtK/t4Igsf5DOLM=
+packageExtensionsChecksum: sha256-lW86B66/OVv00lHm+w86yaYhTDl/6WcFanbYJFUO6BA=
 
 importers:
 
@@ -16708,6 +16708,7 @@ snapshots:
   react-native-worklets@0.5.2(@babel/core@7.29.0)(react-native@0.81.6(@babel/core@7.29.0)(@types/react@19.1.17)(react@19.1.5))(react@19.1.5):
     dependencies:
       '@babel/core': 7.29.0
+      '@babel/generator': 7.29.1
       '@babel/plugin-transform-arrow-functions': 7.27.1(@babel/core@7.29.0)
       '@babel/plugin-transform-class-properties': 7.28.6(@babel/core@7.29.0)
       '@babel/plugin-transform-classes': 7.28.6(@babel/core@7.29.0)
@@ -16717,6 +16718,7 @@ snapshots:
       '@babel/plugin-transform-template-literals': 7.27.1(@babel/core@7.29.0)
       '@babel/plugin-transform-unicode-regex': 7.27.1(@babel/core@7.29.0)
       '@babel/preset-typescript': 7.28.5(@babel/core@7.29.0)
+      '@babel/traverse': 7.29.0
       '@babel/types': 7.29.0
       convert-source-map: 2.0.0
       react: 19.1.5
