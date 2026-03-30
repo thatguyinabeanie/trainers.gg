@@ -23,6 +23,7 @@
     "jest-junit": "catalog:testing",
     "prettier": "catalog:",
     "ts-jest": "catalog:testing",
+    "ts-node": "catalog:testing",
     "typescript": "catalog:"
   },
   "prettier": "@trainers/prettier-config"
