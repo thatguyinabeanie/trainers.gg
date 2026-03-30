@@ -4,17 +4,17 @@
 
 ## Design References
 
-### Pokemon Sites (primary inspiration)
+### Pokémon Sites (primary inspiration)
 
 | Site | URL | What we like |
 |------|-----|-------------|
 | **Pokopia** | https://pokopia.pokemon.com/en-us/ | Warmth, wholesome softness, rounded shapes, organic feel. NOT the childishness — just the warmth. |
-| **Pokemon Champions** | https://champions.pokemon.com/en-us/ | Confident without being esports-y, bold headings, structured content sections |
-| **Legends Z-A** | https://legends.pokemon.com/en-us | Elegant middle ground — airy, modern, light palette, glass/frosted containers |
-| **Pokemon 30** | https://30.pokemon.com/en-us | Bold, celebratory, high energy. Interesting gallery patterns. |
-| **Corporate TPCi** | https://corporate.pokemon.com/en-us/ | Professional warmth, clean hierarchy, approachable. Background color shifts for section separation. Most relevant for dashboard structure. |
+| **Pokémon Champions** | https://champions.pokemon.com/en-us/ | Confident without being esports-y, bold headings, structured content sections |
+| **Legends Z-A** | https://legends.pokemon.com/en-us | Elegant middle ground — airy, modern, light palette, soft translucent panels |
+| **Pokémon 30** | https://30.pokemon.com/en-us | Bold, celebratory, high energy. Interesting gallery patterns. |
+| **Corporate Pokémon (TPCi)** | https://corporate.pokemon.com/en-us/ | Professional warmth, clean hierarchy, approachable. Background color shifts for section separation. Most relevant for dashboard structure. |
 
-### Non-Pokemon References
+### Non-Pokémon References
 
 | Site | URL | What we like |
 |------|-----|-------------|
@@ -27,7 +27,7 @@
 
 - Esports sites with dark/aggressive/neon aesthetics
 - Angular/militaristic UI patterns
-- Heavy gradients, scattered rainbow accents, glassmorphism
+- Heavy gradients, scattered rainbow accents, heavy glassmorphism (thick blur + neon borders)
 - start.gg's aesthetic
 
 ## Target Position
@@ -69,7 +69,7 @@ No dotted/dashed borders on containers.
 ### Transitions (confirmed)
 - CSS-only to preserve SSR
 - Fast: 100ms, Default: 150ms, Slow: 300ms
-- View Transition API for future page transitions
+- View Transitions API for future page transitions
 
 ## Open Decisions
 
