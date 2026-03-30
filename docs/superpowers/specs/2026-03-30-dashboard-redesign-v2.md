@@ -234,23 +234,33 @@ The dashboard is the player's **personal control center** — a launchpad + iden
 
 ### Community Settings (`/dashboard/community/[slug]/settings`)
 
-**Proposed redesign (from visual companion):**
+**Redesign — rethought from purpose:**
 
-- Minimal changes — already the cleanest page
-- Constrain form width with `max-w-md`
-- Group fields in cards (Community Profile, Social Links, URL)
-- Logo upload more compact
-- Social links section with "+ Add Social Link" button
+- **Purpose:** Community leader managing their community's public identity
+- **Audience:** Community leaders who rarely visit settings — it should be quick and clear
+- Profile preview at top (logo + name + URL) — shows what the community looks like publicly
+- Tabs: Profile (active), Permissions (future), Notifications (future) — sets up for growth
+- Single column form, max-width 520px
+- Fields: Community Name, Description (with character count), Social Links (fixed 100px prefix, + Add link)
+- Save button right-aligned, no delete (admin-only action)
+- Social link prefixes fixed width for input alignment
+- **Mockup:** `.superpowers/brainstorm/39571-1774889724/content/21-settings-fixed.html`
 
 ### Community Request (`/dashboard/community/request`)
 
-**Proposed redesign (from visual companion):**
+**Redesign — rethought from purpose:**
 
-- Compress disclaimer into a small callout (from full-width card with bullet points)
-- Constrain form to `max-w-md`
-- Social links in compact 2-column grid instead of stacked full-width
-- Discord field with platform prefix icon
-- Overall much tighter form
+- **Purpose:** Player starting their own tournament community — should feel welcoming, not bureaucratic
+- **Audience:** Existing TO who runs events elsewhere, wants to expand to trainers.gg
+- Centered welcome section (icon + "Start your community" + subtitle) — warm tone
+- Guidelines as ✓/✕ checklist, not dense paragraph — scannable
+- Form sections: Your community (name + description), Discord (highlighted purple card, required), Other accounts (optional 2-column grid)
+- Discord gets its own visual weight — purple accent card, most important field
+- Friendlier labels ("What's your community about?" not "Description")
+- Social grid: 4 platforms with fixed 84px prefix width for alignment
+- Full-width submit + "We typically review within 48 hours" expectation
+- Max-width 520px matching settings
+- **Mockup:** `.superpowers/brainstorm/39571-1774889724/content/22-request-fixed.html`
 
 ### Tournament Management
 
