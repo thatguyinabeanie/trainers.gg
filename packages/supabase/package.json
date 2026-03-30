@@ -86,6 +86,7 @@
     "prettier": "catalog:",
     "supabase": "catalog:supabase",
     "ts-jest": "catalog:testing",
+    "ts-node": "catalog:testing",
     "tsx": "catalog:",
     "typescript": "catalog:"
   },
