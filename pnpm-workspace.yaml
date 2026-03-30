@@ -12,10 +12,10 @@ catalog:
   eslint: ^9
   eslint-plugin-react-compiler: 19.1.0-rc.2
   jose: ^5
-  next: ~16.1
+  next: ^16.1
   obscenity: ^0.4
   prettier: ^3
-  prettier-plugin-tailwindcss: ^0
+  prettier-plugin-tailwindcss: ^0.7
   tailwindcss: ^4
   tsx: ^4
   typescript: ^5
@@ -82,7 +82,7 @@ catalogs:
     "@pkmn/sim": ^0.10
 
   supabase:
-    "@supabase/ssr": ^0
+    "@supabase/ssr": ^0.9
     "@supabase/supabase-js": ^2.97
     supabase: ^2
 
