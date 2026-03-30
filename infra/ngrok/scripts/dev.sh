@@ -13,6 +13,18 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PKG_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 REPO_ROOT="$(cd "$PKG_DIR/../.." && pwd)"
 
+# Source dev slot library
+if [ -f "$REPO_ROOT/scripts/lib/dev-slots.sh" ]; then
+  source "$REPO_ROOT/scripts/lib/dev-slots.sh"
+  SLOT=$(read_slot)
+  WEB_PORT=$(slot_port "${PORT_BASE_WEB:-3000}" "$SLOT")
+  NGROK_API_PORT=$(slot_port "${PORT_BASE_NGROK_API:-4040}" "$SLOT")
+else
+  SLOT=0
+  WEB_PORT=3000
+  NGROK_API_PORT=4040
+fi
+
 # Colors
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -44,7 +56,7 @@ get_static_domain() {
 }
 
 get_ngrok_url() {
-  curl -s http://localhost:4040/api/tunnels 2>/dev/null | grep -o '"public_url":"[^"]*"' | head -1 | cut -d'"' -f4
+  curl -s "http://localhost:${NGROK_API_PORT}/api/tunnels" 2>/dev/null | grep -o '"public_url":"[^"]*"' | head -1 | cut -d'"' -f4
 }
 
 update_env_with_url() {
@@ -164,14 +176,14 @@ NGROK_DOMAIN=$(get_static_domain)
 
 if [ -n "$NGROK_DOMAIN" ] && [ "$NGROK_DOMAIN" != "your-domain.ngrok-free.app" ]; then
   log_info "Starting ngrok tunnel with static domain: $NGROK_DOMAIN"
-  ngrok http --url="$NGROK_DOMAIN" 3000 --log=stdout $NGROK_CONFIG_FLAG || {
+  ngrok http --url="$NGROK_DOMAIN" "$WEB_PORT" --log=stdout $NGROK_CONFIG_FLAG || {
     log_error "ngrok exited — tunnel is unavailable (non-fatal)"
     exit 0
   }
 else
   log_warn "No static domain found in .env.ngrok — using random ngrok URL"
   log_warn "Copy .env.ngrok.example to .env.ngrok and set your static domain"
-  ngrok http 3000 --log=stdout $NGROK_CONFIG_FLAG || {
+  ngrok http "$WEB_PORT" --log=stdout $NGROK_CONFIG_FLAG || {
     log_error "ngrok exited — tunnel is unavailable (non-fatal)"
     exit 0
   }
