@@ -225,6 +225,8 @@ catalogs:
       specifier: ^10
       version: 10.9.2
 
+packageExtensionsChecksum: sha256-6t1X1Dvi+IcakOqG04fa79yOC2D/EtK/t4Igsf5DOLM=
+
 importers:
 
   .:
@@ -16715,6 +16717,7 @@ snapshots:
       '@babel/plugin-transform-template-literals': 7.27.1(@babel/core@7.29.0)
       '@babel/plugin-transform-unicode-regex': 7.27.1(@babel/core@7.29.0)
       '@babel/preset-typescript': 7.28.5(@babel/core@7.29.0)
+      '@babel/types': 7.29.0
       convert-source-map: 2.0.0
       react: 19.1.5
       react-native: 0.81.6(@babel/core@7.29.0)(@types/react@19.1.17)(react@19.1.5)

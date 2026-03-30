@@ -73,6 +73,13 @@
   "pnpm": {
     "ignoredBuiltDependencies": [
       "protobufjs"
-    ]
+    ],
+    "packageExtensions": {
+      "react-native-worklets": {
+        "dependencies": {
+          "@babel/types": "*"
+        }
+      }
+    }
   }
 }
