@@ -5,8 +5,8 @@ packages:
   - infra/*
 
 catalog:
-  "@types/node": ^22
   "@faker-js/faker": ^10
+  "@types/node": ^22
   babel-plugin-react-compiler: ^1
   esbuild: ^0.27
   eslint: ^9
@@ -22,24 +22,11 @@ catalog:
   zod: ^3
 
 catalogs:
-  react:
-    react: ~19.2
-    react-dom: ~19.2
-    react-test-renderer: ~19.2.4
-    "@types/react": ~19.2
-    "@types/react-dom": ~19.2
-
-  testing:
-    jest: ^29
-    "@jest/globals": ^29
-    "@types/jest": ^29
-    ts-jest: ^29
-    ts-node: ^10
-    jest-junit: ^16
-    "@testing-library/jest-dom": ^6
-    "@testing-library/react": ^16
-    "@testing-library/user-event": ^14
-    "@testing-library/react-native": ^13
+  atproto:
+    "@atproto/api": ^0.19
+    "@atproto/jwk-jose": ^0.1
+    "@atproto/oauth-client-expo": ^0.0
+    "@atproto/oauth-client-node": ^0.3
 
   expo:
     react-native: ~0.83
@@ -68,12 +55,6 @@ catalogs:
     expo-system-ui: ~55.0
     jest-expo: ~55.0
 
-  atproto:
-    "@atproto/api": ^0.19
-    "@atproto/jwk-jose": ^0.1
-    "@atproto/oauth-client-expo": ^0.0
-    "@atproto/oauth-client-node": ^0.3
-
   pkmn:
     "@pkmn/data": ^0.10
     "@pkmn/dex": ^0.10
@@ -81,18 +62,37 @@ catalogs:
     "@pkmn/sets": ^5
     "@pkmn/sim": ^0.10
 
+  react:
+    react: ~19.2
+    react-dom: ~19.2
+    react-test-renderer: ~19.2.4
+    "@types/react": ~19.2
+    "@types/react-dom": ~19.2
+
   supabase:
     "@supabase/ssr": ^0.9
     "@supabase/supabase-js": ^2.97
     supabase: ^2
 
-  tanstack:
-    "@tanstack/react-query": ^5
-
   tamagui:
     tamagui: ^2.0.0-rc.0
     "@tamagui/config": ^2.0.0-rc.0
     "@tamagui/web": ^2.0.0-rc.0
+
+  tanstack:
+    "@tanstack/react-query": ^5
+
+  testing:
+    jest: ^29
+    "@jest/globals": ^29
+    "@types/jest": ^29
+    ts-jest: ^29
+    ts-node: ^10
+    jest-junit: ^16
+    "@testing-library/jest-dom": ^6
+    "@testing-library/react": ^16
+    "@testing-library/user-event": ^14
+    "@testing-library/react-native": ^13
 
 onlyBuiltDependencies:
   - browser-tabs-lock

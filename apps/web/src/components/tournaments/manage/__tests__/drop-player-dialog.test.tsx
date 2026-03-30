@@ -27,9 +27,8 @@ describe("DropPlayerDialog", () => {
     const user = userEvent.setup();
     render(<DropPlayerDialog {...defaultProps} />);
 
-    // Select the No-Show radio option
-    const noShowRadio = screen.getByLabelText("No-Show");
-    await user.click(noShowRadio);
+    // Select the No-Show radio option by clicking its label
+    await user.click(screen.getByText("No-Show"));
 
     // Confirm button should now be enabled
     const confirmButton = screen.getByRole("button", {
@@ -54,9 +53,8 @@ describe("DropPlayerDialog", () => {
       const user = userEvent.setup();
       render(<DropPlayerDialog {...defaultProps} />);
 
-      // Select the radio option
-      const radio = screen.getByLabelText(category);
-      await user.click(radio);
+      // Select the radio option by clicking its label
+      await user.click(screen.getByText(category));
 
       // Confirm button should still be disabled (notes required)
       const confirmButton = screen.getByRole("button", {
@@ -107,8 +105,7 @@ describe("DropPlayerDialog", () => {
     const { rerender } = render(<DropPlayerDialog {...defaultProps} />);
 
     // Select a category and type notes
-    const conductRadio = screen.getByLabelText("Conduct");
-    await user.click(conductRadio);
+    await user.click(screen.getByText("Conduct"));
 
     const textarea = screen.getByPlaceholderText(
       "Provide additional context..."
@@ -150,9 +147,8 @@ describe("DropPlayerDialog", () => {
 
     render(<DropPlayerDialog {...defaultProps} onConfirm={slowOnConfirm} />);
 
-    // Select the No-Show radio option
-    const noShowRadio = screen.getByLabelText("No-Show");
-    await user.click(noShowRadio);
+    // Select the No-Show radio option by clicking its label
+    await user.click(screen.getByText("No-Show"));
 
     // Click confirm — starts the submission
     const confirmButton = screen.getByRole("button", {
