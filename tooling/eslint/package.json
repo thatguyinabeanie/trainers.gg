@@ -15,21 +15,21 @@
     "expo.js"
   ],
   "dependencies": {
-    "@eslint/js": "^9.39.2",
-    "@typescript-eslint/eslint-plugin": "^8.53.1",
-    "@typescript-eslint/parser": "^8.53.1",
-    "eslint-config-prettier": "^9.1.0",
-    "eslint-plugin-react": "^7.37.3",
-    "eslint-plugin-react-hooks": "^5.1.0",
-    "globals": "^17.0.0"
+    "@eslint/js": "^9",
+    "@typescript-eslint/eslint-plugin": "^8",
+    "@typescript-eslint/parser": "^8",
+    "eslint-config-prettier": "^9",
+    "eslint-plugin-react": "^7",
+    "eslint-plugin-react-hooks": "^5",
+    "globals": "^17"
   },
   "devDependencies": {
     "@trainers/prettier-config": "workspace:*",
     "prettier": "catalog:"
   },
   "peerDependencies": {
-    "eslint": "^9.39.0",
-    "typescript": "^5.9.0"
+    "eslint": "^9",
+    "typescript": "^5"
   },
   "prettier": "@trainers/prettier-config"
 }

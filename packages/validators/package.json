@@ -16,24 +16,24 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@pkmn/data": "catalog:",
-    "@pkmn/dex": "catalog:",
-    "@pkmn/sets": "catalog:",
-    "@pkmn/sim": "catalog:",
-    "obscenity": "^0.4.6",
+    "@pkmn/data": "catalog:pkmn",
+    "@pkmn/dex": "catalog:pkmn",
+    "@pkmn/sets": "catalog:pkmn",
+    "@pkmn/sim": "catalog:pkmn",
+    "obscenity": "^0",
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@types/jest": "catalog:",
+    "@types/jest": "catalog:testing",
     "@trainers/eslint-config": "workspace:*",
     "@trainers/test-utils": "workspace:*",
     "@trainers/prettier-config": "workspace:*",
     "@trainers/typescript-config": "workspace:*",
     "eslint": "catalog:",
-    "jest": "catalog:",
-    "jest-junit": "catalog:",
+    "jest": "catalog:testing",
+    "jest-junit": "catalog:testing",
     "prettier": "catalog:",
-    "ts-jest": "catalog:",
+    "ts-jest": "catalog:testing",
     "typescript": "catalog:"
   },
   "prettier": "@trainers/prettier-config"
