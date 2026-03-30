@@ -239,7 +239,7 @@ The dashboard is the player's **personal control center** — a launchpad + iden
 - **Purpose:** Community leader managing their community's public identity
 - **Audience:** Community leaders who rarely visit settings — it should be quick and clear
 - Profile preview at top (logo + name + URL) — shows what the community looks like publicly
-- Tabs: Profile (active), Permissions (future), Notifications (future) — sets up for growth
+- Tabs: General (active), Permissions (future), Notifications (future) — sets up for growth
 - Single column form, max-width 520px
 - Fields: Community Name, Description (with character count), Social Links (fixed 100px prefix, + Add link)
 - Save button right-aligned, no delete (admin-only action)
@@ -285,7 +285,7 @@ The dashboard is the player's **personal control center** — a launchpad + iden
 - **Mobile** — sidebar as Sheet (hamburger drawer), same navigation pattern
 - **DropdownMenuTrigger** uses Base UI `render` prop, not Radix `asChild`
 - **DropdownMenuLabel** requires `Menu.Group` context in Base UI — use plain `div` for user info header in dropdown
-- **SidebarMenuButton tooltip** — modified to fix render prop + tooltip conflict. TooltipTrigger wraps as `<span className="contents">` to be layout-neutral.
+- **SidebarMenuButton tooltip** — modified to fix render prop + tooltip conflict. TooltipTrigger wraps as bare `<span>` (NOT `display: contents`, which breaks mouseenter/mouseleave events).
 
 ### Implementation Notes (for future subagents)
 
@@ -350,21 +350,36 @@ Never just copy existing UI and make it "cleaner." Always rethink from purpose.
 
 ## Outstanding Design Work
 
-- [ ] Community overview — review proposal, decide on activity feed
-- [ ] Community staff — review compact list proposal
-- [ ] Community settings — review constrained form proposal
-- [ ] Community request — review compact form proposal
-- [ ] Notifications bell icon implementation in PageHeader
-- [ ] Tooltip positioning fix (collapsed sidebar icons)
-- [ ] Collapsed sidebar icon alignment verification
-- [ ] Alt switcher implementation
-- [ ] Alts page with expandable cards + teams
-- [ ] Inbox with grouped tournament notifications
-- [ ] History pages at new routes (/dashboard/alts/history, /dashboard/alts/[username]/history)
-- [ ] Messages page design (future — Linear ticket)
-- [ ] Team Builder sidebar item (future — major feature)
+### Designs approved — ready to implement
+
+- [x] Community settings — approved (General tab, 520px form, no delete) — **implemented**
+- [x] Community request — approved (warm welcome, Discord highlight, 2-col socials) — **implemented**
+- [x] Community overview — approved (activity feed, live now card, two-column)
+- [x] Community staff — approved (two-column drag-drop)
+
+### Designs still needed
+
+- [ ] Alt switcher — design decisions made (see Sidebar section), needs mockup review
+- [ ] Alts page — design decisions made (see Page Designs section), needs mockup
+- [ ] Inbox — design decisions made (see Page Designs section), needs mockup
+- [ ] History page — route decisions made, page design TBD
+- [ ] Home page (`/dashboard`) — outline exists, needs full design pass
+- [ ] Notifications bell icon — behavior spec exists, needs implementation design
+
+### Bugs (fixed)
+
+- [x] Tooltip positioning on collapsed sidebar icons — fixed by removing `display: contents` from trigger wrapper
+- [x] Build error: community request page import — resolved by page rewrite
+
+### Sidebar changes (implement with designs)
+
 - [ ] Remove "Alts & Teams" → rename to "Alts" in sidebar
 - [ ] Remove "History" from top-level sidebar
+
+### Future (Linear tickets, not this branch)
+
+- [ ] Messages page design (`/dashboard/messages`)
+- [ ] Team Builder sidebar item
 
 ## Linear Tickets to Create
 

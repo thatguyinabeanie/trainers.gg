@@ -548,9 +548,7 @@ function SidebarMenuButton({
 
   return (
     <Tooltip>
-      <TooltipTrigger render={<span className="contents" />}>
-        {comp}
-      </TooltipTrigger>
+      <TooltipTrigger render={<span />}>{comp}</TooltipTrigger>
       <TooltipContent
         side="right"
         align="center"

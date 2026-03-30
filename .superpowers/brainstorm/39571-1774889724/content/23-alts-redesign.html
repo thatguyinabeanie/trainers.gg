@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Alts Page — Redesign</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: Inter, -apple-system, sans-serif; background: #0a0a0a; color: #e5e5e5; padding: 2rem; line-height: 1.5; }
+  .wrap { max-width: 960px; margin: 0 auto; }
+  h1 { font-size: 1.5rem; font-weight: 700; margin-bottom: 0.25rem; }
+  .subtitle { color: #888; font-size: 0.9rem; margin-bottom: 2rem; }
+  hr { border: none; border-top: 1px solid #1a1a1a; margin: 2rem 0; }
+
+  .mockup { background: #fff; border: 1px solid #ddd; border-radius: 10px; overflow: hidden; color: #111; }
+  .header-bar { display: flex; align-items: center; gap: 8px; padding: 0 24px; height: 44px; border-bottom: 1px solid #f0f0f0; font-size: 13px; }
+  .header-bar .trigger { width: 20px; height: 20px; border: 1px solid #ddd; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 9px; color: #888; }
+  .header-bar .sep { width: 1px; height: 14px; background: #d4d4d4; }
+  .header-bar .title { font-weight: 500; color: #111; }
+  .header-bar .bell { margin-left: auto; font-size: 13px; }
+
+  .page { padding: 24px; }
+
+  /* Page heading */
+  .page-heading { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+  .page-heading h2 { font-size: 20px; font-weight: 700; color: #111; }
+  .btn-new { display: inline-flex; align-items: center; gap: 4px; padding: 7px 14px; font-size: 13px; font-weight: 500; border-radius: 6px; border: none; cursor: pointer; background: #0d9488; color: white; }
+
+  /* Aggregate stats */
+  .stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px; }
+  .stat-card { background: #fafafa; border: 1px solid #f0f0f0; border-radius: 8px; padding: 12px 14px; }
+  .stat-label { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #888; margin-bottom: 2px; }
+  .stat-value { font-size: 20px; font-weight: 700; color: #111; font-family: 'Geist Mono', monospace; }
+  .stat-sub { font-size: 10px; color: #aaa; margin-top: 1px; }
+
+  /* Alt list */
+  .alt-list { border: 1px solid #f0f0f0; border-radius: 8px; overflow: hidden; }
+
+  .alt-row { display: flex; align-items: center; padding: 10px 14px; cursor: pointer; transition: background 0.1s; }
+  .alt-row:hover { background: #fafafa; }
+  .alt-row + .alt-row { border-top: 1px solid #f0f0f0; }
+
+  .alt-avatar { width: 32px; height: 32px; border-radius: 50%; background: #f0fdfa; border: 1px solid #d1fae5; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 600; color: #0d9488; flex-shrink: 0; margin-right: 10px; }
+  .alt-info { flex: 1; min-width: 0; }
+  .alt-name { font-size: 13px; font-weight: 600; color: #111; display: flex; align-items: center; gap: 6px; }
+  .alt-meta { font-size: 11px; color: #999; margin-top: 1px; }
+  .badge { font-size: 9px; font-weight: 600; padding: 1px 6px; border-radius: 4px; }
+  .badge-main { background: #fef3c7; color: #92400e; }
+  .badge-public { background: #d1fae5; color: #065f46; }
+  .badge-private { background: #f3f4f6; color: #6b7280; }
+  .alt-stats { display: flex; gap: 16px; font-size: 12px; color: #666; margin-right: 12px; }
+  .alt-stats span { font-family: 'Geist Mono', monospace; }
+  .chevron { color: #ccc; font-size: 14px; }
+
+  /* Expanded alt */
+  .alt-expanded { background: #fafafa; border-top: 1px solid #f0f0f0; padding: 16px; }
+  .expanded-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .expanded-section h4 { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #888; margin-bottom: 8px; }
+
+  .mini-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .mini-stat { text-align: center; }
+  .mini-stat-val { font-size: 16px; font-weight: 700; color: #111; font-family: 'Geist Mono', monospace; }
+  .mini-stat-label { font-size: 10px; color: #999; }
+
+  .team-row { display: flex; align-items: center; padding: 6px 8px; border-radius: 6px; margin-bottom: 4px; background: white; border: 1px solid #f0f0f0; }
+  .team-sprites { display: flex; gap: 2px; margin-right: 8px; }
+  .team-sprites .sprite { width: 20px; height: 20px; background: #e5e7eb; border-radius: 4px; }
+  .team-name { font-size: 12px; font-weight: 500; color: #111; flex: 1; }
+  .team-meta { font-size: 10px; color: #999; }
+
+  .expanded-actions { display: flex; gap: 8px; margin-top: 12px; }
+  .btn-sm { padding: 5px 12px; font-size: 11px; font-weight: 500; border-radius: 5px; border: 1px solid #e5e7eb; background: white; cursor: pointer; color: #333; }
+  .btn-sm:hover { background: #fafafa; border-color: #d4d4d4; }
+  .btn-sm-primary { background: #0d9488; color: white; border-color: #0d9488; }
+  .btn-sm-primary:hover { background: #0f766e; }
+
+  .callout { background: rgba(45,212,191,0.05); border: 1px solid rgba(45,212,191,0.15); border-radius: 8px; padding: 1rem; font-size: 0.8rem; color: #888; margin-top: 1rem; }
+  .callout strong { color: #2dd4bf; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>Alts Page — Redesign</h1>
+<p class="subtitle">Expandable rows, aggregate stats, teams preview. No separate detail page for quick browsing.</p>
+
+<hr>
+
+<div class="mockup">
+  <div class="header-bar">
+    <div class="trigger">&#9776;</div>
+    <div class="sep"></div>
+    <div class="title">Alts</div>
+    <div class="bell">&#128276;</div>
+  </div>
+  <div class="page">
+
+    <!-- Heading -->
+    <div class="page-heading">
+      <h2>Alts</h2>
+      <button class="btn-new">+ New Alt</button>
+    </div>
+
+    <!-- Aggregate stats -->
+    <div class="stats-row">
+      <div class="stat-card">
+        <div class="stat-label">Record</div>
+        <div class="stat-value">24-18</div>
+        <div class="stat-sub">across all alts</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Win Rate</div>
+        <div class="stat-value">57.1%</div>
+        <div class="stat-sub">+3.2% this month</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Peak Rating</div>
+        <div class="stat-value">1,247</div>
+        <div class="stat-sub">admin_trainer_vgc</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Tournaments</div>
+        <div class="stat-value">12</div>
+        <div class="stat-sub">3 active</div>
+      </div>
+    </div>
+
+    <!-- Alt list -->
+    <div class="alt-list">
+      <!-- Row 1: Main alt (collapsed) -->
+      <div class="alt-row">
+        <div class="alt-avatar">A</div>
+        <div class="alt-info">
+          <div class="alt-name">admin_trainer <span class="badge badge-main">Main</span> <span class="badge badge-public">Public</span></div>
+          <div class="alt-meta">5 tournaments &middot; 1,124 ELO &middot; 2 teams</div>
+        </div>
+        <div class="chevron">&#9656;</div>
+      </div>
+
+      <!-- Row 2: Expanded alt -->
+      <div class="alt-row" style="background: #fafafa; border-bottom: none;">
+        <div class="alt-avatar">A</div>
+        <div class="alt-info">
+          <div class="alt-name">admin_trainer_vgc <span class="badge badge-private">Private</span></div>
+          <div class="alt-meta">7 tournaments &middot; 1,247 ELO &middot; 3 teams</div>
+        </div>
+        <div class="chevron" style="transform: rotate(90deg);">&#9656;</div>
+      </div>
+      <div class="alt-expanded">
+        <div class="expanded-grid">
+          <div class="expanded-section">
+            <h4>Stats</h4>
+            <div class="mini-stats">
+              <div class="mini-stat">
+                <div class="mini-stat-val">16-8</div>
+                <div class="mini-stat-label">Record</div>
+              </div>
+              <div class="mini-stat">
+                <div class="mini-stat-val">66.7%</div>
+                <div class="mini-stat-label">Win Rate</div>
+              </div>
+              <div class="mini-stat">
+                <div class="mini-stat-val">1,247</div>
+                <div class="mini-stat-label">Rating</div>
+              </div>
+            </div>
+          </div>
+          <div class="expanded-section">
+            <h4>Teams</h4>
+            <div class="team-row">
+              <div class="team-sprites">
+                <div class="sprite"></div><div class="sprite"></div><div class="sprite"></div>
+                <div class="sprite"></div><div class="sprite"></div><div class="sprite"></div>
+              </div>
+              <div class="team-name">Rain Balance</div>
+              <div class="team-meta">v3 &middot; 4 events</div>
+            </div>
+            <div class="team-row">
+              <div class="team-sprites">
+                <div class="sprite"></div><div class="sprite"></div><div class="sprite"></div>
+                <div class="sprite"></div><div class="sprite"></div><div class="sprite"></div>
+              </div>
+              <div class="team-name">Sun Room</div>
+              <div class="team-meta">v1 &middot; 2 events</div>
+            </div>
+            <div class="team-row" style="opacity: 0.5;">
+              <div class="team-sprites">
+                <div class="sprite"></div><div class="sprite"></div><div class="sprite"></div>
+                <div class="sprite"></div><div class="sprite"></div><div class="sprite"></div>
+              </div>
+              <div class="team-name">Trick Room (archived)</div>
+              <div class="team-meta">v2 &middot; 1 event</div>
+            </div>
+          </div>
+        </div>
+        <div class="expanded-actions">
+          <button class="btn-sm btn-sm-primary">View as this alt</button>
+          <button class="btn-sm">View history</button>
+          <button class="btn-sm">Open in Builder &#128296;</button>
+        </div>
+      </div>
+
+      <!-- Row 3: Another collapsed alt -->
+      <div class="alt-row">
+        <div class="alt-avatar">A</div>
+        <div class="alt-info">
+          <div class="alt-name">admin_trainer_draft <span class="badge badge-private">Private</span></div>
+          <div class="alt-meta">0 tournaments &middot; No rating &middot; 0 teams</div>
+        </div>
+        <div class="chevron">&#9656;</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="callout">
+  <strong>Design decisions:</strong>
+  <ul style="margin-top:0.5rem;padding-left:1.25rem">
+    <li style="margin-bottom:0.2rem"><strong>Aggregate stats at top</strong> — record, win rate, peak rating, tournament count across all alts</li>
+    <li style="margin-bottom:0.2rem"><strong>Expandable rows</strong> — click to expand inline, does NOT auto-switch alt switcher</li>
+    <li style="margin-bottom:0.2rem"><strong>Two-column expanded</strong> — stats on left, teams preview on right</li>
+    <li style="margin-bottom:0.2rem"><strong>Teams show sprites</strong> — 6 grey squares as placeholder for Pokemon sprites</li>
+    <li style="margin-bottom:0.2rem"><strong>Archived teams</strong> — reduced opacity, labeled "(archived)"</li>
+    <li style="margin-bottom:0.2rem"><strong>"View as this alt"</strong> — explicit action to switch alt context + navigate to detail page</li>
+    <li style="margin-bottom:0.2rem"><strong>"View history"</strong> — links to /dashboard/alts/[username]/history</li>
+    <li style="margin-bottom:0.2rem"><strong>"Open in Builder"</strong> — future: opens team builder for this alt's teams</li>
+    <li style="margin-bottom:0.2rem"><strong>Badges</strong> — Main (amber), Public (green), Private (gray)</li>
+    <li style="margin-bottom:0.2rem"><strong>No page title "Alts & Teams"</strong> — just "Alts", teams live under each alt</li>
+  </ul>
+</div>
+
+</div>
+</body>
+</html>

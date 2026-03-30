@@ -140,6 +140,15 @@ pnpm --filter @trainers/theme build         # Generate design tokens
 pnpm functions:serve                  # Serve edge functions locally
 ```
 
+### Test Users (Local Development)
+
+After `pnpm db:reset`, these test users are available (password: `Password123!`):
+
+| Email                   | Username      | Role                             |
+| ----------------------- | ------------- | -------------------------------- |
+| `admin@trainers.local`  | admin_trainer | Site admin, VGC League org owner |
+| `player@trainers.local` | ash_ketchum   | Player, Pallet Town org owner    |
+
 ### Playwright Screenshots
 
 Store all Playwright MCP screenshots in `.playwright-mcp/screenshots/`. This directory is gitignored.
@@ -203,6 +212,10 @@ trainers.gg is the all-in-one integrated platform for Pokemon fans — one place
 ## Development Workflow
 
 When executing implementation plans, always use **subagent-driven development** (`superpowers:subagent-driven-development`). Do not use inline execution unless explicitly asked.
+
+### Memory
+
+When saving memories (user preferences, feedback, project context), write them to `~/.claude/CLAUDE.md` (the user's private global instructions file), not to the project CLAUDE.md.
 
 ## Project Management
 
