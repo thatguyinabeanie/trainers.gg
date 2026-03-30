@@ -32,9 +32,9 @@ BLUE='\033[0;34m'
 CYAN='\033[0;36m'
 NC='\033[0m'
 
-log_info() { echo -e "${BLUE}[dev-slot]${NC} $1"; }
-log_success() { echo -e "${GREEN}[dev-slot]${NC} $1"; }
-log_warn() { echo -e "${YELLOW}[dev-slot]${NC} $1"; }
+log_info() { echo -e "${BLUE}[dev-slot]${NC} $1" >&2; }
+log_success() { echo -e "${GREEN}[dev-slot]${NC} $1" >&2; }
+log_warn() { echo -e "${YELLOW}[dev-slot]${NC} $1" >&2; }
 
 # =============================================================================
 # Skip in CI/Production environments

@@ -176,14 +176,14 @@ NGROK_DOMAIN=$(get_static_domain)
 
 if [ -n "$NGROK_DOMAIN" ] && [ "$NGROK_DOMAIN" != "your-domain.ngrok-free.app" ]; then
   log_info "Starting ngrok tunnel with static domain: $NGROK_DOMAIN"
-  ngrok http --url="$NGROK_DOMAIN" "$WEB_PORT" --log=stdout $NGROK_CONFIG_FLAG || {
+  exec ngrok http --url="$NGROK_DOMAIN" "$WEB_PORT" $NGROK_CONFIG_FLAG || {
     log_error "ngrok exited — tunnel is unavailable (non-fatal)"
     exit 0
   }
 else
   log_warn "No static domain found in .env.ngrok — using random ngrok URL"
   log_warn "Copy .env.ngrok.example to .env.ngrok and set your static domain"
-  ngrok http "$WEB_PORT" --log=stdout $NGROK_CONFIG_FLAG || {
+  exec ngrok http "$WEB_PORT" $NGROK_CONFIG_FLAG || {
     log_error "ngrok exited — tunnel is unavailable (non-fatal)"
     exit 0
   }

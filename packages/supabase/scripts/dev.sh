@@ -86,15 +86,16 @@ echo ""
 # =============================================================================
 # Find and tail the API gateway container
 # =============================================================================
-KONG_CONTAINER=$(docker ps --filter "name=${SUPABASE_PROJECT}_kong" --format "{{.Names}}" 2>/dev/null | head -1)
+# Container naming: supabase_kong_<project> (e.g., supabase_kong_supabase-slot-1)
+KONG_CONTAINER=$(docker ps --filter "name=supabase_kong_${SUPABASE_PROJECT}" --format "{{.Names}}" 2>/dev/null | head -1)
 
 if [ -n "$KONG_CONTAINER" ]; then
   log_success "Supabase is running — tailing API gateway logs ($KONG_CONTAINER)"
   echo ""
   exec docker logs -f --since 0s "$KONG_CONTAINER" 2>&1
 else
-  # Fallback: try to find any supabase container
-  ANY_CONTAINER=$(docker ps --filter "name=${SUPABASE_PROJECT}_" --format "{{.Names}}" 2>/dev/null | head -1)
+  # Fallback: try to find any supabase container for this project
+  ANY_CONTAINER=$(docker ps --filter "name=_${SUPABASE_PROJECT}" --format "{{.Names}}" 2>/dev/null | head -1)
   if [ -n "$ANY_CONTAINER" ]; then
     log_warn "Kong container not found, tailing $ANY_CONTAINER instead"
     echo ""
