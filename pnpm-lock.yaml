@@ -7,11 +7,14 @@ settings:
 catalogs:
   atproto:
     '@atproto/api':
-      specifier: ^0
-      version: 0.18.17
+      specifier: ^0.19
+      version: 0.19.5
     '@atproto/jwk-jose':
-      specifier: ^0
+      specifier: ^0.1
       version: 0.1.11
+    '@atproto/oauth-client-expo':
+      specifier: ^0.0
+      version: 0.0.8
   default:
     '@types/node':
       specifier: ^22
@@ -149,6 +152,16 @@ catalogs:
     supabase:
       specifier: ^2
       version: 2.75.3
+  tamagui:
+    '@tamagui/config':
+      specifier: ^1
+      version: 1.144.3
+    '@tamagui/web':
+      specifier: ^1
+      version: 1.144.3
+    tamagui:
+      specifier: ^1
+      version: 1.144.3
   tanstack:
     '@tanstack/react-query':
       specifier: ^5
@@ -193,9 +206,9 @@ importers:
     dependencies:
       '@atproto/api':
         specifier: catalog:atproto
-        version: 0.18.17
+        version: 0.19.5
       '@atproto/oauth-client-expo':
-        specifier: ^0
+        specifier: catalog:atproto
         version: 0.0.8(expo@54.0.33)(react-native@0.81.5(@babel/core@7.28.6)(@types/react@19.1.17)(bufferutil@4.1.0)(react@19.1.0)(utf-8-validate@5.0.10))(react@19.1.0)
       '@expo/metro-runtime':
         specifier: catalog:expo
@@ -219,10 +232,10 @@ importers:
         specifier: catalog:supabase
         version: 2.91.0(bufferutil@4.1.0)(utf-8-validate@5.0.10)
       '@tamagui/config':
-        specifier: ^1
+        specifier: catalog:tamagui
         version: 1.144.3(react-dom@19.1.0(react@19.1.0))(react-native-reanimated@4.1.6(@babel/core@7.28.6)(react-native-worklets@0.5.1(@babel/core@7.28.6)(react-native@0.81.5(@babel/core@7.28.6)(@types/react@19.1.17)(bufferutil@4.1.0)(react@19.1.0)(utf-8-validate@5.0.10))(react@19.1.0))(react-native@0.81.5(@babel/core@7.28.6)(@types/react@19.1.17)(bufferutil@4.1.0)(react@19.1.0)(utf-8-validate@5.0.10))(react@19.1.0))(react-native@0.81.5(@babel/core@7.28.6)(@types/react@19.1.17)(bufferutil@4.1.0)(react@19.1.0)(utf-8-validate@5.0.10))(react@19.1.0)
       '@tamagui/web':
-        specifier: ^1
+        specifier: catalog:tamagui
         version: 1.144.3(react-dom@19.1.0(react@19.1.0))(react-native@0.81.5(@babel/core@7.28.6)(@types/react@19.1.17)(bufferutil@4.1.0)(react@19.1.0)(utf-8-validate@5.0.10))(react@19.1.0)
       '@tanstack/react-query':
         specifier: catalog:tanstack
@@ -300,8 +313,11 @@ importers:
         specifier: catalog:expo
         version: 0.5.1(@babel/core@7.28.6)(react-native@0.81.5(@babel/core@7.28.6)(@types/react@19.1.17)(bufferutil@4.1.0)(react@19.1.0)(utf-8-validate@5.0.10))(react@19.1.0)
       tamagui:
-        specifier: ^1
+        specifier: catalog:tamagui
         version: 1.144.3(react-dom@19.1.0(react@19.1.0))(react-native@0.81.5(@babel/core@7.28.6)(@types/react@19.1.17)(bufferutil@4.1.0)(react@19.1.0)(utf-8-validate@5.0.10))(react@19.1.0)
+      zod:
+        specifier: 'catalog:'
+        version: 3.25.76
     devDependencies:
       '@babel/core':
         specifier: ^7.26.0
@@ -359,7 +375,7 @@ importers:
     dependencies:
       '@atproto/api':
         specifier: catalog:atproto
-        version: 0.18.17
+        version: 0.19.5
       '@atproto/jwk-jose':
         specifier: catalog:atproto
         version: 0.1.11
@@ -607,7 +623,7 @@ importers:
     dependencies:
       '@atproto/api':
         specifier: catalog:atproto
-        version: 0.18.17
+        version: 0.19.5
     devDependencies:
       '@trainers/eslint-config':
         specifier: workspace:*
@@ -1036,7 +1052,7 @@ importers:
     devDependencies:
       '@atproto/api':
         specifier: catalog:atproto
-        version: 0.18.17
+        version: 0.19.5
       '@trainers/prettier-config':
         specifier: workspace:*
         version: link:../prettier
@@ -1115,11 +1131,11 @@ packages:
   '@atproto-labs/simple-store@0.3.0':
     resolution: {integrity: sha512-nOb6ONKBRJHRlukW1sVawUkBqReLlLx6hT35VS3imaNPwiXDxLnTK7lxw3Lrl9k5yugSBDQAkZAq3MPTEFSUBQ==}
 
-  '@atproto/api@0.18.17':
-    resolution: {integrity: sha512-TeJkLGPkiK3jblwTDSNTH+CnS6WgaOiHDZeVVzywtxomyyF0FpQVSMz5eP3sDhxyHJqpI3E2AOYD7PO/JSbzJw==}
+  '@atproto/api@0.19.5':
+    resolution: {integrity: sha512-u6R5TecYJDO8l8QFN09AMuJASYnUkJ4HhYE5hg4/dha/z14a+OAil2/dli/208uM5AHPFLtlnB8kIK9XU5GgQQ==}
 
-  '@atproto/common-web@0.4.13':
-    resolution: {integrity: sha512-TewRUyB/dVJ5PtI3QmJzEgT3wDsvpnLJ+48hPl+LuUueJPamZevXKJN6dFjtbKAMFRnl2bKfdsf79qwvdSaLKQ==}
+  '@atproto/common-web@0.4.19':
+    resolution: {integrity: sha512-3BTi58p5WpT+9/zb6UZrdsXcfPo5P45UJm0E4iwHLILr+jc37CuBj9JReDSZ4U0i9RTrI3ZkfySyZ9bd+LnMsw==}
 
   '@atproto/did@0.3.0':
     resolution: {integrity: sha512-raUPzUGegtW/6OxwCmM8bhZvuIMzxG5t9oWsth6Tp91Kb5fTnHV2h/KKNF1C82doeA4BdXCErTyg7ISwLbQkzA==}
@@ -1133,14 +1149,14 @@ packages:
   '@atproto/jwk@0.6.0':
     resolution: {integrity: sha512-bDoJPvt7TrQVi/rBfBrSSpGykhtIriKxeYCYQTiPRKFfyRhbgpElF0wPXADjIswnbzZdOwbY63az4E/CFVT3Tw==}
 
-  '@atproto/lex-data@0.0.9':
-    resolution: {integrity: sha512-1slwe4sG0cyWtsq16+rBoWIxNDqGPkkvN+PV6JuzA7dgUK9bjUmXBGQU4eZlUPSS43X1Nhmr/9VjgKmEzU9vDw==}
+  '@atproto/lex-data@0.0.14':
+    resolution: {integrity: sha512-53DUa9664SS76nGAMYopWsO10OH0AAdf7P/HSKB6Wzx3iqe6lk/K61QZnKxOG1LreYl5CfvIJU6eNf4txI6GlQ==}
 
-  '@atproto/lex-json@0.0.9':
-    resolution: {integrity: sha512-Q2v1EVZcnd+ndyZj1r2UlGikA7q6It24CFPLbxokcf5Ba4RBupH8IkkQX7mqUDSRWPgQdmZYIdW9wUln+MKDqw==}
+  '@atproto/lex-json@0.0.14':
+    resolution: {integrity: sha512-6lPkDKqe7teEu4WrN5q7400cvZKgYS3uwUMvzG3F9XkgVYhOwSDCtouV/nSLBbpvo3l9OP0kiigtclcNcyekww==}
 
-  '@atproto/lexicon@0.6.1':
-    resolution: {integrity: sha512-/vI1kVlY50Si+5MXpvOucelnYwb0UJ6Qto5mCp+7Q5C+Jtp+SoSykAPVvjVtTnQUH2vrKOFOwpb3C375vSKzXw==}
+  '@atproto/lexicon@0.6.2':
+    resolution: {integrity: sha512-p3Ly6hinVZW0ETuAXZMeUGwuMm3g8HvQMQ41yyEE6AL0hAkfeKFaZKos6BdBrr6CjkpbrDZqE8M+5+QOceysMw==}
 
   '@atproto/oauth-client-browser@0.3.40':
     resolution: {integrity: sha512-AlvHf1DYFRHw+J8uALUMhpclTbUTTkvLqzQeGBdAXxSGP8OefsOXXaSiY5Mh6zAYxek95/ypxYzNYncasgnMWg==}
@@ -1161,8 +1177,8 @@ packages:
   '@atproto/oauth-types@0.6.2':
     resolution: {integrity: sha512-2cuboM4RQBCYR8NQC5uGRkW6KgCgKyq/B5/+tnMmWZYtZGVUQvsUWQHK/ZiMCnVXbcDNtc/RIEJQJDZ8FXMoxg==}
 
-  '@atproto/syntax@0.4.3':
-    resolution: {integrity: sha512-YoZUz40YAJr5nPwvCDWgodEOlt5IftZqPJvA0JDWjuZKD8yXddTwSzXSaKQAzGOpuM+/A3uXRtPzJJqlScc+iA==}
+  '@atproto/syntax@0.5.2':
+    resolution: {integrity: sha512-W41szOnkppoHr0iCUrzL8gy3OD6qmDyp1UvUgmTx2oFQfgbudpz51T/gznesiCcqiUT5obfHdx4PJ+WdlEOE7Q==}
 
   '@atproto/xrpc@0.7.7':
     resolution: {integrity: sha512-K1ZyO/BU8JNtXX5dmPp7b5UrkLMMqpsIa/Lrj5D3Su+j1Xwq1m6QJ2XJ1AgjEjkI1v4Muzm7klianLE6XGxtmA==}
@@ -8724,22 +8740,22 @@ snapshots:
 
   '@atproto-labs/simple-store@0.3.0': {}
 
-  '@atproto/api@0.18.17':
+  '@atproto/api@0.19.5':
     dependencies:
-      '@atproto/common-web': 0.4.13
-      '@atproto/lexicon': 0.6.1
-      '@atproto/syntax': 0.4.3
+      '@atproto/common-web': 0.4.19
+      '@atproto/lexicon': 0.6.2
+      '@atproto/syntax': 0.5.2
       '@atproto/xrpc': 0.7.7
       await-lock: 2.2.2
       multiformats: 9.9.0
       tlds: 1.261.0
       zod: 3.25.76
 
-  '@atproto/common-web@0.4.13':
+  '@atproto/common-web@0.4.19':
     dependencies:
-      '@atproto/lex-data': 0.0.9
-      '@atproto/lex-json': 0.0.9
-      '@atproto/syntax': 0.4.3
+      '@atproto/lex-data': 0.0.14
+      '@atproto/lex-json': 0.0.14
+      '@atproto/syntax': 0.5.2
       zod: 3.25.76
 
   '@atproto/did@0.3.0':
@@ -8762,22 +8778,22 @@ snapshots:
       multiformats: 9.9.0
       zod: 3.25.76
 
-  '@atproto/lex-data@0.0.9':
+  '@atproto/lex-data@0.0.14':
     dependencies:
       multiformats: 9.9.0
       tslib: 2.8.1
       uint8arrays: 3.0.0
       unicode-segmenter: 0.14.5
 
-  '@atproto/lex-json@0.0.9':
+  '@atproto/lex-json@0.0.14':
     dependencies:
-      '@atproto/lex-data': 0.0.9
+      '@atproto/lex-data': 0.0.14
       tslib: 2.8.1
 
-  '@atproto/lexicon@0.6.1':
+  '@atproto/lexicon@0.6.2':
     dependencies:
-      '@atproto/common-web': 0.4.13
-      '@atproto/syntax': 0.4.3
+      '@atproto/common-web': 0.4.19
+      '@atproto/syntax': 0.5.2
       iso-datestring-validator: 2.2.2
       multiformats: 9.9.0
       zod: 3.25.76
@@ -8843,13 +8859,13 @@ snapshots:
       '@atproto/jwk': 0.6.0
       zod: 3.25.76
 
-  '@atproto/syntax@0.4.3':
+  '@atproto/syntax@0.5.2':
     dependencies:
       tslib: 2.8.1
 
   '@atproto/xrpc@0.7.7':
     dependencies:
-      '@atproto/lexicon': 0.6.1
+      '@atproto/lexicon': 0.6.2
       zod: 3.25.76
 
   '@babel/code-frame@7.10.4':

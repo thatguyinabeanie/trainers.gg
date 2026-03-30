@@ -55,8 +55,9 @@ catalogs:
     jest-expo: ~54.0
 
   atproto:
-    "@atproto/api": ^0
-    "@atproto/jwk-jose": ^0
+    "@atproto/api": ^0.19
+    "@atproto/jwk-jose": ^0.1
+    "@atproto/oauth-client-expo": ^0.0
 
   pkmn:
     "@pkmn/data": ^0
@@ -72,6 +73,11 @@ catalogs:
 
   tanstack:
     "@tanstack/react-query": ^5
+
+  tamagui:
+    tamagui: ^1
+    "@tamagui/config": ^1
+    "@tamagui/web": ^1
 
 onlyBuiltDependencies:
   - browser-tabs-lock
