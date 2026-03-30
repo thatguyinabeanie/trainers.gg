@@ -43,9 +43,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuGroup,
   DropdownMenuItem,
-  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
@@ -120,8 +118,8 @@ export function DashboardSidebar({
               tooltip="trainers.gg"
               className="data-[slot=sidebar-menu-button]:!p-1.5"
             >
-              <div className="bg-primary text-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg text-xs font-bold">
-                t.gg
+              <div className="bg-primary text-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg text-sm font-bold">
+                t
               </div>
               <div className="grid flex-1 text-left text-sm leading-tight">
                 <span className="truncate font-semibold">trainers.gg</span>
@@ -216,48 +214,44 @@ function NavUser({ user, activeCommunity }: NavUserProps) {
             align="end"
             sideOffset={4}
           >
-            <DropdownMenuLabel className="p-0 font-normal">
-              <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
-                <Avatar className="size-8 rounded-lg">
-                  <AvatarImage
-                    src={user.avatarUrl ?? undefined}
-                    alt={user.username}
-                  />
-                  <AvatarFallback className="rounded-lg">
-                    {user.username.charAt(0).toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-medium">{user.username}</span>
-                  <span className="text-muted-foreground truncate text-xs">
-                    {activeCommunity
-                      ? `${activeCommunity.role.charAt(0).toUpperCase()}${activeCommunity.role.slice(1)}`
-                      : "Player"}
-                  </span>
-                </div>
+            <div className="flex items-center gap-2 px-2 py-1.5 text-left text-sm">
+              <Avatar className="size-8 rounded-lg">
+                <AvatarImage
+                  src={user.avatarUrl ?? undefined}
+                  alt={user.username}
+                />
+                <AvatarFallback className="rounded-lg">
+                  {user.username.charAt(0).toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+              <div className="grid flex-1 text-left text-sm leading-tight">
+                <span className="truncate font-medium">{user.username}</span>
+                <span className="text-muted-foreground truncate text-xs">
+                  {activeCommunity
+                    ? `${activeCommunity.role.charAt(0).toUpperCase()}${activeCommunity.role.slice(1)}`
+                    : "Player"}
+                </span>
               </div>
-            </DropdownMenuLabel>
+            </div>
             <DropdownMenuSeparator />
-            <DropdownMenuGroup>
-              <DropdownMenuItem>
-                <Link
-                  href="/dashboard/settings"
-                  className="flex w-full items-center gap-2"
-                >
-                  <User className="size-4" />
-                  Profile
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <Link
-                  href="/dashboard/settings/account"
-                  className="flex w-full items-center gap-2"
-                >
-                  <Settings className="size-4" />
-                  Account
-                </Link>
-              </DropdownMenuItem>
-            </DropdownMenuGroup>
+            <DropdownMenuItem>
+              <Link
+                href="/dashboard/settings"
+                className="flex w-full items-center gap-2"
+              >
+                <Settings className="size-4" />
+                Settings
+              </Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem>
+              <Link
+                href="/dashboard/settings/account"
+                className="flex w-full items-center gap-2"
+              >
+                <User className="size-4" />
+                Account
+              </Link>
+            </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem
               onClick={handleSignOut}
@@ -381,6 +375,24 @@ function PlayerNav({
           </SidebarGroup>
         </>
       )}
+
+      {/* Secondary nav — pinned to bottom of SidebarContent */}
+      <SidebarGroup className="mt-auto">
+        <SidebarGroupContent>
+          <SidebarMenu>
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                render={<Link href="/dashboard/settings" />}
+                isActive={pathname.startsWith("/dashboard/settings")}
+                tooltip="Settings"
+              >
+                <Settings className="size-4 shrink-0" />
+                <span>Settings</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          </SidebarMenu>
+        </SidebarGroupContent>
+      </SidebarGroup>
     </>
   );
 }
