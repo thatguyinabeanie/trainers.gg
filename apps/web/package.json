@@ -20,7 +20,7 @@
   "dependencies": {
     "@atproto/api": "catalog:atproto",
     "@atproto/jwk-jose": "catalog:atproto",
-    "@atproto/oauth-client-node": "^0",
+    "@atproto/oauth-client-node": "catalog:atproto",
     "@base-ui/react": "^1",
     "@dnd-kit/core": "^6",
     "@dnd-kit/sortable": "^10",

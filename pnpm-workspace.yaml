@@ -32,7 +32,6 @@ catalogs:
     jest-junit: ^16
 
   expo:
-    "@babel/runtime": ^7
     react-native: ~0.81
     react-native-reanimated: ~4.1
     react-native-safe-area-context: ~5.6
@@ -59,6 +58,7 @@ catalogs:
     "@atproto/api": ^0.19
     "@atproto/jwk-jose": ^0.1
     "@atproto/oauth-client-expo": ^0.0
+    "@atproto/oauth-client-node": ^0.3
 
   pkmn:
     "@pkmn/data": ^0.10
