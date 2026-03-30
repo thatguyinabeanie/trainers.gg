@@ -44,6 +44,9 @@ catalogs:
     react-native-web: ~0.21
     react-native-worklets: ~0.5
     react-native-url-polyfill: ^2
+    react-native-gesture-handler: ^2.25
+    "@react-navigation/native": ^7
+    "@react-navigation/drawer": ^7
     expo: ~54.0
     babel-preset-expo: ~54.0
     "@expo/metro-runtime": ~6.1
@@ -73,7 +76,7 @@ catalogs:
 
   supabase:
     "@supabase/ssr": ^0
-    "@supabase/supabase-js": ^2
+    "@supabase/supabase-js": ^2.97
     supabase: ^2
 
   tanstack:
