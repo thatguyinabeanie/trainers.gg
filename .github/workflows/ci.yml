@@ -301,7 +301,9 @@ jobs:
   # ── Wait for Vercel preview (shared by E2E + Lighthouse) ───
   wait-for-preview:
     name: Wait for Preview
-    if: github.event_name == 'pull_request'
+    # Skip for Dependabot PRs — they can't access secrets needed for bypass auth,
+    # and dependency bumps don't need E2E/Lighthouse validation
+    if: github.event_name == 'pull_request' && github.actor != 'dependabot[bot]'
     runs-on: ubuntu-latest
     timeout-minutes: 12
     outputs:
@@ -389,7 +391,8 @@ jobs:
   # ── E2E tests (Playwright) ─────────────────────────────────
   e2e-tests:
     name: E2E Tests
-    if: github.event_name == 'pull_request'
+    # Skip for Dependabot PRs — no access to secrets for bypass auth
+    if: github.event_name == 'pull_request' && github.actor != 'dependabot[bot]'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     needs: [install, wait-for-preview]
@@ -490,7 +493,8 @@ jobs:
   # ── Lighthouse CI (performance audit against preview) ──────
   lighthouse:
     name: Lighthouse
-    if: github.event_name == 'pull_request'
+    # Skip for Dependabot PRs — no access to secrets for bypass auth
+    if: github.event_name == 'pull_request' && github.actor != 'dependabot[bot]'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     needs: [wait-for-preview]
