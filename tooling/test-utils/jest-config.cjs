@@ -36,7 +36,8 @@ function createConfig(overrides = {}) {
         [
           "jest-junit",
           {
-            outputDirectory: "<rootDir>/../../test-results",
+            // outputDirectory controlled by JEST_JUNIT_OUTPUT_DIR env var in CI
+            // (defaults to per-package test-results/ directory)
             outputName: `junit-${displayName}.xml`,
           },
         ],

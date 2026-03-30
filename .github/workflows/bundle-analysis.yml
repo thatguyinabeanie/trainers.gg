@@ -3,8 +3,16 @@ name: Bundle Analysis
 on:
   pull_request:
     branches: [main]
+    paths:
+      - "apps/web/**"
+      - "packages/**"
+      - "pnpm-lock.yaml"
   push:
     branches: [main]
+    paths:
+      - "apps/web/**"
+      - "packages/**"
+      - "pnpm-lock.yaml"
 
 concurrency:
   group: bundle-${{ github.event.pull_request.number || github.ref }}
@@ -23,6 +31,7 @@ jobs:
   analyze:
     name: Analyze Bundle
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
 
