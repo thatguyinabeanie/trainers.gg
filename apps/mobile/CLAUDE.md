@@ -4,11 +4,11 @@ Expo 54 (React 19) React Native app. Expo Router file-based routing.
 
 ## Key Files
 
-| File | Purpose |
-|------|---------|
+| File                           | Purpose                                                     |
+| ------------------------------ | ----------------------------------------------------------- |
 | `src/lib/api/query-factory.ts` | TanStack Query factory — use `createQuery`/`createMutation` |
-| `src/lib/supabase/` | Mobile Supabase client (SecureStore sessions) |
-| `src/app/_layout.tsx` | Root layout, auth redirect logic |
+| `src/lib/supabase/`            | Mobile Supabase client (SecureStore sessions)               |
+| `src/app/_layout.tsx`          | Root layout, auth redirect logic                            |
 
 ## Skills
 

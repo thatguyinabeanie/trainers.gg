@@ -45,6 +45,7 @@ Review changed files for correctness, style, architecture, and domain convention
 For each finding:
 
 ### [SEVERITY] Finding title
+
 **File**: `path/to/file.ts:line`
 **Category**: Correctness | Style | Architecture | Domain | Performance
 **Issue**: Clear description

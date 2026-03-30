@@ -17,11 +17,11 @@ Guidelines for code organization, package boundaries, and reuse in the trainers.
 
 If a module has zero framework imports and could be useful across apps, it belongs in a shared package.
 
-| Has framework imports? | Used by multiple apps? | Where it belongs |
-|----------------------|----------------------|-----------------|
-| No | Yes | `packages/` |
-| No | No (but could be) | `packages/` |
-| Yes | N/A | `apps/*/src/lib/` |
+| Has framework imports? | Used by multiple apps? | Where it belongs  |
+| ---------------------- | ---------------------- | ----------------- |
+| No                     | Yes                    | `packages/`       |
+| No                     | No (but could be)      | `packages/`       |
+| Yes                    | N/A                    | `apps/*/src/lib/` |
 
 ## Code Reuse
 

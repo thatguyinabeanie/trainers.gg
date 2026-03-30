@@ -50,7 +50,7 @@ const team = parseTeam(paste);
 ```typescript
 import { getTypeEffectiveness } from "@trainers/pokemon";
 
-getTypeEffectiveness("Electric", "Water");  // 2 (super effective)
+getTypeEffectiveness("Electric", "Water"); // 2 (super effective)
 getTypeEffectiveness("Electric", "Ground"); // 0 (immune)
 ```
 

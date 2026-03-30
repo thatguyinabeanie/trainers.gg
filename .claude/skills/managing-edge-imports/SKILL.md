@@ -17,11 +17,11 @@ This includes transitive dependencies — if edge function A imports `@trainers/
 
 ## Import Map Entry Formats
 
-| Source | Format | Example |
-|--------|--------|---------|
-| Monorepo package | Relative path to source | `"@trainers/utils": "../../../utils/src/index.ts"` |
-| npm package | `npm:` specifier | `"zod": "npm:zod@^3"` |
-| ESM URL | Full URL | `"@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@2.49.4"` |
+| Source           | Format                  | Example                                                                  |
+| ---------------- | ----------------------- | ------------------------------------------------------------------------ |
+| Monorepo package | Relative path to source | `"@trainers/utils": "../../../utils/src/index.ts"`                       |
+| npm package      | `npm:` specifier        | `"zod": "npm:zod@^3"`                                                    |
+| ESM URL          | Full URL                | `"@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@2.49.4"` |
 
 ## Verification
 

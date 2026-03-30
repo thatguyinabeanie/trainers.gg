@@ -4,12 +4,12 @@ Supabase client, queries, mutations, edge functions, and migrations.
 
 ## Key Paths
 
-| Path | Purpose |
-|------|---------|
-| `src/` | TypeScript client code — queries, mutations, types |
-| `supabase/migrations/` | SQL migration files (timestamped, idempotent) |
-| `supabase/functions/` | Deno edge functions |
-| `supabase/functions/deno.json` | Import map — keep in sync |
+| Path                           | Purpose                                            |
+| ------------------------------ | -------------------------------------------------- |
+| `src/`                         | TypeScript client code — queries, mutations, types |
+| `supabase/migrations/`         | SQL migration files (timestamped, idempotent)      |
+| `supabase/functions/`          | Deno edge functions                                |
+| `supabase/functions/deno.json` | Import map — keep in sync                          |
 
 ## Skills
 

@@ -24,12 +24,12 @@ Run these commands sequentially and capture output:
 
 ## Report Format
 
-| Check     | Status    | Details                              |
-|-----------|-----------|--------------------------------------|
-| Lint      | PASS/FAIL | error count or "clean"               |
-| Typecheck | PASS/FAIL | error count or "clean"               |
-| Tests     | PASS/FAIL | X passed, Y failed, Z skipped        |
-| Format    | PASS/FAIL | file count or "clean"                |
+| Check     | Status         | Details                           |
+| --------- | -------------- | --------------------------------- |
+| Lint      | PASS/FAIL      | error count or "clean"            |
+| Typecheck | PASS/FAIL      | error count or "clean"            |
+| Tests     | PASS/FAIL      | X passed, Y failed, Z skipped     |
+| Format    | PASS/FAIL      | file count or "clean"             |
 | E2E       | PASS/FAIL/SKIP | result or "no dev server running" |
 
 If all pass: **"All checks pass. Safe to push."**

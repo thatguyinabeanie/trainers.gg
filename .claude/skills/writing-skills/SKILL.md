@@ -37,12 +37,12 @@ The project uses a three-tier system for providing context to Claude:
 
 ## Decision Framework: Where Does Content Belong?
 
-| If the content... | Put it in... |
-|---|---|
-| Applies to EVERY task regardless of context | CLAUDE.md |
-| Is domain-specific knowledge for a particular area | A skill |
-| Is a workflow requiring isolated execution with fresh context | An agent |
-| Is duplicated between CLAUDE.md and a skill | The skill (single source of truth) |
+| If the content...                                             | Put it in...                       |
+| ------------------------------------------------------------- | ---------------------------------- |
+| Applies to EVERY task regardless of context                   | CLAUDE.md                          |
+| Is domain-specific knowledge for a particular area            | A skill                            |
+| Is a workflow requiring isolated execution with fresh context | An agent                           |
+| Is duplicated between CLAUDE.md and a skill                   | The skill (single source of truth) |
 
 ### Common Mistakes
 
@@ -97,12 +97,12 @@ description: Use when [triggering conditions]
 
 ### Sizing Guidelines
 
-| Lines | Assessment | Action |
-|---|---|---|
-| < 30 | Too thin | Expand with usage examples, common patterns, and gotchas |
-| 30-150 | Good range | Most skills should land here |
-| 150-200 | Getting dense | Review whether everything is essential |
-| > 200 | Too thick | Split into focused sub-skills with cross-references |
+| Lines   | Assessment    | Action                                                   |
+| ------- | ------------- | -------------------------------------------------------- |
+| < 30    | Too thin      | Expand with usage examples, common patterns, and gotchas |
+| 30-150  | Good range    | Most skills should land here                             |
+| 150-200 | Getting dense | Review whether everything is essential                   |
+| > 200   | Too thick     | Split into focused sub-skills with cross-references      |
 
 ### Cross-Referencing
 
@@ -110,9 +110,11 @@ Reference other skills by name, not by file path:
 
 ```markdown
 <!-- Good -->
+
 See `creating-edge-functions` skill for core patterns (CORS, auth, response format).
 
 <!-- Bad -->
+
 See `.claude/skills/edge-function/SKILL.md` for core patterns.
 ```
 
@@ -124,7 +126,7 @@ See `.claude/skills/edge-function/SKILL.md` for core patterns.
 ---
 name: agent-name
 description: When to delegate to this agent
-model: sonnet          # haiku | sonnet | opus
+model: sonnet # haiku | sonnet | opus
 skills:
   - skill-one
   - skill-two
@@ -139,11 +141,11 @@ permissionMode: default
 
 ### Model Assignment
 
-| Model | Use For | Examples |
-|---|---|---|
-| Haiku | Command running, reporting, simple checks | CI status check, file listing, formatting |
-| Sonnet | Code writing, code review, implementation | Feature implementation, test writing, refactoring |
-| Opus | Architecture, planning, complex analysis | Design decisions, audit reports, migration planning |
+| Model  | Use For                                   | Examples                                            |
+| ------ | ----------------------------------------- | --------------------------------------------------- |
+| Haiku  | Command running, reporting, simple checks | CI status check, file listing, formatting           |
+| Sonnet | Code writing, code review, implementation | Feature implementation, test writing, refactoring   |
+| Opus   | Architecture, planning, complex analysis  | Design decisions, audit reports, migration planning |
 
 Match the model to the cognitive demand of the task. Over-specifying wastes tokens; under-specifying produces lower quality.
 
@@ -236,15 +238,19 @@ When no hook matches, Claude reads skill descriptions and decides whether to loa
 Proven agent architectures used across Claude Code projects:
 
 ### 3-Agent Pipeline
+
 Spec agent -> Architect agent -> Implementer agent. Each phase produces a document consumed by the next.
 
 ### QA Council
+
 Multiple review phases with blocking gates. A reviewer agent must approve before the pipeline continues.
 
 ### Test Writer + Reviewer Pair
+
 Separate agents for writing tests vs reviewing them. The reviewer catches gaps the writer misses.
 
 ### Agent Pipeline with File Handoffs
+
 Agents communicate through markdown files in a shared directory. Each agent reads the previous agent's output file and writes its own.
 
 ## v2 Architecture
@@ -253,11 +259,11 @@ Agents communicate through markdown files in a shared directory. Each agent read
 
 The project uses a layered system where `.claude/rules/` files declare conventions and hooks automatically enforce them.
 
-| Rule Type | Example | Hook Needed? |
-|-----------|---------|-------------|
-| Machine-verifiable | "Use 2-space indent" | Yes — Prettier enforces |
-| Judgment-based | "Minimal flat design" | No — Claude internalizes |
-| Structural | "Server Actions in src/actions/" | Maybe — depends on strictness |
+| Rule Type          | Example                          | Hook Needed?                  |
+| ------------------ | -------------------------------- | ----------------------------- |
+| Machine-verifiable | "Use 2-space indent"             | Yes — Prettier enforces       |
+| Judgment-based     | "Minimal flat design"            | No — Claude internalizes      |
+| Structural         | "Server Actions in src/actions/" | Maybe — depends on strictness |
 
 ### Path-Scoped Rules (`.claude/rules/`)
 
@@ -282,10 +288,10 @@ Agents with `memory: project` accumulate learnings across sessions. Enable for a
 
 ### Decision Framework
 
-| If the content... | Put it in... |
-|---|---|
-| Applies to EVERY task | Root `CLAUDE.md` |
-| Is enforcement for certain file types | `.claude/rules/` with paths |
-| Is "where things are" for a directory | Nested `CLAUDE.md` |
-| Is a reference guide, template, or workflow | `.claude/skills/` |
-| Needs isolated execution | `.claude/agents/` |
+| If the content...                           | Put it in...                |
+| ------------------------------------------- | --------------------------- |
+| Applies to EVERY task                       | Root `CLAUDE.md`            |
+| Is enforcement for certain file types       | `.claude/rules/` with paths |
+| Is "where things are" for a directory       | Nested `CLAUDE.md`          |
+| Is a reference guide, template, or workflow | `.claude/skills/`           |
+| Needs isolated execution                    | `.claude/agents/`           |
