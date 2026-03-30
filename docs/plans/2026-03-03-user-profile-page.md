@@ -13,6 +13,7 @@
 ## Task 1: DB Migration — add `is_public` to `alts`
 
 **Files:**
+
 - Create: `packages/supabase/supabase/migrations/20260303000001_add_alt_is_public.sql`
 
 **Step 1: Create the migration file**
@@ -56,6 +57,7 @@ git commit -m "feat(db): add is_public to alts for public alt visibility"
 ## Task 2: Update `getPlayerProfileByHandle` to include `is_public`
 
 **Files:**
+
 - Modify: `packages/supabase/src/queries/users.ts` (lines 234–272)
 
 **Step 1: Write the failing test**
@@ -77,18 +79,19 @@ describe("getPlayerProfileByHandle", () => {
         return {
           select: () => ({
             eq: () => ({
-              maybeSingle: () => Promise.resolve({
-                data: {
-                  id: "user-1",
-                  username: "ash",
-                  country: "US",
-                  did: null,
-                  pds_handle: null,
-                  main_alt_id: 1,
-                  created_at: "2026-01-01T00:00:00Z",
-                },
-                error: null,
-              }),
+              maybeSingle: () =>
+                Promise.resolve({
+                  data: {
+                    id: "user-1",
+                    username: "ash",
+                    country: "US",
+                    did: null,
+                    pds_handle: null,
+                    main_alt_id: 1,
+                    created_at: "2026-01-01T00:00:00Z",
+                  },
+                  error: null,
+                }),
             }),
           }),
         };
@@ -97,20 +100,21 @@ describe("getPlayerProfileByHandle", () => {
         return {
           select: () => ({
             eq: () => ({
-              order: () => Promise.resolve({
-                data: [
-                  {
-                    id: 1,
-                    username: "ash",
-                    bio: null,
-                    avatar_url: null,
-                    tier: "free",
-                    tier_expires_at: null,
-                    is_public: true,
-                  },
-                ],
-                error: null,
-              }),
+              order: () =>
+                Promise.resolve({
+                  data: [
+                    {
+                      id: 1,
+                      username: "ash",
+                      bio: null,
+                      avatar_url: null,
+                      tier: "free",
+                      tier_expires_at: null,
+                      is_public: true,
+                    },
+                  ],
+                  error: null,
+                }),
             }),
           }),
         };
@@ -173,6 +177,7 @@ git commit -m "feat(supabase): include is_public in getPlayerProfileByHandle alt
 ## Task 3: Create `/u/[handle]` page (migrate from `/players/[handle]`)
 
 **Files:**
+
 - Create: `apps/web/src/app/u/[handle]/page.tsx`
 
 **Step 1: Create the directory**
@@ -390,6 +395,7 @@ Expected: No errors (will fail until `PlayerProfileTabs` is created in next task
 ## Task 4: Create `PlayerProfileTabs` with all five tabs
 
 **Files:**
+
 - Create: `apps/web/src/app/u/[handle]/player-profile-tabs.tsx`
 - Create: `apps/web/src/app/u/[handle]/overview-tab.tsx` (copy from players/)
 - Create: `apps/web/src/app/u/[handle]/tournaments-tab.tsx`
@@ -758,6 +764,7 @@ git commit -m "feat(web): add /u/[handle] user profile page with tabbed layout"
 ## Task 5: Add "My Profile" link to topnav auth dropdown
 
 **Files:**
+
 - Modify: `apps/web/src/components/topnav-auth-section.tsx`
 - Modify: `apps/web/src/components/__tests__/topnav.test.tsx` (add auth-section tests)
 - Create: `apps/web/src/components/__tests__/topnav-auth-section.test.tsx`
@@ -948,6 +955,7 @@ git commit -m "feat(web): add My Profile link to topnav auth dropdown"
 ## Task 6: Write tests for the profile page tab structure
 
 **Files:**
+
 - Create: `apps/web/src/app/u/[handle]/__tests__/player-profile-tabs.test.tsx`
 
 **Step 1: Write the tests**
@@ -1047,6 +1055,7 @@ git commit -m "test(web): add player profile tabs tests"
 ## Task 7: Delete old `/players/[handle]` and `/profile/[handle]` directories
 
 **Files:**
+
 - Delete: `apps/web/src/app/players/` (entire directory)
 - Delete: `apps/web/src/app/profile/` (entire directory — social content merged into `/u/[handle]` social tab)
 
@@ -1105,11 +1114,13 @@ Expected: No errors.
 **Step 3: Smoke test in browser**
 
 Start dev server:
+
 ```bash
 pnpm dev:web+backend
 ```
 
 Verify:
+
 - Navigate to `/u/ash_ketchum` — profile page loads with header, tabs
 - Click each tab — switches correctly
 - Sign in as `player@trainers.local` (password: `Password123!`) — "My Profile" link appears in topnav dropdown, links to `/u/ash_ketchum`
@@ -1126,20 +1137,20 @@ git commit -m "chore: final cleanup for user profile page migration"
 
 ## Summary of Changes
 
-| File | Action |
-|---|---|
-| `packages/supabase/supabase/migrations/20260303000001_add_alt_is_public.sql` | Create |
-| `packages/supabase/src/types.ts` | Regenerated |
-| `packages/supabase/src/queries/users.ts` | Update alts select to include `is_public` |
-| `apps/web/src/app/u/[handle]/page.tsx` | Create (migrated + enhanced from `/players/`) |
-| `apps/web/src/app/u/[handle]/player-profile-tabs.tsx` | Create (5 tabs) |
-| `apps/web/src/app/u/[handle]/overview-tab.tsx` | Create (copied from `/players/`) |
-| `apps/web/src/app/u/[handle]/tournaments-tab.tsx` | Create (full history) |
-| `apps/web/src/app/u/[handle]/teams-tab.tsx` | Create (stub) |
-| `apps/web/src/app/u/[handle]/social-tab.tsx` | Create (migrated from `/profile/`) |
-| `apps/web/src/app/u/[handle]/achievements-tab.tsx` | Create (stub) |
-| `apps/web/src/app/u/[handle]/__tests__/player-profile-tabs.test.tsx` | Create |
-| `apps/web/src/components/topnav-auth-section.tsx` | Add "My Profile" link |
-| `apps/web/src/components/__tests__/topnav-auth-section.test.tsx` | Create |
-| `apps/web/src/app/players/` | Delete entire directory |
-| `apps/web/src/app/profile/` | Delete entire directory |
+| File                                                                         | Action                                        |
+| ---------------------------------------------------------------------------- | --------------------------------------------- |
+| `packages/supabase/supabase/migrations/20260303000001_add_alt_is_public.sql` | Create                                        |
+| `packages/supabase/src/types.ts`                                             | Regenerated                                   |
+| `packages/supabase/src/queries/users.ts`                                     | Update alts select to include `is_public`     |
+| `apps/web/src/app/u/[handle]/page.tsx`                                       | Create (migrated + enhanced from `/players/`) |
+| `apps/web/src/app/u/[handle]/player-profile-tabs.tsx`                        | Create (5 tabs)                               |
+| `apps/web/src/app/u/[handle]/overview-tab.tsx`                               | Create (copied from `/players/`)              |
+| `apps/web/src/app/u/[handle]/tournaments-tab.tsx`                            | Create (full history)                         |
+| `apps/web/src/app/u/[handle]/teams-tab.tsx`                                  | Create (stub)                                 |
+| `apps/web/src/app/u/[handle]/social-tab.tsx`                                 | Create (migrated from `/profile/`)            |
+| `apps/web/src/app/u/[handle]/achievements-tab.tsx`                           | Create (stub)                                 |
+| `apps/web/src/app/u/[handle]/__tests__/player-profile-tabs.test.tsx`         | Create                                        |
+| `apps/web/src/components/topnav-auth-section.tsx`                            | Add "My Profile" link                         |
+| `apps/web/src/components/__tests__/topnav-auth-section.test.tsx`             | Create                                        |
+| `apps/web/src/app/players/`                                                  | Delete entire directory                       |
+| `apps/web/src/app/profile/`                                                  | Delete entire directory                       |

@@ -70,6 +70,42 @@ describe("sendMatchMessageSchema", () => {
       }).success
     ).toBe(false);
   });
+
+  it("rejects whitespace-only content", () => {
+    expect(
+      sendMatchMessageSchema.safeParse({
+        altId: 1,
+        content: "   ",
+      }).success
+    ).toBe(false);
+  });
+
+  it("trims whitespace from content", () => {
+    const result = sendMatchMessageSchema.safeParse({
+      altId: 1,
+      content: "  hello  ",
+    });
+    expect(result.success).toBe(true);
+    if (result.success) expect(result.data.content).toBe("hello");
+  });
+
+  it("rejects content containing profanity", () => {
+    expect(
+      sendMatchMessageSchema.safeParse({
+        altId: 1,
+        content: "fuck you",
+      }).success
+    ).toBe(false);
+  });
+
+  it("accepts clean content", () => {
+    expect(
+      sendMatchMessageSchema.safeParse({
+        altId: 1,
+        content: "good game well played",
+      }).success
+    ).toBe(true);
+  });
 });
 
 describe("createMatchGamesSchema", () => {

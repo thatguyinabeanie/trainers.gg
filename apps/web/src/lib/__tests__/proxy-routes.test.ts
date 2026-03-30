@@ -9,6 +9,7 @@ import {
   isProtectedRoute,
   isAdminRoute,
   isNextInternal,
+  needsOnboarding,
   ADMIN_ROUTES,
   PROTECTED_ROUTES,
   PUBLIC_ROUTES,
@@ -82,6 +83,7 @@ describe("proxy-routes", () => {
       expect(isProtectedRoute("/dashboard")).toBe(true);
       expect(isProtectedRoute("/to-dashboard")).toBe(true);
       expect(isProtectedRoute("/communities/create")).toBe(true);
+      expect(isProtectedRoute("/onboarding")).toBe(true);
     });
 
     it("should match protected route prefixes", () => {
@@ -137,6 +139,41 @@ describe("proxy-routes", () => {
         expect(isAdminRoute(route)).toBe(true);
         expect(isAdminRoute(`${route}/sub`)).toBe(true);
       }
+    });
+  });
+
+  describe("needsOnboarding", () => {
+    it.each([
+      // temp_ prefix usernames from OAuth sign-up
+      { username: "temp_06143118-14b", expected: true },
+      // user_ prefix usernames from OAuth sign-up
+      { username: "user_abc123", expected: true },
+    ])(
+      "should return true for temporary username '$username'",
+      ({ username, expected }) => {
+        expect(needsOnboarding(username)).toBe(expected);
+      }
+    );
+
+    it.each([
+      // Normal usernames do not need onboarding
+      { username: "ash_ketchum", expected: false },
+      // undefined means no user / not logged in
+      { username: undefined, expected: false },
+      // Empty string is falsy
+      { username: "", expected: false },
+    ])(
+      "should return false for username '$username'",
+      ({ username, expected }) => {
+        expect(needsOnboarding(username)).toBe(expected);
+      }
+    );
+
+    it("returns false for non-string types", () => {
+      expect(needsOnboarding(123)).toBe(false);
+      expect(needsOnboarding(true)).toBe(false);
+      expect(needsOnboarding(null)).toBe(false);
+      expect(needsOnboarding({})).toBe(false);
     });
   });
 

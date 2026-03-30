@@ -3,8 +3,9 @@
 import { z, usernameSchema, pdsStatusSchema } from "@trainers/validators";
 import { checkBotId } from "botid/server";
 import { createClient } from "@/lib/supabase/server";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, updateTag } from "next/cache";
 import { escapeLike } from "@trainers/utils";
+import { CacheTags } from "@/lib/cache";
 import { withAction } from "./utils";
 
 const PDS_HOST = process.env.PDS_HOST || "https://pds.trainers.gg";
@@ -254,6 +255,14 @@ export async function updateProfile(data: {
     if (userError || !user) {
       return { success: false, error: "Not authenticated" };
     }
+
+    // Fetch current username for cache invalidation
+    const { data: currentUser } = await supabase
+      .from("users")
+      .select("username")
+      .eq("id", user.id)
+      .maybeSingle();
+    const currentUsername = currentUser?.username;
 
     // Build update data for the users table
     const userUpdate: Record<string, string> = {};
@@ -551,6 +560,16 @@ export async function updateProfile(data: {
       }
     }
 
+    // Invalidate player profile cache
+    if (currentUsername) {
+      updateTag(CacheTags.player(currentUsername));
+    }
+    if (hasUsernameChange && validated.username !== currentUsername) {
+      updateTag(CacheTags.player(validated.username!));
+      updateTag(CacheTags.PLAYERS_DIRECTORY);
+      updateTag(CacheTags.PLAYERS_NEW);
+    }
+
     revalidatePath("/");
     return { success: true, error: null };
   } catch (error) {
@@ -606,7 +625,7 @@ export async function updateAltVisibilityAction(
       .eq("id", user.id)
       .maybeSingle();
     if (userData?.username) {
-      revalidatePath(`/u/${userData.username}`);
+      updateTag(CacheTags.player(userData.username));
     }
   }, "Failed to update alt visibility");
 }

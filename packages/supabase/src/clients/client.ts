@@ -36,23 +36,6 @@ import { getTournamentAuditLog as getTournamentAuditLog_core } from "../queries/
 import { getMatchAuditLog as getMatchAuditLog_core } from "../queries/audit-log";
 import { getAuditLog as getAuditLog_core } from "../queries/audit-log";
 import { getAuditLogStats as getAuditLogStats_core } from "../queries/audit-log";
-import { listFeatureFlags as listFeatureFlags_core } from "../queries/feature-flags";
-import { getFeatureFlag as getFeatureFlag_core } from "../queries/feature-flags";
-import { isFeatureEnabled as isFeatureEnabled_core } from "../queries/feature-flags";
-import { createFeatureFlag as createFeatureFlag_core } from "../queries/feature-flags";
-import { updateFeatureFlag as updateFeatureFlag_core } from "../queries/feature-flags";
-import { deleteFeatureFlag as deleteFeatureFlag_core } from "../queries/feature-flags";
-import { getMatchGames as getMatchGames_core } from "../queries/match-games";
-import { getMatchGamesForPlayer as getMatchGamesForPlayer_core } from "../queries/match-games";
-import { getMatchMessages as getMatchMessages_core } from "../queries/match-games";
-import { getMatchGame as getMatchGame_core } from "../queries/match-games";
-import { getNotificationPreferences as getNotificationPreferences_core } from "../queries/notification-preferences";
-import { getNotifications as getNotifications_core } from "../queries/notifications";
-import { getNotificationCount as getNotificationCount_core } from "../queries/notifications";
-import { getUnreadNotificationCount as getUnreadNotificationCount_core } from "../queries/notifications";
-import { getActiveMatchNotifications as getActiveMatchNotifications_core } from "../queries/notifications";
-import { getMyOrganizationRequest as getMyOrganizationRequest_core } from "../queries/organization-requests";
-import { listOrgRequestsAdmin as listOrgRequestsAdmin_core } from "../queries/organization-requests";
 import { listPublicCommunities as listPublicCommunities_core } from "../queries/communities";
 import { listCommunities as listCommunities_core } from "../queries/communities";
 import { getCommunityBySlug as getCommunityBySlug_core } from "../queries/communities";
@@ -70,6 +53,23 @@ import { listCommunityStaffWithRoles as listCommunityStaffWithRoles_core } from 
 import { listCommunityGroups as listCommunityGroups_core } from "../queries/communities";
 import { searchUsersForInvite as searchUsersForInvite_core } from "../queries/communities";
 import { hasCommunityPermission as hasCommunityPermission_core } from "../queries/communities";
+import { listFeatureFlags as listFeatureFlags_core } from "../queries/feature-flags";
+import { getFeatureFlag as getFeatureFlag_core } from "../queries/feature-flags";
+import { isFeatureEnabled as isFeatureEnabled_core } from "../queries/feature-flags";
+import { createFeatureFlag as createFeatureFlag_core } from "../queries/feature-flags";
+import { updateFeatureFlag as updateFeatureFlag_core } from "../queries/feature-flags";
+import { deleteFeatureFlag as deleteFeatureFlag_core } from "../queries/feature-flags";
+import { getMatchGames as getMatchGames_core } from "../queries/match-games";
+import { getMatchGamesForPlayer as getMatchGamesForPlayer_core } from "../queries/match-games";
+import { getMatchMessages as getMatchMessages_core } from "../queries/match-games";
+import { getMatchGame as getMatchGame_core } from "../queries/match-games";
+import { getNotificationPreferences as getNotificationPreferences_core } from "../queries/notification-preferences";
+import { getNotifications as getNotifications_core } from "../queries/notifications";
+import { getNotificationCount as getNotificationCount_core } from "../queries/notifications";
+import { getUnreadNotificationCount as getUnreadNotificationCount_core } from "../queries/notifications";
+import { getActiveMatchNotifications as getActiveMatchNotifications_core } from "../queries/notifications";
+import { getMyOrganizationRequest as getMyOrganizationRequest_core } from "../queries/organization-requests";
+import { listOrgRequestsAdmin as listOrgRequestsAdmin_core } from "../queries/organization-requests";
 import { getUserPermissions as getUserPermissions_core } from "../queries/permissions";
 import { hasPermission as hasPermission_core } from "../queries/permissions";
 import { searchPlayers as searchPlayers_core } from "../queries/players";
@@ -141,6 +141,18 @@ import { getFollowerCount as getFollowerCount_core } from "../queries/users";
 import { getFollowingCount as getFollowingCount_core } from "../queries/users";
 import { getPlayerTournamentHistoryFull as getPlayerTournamentHistoryFull_core } from "../queries/users";
 import { getPlayerPublicTeams as getPlayerPublicTeams_core } from "../queries/users";
+import { createCommunity as createCommunity_core } from "../mutations/communities";
+import { updateCommunity as updateCommunity_core } from "../mutations/communities";
+import { inviteToCommunity as inviteToCommunity_core } from "../mutations/communities";
+import { acceptCommunityInvitation as acceptCommunityInvitation_core } from "../mutations/communities";
+import { declineCommunityInvitation as declineCommunityInvitation_core } from "../mutations/communities";
+import { leaveCommunity as leaveCommunity_core } from "../mutations/communities";
+import { removeStaff as removeStaff_core } from "../mutations/communities";
+import { addStaffMember as addStaffMember_core } from "../mutations/communities";
+import { addStaffToGroup as addStaffToGroup_core } from "../mutations/communities";
+import { removeStaffFromGroup as removeStaffFromGroup_core } from "../mutations/communities";
+import { changeStaffRole as changeStaffRole_core } from "../mutations/communities";
+import { removeStaffCompletely as removeStaffCompletely_core } from "../mutations/communities";
 import { submitGameSelection as submitGameSelection_core } from "../mutations/match-games";
 import { sendMatchMessage as sendMatchMessage_core } from "../mutations/match-games";
 import { sendSystemMessage as sendSystemMessage_core } from "../mutations/match-games";
@@ -154,20 +166,8 @@ import { markNotificationRead as markNotificationRead_core } from "../mutations/
 import { markAllNotificationsRead as markAllNotificationsRead_core } from "../mutations/notifications";
 import { deleteNotification as deleteNotification_core } from "../mutations/notifications";
 import { submitCommunityRequest as submitCommunityRequest_core } from "../mutations/organization-requests";
-import { approveCommunityRequest as approveCommunityRequest_core } from "../mutations/organization-requests";
+import { grantCommunityRequest as grantCommunityRequest_core } from "../mutations/organization-requests";
 import { rejectCommunityRequest as rejectCommunityRequest_core } from "../mutations/organization-requests";
-import { createCommunity as createCommunity_core } from "../mutations/communities";
-import { updateCommunity as updateCommunity_core } from "../mutations/communities";
-import { inviteToCommunity as inviteToCommunity_core } from "../mutations/communities";
-import { acceptCommunityInvitation as acceptCommunityInvitation_core } from "../mutations/communities";
-import { declineCommunityInvitation as declineCommunityInvitation_core } from "../mutations/communities";
-import { leaveCommunity as leaveCommunity_core } from "../mutations/communities";
-import { removeStaff as removeStaff_core } from "../mutations/communities";
-import { addStaffMember as addStaffMember_core } from "../mutations/communities";
-import { addStaffToGroup as addStaffToGroup_core } from "../mutations/communities";
-import { removeStaffFromGroup as removeStaffFromGroup_core } from "../mutations/communities";
-import { changeStaffRole as changeStaffRole_core } from "../mutations/communities";
-import { removeStaffCompletely as removeStaffCompletely_core } from "../mutations/communities";
 import { updateAlt as updateAlt_core } from "../mutations/users";
 import { updateUsername as updateUsername_core } from "../mutations/users";
 import { ensureAlt as ensureAlt_core } from "../mutations/users";
@@ -613,261 +613,6 @@ export async function getAuditLogStats(
 }
 
 /**
- * listFeatureFlags (auto-injected with browser client)
- */
-export async function listFeatureFlags(
-  ...args: Parameters<typeof listFeatureFlags_core> extends [
-    first: infer _F,
-    ...rest: infer R,
-  ]
-    ? R
-    : never
-): Promise<Awaited<ReturnType<typeof listFeatureFlags_core>>> {
-  const client = createBrowserSupabaseClient();
-  return listFeatureFlags_core(client, ...args);
-}
-
-/**
- * getFeatureFlag (auto-injected with browser client)
- */
-export async function getFeatureFlag(
-  ...args: Parameters<typeof getFeatureFlag_core> extends [
-    first: infer _F,
-    ...rest: infer R,
-  ]
-    ? R
-    : never
-): Promise<Awaited<ReturnType<typeof getFeatureFlag_core>>> {
-  const client = createBrowserSupabaseClient();
-  return getFeatureFlag_core(client, ...args);
-}
-
-/**
- * isFeatureEnabled (auto-injected with browser client)
- */
-export async function isFeatureEnabled(
-  ...args: Parameters<typeof isFeatureEnabled_core> extends [
-    first: infer _F,
-    ...rest: infer R,
-  ]
-    ? R
-    : never
-): Promise<Awaited<ReturnType<typeof isFeatureEnabled_core>>> {
-  const client = createBrowserSupabaseClient();
-  return isFeatureEnabled_core(client, ...args);
-}
-
-/**
- * createFeatureFlag (auto-injected with browser client)
- */
-export async function createFeatureFlag(
-  ...args: Parameters<typeof createFeatureFlag_core> extends [
-    first: infer _F,
-    ...rest: infer R,
-  ]
-    ? R
-    : never
-): Promise<Awaited<ReturnType<typeof createFeatureFlag_core>>> {
-  const client = createBrowserSupabaseClient();
-  return createFeatureFlag_core(client, ...args);
-}
-
-/**
- * updateFeatureFlag (auto-injected with browser client)
- */
-export async function updateFeatureFlag(
-  ...args: Parameters<typeof updateFeatureFlag_core> extends [
-    first: infer _F,
-    ...rest: infer R,
-  ]
-    ? R
-    : never
-): Promise<Awaited<ReturnType<typeof updateFeatureFlag_core>>> {
-  const client = createBrowserSupabaseClient();
-  return updateFeatureFlag_core(client, ...args);
-}
-
-/**
- * deleteFeatureFlag (auto-injected with browser client)
- */
-export async function deleteFeatureFlag(
-  ...args: Parameters<typeof deleteFeatureFlag_core> extends [
-    first: infer _F,
-    ...rest: infer R,
-  ]
-    ? R
-    : never
-): Promise<Awaited<ReturnType<typeof deleteFeatureFlag_core>>> {
-  const client = createBrowserSupabaseClient();
-  return deleteFeatureFlag_core(client, ...args);
-}
-
-/**
- * getMatchGames (auto-injected with browser client)
- */
-export async function getMatchGames(
-  ...args: Parameters<typeof getMatchGames_core> extends [
-    first: infer _F,
-    ...rest: infer R,
-  ]
-    ? R
-    : never
-): Promise<Awaited<ReturnType<typeof getMatchGames_core>>> {
-  const client = createBrowserSupabaseClient();
-  return getMatchGames_core(client, ...args);
-}
-
-/**
- * getMatchGamesForPlayer (auto-injected with browser client)
- */
-export async function getMatchGamesForPlayer(
-  ...args: Parameters<typeof getMatchGamesForPlayer_core> extends [
-    first: infer _F,
-    ...rest: infer R,
-  ]
-    ? R
-    : never
-): Promise<Awaited<ReturnType<typeof getMatchGamesForPlayer_core>>> {
-  const client = createBrowserSupabaseClient();
-  return getMatchGamesForPlayer_core(client, ...args);
-}
-
-/**
- * getMatchMessages (auto-injected with browser client)
- */
-export async function getMatchMessages(
-  ...args: Parameters<typeof getMatchMessages_core> extends [
-    first: infer _F,
-    ...rest: infer R,
-  ]
-    ? R
-    : never
-): Promise<Awaited<ReturnType<typeof getMatchMessages_core>>> {
-  const client = createBrowserSupabaseClient();
-  return getMatchMessages_core(client, ...args);
-}
-
-/**
- * getMatchGame (auto-injected with browser client)
- */
-export async function getMatchGame(
-  ...args: Parameters<typeof getMatchGame_core> extends [
-    first: infer _F,
-    ...rest: infer R,
-  ]
-    ? R
-    : never
-): Promise<Awaited<ReturnType<typeof getMatchGame_core>>> {
-  const client = createBrowserSupabaseClient();
-  return getMatchGame_core(client, ...args);
-}
-
-/**
- * getNotificationPreferences (auto-injected with browser client)
- */
-export async function getNotificationPreferences(
-  ...args: Parameters<typeof getNotificationPreferences_core> extends [
-    first: infer _F,
-    ...rest: infer R,
-  ]
-    ? R
-    : never
-): Promise<Awaited<ReturnType<typeof getNotificationPreferences_core>>> {
-  const client = createBrowserSupabaseClient();
-  return getNotificationPreferences_core(client, ...args);
-}
-
-/**
- * getNotifications (auto-injected with browser client)
- */
-export async function getNotifications(
-  ...args: Parameters<typeof getNotifications_core> extends [
-    first: infer _F,
-    ...rest: infer R,
-  ]
-    ? R
-    : never
-): Promise<Awaited<ReturnType<typeof getNotifications_core>>> {
-  const client = createBrowserSupabaseClient();
-  return getNotifications_core(client, ...args);
-}
-
-/**
- * getNotificationCount (auto-injected with browser client)
- */
-export async function getNotificationCount(
-  ...args: Parameters<typeof getNotificationCount_core> extends [
-    first: infer _F,
-    ...rest: infer R,
-  ]
-    ? R
-    : never
-): Promise<Awaited<ReturnType<typeof getNotificationCount_core>>> {
-  const client = createBrowserSupabaseClient();
-  return getNotificationCount_core(client, ...args);
-}
-
-/**
- * getUnreadNotificationCount (auto-injected with browser client)
- */
-export async function getUnreadNotificationCount(
-  ...args: Parameters<typeof getUnreadNotificationCount_core> extends [
-    first: infer _F,
-    ...rest: infer R,
-  ]
-    ? R
-    : never
-): Promise<Awaited<ReturnType<typeof getUnreadNotificationCount_core>>> {
-  const client = createBrowserSupabaseClient();
-  return getUnreadNotificationCount_core(client, ...args);
-}
-
-/**
- * getActiveMatchNotifications (auto-injected with browser client)
- */
-export async function getActiveMatchNotifications(
-  ...args: Parameters<typeof getActiveMatchNotifications_core> extends [
-    first: infer _F,
-    ...rest: infer R,
-  ]
-    ? R
-    : never
-): Promise<Awaited<ReturnType<typeof getActiveMatchNotifications_core>>> {
-  const client = createBrowserSupabaseClient();
-  return getActiveMatchNotifications_core(client, ...args);
-}
-
-/**
- * getMyOrganizationRequest (auto-injected with browser client)
- */
-export async function getMyOrganizationRequest(
-  ...args: Parameters<typeof getMyOrganizationRequest_core> extends [
-    first: infer _F,
-    ...rest: infer R,
-  ]
-    ? R
-    : never
-): Promise<Awaited<ReturnType<typeof getMyOrganizationRequest_core>>> {
-  const client = createBrowserSupabaseClient();
-  return getMyOrganizationRequest_core(client, ...args);
-}
-
-/**
- * listOrgRequestsAdmin (auto-injected with browser client)
- */
-export async function listOrgRequestsAdmin(
-  ...args: Parameters<typeof listOrgRequestsAdmin_core> extends [
-    first: infer _F,
-    ...rest: infer R,
-  ]
-    ? R
-    : never
-): Promise<Awaited<ReturnType<typeof listOrgRequestsAdmin_core>>> {
-  const client = createBrowserSupabaseClient();
-  return listOrgRequestsAdmin_core(client, ...args);
-}
-
-/**
  * listPublicCommunities (auto-injected with browser client)
  */
 export async function listPublicCommunities(
@@ -1120,6 +865,261 @@ export async function hasCommunityPermission(
 ): Promise<Awaited<ReturnType<typeof hasCommunityPermission_core>>> {
   const client = createBrowserSupabaseClient();
   return hasCommunityPermission_core(client, ...args);
+}
+
+/**
+ * listFeatureFlags (auto-injected with browser client)
+ */
+export async function listFeatureFlags(
+  ...args: Parameters<typeof listFeatureFlags_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof listFeatureFlags_core>>> {
+  const client = createBrowserSupabaseClient();
+  return listFeatureFlags_core(client, ...args);
+}
+
+/**
+ * getFeatureFlag (auto-injected with browser client)
+ */
+export async function getFeatureFlag(
+  ...args: Parameters<typeof getFeatureFlag_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof getFeatureFlag_core>>> {
+  const client = createBrowserSupabaseClient();
+  return getFeatureFlag_core(client, ...args);
+}
+
+/**
+ * isFeatureEnabled (auto-injected with browser client)
+ */
+export async function isFeatureEnabled(
+  ...args: Parameters<typeof isFeatureEnabled_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof isFeatureEnabled_core>>> {
+  const client = createBrowserSupabaseClient();
+  return isFeatureEnabled_core(client, ...args);
+}
+
+/**
+ * createFeatureFlag (auto-injected with browser client)
+ */
+export async function createFeatureFlag(
+  ...args: Parameters<typeof createFeatureFlag_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof createFeatureFlag_core>>> {
+  const client = createBrowserSupabaseClient();
+  return createFeatureFlag_core(client, ...args);
+}
+
+/**
+ * updateFeatureFlag (auto-injected with browser client)
+ */
+export async function updateFeatureFlag(
+  ...args: Parameters<typeof updateFeatureFlag_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof updateFeatureFlag_core>>> {
+  const client = createBrowserSupabaseClient();
+  return updateFeatureFlag_core(client, ...args);
+}
+
+/**
+ * deleteFeatureFlag (auto-injected with browser client)
+ */
+export async function deleteFeatureFlag(
+  ...args: Parameters<typeof deleteFeatureFlag_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof deleteFeatureFlag_core>>> {
+  const client = createBrowserSupabaseClient();
+  return deleteFeatureFlag_core(client, ...args);
+}
+
+/**
+ * getMatchGames (auto-injected with browser client)
+ */
+export async function getMatchGames(
+  ...args: Parameters<typeof getMatchGames_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof getMatchGames_core>>> {
+  const client = createBrowserSupabaseClient();
+  return getMatchGames_core(client, ...args);
+}
+
+/**
+ * getMatchGamesForPlayer (auto-injected with browser client)
+ */
+export async function getMatchGamesForPlayer(
+  ...args: Parameters<typeof getMatchGamesForPlayer_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof getMatchGamesForPlayer_core>>> {
+  const client = createBrowserSupabaseClient();
+  return getMatchGamesForPlayer_core(client, ...args);
+}
+
+/**
+ * getMatchMessages (auto-injected with browser client)
+ */
+export async function getMatchMessages(
+  ...args: Parameters<typeof getMatchMessages_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof getMatchMessages_core>>> {
+  const client = createBrowserSupabaseClient();
+  return getMatchMessages_core(client, ...args);
+}
+
+/**
+ * getMatchGame (auto-injected with browser client)
+ */
+export async function getMatchGame(
+  ...args: Parameters<typeof getMatchGame_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof getMatchGame_core>>> {
+  const client = createBrowserSupabaseClient();
+  return getMatchGame_core(client, ...args);
+}
+
+/**
+ * getNotificationPreferences (auto-injected with browser client)
+ */
+export async function getNotificationPreferences(
+  ...args: Parameters<typeof getNotificationPreferences_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof getNotificationPreferences_core>>> {
+  const client = createBrowserSupabaseClient();
+  return getNotificationPreferences_core(client, ...args);
+}
+
+/**
+ * getNotifications (auto-injected with browser client)
+ */
+export async function getNotifications(
+  ...args: Parameters<typeof getNotifications_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof getNotifications_core>>> {
+  const client = createBrowserSupabaseClient();
+  return getNotifications_core(client, ...args);
+}
+
+/**
+ * getNotificationCount (auto-injected with browser client)
+ */
+export async function getNotificationCount(
+  ...args: Parameters<typeof getNotificationCount_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof getNotificationCount_core>>> {
+  const client = createBrowserSupabaseClient();
+  return getNotificationCount_core(client, ...args);
+}
+
+/**
+ * getUnreadNotificationCount (auto-injected with browser client)
+ */
+export async function getUnreadNotificationCount(
+  ...args: Parameters<typeof getUnreadNotificationCount_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof getUnreadNotificationCount_core>>> {
+  const client = createBrowserSupabaseClient();
+  return getUnreadNotificationCount_core(client, ...args);
+}
+
+/**
+ * getActiveMatchNotifications (auto-injected with browser client)
+ */
+export async function getActiveMatchNotifications(
+  ...args: Parameters<typeof getActiveMatchNotifications_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof getActiveMatchNotifications_core>>> {
+  const client = createBrowserSupabaseClient();
+  return getActiveMatchNotifications_core(client, ...args);
+}
+
+/**
+ * getMyOrganizationRequest (auto-injected with browser client)
+ */
+export async function getMyOrganizationRequest(
+  ...args: Parameters<typeof getMyOrganizationRequest_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof getMyOrganizationRequest_core>>> {
+  const client = createBrowserSupabaseClient();
+  return getMyOrganizationRequest_core(client, ...args);
+}
+
+/**
+ * listOrgRequestsAdmin (auto-injected with browser client)
+ */
+export async function listOrgRequestsAdmin(
+  ...args: Parameters<typeof listOrgRequestsAdmin_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof listOrgRequestsAdmin_core>>> {
+  const client = createBrowserSupabaseClient();
+  return listOrgRequestsAdmin_core(client, ...args);
 }
 
 /**
@@ -2189,6 +2189,186 @@ export async function getPlayerPublicTeams(
 }
 
 /**
+ * createCommunity (auto-injected with browser client)
+ */
+export async function createCommunity(
+  ...args: Parameters<typeof createCommunity_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof createCommunity_core>>> {
+  const client = createBrowserSupabaseClient();
+  return createCommunity_core(client, ...args);
+}
+
+/**
+ * updateCommunity (auto-injected with browser client)
+ */
+export async function updateCommunity(
+  ...args: Parameters<typeof updateCommunity_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof updateCommunity_core>>> {
+  const client = createBrowserSupabaseClient();
+  return updateCommunity_core(client, ...args);
+}
+
+/**
+ * inviteToCommunity (auto-injected with browser client)
+ */
+export async function inviteToCommunity(
+  ...args: Parameters<typeof inviteToCommunity_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof inviteToCommunity_core>>> {
+  const client = createBrowserSupabaseClient();
+  return inviteToCommunity_core(client, ...args);
+}
+
+/**
+ * acceptCommunityInvitation (auto-injected with browser client)
+ */
+export async function acceptCommunityInvitation(
+  ...args: Parameters<typeof acceptCommunityInvitation_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof acceptCommunityInvitation_core>>> {
+  const client = createBrowserSupabaseClient();
+  return acceptCommunityInvitation_core(client, ...args);
+}
+
+/**
+ * declineCommunityInvitation (auto-injected with browser client)
+ */
+export async function declineCommunityInvitation(
+  ...args: Parameters<typeof declineCommunityInvitation_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof declineCommunityInvitation_core>>> {
+  const client = createBrowserSupabaseClient();
+  return declineCommunityInvitation_core(client, ...args);
+}
+
+/**
+ * leaveCommunity (auto-injected with browser client)
+ */
+export async function leaveCommunity(
+  ...args: Parameters<typeof leaveCommunity_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof leaveCommunity_core>>> {
+  const client = createBrowserSupabaseClient();
+  return leaveCommunity_core(client, ...args);
+}
+
+/**
+ * removeStaff (auto-injected with browser client)
+ */
+export async function removeStaff(
+  ...args: Parameters<typeof removeStaff_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof removeStaff_core>>> {
+  const client = createBrowserSupabaseClient();
+  return removeStaff_core(client, ...args);
+}
+
+/**
+ * addStaffMember (auto-injected with browser client)
+ */
+export async function addStaffMember(
+  ...args: Parameters<typeof addStaffMember_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof addStaffMember_core>>> {
+  const client = createBrowserSupabaseClient();
+  return addStaffMember_core(client, ...args);
+}
+
+/**
+ * addStaffToGroup (auto-injected with browser client)
+ */
+export async function addStaffToGroup(
+  ...args: Parameters<typeof addStaffToGroup_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof addStaffToGroup_core>>> {
+  const client = createBrowserSupabaseClient();
+  return addStaffToGroup_core(client, ...args);
+}
+
+/**
+ * removeStaffFromGroup (auto-injected with browser client)
+ */
+export async function removeStaffFromGroup(
+  ...args: Parameters<typeof removeStaffFromGroup_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof removeStaffFromGroup_core>>> {
+  const client = createBrowserSupabaseClient();
+  return removeStaffFromGroup_core(client, ...args);
+}
+
+/**
+ * changeStaffRole (auto-injected with browser client)
+ */
+export async function changeStaffRole(
+  ...args: Parameters<typeof changeStaffRole_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof changeStaffRole_core>>> {
+  const client = createBrowserSupabaseClient();
+  return changeStaffRole_core(client, ...args);
+}
+
+/**
+ * removeStaffCompletely (auto-injected with browser client)
+ */
+export async function removeStaffCompletely(
+  ...args: Parameters<typeof removeStaffCompletely_core> extends [
+    first: infer _F,
+    ...rest: infer R,
+  ]
+    ? R
+    : never
+): Promise<Awaited<ReturnType<typeof removeStaffCompletely_core>>> {
+  const client = createBrowserSupabaseClient();
+  return removeStaffCompletely_core(client, ...args);
+}
+
+/**
  * submitGameSelection (auto-injected with browser client)
  */
 export async function submitGameSelection(
@@ -2384,18 +2564,18 @@ export async function submitCommunityRequest(
 }
 
 /**
- * approveCommunityRequest (auto-injected with browser client)
+ * grantCommunityRequest (auto-injected with browser client)
  */
-export async function approveCommunityRequest(
-  ...args: Parameters<typeof approveCommunityRequest_core> extends [
+export async function grantCommunityRequest(
+  ...args: Parameters<typeof grantCommunityRequest_core> extends [
     first: infer _F,
     ...rest: infer R,
   ]
     ? R
     : never
-): Promise<Awaited<ReturnType<typeof approveCommunityRequest_core>>> {
+): Promise<Awaited<ReturnType<typeof grantCommunityRequest_core>>> {
   const client = createBrowserSupabaseClient();
-  return approveCommunityRequest_core(client, ...args);
+  return grantCommunityRequest_core(client, ...args);
 }
 
 /**
@@ -2411,186 +2591,6 @@ export async function rejectCommunityRequest(
 ): Promise<Awaited<ReturnType<typeof rejectCommunityRequest_core>>> {
   const client = createBrowserSupabaseClient();
   return rejectCommunityRequest_core(client, ...args);
-}
-
-/**
- * createCommunity (auto-injected with browser client)
- */
-export async function createCommunity(
-  ...args: Parameters<typeof createCommunity_core> extends [
-    first: infer _F,
-    ...rest: infer R,
-  ]
-    ? R
-    : never
-): Promise<Awaited<ReturnType<typeof createCommunity_core>>> {
-  const client = createBrowserSupabaseClient();
-  return createCommunity_core(client, ...args);
-}
-
-/**
- * updateCommunity (auto-injected with browser client)
- */
-export async function updateCommunity(
-  ...args: Parameters<typeof updateCommunity_core> extends [
-    first: infer _F,
-    ...rest: infer R,
-  ]
-    ? R
-    : never
-): Promise<Awaited<ReturnType<typeof updateCommunity_core>>> {
-  const client = createBrowserSupabaseClient();
-  return updateCommunity_core(client, ...args);
-}
-
-/**
- * inviteToCommunity (auto-injected with browser client)
- */
-export async function inviteToCommunity(
-  ...args: Parameters<typeof inviteToCommunity_core> extends [
-    first: infer _F,
-    ...rest: infer R,
-  ]
-    ? R
-    : never
-): Promise<Awaited<ReturnType<typeof inviteToCommunity_core>>> {
-  const client = createBrowserSupabaseClient();
-  return inviteToCommunity_core(client, ...args);
-}
-
-/**
- * acceptCommunityInvitation (auto-injected with browser client)
- */
-export async function acceptCommunityInvitation(
-  ...args: Parameters<typeof acceptCommunityInvitation_core> extends [
-    first: infer _F,
-    ...rest: infer R,
-  ]
-    ? R
-    : never
-): Promise<Awaited<ReturnType<typeof acceptCommunityInvitation_core>>> {
-  const client = createBrowserSupabaseClient();
-  return acceptCommunityInvitation_core(client, ...args);
-}
-
-/**
- * declineCommunityInvitation (auto-injected with browser client)
- */
-export async function declineCommunityInvitation(
-  ...args: Parameters<typeof declineCommunityInvitation_core> extends [
-    first: infer _F,
-    ...rest: infer R,
-  ]
-    ? R
-    : never
-): Promise<Awaited<ReturnType<typeof declineCommunityInvitation_core>>> {
-  const client = createBrowserSupabaseClient();
-  return declineCommunityInvitation_core(client, ...args);
-}
-
-/**
- * leaveCommunity (auto-injected with browser client)
- */
-export async function leaveCommunity(
-  ...args: Parameters<typeof leaveCommunity_core> extends [
-    first: infer _F,
-    ...rest: infer R,
-  ]
-    ? R
-    : never
-): Promise<Awaited<ReturnType<typeof leaveCommunity_core>>> {
-  const client = createBrowserSupabaseClient();
-  return leaveCommunity_core(client, ...args);
-}
-
-/**
- * removeStaff (auto-injected with browser client)
- */
-export async function removeStaff(
-  ...args: Parameters<typeof removeStaff_core> extends [
-    first: infer _F,
-    ...rest: infer R,
-  ]
-    ? R
-    : never
-): Promise<Awaited<ReturnType<typeof removeStaff_core>>> {
-  const client = createBrowserSupabaseClient();
-  return removeStaff_core(client, ...args);
-}
-
-/**
- * addStaffMember (auto-injected with browser client)
- */
-export async function addStaffMember(
-  ...args: Parameters<typeof addStaffMember_core> extends [
-    first: infer _F,
-    ...rest: infer R,
-  ]
-    ? R
-    : never
-): Promise<Awaited<ReturnType<typeof addStaffMember_core>>> {
-  const client = createBrowserSupabaseClient();
-  return addStaffMember_core(client, ...args);
-}
-
-/**
- * addStaffToGroup (auto-injected with browser client)
- */
-export async function addStaffToGroup(
-  ...args: Parameters<typeof addStaffToGroup_core> extends [
-    first: infer _F,
-    ...rest: infer R,
-  ]
-    ? R
-    : never
-): Promise<Awaited<ReturnType<typeof addStaffToGroup_core>>> {
-  const client = createBrowserSupabaseClient();
-  return addStaffToGroup_core(client, ...args);
-}
-
-/**
- * removeStaffFromGroup (auto-injected with browser client)
- */
-export async function removeStaffFromGroup(
-  ...args: Parameters<typeof removeStaffFromGroup_core> extends [
-    first: infer _F,
-    ...rest: infer R,
-  ]
-    ? R
-    : never
-): Promise<Awaited<ReturnType<typeof removeStaffFromGroup_core>>> {
-  const client = createBrowserSupabaseClient();
-  return removeStaffFromGroup_core(client, ...args);
-}
-
-/**
- * changeStaffRole (auto-injected with browser client)
- */
-export async function changeStaffRole(
-  ...args: Parameters<typeof changeStaffRole_core> extends [
-    first: infer _F,
-    ...rest: infer R,
-  ]
-    ? R
-    : never
-): Promise<Awaited<ReturnType<typeof changeStaffRole_core>>> {
-  const client = createBrowserSupabaseClient();
-  return changeStaffRole_core(client, ...args);
-}
-
-/**
- * removeStaffCompletely (auto-injected with browser client)
- */
-export async function removeStaffCompletely(
-  ...args: Parameters<typeof removeStaffCompletely_core> extends [
-    first: infer _F,
-    ...rest: infer R,
-  ]
-    ? R
-    : never
-): Promise<Awaited<ReturnType<typeof removeStaffCompletely_core>>> {
-  const client = createBrowserSupabaseClient();
-  return removeStaffCompletely_core(client, ...args);
 }
 
 /**

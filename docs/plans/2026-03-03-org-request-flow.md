@@ -13,6 +13,7 @@
 ## Task 1: Database Migration
 
 **Files:**
+
 - Create: `packages/supabase/supabase/migrations/YYYYMMDDHHMMSS_organization_requests.sql`
 
 **Step 1: Create the migration file**
@@ -134,6 +135,7 @@ git commit -m "feat: add organization_requests table and notification/audit enum
 ## Task 2: Zod Validators
 
 **Files:**
+
 - Create: `packages/validators/src/organization-request.ts`
 - Modify: `packages/validators/src/index.ts`
 
@@ -204,6 +206,7 @@ git commit -m "feat: add submitOrganizationRequestSchema validator"
 ## Task 3: Test Factory
 
 **Files:**
+
 - Create: `tooling/test-utils/src/factories/organization-request.ts`
 - Modify: `tooling/test-utils/src/factories/index.ts`
 
@@ -251,6 +254,7 @@ git commit -m "feat: add organizationRequestFactory for tests"
 ## Task 4: Supabase Queries
 
 **Files:**
+
 - Create: `packages/supabase/src/queries/organization-requests.ts`
 - Modify: `packages/supabase/src/queries/index.ts`
 
@@ -375,6 +379,7 @@ git commit -m "feat: add organization request queries (user + admin)"
 ## Task 5: Supabase Mutations
 
 **Files:**
+
 - Create: `packages/supabase/src/mutations/organization-requests.ts`
 - Modify: `packages/supabase/src/mutations/index.ts`
 
@@ -434,9 +439,7 @@ export async function submitOrganizationRequest(
         day: "numeric",
         year: "numeric",
       });
-      throw new Error(
-        `You can submit a new request after ${formatted}`
-      );
+      throw new Error(`You can submit a new request after ${formatted}`);
     }
   }
 
@@ -448,7 +451,9 @@ export async function submitOrganizationRequest(
     .maybeSingle();
 
   if (existingOrg) {
-    throw new Error("This URL slug is already taken by an existing organization");
+    throw new Error(
+      "This URL slug is already taken by an existing organization"
+    );
   }
 
   // Check slug uniqueness against pending requests
@@ -654,6 +659,7 @@ git commit -m "feat: add organization request mutations (submit, approve, reject
 ## Task 6: PostHog Events + Cache Tags + Labels
 
 **Files:**
+
 - Modify: `packages/posthog/src/events.ts`
 - Modify: `apps/web/src/lib/cache.ts`
 
@@ -691,6 +697,7 @@ git commit -m "feat: add org request PostHog events and cache tags"
 ## Task 7: User-Facing Server Action
 
 **Files:**
+
 - Create: `apps/web/src/actions/organization-requests.ts`
 
 **Step 1: Create the server action**
@@ -763,6 +770,7 @@ git commit -m "feat: add submitOrganizationRequestAction server action"
 ## Task 8: User-Facing UI — Request Form + Status Components
 
 **Files:**
+
 - Create: `apps/web/src/app/organizations/create/request-organization-form.tsx`
 - Create: `apps/web/src/app/organizations/create/request-status.tsx`
 - Modify: `apps/web/src/app/organizations/create/page.tsx`
@@ -772,6 +780,7 @@ git commit -m "feat: add submitOrganizationRequestAction server action"
 Model after the existing `CreateOrganizationForm` in the same directory. Same fields (name, slug, description), same auto-slug behavior, but calls `submitOrganizationRequestAction` and shows different success text.
 
 Key differences from `CreateOrganizationForm`:
+
 - Import `submitOrganizationRequestAction` from `@/actions/organization-requests`
 - On success: call `router.refresh()` instead of redirecting (page will re-render showing pending status)
 - Toast: "Organization request submitted"
@@ -783,6 +792,7 @@ Key differences from `CreateOrganizationForm`:
 Props: `request` (the organization_requests row from `getMyOrganizationRequest`).
 
 Renders different cards based on `request.status`:
+
 - **pending**: Clock icon, "Your request is pending review", shows name/slug/submitted date, helper text "We'll notify you when it's reviewed."
 - **rejected + cooldown active**: AlertCircle icon, "Your previous request was not approved", shows rejection reason from `admin_notes`, shows cooldown end date
 - **rejected + cooldown expired**: Same rejection info but includes a "Submit a New Request" button that shows the form
@@ -893,6 +903,7 @@ git commit -m "feat: replace org creation form with request flow"
 ## Task 9: Update Entry Points (Org List + TO Dashboard)
 
 **Files:**
+
 - Modify: `apps/web/src/app/organizations/page.tsx`
 - Modify: `apps/web/src/app/to-dashboard/org-selector-client.tsx`
 
@@ -910,19 +921,22 @@ import { Plus } from "lucide-react";
 const user = await getUser();
 
 // In the header JSX, after the search:
-{user && (
-  <Link href="/organizations/create">
-    <Button>
-      <Plus className="mr-2 h-4 w-4" />
-      Request an Organization
-    </Button>
-  </Link>
-)}
+{
+  user && (
+    <Link href="/organizations/create">
+      <Button>
+        <Plus className="mr-2 h-4 w-4" />
+        Request an Organization
+      </Button>
+    </Link>
+  );
+}
 ```
 
 **Step 2: Update TO dashboard button text**
 
 In `apps/web/src/app/to-dashboard/org-selector-client.tsx`:
+
 - Line 50: Change `href="/organizations/create"` → keep as is (same URL)
 - Line 53: Change `"Create Organization"` → `"Request an Organization"`
 - Line 77: Change `href="/organizations/create"` → keep as is
@@ -940,6 +954,7 @@ git commit -m "feat: update org creation entry points to request flow"
 ## Task 10: Admin Page — Org Requests
 
 **Files:**
+
 - Create: `apps/web/src/app/admin/org-requests/page.tsx`
 - Create: `apps/web/src/app/admin/org-requests/columns.tsx`
 - Create: `apps/web/src/app/admin/org-requests/request-detail-sheet.tsx`
@@ -960,6 +975,7 @@ In `apps/web/src/app/admin/admin-nav.tsx`, add to the `navItems` array:
 Follow the exact pattern of `apps/web/src/app/admin/organizations/columns.tsx`.
 
 Row type `OrgRequestRow`:
+
 ```typescript
 export interface OrgRequestRow {
   id: number;
@@ -982,6 +998,7 @@ export interface OrgRequestRow {
 ```
 
 Status labels and classes:
+
 ```typescript
 export const requestStatusLabels: Record<OrgRequestRow["status"], string> = {
   pending: "Pending",
@@ -990,9 +1007,12 @@ export const requestStatusLabels: Record<OrgRequestRow["status"], string> = {
 };
 
 const requestStatusClasses: Record<OrgRequestRow["status"], string> = {
-  pending: "bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/25",
-  approved: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/25",
-  rejected: "bg-gray-500/15 text-gray-600 dark:text-gray-400 border-gray-500/25",
+  pending:
+    "bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/25",
+  approved:
+    "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/25",
+  rejected:
+    "bg-gray-500/15 text-gray-600 dark:text-gray-400 border-gray-500/25",
 };
 ```
 
@@ -1020,7 +1040,10 @@ export async function approveOrgRequestAction(
 ): Promise<ActionResult> {
   const parsed = positiveIntSchema.safeParse(requestId);
   if (!parsed.success) {
-    return { success: false, error: `Invalid input: ${parsed.error.issues[0]?.message}` };
+    return {
+      success: false,
+      error: `Invalid input: ${parsed.error.issues[0]?.message}`,
+    };
   }
 
   return withAdminAction(async (supabase, adminUserId) => {
@@ -1035,11 +1058,17 @@ export async function rejectOrgRequestAction(
 ): Promise<ActionResult> {
   const parsedId = positiveIntSchema.safeParse(requestId);
   if (!parsedId.success) {
-    return { success: false, error: `Invalid input: ${parsedId.error.issues[0]?.message}` };
+    return {
+      success: false,
+      error: `Invalid input: ${parsedId.error.issues[0]?.message}`,
+    };
   }
   const parsedReason = adminReasonSchema.safeParse(reason);
   if (!parsedReason.success) {
-    return { success: false, error: `Invalid input: ${parsedReason.error.issues[0]?.message}` };
+    return {
+      success: false,
+      error: `Invalid input: ${parsedReason.error.issues[0]?.message}`,
+    };
   }
 
   return withAdminAction(async (supabase, adminUserId) => {
@@ -1094,6 +1123,7 @@ git commit -m "feat: add admin org requests page with approve/reject flow"
 ## Task 11: Notification Bell Icon Mapping
 
 **Files:**
+
 - Modify: `apps/web/src/components/notification-bell.tsx`
 
 **Step 1: Add icon mappings**
@@ -1120,6 +1150,7 @@ git commit -m "feat: add org request notification icons to bell component"
 ## Task 12: Edge Function — Email Notifications
 
 **Files:**
+
 - Create: `packages/supabase/supabase/functions/send-org-request-notification/index.ts`
 
 **Step 1: Create the edge function**
@@ -1127,6 +1158,7 @@ git commit -m "feat: add org request notification icons to bell component"
 Follow the `send-invite` pattern exactly. JWT auth (site_admin), POST body `{ requestId, action }`, looks up request + user email via service role client, sends HTML email via Resend.
 
 Two email templates:
+
 - **Approval**: "Your organization has been approved!" + link to org page
 - **Rejection**: "Organization request update" + rejection reason + cooldown info
 
@@ -1146,6 +1178,7 @@ git commit -m "feat: add edge function for org request email notifications"
 ## Task 13: Tests
 
 **Files:**
+
 - Create: `packages/validators/src/__tests__/organization-request.test.ts`
 - Create: `packages/supabase/src/mutations/__tests__/organization-requests.test.ts`
 - Create: `apps/web/src/app/admin/org-requests/__tests__/actions.test.ts`
@@ -1153,6 +1186,7 @@ git commit -m "feat: add edge function for org request email notifications"
 **Step 1: Validator tests**
 
 Test `submitOrganizationRequestSchema`:
+
 - Valid input passes
 - Empty name fails
 - Name over 100 chars fails
@@ -1165,6 +1199,7 @@ Test `submitOrganizationRequestSchema`:
 **Step 2: Mutation tests**
 
 Test `submitOrganizationRequest`:
+
 - Happy path: creates request with correct fields
 - Fails when user has pending request
 - Fails during cooldown period
@@ -1190,6 +1225,7 @@ git commit -m "test: add tests for org request validators, mutations, and admin 
 ## Task 14: Remove Old Direct Create Action
 
 **Files:**
+
 - Modify: `apps/web/src/actions/organizations.ts`
 
 **Step 1: Remove user-facing createOrganization action**
@@ -1197,6 +1233,7 @@ git commit -m "test: add tests for org request validators, mutations, and admin 
 The `createOrganization` export in `apps/web/src/actions/organizations.ts` (lines 40-64) is no longer called by any user-facing code. Remove it. The `createOrganizationMutation` import can also be removed from this file — it's now only called internally by `approveOrganizationRequest` in the supabase mutations package.
 
 Also remove the old `CreateOrganizationForm` component file if it's no longer imported:
+
 - `apps/web/src/app/organizations/create/create-organization-form.tsx` — delete if unused
 
 **Step 2: Verify no other references**
@@ -1240,6 +1277,7 @@ pnpm db:reset && pnpm dev:web+backend
 ```
 
 Test flows:
+
 1. Log in as `player@trainers.local` → go to `/organizations/create` → see request form
 2. Submit a request → see "pending review" status
 3. Log in as `admin@trainers.local` → go to `/admin/org-requests` → see the request

@@ -1,4 +1,10 @@
-import { type PlayerRef, getPlayerName, formatTimeAgo } from "../format";
+import {
+  type PlayerRef,
+  getPlayerName,
+  formatDate,
+  formatDateTime,
+  formatTimeAgo,
+} from "../format";
 
 describe("getPlayerName", () => {
   it("returns display_name when available", () => {
@@ -54,6 +60,52 @@ describe("getPlayerName", () => {
   it("does not use fallback when username is present", () => {
     const player: PlayerRef = { username: "ash" };
     expect(getPlayerName(player, "Fallback")).toBe("ash");
+  });
+});
+
+describe("formatDate", () => {
+  beforeEach(() => {
+    jest.useFakeTimers();
+    jest.setSystemTime(new Date("2026-03-25T12:00:00.000Z"));
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
+  it.each([
+    ["2026-03-25T12:00:00.000Z", "Mar 25, 2026"],
+    ["2026-01-15T12:00:00.000Z", "Jan 15, 2026"],
+    ["2025-12-01T12:00:00.000Z", "Dec 1, 2025"],
+  ])("formats %s as %s", (input, expected) => {
+    expect(formatDate(input)).toBe(expected);
+  });
+});
+
+describe("formatDateTime", () => {
+  beforeEach(() => {
+    jest.useFakeTimers();
+    jest.setSystemTime(new Date("2026-03-25T12:00:00.000Z"));
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
+  it("includes date and time", () => {
+    const result = formatDateTime("2026-03-25T15:45:00.000Z");
+    expect(result).toContain("Mar");
+    expect(result).toContain("25");
+    expect(result).toContain("2026");
+    // Time portion — locale-dependent but should contain hour and minute
+    expect(result).toMatch(/\d{1,2}:\d{2}/);
+  });
+
+  it.each([
+    ["2026-01-15T09:30:00.000Z", "Jan"],
+    ["2025-06-20T18:00:00.000Z", "Jun"],
+  ])("formats %s with month %s", (input, expectedMonth) => {
+    expect(formatDateTime(input)).toContain(expectedMonth);
   });
 });
 

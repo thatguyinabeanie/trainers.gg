@@ -2,8 +2,26 @@
  * @jest-environment node
  */
 
-// Mock Supabase client
-const mockSupabaseClient = {};
+// Mock next/cache
+const mockUpdateTag = jest.fn();
+jest.mock("next/cache", () => ({
+  updateTag: (...args: unknown[]) => mockUpdateTag(...args),
+}));
+
+// Mock Supabase client with auth.getUser and users query for invalidatePlayerCache
+const mockMaybeSingle = jest.fn().mockResolvedValue({
+  data: { username: "test_user" },
+  error: null,
+});
+const mockEq = jest.fn().mockReturnValue({ maybeSingle: mockMaybeSingle });
+const mockSelect = jest.fn().mockReturnValue({ eq: mockEq });
+const mockFrom = jest.fn().mockReturnValue({ select: mockSelect });
+const mockSupabaseClient = {
+  auth: {
+    getUser: jest.fn().mockResolvedValue({ data: { user: { id: "user-1" } } }),
+  },
+  from: mockFrom,
+};
 jest.mock("@/lib/supabase/server", () => ({
   createClient: jest.fn(async () => mockSupabaseClient),
 }));
@@ -45,6 +63,14 @@ describe("createAltAction", () => {
     });
   });
 
+  it("invalidates player cache after creating an alt", async () => {
+    mockCreateAlt.mockResolvedValue({ id: 101 });
+
+    await createAltAction({ username: "ash_ketchum" });
+
+    expect(mockUpdateTag).toHaveBeenCalledWith("player:test_user");
+  });
+
   it("returns a validation error for an invalid username (special characters)", async () => {
     const result = await createAltAction({
       username: "InvalidUser!",
@@ -56,6 +82,7 @@ describe("createAltAction", () => {
     }
     // The mutation should never be called when validation fails
     expect(mockCreateAlt).not.toHaveBeenCalled();
+    expect(mockUpdateTag).not.toHaveBeenCalled();
   });
 
   it("returns an error when the mutation throws", async () => {

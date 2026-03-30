@@ -2,7 +2,7 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { SocialAuthButtons } from "../social-auth-buttons";
 
-const mockSignInWithOAuth = jest.fn();
+const mockSignInWithOAuth = jest.fn().mockResolvedValue({ error: null });
 
 jest.mock("@/hooks/use-auth", () => ({
   useAuth: () => ({
@@ -12,7 +12,7 @@ jest.mock("@/hooks/use-auth", () => ({
 
 jest.mock("@/lib/supabase/auth", () => ({
   oauthProviders: [
-    { name: "twitter", displayName: "X", icon: "twitter", type: "supabase" },
+    { name: "x", displayName: "X", icon: "x", type: "supabase" },
     {
       name: "discord",
       displayName: "Discord",
@@ -87,6 +87,20 @@ describe("SocialAuthButtons", () => {
     await user.click(screen.getByText("Continue with Bluesky"));
 
     expect(window.location.href).toBe("/api/oauth/login");
+  });
+
+  it("calls onError when OAuth sign-in fails", async () => {
+    const onError = jest.fn();
+    mockSignInWithOAuth.mockResolvedValueOnce({
+      error: { message: "Provider not configured" },
+    });
+
+    const user = userEvent.setup();
+    render(<SocialAuthButtons onError={onError} />);
+
+    await user.click(screen.getByText("Continue with X"));
+
+    expect(onError).toHaveBeenCalledWith("Provider not configured");
   });
 
   it("includes returnUrl in Bluesky redirect when redirectTo is set", async () => {

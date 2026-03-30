@@ -46,7 +46,9 @@ All user input validation lives in `@trainers/validators` (shared package). Sche
 
 ```ts
 // Trim, then validate length
-z.string().transform((val) => val.trim()).pipe(z.string().max(100))
+z.string()
+  .transform((val) => val.trim())
+  .pipe(z.string().max(100));
 ```
 
 Empty optional strings are transformed to `undefined` so downstream code doesn't need to handle `""`.

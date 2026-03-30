@@ -26,6 +26,7 @@ function createConfig(overrides = {}) {
       ],
     },
     extensionsToTreatAsEsm: [".ts", ".tsx"],
+    cacheDirectory: "<rootDir>/.jest-cache",
     coverageDirectory: "<rootDir>/coverage",
     // In CI: enable coverage and add junit reporter with monorepo-aware config
     ...(isCI && {
@@ -35,7 +36,8 @@ function createConfig(overrides = {}) {
         [
           "jest-junit",
           {
-            outputDirectory: "<rootDir>/../../test-results",
+            // outputDirectory controlled by JEST_JUNIT_OUTPUT_DIR env var in CI
+            // (defaults to per-package test-results/ directory)
             outputName: `junit-${displayName}.xml`,
           },
         ],

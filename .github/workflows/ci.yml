@@ -3,9 +3,22 @@ name: CI
 on:
   push:
     branches: [main]
+    paths-ignore:
+      - "**.md"
+      - ".vscode/**"
+      - "LICENSE"
+      - ".gitignore"
+      - "infra/**"
+      - ".claude/**"
   pull_request:
-    branches: [main]
     types: [opened, synchronize, reopened]
+    paths-ignore:
+      - "**.md"
+      - ".vscode/**"
+      - "LICENSE"
+      - ".gitignore"
+      - "infra/**"
+      - ".claude/**"
 
 # Cancel in-progress runs for the same PR/branch
 concurrency:
@@ -58,7 +71,7 @@ jobs:
 
       - name: Install dependencies
         if: steps.node-modules-cache.outputs.cache-hit != 'true'
-        run: pnpm install --frozen-lockfile --prefer-offline
+        run: pnpm install --frozen-lockfile
         env:
           CI: true
           GITHUB_ACTIONS: true
@@ -74,44 +87,20 @@ jobs:
         with:
           fetch-depth: 1
 
-      - uses: pnpm/action-setup@v4
-
-      - uses: actions/setup-node@v4
+      - uses: ./.github/actions/setup
         with:
-          node-version: 22
-          cache: pnpm
-
-      - name: Restore node_modules
-        uses: actions/cache/restore@v4
-        with:
-          path: |
-            node_modules
-            apps/*/node_modules
-            packages/*/node_modules
-            tooling/*/node_modules
-          key: ${{ needs.install.outputs.cache-key }}
-          fail-on-cache-miss: true
-
-      - name: Restore workspace links
-        run: pnpm install --frozen-lockfile --offline --prefer-offline
-        env:
-          CI: true
-
-      - name: Turbo cache
-        uses: actions/cache@v4
-        with:
-          path: .turbo
-          key: turbo-quality-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml', 'turbo.json', '**/tsconfig.json') }}
-          restore-keys: |
-            turbo-quality-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml') }}-
-            turbo-quality-${{ runner.os }}-
+          node-modules-cache-key: ${{ needs.install.outputs.cache-key }}
+          turbo-prefix: quality
+          turbo-token: ${{ secrets.TURBO_TOKEN }}
+          turbo-team: ${{ secrets.TURBO_TEAM }}
 
       - name: ESLint cache
         uses: actions/cache@v4
         with:
           path: |
-            **/.eslintcache
-            node_modules/.cache/eslint
+            apps/*/.eslintcache
+            packages/*/.eslintcache
+            tooling/*/.eslintcache
           key: eslint-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml', '**/.eslintrc.*', '**/eslint.config.*') }}
           restore-keys: |
             eslint-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml') }}-
@@ -121,18 +110,13 @@ jobs:
         uses: actions/cache@v4
         with:
           path: |
-            **/.tsbuildinfo
-            **/tsconfig.tsbuildinfo
+            apps/*/tsconfig.tsbuildinfo
+            packages/*/tsconfig.tsbuildinfo
+            packages/*/dist/tsconfig.tsbuildinfo
           key: tsc-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml', '**/tsconfig*.json') }}
           restore-keys: |
             tsc-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml') }}-
             tsc-${{ runner.os }}-
-
-      - name: Configure Turbo Remote Cache
-        if: vars.TURBO_TOKEN != ''
-        run: |
-          echo "TURBO_TOKEN=${{ secrets.TURBO_TOKEN }}" >> "$GITHUB_ENV"
-          echo "TURBO_TEAM=${{ vars.TURBO_TEAM }}" >> "$GITHUB_ENV"
 
       # Register problem matchers so ESLint and tsc errors become
       # inline annotations on the PR Files tab.
@@ -147,9 +131,9 @@ jobs:
       - name: Typecheck
         run: pnpm turbo run typecheck --log-prefix=none
 
-  # ── Unit tests (Jest) ──────────────────────────────────────
-  unit-tests:
-    name: Unit Tests
+  # ── Unit tests (Jest) — 3 jobs: web, mobile, packages ─────
+  test-web:
+    name: Test @trainers/web
     runs-on: ubuntu-latest
     timeout-minutes: 10
     needs: [install]
@@ -158,57 +142,24 @@ jobs:
         with:
           fetch-depth: 1
 
-      - uses: pnpm/action-setup@v4
-
-      - uses: actions/setup-node@v4
+      - uses: ./.github/actions/setup
         with:
-          node-version: 22
-          cache: pnpm
-
-      - name: Restore node_modules
-        uses: actions/cache/restore@v4
-        with:
-          path: |
-            node_modules
-            apps/*/node_modules
-            packages/*/node_modules
-            tooling/*/node_modules
-          key: ${{ needs.install.outputs.cache-key }}
-          fail-on-cache-miss: true
-
-      - name: Restore workspace links
-        run: pnpm install --frozen-lockfile --offline --prefer-offline
-        env:
-          CI: true
-
-      - name: Turbo cache
-        uses: actions/cache@v4
-        with:
-          path: .turbo
-          key: turbo-test-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml', 'turbo.json', '**/jest.config.*') }}
-          restore-keys: |
-            turbo-test-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml') }}-
-            turbo-test-${{ runner.os }}-
+          node-modules-cache-key: ${{ needs.install.outputs.cache-key }}
+          turbo-prefix: test-web
+          turbo-token: ${{ secrets.TURBO_TOKEN }}
+          turbo-team: ${{ secrets.TURBO_TEAM }}
 
       - name: Jest cache
         uses: actions/cache@v4
         with:
-          path: |
-            node_modules/.cache/jest
-            **/.jest-cache
-          key: jest-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml', '**/jest.config.*', 'tooling/jest/**') }}
+          path: apps/web/.jest-cache
+          key: jest-web-${{ runner.os }}-${{ github.ref }}-${{ hashFiles('**/pnpm-lock.yaml', '**/jest.config.*', 'tooling/test-utils/jest-config.cjs') }}
           restore-keys: |
-            jest-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml') }}-
-            jest-${{ runner.os }}-
+            jest-web-${{ runner.os }}-${{ github.ref }}-
+            jest-web-${{ runner.os }}-refs/heads/main-
 
-      - name: Configure Turbo Remote Cache
-        if: vars.TURBO_TOKEN != ''
-        run: |
-          echo "TURBO_TOKEN=${{ secrets.TURBO_TOKEN }}" >> "$GITHUB_ENV"
-          echo "TURBO_TEAM=${{ vars.TURBO_TEAM }}" >> "$GITHUB_ENV"
-
-      - name: Run unit tests with coverage
-        run: pnpm test:ci
+      - name: Run tests
+        run: pnpm turbo run test --filter=@trainers/web --ui stream
         env:
           CI: true
           JEST_JUNIT_OUTPUT_DIR: test-results
@@ -217,12 +168,13 @@ jobs:
           JEST_JUNIT_ANCESTOR_SEPARATOR: " › "
           JEST_JUNIT_ADD_FILE_ATTRIBUTE: "true"
 
-      - name: Publish unit test results
+      - name: Publish test results
         uses: EnricoMi/publish-unit-test-result-action@v2
         if: always()
         with:
-          files: test-results/**/*.xml
-          check_name: Unit Test Results
+          files: "**/test-results/**/*.xml"
+          check_name: Test Results / web
+          comment_title: "Test Results / web"
           comment_mode: ${{ github.event_name == 'pull_request' && 'always' || 'off' }}
 
       - name: Upload coverage to Codecov
@@ -230,7 +182,120 @@ jobs:
         if: always()
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          files: coverage/lcov.info
+          files: "**/coverage/lcov.info"
+          fail_ci_if_error: false
+
+  test-mobile:
+    name: Test @trainers/mobile
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: [install]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - uses: ./.github/actions/setup
+        with:
+          node-modules-cache-key: ${{ needs.install.outputs.cache-key }}
+          turbo-prefix: test-mobile
+          turbo-token: ${{ secrets.TURBO_TOKEN }}
+          turbo-team: ${{ secrets.TURBO_TEAM }}
+
+      - name: Jest cache
+        uses: actions/cache@v4
+        with:
+          path: apps/mobile/.jest-cache
+          key: jest-mobile-${{ runner.os }}-${{ github.ref }}-${{ hashFiles('**/pnpm-lock.yaml', '**/jest.config.*', 'tooling/test-utils/jest-config.cjs') }}
+          restore-keys: |
+            jest-mobile-${{ runner.os }}-${{ github.ref }}-
+            jest-mobile-${{ runner.os }}-refs/heads/main-
+
+      - name: Run tests
+        run: pnpm turbo run test --filter=@trainers/mobile --ui stream
+        env:
+          CI: true
+          JEST_JUNIT_OUTPUT_DIR: test-results
+          JEST_JUNIT_CLASSNAME: "{classname}"
+          JEST_JUNIT_TITLE: "{title}"
+          JEST_JUNIT_ANCESTOR_SEPARATOR: " › "
+          JEST_JUNIT_ADD_FILE_ATTRIBUTE: "true"
+
+      - name: Publish test results
+        uses: EnricoMi/publish-unit-test-result-action@v2
+        if: always()
+        with:
+          files: "**/test-results/**/*.xml"
+          check_name: Test Results / mobile
+          comment_title: "Test Results / mobile"
+          comment_mode: ${{ github.event_name == 'pull_request' && 'always' || 'off' }}
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v5
+        if: always()
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: "**/coverage/lcov.info"
+          fail_ci_if_error: false
+
+  test-packages:
+    name: Test packages
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: [install]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - uses: ./.github/actions/setup
+        with:
+          node-modules-cache-key: ${{ needs.install.outputs.cache-key }}
+          turbo-prefix: test-packages
+          turbo-token: ${{ secrets.TURBO_TOKEN }}
+          turbo-team: ${{ secrets.TURBO_TEAM }}
+
+      - name: Jest cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            packages/atproto/.jest-cache
+            packages/pokemon/.jest-cache
+            packages/posthog/.jest-cache
+            packages/supabase/.jest-cache
+            packages/tournaments/.jest-cache
+            packages/utils/.jest-cache
+            packages/validators/.jest-cache
+          key: jest-packages-${{ runner.os }}-${{ github.ref }}-${{ hashFiles('**/pnpm-lock.yaml', '**/jest.config.*', 'tooling/test-utils/jest-config.cjs') }}
+          restore-keys: |
+            jest-packages-${{ runner.os }}-${{ github.ref }}-
+            jest-packages-${{ runner.os }}-refs/heads/main-
+
+      - name: Run tests
+        run: pnpm turbo run test --filter='./packages/*' --ui stream
+        env:
+          CI: true
+          JEST_JUNIT_OUTPUT_DIR: test-results
+          JEST_JUNIT_CLASSNAME: "{classname}"
+          JEST_JUNIT_TITLE: "{title}"
+          JEST_JUNIT_ANCESTOR_SEPARATOR: " › "
+          JEST_JUNIT_ADD_FILE_ATTRIBUTE: "true"
+
+      - name: Publish test results
+        uses: EnricoMi/publish-unit-test-result-action@v2
+        if: always()
+        with:
+          files: "**/test-results/**/*.xml"
+          check_name: Test Results / packages
+          comment_title: "Test Results / packages"
+          comment_mode: ${{ github.event_name == 'pull_request' && 'always' || 'off' }}
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v5
+        if: always()
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: "**/coverage/lcov.info"
           fail_ci_if_error: false
 
   # ── Wait for Vercel preview (shared by E2E + Lighthouse) ───
@@ -333,47 +398,23 @@ jobs:
         with:
           fetch-depth: 1
 
-      - uses: pnpm/action-setup@v4
-
-      - uses: actions/setup-node@v4
+      - uses: ./.github/actions/setup
         with:
-          node-version: 22
-          cache: pnpm
+          node-modules-cache-key: ${{ needs.install.outputs.cache-key }}
+          turbo-prefix: e2e
+          turbo-token: ${{ secrets.TURBO_TOKEN }}
+          turbo-team: ${{ secrets.TURBO_TEAM }}
 
-      - name: Restore node_modules
-        uses: actions/cache/restore@v4
-        with:
-          path: |
-            node_modules
-            apps/*/node_modules
-            packages/*/node_modules
-            tooling/*/node_modules
-          key: ${{ needs.install.outputs.cache-key }}
-          fail-on-cache-miss: true
-
-      - name: Restore workspace links
-        run: pnpm install --frozen-lockfile --offline --prefer-offline
-        env:
-          CI: true
-
-      - name: Turbo cache
-        uses: actions/cache@v4
-        with:
-          path: .turbo
-          key: turbo-e2e-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml', 'turbo.json') }}
-          restore-keys: |
-            turbo-e2e-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml') }}-
-            turbo-e2e-${{ runner.os }}-
+      - name: Get Playwright version
+        id: playwright-version
+        run: echo "version=$(pnpm --filter=@trainers/web exec playwright --version | awk '{print $2}')" >> "$GITHUB_OUTPUT"
 
       - name: Cache Playwright browsers
         uses: actions/cache@v4
         id: playwright-cache
         with:
           path: ~/.cache/ms-playwright
-          key: playwright-${{ runner.os }}-${{ hashFiles('apps/web/package.json') }}-v1
-          restore-keys: |
-            playwright-${{ runner.os }}-${{ hashFiles('apps/web/package.json') }}-
-            playwright-${{ runner.os }}-
+          key: playwright-${{ runner.os }}-${{ steps.playwright-version.outputs.version }}
 
       - name: Install Playwright browsers
         if: steps.playwright-cache.outputs.cache-hit != 'true'
@@ -382,12 +423,6 @@ jobs:
       - name: Install Playwright system deps
         if: steps.playwright-cache.outputs.cache-hit == 'true'
         run: pnpm --filter=@trainers/web exec playwright install-deps chromium
-
-      - name: Configure Turbo Remote Cache
-        if: vars.TURBO_TOKEN != ''
-        run: |
-          echo "TURBO_TOKEN=${{ secrets.TURBO_TOKEN }}" >> "$GITHUB_ENV"
-          echo "TURBO_TEAM=${{ vars.TURBO_TEAM }}" >> "$GITHUB_ENV"
 
       - name: Seed E2E test users on preview
         if: needs.wait-for-preview.outputs.url != ''
@@ -414,8 +449,6 @@ jobs:
           CI: true
           PLAYWRIGHT_BASE_URL: ${{ needs.wait-for-preview.outputs.url }}
           VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
-          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
-          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: pnpm --filter=@trainers/web exec playwright test
 
       - name: Upload Playwright HTML report
@@ -448,7 +481,7 @@ jobs:
         with:
           files: apps/web/test-results/junit.xml
           check_name: E2E Test Results
-          comment_title: 🎭 E2E Test Results
+          comment_title: E2E Test Results
           comment_mode: always
           compare_to_earlier_commit: true
           report_individual_runs: true

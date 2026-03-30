@@ -4,6 +4,7 @@ import { createColumnHelper } from "@tanstack/react-table";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
+import { formatDate } from "@trainers/utils";
 
 // --- Types ---
 
@@ -72,16 +73,6 @@ const communityTierClasses: Record<CommunityRow["tier"], string> = {
   partner:
     "bg-purple-500/15 text-purple-600 dark:text-purple-400 border-purple-500/25",
 };
-
-// --- Helpers ---
-
-function formatDate(dateStr: string): string {
-  return new Date(dateStr).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
-}
 
 // --- Column definitions ---
 

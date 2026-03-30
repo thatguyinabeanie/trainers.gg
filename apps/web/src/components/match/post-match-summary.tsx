@@ -105,27 +105,23 @@ export function PostMatchSummary({
           setNextMatch(null);
         }
 
-        // Check current round status if we have roundNumber
-        if (roundNumber != null) {
-          const { data: round } = await supabase
-            .from("tournament_rounds")
-            .select("id")
-            .eq("tournament_id", tournamentId)
-            .eq("round_number", roundNumber)
-            .maybeSingle();
+        // Check current round status by deriving round_id from the current match
+        const currentMatch = matches.find((m) => m.id === matchId);
+        const currentRound = currentMatch?.round as {
+          id: number;
+          round_number: number;
+        } | null;
 
-          if (isCancelled) return;
+        if (currentRound?.id) {
+          const { count, error: countError } = await supabase
+            .from("tournament_matches")
+            .select("*", { count: "exact", head: true })
+            .eq("round_id", currentRound.id)
+            .eq("status", "active");
 
-          if (round) {
-            // Check if there are any active matches in this round
-            const { count } = await supabase
-              .from("tournament_matches")
-              .select("*", { count: "exact", head: true })
-              .eq("round_id", round.id)
-              .eq("status", "active");
-
-            if (isCancelled) return;
-
+          if (countError) {
+            console.error("Error checking round status:", countError);
+          } else if (!isCancelled) {
             setRoundStatus((count ?? 0) > 0 ? "active" : "completed");
           }
         }

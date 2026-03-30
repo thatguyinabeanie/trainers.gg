@@ -212,8 +212,8 @@ describe("unlinkBlueskyAction", () => {
               {
                 id: "oauth-2",
                 user_id: "user-123",
-                identity_id: "twitter-456",
-                provider: "twitter",
+                identity_id: "x-456",
+                provider: "x",
               },
             ],
           },
@@ -464,8 +464,8 @@ describe("unlinkBlueskyAction", () => {
               {
                 id: "oauth-2",
                 user_id: "user-123",
-                identity_id: "twitter-456",
-                provider: "twitter",
+                identity_id: "x-456",
+                provider: "x",
               },
             ],
           },

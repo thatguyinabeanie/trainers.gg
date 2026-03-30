@@ -53,23 +53,28 @@ digraph post_pr {
 ## Commands
 
 ### Check CI status
+
 ```bash
 gh pr checks <pr-number>
 ```
+
 Re-run until no check shows `pending` or `in_progress`. A `✓` on every row means passing.
 
 ### Get failed check logs
+
 ```bash
 gh run list --branch <branch> --limit 5
 gh run view <run-id> --log-failed
 ```
 
 ### Check for Copilot review
+
 ```bash
 gh pr view <pr-number> --json reviews --jq '.reviews[] | select(.author.login == "github-copilot[bot]") | {state, body}'
 ```
 
 ### View Copilot inline comments
+
 ```bash
 gh api repos/{owner}/{repo}/pulls/{pr-number}/comments \
   --jq '.[] | select(.user.login == "github-copilot[bot]") | {path: .path, line: .line, body: .body}'
@@ -136,12 +141,12 @@ Post all replies in parallel (background `&` + `wait`) so it's fast.
 
 ## Timing
 
-| What | Typical wait |
-|------|-------------|
-| CI checks start | ~30s after push |
-| CI checks complete | 2–10 min depending on suite |
-| Copilot review appears | 2–5 min after PR creation |
-| Copilot timeout (give up) | 10 min |
+| What                      | Typical wait                |
+| ------------------------- | --------------------------- |
+| CI checks start           | ~30s after push             |
+| CI checks complete        | 2–10 min depending on suite |
+| Copilot review appears    | 2–5 min after PR creation   |
+| Copilot timeout (give up) | 10 min                      |
 
 If Copilot has not reviewed after 10 minutes, proceed — the review may be disabled or delayed. Note it to the user.
 

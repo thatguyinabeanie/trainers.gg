@@ -26,6 +26,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
+import { formatDateTime } from "@trainers/utils";
 import {
   type CommunityRow,
   communityStatusLabels,
@@ -58,18 +59,6 @@ const communityTierClasses: Record<CommunityRow["tier"], string> = {
   partner:
     "bg-purple-500/15 text-purple-600 dark:text-purple-400 border-purple-500/25",
 };
-
-// --- Helper ---
-
-function formatDateTime(dateStr: string): string {
-  return new Date(dateStr).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  });
-}
 
 // --- Confirmation dialog types ---
 
@@ -302,7 +291,7 @@ export function CommunityDetailSheet({
             <section className="space-y-2">
               <h3 className="text-sm font-medium">Admin Notes</h3>
               {community.community_admin_notes?.[0]?.notes ? (
-                <p className="bg-muted rounded-lg p-3 text-sm whitespace-pre-wrap">
+                <p className="bg-muted whitespace-pre-wrap rounded-lg p-3 text-sm">
                   {community.community_admin_notes[0].notes}
                 </p>
               ) : (

@@ -16,9 +16,9 @@
 
 ## File Map
 
-| Action | Path |
-|--------|------|
-| **Modify** | `apps/web/src/components/landing/journey-steps.tsx` |
+| Action     | Path                                                               |
+| ---------- | ------------------------------------------------------------------ |
+| **Modify** | `apps/web/src/components/landing/journey-steps.tsx`                |
 | **Modify** | `apps/web/src/components/landing/__tests__/journey-steps.test.tsx` |
 
 ---
@@ -26,6 +26,7 @@
 ## Task 1: Update failing tests
 
 **Files:**
+
 - Modify: `apps/web/src/components/landing/__tests__/journey-steps.test.tsx`
 
 - [ ] **Step 1: Update the test file**
@@ -55,9 +56,7 @@ describe("JourneySteps", () => {
     "Find who's competing — and where they hang out.",
   ])("renders step headline: %s", (headline) => {
     render(<JourneySteps />);
-    expect(
-      screen.getByRole("heading", { name: headline })
-    ).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: headline })).toBeInTheDocument();
   });
 
   it("renders Coming Soon badges for Build Smarter, Articles, and Coaching steps", () => {
@@ -94,6 +93,7 @@ Expected: FAIL — coaching headline not found, badge count is 2 not 3.
 ## Task 2: Implement the coaching step
 
 **Files:**
+
 - Modify: `apps/web/src/components/landing/journey-steps.tsx`
 
 - [ ] **Step 1: Add `CoachingPreview` and insert the coaching `JourneyStep`**
@@ -136,20 +136,19 @@ function CoachingPreview() {
 Find this block (lines 339–352):
 
 ```tsx
-      <JourneyStep
-        number={7}
-        label="Community"
-        headline="Find who's competing — and where they hang out."
-        description={
-          <>
-            Search players by format, country, or name and browse the
-            leaderboard. <span className="text-foreground">Coming soon:</span> a
-            searchable index of competitive Pokémon Discord servers — find your
-            community in one place.
-          </>
-        }
-        preview={<CommunityPreview />}
-      />
+<JourneyStep
+  number={7}
+  label="Community"
+  headline="Find who's competing — and where they hang out."
+  description={
+    <>
+      Search players by format, country, or name and browse the leaderboard.{" "}
+      <span className="text-foreground">Coming soon:</span> a searchable index
+      of competitive Pokémon Discord servers — find your community in one place.
+    </>
+  }
+  preview={<CommunityPreview />}
+/>
 ```
 
 Replace with:

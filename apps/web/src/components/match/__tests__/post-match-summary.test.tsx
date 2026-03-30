@@ -151,7 +151,9 @@ describe("PostMatchSummary", () => {
   });
 
   it("shows round complete status when round is completed", async () => {
-    (getPlayerMatches as jest.Mock).mockResolvedValue([]);
+    (getPlayerMatches as jest.Mock).mockResolvedValue([
+      { id: 100, status: "completed", round: { id: 1, round_number: 3 } },
+    ]);
 
     render(<PostMatchSummary {...defaultProps} />);
 
@@ -161,7 +163,9 @@ describe("PostMatchSummary", () => {
   });
 
   it("shows waiting status when round is still active", async () => {
-    (getPlayerMatches as jest.Mock).mockResolvedValue([]);
+    (getPlayerMatches as jest.Mock).mockResolvedValue([
+      { id: 100, status: "active", round: { id: 1, round_number: 3 } },
+    ]);
 
     // Mock Supabase to return count > 0 for active matches
     const mockSupabaseWithActiveMatches = {

@@ -30,7 +30,8 @@ export async function withAdminAction(
     const supabase = createServiceRoleClient();
     return await action(supabase, adminCheck.userId);
   } catch (err) {
-    console.error("%s", errorMessage, err);
-    return { success: false, error: errorMessage };
+    const detail = err instanceof Error ? err.message : String(err);
+    console.error("%s: %s", errorMessage, detail, err);
+    return { success: false, error: `${errorMessage}: ${detail}` };
   }
 }

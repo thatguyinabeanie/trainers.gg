@@ -74,11 +74,15 @@ describe("NotificationPreferencesForm", () => {
     );
 
     // Find the Match Result switch - it should be unchecked
-    const matchResultSwitch = screen.getByLabelText("Match Result");
+    const matchResultSwitch = screen.getByRole("switch", {
+      name: "Match Result",
+    });
     expect(matchResultSwitch).not.toBeChecked();
 
     // Match Ready should be checked
-    const matchReadySwitch = screen.getByLabelText("Match Ready");
+    const matchReadySwitch = screen.getByRole("switch", {
+      name: "Match Ready",
+    });
     expect(matchReadySwitch).toBeChecked();
   });
 

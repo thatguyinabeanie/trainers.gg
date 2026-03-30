@@ -12,19 +12,16 @@
     "./factories": "./src/factories/index.ts",
     "./mocks": "./src/mocks/index.ts"
   },
-  "scripts": {
-    "format": "prettier --write \"**/*.{ts,js,json}\"",
-    "format:check": "prettier --check \"**/*.{ts,js,json}\""
-  },
+  "scripts": {},
   "dependencies": {
-    "fishery": "^2.2.2"
+    "fishery": "^2"
   },
   "devDependencies": {
-    "@atproto/api": "catalog:",
+    "@atproto/api": "catalog:atproto",
     "@trainers/prettier-config": "workspace:*",
     "@trainers/typescript-config": "workspace:*",
-    "@types/jest": "catalog:",
-    "jest": "catalog:",
+    "@types/jest": "catalog:testing",
+    "jest": "catalog:testing",
     "prettier": "catalog:",
     "typescript": "catalog:"
   },

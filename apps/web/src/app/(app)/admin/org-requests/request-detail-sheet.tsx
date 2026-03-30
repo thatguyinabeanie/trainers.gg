@@ -34,37 +34,17 @@ import { toast } from "sonner";
 import {
   type CommunityRequestRow,
   communityRequestStatusLabels,
+  communityRequestStatusClasses,
 } from "./columns";
 import {
-  approveCommunityRequestAction,
+  grantCommunityRequestAction,
   rejectCommunityRequestAction,
 } from "./actions";
 import {
   SOCIAL_LINK_PLATFORMS,
   type SocialLinkPlatform,
 } from "@trainers/validators";
-
-const communityRequestStatusClasses: Record<
-  CommunityRequestRow["status"],
-  string
-> = {
-  pending:
-    "bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/25",
-  approved:
-    "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/25",
-  rejected:
-    "bg-gray-500/15 text-gray-600 dark:text-gray-400 border-gray-500/25",
-};
-
-function formatDateTime(dateStr: string): string {
-  return new Date(dateStr).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  });
-}
+import { formatDateTime } from "@trainers/utils";
 
 type ConfirmAction = { type: "approve" } | { type: "reject" };
 
@@ -83,6 +63,7 @@ export function RequestDetailSheet({
 }: RequestDetailSheetProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [rejectReason, setRejectReason] = useState("");
+  const [approveReason, setApproveReason] = useState("");
   const [confirmAction, setConfirmAction] = useState<ConfirmAction | null>(
     null
   );
@@ -90,12 +71,15 @@ export function RequestDetailSheet({
   // Reset state when request changes
   useEffect(() => {
     setRejectReason("");
+    setApproveReason("");
     setConfirmAction(null);
   }, [request?.id]);
 
   if (!request) return null;
 
   const isPending = request.status === "pending";
+  const isRejected = request.status === "rejected";
+  const canApprove = isPending || isRejected;
 
   // Collect all links for display
   const allLinks: { platform: string; url: string }[] = [];
@@ -117,7 +101,8 @@ export function RequestDetailSheet({
     try {
       let result;
       if (confirmAction.type === "approve") {
-        result = await approveCommunityRequestAction(request.id);
+        const reason = approveReason.trim() || undefined;
+        result = await grantCommunityRequestAction(request.id, reason);
       } else {
         result = await rejectCommunityRequestAction(request.id, rejectReason);
       }
@@ -130,6 +115,7 @@ export function RequestDetailSheet({
         );
         setConfirmAction(null);
         setRejectReason("");
+        setApproveReason("");
         onOpenChange(false);
         onActionComplete?.();
       } else {
@@ -152,11 +138,9 @@ export function RequestDetailSheet({
           </SheetHeader>
 
           <div className="flex flex-col gap-6 px-4 pb-4">
-            {/* Details section */}
             <section className="space-y-3">
               <h3 className="text-sm font-medium">Details</h3>
 
-              {/* Status + Requester row */}
               <div className="flex items-center justify-between">
                 <Badge
                   variant="outline"
@@ -187,14 +171,12 @@ export function RequestDetailSheet({
                 )}
               </div>
 
-              {/* Description */}
               {request.description && (
                 <p className="text-muted-foreground text-sm">
                   {request.description}
                 </p>
               )}
 
-              {/* Dates */}
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
                   <Label className="text-muted-foreground text-xs">
@@ -217,7 +199,6 @@ export function RequestDetailSheet({
               </div>
             </section>
 
-            {/* Community Links */}
             {allLinks.length > 0 && (
               <section className="space-y-2">
                 <h3 className="text-sm font-medium">Community Links</h3>
@@ -253,18 +234,16 @@ export function RequestDetailSheet({
               </section>
             )}
 
-            {/* Admin Notes */}
             {request.admin_notes && (
               <section className="space-y-2">
                 <h3 className="text-sm font-medium">Admin Notes</h3>
-                <p className="bg-muted rounded-lg p-3 text-sm whitespace-pre-wrap">
+                <p className="bg-muted whitespace-pre-wrap rounded-lg p-3 text-sm">
                   {request.admin_notes}
                 </p>
               </section>
             )}
 
-            {/* Actions (only for pending) */}
-            {isPending && (
+            {canApprove && (
               <>
                 <Separator />
                 <section className="space-y-4">
@@ -278,25 +257,27 @@ export function RequestDetailSheet({
                     Approve Request
                   </Button>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="reject-reason">Rejection Reason</Label>
-                    <Textarea
-                      id="reject-reason"
-                      placeholder="Explain why this request is being rejected..."
-                      value={rejectReason}
-                      onChange={(e) => setRejectReason(e.target.value)}
-                      rows={3}
-                    />
-                    <Button
-                      variant="destructive"
-                      className="w-full"
-                      onClick={() => setConfirmAction({ type: "reject" })}
-                      disabled={!rejectReason.trim()}
-                    >
-                      <X className="size-4" />
-                      Reject Request
-                    </Button>
-                  </div>
+                  {isPending && (
+                    <div className="space-y-2">
+                      <Label htmlFor="reject-reason">Rejection Reason</Label>
+                      <Textarea
+                        id="reject-reason"
+                        placeholder="Explain why this request is being rejected..."
+                        value={rejectReason}
+                        onChange={(e) => setRejectReason(e.target.value)}
+                        rows={3}
+                      />
+                      <Button
+                        variant="destructive"
+                        className="w-full"
+                        onClick={() => setConfirmAction({ type: "reject" })}
+                        disabled={!rejectReason.trim()}
+                      >
+                        <X className="size-4" />
+                        Reject Request
+                      </Button>
+                    </div>
+                  )}
                 </section>
               </>
             )}
@@ -304,7 +285,6 @@ export function RequestDetailSheet({
         </SheetContent>
       </Sheet>
 
-      {/* Confirmation dialog */}
       <AlertDialog
         open={!!confirmAction}
         onOpenChange={(open) => {
@@ -324,6 +304,35 @@ export function RequestDetailSheet({
                 : `This will reject the request and notify the requester. They can reapply after 7 days.`}
             </AlertDialogDescription>
           </AlertDialogHeader>
+
+          {/* Show original rejection reason when approving a previously rejected request */}
+          {confirmAction?.type === "approve" &&
+            isRejected &&
+            request.admin_notes && (
+              <div className="space-y-2">
+                <Label className="text-muted-foreground text-xs">
+                  Original rejection reason
+                </Label>
+                <p className="bg-muted whitespace-pre-wrap rounded-lg p-3 text-sm">
+                  {request.admin_notes}
+                </p>
+              </div>
+            )}
+
+          {/* Optional reason for approving a rejected request */}
+          {confirmAction?.type === "approve" && isRejected && (
+            <div className="space-y-2">
+              <Label htmlFor="approve-reason">Reason (optional)</Label>
+              <Textarea
+                id="approve-reason"
+                placeholder="Why are you approving this previously rejected request?"
+                value={approveReason}
+                onChange={(e) => setApproveReason(e.target.value)}
+                rows={2}
+              />
+            </div>
+          )}
+
           <AlertDialogFooter>
             <AlertDialogCancel disabled={isSubmitting}>
               Cancel

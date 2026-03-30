@@ -178,7 +178,7 @@ export function PokemonCard({ pokemon, className }: PokemonCardProps) {
         )}
         <div
           className={cn(
-            "mt-auto mb-auto flex h-[76px] w-[76px] items-center justify-center rounded-full",
+            "mb-auto mt-auto flex h-[76px] w-[76px] items-center justify-center rounded-full",
             teraStyle.bg
           )}
         >
@@ -188,11 +188,11 @@ export function PokemonCard({ pokemon, className }: PokemonCardProps) {
 
       {/* Right column: Moves */}
       {moves.length > 0 && (
-        <div className="border-foreground/10 flex w-[164px] shrink-0 flex-col justify-center gap-1 border-l py-3 pr-3 pl-3">
+        <div className="border-foreground/10 flex w-[164px] shrink-0 flex-col justify-center gap-1 border-l py-3 pl-3 pr-3">
           {moves.map((move) => (
             <span
               key={move}
-              className="text-muted-foreground text-[11px] whitespace-nowrap"
+              className="text-muted-foreground whitespace-nowrap text-[11px]"
             >
               {move}
             </span>

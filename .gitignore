@@ -2,6 +2,9 @@
 node_modules/
 .pnpm-store/
 
+# Lefthook local overrides
+lefthook-local.yml
+
 # Build outputs
 dist/
 .next/
@@ -35,6 +38,7 @@ pnpm-debug.log*
 # Testing
 coverage/
 test-results/
+.jest-cache/
 junit.xml
 playwright-report/
 
@@ -90,3 +94,11 @@ apps/web/public/oauth/jwks.json
 .claude.local.md
 !docs
 .superpowers
+.audit-reports/
+
+# Dev slot port management
+.dev-slot
+packages/supabase/supabase/config.toml.slot-backup
+
+# Local mise overrides (personal tool versions)
+mise.local.toml

@@ -74,7 +74,7 @@ export {
 // Community request mutations (renamed from organization)
 export {
   submitCommunityRequest,
-  approveCommunityRequest,
+  grantCommunityRequest,
   rejectCommunityRequest,
 } from "./organization-requests";
 

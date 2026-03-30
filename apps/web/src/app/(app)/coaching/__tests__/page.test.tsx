@@ -9,33 +9,29 @@ describe("CoachingPage", () => {
     ).toBeInTheDocument();
   });
 
-  it("displays coming soon message", () => {
+  it("displays under construction badge", () => {
     render(<CoachingPage />);
-    expect(screen.getByText("Coming Soon")).toBeInTheDocument();
+    expect(screen.getByText("Under Construction")).toBeInTheDocument();
   });
 
-  it("displays coaching feature description", () => {
+  it("displays feature description", () => {
     render(<CoachingPage />);
     expect(
-      screen.getByText(
-        /Get matchup prep, coaching tools, and personalized resources to improve your competitive game/i
-      )
+      screen.getByText(/Find and connect with coaches who know the meta/i)
     ).toBeInTheDocument();
   });
 
-  it("renders coaching icon", () => {
+  it("renders feature bullets", () => {
     render(<CoachingPage />);
-    // Check for the icon container with the correct styling
-    const iconContainer = screen
-      .getByRole("main")
-      .querySelector(".bg-teal-100");
-    expect(iconContainer).toBeInTheDocument();
+    expect(
+      screen.getByText("Coaches identified by badge in the player directory")
+    ).toBeInTheDocument();
   });
 
-  it("renders back to home button", () => {
+  it("renders back to home link", () => {
     render(<CoachingPage />);
-    const backButton = screen.getByRole("link", { name: "Back to Home" });
-    expect(backButton).toBeInTheDocument();
-    expect(backButton).toHaveAttribute("href", "/");
+    const backLink = screen.getByRole("link", { name: /Back to Home/i });
+    expect(backLink).toBeInTheDocument();
+    expect(backLink).toHaveAttribute("href", "/");
   });
 });

@@ -107,8 +107,31 @@ export const signupRequestSchema = z.object({
   country: z.string().optional(),
 });
 
+/**
+ * Onboarding completion request validation.
+ * Used when an OAuth user completes their profile setup.
+ * Composes usernameSchema with country, bio, and optional birth date.
+ */
+export const completeOnboardingSchema = z.object({
+  username: usernameSchema,
+  country: z.string().length(2, "Country must be a 2-letter ISO code"),
+  bio: z
+    .string()
+    .trim()
+    .min(1, "Bio is required")
+    .max(160, "Bio must be 160 characters or less")
+    .refine((val) => !containsProfanity(val), {
+      message: PROFANITY_ERROR_MESSAGE,
+    }),
+  birthDate: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, "Birth date must be in YYYY-MM-DD format")
+    .optional(),
+});
+
 // Types
 export type Password = z.infer<typeof passwordSchema>;
 export type Username = z.infer<typeof usernameSchema>;
 export type Email = z.infer<typeof emailSchema>;
 export type SignupRequestInput = z.infer<typeof signupRequestSchema>;
+export type CompleteOnboardingInput = z.infer<typeof completeOnboardingSchema>;

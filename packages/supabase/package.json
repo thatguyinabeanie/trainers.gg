@@ -29,8 +29,6 @@
     "test:watch": "jest --watch",
     "lint": "eslint . --max-warnings 0 --cache",
     "typecheck": "tsc --noEmit",
-    "format": "prettier --write \"src/**/*.{ts,tsx,js,jsx,json,md}\"",
-    "format:check": "prettier --check \"src/**/*.{ts,tsx,js,jsx,json,md}\"",
     "generate-types": "supabase gen types typescript --local 2>/dev/null > src/types.ts",
     "generate-seed-json": "tsx scripts/generate-seed-data/generate-user-data.ts",
     "generate-seeds": "tsx scripts/generate-seed-data/index.ts",
@@ -43,16 +41,16 @@
     "supabase": "supabase"
   },
   "dependencies": {
-    "@supabase/supabase-js": "catalog:",
+    "@supabase/supabase-js": "catalog:supabase",
     "@trainers/utils": "workspace:*",
     "@trainers/validators": "workspace:*"
   },
   "peerDependencies": {
-    "@supabase/ssr": "catalog:",
-    "expo-secure-store": "~14.0.0",
+    "@supabase/ssr": "catalog:supabase",
+    "expo-secure-store": "catalog:expo",
     "next": "catalog:",
-    "react": "catalog:",
-    "react-native-url-polyfill": "^2.0.0"
+    "react": "catalog:react",
+    "react-native-url-polyfill": "catalog:expo"
   },
   "peerDependenciesMeta": {
     "@supabase/ssr": {
@@ -72,22 +70,23 @@
     }
   },
   "devDependencies": {
-    "esbuild": "^0.25.0",
-    "@faker-js/faker": "^10.2.0",
-    "@types/jest": "catalog:",
-    "@jest/globals": "^30.2.0",
+    "esbuild": "catalog:",
+    "@faker-js/faker": "catalog:",
+    "@types/jest": "catalog:testing",
+    "@jest/globals": "catalog:testing",
     "@trainers/eslint-config": "workspace:*",
     "@trainers/test-utils": "workspace:*",
     "@trainers/prettier-config": "workspace:*",
     "@trainers/typescript-config": "workspace:*",
     "@types/node": "catalog:",
-    "@types/react": "catalog:",
+    "@types/react": "catalog:react",
     "eslint": "catalog:",
-    "jest": "catalog:",
-    "jest-junit": "catalog:",
+    "jest": "catalog:testing",
+    "jest-junit": "catalog:testing",
     "prettier": "catalog:",
-    "supabase": "catalog:",
-    "ts-jest": "catalog:",
+    "supabase": "catalog:supabase",
+    "ts-jest": "catalog:testing",
+    "ts-node": "catalog:testing",
     "tsx": "catalog:",
     "typescript": "catalog:"
   },

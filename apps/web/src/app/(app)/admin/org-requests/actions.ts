@@ -1,19 +1,22 @@
 "use server";
 
+import { updateTag } from "next/cache";
 import { positiveIntSchema, adminReasonSchema } from "@trainers/validators";
 import {
   withAdminAction,
   type ActionResult,
 } from "@/lib/auth/with-admin-action";
 import {
-  approveCommunityRequest,
+  grantCommunityRequest,
   rejectCommunityRequest,
 } from "@trainers/supabase/mutations";
+import { CacheTags } from "@/lib/cache";
 
-// --- Approve ---
+// --- Grant (approve pending or rejected) ---
 
-export async function approveCommunityRequestAction(
-  requestId: number
+export async function grantCommunityRequestAction(
+  requestId: number,
+  reason?: string
 ): Promise<ActionResult> {
   const parsed = positiveIntSchema.safeParse(requestId);
   if (!parsed.success) {
@@ -23,8 +26,28 @@ export async function approveCommunityRequestAction(
     };
   }
 
+  let validatedReason: string | undefined;
+  if (reason !== undefined) {
+    const parsedReason = adminReasonSchema.safeParse(reason);
+    if (!parsedReason.success) {
+      return {
+        success: false,
+        error: `Invalid input: ${parsedReason.error.issues[0]?.message}`,
+      };
+    }
+    validatedReason = parsedReason.data;
+  }
+
   return withAdminAction(async (supabase, adminUserId) => {
-    await approveCommunityRequest(supabase, parsed.data, adminUserId);
+    await grantCommunityRequest(
+      supabase,
+      parsed.data,
+      adminUserId,
+      validatedReason
+    );
+
+    updateTag(CacheTags.COMMUNITIES_LIST);
+    updateTag(CacheTags.COMMUNITY_REQUESTS_LIST);
 
     // Fire-and-forget email notification
     supabase.functions
@@ -36,7 +59,7 @@ export async function approveCommunityRequestAction(
       );
 
     return { success: true };
-  }, "Failed to approve organization request");
+  }, "Failed to approve community request");
 }
 
 // --- Reject ---
@@ -67,6 +90,8 @@ export async function rejectCommunityRequestAction(
       adminUserId,
       parsedReason.data
     );
+
+    updateTag(CacheTags.COMMUNITY_REQUESTS_LIST);
 
     // Fire-and-forget email notification
     supabase.functions

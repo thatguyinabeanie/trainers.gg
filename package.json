@@ -8,7 +8,6 @@
     "setup": "pnpm --filter=@trainers/supabase run setup",
     "setup:pds": "./infra/pds/setup-local.sh",
     "postinstall": "./scripts/postinstall.sh",
-    "prepare": "husky",
     "// dev": "",
     "dev": "bash -c 'source ./scripts/claim-dev-slot.sh && rm -rf apps/web/.next/dev && turbo run dev'",
     "dev:web": "bash -c 'source ./scripts/claim-dev-slot.sh && turbo run dev --filter=@trainers/web'",
@@ -30,8 +29,8 @@
     "// quality": "",
     "lint": "turbo run lint",
     "typecheck": "turbo run typecheck",
-    "format": "turbo run format",
-    "format:check": "turbo run format:check",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
     "// db": "",
     "db:start": "turbo run db:start --filter=@trainers/supabase",
     "db:stop": "turbo run db:stop --filter=@trainers/supabase",
@@ -67,18 +66,32 @@
   },
   "devDependencies": {
     "@trainers/prettier-config": "workspace:*",
-    "husky": "^9.1.7",
-    "lint-staged": "^16.2.7",
-    "turbo": "^2.8.20"
+    "prettier": "catalog:",
+    "prettier-plugin-tailwindcss": "catalog:",
+    "turbo": "^2.8.21"
   },
   "pnpm": {
     "overrides": {
       "lodash@<4.17.21": ">=4.17.21",
       "tar@<=7.5.3": ">=7.5.4",
-      "@types/react": "~19.1.10"
+      "@types/react": "~19.2.0"
     },
     "ignoredBuiltDependencies": [
       "protobufjs"
-    ]
+    ],
+    "packageExtensions": {
+      "react-native": {
+        "dependencies": {
+          "@babel/runtime": "*"
+        }
+      },
+      "react-native-worklets": {
+        "dependencies": {
+          "@babel/generator": "*",
+          "@babel/traverse": "*",
+          "@babel/types": "*"
+        }
+      }
+    }
   }
 }

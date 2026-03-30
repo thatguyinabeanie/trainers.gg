@@ -45,26 +45,29 @@ ALTER TABLE public.alts
 
 ### Tabs
 
-| Tab | Status | Data Source | Content |
-|-----|--------|------------|---------|
-| Overview | Implemented | `playerKeys.stats` + `playerKeys.tournaments` APIs | Stats cards (tournaments, win rate, best placement, main format) + recent 5 tournaments |
-| Tournaments | New | New query: full tournament history | Filterable table — format, year, status. Shows placement, record, tournament name. Links to tournament page |
-| Teams | New | `tournament_registrations` with team submission data | Public team sheets from tournaments. Parsed Pokemon display (sprites, moves, items, abilities) |
-| Articles | Stub | None | "Coming Soon" placeholder |
-| Achievements | Stub | None | "Coming Soon" placeholder |
+| Tab          | Status      | Data Source                                          | Content                                                                                                     |
+| ------------ | ----------- | ---------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| Overview     | Implemented | `playerKeys.stats` + `playerKeys.tournaments` APIs   | Stats cards (tournaments, win rate, best placement, main format) + recent 5 tournaments                     |
+| Tournaments  | New         | New query: full tournament history                   | Filterable table — format, year, status. Shows placement, record, tournament name. Links to tournament page |
+| Teams        | New         | `tournament_registrations` with team submission data | Public team sheets from tournaments. Parsed Pokemon display (sprites, moves, items, abilities)              |
+| Articles     | Stub        | None                                                 | "Coming Soon" placeholder                                                                                   |
+| Achievements | Stub        | None                                                 | "Coming Soon" placeholder                                                                                   |
 
 ### Query Changes
 
 **`getPlayerProfileByHandle`** (packages/supabase/src/queries/users.ts):
+
 - Include `is_public` in alt selection
 - For non-owner viewers: filter alts to only those with `is_public = true`
 - For profile owner: return all alts with their `is_public` status
 
 **New query: `getPlayerTournamentHistoryFull`**:
+
 - Full paginated tournament history with filters (format, year, status)
 - Returns: tournament name, slug, date, format, placement, match record (W-L), status
 
 **New query: `getPlayerPublicTeams`**:
+
 - Team sheets from tournament registrations where the tournament is complete
 - Returns: tournament name, team Pokemon data (parsed), date
 
@@ -106,12 +109,14 @@ ALTER TABLE public.alts
 ### Page Layout
 
 **Main column** (left ~70%):
+
 - Search bar: debounced text input, searches `users.username` + `alts.username`
 - Filter row: Country dropdown, Format dropdown, Sort dropdown
 - Player card grid: 2 columns, 24 per page, paginated
 - Each card: avatar, username, country flag, tournament count, win rate → links to `/u/[handle]`
 
 **Sidebar** (right ~30%):
+
 - 🏆 **Leaderboard**: Top 5 by win rate (minimum 5 tournaments played)
 - ⚡ **Recently Active**: Last 5 players with tournament activity
 - 👋 **New Members**: 5 most recently created accounts
@@ -119,6 +124,7 @@ ALTER TABLE public.alts
 ### New API Route
 
 **`GET /api/players/search`**
+
 - Query params: `q` (search), `country`, `format`, `sort`, `page`
 - Returns: paginated player list with stats
 - Public (no auth required)
@@ -127,6 +133,7 @@ ALTER TABLE public.alts
 ### New Queries (`packages/supabase/src/queries/players.ts`)
 
 **`searchPlayers(query, filters, page)`**:
+
 - `ILIKE` pattern search on `users.username` and `alts.username` (not full-text search — usernames are short strings)
 - Join with tournament registration stats (count, wins, losses)
 - Filter by country, format (via tournament format join)
@@ -134,16 +141,19 @@ ALTER TABLE public.alts
 - Paginated: 24 per page, returns `{ players, totalCount, page }`
 
 **`getLeaderboard(limit)`**:
+
 - Top players by win rate
 - Minimum 5 tournaments played (avoids 1-tournament-100%-win-rate outliers)
 - Returns: username, avatar, win rate, top cut count
 
 **`getRecentlyActivePlayers(limit)`**:
+
 - Players with most recent tournament participation
 - Based on `tournament_registrations.created_at` or tournament end date
 - Returns: username, avatar, last active timestamp
 
 **`getNewMembers(limit)`**:
+
 - Most recently created user accounts
 - Based on `users.created_at`
 - Returns: username, avatar, join date
@@ -205,6 +215,7 @@ CREATE POLICY "Users can update own preferences"
 ```
 
 **JSONB `preferences` column structure:**
+
 ```json
 {
   "match_ready": true,
@@ -228,10 +239,12 @@ When no row exists for a user, all notifications default to enabled (backwards c
 **Header:** Title, unread count, "Mark all read" button
 
 **Filter tabs:** All | Unread | Matches | Tournaments | Organizations
+
 - "All" and "Unread" use existing `getNotifications(userId, { unreadOnly })` query
 - Type tabs filter by notification type prefix — add optional `types` array filter param to `getNotifications` (e.g., Matches tab passes `["match_ready", "match_result", "match_disputed", "match_no_show"]`)
 
 **Notification list:**
+
 - Paginated: 20 per page
 - Unread: teal left border, dot indicator, slightly highlighted background
 - Read: dimmed opacity
@@ -244,12 +257,12 @@ When no row exists for a user, all notifications default to enabled (backwards c
 
 **UI organized by category** (flat in DB):
 
-| Category | Types | Shown To |
-|----------|-------|----------|
-| ⚔️ Match | match_ready, match_result, match_disputed, match_no_show | All users |
-| 🏆 Tournament | tournament_start, tournament_round, tournament_complete | All users |
-| 🔧 Staff | judge_call, judge_resolved | Users with staff roles only |
-| 🏢 Organization | org_request_approved, org_request_rejected | All users |
+| Category        | Types                                                    | Shown To                    |
+| --------------- | -------------------------------------------------------- | --------------------------- |
+| ⚔️ Match        | match_ready, match_result, match_disputed, match_no_show | All users                   |
+| 🏆 Tournament   | tournament_start, tournament_round, tournament_complete  | All users                   |
+| 🔧 Staff        | judge_call, judge_resolved                               | Users with staff roles only |
+| 🏢 Organization | org_request_approved, org_request_rejected               | All users                   |
 
 Each type: label, description, toggle switch.
 
@@ -286,12 +299,15 @@ This is backwards compatible: no preferences row = no opt-outs = all notificatio
 ### New Queries/Mutations
 
 **Queries** (`packages/supabase/src/queries/notification-preferences.ts`):
+
 - `getNotificationPreferences(userId)` — returns preferences JSONB or null (null = all enabled)
 
 **Mutations** (`packages/supabase/src/mutations/notification-preferences.ts`):
+
 - `upsertNotificationPreferences(userId, preferences)` — insert or update preferences
 
 **Server Actions** (`apps/web/src/actions/notification-preferences.ts`):
+
 - `getNotificationPreferencesAction()` — for settings page load
 - `updateNotificationPreferencesAction(preferences)` — save preferences with Zod validation
 
@@ -315,11 +331,11 @@ This is backwards compatible: no preferences row = no opt-outs = all notificatio
 
 All three features are built simultaneously in separate git worktrees:
 
-| Agent | Feature | Branch | Key Files |
-|-------|---------|--------|-----------|
-| Agent 1 | Player Profiles | `feat/player-profiles` | `apps/web/src/app/u/`, migration, queries |
-| Agent 2 | Player Directory | `feat/player-directory` | `apps/web/src/app/players/`, new queries |
-| Agent 3 | Notifications | `feat/notification-center` | `apps/web/src/app/dashboard/notifications/`, migration, triggers |
+| Agent   | Feature          | Branch                     | Key Files                                                        |
+| ------- | ---------------- | -------------------------- | ---------------------------------------------------------------- |
+| Agent 1 | Player Profiles  | `feat/player-profiles`     | `apps/web/src/app/u/`, migration, queries                        |
+| Agent 2 | Player Directory | `feat/player-directory`    | `apps/web/src/app/players/`, new queries                         |
+| Agent 3 | Notifications    | `feat/notification-center` | `apps/web/src/app/dashboard/notifications/`, migration, triggers |
 
 **Shared dependency:** Agent 1 creates the `alts.is_public` migration. Agent 2 reads `is_public` but doesn't need the migration to exist during development (can use `COALESCE(is_public, false)` defensively). Merge order: Agent 1 first, then Agent 2 and 3.
 

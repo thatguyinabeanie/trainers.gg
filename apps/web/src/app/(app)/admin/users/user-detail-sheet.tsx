@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo, useCallback } from "react";
+import { formatDateTime } from "@trainers/utils";
 import {
   Sheet,
   SheetContent,
@@ -110,16 +111,6 @@ const roleLabels: Record<string, string> = {
 
 function getRoleLabel(name: string): string {
   return roleLabels[name] ?? name;
-}
-
-function formatDateTime(dateStr: string): string {
-  return new Date(dateStr).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  });
 }
 
 // ----------------------------------------------------------------

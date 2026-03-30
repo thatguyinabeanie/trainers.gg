@@ -3,15 +3,19 @@ export {
   type TournamentPhasesEditorProps,
 } from "./tournament-phases-editor";
 export {
-  TournamentGameSettings,
-  type TournamentGameSettingsProps,
-  type BattlePlatform,
-  type BattleFormat,
+  type GameOption,
+  type FormatOption,
   POKEMON_GAMES,
   GAME_FORMATS,
   getFormatsForGame,
   getGameById,
   getFormatById,
+} from "./game-data";
+export {
+  TournamentGameSettings,
+  type TournamentGameSettingsProps,
+  type BattlePlatform,
+  type BattleFormat,
 } from "./tournament-game-settings";
 export {
   TournamentPresetSelector,

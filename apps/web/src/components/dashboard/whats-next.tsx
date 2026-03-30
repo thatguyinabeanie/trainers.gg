@@ -79,7 +79,7 @@ function ActionCard({ action }: { action: ActionItem }) {
     >
       {/* Accent line for urgent items */}
       {isUrgent && (
-        <div className="absolute top-0 left-0 h-full w-1 rounded-l-lg bg-amber-500" />
+        <div className="absolute left-0 top-0 h-full w-1 rounded-l-lg bg-amber-500" />
       )}
 
       {/* Icon */}

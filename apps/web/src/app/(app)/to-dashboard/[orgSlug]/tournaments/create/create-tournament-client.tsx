@@ -426,8 +426,8 @@ export function CreateTournamentClient({
 
   const progressPercentage = (currentStep / STEPS.length) * 100;
 
-  // Helper to convert form values to TournamentFormData for child components
-  const formData = form.getValues();
+  // Subscribe to form changes so child components re-render on updates
+  const formData = form.watch();
   const updateFormData = (updates: Partial<TournamentFormValues>) => {
     Object.entries(updates).forEach(([key, value]) => {
       form.setValue(key as keyof TournamentFormValues, value as never);

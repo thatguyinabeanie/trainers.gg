@@ -36,11 +36,22 @@ Run all of these and collect results:
 pnpm lint
 pnpm typecheck
 pnpm format:check
+pnpm test
 ```
 
 - If any check fails, report the failures clearly and ask if the user wants you to fix them.
 - Fix issues if requested, commit the fixes, then re-run the failing checks.
 - Do not proceed until all checks pass.
+
+### 2.5. Run E2E tests
+
+```bash
+pnpm test:e2e
+```
+
+- E2E tests require the local Supabase backend to be running (`pnpm dev:backend`).
+- If E2E fails because the backend is not running, report it and ask if the user wants to start it or skip E2E.
+- If E2E fails for other reasons, report the failures and ask if they should be fixed before proceeding.
 
 ### 3. Review migrations (if any)
 
@@ -78,6 +89,19 @@ git diff main --name-only -- 'packages/supabase/supabase/functions/'
 - If edge function files were changed, invoke the `edge-function-reviewer` agent.
 - Report findings.
 
+### 5.5. Mobile parity check
+
+Check if the branch includes changes under `apps/web/`:
+
+```bash
+git diff --name-only main...HEAD -- apps/web/
+```
+
+- If web files were changed, invoke the `checking-mobile-parity` skill to analyze changes and check for mobile parity tickets in Linear.
+- The skill will present findings and ask whether to create, update, or skip — it never acts without confirmation.
+- The user can skip to proceed directly to PR creation.
+- If no web files were changed, skip this step silently.
+
 ### 6. Push and create PR
 
 After all checks pass:
@@ -113,6 +137,8 @@ gh pr create --title "<title>" --body "<body>"
 - [x] Lint passes
 - [x] Typecheck passes
 - [x] Format check passes
+- [x] Unit tests pass
+- [x] E2E tests pass
 - [x] Migration review (if applicable)
 - [x] Security review (if applicable)
 - [x] Edge function review (if applicable)

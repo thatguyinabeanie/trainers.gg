@@ -55,6 +55,7 @@ const actionLabels: Record<AuditAction, string> = {
   "admin.announcement_deleted": "Announcement Deleted",
   "admin.org_request_approved": "Org Request Approved",
   "admin.org_request_rejected": "Org Request Rejected",
+  "admin.org_request_cancelled": "Org Request Cancelled",
 };
 
 // Color classes by action prefix
