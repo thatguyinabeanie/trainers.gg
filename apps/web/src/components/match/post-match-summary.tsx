@@ -105,40 +105,24 @@ export function PostMatchSummary({
           setNextMatch(null);
         }
 
-        // Check current round status if we have roundNumber
-        if (roundNumber != null) {
-          // First get the phase for this tournament
-          const { data: phases } = await supabase
-            .from("tournament_phases")
-            .select("id")
-            .eq("tournament_id", tournamentId);
+        // Check current round status by deriving round_id from the current match
+        const currentMatch = matches.find((m) => m.id === matchId);
+        const currentRound = currentMatch?.round as {
+          id: number;
+          round_number: number;
+        } | null;
 
-          if (isCancelled) return;
+        if (currentRound?.id) {
+          const { count, error: countError } = await supabase
+            .from("tournament_matches")
+            .select("*", { count: "exact", head: true })
+            .eq("round_id", currentRound.id)
+            .eq("status", "active");
 
-          if (phases?.length) {
-            const phaseIds = phases.map((p) => p.id);
-
-            const { data: round } = await supabase
-              .from("tournament_rounds")
-              .select("id")
-              .in("phase_id", phaseIds)
-              .eq("round_number", roundNumber)
-              .maybeSingle();
-
-            if (isCancelled) return;
-
-            if (round) {
-              // Check if there are any active matches in this round
-              const { count } = await supabase
-                .from("tournament_matches")
-                .select("*", { count: "exact", head: true })
-                .eq("round_id", round.id)
-                .eq("status", "active");
-
-              if (isCancelled) return;
-
-              setRoundStatus((count ?? 0) > 0 ? "active" : "completed");
-            }
+          if (countError) {
+            console.error("Error checking round status:", countError);
+          } else if (!isCancelled) {
+            setRoundStatus((count ?? 0) > 0 ? "active" : "completed");
           }
         }
       } catch (error) {
