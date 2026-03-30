@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { getCommunityBySlug } from "@trainers/supabase";
 import { TournamentsListClient } from "@/app/(app)/to-dashboard/[orgSlug]/tournaments/tournaments-list-client";
+import { PageHeader } from "@/components/dashboard/page-header";
 
 interface PageProps {
   params: Promise<{
@@ -26,10 +27,15 @@ export default async function DashboardTournamentsPage({
   }
 
   return (
-    <TournamentsListClient
-      communityId={organization.id}
-      communitySlug={communitySlug}
-      initialStatus={status}
-    />
+    <>
+      <PageHeader title="Tournaments" />
+      <div className="flex flex-1 flex-col gap-4 p-4 md:p-6">
+        <TournamentsListClient
+          communityId={organization.id}
+          communitySlug={communitySlug}
+          initialStatus={status}
+        />
+      </div>
+    </>
   );
 }

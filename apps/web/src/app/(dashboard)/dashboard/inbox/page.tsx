@@ -6,6 +6,7 @@ import {
   getNotificationCount,
 } from "@trainers/supabase";
 import { NotificationCenter } from "../notifications/notification-center";
+import { PageHeader } from "@/components/dashboard/page-header";
 
 export const metadata = {
   title: "Inbox — trainers.gg",
@@ -27,10 +28,15 @@ export default async function InboxPage() {
   ]);
 
   return (
-    <NotificationCenter
-      initialNotifications={notifications}
-      initialTotalCount={totalCount}
-      initialUnreadCount={unreadCount}
-    />
+    <>
+      <PageHeader title="Inbox" />
+      <div className="flex flex-1 flex-col gap-4 p-4 md:p-6">
+        <NotificationCenter
+          initialNotifications={notifications}
+          initialTotalCount={totalCount}
+          initialUnreadCount={unreadCount}
+        />
+      </div>
+    </>
   );
 }

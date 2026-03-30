@@ -5,6 +5,7 @@ import {
   listCommunityGroups,
 } from "@trainers/supabase";
 import { StaffListClient } from "@/app/(app)/to-dashboard/[orgSlug]/staff/staff-list-client";
+import { PageHeader } from "@/components/dashboard/page-header";
 
 interface PageProps {
   params: Promise<{
@@ -39,14 +40,19 @@ export default async function DashboardStaffPage({ params }: PageProps) {
   const currentUserRole = currentUserStaff?.role?.name ?? null;
 
   return (
-    <StaffListClient
-      communityId={organization.id}
-      communitySlug={communitySlug}
-      initialStaff={staffMembers}
-      groups={groups}
-      isOwner={isOwner}
-      currentUserId={user?.id}
-      currentUserRole={currentUserRole}
-    />
+    <>
+      <PageHeader title="Staff" />
+      <div className="flex flex-1 flex-col gap-4 p-4 md:p-6">
+        <StaffListClient
+          communityId={organization.id}
+          communitySlug={communitySlug}
+          initialStaff={staffMembers}
+          groups={groups}
+          isOwner={isOwner}
+          currentUserId={user?.id}
+          currentUserRole={currentUserRole}
+        />
+      </div>
+    </>
   );
 }

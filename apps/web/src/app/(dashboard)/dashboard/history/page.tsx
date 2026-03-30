@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { getUser } from "@/lib/supabase/server";
 import { StatsClient } from "../stats/stats-client";
+import { PageHeader } from "@/components/dashboard/page-header";
 
 export const metadata = {
   title: "History — trainers.gg",
@@ -14,5 +15,12 @@ export default async function HistoryPage() {
     redirect("/sign-in");
   }
 
-  return <StatsClient />;
+  return (
+    <>
+      <PageHeader title="History" />
+      <div className="flex flex-1 flex-col gap-4 p-4 md:p-6">
+        <StatsClient />
+      </div>
+    </>
+  );
 }

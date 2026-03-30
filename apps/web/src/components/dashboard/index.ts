@@ -1,4 +1,5 @@
 export { DashboardSidebar } from "./dashboard-sidebar";
+export { PageHeader } from "./page-header";
 export { QuickActions } from "./quick-actions";
 export { StatsOverview } from "./stats-overview";
 export { UpcomingTournaments } from "./upcoming-tournaments";

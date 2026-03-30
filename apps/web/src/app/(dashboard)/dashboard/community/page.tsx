@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { createClient, getUser } from "@/lib/supabase/server";
 import { listMyCommunities } from "@trainers/supabase";
 import { OrgSelectorClient } from "@/app/(app)/to-dashboard/org-selector-client";
+import { PageHeader } from "@/components/dashboard/page-header";
 
 export default async function DashboardCommunityPage() {
   const user = await getUser();
@@ -17,7 +18,14 @@ export default async function DashboardCommunityPage() {
 
   // If user has no organizations, show empty state
   if (organizations.length === 0) {
-    return <OrgSelectorClient organizations={[]} />;
+    return (
+      <>
+        <PageHeader title="Communities" />
+        <div className="flex flex-1 flex-col gap-4 p-4 md:p-6">
+          <OrgSelectorClient organizations={[]} />
+        </div>
+      </>
+    );
   }
 
   // If user has exactly 1 organization, redirect directly to it
@@ -26,5 +34,12 @@ export default async function DashboardCommunityPage() {
   }
 
   // Otherwise show the community selector
-  return <OrgSelectorClient organizations={organizations} />;
+  return (
+    <>
+      <PageHeader title="Communities" />
+      <div className="flex flex-1 flex-col gap-4 p-4 md:p-6">
+        <OrgSelectorClient organizations={organizations} />
+      </div>
+    </>
+  );
 }

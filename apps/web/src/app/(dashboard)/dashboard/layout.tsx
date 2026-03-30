@@ -5,12 +5,7 @@ import {
   listMyCommunities,
   getUnreadNotificationCount,
 } from "@trainers/supabase";
-import {
-  SidebarInset,
-  SidebarProvider,
-  SidebarTrigger,
-} from "@/components/ui/sidebar";
-import { Separator } from "@/components/ui/separator";
+import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { DashboardSidebar } from "@/components/dashboard/dashboard-sidebar";
 
 export default async function DashboardLayout({
@@ -30,6 +25,21 @@ export default async function DashboardLayout({
     getUnreadNotificationCount(supabase).catch(() => 0),
   ]);
 
+  // Check which communities have active (live) tournaments
+  const communityIds = communities.map((c) => c.id);
+  const { data: activeTournaments } =
+    communityIds.length > 0
+      ? await supabase
+          .from("tournaments")
+          .select("community_id")
+          .in("community_id", communityIds)
+          .eq("status", "active")
+      : { data: [] };
+
+  const activeCommunityIds = new Set(
+    (activeTournaments ?? []).map((t) => t.community_id)
+  );
+
   const sidebarUser = {
     id: user.id,
     username: (user.user_metadata?.username as string) ?? "user",
@@ -42,7 +52,7 @@ export default async function DashboardLayout({
     slug: c.slug,
     logoUrl: c.logo_url ?? null,
     role: c.isOwner ? ("owner" as const) : ("staff" as const),
-    hasLiveTournament: false, // TODO: query active tournaments per community
+    hasLiveTournament: activeCommunityIds.has(c.id),
   }));
 
   return (
@@ -59,18 +69,7 @@ export default async function DashboardLayout({
         unreadInboxCount={unreadInboxCount}
         variant="inset"
       />
-      <SidebarInset>
-        <header className="flex h-12 shrink-0 items-center gap-2 border-b px-4">
-          <SidebarTrigger className="-ml-1" />
-          <Separator
-            orientation="vertical"
-            className="mr-2 data-[orientation=vertical]:h-4"
-          />
-        </header>
-        <main className="flex flex-1 flex-col p-4 pt-0 md:p-6 md:pt-0">
-          {children}
-        </main>
-      </SidebarInset>
+      <SidebarInset>{children}</SidebarInset>
     </SidebarProvider>
   );
 }

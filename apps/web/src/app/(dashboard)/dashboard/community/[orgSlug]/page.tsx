@@ -4,6 +4,7 @@ import {
   listCommunityTournaments,
 } from "@trainers/supabase";
 import { OverviewClient } from "@/app/(app)/to-dashboard/[orgSlug]/overview-client";
+import { PageHeader } from "@/components/dashboard/page-header";
 
 interface PageProps {
   params: Promise<{
@@ -35,10 +36,15 @@ export default async function DashboardCommunityOverviewPage({
   );
 
   return (
-    <OverviewClient
-      organization={organization}
-      recentTournaments={recentTournaments}
-      communitySlug={communitySlug}
-    />
+    <>
+      <PageHeader title={organization.name} />
+      <div className="flex flex-1 flex-col gap-4 p-4 md:p-6">
+        <OverviewClient
+          organization={organization}
+          recentTournaments={recentTournaments}
+          communitySlug={communitySlug}
+        />
+      </div>
+    </>
   );
 }

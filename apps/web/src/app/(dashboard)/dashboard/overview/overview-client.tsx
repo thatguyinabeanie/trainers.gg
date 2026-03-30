@@ -200,7 +200,7 @@ export function OverviewClient() {
   return (
     <div className="space-y-6">
       {/* Welcome header */}
-      <div className="flex items-center justify-between pt-4">
+      <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">
             Welcome back,{" "}
