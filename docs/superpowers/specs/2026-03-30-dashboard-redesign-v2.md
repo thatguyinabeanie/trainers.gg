@@ -156,17 +156,15 @@ The dashboard is the player's **personal control center** — a launchpad + iden
   - **Footer** with separator: "View as this alt" (primary) + "View history" (secondary) on left, "Delete alt" (red text) on right
 - **Mockup:** `.superpowers/brainstorm/28734-1774902746/content/08-alts-table-v6.html`
 
-**Single Alt view (`/dashboard/alts/[username]`):**
+**Single Alt view (`/dashboard/alts/[username]`) ✅ Approved:**
 
-- Profile card: large avatar (click to change), name, badges (Main, Public/Private), visibility toggle
-- Per-alt stats: record, win rate, rating (current + peak), champion points
-- Teams section: list of teams owned by this alt
-  - Each team: sprite row, name, version count, tournament usage, last played
-  - Actions: Open in Builder (🔨), Share (↗), Archive (📦)
-  - Archived teams at reduced opacity
-  - Click team row → opens in Team Builder (future)
-- "View history" link → `/dashboard/alts/[username]/history`
-- Danger zone: delete alt (not for main alt)
+- **Profile card** — large avatar (64px, click to change with camera overlay), alt name + badges (Main amber, Public green, Private gray), handle in mono (`@username.trainers.gg`), "Make public"/"Make private" toggle button, "Archive alt" link (muted, not for main alt)
+- **Stats row** — 4 cards: Record (+ tournament count), Win Rate (+ trend), Rating (+ peak), Champion Points
+- **Teams table** — same columns as alts page expansion: Team (name, future builder link), Pokemon (24px Gen 5 sprites), Record, Win %, Events, Actions (🔨 Builder, ↗ Share coming soon, ⊕ Clone coming soon)
+- Archived teams: reduced opacity + grayscale sprites, only ↩ Restore action
+- **"View tournaments →"** link in section header → `/dashboard/alts/[username]/tournaments`
+- PageHeader title shows the alt username
+- **Mockup:** `.superpowers/brainstorm/39850-1774922758/content/01-alt-detail.html`
 
 **Teams are managed on the Alts page but edited in the Builder:**
 
@@ -464,6 +462,7 @@ All mockups live in `.superpowers/brainstorm/` directories. The latest approved 
 | Notifications popover         | `.superpowers/brainstorm/28734-1774902746/content/16-notifications-popover.html` | Session 2 |
 | Tournaments (with seat order) | `.superpowers/brainstorm/28734-1774902746/content/41-tournaments-page.html`      | Session 2 |
 | Home page (compact)           | `.superpowers/brainstorm/28734-1774902746/content/40-home-no-attention.html`     | Session 2 |
+| Alt detail page               | `.superpowers/brainstorm/39850-1774922758/content/01-alt-detail.html`            | Session 3 |
 
 Earlier iterations are preserved in the same directories for reference.
 
