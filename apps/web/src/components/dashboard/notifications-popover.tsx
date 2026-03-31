@@ -250,15 +250,19 @@ export function NotificationsPopover() {
         {/* Header */}
         <div className="flex shrink-0 items-center justify-between border-b px-4 py-3">
           <span className="text-sm font-semibold">Notifications</span>
-          {unreadCount > 0 && (
-            <button
-              type="button"
-              onClick={() => markAllRead()}
-              className="text-primary hover:text-primary/80 cursor-pointer text-[11px] font-medium transition-colors outline-none"
-            >
-              Mark all read
-            </button>
-          )}
+          <button
+            type="button"
+            onClick={() => markAllRead()}
+            disabled={unreadCount === 0}
+            className={cn(
+              "text-[11px] font-medium transition-colors outline-none",
+              unreadCount > 0
+                ? "text-primary hover:text-primary/80 cursor-pointer"
+                : "text-muted-foreground/50 cursor-default"
+            )}
+          >
+            Mark all read
+          </button>
         </div>
 
         {/* Scrollable content */}

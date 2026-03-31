@@ -10,6 +10,7 @@ import {
   getMyDashboardData,
   getActiveMatch,
   getUserTournamentHistory,
+  getCurrentUserAlts,
 } from "@trainers/supabase";
 import { cn } from "@/lib/utils";
 
@@ -257,10 +258,25 @@ export function HomeClient({
   }, [user]);
 
   // ── Queries ──
+  const { data: userAlts } = useSupabaseQuery(
+    (client) => getCurrentUserAlts(client),
+    [profileId]
+  );
+
+  // Resolve the selected alt's database ID for filtered queries
+  const selectedAltId = selectedAltUsername
+    ? (userAlts?.find((a) => a.username === selectedAltUsername)?.id ?? null)
+    : null;
+
+  // When an alt is selected, fetch stats for that alt; otherwise use main alt (profileId)
+  const dashboardAltId = selectedAltId ?? profileId;
+
   const { data: dashboardData } = useSupabaseQuery(
     (client) =>
-      profileId ? getMyDashboardData(client, profileId) : Promise.resolve(null),
-    [profileId]
+      dashboardAltId
+        ? getMyDashboardData(client, dashboardAltId)
+        : Promise.resolve(null),
+    [dashboardAltId]
   );
 
   const { data: activeMatch } = useSupabaseQuery(
