@@ -37,12 +37,17 @@ const nextConfig: NextConfig = {
     },
     {
       source: "/dashboard/notifications",
-      destination: "/dashboard/inbox",
+      destination: "/dashboard",
       permanent: true,
     },
     {
       source: "/dashboard/invitations",
-      destination: "/dashboard/inbox",
+      destination: "/dashboard",
+      permanent: true,
+    },
+    {
+      source: "/dashboard/inbox",
+      destination: "/dashboard",
       permanent: true,
     },
     {
