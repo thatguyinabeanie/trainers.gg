@@ -1,10 +1,7 @@
 import type { ReactNode } from "react";
 import { redirect } from "next/navigation";
 import { createClient, getUser } from "@/lib/supabase/server";
-import {
-  listMyCommunities,
-  getUnreadNotificationCount,
-} from "@trainers/supabase";
+import { listMyCommunities, getCurrentUserAlts } from "@trainers/supabase";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { DashboardSidebar } from "@/components/dashboard/dashboard-sidebar";
 
@@ -20,10 +17,19 @@ export default async function DashboardLayout({
   }
 
   const supabase = await createClient();
-  const [communities, unreadInboxCount] = await Promise.all([
+
+  const [communities, alts, userRow] = await Promise.all([
     listMyCommunities(supabase, user.id).catch(() => []),
-    getUnreadNotificationCount(supabase).catch(() => 0),
+    getCurrentUserAlts(supabase).catch(() => []),
+    supabase
+      .from("users")
+      .select("main_alt_id")
+      .eq("id", user.id)
+      .single()
+      .then(({ data }) => data),
   ]);
+
+  const mainAltId = userRow?.main_alt_id ?? null;
 
   // Check which communities have active (live) tournaments
   const communityIds = communities.map((c) => c.id);
@@ -52,6 +58,13 @@ export default async function DashboardLayout({
     hasLiveTournament: activeCommunityIds.has(c.id),
   }));
 
+  const sidebarAlts = alts.map((a) => ({
+    id: a.id,
+    username: a.username,
+    avatarUrl: a.avatar_url ?? null,
+    isMain: a.id === mainAltId,
+  }));
+
   return (
     <SidebarProvider
       style={
@@ -63,7 +76,7 @@ export default async function DashboardLayout({
       <DashboardSidebar
         user={sidebarUser}
         communities={sidebarCommunities}
-        unreadInboxCount={unreadInboxCount}
+        alts={sidebarAlts}
         variant="inset"
       />
       <SidebarInset>{children}</SidebarInset>

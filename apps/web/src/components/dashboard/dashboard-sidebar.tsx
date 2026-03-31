@@ -7,8 +7,6 @@ import { usePathname, useRouter } from "next/navigation";
 import {
   Home,
   Users,
-  Inbox,
-  History,
   LayoutDashboard,
   Trophy,
   UserCog,
@@ -19,6 +17,8 @@ import {
   LogOut,
   Settings,
   User,
+  ChevronsUpDown,
+  Check,
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -33,7 +33,6 @@ import {
   SidebarGroupLabel,
   SidebarHeader,
   SidebarMenu,
-  SidebarMenuBadge,
   SidebarMenuButton,
   SidebarMenuItem,
   useSidebar,
@@ -57,6 +56,13 @@ interface UserInfo {
   avatarUrl?: string | null;
 }
 
+interface AltInfo {
+  id: number;
+  username: string;
+  avatarUrl: string | null;
+  isMain: boolean;
+}
+
 interface CommunityInfo {
   id: number;
   name: string;
@@ -68,8 +74,8 @@ interface CommunityInfo {
 
 interface DashboardSidebarProps {
   user: UserInfo;
+  alts: AltInfo[];
   communities: CommunityInfo[];
-  unreadInboxCount: number;
 }
 
 // ---------------------------------------------------------------------------
@@ -78,6 +84,15 @@ interface DashboardSidebarProps {
 
 function getCommunitySlug(pathname: string): string | null {
   const match = /^\/dashboard\/community\/([^/]+)/.exec(pathname);
+  return match?.[1] ?? null;
+}
+
+/**
+ * Derives which alt username is selected from the URL path.
+ * Returns null when on /dashboard/alts (all alts view) or non-alts pages.
+ */
+function getSelectedAltUsername(pathname: string): string | null {
+  const match = /^\/dashboard\/alts\/([^/]+)/.exec(pathname);
   return match?.[1] ?? null;
 }
 
@@ -93,8 +108,8 @@ function LiveDot() {
 
 export function DashboardSidebar({
   user,
+  alts,
   communities,
-  unreadInboxCount,
   ...props
 }: DashboardSidebarProps & React.ComponentProps<typeof Sidebar>) {
   const pathname = usePathname();
@@ -107,27 +122,9 @@ export function DashboardSidebar({
 
   return (
     <Sidebar collapsible="icon" {...props}>
-      {/* Header — logo */}
+      {/* Header — alt switcher */}
       <SidebarHeader>
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarMenuButton
-              render={<Link href="/" />}
-              size="lg"
-              tooltip="trainers.gg"
-            >
-              <div className="bg-primary text-primary-foreground flex aspect-square size-8 shrink-0 items-center justify-center rounded-lg text-sm font-bold">
-                t
-              </div>
-              <div className="grid flex-1 text-left text-sm leading-tight">
-                <span className="truncate font-semibold">trainers.gg</span>
-                <span className="text-muted-foreground truncate text-xs">
-                  Dashboard
-                </span>
-              </div>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        </SidebarMenu>
+        <AltSwitcher alts={alts} />
       </SidebarHeader>
 
       {/* Content — context-switches between player and community nav */}
@@ -135,11 +132,7 @@ export function DashboardSidebar({
         {isCommunityContext && activeCommunity ? (
           <CommunityNav community={activeCommunity} pathname={pathname} />
         ) : (
-          <PlayerNav
-            pathname={pathname}
-            communities={communities}
-            unreadInboxCount={unreadInboxCount}
-          />
+          <PlayerNav pathname={pathname} communities={communities} />
         )}
       </SidebarContent>
 
@@ -153,6 +146,189 @@ export function DashboardSidebar({
         />
       </SidebarFooter>
     </Sidebar>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// AltSwitcher — header component replacing the logo, popover pattern
+// ---------------------------------------------------------------------------
+
+interface AltSwitcherProps {
+  alts: AltInfo[];
+}
+
+function AltAvatar({
+  alt,
+  size = "sm",
+}: {
+  alt: Pick<AltInfo, "username" | "avatarUrl">;
+  size?: "sm" | "md";
+}) {
+  const sizeClass = size === "sm" ? "size-7" : "size-8";
+  const textClass = size === "sm" ? "text-[11px]" : "text-sm";
+
+  if (alt.avatarUrl) {
+    return (
+      <Image
+        src={alt.avatarUrl}
+        alt={alt.username}
+        width={size === "sm" ? 28 : 32}
+        height={size === "sm" ? 28 : 32}
+        className={cn(
+          sizeClass,
+          "shrink-0 rounded-full border border-teal-200 object-cover"
+        )}
+      />
+    );
+  }
+
+  return (
+    <div
+      className={cn(
+        sizeClass,
+        textClass,
+        "flex shrink-0 items-center justify-center rounded-full border border-teal-200 bg-teal-50 font-semibold text-teal-700"
+      )}
+      aria-hidden
+    >
+      {alt.username.charAt(0).toUpperCase()}
+    </div>
+  );
+}
+
+function AltSwitcher({ alts }: AltSwitcherProps) {
+  const { isMobile } = useSidebar();
+  const pathname = usePathname();
+
+  const selectedUsername = getSelectedAltUsername(pathname);
+
+  // Resolve which alt to show in the trigger:
+  // 1. If on an alt-specific URL, show that alt
+  // 2. Otherwise, show the main alt (or first alt as fallback)
+  const mainAlt = alts.find((a) => a.isMain) ?? alts[0] ?? null;
+  const selectedAlt = selectedUsername
+    ? (alts.find((a) => a.username === selectedUsername) ?? mainAlt)
+    : mainAlt;
+
+  // Subtitle: when on /dashboard/alts (all alts page), show "All alts"
+  const isAllAltsPage = pathname === "/dashboard/alts";
+
+  const triggerSubtitle = isAllAltsPage
+    ? "All alts"
+    : selectedAlt?.isMain
+      ? "Main alt"
+      : (selectedAlt?.username ?? "All alts");
+
+  return (
+    <SidebarMenu>
+      <SidebarMenuItem>
+        <DropdownMenu>
+          <DropdownMenuTrigger
+            render={
+              <SidebarMenuButton
+                size="lg"
+                className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+                tooltip="Switch alt"
+              />
+            }
+          >
+            {selectedAlt ? (
+              <AltAvatar alt={selectedAlt} size="sm" />
+            ) : (
+              // Collapsed icon fallback when no alts exist
+              <div className="bg-primary text-primary-foreground flex aspect-square size-7 shrink-0 items-center justify-center rounded-full text-sm font-bold">
+                t
+              </div>
+            )}
+            <div className="grid flex-1 text-left text-sm leading-tight">
+              <span className="truncate font-semibold">
+                {selectedAlt?.username ?? "No alts"}
+              </span>
+              <span className="text-muted-foreground truncate text-xs">
+                {triggerSubtitle}
+              </span>
+            </div>
+            <ChevronsUpDown className="ml-auto size-4 shrink-0" />
+          </DropdownMenuTrigger>
+
+          <DropdownMenuContent
+            className="w-[260px] rounded-xl p-0"
+            side={isMobile ? "bottom" : "right"}
+            align="start"
+            sideOffset={4}
+          >
+            {/* Header label */}
+            <div className="text-muted-foreground px-3.5 py-2.5 text-[10px] font-medium tracking-wide uppercase">
+              Switch alt
+            </div>
+
+            {/* All Alts option */}
+            <DropdownMenuItem
+              render={<Link href="/dashboard/alts" />}
+              className="mx-1 gap-2.5 rounded-lg px-3 py-2"
+            >
+              <div className="text-muted-foreground bg-muted flex size-[26px] shrink-0 items-center justify-center rounded-full text-xs">
+                ✦
+              </div>
+              <span className="font-medium">All Alts</span>
+            </DropdownMenuItem>
+
+            {alts.length > 0 && <DropdownMenuSeparator className="mx-3.5" />}
+
+            {/* Alt list */}
+            {alts.map((alt) => {
+              const isSelected = selectedAlt?.id === alt.id && !isAllAltsPage;
+              return (
+                <DropdownMenuItem
+                  key={alt.id}
+                  render={<Link href={`/dashboard/alts/${alt.username}`} />}
+                  className={cn(
+                    "mx-1 gap-2.5 rounded-lg px-3 py-2",
+                    isSelected && "bg-accent"
+                  )}
+                >
+                  <AltAvatar alt={alt} size="sm" />
+                  <span className="flex-1 font-medium">{alt.username}</span>
+                  {alt.isMain && (
+                    <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[8px] font-semibold text-amber-800">
+                      Main
+                    </span>
+                  )}
+                  {isSelected && (
+                    <Check className="size-3.5 shrink-0 text-teal-600" />
+                  )}
+                </DropdownMenuItem>
+              );
+            })}
+
+            <DropdownMenuSeparator className="mx-3.5" />
+
+            {/* Actions */}
+            <DropdownMenuItem
+              render={
+                <Link href="/dashboard/alts/new" aria-label="Create new alt" />
+              }
+              className="mx-1 gap-2.5 rounded-lg px-3 py-2 text-sm"
+            >
+              <span className="text-muted-foreground flex size-[26px] shrink-0 items-center justify-center text-base">
+                +
+              </span>
+              <span>Create new alt</span>
+            </DropdownMenuItem>
+
+            <DropdownMenuItem
+              render={<Link href="/dashboard/alts" />}
+              className="mx-1 mb-1 gap-2.5 rounded-lg px-3 py-2 text-sm"
+            >
+              <span className="text-muted-foreground flex size-[26px] shrink-0 items-center justify-center text-base">
+                ⚙
+              </span>
+              <span>Manage alts</span>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </SidebarMenuItem>
+    </SidebarMenu>
   );
 }
 
@@ -272,14 +448,9 @@ function NavUser({ user, activeCommunity }: NavUserProps) {
 interface PlayerNavProps {
   pathname: string;
   communities: CommunityInfo[];
-  unreadInboxCount: number;
 }
 
-function PlayerNav({
-  pathname,
-  communities,
-  unreadInboxCount,
-}: PlayerNavProps) {
+function PlayerNav({ pathname, communities }: PlayerNavProps) {
   const playerItems = [
     {
       label: "Home",
@@ -288,22 +459,16 @@ function PlayerNav({
       isActive: pathname === "/dashboard",
     },
     {
-      label: "Alts & Teams",
+      label: "Alts",
       href: "/dashboard/alts",
       icon: Users,
       isActive: pathname.startsWith("/dashboard/alts"),
     },
     {
-      label: "Inbox",
-      href: "/dashboard/inbox",
-      icon: Inbox,
-      isActive: pathname.startsWith("/dashboard/inbox"),
-    },
-    {
-      label: "History",
-      href: "/dashboard/history",
-      icon: History,
-      isActive: pathname.startsWith("/dashboard/history"),
+      label: "Tournaments",
+      href: "/dashboard/tournaments",
+      icon: Trophy,
+      isActive: pathname.startsWith("/dashboard/tournaments"),
     },
   ] as const;
 
@@ -323,10 +488,6 @@ function PlayerNav({
                   <item.icon className="size-4 shrink-0" />
                   <span>{item.label}</span>
                 </SidebarMenuButton>
-
-                {item.label === "Inbox" && unreadInboxCount > 0 && (
-                  <SidebarMenuBadge>{unreadInboxCount}</SidebarMenuBadge>
-                )}
               </SidebarMenuItem>
             ))}
           </SidebarMenu>
