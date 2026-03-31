@@ -217,7 +217,7 @@ function AltSwitcher({ alts }: AltSwitcherProps) {
     ? "All alts"
     : selectedAlt?.isMain
       ? "Main alt"
-      : (selectedAlt?.username ?? "All alts");
+      : "Alt";
 
   return (
     <SidebarMenu>

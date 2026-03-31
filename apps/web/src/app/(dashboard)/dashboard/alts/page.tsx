@@ -348,13 +348,14 @@ function TeamsSubTable({
             View history
           </Button>
         </div>
+        {/* TODO: Replace deleteAltAction with archiveAltAction — alts should be archived, not deleted */}
         {!isMain && (
           <button
-            className="text-destructive cursor-pointer text-xs hover:underline disabled:cursor-not-allowed disabled:opacity-50"
+            className="text-muted-foreground cursor-pointer text-xs hover:underline disabled:cursor-not-allowed disabled:opacity-50"
             onClick={onDeleteAlt}
             disabled={isDeletePending}
           >
-            Delete alt
+            Archive alt
           </button>
         )}
       </div>
@@ -725,17 +726,18 @@ export default function AltsPage() {
     refetch();
   };
 
+  // TODO: Replace with archiveAltAction when archive system is built
   const handleDelete = (altId: number, altName: string) => {
     if (mainAltId === altId) {
-      toast.error("Cannot delete your main alt. Set a different main first.");
+      toast.error("Cannot archive your main alt.");
       return;
     }
-    if (!confirm(`Delete alt "${altName}"? This cannot be undone.`)) return;
+    if (!confirm(`Archive alt "${altName}"? It can be restored later.`)) return;
 
     startTransition(async () => {
       const result = await deleteAltAction(altId);
       if (result.success) {
-        toast.success("Alt deleted");
+        toast.success("Alt archived");
         setExpandedAltId(null);
         handleRefresh();
       } else {

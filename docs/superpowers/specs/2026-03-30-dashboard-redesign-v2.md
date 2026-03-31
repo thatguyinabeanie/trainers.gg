@@ -52,7 +52,11 @@ The dashboard is the player's **personal control center** — a launchpad + iden
 - **No stats in the switcher** — stats live on the pages. Keep it simple.
 - Selecting an alt navigates to `/dashboard/alts/[username]`
 - Selecting "All Alts" navigates to `/dashboard/alts`
-- State derived from URL path, not client state
+- **Global filter** — selection persists across all dashboard pages via cookie (SSR-compatible). NOT just a navigation shortcut.
+  - "All Alts" = aggregate view (default)
+  - Specific alt = all pages filter to that alt's data
+  - `/dashboard/alts` is the exception: "All Alts" shows the alts table, specific alt navigates to `/dashboard/alts/[username]`
+  - URL stays clean (no query params), state stored in cookie
 - Uses the shadcn Team Switcher pattern
 - **Popover menu** (not inline dropdown) — floats over the sidebar at 260px width
 - "Switch alt" label header at top of popover

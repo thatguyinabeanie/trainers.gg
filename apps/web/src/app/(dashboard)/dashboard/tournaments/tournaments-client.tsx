@@ -538,7 +538,7 @@ export function TournamentsClient() {
     <div className="flex flex-col gap-4">
       {/* Heading + filters row */}
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h1 className="text-xl font-bold tracking-tight">My Tournaments</h1>
+        <h1 className="text-xl font-bold tracking-tight">Tournaments</h1>
         <div className="flex items-center gap-2">
           {/* Alt dropdown */}
           <Select
