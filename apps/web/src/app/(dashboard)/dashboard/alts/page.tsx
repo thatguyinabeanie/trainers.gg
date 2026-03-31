@@ -6,8 +6,13 @@ import Link from "next/link";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { useAuth } from "@/components/auth/auth-provider";
 import { useSupabaseQuery } from "@/lib/supabase";
-import { getCurrentUserAlts } from "@trainers/supabase";
-import type { TypedSupabaseClient } from "@trainers/supabase";
+import {
+  getCurrentUserAlts,
+  getPlayerLifetimeStats,
+  getAltsBulkStats,
+  getTeamsForAlt,
+} from "@trainers/supabase";
+import type { TypedSupabaseClient, AltStats } from "@trainers/supabase";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -37,7 +42,6 @@ import {
   Hammer,
   ArrowUpRight,
   Copy,
-  RotateCcw,
 } from "lucide-react";
 import { toast } from "sonner";
 import { createAltAction, deleteAltAction } from "@/actions/alts";
@@ -54,17 +58,6 @@ type Alt = {
   username: string;
   avatar_url: string | null;
   is_public: boolean;
-};
-
-// Placeholder team type — future: fetch from DB
-type Team = {
-  id: number;
-  name: string;
-  species: string[];
-  wins: number;
-  losses: number;
-  events: number;
-  isArchived: boolean;
 };
 
 // ---------------------------------------------------------------------------
@@ -88,12 +81,24 @@ function spriteUrl(species: string): string {
 }
 
 // ---------------------------------------------------------------------------
-// Aggregate stats — currently placeholders since stats aren't in the DB yet.
-// Future: replace with real aggregated query.
+// Aggregate stats row
 // ---------------------------------------------------------------------------
 
-function AggregateStatsRow({ alts }: { alts: Alt[] }) {
-  const altCount = alts.length;
+function AggregateStatsRow({ altIds }: { altIds: number[] }) {
+  const statsQueryFn = (client: TypedSupabaseClient) =>
+    getPlayerLifetimeStats(client, altIds);
+  const { data: stats } = useSupabaseQuery(statsQueryFn, [
+    "lifetimeStats",
+    ...altIds,
+  ]);
+
+  const totalWins = stats?.totalWins ?? 0;
+  const totalLosses = stats?.totalLosses ?? 0;
+  const winRate = stats?.winRate ?? 0;
+  const tournamentCount = stats?.tournamentCount ?? 0;
+  const altCount = altIds.length;
+
+  const hasGames = totalWins + totalLosses > 0;
 
   return (
     <div className="grid grid-cols-2 gap-2.5 md:grid-cols-4">
@@ -101,21 +106,29 @@ function AggregateStatsRow({ alts }: { alts: Alt[] }) {
         <div className="text-muted-foreground mb-0.5 text-[10px] font-semibold tracking-widest uppercase">
           Record
         </div>
-        <div className="font-mono text-lg font-bold">0-0</div>
+        <div className="font-mono text-lg font-bold">
+          {totalWins}-{totalLosses}
+        </div>
         <div className="text-muted-foreground text-[10px]">across all alts</div>
       </div>
       <div className="bg-muted/50 rounded-lg p-3">
         <div className="text-muted-foreground mb-0.5 text-[10px] font-semibold tracking-widest uppercase">
           Win Rate
         </div>
-        <div className="font-mono text-lg font-bold">—</div>
-        <div className="text-muted-foreground text-[10px]">no games played</div>
+        <div className="font-mono text-lg font-bold">
+          {hasGames ? `${winRate.toFixed(1)}%` : "—"}
+        </div>
+        <div className="text-muted-foreground text-[10px]">
+          {hasGames ? `${totalWins + totalLosses} games` : "no games played"}
+        </div>
       </div>
       <div className="bg-muted/50 rounded-lg p-3">
         <div className="text-muted-foreground mb-0.5 text-[10px] font-semibold tracking-widest uppercase">
-          Peak Rating
+          Best Placement
         </div>
-        <div className="font-mono text-lg font-bold">—</div>
+        <div className="font-mono text-lg font-bold">
+          {stats?.bestPlacement != null ? `#${stats.bestPlacement}` : "—"}
+        </div>
         <div className="text-muted-foreground text-[10px]">
           {altCount} alt{altCount !== 1 ? "s" : ""}
         </div>
@@ -124,8 +137,10 @@ function AggregateStatsRow({ alts }: { alts: Alt[] }) {
         <div className="text-muted-foreground mb-0.5 text-[10px] font-semibold tracking-widest uppercase">
           Tournaments
         </div>
-        <div className="font-mono text-lg font-bold">0</div>
-        <div className="text-muted-foreground text-[10px]">0 active</div>
+        <div className="font-mono text-lg font-bold">{tournamentCount}</div>
+        <div className="text-muted-foreground text-[10px]">
+          {tournamentCount === 1 ? "1 event" : `${tournamentCount} events`}
+        </div>
       </div>
     </div>
   );
@@ -151,29 +166,7 @@ function PublicDot({ isPublic }: { isPublic: boolean }) {
 // Team action buttons
 // ---------------------------------------------------------------------------
 
-function TeamActions({
-  team,
-  altUsername,
-}: {
-  team: Team;
-  altUsername: string;
-}) {
-  if (team.isArchived) {
-    return (
-      <Tooltip>
-        <TooltipTrigger render={<span />}>
-          <button
-            className="bg-muted inline-flex size-6 cursor-pointer items-center justify-center rounded text-xs"
-            aria-label="Restore team"
-          >
-            <RotateCcw className="text-muted-foreground size-3" />
-          </button>
-        </TooltipTrigger>
-        <TooltipContent>Restore</TooltipContent>
-      </Tooltip>
-    );
-  }
-
+function TeamActions({ altUsername }: { altUsername: string }) {
   return (
     <div className="flex justify-end gap-1">
       {/* TODO: link to builder page when available */}
@@ -222,18 +215,28 @@ function TeamActions({
 // ---------------------------------------------------------------------------
 
 function TeamsSubTable({
-  teams,
+  altId,
   altUsername,
   isMain,
   onDeleteAlt,
   isDeletePending,
+  refreshKey,
 }: {
-  teams: Team[];
+  altId: number;
   altUsername: string;
   isMain: boolean;
   onDeleteAlt: () => void;
   isDeletePending: boolean;
+  refreshKey: number;
 }) {
+  const teamsQueryFn = (client: TypedSupabaseClient) =>
+    getTeamsForAlt(client, altId);
+  const { data: teams, isLoading } = useSupabaseQuery(teamsQueryFn, [
+    "altTeams",
+    altId,
+    refreshKey,
+  ]);
+
   return (
     <div className="bg-background rounded-lg border">
       <div className="overflow-x-auto">
@@ -246,23 +249,20 @@ function TeamsSubTable({
               <th className="text-muted-foreground px-3 py-1.5 text-left text-[10px] font-medium tracking-wider uppercase">
                 Pokemon
               </th>
-              <th className="text-muted-foreground px-3 py-1.5 text-right text-[10px] font-medium tracking-wider uppercase">
-                Record
-              </th>
-              <th className="text-muted-foreground px-3 py-1.5 text-right text-[10px] font-medium tracking-wider uppercase">
-                Win %
-              </th>
-              <th className="text-muted-foreground px-3 py-1.5 text-right text-[10px] font-medium tracking-wider uppercase">
-                Events
-              </th>
               <th className="w-24 px-3 py-1.5" />
             </tr>
           </thead>
           <tbody>
-            {teams.length === 0 ? (
+            {isLoading ? (
+              <tr>
+                <td colSpan={3} className="px-3 py-4 text-center">
+                  <Loader2 className="text-muted-foreground mx-auto size-4 animate-spin" />
+                </td>
+              </tr>
+            ) : !teams || teams.length === 0 ? (
               <tr>
                 <td
-                  colSpan={6}
+                  colSpan={3}
                   className="text-muted-foreground px-3 py-6 text-center text-xs"
                 >
                   No teams yet
@@ -272,22 +272,12 @@ function TeamsSubTable({
               teams.map((team) => (
                 <tr
                   key={team.id}
-                  className={cn(
-                    "hover:bg-muted/30 border-b transition-colors last:border-0",
-                    team.isArchived && "opacity-40"
-                  )}
+                  className="hover:bg-muted/30 border-b transition-colors last:border-0"
                 >
-                  <td className="px-3 py-1.5 font-medium">
-                    {team.name}
-                    {team.isArchived && (
-                      <span className="text-muted-foreground ml-1.5 font-normal">
-                        (archived)
-                      </span>
-                    )}
-                  </td>
+                  <td className="px-3 py-1.5 font-medium">{team.name}</td>
                   <td className="px-3 py-1">
-                    <div className={cn("flex", team.isArchived && "grayscale")}>
-                      {team.species.map((species, i) => (
+                    <div className="flex">
+                      {team.pokemonSpecies.map((species, i) => (
                         <Image
                           key={i}
                           src={spriteUrl(species)}
@@ -301,24 +291,8 @@ function TeamsSubTable({
                       ))}
                     </div>
                   </td>
-                  <td className="px-3 py-1.5 text-right font-mono">
-                    {team.wins}-{team.losses}
-                  </td>
-                  <td
-                    className={cn(
-                      "px-3 py-1.5 text-right font-mono",
-                      !team.isArchived &&
-                        isHighWinRate(team.wins, team.losses) &&
-                        "font-medium text-teal-600 dark:text-teal-400"
-                    )}
-                  >
-                    {formatWinRate(team.wins, team.losses)}
-                  </td>
-                  <td className="text-muted-foreground px-3 py-1.5 text-right font-mono">
-                    {team.events}
-                  </td>
                   <td className="px-3 py-1.5">
-                    <TeamActions team={team} altUsername={altUsername} />
+                    <TeamActions altUsername={altUsername} />
                   </td>
                 </tr>
               ))
@@ -376,6 +350,7 @@ function AltTableRow({
   isDeletePending,
   onRefresh,
   refreshKey,
+  altStats,
 }: {
   alt: Alt;
   isMain: boolean;
@@ -385,17 +360,26 @@ function AltTableRow({
   isDeletePending: boolean;
   onRefresh: () => void;
   refreshKey: number;
+  altStats: AltStats | undefined;
 }) {
   const [, startVisibilityTransition] = useTransition();
 
-  // Placeholder teams — future: fetch per-alt teams from DB
-  const teams: Team[] = [];
+  const wins = altStats?.matchWins ?? 0;
+  const losses = altStats?.matchLosses ?? 0;
+  const events = altStats?.tournamentCount ?? 0;
 
-  const wins = 0;
-  const losses = 0;
-  const rating = null;
-  const events = 0;
-  const teamCount = 0;
+  // Team count fetched separately so expand panel can show the full list
+  const teamCountQueryFn = (client: TypedSupabaseClient) =>
+    getTeamsForAlt(client, alt.id);
+  const { data: teams } = useSupabaseQuery(teamCountQueryFn, [
+    "altTeams",
+    alt.id,
+    refreshKey,
+  ]);
+  const teamCount = teams?.length ?? 0;
+
+  // Rating — not yet implemented at the per-alt level on this page
+  const rating: number | null = null;
 
   const handleVisibilityChange = (checked: boolean) => {
     startVisibilityTransition(async () => {
@@ -571,11 +555,12 @@ function AltTableRow({
         <tr className="bg-muted/20 border-b last:border-0">
           <td colSpan={8} className="px-3 pt-1 pb-3">
             <TeamsSubTable
-              teams={teams}
+              altId={alt.id}
               altUsername={alt.username}
               isMain={isMain}
               onDeleteAlt={onDelete}
               isDeletePending={isDeletePending}
+              refreshKey={refreshKey}
             />
           </td>
         </tr>
@@ -721,6 +706,16 @@ export default function AltsPage() {
     refreshKey,
   ]);
 
+  // Bulk stats for all alts — two queries, no N+1
+  const altIds = (alts ?? []).map((a) => a.id);
+  const bulkStatsQueryFn = (client: TypedSupabaseClient) =>
+    getAltsBulkStats(client, altIds);
+  const { data: bulkStats } = useSupabaseQuery(bulkStatsQueryFn, [
+    "altsBulkStats",
+    ...altIds,
+    refreshKey,
+  ]);
+
   const handleRefresh = () => {
     setRefreshKey((k) => k + 1);
     refetch();
@@ -818,7 +813,7 @@ export default function AltsPage() {
         ) : (
           <>
             {/* Aggregate stats */}
-            <AggregateStatsRow alts={alts} />
+            <AggregateStatsRow altIds={altIds} />
 
             {/* Alts table */}
             <div className="overflow-hidden rounded-lg border">
@@ -862,6 +857,7 @@ export default function AltsPage() {
                         isDeletePending={isPending}
                         onRefresh={handleRefresh}
                         refreshKey={refreshKey}
+                        altStats={bulkStats?.[alt.id]}
                       />
                     ))}
                   </tbody>

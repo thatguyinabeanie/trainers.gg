@@ -2394,3 +2394,128 @@ export async function getPlayerLifetimeStats(
     formats: Array.from(formatSet),
   };
 }
+
+// ============================================================================
+// Per-alt stats for the alts management page
+// ============================================================================
+
+export type AltStats = {
+  altId: number;
+  matchWins: number;
+  matchLosses: number;
+  tournamentCount: number;
+};
+
+/**
+ * Fetch match stats and tournament registration counts for a list of alt IDs
+ * in two bulk queries (no N+1). Returns a map keyed by altId.
+ */
+export async function getAltsBulkStats(
+  supabase: TypedClient,
+  altIds: number[]
+): Promise<Record<number, AltStats>> {
+  if (altIds.length === 0) return {};
+
+  // Aggregate wins/losses per alt from player_stats
+  const { data: statsRows, error: statsError } = await supabase
+    .from("tournament_player_stats")
+    .select("alt_id, match_wins, match_losses")
+    .in("alt_id", altIds);
+
+  if (statsError) throw statsError;
+
+  // Count tournament registrations per alt (any status)
+  const { data: regRows, error: regError } = await supabase
+    .from("tournament_registrations")
+    .select("alt_id")
+    .in("alt_id", altIds);
+
+  if (regError) throw regError;
+
+  // Build result map
+  const result: Record<number, AltStats> = {};
+
+  for (const altId of altIds) {
+    result[altId] = {
+      altId,
+      matchWins: 0,
+      matchLosses: 0,
+      tournamentCount: 0,
+    };
+  }
+
+  for (const row of statsRows ?? []) {
+    const entry = result[row.alt_id];
+    if (entry) {
+      entry.matchWins += row.match_wins ?? 0;
+      entry.matchLosses += row.match_losses ?? 0;
+    }
+  }
+
+  for (const row of regRows ?? []) {
+    const entry = result[row.alt_id];
+    if (entry) {
+      entry.tournamentCount += 1;
+    }
+  }
+
+  return result;
+}
+
+export type AltTeam = {
+  id: number;
+  name: string;
+  createdBy: number;
+  isPublic: boolean;
+  formatLegal: boolean | null;
+  pokemonSpecies: string[];
+};
+
+/**
+ * Fetch teams (with pokemon species) for a single alt.
+ * Only returns teams that have at least one pokemon.
+ */
+export async function getTeamsForAlt(
+  supabase: TypedClient,
+  altId: number
+): Promise<AltTeam[]> {
+  const { data: teams, error } = await supabase
+    .from("teams")
+    .select(
+      `
+      id,
+      name,
+      created_by,
+      is_public,
+      format_legal,
+      team_pokemon(
+        pokemon:pokemon(species)
+      )
+    `
+    )
+    .eq("created_by", altId)
+    .order("created_at", { ascending: false });
+
+  if (error) throw error;
+  if (!teams) return [];
+
+  return teams
+    .map((team) => {
+      const pokemonEntries = team.team_pokemon as
+        | { pokemon: { species: string } | null }[]
+        | null;
+      const species = (pokemonEntries ?? [])
+        .map((p) => p.pokemon?.species)
+        .filter((s): s is string => s != null);
+
+      return {
+        id: team.id,
+        name: team.name,
+        createdBy: team.created_by,
+        isPublic: team.is_public ?? false,
+        formatLegal: team.format_legal,
+        pokemonSpecies: species,
+      };
+    })
+    .filter((team) => team.pokemonSpecies.length > 0);
+}

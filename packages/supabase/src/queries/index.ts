@@ -91,12 +91,16 @@ export {
   getUserTournamentHistory,
   getPlayerTournamentHistory,
   getPlayerLifetimeStats,
+  getAltsBulkStats,
+  getTeamsForAlt,
 } from "./tournaments";
 
 export type {
   TournamentWithOrg,
   GroupedTournaments,
   PlayerLifetimeStats,
+  AltStats,
+  AltTeam,
 } from "./tournaments";
 // CommunityWithCounts already exported above
 
