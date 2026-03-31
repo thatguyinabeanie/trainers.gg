@@ -2,6 +2,7 @@
 
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Separator } from "@/components/ui/separator";
+import { NotificationsPopover } from "@/components/dashboard/notifications-popover";
 
 interface PageHeaderProps {
   title?: string;
@@ -10,7 +11,8 @@ interface PageHeaderProps {
 
 /**
  * Dashboard page header — renders inside the SidebarInset header bar.
- * Shows the sidebar trigger, separator, and an optional page title.
+ * Shows the sidebar trigger, separator, page title, optional children,
+ * and a notifications bell icon on the right.
  * Each page renders this as its first element.
  */
 export function PageHeader({ title, children }: PageHeaderProps) {
@@ -23,6 +25,10 @@ export function PageHeader({ title, children }: PageHeaderProps) {
       />
       {title && <span className="text-sm font-medium">{title}</span>}
       {children}
+      {/* Notifications bell — pushed to the right */}
+      <div className="ml-auto">
+        <NotificationsPopover />
+      </div>
     </header>
   );
 }
