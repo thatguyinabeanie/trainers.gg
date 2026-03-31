@@ -47,7 +47,12 @@ const nextConfig: NextConfig = {
     },
     {
       source: "/dashboard/stats",
-      destination: "/dashboard/history",
+      destination: "/dashboard/tournaments",
+      permanent: true,
+    },
+    {
+      source: "/dashboard/history",
+      destination: "/dashboard/tournaments",
       permanent: true,
     },
     {
