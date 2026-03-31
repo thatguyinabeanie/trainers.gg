@@ -471,9 +471,15 @@ function EmptyState() {
 const historyQueryFn = (client: TypedSupabaseClient) =>
   getUserTournamentHistory(client);
 
-export function TournamentsClient() {
+export function TournamentsClient({
+  selectedAltUsername,
+}: {
+  selectedAltUsername: string | null;
+}) {
   const [activeChip, setActiveChip] = useState<FilterChip>("all");
-  const [selectedAlt, setSelectedAlt] = useState<string>("all");
+  const [selectedAlt, setSelectedAlt] = useState<string>(
+    selectedAltUsername ?? "all"
+  );
   const [selectedFormat, setSelectedFormat] = useState<string>("all");
   const [expandedId, setExpandedId] = useState<number | null>(null);
 

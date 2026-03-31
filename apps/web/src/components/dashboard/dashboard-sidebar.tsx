@@ -76,6 +76,7 @@ interface DashboardSidebarProps {
   user: UserInfo;
   alts: AltInfo[];
   communities: CommunityInfo[];
+  selectedAltUsername: string | null;
 }
 
 // ---------------------------------------------------------------------------
@@ -84,15 +85,6 @@ interface DashboardSidebarProps {
 
 function getCommunitySlug(pathname: string): string | null {
   const match = /^\/dashboard\/community\/([^/]+)/.exec(pathname);
-  return match?.[1] ?? null;
-}
-
-/**
- * Derives which alt username is selected from the URL path.
- * Returns null when on /dashboard/alts (all alts view) or non-alts pages.
- */
-function getSelectedAltUsername(pathname: string): string | null {
-  const match = /^\/dashboard\/alts\/([^/]+)/.exec(pathname);
   return match?.[1] ?? null;
 }
 
@@ -110,6 +102,7 @@ export function DashboardSidebar({
   user,
   alts,
   communities,
+  selectedAltUsername,
   ...props
 }: DashboardSidebarProps & React.ComponentProps<typeof Sidebar>) {
   const pathname = usePathname();
@@ -124,7 +117,7 @@ export function DashboardSidebar({
     <Sidebar collapsible="icon" {...props}>
       {/* Header — alt switcher */}
       <SidebarHeader>
-        <AltSwitcher alts={alts} />
+        <AltSwitcher alts={alts} selectedAltUsername={selectedAltUsername} />
       </SidebarHeader>
 
       {/* Content — context-switches between player and community nav */}
@@ -153,8 +146,20 @@ export function DashboardSidebar({
 // AltSwitcher — header component replacing the logo, popover pattern
 // ---------------------------------------------------------------------------
 
+const DASHBOARD_ALT_COOKIE = "dashboard-alt";
+const COOKIE_MAX_AGE = 60 * 60 * 24 * 365; // 1 year
+
+function setAltCookie(username: string) {
+  document.cookie = `${DASHBOARD_ALT_COOKIE}=${encodeURIComponent(username)}; path=/; samesite=lax; max-age=${COOKIE_MAX_AGE}`;
+}
+
+function clearAltCookie() {
+  document.cookie = `${DASHBOARD_ALT_COOKIE}=; path=/; samesite=lax; max-age=0`;
+}
+
 interface AltSwitcherProps {
   alts: AltInfo[];
+  selectedAltUsername: string | null;
 }
 
 function AltAvatar({
@@ -196,28 +201,45 @@ function AltAvatar({
   );
 }
 
-function AltSwitcher({ alts }: AltSwitcherProps) {
+function AltSwitcher({ alts, selectedAltUsername }: AltSwitcherProps) {
   const { isMobile } = useSidebar();
   const pathname = usePathname();
+  const router = useRouter();
 
-  const selectedUsername = getSelectedAltUsername(pathname);
+  // Resolve which alt object matches the cookie-driven selection
+  const selectedAlt = selectedAltUsername
+    ? (alts.find((a) => a.username === selectedAltUsername) ?? null)
+    : null;
 
-  // Resolve which alt to show in the trigger:
-  // 1. If on an alt-specific URL, show that alt
-  // 2. Otherwise, show the main alt (or first alt as fallback)
-  const mainAlt = alts.find((a) => a.isMain) ?? alts[0] ?? null;
-  const selectedAlt = selectedUsername
-    ? (alts.find((a) => a.username === selectedUsername) ?? mainAlt)
-    : mainAlt;
-
-  // Subtitle: when on /dashboard/alts (all alts page), show "All alts"
-  const isAllAltsPage = pathname === "/dashboard/alts";
-
-  const triggerSubtitle = isAllAltsPage
-    ? "All alts"
-    : selectedAlt?.isMain
+  // Trigger display: when no alt selected, show "All alts"
+  const triggerSubtitle = selectedAlt
+    ? selectedAlt.isMain
       ? "Main alt"
-      : "Alt";
+      : "Alt"
+    : "All alts";
+
+  // Trigger avatar/name: when no alt selected, show a generic "all" indicator
+  const triggerAlt = selectedAlt;
+
+  const handleSelectAllAlts = () => {
+    clearAltCookie();
+    // If on the alts detail page, navigate back to the alts list
+    if (pathname.startsWith("/dashboard/alts/")) {
+      router.push("/dashboard/alts");
+    } else {
+      router.refresh();
+    }
+  };
+
+  const handleSelectAlt = (alt: AltInfo) => {
+    setAltCookie(alt.username);
+    // If on the alts section, navigate to that alt's page
+    if (pathname.startsWith("/dashboard/alts")) {
+      router.push(`/dashboard/alts/${alt.username}`);
+    } else {
+      router.refresh();
+    }
+  };
 
   return (
     <SidebarMenu>
@@ -232,17 +254,17 @@ function AltSwitcher({ alts }: AltSwitcherProps) {
               />
             }
           >
-            {selectedAlt ? (
-              <AltAvatar alt={selectedAlt} size="sm" />
+            {triggerAlt ? (
+              <AltAvatar alt={triggerAlt} size="sm" />
             ) : (
-              // Collapsed icon fallback when no alts exist
-              <div className="bg-primary text-primary-foreground flex aspect-square size-7 shrink-0 items-center justify-center rounded-full text-sm font-bold">
-                t
+              // "All Alts" indicator
+              <div className="text-muted-foreground bg-muted flex aspect-square size-7 shrink-0 items-center justify-center rounded-full text-xs">
+                ✦
               </div>
             )}
             <div className="grid flex-1 text-left text-sm leading-tight">
               <span className="truncate font-semibold">
-                {selectedAlt?.username ?? "No alts"}
+                {triggerAlt?.username ?? "All Alts"}
               </span>
               <span className="text-muted-foreground truncate text-xs">
                 {triggerSubtitle}
@@ -264,28 +286,34 @@ function AltSwitcher({ alts }: AltSwitcherProps) {
 
             {/* All Alts option */}
             <DropdownMenuItem
-              render={<Link href="/dashboard/alts" />}
-              className="mx-1 gap-2.5 rounded-lg px-3 py-2"
+              className={cn(
+                "mx-1 gap-2.5 rounded-lg px-3 py-2",
+                !selectedAlt && "bg-accent"
+              )}
+              onClick={handleSelectAllAlts}
             >
               <div className="text-muted-foreground bg-muted flex size-[26px] shrink-0 items-center justify-center rounded-full text-xs">
                 ✦
               </div>
-              <span className="font-medium">All Alts</span>
+              <span className="flex-1 font-medium">All Alts</span>
+              {!selectedAlt && (
+                <Check className="size-3.5 shrink-0 text-teal-600" />
+              )}
             </DropdownMenuItem>
 
             {alts.length > 0 && <DropdownMenuSeparator className="mx-3.5" />}
 
             {/* Alt list */}
             {alts.map((alt) => {
-              const isSelected = selectedAlt?.id === alt.id && !isAllAltsPage;
+              const isSelected = selectedAlt?.id === alt.id;
               return (
                 <DropdownMenuItem
                   key={alt.id}
-                  render={<Link href={`/dashboard/alts/${alt.username}`} />}
                   className={cn(
                     "mx-1 gap-2.5 rounded-lg px-3 py-2",
                     isSelected && "bg-accent"
                   )}
+                  onClick={() => handleSelectAlt(alt)}
                 >
                   <AltAvatar alt={alt} size="sm" />
                   <span className="flex-1 font-medium">{alt.username}</span>

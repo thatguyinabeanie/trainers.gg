@@ -149,7 +149,11 @@ function ResultRow({ item }: { item: TournamentHistoryItem }) {
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 
-export function HomeClient() {
+export function HomeClient({
+  selectedAltUsername,
+}: {
+  selectedAltUsername: string | null;
+}) {
   const { user } = useAuth();
   const profileId = user?.profile?.id;
   const supabase = useSupabase();
@@ -296,8 +300,11 @@ export function HomeClient() {
   const tournamentsStr =
     stats.totalEnrolled > 0 ? `${stats.totalEnrolled}` : "0";
 
-  // Recent results: last 5 completed tournaments
-  const recentResults = (recentHistory ?? []).slice(0, 5);
+  // Recent results: last 5 completed tournaments, optionally filtered by selected alt
+  const filteredHistory = selectedAltUsername
+    ? (recentHistory ?? []).filter((r) => r.altUsername === selectedAltUsername)
+    : (recentHistory ?? []);
+  const recentResults = filteredHistory.slice(0, 5);
 
   const displayName = getUserDisplayName(user);
 
@@ -325,7 +332,15 @@ export function HomeClient() {
           value={ratingStr}
           sub={stats.ratingRank > 0 ? `Rank #${stats.ratingRank}` : undefined}
         />
-        <StatCard label="Record" value={recordStr} sub="across all alts" />
+        <StatCard
+          label="Record"
+          value={recordStr}
+          sub={
+            selectedAltUsername
+              ? `as ${selectedAltUsername}`
+              : "across all alts"
+          }
+        />
         <StatCard
           label="Tournaments"
           value={tournamentsStr}

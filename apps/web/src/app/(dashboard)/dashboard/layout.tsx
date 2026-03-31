@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { redirect } from "next/navigation";
+import { cookies } from "next/headers";
 import { createClient, getUser } from "@/lib/supabase/server";
 import { listMyCommunities, getCurrentUserAlts } from "@trainers/supabase";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
@@ -30,6 +31,15 @@ export default async function DashboardLayout({
   ]);
 
   const mainAltId = userRow?.main_alt_id ?? null;
+
+  // Read the dashboard alt filter cookie
+  const cookieStore = await cookies();
+  const dashboardAltCookie = cookieStore.get("dashboard-alt")?.value ?? null;
+  // Only use the cookie value if it matches an actual alt for this user
+  const selectedAltUsername =
+    dashboardAltCookie && alts.some((a) => a.username === dashboardAltCookie)
+      ? dashboardAltCookie
+      : null;
 
   // Check which communities have active (live) tournaments
   const communityIds = communities.map((c) => c.id);
@@ -77,6 +87,7 @@ export default async function DashboardLayout({
         user={sidebarUser}
         communities={sidebarCommunities}
         alts={sidebarAlts}
+        selectedAltUsername={selectedAltUsername}
         variant="inset"
       />
       <SidebarInset>{children}</SidebarInset>
