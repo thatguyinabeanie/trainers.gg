@@ -20,6 +20,7 @@ Domain-specific guidance lives in `.claude/skills/`. Invoke the relevant skill b
 | `tracking-analytics`       | PostHog event constants, adding new events                       |
 | `integrating-bluesky`      | Bluesky/AT Protocol, DID resolution, public agent                |
 | `writing-tests`            | Fishery factories, Supabase/AT Protocol mocks, Jest config       |
+| `managing-dev-slots`       | Dev-slot port allocation, multi-instance dev, slot cleanup       |
 | `managing-infrastructure`  | PDS on Fly.io, ngrok tunnel for local dev                        |
 | `creating-edge-functions`  | Creating/updating Supabase edge functions                        |
 | `managing-edge-imports`    | Deno import maps, `deno.json` management                         |
