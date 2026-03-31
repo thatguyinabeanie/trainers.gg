@@ -3539,15 +3539,16 @@ END $$;
 -- =========================================================================
 DO $$
 DECLARE
-  v_main_id bigint;
-  v_vgc_id bigint;
+  v_main_id  bigint;
+  v_vgc_id   bigint;
   v_draft_id bigint;
   v_team1_id bigint;
   v_team2_id bigint;
   v_team3_id bigint;
   v_round_id bigint;
-  v_opp_id bigint;
-  v_won boolean;
+  v_opp_id   bigint;
+  v_won      boolean;
+  v_match_id bigint;
 BEGIN
   SELECT a.id INTO v_main_id FROM alts a JOIN auth.users u ON a.user_id = u.id
     WHERE u.email = 'admin@trainers.local' AND a.username = 'admin_trainer';
@@ -3566,68 +3567,225 @@ BEGIN
     RAISE NOTICE 'Admin tournament data already exists, skipping';
     RETURN;
   END IF;
-      -- Create teams
-      INSERT INTO teams (created_by, name) VALUES (v_vgc_id, 'Rain Balance') RETURNING id INTO v_team1_id;
-      INSERT INTO teams (created_by, name) VALUES (v_vgc_id, 'Sun Room') RETURNING id INTO v_team2_id;
-      INSERT INTO teams (created_by, name) VALUES (v_draft_id, 'Stall Core') RETURNING id INTO v_team3_id;
 
-      -- Register admin alts in tournaments
-      INSERT INTO tournament_registrations (alt_id, tournament_id, status, team_id) VALUES (v_vgc_id, 1, 'checked_in', v_team1_id) ON CONFLICT DO NOTHING;
-      INSERT INTO tournament_registrations (alt_id, tournament_id, status, team_id) VALUES (v_vgc_id, 2, 'checked_in', v_team2_id) ON CONFLICT DO NOTHING;
-      INSERT INTO tournament_registrations (alt_id, tournament_id, status, team_id) VALUES (v_vgc_id, 3, 'checked_in', v_team1_id) ON CONFLICT DO NOTHING;
-      INSERT INTO tournament_registrations (alt_id, tournament_id, status) VALUES (v_vgc_id, 5, 'registered') ON CONFLICT DO NOTHING;
-      INSERT INTO tournament_registrations (alt_id, tournament_id, status, team_id) VALUES (v_main_id, 2, 'checked_in', v_team1_id) ON CONFLICT DO NOTHING;
-      INSERT INTO tournament_registrations (alt_id, tournament_id, status, team_id) VALUES (v_main_id, 3, 'checked_in', v_team1_id) ON CONFLICT DO NOTHING;
-      INSERT INTO tournament_registrations (alt_id, tournament_id, status, team_id) VALUES (v_draft_id, 1, 'checked_in', v_team3_id) ON CONFLICT DO NOTHING;
-      INSERT INTO tournament_registrations (alt_id, tournament_id, status) VALUES (v_draft_id, 5, 'registered') ON CONFLICT DO NOTHING;
+  -- -----------------------------------------------------------------------
+  -- Rename admin_trainer (main) existing seed teams to something legible
+  -- -----------------------------------------------------------------------
+  UPDATE teams SET name = 'VGC Goodstuffs' WHERE created_by = v_main_id AND name LIKE 'team-seed-%';
 
-      -- Create matches for admin_trainer_vgc in completed tournaments
-      FOR v_round_id IN SELECT tr.id FROM tournament_rounds tr JOIN tournament_phases tp ON tr.phase_id = tp.id WHERE tp.tournament_id = 1 ORDER BY tr.round_number LIMIT 5
-      LOOP
-        SELECT alt_id INTO v_opp_id FROM tournament_registrations WHERE tournament_id = 1 AND alt_id NOT IN (v_main_id, v_vgc_id, v_draft_id) ORDER BY random() LIMIT 1;
-        v_won := random() > 0.25;
-        IF v_opp_id IS NOT NULL THEN
-          INSERT INTO tournament_matches (round_id, alt1_id, alt2_id, status, winner_alt_id, game_wins1, game_wins2, table_number, start_time, end_time)
-          VALUES (v_round_id, v_vgc_id, v_opp_id, 'completed', CASE WHEN v_won THEN v_vgc_id ELSE v_opp_id END, CASE WHEN v_won THEN 2 ELSE floor(random()*2)::int END, CASE WHEN v_won THEN floor(random()*2)::int ELSE 2 END, floor(random()*10+1)::int, now()-interval '7 days', now()-interval '7 days'+interval '30 minutes');
-        END IF;
-      END LOOP;
-      FOR v_round_id IN SELECT tr.id FROM tournament_rounds tr JOIN tournament_phases tp ON tr.phase_id = tp.id WHERE tp.tournament_id = 2 ORDER BY tr.round_number LIMIT 5
-      LOOP
-        SELECT alt_id INTO v_opp_id FROM tournament_registrations WHERE tournament_id = 2 AND alt_id NOT IN (v_main_id, v_vgc_id, v_draft_id) ORDER BY random() LIMIT 1;
-        v_won := random() > 0.3;
-        IF v_opp_id IS NOT NULL THEN
-          INSERT INTO tournament_matches (round_id, alt1_id, alt2_id, status, winner_alt_id, game_wins1, game_wins2, table_number, start_time, end_time)
-          VALUES (v_round_id, v_vgc_id, v_opp_id, 'completed', CASE WHEN v_won THEN v_vgc_id ELSE v_opp_id END, CASE WHEN v_won THEN 2 ELSE floor(random()*2)::int END, CASE WHEN v_won THEN floor(random()*2)::int ELSE 2 END, floor(random()*10+1)::int, now()-interval '3 days', now()-interval '3 days'+interval '25 minutes');
-        END IF;
-      END LOOP;
+  -- -----------------------------------------------------------------------
+  -- Create teams with real competitive Pokemon
+  -- -----------------------------------------------------------------------
 
-      -- Matches for admin_trainer (main) in tournament 2
-      FOR v_round_id IN SELECT tr.id FROM tournament_rounds tr JOIN tournament_phases tp ON tr.phase_id = tp.id WHERE tp.tournament_id = 2 ORDER BY tr.round_number LIMIT 5
-      LOOP
-        SELECT alt_id INTO v_opp_id FROM tournament_registrations WHERE tournament_id = 2 AND alt_id NOT IN (v_main_id, v_vgc_id, v_draft_id) ORDER BY random() LIMIT 1;
-        v_won := random() > 0.4;
-        IF v_opp_id IS NOT NULL THEN
-          INSERT INTO tournament_matches (round_id, alt1_id, alt2_id, status, winner_alt_id, game_wins1, game_wins2, table_number, start_time, end_time)
-          VALUES (v_round_id, v_main_id, v_opp_id, 'completed', CASE WHEN v_won THEN v_main_id ELSE v_opp_id END, CASE WHEN v_won THEN 2 ELSE floor(random()*2)::int END, CASE WHEN v_won THEN floor(random()*2)::int ELSE 2 END, floor(random()*10+1)::int, now()-interval '5 days', now()-interval '5 days'+interval '20 minutes');
-        END IF;
-      END LOOP;
+  -- Team 1: Rain Balance (admin_trainer_vgc)
+  INSERT INTO teams (created_by, name) VALUES (v_vgc_id, 'Rain Balance') RETURNING id INTO v_team1_id;
 
-      -- Matches for admin_trainer_draft in tournament 1
-      FOR v_round_id IN SELECT tr.id FROM tournament_rounds tr JOIN tournament_phases tp ON tr.phase_id = tp.id WHERE tp.tournament_id = 1 ORDER BY tr.round_number LIMIT 4
-      LOOP
-        SELECT alt_id INTO v_opp_id FROM tournament_registrations WHERE tournament_id = 1 AND alt_id NOT IN (v_main_id, v_vgc_id, v_draft_id) ORDER BY random() LIMIT 1;
-        v_won := random() > 0.5;
-        IF v_opp_id IS NOT NULL THEN
-          INSERT INTO tournament_matches (round_id, alt1_id, alt2_id, status, winner_alt_id, game_wins1, game_wins2, table_number, start_time, end_time)
-          VALUES (v_round_id, v_draft_id, v_opp_id, 'completed', CASE WHEN v_won THEN v_draft_id ELSE v_opp_id END, CASE WHEN v_won THEN 2 ELSE floor(random()*2)::int END, CASE WHEN v_won THEN floor(random()*2)::int ELSE 2 END, floor(random()*10+1)::int, now()-interval '8 days', now()-interval '8 days'+interval '25 minutes');
-        END IF;
-      END LOOP;
+  INSERT INTO pokemon (species, level, nature, ability, held_item, move1, move2, move3, move4, ev_hp, ev_attack, ev_defense, ev_special_attack, ev_special_defense, ev_speed, tera_type)
+  VALUES
+    ('Kyogre',               50, 'Modest',   'Drizzle',       'Mystic Water',  'Water Spout',   'Origin Pulse', 'Ice Beam',      'Protect',      4,   0,   0,   252, 0,   252, 'Water'),
+    ('Pelipper',             50, 'Bold',     'Drizzle',       'Focus Sash',    'Hurricane',     'Weather Ball', 'Tailwind',      'Protect',      252, 0,   252, 0,   4,   0,   'Flying'),
+    ('Rillaboom',            50, 'Adamant',  'Grassy Surge',  'Miracle Seed',  'Grassy Glide',  'Wood Hammer',  'U-turn',        'Fake Out',     252, 252, 0,   0,   0,   4,   'Grass'),
+    ('Urshifu-Rapid-Strike', 50, 'Jolly',    'Unseen Fist',   'Choice Band',   'Surging Strikes','Close Combat', 'Aqua Jet',      'Detect',       4,   252, 0,   0,   0,   252, 'Water'),
+    ('Tornadus',             50, 'Timid',    'Prankster',     'Covert Cloak',  'Bleakwind Storm','Tailwind',     'Rain Dance',    'Protect',      4,   0,   0,   252, 0,   252, 'Flying'),
+    ('Amoonguss',            50, 'Relaxed',  'Regenerator',   'Rocky Helmet',  'Spore',         'Rage Powder',  'Pollen Puff',   'Protect',      252, 0,   252, 0,   4,   0,   'Grass');
 
-      -- Player stats
-      INSERT INTO tournament_player_stats (tournament_id, alt_id, matches_played, match_wins, match_losses, game_wins, game_losses, final_ranking) VALUES
-        (1, v_vgc_id, 5, 4, 1, 9, 3, 2), (2, v_vgc_id, 5, 3, 2, 7, 5, 5),
-        (2, v_main_id, 5, 3, 2, 7, 5, 6), (1, v_draft_id, 4, 2, 2, 5, 5, 10)
-      ON CONFLICT DO NOTHING;
+  INSERT INTO team_pokemon (team_id, pokemon_id, team_position)
+  SELECT v_team1_id, p.id, 1 FROM pokemon p WHERE p.species = 'Kyogre'               AND p.ability = 'Drizzle'      AND p.nature = 'Modest'   AND p.move1 = 'Water Spout'    LIMIT 1 ON CONFLICT DO NOTHING;
+  INSERT INTO team_pokemon (team_id, pokemon_id, team_position)
+  SELECT v_team1_id, p.id, 2 FROM pokemon p WHERE p.species = 'Pelipper'             AND p.ability = 'Drizzle'      AND p.nature = 'Bold'     AND p.move1 = 'Hurricane'      LIMIT 1 ON CONFLICT DO NOTHING;
+  INSERT INTO team_pokemon (team_id, pokemon_id, team_position)
+  SELECT v_team1_id, p.id, 3 FROM pokemon p WHERE p.species = 'Rillaboom'            AND p.ability = 'Grassy Surge' AND p.nature = 'Adamant'  AND p.move1 = 'Grassy Glide'   LIMIT 1 ON CONFLICT DO NOTHING;
+  INSERT INTO team_pokemon (team_id, pokemon_id, team_position)
+  SELECT v_team1_id, p.id, 4 FROM pokemon p WHERE p.species = 'Urshifu-Rapid-Strike' AND p.ability = 'Unseen Fist'  AND p.nature = 'Jolly'    AND p.move1 = 'Surging Strikes' LIMIT 1 ON CONFLICT DO NOTHING;
+  INSERT INTO team_pokemon (team_id, pokemon_id, team_position)
+  SELECT v_team1_id, p.id, 5 FROM pokemon p WHERE p.species = 'Tornadus'             AND p.ability = 'Prankster'    AND p.nature = 'Timid'    AND p.move1 = 'Bleakwind Storm' LIMIT 1 ON CONFLICT DO NOTHING;
+  INSERT INTO team_pokemon (team_id, pokemon_id, team_position)
+  SELECT v_team1_id, p.id, 6 FROM pokemon p WHERE p.species = 'Amoonguss'            AND p.ability = 'Regenerator'  AND p.nature = 'Relaxed'  AND p.move1 = 'Spore'          LIMIT 1 ON CONFLICT DO NOTHING;
+
+  -- Team 2: Sun Room (admin_trainer_vgc)
+  INSERT INTO teams (created_by, name) VALUES (v_vgc_id, 'Sun Room') RETURNING id INTO v_team2_id;
+
+  INSERT INTO pokemon (species, level, nature, ability, held_item, move1, move2, move3, move4, ev_hp, ev_attack, ev_defense, ev_special_attack, ev_special_defense, ev_speed, iv_speed, tera_type)
+  VALUES
+    ('Koraidon',      50, 'Adamant', 'Orichalcum Pulse', 'Clear Amulet',   'Collision Course', 'Flare Blitz',   'Flame Charge', 'Protect',    4,   252, 0,   0,   0,   252, 31, 'Fire'),
+    ('Flutter Mane',  50, 'Timid',   'Protosynthesis',   'Booster Energy', 'Moonblast',        'Shadow Ball',   'Dazzling Gleam','Protect',   4,   0,   0,   252, 0,   252, 31, 'Fairy'),
+    ('Incineroar',    50, 'Careful', 'Intimidate',       'Safety Goggles', 'Flare Blitz',      'Fake Out',      'Parting Shot', 'Knock Off',  252, 0,   0,   0,   252, 4,  31, 'Dark'),
+    ('Landorus',      50, 'Modest',  'Sheer Force',      'Life Orb',       'Sandsear Storm',   'Earth Power',   'Sludge Bomb',  'Protect',    4,   0,   0,   252, 0,   252, 31, 'Ground'),
+    ('Farigiraf',     50, 'Quiet',   'Armor Tail',       'Sitrus Berry',   'Trick Room',       'Psychic',       'Hyper Voice',  'Protect',    252, 0,   4,   252, 0,   0,  0,  'Normal'),
+    ('Raging Bolt',   50, 'Modest',  'Protosynthesis',   'Assault Vest',   'Thunderclap',      'Draco Meteor',  'Thunderbolt',  'Calm Mind',  252, 0,   0,   252, 4,   0,  31, 'Electric');
+
+  INSERT INTO team_pokemon (team_id, pokemon_id, team_position)
+  SELECT v_team2_id, p.id, 1 FROM pokemon p WHERE p.species = 'Koraidon'     AND p.ability = 'Orichalcum Pulse' AND p.nature = 'Adamant' AND p.move1 = 'Collision Course' LIMIT 1 ON CONFLICT DO NOTHING;
+  INSERT INTO team_pokemon (team_id, pokemon_id, team_position)
+  SELECT v_team2_id, p.id, 2 FROM pokemon p WHERE p.species = 'Flutter Mane' AND p.ability = 'Protosynthesis'   AND p.nature = 'Timid'   AND p.move1 = 'Moonblast'        LIMIT 1 ON CONFLICT DO NOTHING;
+  INSERT INTO team_pokemon (team_id, pokemon_id, team_position)
+  SELECT v_team2_id, p.id, 3 FROM pokemon p WHERE p.species = 'Incineroar'   AND p.ability = 'Intimidate'       AND p.nature = 'Careful' AND p.move1 = 'Flare Blitz'      LIMIT 1 ON CONFLICT DO NOTHING;
+  INSERT INTO team_pokemon (team_id, pokemon_id, team_position)
+  SELECT v_team2_id, p.id, 4 FROM pokemon p WHERE p.species = 'Landorus'     AND p.ability = 'Sheer Force'      AND p.nature = 'Modest'  AND p.move1 = 'Sandsear Storm'   LIMIT 1 ON CONFLICT DO NOTHING;
+  INSERT INTO team_pokemon (team_id, pokemon_id, team_position)
+  SELECT v_team2_id, p.id, 5 FROM pokemon p WHERE p.species = 'Farigiraf'    AND p.ability = 'Armor Tail'       AND p.nature = 'Quiet'   AND p.move1 = 'Trick Room'       LIMIT 1 ON CONFLICT DO NOTHING;
+  INSERT INTO team_pokemon (team_id, pokemon_id, team_position)
+  SELECT v_team2_id, p.id, 6 FROM pokemon p WHERE p.species = 'Raging Bolt'  AND p.ability = 'Protosynthesis'   AND p.nature = 'Modest'  AND p.move1 = 'Thunderclap'      LIMIT 1 ON CONFLICT DO NOTHING;
+
+  -- Team 3: Stall Core (admin_trainer_draft)
+  INSERT INTO teams (created_by, name) VALUES (v_draft_id, 'Stall Core') RETURNING id INTO v_team3_id;
+
+  INSERT INTO pokemon (species, level, nature, ability, held_item, move1, move2, move3, move4, ev_hp, ev_attack, ev_defense, ev_special_attack, ev_special_defense, ev_speed, iv_speed, tera_type)
+  VALUES
+    ('Dondozo',    50, 'Impish',  'Unaware',      'Leftovers',     'Order Up',      'Wave Crash',    'Earthquake',    'Protect',       252, 0,   252, 0,   4,   0,  31, 'Water'),
+    ('Tatsugiri',  50, 'Modest',  'Commander',    'Focus Sash',    'Muddy Water',   'Draco Meteor',  'Icy Wind',      'Endure',        4,   0,   0,   252, 0,   252,31, 'Dragon'),
+    ('Amoonguss',  50, 'Sassy',   'Regenerator',  'Sitrus Berry',  'Spore',         'Rage Powder',   'Pollen Puff',   'Protect',       252, 0,   4,   0,   252, 0,  0,  'Grass'),
+    ('Cresselia',  50, 'Bold',    'Levitate',     'Mental Herb',   'Trick Room',    'Helping Hand',  'Lunar Blessing','Ally Switch',   252, 0,   252, 0,   4,   0,  31, 'Psychic'),
+    ('Incineroar', 50, 'Careful', 'Intimidate',   'Safety Goggles','Flare Blitz',   'Fake Out',      'Parting Shot',  'Will-O-Wisp',   252, 0,   0,   0,   252, 4,  31, 'Fire'),
+    ('Arcanine',   50, 'Calm',    'Intimidate',   'Assault Vest',  'Flamethrower',  'Snarl',         'Will-O-Wisp',   'Protect',       252, 0,   0,   0,   252, 4,  31, 'Normal');
+
+  INSERT INTO team_pokemon (team_id, pokemon_id, team_position)
+  SELECT v_team3_id, p.id, 1 FROM pokemon p WHERE p.species = 'Dondozo'    AND p.ability = 'Unaware'     AND p.nature = 'Impish'  AND p.move1 = 'Order Up'      LIMIT 1 ON CONFLICT DO NOTHING;
+  INSERT INTO team_pokemon (team_id, pokemon_id, team_position)
+  SELECT v_team3_id, p.id, 2 FROM pokemon p WHERE p.species = 'Tatsugiri'  AND p.ability = 'Commander'   AND p.nature = 'Modest'  AND p.move1 = 'Muddy Water'   LIMIT 1 ON CONFLICT DO NOTHING;
+  INSERT INTO team_pokemon (team_id, pokemon_id, team_position)
+  SELECT v_team3_id, p.id, 3 FROM pokemon p WHERE p.species = 'Amoonguss'  AND p.ability = 'Regenerator' AND p.nature = 'Sassy'   AND p.move1 = 'Spore'         LIMIT 1 ON CONFLICT DO NOTHING;
+  INSERT INTO team_pokemon (team_id, pokemon_id, team_position)
+  SELECT v_team3_id, p.id, 4 FROM pokemon p WHERE p.species = 'Cresselia'  AND p.ability = 'Levitate'    AND p.nature = 'Bold'    AND p.move1 = 'Trick Room'    LIMIT 1 ON CONFLICT DO NOTHING;
+  INSERT INTO team_pokemon (team_id, pokemon_id, team_position)
+  SELECT v_team3_id, p.id, 5 FROM pokemon p WHERE p.species = 'Incineroar' AND p.ability = 'Intimidate'  AND p.nature = 'Careful' AND p.move1 = 'Flare Blitz'   LIMIT 1 ON CONFLICT DO NOTHING;
+  INSERT INTO team_pokemon (team_id, pokemon_id, team_position)
+  SELECT v_team3_id, p.id, 6 FROM pokemon p WHERE p.species = 'Arcanine'   AND p.ability = 'Intimidate'  AND p.nature = 'Calm'    AND p.move1 = 'Flamethrower'  LIMIT 1 ON CONFLICT DO NOTHING;
+
+  -- -----------------------------------------------------------------------
+  -- Register admin alts in tournaments
+  -- -----------------------------------------------------------------------
+  INSERT INTO tournament_registrations (alt_id, tournament_id, status, team_id) VALUES (v_vgc_id,   1, 'checked_in', v_team1_id) ON CONFLICT DO NOTHING;
+  INSERT INTO tournament_registrations (alt_id, tournament_id, status, team_id) VALUES (v_vgc_id,   2, 'checked_in', v_team2_id) ON CONFLICT DO NOTHING;
+  INSERT INTO tournament_registrations (alt_id, tournament_id, status, team_id) VALUES (v_vgc_id,   3, 'checked_in', v_team1_id) ON CONFLICT DO NOTHING;
+  INSERT INTO tournament_registrations (alt_id, tournament_id, status)          VALUES (v_vgc_id,   5, 'registered')              ON CONFLICT DO NOTHING;
+  INSERT INTO tournament_registrations (alt_id, tournament_id, status, team_id) VALUES (v_main_id,  2, 'checked_in', v_team1_id) ON CONFLICT DO NOTHING;
+  INSERT INTO tournament_registrations (alt_id, tournament_id, status, team_id) VALUES (v_main_id,  3, 'checked_in', v_team1_id) ON CONFLICT DO NOTHING;
+  INSERT INTO tournament_registrations (alt_id, tournament_id, status, team_id) VALUES (v_draft_id, 1, 'checked_in', v_team3_id) ON CONFLICT DO NOTHING;
+  INSERT INTO tournament_registrations (alt_id, tournament_id, status)          VALUES (v_draft_id, 5, 'registered')              ON CONFLICT DO NOTHING;
+
+  -- -----------------------------------------------------------------------
+  -- Create matches — insert as pending, then UPDATE to completed so the
+  -- ELO trigger (BEFORE UPDATE OF status) fires correctly.
+  -- -----------------------------------------------------------------------
+
+  -- Matches for admin_trainer_vgc in tournament 1
+  FOR v_round_id IN
+    SELECT tr.id FROM tournament_rounds tr JOIN tournament_phases tp ON tr.phase_id = tp.id
+    WHERE tp.tournament_id = 1 ORDER BY tr.round_number LIMIT 5
+  LOOP
+    SELECT alt_id INTO v_opp_id
+    FROM tournament_registrations
+    WHERE tournament_id = 1 AND alt_id NOT IN (v_main_id, v_vgc_id, v_draft_id)
+    ORDER BY random() LIMIT 1;
+
+    v_won := random() > 0.25;
+
+    IF v_opp_id IS NOT NULL THEN
+      INSERT INTO tournament_matches (round_id, alt1_id, alt2_id, status, table_number, start_time)
+      VALUES (v_round_id, v_vgc_id, v_opp_id, 'pending', floor(random()*10+1)::int, now() - interval '7 days')
+      RETURNING id INTO v_match_id;
+
+      UPDATE tournament_matches SET
+        status        = 'completed',
+        winner_alt_id = CASE WHEN v_won THEN v_vgc_id   ELSE v_opp_id END,
+        game_wins1    = CASE WHEN v_won THEN 2           ELSE floor(random()*2)::int END,
+        game_wins2    = CASE WHEN v_won THEN floor(random()*2)::int ELSE 2 END,
+        end_time      = now() - interval '7 days' + interval '30 minutes'
+      WHERE id = v_match_id;
+    END IF;
+  END LOOP;
+
+  -- Matches for admin_trainer_vgc in tournament 2
+  FOR v_round_id IN
+    SELECT tr.id FROM tournament_rounds tr JOIN tournament_phases tp ON tr.phase_id = tp.id
+    WHERE tp.tournament_id = 2 ORDER BY tr.round_number LIMIT 5
+  LOOP
+    SELECT alt_id INTO v_opp_id
+    FROM tournament_registrations
+    WHERE tournament_id = 2 AND alt_id NOT IN (v_main_id, v_vgc_id, v_draft_id)
+    ORDER BY random() LIMIT 1;
+
+    v_won := random() > 0.3;
+
+    IF v_opp_id IS NOT NULL THEN
+      INSERT INTO tournament_matches (round_id, alt1_id, alt2_id, status, table_number, start_time)
+      VALUES (v_round_id, v_vgc_id, v_opp_id, 'pending', floor(random()*10+1)::int, now() - interval '3 days')
+      RETURNING id INTO v_match_id;
+
+      UPDATE tournament_matches SET
+        status        = 'completed',
+        winner_alt_id = CASE WHEN v_won THEN v_vgc_id   ELSE v_opp_id END,
+        game_wins1    = CASE WHEN v_won THEN 2           ELSE floor(random()*2)::int END,
+        game_wins2    = CASE WHEN v_won THEN floor(random()*2)::int ELSE 2 END,
+        end_time      = now() - interval '3 days' + interval '25 minutes'
+      WHERE id = v_match_id;
+    END IF;
+  END LOOP;
+
+  -- Matches for admin_trainer (main) in tournament 2
+  FOR v_round_id IN
+    SELECT tr.id FROM tournament_rounds tr JOIN tournament_phases tp ON tr.phase_id = tp.id
+    WHERE tp.tournament_id = 2 ORDER BY tr.round_number LIMIT 5
+  LOOP
+    SELECT alt_id INTO v_opp_id
+    FROM tournament_registrations
+    WHERE tournament_id = 2 AND alt_id NOT IN (v_main_id, v_vgc_id, v_draft_id)
+    ORDER BY random() LIMIT 1;
+
+    v_won := random() > 0.4;
+
+    IF v_opp_id IS NOT NULL THEN
+      INSERT INTO tournament_matches (round_id, alt1_id, alt2_id, status, table_number, start_time)
+      VALUES (v_round_id, v_main_id, v_opp_id, 'pending', floor(random()*10+1)::int, now() - interval '5 days')
+      RETURNING id INTO v_match_id;
+
+      UPDATE tournament_matches SET
+        status        = 'completed',
+        winner_alt_id = CASE WHEN v_won THEN v_main_id  ELSE v_opp_id END,
+        game_wins1    = CASE WHEN v_won THEN 2           ELSE floor(random()*2)::int END,
+        game_wins2    = CASE WHEN v_won THEN floor(random()*2)::int ELSE 2 END,
+        end_time      = now() - interval '5 days' + interval '20 minutes'
+      WHERE id = v_match_id;
+    END IF;
+  END LOOP;
+
+  -- Matches for admin_trainer_draft in tournament 1
+  FOR v_round_id IN
+    SELECT tr.id FROM tournament_rounds tr JOIN tournament_phases tp ON tr.phase_id = tp.id
+    WHERE tp.tournament_id = 1 ORDER BY tr.round_number LIMIT 4
+  LOOP
+    SELECT alt_id INTO v_opp_id
+    FROM tournament_registrations
+    WHERE tournament_id = 1 AND alt_id NOT IN (v_main_id, v_vgc_id, v_draft_id)
+    ORDER BY random() LIMIT 1;
+
+    v_won := random() > 0.5;
+
+    IF v_opp_id IS NOT NULL THEN
+      INSERT INTO tournament_matches (round_id, alt1_id, alt2_id, status, table_number, start_time)
+      VALUES (v_round_id, v_draft_id, v_opp_id, 'pending', floor(random()*10+1)::int, now() - interval '8 days')
+      RETURNING id INTO v_match_id;
+
+      UPDATE tournament_matches SET
+        status        = 'completed',
+        winner_alt_id = CASE WHEN v_won THEN v_draft_id ELSE v_opp_id END,
+        game_wins1    = CASE WHEN v_won THEN 2           ELSE floor(random()*2)::int END,
+        game_wins2    = CASE WHEN v_won THEN floor(random()*2)::int ELSE 2 END,
+        end_time      = now() - interval '8 days' + interval '25 minutes'
+      WHERE id = v_match_id;
+    END IF;
+  END LOOP;
+
+  -- -----------------------------------------------------------------------
+  -- Player stats (final standings per tournament)
+  -- -----------------------------------------------------------------------
+  INSERT INTO tournament_player_stats (tournament_id, alt_id, matches_played, match_wins, match_losses, game_wins, game_losses, final_ranking) VALUES
+    (1, v_vgc_id,   5, 4, 1, 9, 3,  2),
+    (2, v_vgc_id,   5, 3, 2, 7, 5,  5),
+    (2, v_main_id,  5, 3, 2, 7, 5,  6),
+    (1, v_draft_id, 4, 2, 2, 5, 5, 10)
+  ON CONFLICT DO NOTHING;
 
   RAISE NOTICE 'Admin tournament seed data created: main=%, vgc=%, draft=%', v_main_id, v_vgc_id, v_draft_id;
 END $$;
