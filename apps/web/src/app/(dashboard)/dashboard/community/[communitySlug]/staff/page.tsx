@@ -4,7 +4,7 @@ import {
   listCommunityStaffWithRoles,
   listCommunityGroups,
 } from "@trainers/supabase";
-import { StaffListClient } from "@/app/(app)/to-dashboard/[communitySlug]/staff/staff-list-client";
+import { StaffClient } from "./staff-client";
 import { PageHeader } from "@/components/dashboard/page-header";
 
 interface PageProps {
@@ -43,7 +43,7 @@ export default async function DashboardStaffPage({ params }: PageProps) {
     <>
       <PageHeader title="Staff" />
       <div className="flex flex-1 flex-col gap-4 p-4 md:p-6">
-        <StaffListClient
+        <StaffClient
           communityId={organization.id}
           communitySlug={communitySlug}
           initialStaff={staffMembers}

@@ -16,6 +16,7 @@ import {
   addStaffMember as addStaffMemberMutation,
   addStaffToGroup as addStaffToGroupMutation,
   changeStaffRole as changeRoleMutation,
+  removeStaffFromGroup as removeStaffFromGroupMutation,
   removeStaffCompletely as removeStaffMutation,
 } from "@trainers/supabase";
 import { CacheTags } from "@/lib/cache";
@@ -189,6 +190,34 @@ export async function removeStaffAction(
     return {
       success: false,
       error: getErrorMessage(error, "Failed to remove staff member"),
+    };
+  }
+}
+
+/**
+ * Unassign a staff member from all groups (move back to unassigned pool)
+ * Does NOT remove them from the community — they remain staff without a role.
+ * Revalidates: organization page
+ */
+export async function unassignStaffAction(
+  communityId: number,
+  userId: string,
+  slug?: string
+): Promise<ActionResult<{ success: true }>> {
+  try {
+    const supabase = await createClient();
+    await removeStaffFromGroupMutation(supabase, communityId, userId);
+
+    if (slug) {
+      updateTag(CacheTags.community(slug));
+    }
+    updateTag(CacheTags.community(communityId));
+
+    return { success: true, data: { success: true } };
+  } catch (error) {
+    return {
+      success: false,
+      error: getErrorMessage(error, "Failed to unassign staff member"),
     };
   }
 }
