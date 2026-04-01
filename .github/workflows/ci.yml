@@ -445,7 +445,7 @@ jobs:
           if [ "$HTTP_CODE" = "404" ]; then
             echo "::error::E2E seed returned 404 — preview is likely connected to the production database. Skipping E2E tests to prevent production pollution."
             echo "safe=false" >> "$GITHUB_OUTPUT"
-          elif [ -z "$HTTP_CODE" ] || ! [ "$HTTP_CODE" -eq "$HTTP_CODE" ] 2>/dev/null; then
+          elif [ -z "$HTTP_CODE" ] || ! [[ "$HTTP_CODE" =~ ^[0-9]+$ ]]; then
             echo "::warning::E2E seed request failed (curl error) — tests may fail if users don't exist"
             echo "safe=true" >> "$GITHUB_OUTPUT"
           elif [ "$HTTP_CODE" -lt 200 ] || [ "$HTTP_CODE" -ge 300 ] || [ "$HTTP_CODE" -eq 207 ]; then

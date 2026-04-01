@@ -99,7 +99,10 @@ test.describe("Onboarding flow", () => {
           );
         }
       } catch (err) {
-        console.error(`E2E cleanup fetch failed: ${err}`);
+        console.error(
+          "E2E cleanup fetch failed:",
+          err instanceof Error ? err.stack : err
+        );
       }
     }
   });

@@ -42,7 +42,7 @@ setup("authenticate as player", async ({ page, request }) => {
       if (err instanceof Error && err.message.includes("production database")) {
         throw err;
       }
-      console.log(`E2E seed request failed (non-fatal): ${err}`);
+      console.log("E2E seed request failed (non-fatal):", err);
     }
   }
 
