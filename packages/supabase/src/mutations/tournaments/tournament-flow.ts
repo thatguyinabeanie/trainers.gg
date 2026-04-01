@@ -4,6 +4,7 @@ import {
   checkCommunityPermission,
 } from "./helpers";
 import { recalculateStandings } from "./standings";
+import { createTournamentTeamSheets } from "./team-sheets";
 
 /**
  * Enhanced tournament start: lock teams, activate first phase, create Round 1.
@@ -56,6 +57,9 @@ export async function startTournamentEnhanced(
     .eq("status", "checked_in");
 
   if (lockError) throw lockError;
+
+  // 1b. Snapshot OTS data for all checked-in players (must run after locking)
+  await createTournamentTeamSheets(supabase, tournamentId);
 
   // 2. Activate the first phase
   const { data: phases, error: phasesError } = await supabase

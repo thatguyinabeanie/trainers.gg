@@ -66,3 +66,6 @@ export {
   generateEliminationPairings,
   completeTournament,
 } from "./tournament-flow";
+
+// Team sheets (OTS snapshots)
+export { createTournamentTeamSheets } from "./team-sheets";
