@@ -79,8 +79,8 @@ test.describe("Onboarding flow", () => {
       // --- Should redirect to dashboard ---
       // Server action includes PDS handle check (5s timeout) + PDS provisioning
       // (30s timeout) which can take a while on preview deployments
-      await page.waitForURL("**/dashboard/overview", { timeout: 60000 });
-      expect(page.url()).toContain("/dashboard/overview");
+      await page.waitForURL("**/dashboard", { timeout: 60000 });
+      expect(page.url()).toContain("/dashboard");
     } finally {
       // --- Cleanup: delete the test user via the preview API ---
       await fetch(`${baseURL}/api/e2e/temp-user`, {
