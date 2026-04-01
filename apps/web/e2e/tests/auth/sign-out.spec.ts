@@ -8,8 +8,10 @@ test.describe("Sign out", () => {
   test.use({ storageState: { cookies: [], origins: [] } });
 
   test("signs out and redirects", async ({ page }) => {
-    // Log in with our own session so we don't destroy the shared one
-    await loginViaUI(page, TEST_USERS.player);
+    // Log in as a DIFFERENT user than the shared auth state (player).
+    // supabase.auth.signOut() uses scope: 'global' which revokes ALL sessions
+    // for the user — using the same user here would destroy the shared session.
+    await loginViaUI(page, TEST_USERS.champion);
 
     await page.goto("/dashboard");
 
