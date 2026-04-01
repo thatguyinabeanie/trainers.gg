@@ -1,7 +1,16 @@
 import { test, expect } from "@playwright/test";
+import { TEST_USERS, loginViaUI } from "../../fixtures/auth";
 
 test.describe("Sign out", () => {
+  // Use a fresh session — the sign-out action revokes all server-side sessions
+  // (supabase.auth.signOut() defaults to scope: 'global'), which would
+  // invalidate the shared storage state used by other authenticated tests.
+  test.use({ storageState: { cookies: [], origins: [] } });
+
   test("signs out and redirects", async ({ page }) => {
+    // Log in with our own session so we don't destroy the shared one
+    await loginViaUI(page, TEST_USERS.player);
+
     await page.goto("/dashboard");
 
     // NavUser footer in the sidebar — button contains username + role
