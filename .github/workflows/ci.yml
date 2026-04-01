@@ -428,6 +428,7 @@ jobs:
         run: pnpm --filter=@trainers/web exec playwright install-deps chromium
 
       - name: Seed E2E test users on preview
+        id: e2e-seed
         if: needs.wait-for-preview.outputs.url != ''
         env:
           PLAYWRIGHT_BASE_URL: ${{ needs.wait-for-preview.outputs.url }}
@@ -441,13 +442,21 @@ jobs:
           HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
           BODY=$(echo "$RESPONSE" | sed '$d')
           echo "Response (HTTP $HTTP_CODE): $BODY"
-          if [ -z "$HTTP_CODE" ] || ! [ "$HTTP_CODE" -eq "$HTTP_CODE" ] 2>/dev/null; then
+          if [ "$HTTP_CODE" = "404" ]; then
+            echo "::error::E2E seed returned 404 — preview is likely connected to the production database. Skipping E2E tests to prevent production pollution."
+            echo "safe=false" >> "$GITHUB_OUTPUT"
+          elif [ -z "$HTTP_CODE" ] || ! [ "$HTTP_CODE" -eq "$HTTP_CODE" ] 2>/dev/null; then
             echo "::warning::E2E seed request failed (curl error) — tests may fail if users don't exist"
+            echo "safe=true" >> "$GITHUB_OUTPUT"
           elif [ "$HTTP_CODE" -lt 200 ] || [ "$HTTP_CODE" -ge 300 ] || [ "$HTTP_CODE" -eq 207 ]; then
             echo "::warning::E2E seed returned HTTP $HTTP_CODE — tests may fail if users don't exist"
+            echo "safe=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "safe=true" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Run E2E tests
+        if: steps.e2e-seed.outputs.safe != 'false'
         env:
           CI: true
           PLAYWRIGHT_BASE_URL: ${{ needs.wait-for-preview.outputs.url }}
