@@ -57,7 +57,7 @@ function buildSocialLinks(
 }
 
 /**
- * Submit an organization request.
+ * Submit a community request.
  * Validates input, creates the request, revalidates cache.
  */
 export async function submitCommunityRequestAction(
@@ -81,7 +81,7 @@ export async function submitCommunityRequestAction(
       social_links: buildSocialLinks(parsed.data),
     });
 
-    updateTag(CacheTags.ORG_REQUESTS_LIST);
+    updateTag(CacheTags.COMMUNITY_REQUESTS_LIST);
 
     return {
       success: true,

@@ -7,14 +7,14 @@ import { Shield } from "lucide-react";
 import Link from "next/link";
 
 interface CommunityAccessProps {
-  organizations: Array<{
+  communities: Array<{
     id: number;
     name: string;
     role: string;
   }>;
 }
 
-export function CommunityAccess({ organizations }: CommunityAccessProps) {
+export function CommunityAccess({ communities }: CommunityAccessProps) {
   return (
     <Card className="mb-6">
       <CardHeader>
@@ -27,20 +27,20 @@ export function CommunityAccess({ organizations }: CommunityAccessProps) {
         </p>
       </CardHeader>
       <CardContent>
-        {organizations.length === 0 ? (
+        {communities.length === 0 ? (
           <div className="py-8 text-center">
             <p className="text-muted-foreground mb-4 text-sm">
               Need tournament hosting permissions?
             </p>
             <Link href="/communities/create">
               <Button variant="outline" size="sm">
-                Request Organizer Role
+                Request Community Leader Role
               </Button>
             </Link>
           </div>
         ) : (
           <div className="space-y-3">
-            {organizations.map((community) => (
+            {communities.map((community) => (
               <div
                 key={community.id}
                 className="flex items-center justify-between rounded-lg border p-3"
