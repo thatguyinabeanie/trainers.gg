@@ -4,7 +4,10 @@ test.describe("Sign out", () => {
   test("signs out and redirects", async ({ page }) => {
     await page.goto("/dashboard");
 
-    const userMenu = page.getByRole("button", { name: /user menu/i });
+    // NavUser footer in the sidebar — button contains username + role
+    const userMenu = page
+      .getByRole("button", { name: /user menu/i })
+      .or(page.getByRole("button", { name: /player/i }).last());
     await expect(userMenu).toBeVisible({ timeout: 10000 });
     await userMenu.click();
 
