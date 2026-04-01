@@ -1,17 +1,19 @@
 "use client";
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import Link from "next/link";
 import { Bell } from "lucide-react";
-import { formatDistanceToNowStrict } from "date-fns";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useSupabase } from "@/lib/supabase";
+import { useAuth } from "@/hooks/use-auth";
 import { getNotifications, markAllNotificationsRead } from "@trainers/supabase";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { formatAge, getTypeIcon, isActionType } from "./notification-helpers";
 import type { Database } from "@trainers/supabase/types";
 
 // ---------------------------------------------------------------------------
@@ -20,61 +22,14 @@ import type { Database } from "@trainers/supabase/types";
 
 type Notification = Database["public"]["Tables"]["notifications"]["Row"];
 
-type NotificationType = Database["public"]["Enums"]["notification_type"];
-
-// ---------------------------------------------------------------------------
-// Helpers — type classification and icon mapping
-// ---------------------------------------------------------------------------
-
-/**
- * "Needs attention" types require user action (persistent until resolved).
- * Everything else is informational (shown in the Recent section).
- */
-const ACTION_TYPES: NotificationType[] = ["match_ready", "judge_call"];
-
-const TYPE_ICON: Record<NotificationType, string> = {
-  match_ready: "⚔️",
-  match_result: "⚔️",
-  match_disputed: "⚖️",
-  judge_call: "⚖️",
-  judge_resolved: "✅",
-  tournament_start: "🏆",
-  tournament_round: "🏆",
-  tournament_complete: "🏆",
-  match_no_show: "📋",
-  org_request_approved: "✅",
-  org_request_rejected: "✅",
-};
-
-function getTypeIcon(type: NotificationType): string {
-  return TYPE_ICON[type] ?? "🔔";
-}
-
-function isActionType(type: NotificationType): boolean {
-  return ACTION_TYPES.includes(type);
-}
-
-function formatAge(createdAt: string): string {
-  return formatDistanceToNowStrict(new Date(createdAt), { addSuffix: false })
-    .replace(" seconds", "s")
-    .replace(" second", "s")
-    .replace(" minutes", "m")
-    .replace(" minute", "m")
-    .replace(" hours", "h")
-    .replace(" hour", "h")
-    .replace(" days", "d")
-    .replace(" day", "d")
-    .replace(" months", "mo")
-    .replace(" month", "mo");
-}
-
 // ---------------------------------------------------------------------------
 // Query keys
 // ---------------------------------------------------------------------------
 
 const notificationsKeys = {
-  all: ["notifications"] as const,
-  recent: () => [...notificationsKeys.all, "recent"] as const,
+  all: (userId: string | undefined) => ["notifications", userId] as const,
+  recent: (userId: string | undefined) =>
+    [...notificationsKeys.all(userId), "recent"] as const,
 };
 
 // ---------------------------------------------------------------------------
@@ -104,12 +59,12 @@ function AttentionItem({ notification }: AttentionItemProps) {
         )}
         {notification.action_url && (
           <div className="mt-1.5">
-            <a
+            <Link
               href={notification.action_url}
               className="bg-primary text-primary-foreground hover:bg-primary/90 inline-flex items-center rounded px-2.5 py-0.5 text-[10px] font-medium transition-colors"
             >
               {notification.type === "match_ready" ? "Go to match →" : "View →"}
-            </a>
+            </Link>
           </div>
         )}
       </div>
@@ -186,12 +141,15 @@ function RecentItem({ notification }: RecentItemProps) {
 
 export function NotificationsPopover() {
   const supabase = useSupabase();
+  const { user } = useAuth();
   const queryClient = useQueryClient();
+  const userId = user?.id;
 
   // Fetch recent notifications — last 20, newest first
   const { data: notifications = [] } = useQuery({
-    queryKey: notificationsKeys.recent(),
+    queryKey: notificationsKeys.recent(userId),
     queryFn: () => getNotifications(supabase, { limit: 20 }),
+    enabled: !!userId,
     staleTime: 30_000,
     refetchInterval: 60_000,
   });
@@ -200,7 +158,7 @@ export function NotificationsPopover() {
     mutationFn: () => markAllNotificationsRead(supabase),
     onSuccess: () => {
       void queryClient.invalidateQueries({
-        queryKey: notificationsKeys.all,
+        queryKey: notificationsKeys.all(userId),
       });
     },
     onError: () => {

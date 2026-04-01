@@ -20,10 +20,6 @@ export type PlayerRating = {
 // ============================================================================
 
 /**
- * Fetch the rating for a specific alt and format.
- * Returns null if no rating record exists yet or if the player has no rated games.
- */
-/**
  * Fetch ratings for multiple alts in bulk (2 queries total, no N+1).
  * Returns a map keyed by altId. Alts without ratings are omitted.
  */

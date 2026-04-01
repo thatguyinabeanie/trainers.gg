@@ -73,7 +73,7 @@ function ActionCard({ action }: { action: ActionItem }) {
     >
       {/* Accent line for urgent items */}
       {isUrgent && (
-        <div className="absolute bottom-2 left-0 top-2 w-1 rounded-full bg-amber-500" />
+        <div className="absolute top-2 bottom-2 left-0 w-1 rounded-full bg-amber-500" />
       )}
 
       {/* Icon */}
@@ -136,7 +136,8 @@ function ActionCard({ action }: { action: ActionItem }) {
   return content;
 }
 
-function getActionItems(
+/** @internal Exported for testing */
+export function getActionItems(
   mode: OverviewMode,
   tournaments: DashboardTournament[]
 ): ActionItem[] {

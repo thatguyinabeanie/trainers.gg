@@ -57,11 +57,17 @@ export default async function DashboardLayout({
   const communityIds = communities.map((c) => c.id);
   let activeCommunityIds = new Set<number>();
   if (communityIds.length > 0) {
-    const { data } = await supabase
+    const { data, error: tournamentsError } = await supabase
       .from("tournaments")
       .select("community_id")
       .in("community_id", communityIds)
       .eq("status", "active");
+    if (tournamentsError) {
+      console.error(
+        "[DashboardLayout] Failed to load active tournaments:",
+        tournamentsError
+      );
+    }
     activeCommunityIds = new Set((data ?? []).map((t) => t.community_id));
   }
 
