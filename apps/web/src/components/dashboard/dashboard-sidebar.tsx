@@ -117,9 +117,13 @@ export function DashboardSidebar({
 
   return (
     <Sidebar collapsible="icon" {...props}>
-      {/* Header — alt switcher */}
+      {/* Header — alt switcher (player) or community identity (community) */}
       <SidebarHeader>
-        <AltSwitcher alts={alts} selectedAltUsername={selectedAltUsername} />
+        {isCommunityContext && activeCommunity ? (
+          <CommunityHeader community={activeCommunity} />
+        ) : (
+          <AltSwitcher alts={alts} selectedAltUsername={selectedAltUsername} />
+        )}
       </SidebarHeader>
 
       {/* Content — context-switches between player and community nav */}
@@ -359,6 +363,29 @@ function AltSwitcher({ alts, selectedAltUsername }: AltSwitcherProps) {
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
+      </SidebarMenuItem>
+    </SidebarMenu>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// CommunityHeader — replaces AltSwitcher when viewing a community dashboard
+// ---------------------------------------------------------------------------
+
+function CommunityHeader({ community }: { community: CommunityInfo }) {
+  return (
+    <SidebarMenu>
+      <SidebarMenuItem>
+        <SidebarMenuButton size="lg" tooltip={community.name}>
+          <CommunityIcon community={community} />
+          <div className="grid flex-1 text-left text-sm leading-tight">
+            <span className="truncate font-semibold">{community.name}</span>
+            <span className="text-muted-foreground truncate text-xs capitalize">
+              {community.role}
+            </span>
+          </div>
+          {community.hasLiveTournament && <LiveDot />}
+        </SidebarMenuButton>
       </SidebarMenuItem>
     </SidebarMenu>
   );
@@ -652,20 +679,6 @@ function CommunityNav({ community, pathname }: CommunityNavProps) {
             </SidebarMenuItem>
           </SidebarMenu>
         </SidebarGroupContent>
-      </SidebarGroup>
-
-      {/* Community header */}
-      <SidebarGroup className="group-data-[collapsible=icon]:hidden">
-        <div className="flex items-center gap-3 px-2 py-1">
-          <CommunityIcon community={community} size="md" />
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-medium">{community.name}</p>
-            <p className="text-muted-foreground text-xs capitalize">
-              {community.role}
-            </p>
-          </div>
-          {community.hasLiveTournament && <LiveDot />}
-        </div>
       </SidebarGroup>
 
       {/* Community nav items */}
