@@ -41,7 +41,7 @@ export default async function DashboardTournamentsPage({
           Create Tournament
         </Link>
       </PageHeader>
-      <div className="bg-muted flex flex-1 flex-col gap-3 p-4 md:p-6">
+      <div className="flex flex-1 flex-col gap-3 p-4 md:p-6">
         <TournamentsListClient
           communityId={organization.id}
           communitySlug={communitySlug}

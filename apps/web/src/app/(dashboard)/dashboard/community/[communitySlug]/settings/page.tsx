@@ -6,7 +6,6 @@ import { getCommunityBySlug } from "@trainers/supabase";
 import type { TypedSupabaseClient } from "@trainers/supabase";
 import { updateOrganization } from "@/actions/communities";
 import type {
-  RegistrationMode,
   StaffInviteMode,
   TeamSheetVisibility,
 } from "@trainers/validators";
@@ -100,8 +99,8 @@ export default function DashboardSettingsPage({ params }: PageProps) {
   return (
     <>
       <PageHeader title="Settings" />
-      <div className="bg-muted flex flex-1 flex-col gap-3 p-4 md:p-6">
-        <div className="w-full max-w-[520px]">
+      <div className="flex flex-1 flex-col gap-3 p-4 md:p-6">
+        <div className="mx-auto w-full max-w-3xl">
           {isLoading ? (
             <SettingsSkeleton />
           ) : !org ? (
@@ -124,9 +123,6 @@ export default function DashboardSettingsPage({ params }: PageProps) {
                   communityId={org.id}
                   communitySlug={org.slug}
                   isPublic={org.is_public ?? true}
-                  registrationMode={
-                    (org.registration_mode ?? "anyone") as RegistrationMode
-                  }
                   staffInviteMode={
                     (org.staff_invite_mode ?? "owner_only") as StaffInviteMode
                   }

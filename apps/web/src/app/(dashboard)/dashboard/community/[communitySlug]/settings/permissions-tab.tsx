@@ -5,7 +5,6 @@ import { Check, Loader2, Minus } from "lucide-react";
 import { toast } from "sonner";
 
 import type {
-  RegistrationMode,
   StaffInviteMode,
   TeamSheetVisibility,
 } from "@trainers/validators";
@@ -81,7 +80,6 @@ interface PermissionsTabProps {
   communityId: number;
   communitySlug: string;
   isPublic: boolean;
-  registrationMode: RegistrationMode;
   staffInviteMode: StaffInviteMode;
   teamSheetVisibility: TeamSheetVisibility;
 }
@@ -90,15 +88,12 @@ export function PermissionsTab({
   communityId,
   communitySlug,
   isPublic,
-  registrationMode,
   staffInviteMode,
   teamSheetVisibility,
 }: PermissionsTabProps) {
   const [isPending, startTransition] = useTransition();
 
   const [localIsPublic, setLocalIsPublic] = useState(isPublic);
-  const [localRegistrationMode, setLocalRegistrationMode] =
-    useState(registrationMode);
   const [localStaffInviteMode, setLocalStaffInviteMode] =
     useState(staffInviteMode);
   const [localTeamSheetVisibility, setLocalTeamSheetVisibility] =
@@ -110,7 +105,6 @@ export function PermissionsTab({
         communityId,
         {
           isPublic: localIsPublic,
-          registrationMode: localRegistrationMode,
           staffInviteMode: localStaffInviteMode,
           teamSheetVisibility: localTeamSheetVisibility,
         },
@@ -145,32 +139,6 @@ export function PermissionsTab({
               checked={localIsPublic}
               onCheckedChange={setLocalIsPublic}
             />
-          </div>
-
-          {/* Tournament registration */}
-          <div className="flex items-center justify-between gap-4">
-            <div className="min-w-0 flex-1">
-              <Label htmlFor="registrationMode" className="text-sm font-medium">
-                Tournament registration
-              </Label>
-              <p className="text-muted-foreground text-xs">
-                Who can register for tournaments in this community
-              </p>
-            </div>
-            <Select
-              value={localRegistrationMode}
-              onValueChange={(val) =>
-                setLocalRegistrationMode(val as RegistrationMode)
-              }
-            >
-              <SelectTrigger id="registrationMode" className="w-[160px]">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="anyone">Anyone</SelectItem>
-                <SelectItem value="invite_only">Invite only</SelectItem>
-              </SelectContent>
-            </Select>
           </div>
 
           {/* Staff invitations */}

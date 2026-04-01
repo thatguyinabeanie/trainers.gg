@@ -42,7 +42,7 @@ export default async function DashboardStaffPage({ params }: PageProps) {
   return (
     <>
       <PageHeader title="Staff" />
-      <div className="bg-muted flex flex-1 flex-col gap-3 p-4 md:p-6">
+      <div className="flex flex-1 flex-col gap-3 p-4 md:p-6">
         <StaffClient
           communityId={organization.id}
           communitySlug={communitySlug}
