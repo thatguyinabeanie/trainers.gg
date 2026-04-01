@@ -8,6 +8,7 @@ import type {
   CommunityStats,
   TopPlayer,
 } from "@trainers/supabase";
+import { formatTimeAgo } from "@trainers/utils";
 
 import { DashboardCard } from "@/components/dashboard/dashboard-card";
 import { buttonVariants } from "@/components/ui/button";
@@ -46,17 +47,7 @@ function activityVerb(item: CommunityActivityItem): string {
   }
 }
 
-function timeAgo(timestamp: string): string {
-  const diffMs = Date.now() - new Date(timestamp).getTime();
-  const diffMinutes = Math.floor(diffMs / 60_000);
-  if (diffMinutes < 60) return `${diffMinutes}m ago`;
-  const diffHours = Math.floor(diffMinutes / 60);
-  if (diffHours < 24) return `${diffHours}h ago`;
-  const diffDays = Math.floor(diffHours / 24);
-  return `${diffDays}d ago`;
-}
-
-function formatDate(dateStr: string | null): string {
+function formatShortDate(dateStr: string | null): string {
   if (!dateStr) return "TBD";
   return new Date(dateStr).toLocaleDateString(undefined, {
     month: "short",
@@ -222,7 +213,7 @@ export function OverviewClient({
               >
                 <p className="text-sm font-semibold">{t.name}</p>
                 <p className="text-muted-foreground mt-1 text-xs">
-                  {formatDate(t.start_date)} · {t.registrationCount}/
+                  {formatShortDate(t.start_date)} · {t.registrationCount}/
                   {t.max_participants ?? "∞"} registered
                 </p>
                 <div className="bg-border mt-2 h-1 overflow-hidden rounded-full">
@@ -267,7 +258,7 @@ export function OverviewClient({
                   </span>
                 </p>
                 <p className="text-muted-foreground mt-0.5 text-[10px]">
-                  {timeAgo(item.timestamp)}
+                  {formatTimeAgo(item.timestamp)}
                 </p>
               </div>
             ))

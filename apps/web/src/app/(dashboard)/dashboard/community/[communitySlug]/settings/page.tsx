@@ -5,6 +5,12 @@ import { useSupabaseQuery } from "@/lib/supabase";
 import { getCommunityBySlug } from "@trainers/supabase";
 import type { TypedSupabaseClient } from "@trainers/supabase";
 import { updateOrganization } from "@/actions/communities";
+import type {
+  RegistrationMode,
+  StaffInviteMode,
+  TeamSheetVisibility,
+} from "@trainers/validators";
+
 import { PermissionsTab } from "./permissions-tab";
 import {
   uploadCommunityLogo,
@@ -118,10 +124,15 @@ export default function DashboardSettingsPage({ params }: PageProps) {
                   communityId={org.id}
                   communitySlug={org.slug}
                   isPublic={org.is_public ?? true}
-                  registrationMode={org.registration_mode ?? "anyone"}
-                  staffInviteMode={org.staff_invite_mode ?? "owner_only"}
+                  registrationMode={
+                    (org.registration_mode ?? "anyone") as RegistrationMode
+                  }
+                  staffInviteMode={
+                    (org.staff_invite_mode ?? "owner_only") as StaffInviteMode
+                  }
                   teamSheetVisibility={
-                    org.team_sheet_visibility ?? "after_tournament"
+                    (org.team_sheet_visibility ??
+                      "after_tournament") as TeamSheetVisibility
                   }
                 />
               </TabsContent>

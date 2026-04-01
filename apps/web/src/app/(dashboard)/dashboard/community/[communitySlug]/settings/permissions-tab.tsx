@@ -81,9 +81,9 @@ interface PermissionsTabProps {
   communityId: number;
   communitySlug: string;
   isPublic: boolean;
-  registrationMode: string;
-  staffInviteMode: string;
-  teamSheetVisibility: string;
+  registrationMode: RegistrationMode;
+  staffInviteMode: StaffInviteMode;
+  teamSheetVisibility: TeamSheetVisibility;
 }
 
 export function PermissionsTab({
@@ -98,11 +98,11 @@ export function PermissionsTab({
 
   const [localIsPublic, setLocalIsPublic] = useState(isPublic);
   const [localRegistrationMode, setLocalRegistrationMode] =
-    useState<RegistrationMode>(registrationMode as RegistrationMode);
+    useState(registrationMode);
   const [localStaffInviteMode, setLocalStaffInviteMode] =
-    useState<StaffInviteMode>(staffInviteMode as StaffInviteMode);
+    useState(staffInviteMode);
   const [localTeamSheetVisibility, setLocalTeamSheetVisibility] =
-    useState<TeamSheetVisibility>(teamSheetVisibility as TeamSheetVisibility);
+    useState(teamSheetVisibility);
 
   const handleSave = () => {
     startTransition(async () => {
@@ -237,11 +237,7 @@ export function PermissionsTab({
 
       {/* Save */}
       <div className="flex justify-end">
-        <Button
-          onClick={handleSave}
-          disabled={isPending}
-          className="bg-teal-600 text-white hover:bg-teal-700"
-        >
+        <Button onClick={handleSave} disabled={isPending} size="sm">
           {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           Save
         </Button>
