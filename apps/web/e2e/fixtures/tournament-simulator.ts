@@ -108,6 +108,22 @@ const PLAYER_ACCOUNTS = [
   },
 ] as const;
 
+// -- Production Safety --
+
+function assertNotProductionDatabase() {
+  const productionRef = process.env.SUPABASE_PRODUCTION_PROJECT_REF;
+  if (!productionRef) return;
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
+  const match = supabaseUrl.match(/https:\/\/([a-z0-9]+)\.supabase\.co/i);
+  const currentRef = match?.[1];
+  if (currentRef === productionRef) {
+    throw new Error(
+      "Tournament simulator BLOCKED: connected to production database " +
+        `(ref: ${currentRef}). Aborting to prevent production pollution.`
+    );
+  }
+}
+
 // -- Simulator Class --
 
 export class TournamentSimulator {
@@ -135,6 +151,7 @@ export class TournamentSimulator {
       seed: config.seed ?? (Number(process.env.TOURNAMENT_SIM_SEED) || 42),
     };
 
+    assertNotProductionDatabase();
     this.rng = new SeededRandom(this.config.seed!);
     this.adminClient = createAdminSupabaseClient();
   }
