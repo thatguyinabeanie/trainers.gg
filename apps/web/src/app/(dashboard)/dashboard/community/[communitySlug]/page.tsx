@@ -1,15 +1,18 @@
 import { createClient } from "@/lib/supabase/server";
 import {
-  getCommunityWithTournamentStats,
+  getCommunityBySlug,
+  getCommunityStats,
+  getTopReturningPlayers,
+  getCommunityActivity,
   listCommunityTournaments,
 } from "@trainers/supabase";
-import { OverviewClient } from "@/app/(app)/to-dashboard/[communitySlug]/overview-client";
+
 import { PageHeader } from "@/components/dashboard/page-header";
 
+import { OverviewClient } from "./overview-client";
+
 interface PageProps {
-  params: Promise<{
-    communitySlug: string;
-  }>;
+  params: Promise<{ communitySlug: string }>;
 }
 
 export default async function DashboardCommunityOverviewPage({
@@ -18,31 +21,30 @@ export default async function DashboardCommunityOverviewPage({
   const { communitySlug } = await params;
   const supabase = await createClient();
 
-  // Get community with stats
-  const organization = await getCommunityWithTournamentStats(
-    supabase,
-    communitySlug
-  );
+  const community = await getCommunityBySlug(supabase, communitySlug);
+  if (!community) return null;
 
-  if (!organization) {
-    return null; // Layout handles 404
-  }
-
-  // Get recent tournaments (limit 6)
-  const { tournaments: recentTournaments } = await listCommunityTournaments(
-    supabase,
-    organization.id,
-    { limit: 6 }
-  );
+  const [stats, topPlayers, activity, { tournaments: upcomingTournaments }] =
+    await Promise.all([
+      getCommunityStats(supabase, community.id),
+      getTopReturningPlayers(supabase, community.id, 5),
+      getCommunityActivity(supabase, community.id, 5),
+      listCommunityTournaments(supabase, community.id, {
+        status: "upcoming",
+        limit: 3,
+      }),
+    ]);
 
   return (
     <>
-      <PageHeader title={organization.name} />
+      <PageHeader title="Overview" />
       <div className="bg-muted flex flex-1 flex-col gap-3 p-4 md:p-6">
         <OverviewClient
-          organization={organization}
-          recentTournaments={recentTournaments}
           communitySlug={communitySlug}
+          stats={stats}
+          topPlayers={topPlayers}
+          activity={activity}
+          upcomingTournaments={upcomingTournaments}
         />
       </div>
     </>
