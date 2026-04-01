@@ -839,7 +839,7 @@ export default function AltsPage() {
                         Win %
                       </th>
                       <th className="text-muted-foreground h-9 px-3 text-right text-[10px] font-medium tracking-wider uppercase">
-                        Rating
+                        ELO
                       </th>
                       <th className="text-muted-foreground h-9 px-3 text-right text-[10px] font-medium tracking-wider uppercase">
                         Events
