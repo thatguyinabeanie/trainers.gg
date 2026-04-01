@@ -2,7 +2,7 @@
   "name": "@thatguyinabeanie/trainers.gg",
   "private": true,
   "type": "module",
-  "packageManager": "pnpm@10.28.1",
+  "packageManager": "pnpm@10.33.0",
   "scripts": {
     "// setup": "",
     "setup": "pnpm --filter=@trainers/supabase run setup",
