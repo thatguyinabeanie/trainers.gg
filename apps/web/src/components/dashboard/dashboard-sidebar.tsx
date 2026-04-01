@@ -80,14 +80,15 @@ interface DashboardSidebarProps {
   selectedAltUsername: string | null;
 }
 
+import {
+  getCommunitySlug,
+  DASHBOARD_ALT_COOKIE,
+  COOKIE_MAX_AGE,
+} from "./sidebar-helpers";
+
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
-
-function getCommunitySlug(pathname: string): string | null {
-  const match = /^\/dashboard\/community\/([^/]+)/.exec(pathname);
-  return match?.[1] ?? null;
-}
 
 function LiveDot() {
   return (
@@ -146,9 +147,6 @@ export function DashboardSidebar({
 // ---------------------------------------------------------------------------
 // AltSwitcher — header component replacing the logo, popover pattern
 // ---------------------------------------------------------------------------
-
-const DASHBOARD_ALT_COOKIE = "dashboard-alt";
-const COOKIE_MAX_AGE = 60 * 60 * 24 * 365; // 1 year
 
 function setAltCookie(username: string) {
   document.cookie = `${DASHBOARD_ALT_COOKIE}=${encodeURIComponent(username)}; path=/; samesite=lax; max-age=${COOKIE_MAX_AGE}`;

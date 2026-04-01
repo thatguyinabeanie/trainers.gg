@@ -18,6 +18,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import {
+  formatDate,
+  ordinalSuffix,
+  computeSummaryStats,
+} from "./tournament-helpers";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -35,34 +40,6 @@ type FilterChip = "all" | "live" | "upcoming" | "completed";
 
 function spriteUrl(species: string): string {
   return getPokemonSprite(species).url;
-}
-
-function formatDate(dateStr: string | null): string {
-  if (!dateStr) return "—";
-  return new Date(dateStr).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-  });
-}
-
-function ordinalSuffix(n: number): string {
-  const s = ["th", "st", "nd", "rd"];
-  const v = n % 100;
-  return n + (s[(v - 20) % 10] ?? s[v] ?? s[0]!);
-}
-
-function formatWinRate(wins: number, losses: number): string {
-  const total = wins + losses;
-  if (total === 0) return "—";
-  return `${((wins / total) * 100).toFixed(1)}%`;
-}
-
-function calcAvgPlace(entries: TournamentEntry[]): string {
-  const placed = entries.filter((e) => e.placement !== null && e.placement > 0);
-  if (placed.length === 0) return "—";
-  const avg =
-    placed.reduce((sum, e) => sum + (e.placement ?? 0), 0) / placed.length;
-  return avg.toFixed(1);
 }
 
 // ---------------------------------------------------------------------------
@@ -345,13 +322,7 @@ function TournamentRow({
 // ---------------------------------------------------------------------------
 
 function SummaryStats({ entries }: { entries: TournamentEntry[] }) {
-  const played = entries.length;
-  const totalWins = entries.reduce((s, e) => s + e.wins, 0);
-  const totalLosses = entries.reduce((s, e) => s + e.losses, 0);
-  const bestPlacement = entries
-    .map((e) => e.placement)
-    .filter((p): p is number => p !== null && p > 0)
-    .sort((a, b) => a - b)[0];
+  const summary = computeSummaryStats(entries);
 
   return (
     <div className="grid grid-cols-2 gap-2.5 md:grid-cols-4">
@@ -359,15 +330,13 @@ function SummaryStats({ entries }: { entries: TournamentEntry[] }) {
         <div className="text-muted-foreground mb-0.5 text-[10px] font-semibold tracking-widest uppercase">
           Played
         </div>
-        <div className="font-mono text-lg font-bold">{played}</div>
+        <div className="font-mono text-lg font-bold">{summary.played}</div>
       </div>
       <div className="bg-muted/50 rounded-lg p-3">
         <div className="text-muted-foreground mb-0.5 text-[10px] font-semibold tracking-widest uppercase">
           Win Rate
         </div>
-        <div className="font-mono text-lg font-bold">
-          {formatWinRate(totalWins, totalLosses)}
-        </div>
+        <div className="font-mono text-lg font-bold">{summary.winRate}</div>
       </div>
       <div className="bg-muted/50 rounded-lg p-3">
         <div className="text-muted-foreground mb-0.5 text-[10px] font-semibold tracking-widest uppercase">
@@ -376,19 +345,19 @@ function SummaryStats({ entries }: { entries: TournamentEntry[] }) {
         <div
           className={cn(
             "font-mono text-lg font-bold",
-            bestPlacement === 1 && "text-teal-600 dark:text-teal-400"
+            summary.bestPlacement === 1 && "text-teal-600 dark:text-teal-400"
           )}
         >
-          {bestPlacement != null ? ordinalSuffix(bestPlacement) : "—"}
+          {summary.bestPlacement != null
+            ? ordinalSuffix(summary.bestPlacement)
+            : "—"}
         </div>
       </div>
       <div className="bg-muted/50 rounded-lg p-3">
         <div className="text-muted-foreground mb-0.5 text-[10px] font-semibold tracking-widest uppercase">
           Avg Place
         </div>
-        <div className="font-mono text-lg font-bold">
-          {calcAvgPlace(entries)}
-        </div>
+        <div className="font-mono text-lg font-bold">{summary.avgPlace}</div>
       </div>
     </div>
   );
