@@ -5,9 +5,6 @@ import { useSupabaseQuery } from "@/lib/supabase";
 import { getCommunityBySlug } from "@trainers/supabase";
 import type { TypedSupabaseClient } from "@trainers/supabase";
 import { updateOrganization } from "@/actions/communities";
-import type { StaffInviteMode } from "@trainers/validators";
-
-import { PermissionsTab } from "./permissions-tab";
 import {
   uploadCommunityLogo,
   removeCommunityLogo,
@@ -105,16 +102,7 @@ export default function DashboardSettingsPage({ params }: PageProps) {
               Community not found.
             </p>
           ) : (
-            <div className="space-y-3">
-              <SettingsForm org={org} onSaved={refetch} />
-              <PermissionsTab
-                communityId={org.id}
-                communitySlug={org.slug}
-                staffInviteMode={
-                  (org.staff_invite_mode ?? "owner_only") as StaffInviteMode
-                }
-              />
-            </div>
+            <SettingsForm org={org} onSaved={refetch} />
           )}
         </div>
       </div>

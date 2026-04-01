@@ -4,9 +4,12 @@ import {
   listCommunityStaffWithRoles,
   listCommunityGroups,
 } from "@trainers/supabase";
+import type { StaffInviteMode } from "@trainers/validators";
+
 import { StaffClient } from "./staff-client";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { RolePermissionsCard } from "@/components/dashboard/role-permissions-card";
+import { PermissionsTab } from "../settings/permissions-tab";
 
 interface PageProps {
   params: Promise<{
@@ -53,6 +56,16 @@ export default async function DashboardStaffPage({ params }: PageProps) {
           currentUserId={user?.id}
           currentUserRole={currentUserRole}
         />
+        {isOwner && (
+          <PermissionsTab
+            communityId={organization.id}
+            communitySlug={communitySlug}
+            staffInviteMode={
+              (organization.staff_invite_mode ??
+                "owner_only") as StaffInviteMode
+            }
+          />
+        )}
         <RolePermissionsCard />
       </div>
     </>
