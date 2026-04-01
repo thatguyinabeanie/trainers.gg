@@ -5,6 +5,7 @@ import { useSupabaseQuery } from "@/lib/supabase";
 import { getCommunityBySlug } from "@trainers/supabase";
 import type { TypedSupabaseClient } from "@trainers/supabase";
 import { updateOrganization } from "@/actions/communities";
+import { PermissionsTab } from "./permissions-tab";
 import {
   uploadCommunityLogo,
   removeCommunityLogo,
@@ -113,9 +114,16 @@ export default function DashboardSettingsPage({ params }: PageProps) {
               </TabsContent>
 
               <TabsContent value="permissions" className="mt-4">
-                <p className="text-muted-foreground p-4 text-sm">
-                  Permissions settings coming soon.
-                </p>
+                <PermissionsTab
+                  communityId={org.id}
+                  communitySlug={org.slug}
+                  isPublic={org.is_public ?? true}
+                  registrationMode={org.registration_mode ?? "anyone"}
+                  staffInviteMode={org.staff_invite_mode ?? "owner_only"}
+                  teamSheetVisibility={
+                    org.team_sheet_visibility ?? "after_tournament"
+                  }
+                />
               </TabsContent>
             </Tabs>
           )}
