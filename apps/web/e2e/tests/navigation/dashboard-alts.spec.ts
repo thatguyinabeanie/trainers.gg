@@ -10,8 +10,8 @@ test.describe("Dashboard alts page", () => {
       timeout: 10000,
     });
 
-    // "Add Alt" button should be present
-    await expect(main.getByRole("button", { name: /add alt/i })).toBeVisible();
+    // "New Alt" button should be present
+    await expect(main.getByRole("button", { name: /new alt/i })).toBeVisible();
   });
 
   test("renders alt list with table headers", async ({ page }) => {

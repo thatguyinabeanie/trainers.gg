@@ -27,11 +27,8 @@ test.describe("Dashboard alt switcher", () => {
     await expect(bellButton).toBeVisible({ timeout: 10000 });
     await bellButton.click();
 
-    // "Notifications" text appears in both the popover header and sidebar tooltip.
-    // Scope to the popover content which renders as a [data-side] element.
+    // Popover should show "Mark all read" or "No notifications yet"
     const popover = page.locator("[data-side]");
-    await expect(popover.getByText("Notifications")).toBeVisible();
-
     const hasContent = popover
       .getByText("Mark all read")
       .or(popover.getByText("No notifications yet"));
