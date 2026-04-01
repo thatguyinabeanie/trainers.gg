@@ -115,5 +115,19 @@ export {
   AdvancedTeamValidator,
 } from "./team-validator";
 
+// Competitive format registry (Showdown format IDs + display metadata)
+export {
+  type GameFormat,
+  type PokemonGame,
+  POKEMON_GAMES,
+  VGC_FORMATS,
+  ALL_FORMAT_IDS,
+  getFormatById,
+  getFormatLabel,
+  getFormatsByGame,
+  getActiveFormats,
+  getAvailableGames,
+} from "./formats";
+
 // Featured Pokemon for avatar picker
 export { FEATURED_POKEMON } from "./featured-pokemon";
