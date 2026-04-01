@@ -6,6 +6,7 @@ import Link from "next/link";
 import { Trophy, ChevronDown, ChevronRight, Loader2, X } from "lucide-react";
 import { useSupabaseQuery } from "@/lib/supabase";
 import { getUserTournamentHistory } from "@trainers/supabase";
+import { getPokemonSprite } from "@trainers/pokemon/sprites";
 import type { TypedSupabaseClient } from "@trainers/supabase";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -33,7 +34,7 @@ type FilterChip = "all" | "live" | "upcoming" | "completed";
 // ---------------------------------------------------------------------------
 
 function spriteUrl(species: string): string {
-  return `https://play.pokemonshowdown.com/sprites/gen5/${species.toLowerCase().replace(/[^a-z0-9-]/g, "")}.png`;
+  return getPokemonSprite(species).url;
 }
 
 function formatDate(dateStr: string | null): string {

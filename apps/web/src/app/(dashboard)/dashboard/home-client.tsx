@@ -12,6 +12,7 @@ import {
   getUserTournamentHistory,
   getCurrentUserAlts,
 } from "@trainers/supabase";
+import { getPokemonSprite } from "@trainers/pokemon/sprites";
 import { cn } from "@/lib/utils";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -75,16 +76,15 @@ function StatCard({ label, value, sub }: StatCardProps) {
 }
 
 function PokemonSprite({ species }: { species: string }) {
-  // Showdown URLs: lowercase, remove all non-alphanumeric chars (including hyphens and spaces)
-  const src = `https://play.pokemonshowdown.com/sprites/gen5/${species.toLowerCase().replace(/[^a-z0-9]/g, "")}.png`;
+  const sprite = getPokemonSprite(species);
   return (
     <Image
-      src={src}
+      src={sprite.url}
       alt={species}
       width={18}
       height={18}
       className="shrink-0 object-contain"
-      style={{ imageRendering: "pixelated" }}
+      style={{ imageRendering: sprite.pixelated ? "pixelated" : undefined }}
       unoptimized
     />
   );

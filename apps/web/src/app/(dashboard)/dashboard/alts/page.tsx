@@ -13,6 +13,7 @@ import {
   getTeamsForAlt,
 } from "@trainers/supabase";
 import type { TypedSupabaseClient, AltStats } from "@trainers/supabase";
+import { getPokemonSprite } from "@trainers/pokemon/sprites";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -77,7 +78,7 @@ function isHighWinRate(wins: number, losses: number): boolean {
 }
 
 function spriteUrl(species: string): string {
-  return `https://play.pokemonshowdown.com/sprites/gen5/${species.toLowerCase()}.png`;
+  return getPokemonSprite(species).url;
 }
 
 // ---------------------------------------------------------------------------
