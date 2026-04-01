@@ -17,6 +17,11 @@ jest.mock("../standings", () => ({
   recalculateStandings: jest.fn(),
 }));
 
+// Mock the team sheet snapshot creation — tested separately
+jest.mock("../team-sheets", () => ({
+  createTournamentTeamSheets: jest.fn().mockResolvedValue(undefined),
+}));
+
 import { getCurrentUser, checkCommunityPermission } from "../helpers";
 import { recalculateStandings } from "../standings";
 
