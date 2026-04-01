@@ -288,22 +288,18 @@ export type Database = {
           discord_invite_url: string | null
           icon: string | null
           id: number
-          is_public: boolean
           logo_url: string | null
           name: string
           owner_user_id: string
           platform_fee_percentage: number | null
-          registration_mode: string
           slug: string
           social_links: Json
-          staff_invite_mode: string
           status: Database["public"]["Enums"]["community_status"] | null
           subscription_expires_at: string | null
           subscription_started_at: string | null
           subscription_tier:
             | Database["public"]["Enums"]["community_subscription_tier"]
             | null
-          team_sheet_visibility: string
           tier: Database["public"]["Enums"]["community_tier"] | null
           updated_at: string | null
         }
@@ -313,22 +309,18 @@ export type Database = {
           discord_invite_url?: string | null
           icon?: string | null
           id?: never
-          is_public?: boolean
           logo_url?: string | null
           name: string
           owner_user_id: string
           platform_fee_percentage?: number | null
-          registration_mode?: string
           slug: string
           social_links?: Json
-          staff_invite_mode?: string
           status?: Database["public"]["Enums"]["community_status"] | null
           subscription_expires_at?: string | null
           subscription_started_at?: string | null
           subscription_tier?:
             | Database["public"]["Enums"]["community_subscription_tier"]
             | null
-          team_sheet_visibility?: string
           tier?: Database["public"]["Enums"]["community_tier"] | null
           updated_at?: string | null
         }
@@ -338,22 +330,18 @@ export type Database = {
           discord_invite_url?: string | null
           icon?: string | null
           id?: never
-          is_public?: boolean
           logo_url?: string | null
           name?: string
           owner_user_id?: string
           platform_fee_percentage?: number | null
-          registration_mode?: string
           slug?: string
           social_links?: Json
-          staff_invite_mode?: string
           status?: Database["public"]["Enums"]["community_status"] | null
           subscription_expires_at?: string | null
           subscription_started_at?: string | null
           subscription_tier?:
             | Database["public"]["Enums"]["community_subscription_tier"]
             | null
-          team_sheet_visibility?: string
           tier?: Database["public"]["Enums"]["community_tier"] | null
           updated_at?: string | null
         }
@@ -2287,6 +2275,92 @@ export type Database = {
           },
           {
             foreignKeyName: "tournament_standings_tournament_id_fkey"
+            columns: ["tournament_id"]
+            isOneToOne: false
+            referencedRelation: "tournaments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tournament_team_sheets: {
+        Row: {
+          ability: string
+          alt_id: number
+          created_at: string | null
+          format: string
+          held_item: string | null
+          id: number
+          move1: string
+          move2: string | null
+          move3: string | null
+          move4: string | null
+          position: number
+          registration_id: number
+          species: string
+          team_id: number
+          tera_type: string | null
+          tournament_id: number
+        }
+        Insert: {
+          ability: string
+          alt_id: number
+          created_at?: string | null
+          format: string
+          held_item?: string | null
+          id?: never
+          move1: string
+          move2?: string | null
+          move3?: string | null
+          move4?: string | null
+          position: number
+          registration_id: number
+          species: string
+          team_id: number
+          tera_type?: string | null
+          tournament_id: number
+        }
+        Update: {
+          ability?: string
+          alt_id?: number
+          created_at?: string | null
+          format?: string
+          held_item?: string | null
+          id?: never
+          move1?: string
+          move2?: string | null
+          move3?: string | null
+          move4?: string | null
+          position?: number
+          registration_id?: number
+          species?: string
+          team_id?: number
+          tera_type?: string | null
+          tournament_id?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tournament_team_sheets_alt_id_fkey"
+            columns: ["alt_id"]
+            isOneToOne: false
+            referencedRelation: "alts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tournament_team_sheets_registration_id_fkey"
+            columns: ["registration_id"]
+            isOneToOne: false
+            referencedRelation: "tournament_registrations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tournament_team_sheets_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tournament_team_sheets_tournament_id_fkey"
             columns: ["tournament_id"]
             isOneToOne: false
             referencedRelation: "tournaments"

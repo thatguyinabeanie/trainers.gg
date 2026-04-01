@@ -4,7 +4,6 @@ import { getInvitationExpiryDate } from "../constants";
 import {
   communitySocialLinksSchema,
   type CommunitySocialLink,
-  type UpdateCommunityPermissionsInput,
 } from "@trainers/validators";
 
 /**
@@ -690,36 +689,4 @@ export async function removeStaffCompletely(
 
   if (error) throw error;
   return { success: true };
-}
-
-/**
- * Update community permission settings. Owner-only operation enforced by RLS.
- */
-export async function updateCommunityPermissions(
-  supabase: TypedClient,
-  communityId: number,
-  permissions: UpdateCommunityPermissionsInput
-): Promise<void> {
-  const user = await getCurrentUser(supabase);
-  if (!user) throw new Error("Not authenticated");
-
-  // Build update object, only including provided fields
-  const updateData: Database["public"]["Tables"]["communities"]["Update"] = {};
-  if (permissions.isPublic !== undefined)
-    updateData.is_public = permissions.isPublic;
-  if (permissions.registrationMode !== undefined)
-    updateData.registration_mode = permissions.registrationMode;
-  if (permissions.staffInviteMode !== undefined)
-    updateData.staff_invite_mode = permissions.staffInviteMode;
-  if (permissions.teamSheetVisibility !== undefined)
-    updateData.team_sheet_visibility = permissions.teamSheetVisibility;
-
-  if (Object.keys(updateData).length === 0) return;
-
-  const { error } = await supabase
-    .from("communities")
-    .update(updateData)
-    .eq("id", communityId);
-
-  if (error) throw new Error(`Failed to update permissions: ${error.message}`);
 }

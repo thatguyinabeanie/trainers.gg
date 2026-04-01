@@ -12,18 +12,13 @@ import { createClient } from "@/lib/supabase/server";
 import { getErrorMessage } from "@/lib/utils";
 import {
   updateCommunity as updateCommunityMutation,
-  updateCommunityPermissions as updatePermissionsMutation,
   inviteToCommunity as inviteToCommunityMutation,
   acceptCommunityInvitation as acceptCommunityInvitationMutation,
   declineCommunityInvitation as declineCommunityInvitationMutation,
   leaveCommunity as leaveCommunityMutation,
   removeStaff as removeStaffMutation,
 } from "@trainers/supabase";
-import {
-  type CommunitySocialLink,
-  updateCommunityPermissionsSchema,
-  type UpdateCommunityPermissionsInput,
-} from "@trainers/validators";
+import { type CommunitySocialLink } from "@trainers/validators";
 import { CacheTags } from "@/lib/cache";
 
 /**
@@ -74,44 +69,6 @@ export async function updateOrganization(
     return {
       success: false,
       error: getErrorMessage(error, "Failed to update community"),
-    };
-  }
-}
-
-/**
- * Update community permissions (visibility, join settings, etc.)
- * Revalidates: communities list (is_public affects listing) and individual community page
- */
-export async function updateCommunityPermissions(
-  communityId: number,
-  permissions: UpdateCommunityPermissionsInput,
-  slug?: string
-): Promise<ActionResult<{ success: true }>> {
-  try {
-    const parsed = updateCommunityPermissionsSchema.safeParse(permissions);
-    if (!parsed.success) {
-      return {
-        success: false,
-        error: "Invalid permissions data",
-        validationErrors: parsed.error.errors.map((e) => e.message),
-      };
-    }
-
-    const supabase = await createClient();
-    await updatePermissionsMutation(supabase, communityId, parsed.data);
-
-    // Revalidate — is_public affects the communities list
-    updateTag(CacheTags.COMMUNITIES_LIST);
-    if (slug) {
-      updateTag(CacheTags.community(slug));
-    }
-    updateTag(CacheTags.community(communityId));
-
-    return { success: true, data: { success: true } };
-  } catch (error) {
-    return {
-      success: false,
-      error: getErrorMessage(error, "Failed to update permissions"),
     };
   }
 }

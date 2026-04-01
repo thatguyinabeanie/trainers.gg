@@ -18,7 +18,6 @@ export {
 export {
   createCommunity,
   updateCommunity,
-  updateCommunityPermissions,
   inviteToCommunity,
   acceptCommunityInvitation,
   declineCommunityInvitation,

@@ -106,32 +106,3 @@ export const updateCommunitySchema = z.object({
 export type CommunitySocialLink = z.infer<typeof communitySocialLinkSchema>;
 export type CreateCommunityInput = z.infer<typeof createCommunitySchema>;
 export type UpdateCommunityInput = z.infer<typeof updateCommunitySchema>;
-
-// =============================================================================
-// Community Permissions
-// =============================================================================
-
-export const REGISTRATION_MODES = ["anyone", "invite_only"] as const;
-export type RegistrationMode = (typeof REGISTRATION_MODES)[number];
-
-export const STAFF_INVITE_MODES = ["owner_only", "admins_and_above"] as const;
-export type StaffInviteMode = (typeof STAFF_INVITE_MODES)[number];
-
-export const TEAM_SHEET_VISIBILITY_OPTIONS = [
-  "after_tournament",
-  "after_round",
-  "never",
-] as const;
-export type TeamSheetVisibility =
-  (typeof TEAM_SHEET_VISIBILITY_OPTIONS)[number];
-
-export const updateCommunityPermissionsSchema = z.object({
-  isPublic: z.boolean().optional(),
-  registrationMode: z.enum(REGISTRATION_MODES).optional(),
-  staffInviteMode: z.enum(STAFF_INVITE_MODES).optional(),
-  teamSheetVisibility: z.enum(TEAM_SHEET_VISIBILITY_OPTIONS).optional(),
-});
-
-export type UpdateCommunityPermissionsInput = z.infer<
-  typeof updateCommunityPermissionsSchema
->;
