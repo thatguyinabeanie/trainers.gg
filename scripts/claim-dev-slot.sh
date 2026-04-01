@@ -160,11 +160,6 @@ detect_running_supabase_slot() {
 }
 
 # =============================================================================
-# Clean up orphaned containers before claiming
-# =============================================================================
-cleanup_orphaned_supabase
-
-# =============================================================================
 # Find a free slot
 # =============================================================================
 claim_slot() {
@@ -228,7 +223,7 @@ if SLOT=$(reuse_existing_slot); then
   log_info "Reusing active slot $SLOT for this worktree"
   REUSE_SLOT=true
 elif SLOT=$(detect_running_supabase_slot); then
-  log_info "Detected running Supabase on slot $SLOT — reusing it"
+  log_info "Detected running Supabase on slot $SLOT — adopting it"
   # Write lockfile for the detected slot
   LOCKFILE="$DEV_SLOT_DIR/slot-${SLOT}.lock"
   cat > "$LOCKFILE" << EOF
@@ -240,6 +235,9 @@ elif SLOT=$(detect_running_supabase_slot); then
 EOF
   echo "$SLOT" > "$ROOT_DIR/.dev-slot"
 else
+  # No existing slot or running Supabase to adopt — clean up any orphaned
+  # containers before claiming a fresh slot
+  cleanup_orphaned_supabase
   SLOT=$(claim_slot)
   log_success "Claimed dev slot $SLOT"
   echo "$SLOT" > "$ROOT_DIR/.dev-slot"
