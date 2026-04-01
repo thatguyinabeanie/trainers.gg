@@ -89,7 +89,7 @@ describe("updateOrganization", () => {
     expect(mockUpdateTag).toHaveBeenCalledWith("community:1");
   });
 
-  it("does not revalidate the list when only socialLinks changes", async () => {
+  it("revalidates the list when only socialLinks changes", async () => {
     mockUpdateCommunity.mockResolvedValue(undefined);
 
     const result = await updateOrganization(
@@ -101,8 +101,8 @@ describe("updateOrganization", () => {
     );
 
     expect(result.success).toBe(true);
-    // List should NOT be revalidated — socialLinks is not display data
-    expect(mockUpdateTag).not.toHaveBeenCalledWith("communities-list");
+    // List is always revalidated — any update may affect the public listing
+    expect(mockUpdateTag).toHaveBeenCalledWith("communities-list");
     // Individual org pages should still be revalidated
     expect(mockUpdateTag).toHaveBeenCalledWith("community:team-rocket");
     expect(mockUpdateTag).toHaveBeenCalledWith("community:1");
