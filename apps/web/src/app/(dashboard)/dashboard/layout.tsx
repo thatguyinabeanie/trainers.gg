@@ -5,6 +5,7 @@ import { createClient, getUser } from "@/lib/supabase/server";
 import { listMyCommunities, getCurrentUserAlts } from "@trainers/supabase";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { DashboardSidebar } from "@/components/dashboard/dashboard-sidebar";
+import { DASHBOARD_ALT_COOKIE } from "@/components/dashboard/sidebar-helpers";
 
 export default async function DashboardLayout({
   children,
@@ -46,7 +47,8 @@ export default async function DashboardLayout({
 
   // Read the dashboard alt filter cookie
   const cookieStore = await cookies();
-  const dashboardAltCookie = cookieStore.get("dashboard-alt")?.value ?? null;
+  const dashboardAltCookie =
+    cookieStore.get(DASHBOARD_ALT_COOKIE)?.value ?? null;
   // Only use the cookie value if it matches an actual alt for this user
   const selectedAltUsername =
     dashboardAltCookie && alts.some((a) => a.username === dashboardAltCookie)

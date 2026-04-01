@@ -26,7 +26,7 @@ import {
 } from "@/components/ui/form";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { PlatformIcon } from "@/components/communities/social-link-icons";
-import { submitOrganizationRequestAction } from "@/actions/community-requests";
+import { submitCommunityRequestAction } from "@/actions/community-requests";
 import { cn } from "@/lib/utils";
 import { Loader2, Clock, AlertCircle, Check, X, House } from "lucide-react";
 import { toast } from "sonner";
@@ -289,7 +289,7 @@ function RequestForm({ rejectedRequest }: RequestFormProps) {
   }, [name, form]);
 
   async function onSubmit(data: SubmitOrganizationRequestInput) {
-    const result = await submitOrganizationRequestAction({
+    const result = await submitCommunityRequestAction({
       ...data,
       slug: generateSlug(data.name),
     });

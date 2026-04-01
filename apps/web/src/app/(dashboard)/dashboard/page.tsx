@@ -3,10 +3,12 @@ import { cookies } from "next/headers";
 import { HomeClient } from "./home-client";
 import HomeLoading from "./home-loading";
 import { PageHeader } from "@/components/dashboard/page-header";
+import { DASHBOARD_ALT_COOKIE } from "@/components/dashboard/sidebar-helpers";
 
 export default async function DashboardHomePage() {
   const cookieStore = await cookies();
-  const selectedAltUsername = cookieStore.get("dashboard-alt")?.value ?? null;
+  const selectedAltUsername =
+    cookieStore.get(DASHBOARD_ALT_COOKIE)?.value ?? null;
 
   return (
     <>

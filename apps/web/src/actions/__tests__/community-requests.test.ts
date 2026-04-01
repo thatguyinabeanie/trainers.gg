@@ -29,7 +29,7 @@ jest.mock("@trainers/supabase", () => ({
     mockSubmitCommunityRequest(...args),
 }));
 
-import { submitOrganizationRequestAction } from "../community-requests";
+import { submitCommunityRequestAction } from "../community-requests";
 
 const validInput = {
   name: "Pallet Town",
@@ -38,7 +38,7 @@ const validInput = {
   discord_invite_code: "pallet-town",
 };
 
-describe("submitOrganizationRequestAction", () => {
+describe("submitCommunityRequestAction", () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });
@@ -49,7 +49,7 @@ describe("submitOrganizationRequestAction", () => {
       slug: "pallet-town",
     });
 
-    const result = await submitOrganizationRequestAction(validInput);
+    const result = await submitCommunityRequestAction(validInput);
 
     expect(result).toEqual({
       success: true,
@@ -71,7 +71,7 @@ describe("submitOrganizationRequestAction", () => {
       slug: "pallet-town",
     });
 
-    await submitOrganizationRequestAction({
+    await submitCommunityRequestAction({
       ...validInput,
       twitter_handle: "pallettown",
       bluesky_handle: "pallettown.bsky.social",
@@ -92,7 +92,7 @@ describe("submitOrganizationRequestAction", () => {
   });
 
   it("returns validation error for empty name", async () => {
-    const result = await submitOrganizationRequestAction({
+    const result = await submitCommunityRequestAction({
       ...validInput,
       name: "",
     });
@@ -106,7 +106,7 @@ describe("submitOrganizationRequestAction", () => {
       new Error("Already have pending request")
     );
 
-    const result = await submitOrganizationRequestAction(validInput);
+    const result = await submitCommunityRequestAction(validInput);
 
     expect(result).toEqual({
       success: false,
@@ -120,7 +120,7 @@ describe("submitOrganizationRequestAction", () => {
       slug: "trimmed",
     });
 
-    await submitOrganizationRequestAction({
+    await submitCommunityRequestAction({
       ...validInput,
       name: "  Trimmed Org  ",
       slug: "trimmed",

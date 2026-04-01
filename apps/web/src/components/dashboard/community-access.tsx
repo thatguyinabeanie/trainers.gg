@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Shield } from "lucide-react";
 import Link from "next/link";
 
-interface OrganizerAccessProps {
+interface CommunityAccessProps {
   organizations: Array<{
     id: number;
     name: string;
@@ -14,7 +14,7 @@ interface OrganizerAccessProps {
   }>;
 }
 
-export function OrganizerAccess({ organizations }: OrganizerAccessProps) {
+export function CommunityAccess({ organizations }: CommunityAccessProps) {
   return (
     <Card className="mb-6">
       <CardHeader>

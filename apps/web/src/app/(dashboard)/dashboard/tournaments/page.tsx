@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import { getUser } from "@/lib/supabase/server";
 import { TournamentsClient } from "./tournaments-client";
 import { PageHeader } from "@/components/dashboard/page-header";
+import { DASHBOARD_ALT_COOKIE } from "@/components/dashboard/sidebar-helpers";
 
 export const metadata = {
   title: "Tournaments — trainers.gg",
@@ -18,7 +19,8 @@ export default async function TournamentsPage() {
   }
 
   const cookieStore = await cookies();
-  const selectedAltUsername = cookieStore.get("dashboard-alt")?.value ?? null;
+  const selectedAltUsername =
+    cookieStore.get(DASHBOARD_ALT_COOKIE)?.value ?? null;
 
   return (
     <>

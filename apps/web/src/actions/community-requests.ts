@@ -60,7 +60,7 @@ function buildSocialLinks(
  * Submit an organization request.
  * Validates input, creates the request, revalidates cache.
  */
-export async function submitOrganizationRequestAction(
+export async function submitCommunityRequestAction(
   data: SubmitOrganizationRequestInput
 ): Promise<ActionResult<{ id: number; slug: string }>> {
   const parsed = submitOrganizationRequestSchema.safeParse(data);

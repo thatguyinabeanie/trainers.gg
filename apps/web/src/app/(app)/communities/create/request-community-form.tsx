@@ -23,7 +23,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { PlatformIcon } from "@/components/communities/social-link-icons";
-import { submitOrganizationRequestAction } from "@/actions/community-requests";
+import { submitCommunityRequestAction } from "@/actions/community-requests";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -93,7 +93,7 @@ export function RequestCommunityForm() {
   }, [name, form]);
 
   async function onSubmit(data: SubmitOrganizationRequestInput) {
-    const result = await submitOrganizationRequestAction({
+    const result = await submitCommunityRequestAction({
       ...data,
       slug: generateSlug(data.name),
     });
