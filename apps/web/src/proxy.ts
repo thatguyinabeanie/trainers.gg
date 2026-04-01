@@ -30,8 +30,9 @@ import {
  *    - Impersonation requires an active sudo session
  *
  * 3. Protected routes (auth required, always enforced):
- *    - /dashboard, /communities/create
+ *    - /dashboard/*, /communities/create, /onboarding
  *    - /tournaments/[slug]/r/[round]/t/[table]
+ *    - See PROTECTED_ROUTES and PROTECTED_PATTERNS in proxy-routes.ts
  *    - Unauthenticated users are redirected to /sign-in?redirect=<path>
  */
 
