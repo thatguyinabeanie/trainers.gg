@@ -219,7 +219,7 @@ function TournamentHeader({
       {canManage && organization && (
         <div className="flex gap-2">
           <Link
-            href={`/to-dashboard/${organization.slug}/tournaments/${tournament.slug}/manage`}
+            href={`/dashboard/community/${organization.slug}/tournaments/${tournament.slug}/manage`}
           >
             <Button variant="outline">
               <Settings className="mr-2 h-4 w-4" />

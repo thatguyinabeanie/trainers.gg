@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { listMyCommunities } from "@trainers/supabase";
-import { OrgSelectorClient } from "./org-selector-client";
+import { CommunitySelectorClient } from "./community-selector-client";
 
 export default async function TODashboardPage() {
   const supabase = await createClient();
@@ -10,7 +10,7 @@ export default async function TODashboardPage() {
   } = await supabase.auth.getUser();
 
   if (!user) {
-    redirect("/sign-in?redirect=/to-dashboard");
+    redirect("/sign-in?redirect=/dashboard/community");
   }
 
   // Get all organizations where user is owner or staff
@@ -18,14 +18,14 @@ export default async function TODashboardPage() {
 
   // If user has no organizations, show empty state
   if (organizations.length === 0) {
-    return <OrgSelectorClient organizations={[]} />;
+    return <CommunitySelectorClient organizations={[]} />;
   }
 
   // If user has exactly 1 organization, redirect directly to it
   if (organizations.length === 1 && organizations[0]) {
-    redirect(`/to-dashboard/${organizations[0].slug}`);
+    redirect(`/dashboard/community/${organizations[0].slug}`);
   }
 
   // Otherwise show the community selector
-  return <OrgSelectorClient organizations={organizations} />;
+  return <CommunitySelectorClient organizations={organizations} />;
 }

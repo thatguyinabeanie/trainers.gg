@@ -14,7 +14,7 @@ export default async function TODashboardLayout({
   } = await supabase.auth.getUser();
 
   if (!user) {
-    redirect("/sign-in?redirect=/to-dashboard");
+    redirect("/sign-in?redirect=/dashboard/community");
   }
 
   return <PageContainer variant="wide">{children}</PageContainer>;

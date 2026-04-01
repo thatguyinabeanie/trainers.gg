@@ -1,6 +1,6 @@
 # @trainers/mobile
 
-Expo 55 (React 19.2) React Native app. Expo Router file-based routing.
+Expo 55 (React Native 0.83, React 19.2) mobile app. Expo Router file-based routing.
 
 ## Key Files
 

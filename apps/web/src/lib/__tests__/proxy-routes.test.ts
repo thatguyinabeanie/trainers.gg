@@ -81,7 +81,6 @@ describe("proxy-routes", () => {
   describe("isProtectedRoute", () => {
     it("should match exact protected routes", () => {
       expect(isProtectedRoute("/dashboard")).toBe(true);
-      expect(isProtectedRoute("/to-dashboard")).toBe(true);
       expect(isProtectedRoute("/communities/create")).toBe(true);
       expect(isProtectedRoute("/onboarding")).toBe(true);
     });

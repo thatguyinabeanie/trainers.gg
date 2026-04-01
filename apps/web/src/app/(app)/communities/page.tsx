@@ -75,7 +75,7 @@ export default async function CommunitiesPage({
             <CommunitySearch />
           </Suspense>
           {user && (
-            <Link href="/communities/create">
+            <Link href="/dashboard/community/request">
               <Button>
                 <Plus className="mr-2 h-4 w-4" />
                 Request a Community

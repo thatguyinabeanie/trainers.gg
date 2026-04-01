@@ -91,12 +91,16 @@ export {
   getUserTournamentHistory,
   getPlayerTournamentHistory,
   getPlayerLifetimeStats,
+  getAltsBulkStats,
+  getTeamsForAlt,
 } from "./tournaments";
 
 export type {
   TournamentWithOrg,
   GroupedTournaments,
   PlayerLifetimeStats,
+  AltStats,
+  AltTeam,
 } from "./tournaments";
 // CommunityWithCounts already exported above
 
@@ -226,7 +230,7 @@ export type {
 } from "./players";
 
 // Rating queries
-export { getPlayerRating } from "./ratings";
+export { getPlayerRating, getPlayerRatingsBulk } from "./ratings";
 export type { PlayerRating } from "./ratings";
 
 // Announcement queries

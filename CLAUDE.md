@@ -20,6 +20,7 @@ Domain-specific guidance lives in `.claude/skills/`. Invoke the relevant skill b
 | `tracking-analytics`       | PostHog event constants, adding new events                       |
 | `integrating-bluesky`      | Bluesky/AT Protocol, DID resolution, public agent                |
 | `writing-tests`            | Fishery factories, Supabase/AT Protocol mocks, Jest config       |
+| `managing-dev-slots`       | Dev-slot port allocation, multi-instance dev, slot cleanup       |
 | `managing-infrastructure`  | PDS on Fly.io, ngrok tunnel for local dev                        |
 | `creating-edge-functions`  | Creating/updating Supabase edge functions                        |
 | `managing-edge-imports`    | Deno import maps, `deno.json` management                         |
@@ -59,8 +60,8 @@ Custom agents in `.claude/agents/`. Invoke for isolated, focused work.
 
 ```
 apps/
-  web/          # Next.js 16 (React 19) - @trainers/web
-  mobile/       # Expo 55 (React 19) - @trainers/mobile
+  web/          # Next.js 16 (React 19.2) - @trainers/web
+  mobile/       # Expo 55 (React Native 0.83) - @trainers/mobile
 
 packages/
   pokemon/      # Pokemon data, validation, parsing
@@ -89,8 +90,8 @@ infra/
 | React Compiler     | React Compiler                 | Auto-memoization — do NOT manually use useMemo/useCallback/memo |
 | Validation         | Zod via `@trainers/validators` | Shared schemas for forms, Server Actions, edge functions        |
 | Client State (Web) | TanStack Query v5              | Cache, mutations, optimistic updates                            |
-| Web                | Next.js 16                     | React 19, App Router, Server Components                         |
-| Mobile             | Expo 55                        | React Native with Tamagui                                       |
+| Web                | Next.js 16                     | React 19.2, App Router, Server Components                       |
+| Mobile             | Expo 55                        | React Native 0.83 with Tamagui                                  |
 | UI (Web)           | shadcn/ui + Base UI            | Base UI primitives (NOT Radix), no `asChild`                    |
 | Styling (Web)      | Tailwind CSS 4                 | @tailwindcss/postcss                                            |
 | Styling (Mobile)   | Tamagui                        | Theme tokens from @trainers/theme                               |
@@ -139,6 +140,15 @@ pnpm --filter @trainers/theme build         # Generate design tokens
 # Edge Functions
 pnpm functions:serve                  # Serve edge functions locally
 ```
+
+### Test Users (Local Development)
+
+After `pnpm db:reset`, these test users are available (password: `Password123!`):
+
+| Email                   | Username      | Role                             |
+| ----------------------- | ------------- | -------------------------------- |
+| `admin@trainers.local`  | admin_trainer | Site admin, VGC League org owner |
+| `player@trainers.local` | ash_ketchum   | Player, Pallet Town org owner    |
 
 ### Playwright Screenshots
 
@@ -204,20 +214,24 @@ trainers.gg is the all-in-one integrated platform for Pokemon fans — one place
 
 When executing implementation plans, always use **subagent-driven development** (`superpowers:subagent-driven-development`). Do not use inline execution unless explicitly asked.
 
+### Memory
+
+When saving memories (user preferences, feedback, project context), write them to `~/.claude/CLAUDE.md` (the user's private global instructions file), not to the project CLAUDE.md.
+
 ## Project Management
 
 Linear for issue tracking (MCP server available). **Team**: `trainers-gg`. **Default Project**: `Private Beta MVP`.
 
 ## Glossary
 
-| Term                | Definition                                                                        |
-| ------------------- | --------------------------------------------------------------------------------- |
-| **Alt**             | Player identity linked to a user. Users can have multiple alts. Stored in `alts`. |
-| **Staff**           | Organization personnel who run events — NOT tournament participants.              |
-| **TO**              | Tournament Organizer — staff role with create/manage permissions.                 |
-| **DID**             | Decentralized Identifier — AT Protocol identity (`did:plc:abc123`).               |
-| **PDS**             | Personal Data Server — self-hosted Bluesky at `pds.trainers.gg`.                  |
-| **Handle**          | Human-readable Bluesky identity (`@username.trainers.gg`).                        |
-| **RLS**             | Row Level Security — PostgreSQL access control via `auth.uid()`.                  |
-| **Team Sheet**      | Player's Pokemon team for a tournament. Parsed via `@trainers/validators`.        |
-| **Protected Route** | Route requiring auth regardless of maintenance mode. Enforced in `proxy.ts`.      |
+| Term                 | Definition                                                                        |
+| -------------------- | --------------------------------------------------------------------------------- |
+| **Alt**              | Player identity linked to a user. Users can have multiple alts. Stored in `alts`. |
+| **Staff**            | Community personnel who run events — NOT tournament participants.                 |
+| **Community Leader** | Staff role with create/manage permissions for tournaments and events.             |
+| **DID**              | Decentralized Identifier — AT Protocol identity (`did:plc:abc123`).               |
+| **PDS**              | Personal Data Server — self-hosted Bluesky at `pds.trainers.gg`.                  |
+| **Handle**           | Human-readable Bluesky identity (`@username.trainers.gg`).                        |
+| **RLS**              | Row Level Security — PostgreSQL access control via `auth.uid()`.                  |
+| **Team Sheet**       | Player's Pokemon team for a tournament. Parsed via `@trainers/validators`.        |
+| **Protected Route**  | Route requiring auth regardless of maintenance mode. Enforced in `proxy.ts`.      |

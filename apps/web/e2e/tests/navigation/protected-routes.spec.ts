@@ -17,8 +17,8 @@ test.describe("Protected routes redirect unauthenticated users", () => {
 
   const protectedRoutes = [
     "/dashboard",
-    "/to-dashboard",
-    "/organizations/create",
+    "/dashboard/alts",
+    "/dashboard/tournaments",
   ];
 
   for (const route of protectedRoutes) {

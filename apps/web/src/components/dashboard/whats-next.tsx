@@ -1,6 +1,6 @@
 "use client";
 
-import { Card, CardContent } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import {
   Clock,
@@ -42,23 +42,18 @@ export function WhatsNext({ mode, tournaments }: WhatsNextProps) {
   if (actions.length === 0) return null;
 
   return (
-    <Card className="border-primary/20 relative overflow-hidden">
-      <div className="from-primary/5 absolute inset-0 bg-gradient-to-r via-transparent to-transparent" />
-      <CardContent className="relative p-6">
-        <div className="mb-4 flex items-center gap-2">
-          <div className="bg-primary/10 flex size-8 items-center justify-center rounded-lg">
-            <Sparkles className="text-primary size-4" />
-          </div>
-          <h3 className="font-semibold">What&apos;s Next?</h3>
-        </div>
+    <div className="space-y-3">
+      <div className="flex items-center gap-2 px-1">
+        <Sparkles className="text-primary size-4" />
+        <h3 className="text-sm font-semibold">What&apos;s Next?</h3>
+      </div>
 
-        <div className="space-y-3">
-          {actions.map((action) => (
-            <ActionCard key={action.id} action={action} />
-          ))}
-        </div>
-      </CardContent>
-    </Card>
+      <div className="space-y-2">
+        {actions.map((action) => (
+          <ActionCard key={action.id} action={action} />
+        ))}
+      </div>
+    </div>
   );
 }
 
@@ -69,44 +64,41 @@ function ActionCard({ action }: { action: ActionItem }) {
 
   const content = (
     <div
-      className={`group relative flex items-center gap-4 rounded-lg border p-4 transition-all ${
-        isUrgent
-          ? "border-amber-500/30 bg-amber-500/5 hover:bg-amber-500/10"
-          : isImportant
-            ? "border-blue-500/30 bg-blue-500/5 hover:bg-blue-500/10"
-            : "border-border bg-card hover:border-primary/50 hover:shadow-sm"
-      }`}
+      className={cn(
+        "group relative flex items-center gap-4 rounded-xl p-4 transition-all",
+        isUrgent && "bg-amber-500/5 hover:bg-amber-500/10",
+        isImportant && "bg-blue-500/5 hover:bg-blue-500/10",
+        !isUrgent && !isImportant && "bg-muted/50 hover:bg-muted"
+      )}
     >
       {/* Accent line for urgent items */}
       {isUrgent && (
-        <div className="absolute left-0 top-0 h-full w-1 rounded-l-lg bg-amber-500" />
+        <div className="absolute top-2 bottom-2 left-0 w-1 rounded-full bg-amber-500" />
       )}
 
       {/* Icon */}
       <div
-        className={`flex size-10 shrink-0 items-center justify-center rounded-lg ${
-          isUrgent
-            ? "bg-amber-500/10"
-            : isImportant
-              ? "bg-blue-500/10"
-              : "bg-primary/10"
-        }`}
+        className={cn(
+          "flex size-10 shrink-0 items-center justify-center rounded-xl",
+          isUrgent && "bg-amber-500/10",
+          isImportant && "bg-blue-500/10",
+          !isUrgent && !isImportant && "bg-primary/10"
+        )}
       >
         <Icon
-          className={`size-5 ${
-            isUrgent
-              ? "text-amber-600 dark:text-amber-400"
-              : isImportant
-                ? "text-blue-600 dark:text-blue-400"
-                : "text-primary"
-          }`}
+          className={cn(
+            "size-5",
+            isUrgent && "text-amber-600 dark:text-amber-400",
+            isImportant && "text-blue-600 dark:text-blue-400",
+            !isUrgent && !isImportant && "text-primary"
+          )}
         />
       </div>
 
       {/* Content */}
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
-          <h4 className="group-hover:text-primary font-semibold">
+          <h4 className="group-hover:text-primary text-sm font-semibold transition-colors">
             {action.title}
           </h4>
           {action.count && action.count > 1 && (
@@ -121,7 +113,7 @@ function ActionCard({ action }: { action: ActionItem }) {
       </div>
 
       {/* Action indicator */}
-      <ChevronRight className="text-muted-foreground group-hover:text-primary size-5 shrink-0 transition-transform group-hover:translate-x-1" />
+      <ChevronRight className="text-muted-foreground group-hover:text-primary size-4 shrink-0 transition-transform group-hover:translate-x-0.5" />
     </div>
   );
 
@@ -144,7 +136,8 @@ function ActionCard({ action }: { action: ActionItem }) {
   return content;
 }
 
-function getActionItems(
+/** @internal Exported for testing */
+export function getActionItems(
   mode: OverviewMode,
   tournaments: DashboardTournament[]
 ): ActionItem[] {

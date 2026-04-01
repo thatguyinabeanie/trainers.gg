@@ -6,7 +6,7 @@ applyTo: "apps/web/**"
 
 ## Framework
 
-Next.js 16 with React 19, App Router, and React Compiler enabled.
+Next.js 16 with React 19.2, App Router, and React Compiler enabled.
 
 ## Request Interception
 

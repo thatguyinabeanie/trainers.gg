@@ -3532,3 +3532,179 @@ BEGIN
 
   RAISE NOTICE 'Created 251 tournament registrations';
 END $$;
+
+-- =========================================================================
+-- Admin user tournament data (for dashboard testing)
+-- Separate DO block so it runs even when registrations already exist
+-- =========================================================================
+DO $$
+DECLARE
+  v_main_id  bigint;
+  v_vgc_id   bigint;
+  v_draft_id bigint;
+  v_team1_id bigint;
+  v_team2_id bigint;
+  v_team3_id bigint;
+  v_round_id bigint;
+  v_opp_id   bigint;
+  v_won      boolean;
+  v_match_id bigint;
+  v_p1       bigint;
+  v_p2       bigint;
+  v_p3       bigint;
+  v_p4       bigint;
+  v_p5       bigint;
+  v_p6       bigint;
+BEGIN
+  SELECT a.id INTO v_main_id FROM alts a JOIN auth.users u ON a.user_id = u.id
+    WHERE u.email = 'admin@trainers.local' AND a.username = 'admin_trainer';
+  SELECT a.id INTO v_vgc_id FROM alts a JOIN auth.users u ON a.user_id = u.id
+    WHERE u.email = 'admin@trainers.local' AND a.username = 'admin_trainer_vgc';
+  SELECT a.id INTO v_draft_id FROM alts a JOIN auth.users u ON a.user_id = u.id
+    WHERE u.email = 'admin@trainers.local' AND a.username = 'admin_trainer_draft';
+
+  IF v_main_id IS NULL OR v_vgc_id IS NULL OR v_draft_id IS NULL THEN
+    RAISE NOTICE 'Admin alts not found, skipping admin tournament data';
+    RETURN;
+  END IF;
+
+  -- Skip if admin already has tournament registrations (idempotent)
+  IF EXISTS (SELECT 1 FROM tournament_registrations WHERE alt_id = v_vgc_id) THEN
+    RAISE NOTICE 'Admin tournament data already exists, skipping';
+    RETURN;
+  END IF;
+
+  -- -----------------------------------------------------------------------
+  -- Rename admin_trainer (main) existing seed teams to something legible
+  -- -----------------------------------------------------------------------
+  UPDATE teams SET name = 'VGC Goodstuffs' WHERE created_by = v_main_id AND name LIKE 'team-seed-%';
+
+  -- -----------------------------------------------------------------------
+  -- Create teams with real competitive Pokemon
+  -- -----------------------------------------------------------------------
+
+  -- Team 1: Rain Balance (admin_trainer_vgc)
+  INSERT INTO teams (created_by, name) VALUES (v_vgc_id, 'Rain Balance') RETURNING id INTO v_team1_id;
+
+  INSERT INTO pokemon (species, level, nature, ability, held_item, move1, move2, move3, move4, ev_hp, ev_attack, ev_defense, ev_special_attack, ev_special_defense, ev_speed, tera_type)
+  VALUES ('Kyogre', 50, 'Modest', 'Drizzle', 'Mystic Water', 'Water Spout', 'Origin Pulse', 'Ice Beam', 'Protect', 4, 0, 0, 252, 0, 252, 'Water')
+  RETURNING id INTO v_p1;
+
+  INSERT INTO pokemon (species, level, nature, ability, held_item, move1, move2, move3, move4, ev_hp, ev_attack, ev_defense, ev_special_attack, ev_special_defense, ev_speed, tera_type)
+  VALUES ('Pelipper', 50, 'Bold', 'Drizzle', 'Focus Sash', 'Hurricane', 'Weather Ball', 'Tailwind', 'Protect', 252, 0, 252, 0, 4, 0, 'Flying')
+  RETURNING id INTO v_p2;
+
+  INSERT INTO pokemon (species, level, nature, ability, held_item, move1, move2, move3, move4, ev_hp, ev_attack, ev_defense, ev_special_attack, ev_special_defense, ev_speed, tera_type)
+  VALUES ('Rillaboom', 50, 'Adamant', 'Grassy Surge', 'Miracle Seed', 'Grassy Glide', 'Wood Hammer', 'U-turn', 'Fake Out', 252, 252, 0, 0, 0, 4, 'Grass')
+  RETURNING id INTO v_p3;
+
+  INSERT INTO pokemon (species, level, nature, ability, held_item, move1, move2, move3, move4, ev_hp, ev_attack, ev_defense, ev_special_attack, ev_special_defense, ev_speed, tera_type)
+  VALUES ('Urshifu-Rapid-Strike', 50, 'Jolly', 'Unseen Fist', 'Choice Band', 'Surging Strikes', 'Close Combat', 'Aqua Jet', 'Detect', 4, 252, 0, 0, 0, 252, 'Water')
+  RETURNING id INTO v_p4;
+
+  INSERT INTO pokemon (species, level, nature, ability, held_item, move1, move2, move3, move4, ev_hp, ev_attack, ev_defense, ev_special_attack, ev_special_defense, ev_speed, tera_type)
+  VALUES ('Tornadus', 50, 'Timid', 'Prankster', 'Covert Cloak', 'Bleakwind Storm', 'Tailwind', 'Rain Dance', 'Protect', 4, 0, 0, 252, 0, 252, 'Flying')
+  RETURNING id INTO v_p5;
+
+  INSERT INTO pokemon (species, level, nature, ability, held_item, move1, move2, move3, move4, ev_hp, ev_attack, ev_defense, ev_special_attack, ev_special_defense, ev_speed, tera_type)
+  VALUES ('Amoonguss', 50, 'Relaxed', 'Regenerator', 'Rocky Helmet', 'Spore', 'Rage Powder', 'Pollen Puff', 'Protect', 252, 0, 252, 0, 4, 0, 'Grass')
+  RETURNING id INTO v_p6;
+
+  INSERT INTO team_pokemon (team_id, pokemon_id, team_position) VALUES
+    (v_team1_id, v_p1, 1),
+    (v_team1_id, v_p2, 2),
+    (v_team1_id, v_p3, 3),
+    (v_team1_id, v_p4, 4),
+    (v_team1_id, v_p5, 5),
+    (v_team1_id, v_p6, 6)
+  ON CONFLICT DO NOTHING;
+
+  -- Team 2: Sun Room (admin_trainer_vgc)
+  INSERT INTO teams (created_by, name) VALUES (v_vgc_id, 'Sun Room') RETURNING id INTO v_team2_id;
+
+  INSERT INTO pokemon (species, level, nature, ability, held_item, move1, move2, move3, move4, ev_hp, ev_attack, ev_defense, ev_special_attack, ev_special_defense, ev_speed, iv_speed, tera_type)
+  VALUES ('Koraidon', 50, 'Adamant', 'Orichalcum Pulse', 'Clear Amulet', 'Collision Course', 'Flare Blitz', 'Flame Charge', 'Protect', 4, 252, 0, 0, 0, 252, 31, 'Fire')
+  RETURNING id INTO v_p1;
+
+  INSERT INTO pokemon (species, level, nature, ability, held_item, move1, move2, move3, move4, ev_hp, ev_attack, ev_defense, ev_special_attack, ev_special_defense, ev_speed, iv_speed, tera_type)
+  VALUES ('Flutter Mane', 50, 'Timid', 'Protosynthesis', 'Booster Energy', 'Moonblast', 'Shadow Ball', 'Dazzling Gleam', 'Protect', 4, 0, 0, 252, 0, 252, 31, 'Fairy')
+  RETURNING id INTO v_p2;
+
+  INSERT INTO pokemon (species, level, nature, ability, held_item, move1, move2, move3, move4, ev_hp, ev_attack, ev_defense, ev_special_attack, ev_special_defense, ev_speed, iv_speed, tera_type)
+  VALUES ('Incineroar', 50, 'Careful', 'Intimidate', 'Safety Goggles', 'Flare Blitz', 'Fake Out', 'Parting Shot', 'Knock Off', 252, 0, 0, 0, 252, 4, 31, 'Dark')
+  RETURNING id INTO v_p3;
+
+  INSERT INTO pokemon (species, level, nature, ability, held_item, move1, move2, move3, move4, ev_hp, ev_attack, ev_defense, ev_special_attack, ev_special_defense, ev_speed, iv_speed, tera_type)
+  VALUES ('Landorus', 50, 'Modest', 'Sheer Force', 'Life Orb', 'Sandsear Storm', 'Earth Power', 'Sludge Bomb', 'Protect', 4, 0, 0, 252, 0, 252, 31, 'Ground')
+  RETURNING id INTO v_p4;
+
+  INSERT INTO pokemon (species, level, nature, ability, held_item, move1, move2, move3, move4, ev_hp, ev_attack, ev_defense, ev_special_attack, ev_special_defense, ev_speed, iv_speed, tera_type)
+  VALUES ('Farigiraf', 50, 'Quiet', 'Armor Tail', 'Sitrus Berry', 'Trick Room', 'Psychic', 'Hyper Voice', 'Protect', 252, 0, 4, 252, 0, 0, 0, 'Normal')
+  RETURNING id INTO v_p5;
+
+  INSERT INTO pokemon (species, level, nature, ability, held_item, move1, move2, move3, move4, ev_hp, ev_attack, ev_defense, ev_special_attack, ev_special_defense, ev_speed, iv_speed, tera_type)
+  VALUES ('Raging Bolt', 50, 'Modest', 'Protosynthesis', 'Assault Vest', 'Thunderclap', 'Draco Meteor', 'Thunderbolt', 'Calm Mind', 252, 0, 0, 252, 4, 0, 31, 'Electric')
+  RETURNING id INTO v_p6;
+
+  INSERT INTO team_pokemon (team_id, pokemon_id, team_position) VALUES
+    (v_team2_id, v_p1, 1),
+    (v_team2_id, v_p2, 2),
+    (v_team2_id, v_p3, 3),
+    (v_team2_id, v_p4, 4),
+    (v_team2_id, v_p5, 5),
+    (v_team2_id, v_p6, 6)
+  ON CONFLICT DO NOTHING;
+
+  -- Team 3: Stall Core (admin_trainer_draft)
+  INSERT INTO teams (created_by, name) VALUES (v_draft_id, 'Stall Core') RETURNING id INTO v_team3_id;
+
+  INSERT INTO pokemon (species, level, nature, ability, held_item, move1, move2, move3, move4, ev_hp, ev_attack, ev_defense, ev_special_attack, ev_special_defense, ev_speed, iv_speed, tera_type)
+  VALUES ('Dondozo', 50, 'Impish', 'Unaware', 'Leftovers', 'Order Up', 'Wave Crash', 'Earthquake', 'Protect', 252, 0, 252, 0, 4, 0, 31, 'Water')
+  RETURNING id INTO v_p1;
+
+  INSERT INTO pokemon (species, level, nature, ability, held_item, move1, move2, move3, move4, ev_hp, ev_attack, ev_defense, ev_special_attack, ev_special_defense, ev_speed, iv_speed, tera_type)
+  VALUES ('Tatsugiri', 50, 'Modest', 'Commander', 'Focus Sash', 'Muddy Water', 'Draco Meteor', 'Icy Wind', 'Endure', 4, 0, 0, 252, 0, 252, 31, 'Dragon')
+  RETURNING id INTO v_p2;
+
+  INSERT INTO pokemon (species, level, nature, ability, held_item, move1, move2, move3, move4, ev_hp, ev_attack, ev_defense, ev_special_attack, ev_special_defense, ev_speed, iv_speed, tera_type)
+  VALUES ('Amoonguss', 50, 'Sassy', 'Regenerator', 'Sitrus Berry', 'Spore', 'Rage Powder', 'Pollen Puff', 'Protect', 252, 0, 4, 0, 252, 0, 0, 'Grass')
+  RETURNING id INTO v_p3;
+
+  INSERT INTO pokemon (species, level, nature, ability, held_item, move1, move2, move3, move4, ev_hp, ev_attack, ev_defense, ev_special_attack, ev_special_defense, ev_speed, iv_speed, tera_type)
+  VALUES ('Cresselia', 50, 'Bold', 'Levitate', 'Mental Herb', 'Trick Room', 'Helping Hand', 'Lunar Blessing', 'Ally Switch', 252, 0, 252, 0, 4, 0, 31, 'Psychic')
+  RETURNING id INTO v_p4;
+
+  INSERT INTO pokemon (species, level, nature, ability, held_item, move1, move2, move3, move4, ev_hp, ev_attack, ev_defense, ev_special_attack, ev_special_defense, ev_speed, iv_speed, tera_type)
+  VALUES ('Incineroar', 50, 'Careful', 'Intimidate', 'Safety Goggles', 'Flare Blitz', 'Fake Out', 'Parting Shot', 'Will-O-Wisp', 252, 0, 0, 0, 252, 4, 31, 'Fire')
+  RETURNING id INTO v_p5;
+
+  INSERT INTO pokemon (species, level, nature, ability, held_item, move1, move2, move3, move4, ev_hp, ev_attack, ev_defense, ev_special_attack, ev_special_defense, ev_speed, iv_speed, tera_type)
+  VALUES ('Arcanine', 50, 'Calm', 'Intimidate', 'Assault Vest', 'Flamethrower', 'Snarl', 'Will-O-Wisp', 'Protect', 252, 0, 0, 0, 252, 4, 31, 'Normal')
+  RETURNING id INTO v_p6;
+
+  INSERT INTO team_pokemon (team_id, pokemon_id, team_position) VALUES
+    (v_team3_id, v_p1, 1),
+    (v_team3_id, v_p2, 2),
+    (v_team3_id, v_p3, 3),
+    (v_team3_id, v_p4, 4),
+    (v_team3_id, v_p5, 5),
+    (v_team3_id, v_p6, 6)
+  ON CONFLICT DO NOTHING;
+
+  -- -----------------------------------------------------------------------
+  -- Register admin alts in tournaments
+  -- -----------------------------------------------------------------------
+  INSERT INTO tournament_registrations (alt_id, tournament_id, status, team_id) VALUES (v_vgc_id,   1, 'checked_in', v_team1_id) ON CONFLICT DO NOTHING;
+  INSERT INTO tournament_registrations (alt_id, tournament_id, status, team_id) VALUES (v_vgc_id,   2, 'checked_in', v_team2_id) ON CONFLICT DO NOTHING;
+  INSERT INTO tournament_registrations (alt_id, tournament_id, status, team_id) VALUES (v_vgc_id,   3, 'checked_in', v_team1_id) ON CONFLICT DO NOTHING;
+  INSERT INTO tournament_registrations (alt_id, tournament_id, status)          VALUES (v_vgc_id,   5, 'registered')              ON CONFLICT DO NOTHING;
+  INSERT INTO tournament_registrations (alt_id, tournament_id, status, team_id) VALUES (v_main_id,  2, 'checked_in', v_team1_id) ON CONFLICT DO NOTHING;
+  INSERT INTO tournament_registrations (alt_id, tournament_id, status, team_id) VALUES (v_main_id,  3, 'checked_in', v_team1_id) ON CONFLICT DO NOTHING;
+  INSERT INTO tournament_registrations (alt_id, tournament_id, status, team_id) VALUES (v_draft_id, 1, 'checked_in', v_team3_id) ON CONFLICT DO NOTHING;
+  INSERT INTO tournament_registrations (alt_id, tournament_id, status)          VALUES (v_draft_id, 5, 'registered')              ON CONFLICT DO NOTHING;
+
+  -- NOTE: Match creation + ELO + player_stats are in 12_standings.sql
+  -- (runs after 11_matches.sql creates rounds)
+
+  RAISE NOTICE 'Admin tournament seed data created: main=%, vgc=%, draft=%', v_main_id, v_vgc_id, v_draft_id;
+END $$;

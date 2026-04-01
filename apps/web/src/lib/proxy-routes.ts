@@ -10,7 +10,6 @@ export const ADMIN_ROUTES = ["/admin"];
 // Routes that require authentication
 export const PROTECTED_ROUTES = [
   "/dashboard",
-  "/to-dashboard",
   "/communities/create",
   "/onboarding",
 ];
