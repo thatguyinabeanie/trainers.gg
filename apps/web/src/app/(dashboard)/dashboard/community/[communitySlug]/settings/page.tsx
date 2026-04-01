@@ -5,10 +5,7 @@ import { useSupabaseQuery } from "@/lib/supabase";
 import { getCommunityBySlug } from "@trainers/supabase";
 import type { TypedSupabaseClient } from "@trainers/supabase";
 import { updateOrganization } from "@/actions/communities";
-import type {
-  StaffInviteMode,
-  TeamSheetVisibility,
-} from "@trainers/validators";
+import type { StaffInviteMode } from "@trainers/validators";
 
 import { PermissionsTab } from "./permissions-tab";
 import {
@@ -122,13 +119,8 @@ export default function DashboardSettingsPage({ params }: PageProps) {
                 <PermissionsTab
                   communityId={org.id}
                   communitySlug={org.slug}
-                  isPublic={org.is_public ?? true}
                   staffInviteMode={
                     (org.staff_invite_mode ?? "owner_only") as StaffInviteMode
-                  }
-                  teamSheetVisibility={
-                    (org.team_sheet_visibility ??
-                      "after_tournament") as TeamSheetVisibility
                   }
                 />
               </TabsContent>

@@ -6,6 +6,7 @@ import {
 } from "@trainers/supabase";
 import { StaffClient } from "./staff-client";
 import { PageHeader } from "@/components/dashboard/page-header";
+import { RolePermissionsCard } from "@/components/dashboard/role-permissions-card";
 
 interface PageProps {
   params: Promise<{
@@ -52,6 +53,7 @@ export default async function DashboardStaffPage({ params }: PageProps) {
           currentUserId={user?.id}
           currentUserRole={currentUserRole}
         />
+        <RolePermissionsCard />
       </div>
     </>
   );
