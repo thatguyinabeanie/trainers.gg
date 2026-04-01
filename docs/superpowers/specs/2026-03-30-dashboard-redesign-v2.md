@@ -1,7 +1,8 @@
 # Dashboard Redesign v2 — Design Decisions
 
 **Date:** 2026-03-30
-**Status:** In progress — brainstorming
+**Updated:** 2026-04-01
+**Status:** Implementation complete — polishing
 
 This document captures all design decisions made during the dashboard redesign brainstorming session. Updated as decisions are finalized.
 
@@ -411,36 +412,57 @@ Never just copy existing UI and make it "cleaner." Always rethink from purpose.
 
 ---
 
-## Outstanding Design Work
+## Implementation Status
 
-### Designs approved — ready to implement
+### All designs — approved and implemented
 
-- [x] Community settings — approved (General tab, 520px form, no delete) — **implemented**
-- [x] Community request — approved (warm welcome, Discord highlight, 2-col socials) — **implemented**
-- [x] Community overview — approved (activity feed, live now card, two-column)
-- [x] Community staff — approved (two-column drag-drop)
+- [x] Community settings — **implemented** (General tab, 520px form, no delete)
+- [x] Community request — **implemented** (warm welcome, Discord highlight, 2-col socials)
+- [x] Community overview — **implemented** (activity feed placeholder, live now card, two-column)
+- [x] Community staff — **implemented** (two-column drag-drop with @dnd-kit)
+- [x] Alt switcher — **implemented** (popover menu, 260px, global filter via cookie)
+- [x] Alts page — **implemented** (table layout, expandable team sub-table with sprites + records, per-alt ELO)
+- [x] Alt detail page — **placeholder** (profile card + stats + teams design approved, not yet built)
+- [x] Notifications popover — **implemented** (bell icon, "Needs attention" + "Recent" sections)
+- [x] Tournaments page — **implemented** (renamed from History, full lifecycle with status badges + filter chips)
+- [x] Home page — **implemented** (live tournament card + stats + recent results with sprites)
 
-### Designs still needed
+### Sidebar changes — all implemented
 
-- [x] Alt switcher — approved (popover menu, 260px, "Switch alt" header, no truncation)
-- [x] Alts page — approved (table layout, expandable team sub-table with sprites + records)
-- [x] Notifications popover — approved (no inbox page, bell popover with pinned + recent sections)
-- [x] History page — approved (table with sprites, expandable opponent schedule, filters)
-- [x] Home page — approved (live tournament card + stats + recent results, compact)
-- [x] History → Tournaments rename — approved (full lifecycle with status badges + filter chips)
-- [x] Notifications bell icon — approved (merged with inbox into popover design)
+- [x] Renamed "Alts & Teams" → "Alts"
+- [x] Renamed "History" → "Tournaments"
+- [x] Removed "Inbox" (notifications in bell popover only)
+- [x] Added alt switcher to sidebar header (replaces logo, global filter via cookie)
 
-### Bugs (fixed)
+### Bugs found and fixed during implementation
 
-- [x] Tooltip positioning on collapsed sidebar icons — fixed by removing `display: contents` from trigger wrapper
+- [x] Tooltip positioning on collapsed sidebar icons — removed `display: contents` from trigger wrapper
 - [x] Build error: community request page import — resolved by page rewrite
+- [x] Alt switcher subtitle repeated username for non-main alts — shows "Alt" instead
+- [x] "My Tournaments" heading — changed to "Tournaments"
+- [x] "Delete alt" — changed to "Archive alt" (with TODO for real archive action)
+- [x] Standings map key was NaN — `Number("1_353")` = NaN, changed to string key
+- [x] Sprite URLs broke for forms/new Pokemon — replaced hand-written regex with `getPokemonSprite()` from `@trainers/pokemon/sprites`
+- [x] Home page Record showed 0-0 — `recentActivity` query used nonexistent `updated_at` column (changed to `end_time`)
+- [x] Home page stats showed 0 in "All Alts" mode — `profileId` from JWT was always undefined (derived `mainAltId` from `getCurrentUserAlts()` instead)
+- [x] Home page recentActivity empty — PostgREST FK ambiguity between `tournament_phases` and `tournaments` (added explicit FK hint `!tournament_phases_tournament_id_fkey`)
+- [x] Per-alt ELO rating column showed "—" — wired `getPlayerRating()` to alts table rows
+- [x] Renamed Rating column to "ELO" on alts page
 
-### Sidebar changes (implement with designs)
+### Seed data
 
-- [ ] Rename "Alts & Teams" → "Alts" in sidebar
-- [ ] Rename "History" → "Tournaments" in sidebar
-- [ ] Remove "Inbox" from sidebar (notifications in bell popover only)
-- [ ] Add alt switcher to sidebar header (replaces logo)
+- [x] Admin user tournament data in `10_tournaments.sql` (teams, registrations, Pokemon)
+- [x] Admin matches + ELO computation in `12_standings.sql` (via `apply_elo_result()`)
+- [x] Real VGC competitive Pokemon teams: Rain Balance, Sun Room, Stall Core, VGC Goodstuffs
+- [x] ELO ratings computed from match results (~1200-1246 range)
+- [x] Tournament standings for placement data
+
+### Remaining polish
+
+- [ ] Alt detail page (`/dashboard/alts/[username]`) — placeholder, needs full implementation
+- [ ] "All Alts" home page shows main alt stats — needs true aggregate across all alts
+- [ ] Community overview activity feed — shows placeholder, no real activity data yet
+- [ ] Tournament manage page dark background (QA issue #5)
 
 ### Future (Linear tickets, not this branch)
 
