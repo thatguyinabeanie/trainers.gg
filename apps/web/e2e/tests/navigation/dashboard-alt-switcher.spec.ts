@@ -27,11 +27,10 @@ test.describe("Dashboard alt switcher", () => {
     await expect(bellButton).toBeVisible({ timeout: 10000 });
     await bellButton.click();
 
-    // Popover should show "Mark all read" or "No notifications yet"
+    // Popover should show content — verify the "Mark all read" button exists
     const popover = page.locator("[data-side]");
-    const hasContent = popover
-      .getByText("Mark all read")
-      .or(popover.getByText("No notifications yet"));
-    await expect(hasContent).toBeVisible();
+    await expect(
+      popover.getByRole("button", { name: "Mark all read" })
+    ).toBeVisible();
   });
 });
