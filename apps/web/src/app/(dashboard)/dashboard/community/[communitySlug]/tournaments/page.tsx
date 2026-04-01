@@ -1,7 +1,13 @@
+import Link from "next/link";
+import { Plus } from "lucide-react";
+
 import { createClient } from "@/lib/supabase/server";
 import { getCommunityBySlug } from "@trainers/supabase";
+
 import { TournamentsListClient } from "@/app/(app)/to-dashboard/[communitySlug]/tournaments/tournaments-list-client";
+import { buttonVariants } from "@/components/ui/button";
 import { PageHeader } from "@/components/dashboard/page-header";
+import { cn } from "@/lib/utils";
 
 interface PageProps {
   params: Promise<{
@@ -28,7 +34,15 @@ export default async function DashboardTournamentsPage({
 
   return (
     <>
-      <PageHeader title="Tournaments" />
+      <PageHeader title="Tournaments">
+        <Link
+          href={`/dashboard/community/${communitySlug}/tournaments/create`}
+          className={cn(buttonVariants({ size: "sm" }), "ml-auto")}
+        >
+          <Plus className="mr-1 h-4 w-4" />
+          Create Tournament
+        </Link>
+      </PageHeader>
       <div className="bg-muted flex flex-1 flex-col gap-3 p-4 md:p-6">
         <TournamentsListClient
           communityId={organization.id}

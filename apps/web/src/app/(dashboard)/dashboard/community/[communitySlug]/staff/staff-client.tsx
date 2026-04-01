@@ -282,13 +282,13 @@ function UnassignedPanel({
   return (
     <div
       className={cn(
-        "flex flex-col overflow-hidden rounded-lg border transition-colors",
+        "bg-card flex flex-col overflow-hidden rounded-lg shadow-sm transition-colors",
         isOver && "ring-primary ring-2 ring-offset-2"
       )}
     >
       {/* Panel header */}
       <div className="bg-muted/40 flex items-center justify-between border-b px-3 py-2">
-        <span className="text-foreground text-xs font-semibold">
+        <span className="text-muted-foreground text-[10px] font-semibold tracking-wide uppercase">
           Unassigned
         </span>
         <span className="text-muted-foreground text-[11px]">
@@ -373,7 +373,7 @@ function RoleGroup({
   return (
     <div
       className={cn(
-        "overflow-hidden rounded-lg border transition-colors",
+        "bg-card overflow-hidden rounded-lg shadow-sm transition-colors",
         isOver && canDrop && "ring-primary ring-2 ring-offset-2",
         !canDrop && "opacity-60"
       )}
@@ -384,7 +384,7 @@ function RoleGroup({
           <span
             className={cn("h-2 w-2 flex-shrink-0 rounded-full", dotColor)}
           />
-          <span className="text-foreground truncate text-xs font-semibold">
+          <span className="text-muted-foreground truncate text-[10px] font-semibold tracking-wide uppercase">
             {group.name}
           </span>
           {group.role?.description && (
@@ -434,11 +434,11 @@ function OwnerGroup({ members }: { members: StaffWithRole[] }) {
   if (members.length === 0) return null;
 
   return (
-    <div className="overflow-hidden rounded-lg border border-amber-200 dark:border-amber-900">
+    <div className="bg-card overflow-hidden rounded-lg shadow-sm">
       {/* Header */}
       <div className="flex items-center gap-1.5 border-b border-amber-200 bg-amber-50 px-3 py-2 dark:border-amber-900 dark:bg-amber-950/40">
         <Crown className="h-3 w-3 flex-shrink-0 text-amber-500" />
-        <span className="text-xs font-semibold text-amber-800 dark:text-amber-300">
+        <span className="text-[10px] font-semibold tracking-wide text-amber-800 uppercase dark:text-amber-300">
           Owner
         </span>
       </div>
