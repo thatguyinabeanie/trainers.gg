@@ -1459,7 +1459,7 @@ export async function getMyDashboardData(supabase: TypedClient, altId: number) {
         id,
         phase:tournament_phases(
           id,
-          tournament:tournaments(id, name)
+          tournament:tournaments!tournament_phases_tournament_id_fkey(id, name)
         )
       )
     `
