@@ -2011,7 +2011,7 @@ export async function getUserTournamentHistory(supabase: TypedClient) {
 
   // Get standings for completed tournaments
   const standingsMap = new Map<
-    number,
+    string,
     { rank: number; wins: number; losses: number; ties: number }
   >();
 
@@ -2023,7 +2023,7 @@ export async function getUserTournamentHistory(supabase: TypedClient) {
       .in("alt_id", altIds);
 
     for (const standing of standings ?? []) {
-      standingsMap.set(Number(`${standing.tournament_id}_${standing.alt_id}`), {
+      standingsMap.set(`${standing.tournament_id}_${standing.alt_id}`, {
         rank: standing.rank ?? 0,
         wins: standing.game_wins ?? 0,
         losses: standing.game_losses ?? 0,
@@ -2088,9 +2088,7 @@ export async function getUserTournamentHistory(supabase: TypedClient) {
           ? tournament.organization
           : null;
 
-      const standing = standingsMap.get(
-        Number(`${tournament?.id}_${r.alt_id}`)
-      );
+      const standing = standingsMap.get(`${tournament?.id}_${r.alt_id}`);
       const alt = altMap.get(r.alt_id);
       const teamPokemon = r.team_id
         ? (teamPokemonMap.get(r.team_id) ?? [])
