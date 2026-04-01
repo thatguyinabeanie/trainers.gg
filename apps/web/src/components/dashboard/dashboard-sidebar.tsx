@@ -152,6 +152,11 @@ const COOKIE_MAX_AGE = 60 * 60 * 24 * 365; // 1 year
 
 function setAltCookie(username: string) {
   document.cookie = `${DASHBOARD_ALT_COOKIE}=${encodeURIComponent(username)}; path=/; samesite=lax; max-age=${COOKIE_MAX_AGE}`;
+  if (!document.cookie.includes(DASHBOARD_ALT_COOKIE)) {
+    toast.error(
+      "Could not save your alt selection. Check that cookies are enabled."
+    );
+  }
 }
 
 function clearAltCookie() {
