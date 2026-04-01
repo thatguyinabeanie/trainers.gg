@@ -87,6 +87,51 @@ reuse_existing_slot() {
 }
 
 # =============================================================================
+# Detect slot from a running Supabase instance
+# =============================================================================
+# If Supabase Docker containers are still running from a previous session,
+# detect their port and reverse-calculate the slot so we reuse it instead
+# of claiming a new slot with mismatched ports.
+detect_running_supabase_slot() {
+  command -v supabase &>/dev/null || return 1
+
+  local PREV_DIR="$PWD"
+  cd "$ROOT_DIR/packages/supabase"
+  local STATUS_JSON
+  STATUS_JSON=$(supabase status --output json 2>/dev/null || echo "{}")
+  cd "$PREV_DIR"
+
+  local API_URL
+  API_URL=$(echo "$STATUS_JSON" | grep '"API_URL"' | sed 's/.*"API_URL": *"\([^"]*\)".*/\1/')
+  [ -n "$API_URL" ] || return 1
+
+  # Extract port from URL (e.g., http://127.0.0.1:55821 → 55821)
+  local API_PORT
+  API_PORT=$(echo "$API_URL" | sed 's/.*:\([0-9]*\)$/\1/')
+  [ -n "$API_PORT" ] || return 1
+
+  # Reverse-calculate slot: slot = (port - base) / offset
+  local DETECTED_SLOT=$(( (API_PORT - PORT_BASE_SUPABASE_API) / DEV_SLOT_OFFSET ))
+
+  # Sanity check: recalculated port must match
+  local EXPECTED_PORT
+  EXPECTED_PORT=$(slot_port "$PORT_BASE_SUPABASE_API" "$DETECTED_SLOT")
+  if [ "$EXPECTED_PORT" != "$API_PORT" ]; then
+    return 1
+  fi
+
+  # Verify the web port for this slot is free (so we can actually use it)
+  local WEB_PORT_CHECK
+  WEB_PORT_CHECK=$(slot_port "$PORT_BASE_WEB" "$DETECTED_SLOT")
+  if ! is_port_free "$WEB_PORT_CHECK"; then
+    return 1
+  fi
+
+  echo "$DETECTED_SLOT"
+  return 0
+}
+
+# =============================================================================
 # Find a free slot
 # =============================================================================
 claim_slot() {
@@ -151,6 +196,18 @@ REUSE_SLOT=false
 if SLOT=$(reuse_existing_slot); then
   log_info "Reusing active slot $SLOT for this worktree"
   REUSE_SLOT=true
+elif SLOT=$(detect_running_supabase_slot); then
+  log_info "Detected running Supabase on slot $SLOT — reusing it"
+  # Write lockfile for the detected slot
+  LOCKFILE="$DEV_SLOT_DIR/slot-${SLOT}.lock"
+  cat > "$LOCKFILE" << EOF
+{
+  "pid": $$,
+  "worktree": "$ROOT_DIR",
+  "claimedAt": "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+}
+EOF
+  echo "$SLOT" > "$ROOT_DIR/.dev-slot"
 else
   SLOT=$(claim_slot)
   log_success "Claimed dev slot $SLOT"
@@ -300,6 +357,12 @@ echo ""
 # =============================================================================
 cleanup() {
   log_info "Releasing dev slot $SLOT..."
+
+  # Stop Supabase Docker containers
+  if command -v supabase &>/dev/null; then
+    log_info "Stopping Supabase..."
+    (cd "$ROOT_DIR/packages/supabase" && supabase stop --no-backup 2>/dev/null) || true
+  fi
 
   # Remove lockfile
   rm -f "$DEV_SLOT_DIR/slot-${SLOT}.lock"
