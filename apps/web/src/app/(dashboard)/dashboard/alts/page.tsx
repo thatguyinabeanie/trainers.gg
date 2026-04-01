@@ -11,6 +11,7 @@ import {
   getPlayerLifetimeStats,
   getAltsBulkStats,
   getTeamsForAlt,
+  getPlayerRating,
 } from "@trainers/supabase";
 import type { TypedSupabaseClient, AltStats } from "@trainers/supabase";
 import { getPokemonSprite } from "@trainers/pokemon/sprites";
@@ -379,8 +380,14 @@ function AltTableRow({
   ]);
   const teamCount = teams?.length ?? 0;
 
-  // Rating — not yet implemented at the per-alt level on this page
-  const rating: number | null = null;
+  // Per-alt ELO rating
+  const ratingQueryFn = (client: TypedSupabaseClient) =>
+    getPlayerRating(client, alt.id, "overall");
+  const { data: ratingData } = useSupabaseQuery(ratingQueryFn, [
+    "altRating",
+    alt.id,
+  ]);
+  const rating = ratingData?.rating ?? null;
 
   const handleVisibilityChange = (checked: boolean) => {
     startVisibilityTransition(async () => {
