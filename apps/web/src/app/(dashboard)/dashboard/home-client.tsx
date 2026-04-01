@@ -75,14 +75,15 @@ function StatCard({ label, value, sub }: StatCardProps) {
 }
 
 function PokemonSprite({ species }: { species: string }) {
-  const src = `https://play.pokemonshowdown.com/sprites/gen5/${species.toLowerCase().replace(/[^a-z0-9-]/g, "")}.png`;
+  // Showdown URLs: lowercase, remove all non-alphanumeric chars (including hyphens and spaces)
+  const src = `https://play.pokemonshowdown.com/sprites/gen5/${species.toLowerCase().replace(/[^a-z0-9]/g, "")}.png`;
   return (
     <Image
       src={src}
       alt={species}
       width={18}
       height={18}
-      className="object-contain"
+      className="shrink-0 object-contain"
       style={{ imageRendering: "pixelated" }}
       unoptimized
     />
@@ -301,15 +302,15 @@ export function HomeClient({
     championPoints: 0,
   };
 
-  const totalWins =
-    dashboardData?.recentActivity.filter((a) => a.result === "won").length ?? 0;
-  const totalMatches = dashboardData?.recentActivity.length ?? 0;
-  const totalLosses = totalMatches - totalWins;
-
-  // Build record string from all known matches
   const winRatePct =
     stats.winRate > 0 ? `${stats.winRate.toFixed(1)}%` : "0.0%";
-  const recordStr = totalMatches > 0 ? `${totalWins}-${totalLosses}` : "0-0";
+
+  // Compute W-L record from recentActivity or fall back to myTournaments player stats
+  const recentWins =
+    dashboardData?.recentActivity.filter((a) => a.result === "won").length ?? 0;
+  const recentTotal = dashboardData?.recentActivity.length ?? 0;
+  const recordStr =
+    recentTotal > 0 ? `${recentWins}-${recentTotal - recentWins}` : "0-0";
 
   const ratingStr =
     stats.currentRating > 0 ? stats.currentRating.toLocaleString() : "—";
