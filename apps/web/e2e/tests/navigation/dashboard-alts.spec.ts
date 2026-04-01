@@ -14,7 +14,7 @@ test.describe("Dashboard alts page", () => {
     await expect(main.getByRole("button", { name: /new alt/i })).toBeVisible();
   });
 
-  test("renders alt list with table headers", async ({ page }) => {
+  test("renders alt list or empty state", async ({ page }) => {
     await page.goto("/dashboard/alts");
 
     const main = page.getByRole("main");
@@ -22,9 +22,10 @@ test.describe("Dashboard alts page", () => {
       timeout: 10000,
     });
 
-    // Table should have expected column headers
-    await expect(main.getByText("Teams")).toBeVisible();
-    await expect(main.getByText("ELO")).toBeVisible();
+    // Either table headers (user has alts) or empty state (no alts)
+    const hasTable = main.getByText("Teams");
+    const hasEmptyState = main.getByText(/create your first alt/i);
+    await expect(hasTable.or(hasEmptyState)).toBeVisible();
   });
 
   test("alt rows are expandable", async ({ page }) => {

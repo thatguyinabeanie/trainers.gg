@@ -28,8 +28,21 @@ setup("authenticate as player", async ({ page, request }) => {
         },
       });
       console.log(`E2E seed response: ${response.status()}`);
+
+      // If seed returns 404, the preview is connected to the production database.
+      // Abort to prevent E2E tests from polluting production.
+      if (response.status() === 404) {
+        throw new Error(
+          "E2E seed returned 404 — preview is likely connected to the production database. " +
+            "Aborting E2E tests to prevent production pollution."
+        );
+      }
     } catch (err) {
-      console.log(`E2E seed request failed (non-fatal): ${err}`);
+      // Re-throw production safety errors — those must not be ignored
+      if (err instanceof Error && err.message.includes("production database")) {
+        throw err;
+      }
+      console.log("E2E seed request failed (non-fatal):", err);
     }
   }
 
