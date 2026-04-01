@@ -10,14 +10,12 @@ test.describe("Dashboard alt switcher", () => {
     await expect(sidebar).toBeVisible({ timeout: 10000 });
 
     // The sidebar should render without errors
-    // The exact alt switcher UI depends on whether the user has alts
     await expect(sidebar).toBeVisible();
   });
 
   test("notifications bell is visible in page header", async ({ page }) => {
     await page.goto("/dashboard");
 
-    // The notifications bell should be in the page header
     const bellButton = page.getByRole("button", { name: /notification/i });
     await expect(bellButton).toBeVisible({ timeout: 10000 });
   });
@@ -29,12 +27,14 @@ test.describe("Dashboard alt switcher", () => {
     await expect(bellButton).toBeVisible({ timeout: 10000 });
     await bellButton.click();
 
-    // Popover should show with "Notifications" header
-    await expect(page.getByText("Notifications")).toBeVisible();
-    // Should show "Mark all read" button or "No notifications yet"
-    const hasContent = page
+    // "Notifications" text appears in both the popover header and sidebar tooltip.
+    // Scope to the popover content which renders as a [data-side] element.
+    const popover = page.locator("[data-side]");
+    await expect(popover.getByText("Notifications")).toBeVisible();
+
+    const hasContent = popover
       .getByText("Mark all read")
-      .or(page.getByText("No notifications yet"));
+      .or(popover.getByText("No notifications yet"));
     await expect(hasContent).toBeVisible();
   });
 });
