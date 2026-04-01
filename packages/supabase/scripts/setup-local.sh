@@ -421,6 +421,13 @@ check_fast_path() {
   ENV_KEY=$(grep "^SUPABASE_SERVICE_ROLE_KEY=" "$ENV_FILE" 2>/dev/null | cut -d'=' -f2-)
   [ "$LIVE_KEY" = "$ENV_KEY" ] || return 1
 
+  # Verify anon key matches running instance
+  local LIVE_ANON
+  LIVE_ANON=$($SUPABASE_CMD status --output json 2>/dev/null | grep '"ANON_KEY"' | sed 's/.*"ANON_KEY": *"\([^"]*\)".*/\1/')
+  local ENV_ANON
+  ENV_ANON=$(grep "^NEXT_PUBLIC_SUPABASE_ANON_KEY=" "$ENV_FILE" 2>/dev/null | cut -d'=' -f2-)
+  [ "$LIVE_ANON" = "$ENV_ANON" ] || return 1
+
   return 0
 }
 

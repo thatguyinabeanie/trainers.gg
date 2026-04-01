@@ -178,6 +178,11 @@ EDGE_DEBUG_PORT=$(slot_port "$PORT_BASE_EDGE_DEBUG" "$SLOT")
 # =============================================================================
 ENV_FILE="$ROOT_DIR/.env.local"
 
+if [ ! -f "$ENV_FILE" ] && [ ! -L "$ENV_FILE" ]; then
+  log_warn ".env.local not found — running postinstall to create it"
+  bash "$ROOT_DIR/scripts/postinstall.sh"
+fi
+
 if [ -f "$ENV_FILE" ]; then
   log_info "Updating .env.local with slot $SLOT ports..."
 
@@ -205,6 +210,23 @@ if [ -f "$ENV_FILE" ]; then
   # Update site URL (only if it's a localhost URL, not an ngrok URL)
   if grep -q "NEXT_PUBLIC_SITE_URL=http://localhost:" "$ENV_FILE" 2>/dev/null; then
     sed -i '' "s|NEXT_PUBLIC_SITE_URL=http://localhost:[0-9]*|NEXT_PUBLIC_SITE_URL=http://localhost:${WEB_PORT}|" "$ENV_FILE"
+  fi
+
+  # If Supabase is already running, update keys from live instance
+  if command -v supabase &>/dev/null; then
+    PREV_DIR="$PWD"
+    cd "$ROOT_DIR/packages/supabase"
+    STATUS_JSON=$(supabase status --output json 2>/dev/null || echo "{}")
+    cd "$PREV_DIR"
+    LIVE_ANON=$(echo "$STATUS_JSON" | grep '"ANON_KEY"' | sed 's/.*"ANON_KEY": *"\([^"]*\)".*/\1/')
+    LIVE_SERVICE=$(echo "$STATUS_JSON" | grep '"SERVICE_ROLE_KEY"' | sed 's/.*"SERVICE_ROLE_KEY": *"\([^"]*\)".*/\1/')
+
+    if [ -n "$LIVE_ANON" ] && [ -n "$LIVE_SERVICE" ]; then
+      sed -i '' "s|^NEXT_PUBLIC_SUPABASE_ANON_KEY=.*|NEXT_PUBLIC_SUPABASE_ANON_KEY=$LIVE_ANON|" "$ENV_FILE"
+      sed -i '' "s|^EXPO_PUBLIC_SUPABASE_ANON_KEY=.*|EXPO_PUBLIC_SUPABASE_ANON_KEY=$LIVE_ANON|" "$ENV_FILE"
+      sed -i '' "s|^SUPABASE_SERVICE_ROLE_KEY=.*|SUPABASE_SERVICE_ROLE_KEY=$LIVE_SERVICE|" "$ENV_FILE"
+      log_success "Updated Supabase keys from running instance"
+    fi
   fi
 
   log_success "Updated .env.local"

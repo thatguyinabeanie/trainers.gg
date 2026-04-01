@@ -54,6 +54,11 @@ create_env_file() {
     log_skip ".env.local already exists"
     return 0
   fi
+  # Clean up dangling symlink (e.g., worktree with missing target)
+  if [ -L "$ENV_FILE" ] && [ ! -e "$ENV_FILE" ]; then
+    rm "$ENV_FILE"
+    log_info "Removed dangling .env.local symlink"
+  fi
 
   log_info "Creating .env.local..."
 
@@ -156,7 +161,12 @@ create_symlinks() {
     if [ -d "$app_dir" ]; then
       local target="$app_dir/.env.local"
       if [ -L "$target" ]; then
-        continue  # symlink already exists
+        if [ -e "$target" ]; then
+          continue  # valid symlink, skip
+        else
+          rm "$target"  # dangling symlink, remove and recreate
+          log_info "Removed dangling symlink: $target"
+        fi
       fi
       if [ -f "$target" ]; then
         mv "$target" "$target.backup"
@@ -179,7 +189,12 @@ create_symlinks() {
     if [ -d "$target_dir" ]; then
       local target="$target_dir/$file_name"
       if [ -L "$target" ]; then
-        continue  # symlink already exists
+        if [ -e "$target" ]; then
+          continue  # valid symlink, skip
+        else
+          rm "$target"  # dangling symlink, remove and recreate
+          log_info "Removed dangling symlink: $target"
+        fi
       fi
       if [ -f "$target" ]; then
         mv "$target" "$target.backup"
