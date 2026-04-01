@@ -269,7 +269,9 @@ export function HomeClient({
     ? (userAlts?.find((a) => a.username === selectedAltUsername)?.id ?? null)
     : null;
 
-  // When an alt is selected, fetch stats for that alt; otherwise use main alt (profileId)
+  // When an alt is selected, fetch stats for that alt
+  // When "All Alts", use the main alt (profileId) — aggregate mode would need
+  // a new query, but for now the main alt gives a reasonable default
   const dashboardAltId = selectedAltId ?? profileId;
 
   const { data: dashboardData } = useSupabaseQuery(

@@ -1466,7 +1466,7 @@ export async function getMyDashboardData(supabase: TypedClient, altId: number) {
     )
     .eq("status", "completed")
     .or(`alt1_id.eq.${altId},alt2_id.eq.${altId}`)
-    .order("updated_at", { ascending: false })
+    .order("end_time", { ascending: false })
     .limit(5);
 
   // Build recent activity
