@@ -23,6 +23,66 @@ export type PlayerRating = {
  * Fetch the rating for a specific alt and format.
  * Returns null if no rating record exists yet or if the player has no rated games.
  */
+/**
+ * Fetch ratings for multiple alts in bulk (2 queries total, no N+1).
+ * Returns a map keyed by altId. Alts without ratings are omitted.
+ */
+export async function getPlayerRatingsBulk(
+  supabase: TypedClient,
+  altIds: number[],
+  format = "overall"
+): Promise<Record<number, PlayerRating>> {
+  if (altIds.length === 0) return {};
+
+  const { data, error } = await supabase
+    .from("player_ratings")
+    .select("alt_id, format, rating, peak_rating, games_played, skill_bracket")
+    .in("alt_id", altIds)
+    .eq("format", format);
+
+  if (error) throw new Error(`Failed to fetch bulk ratings: ${error.message}`);
+  if (!data || data.length === 0) return {};
+
+  // For each player, compute global rank: count of players with higher rating
+  // We do this in a single query by getting ALL rated players' ratings for this format,
+  // then computing ranks in JS. This avoids N separate count queries.
+  const { data: allRatings, error: allError } = await supabase
+    .from("player_ratings")
+    .select("rating")
+    .eq("format", format)
+    .gt("games_played", 0)
+    .order("rating", { ascending: false });
+
+  if (allError)
+    throw new Error(`Failed to fetch rating ranks: ${allError.message}`);
+
+  // Build sorted ratings array for rank computation
+  const sortedRatings = (allRatings ?? []).map((r) => Number(r.rating));
+
+  const result: Record<number, PlayerRating> = {};
+  for (const row of data) {
+    const rating = Number(row.rating);
+    // Rank = number of players with strictly higher rating + 1
+    const rank = sortedRatings.filter((r) => r > rating).length + 1;
+
+    result[row.alt_id] = {
+      altId: row.alt_id,
+      format: row.format,
+      rating,
+      peakRating: Number(row.peak_rating),
+      gamesPlayed: row.games_played,
+      skillBracket: row.skill_bracket as PlayerRating["skillBracket"],
+      globalRank: rank,
+    };
+  }
+
+  return result;
+}
+
+/**
+ * Fetch the rating for a specific alt and format.
+ * Returns null if no rating record exists yet or if the player has no rated games.
+ */
 export async function getPlayerRating(
   supabase: TypedClient,
   altId: number,

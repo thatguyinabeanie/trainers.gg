@@ -11,9 +11,13 @@ import {
   getPlayerLifetimeStats,
   getAltsBulkStats,
   getTeamsForAlt,
-  getPlayerRating,
+  getPlayerRatingsBulk,
 } from "@trainers/supabase";
-import type { TypedSupabaseClient, AltStats } from "@trainers/supabase";
+import type {
+  TypedSupabaseClient,
+  AltStats,
+  PlayerRating,
+} from "@trainers/supabase";
 import { getPokemonSprite } from "@trainers/pokemon/sprites";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -353,6 +357,7 @@ function AltTableRow({
   onRefresh,
   refreshKey,
   altStats,
+  altRating,
 }: {
   alt: Alt;
   isMain: boolean;
@@ -363,6 +368,7 @@ function AltTableRow({
   onRefresh: () => void;
   refreshKey: number;
   altStats: AltStats | undefined;
+  altRating: PlayerRating | null;
 }) {
   const [, startVisibilityTransition] = useTransition();
 
@@ -380,14 +386,7 @@ function AltTableRow({
   ]);
   const teamCount = teams?.length ?? 0;
 
-  // Per-alt ELO rating
-  const ratingQueryFn = (client: TypedSupabaseClient) =>
-    getPlayerRating(client, alt.id, "overall");
-  const { data: ratingData } = useSupabaseQuery(ratingQueryFn, [
-    "altRating",
-    alt.id,
-  ]);
-  const rating = ratingData?.rating ?? null;
+  const rating = altRating?.rating ?? null;
 
   const handleVisibilityChange = (checked: boolean) => {
     startVisibilityTransition(async () => {
@@ -715,7 +714,7 @@ export default function AltsPage() {
     refreshKey,
   ]);
 
-  // Bulk stats for all alts — two queries, no N+1
+  // Bulk stats + ratings for all alts — no N+1
   const altIds = (alts ?? []).map((a) => a.id);
   const bulkStatsQueryFn = (client: TypedSupabaseClient) =>
     getAltsBulkStats(client, altIds);
@@ -723,6 +722,13 @@ export default function AltsPage() {
     "altsBulkStats",
     ...altIds,
     refreshKey,
+  ]);
+
+  const bulkRatingsQueryFn = (client: TypedSupabaseClient) =>
+    getPlayerRatingsBulk(client, altIds, "overall");
+  const { data: bulkRatings } = useSupabaseQuery(bulkRatingsQueryFn, [
+    "altsBulkRatings",
+    ...altIds,
   ]);
 
   const handleRefresh = () => {
@@ -867,6 +873,7 @@ export default function AltsPage() {
                         onRefresh={handleRefresh}
                         refreshKey={refreshKey}
                         altStats={bulkStats?.[alt.id]}
+                        altRating={bulkRatings?.[alt.id] ?? null}
                       />
                     ))}
                   </tbody>
