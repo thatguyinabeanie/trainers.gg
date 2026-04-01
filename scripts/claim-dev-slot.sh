@@ -87,49 +87,82 @@ reuse_existing_slot() {
 }
 
 # =============================================================================
-# Detect slot from a running Supabase instance
+# Clean up orphaned Supabase containers
 # =============================================================================
-# If Supabase Docker containers are still running from a previous session,
-# detect their port and reverse-calculate the slot so we reuse it instead
-# of claiming a new slot with mismatched ports.
-detect_running_supabase_slot() {
-  command -v supabase &>/dev/null || return 1
+# Scan for Supabase Docker containers whose lockfile PID is dead.
+# These are leftovers from dev servers that exited without cleanup (kill -9, crash).
+cleanup_orphaned_supabase() {
+  local occupied_slots
+  occupied_slots=$(list_occupied_slots)
+  [ -n "$occupied_slots" ] || return 0
 
-  local PREV_DIR="$PWD"
-  cd "$ROOT_DIR/packages/supabase"
-  local STATUS_JSON
-  STATUS_JSON=$(supabase status --output json 2>/dev/null || echo "{}")
-  cd "$PREV_DIR"
-
-  local API_URL
-  API_URL=$(echo "$STATUS_JSON" | grep '"API_URL"' | sed 's/.*"API_URL": *"\([^"]*\)".*/\1/')
-  [ -n "$API_URL" ] || return 1
-
-  # Extract port from URL (e.g., http://127.0.0.1:55821 → 55821)
-  local API_PORT
-  API_PORT=$(echo "$API_URL" | sed 's/.*:\([0-9]*\)$/\1/')
-  [ -n "$API_PORT" ] || return 1
-
-  # Reverse-calculate slot: slot = (port - base) / offset
-  local DETECTED_SLOT=$(( (API_PORT - PORT_BASE_SUPABASE_API) / DEV_SLOT_OFFSET ))
-
-  # Sanity check: recalculated port must match
-  local EXPECTED_PORT
-  EXPECTED_PORT=$(slot_port "$PORT_BASE_SUPABASE_API" "$DETECTED_SLOT")
-  if [ "$EXPECTED_PORT" != "$API_PORT" ]; then
-    return 1
-  fi
-
-  # Verify the web port for this slot is free (so we can actually use it)
-  local WEB_PORT_CHECK
-  WEB_PORT_CHECK=$(slot_port "$PORT_BASE_WEB" "$DETECTED_SLOT")
-  if ! is_port_free "$WEB_PORT_CHECK"; then
-    return 1
-  fi
-
-  echo "$DETECTED_SLOT"
-  return 0
+  for occupied_slot in $occupied_slots; do
+    local lockfile="$DEV_SLOT_DIR/slot-${occupied_slot}.lock"
+    if [ -f "$lockfile" ]; then
+      local lock_pid
+      lock_pid=$(grep -o '"pid": *[0-9]*' "$lockfile" 2>/dev/null | grep -o '[0-9]*')
+      if [ -n "$lock_pid" ] && is_pid_alive "$lock_pid"; then
+        continue  # Legitimately in use by a running dev server
+      fi
+    fi
+    # No lockfile or dead PID — orphaned containers
+    log_info "Cleaning up orphaned Supabase containers for slot $occupied_slot"
+    stop_slot_supabase "$occupied_slot"
+    rm -f "$DEV_SLOT_DIR/slot-${occupied_slot}.lock"
+  done
 }
+
+# =============================================================================
+# Detect slot from running Supabase Docker containers
+# =============================================================================
+# If Supabase Docker containers survived a previous session (e.g., crash
+# without cleanup trap), detect which slot they belong to and reuse it.
+detect_running_supabase_slot() {
+  local occupied_slots
+  occupied_slots=$(list_occupied_slots)
+  [ -n "$occupied_slots" ] || return 1
+
+  # First: look for containers that match THIS worktree's lockfile
+  for occupied_slot in $occupied_slots; do
+    local lockfile="$DEV_SLOT_DIR/slot-${occupied_slot}.lock"
+    if [ -f "$lockfile" ]; then
+      local lock_worktree
+      lock_worktree=$(grep -o '"worktree": *"[^"]*"' "$lockfile" 2>/dev/null \
+        | sed 's/.*"worktree": *"\([^"]*\)".*/\1/')
+      if [ "$lock_worktree" = "$ROOT_DIR" ]; then
+        local web_port
+        web_port=$(slot_port "$PORT_BASE_WEB" "$occupied_slot")
+        if is_port_free "$web_port"; then
+          echo "$occupied_slot"
+          return 0
+        fi
+      fi
+    fi
+  done
+
+  # Fallback: if only one Supabase instance is running with no valid lockfile,
+  # adopt it (common case: single dev, server exited without cleanup)
+  local count
+  count=$(echo "$occupied_slots" | wc -w | tr -d ' ')
+  if [ "$count" -eq 1 ]; then
+    local solo_slot
+    solo_slot=$(echo "$occupied_slots" | head -1)
+    local web_port
+    web_port=$(slot_port "$PORT_BASE_WEB" "$solo_slot")
+    if is_port_free "$web_port"; then
+      log_info "Found orphaned Supabase on slot $solo_slot — adopting it"
+      echo "$solo_slot"
+      return 0
+    fi
+  fi
+
+  return 1
+}
+
+# =============================================================================
+# Clean up orphaned containers before claiming
+# =============================================================================
+cleanup_orphaned_supabase
 
 # =============================================================================
 # Find a free slot
@@ -140,32 +173,32 @@ claim_slot() {
   while true; do
     local lockfile="$DEV_SLOT_DIR/slot-${slot}.lock"
 
-    # Check lockfile
+    # Check lockfile — PID-alive slots are in use
     if [ -f "$lockfile" ]; then
       local lock_pid
       lock_pid=$(grep -o '"pid": *[0-9]*' "$lockfile" 2>/dev/null | grep -o '[0-9]*')
 
       if [ -n "$lock_pid" ] && is_pid_alive "$lock_pid"; then
-        # Slot is genuinely in use
         slot=$((slot + 1))
         continue
       else
-        # Stale lockfile — remove it
         log_info "Removing stale lockfile for slot $slot (PID $lock_pid is dead)"
         rm -f "$lockfile"
       fi
     fi
 
-    # Check key ports are free
+    # Docker is the authority for Supabase occupancy
+    if is_slot_occupied "$slot"; then
+      log_info "Slot $slot has running Supabase containers, trying next"
+      slot=$((slot + 1))
+      continue
+    fi
+
+    # Check web port separately (Docker only tracks Supabase, not Next.js)
     local web_port
     web_port=$(slot_port "$PORT_BASE_WEB" "$slot")
-    local api_port
-    api_port=$(slot_port "$PORT_BASE_SUPABASE_API" "$slot")
-    local db_port
-    db_port=$(slot_port "$PORT_BASE_SUPABASE_DB" "$slot")
-
-    if ! is_port_free "$web_port" || ! is_port_free "$api_port" || ! is_port_free "$db_port"; then
-      log_info "Slot $slot ports in use (web=$web_port api=$api_port db=$db_port), trying next"
+    if ! is_port_free "$web_port"; then
+      log_info "Slot $slot web port $web_port in use, trying next"
       slot=$((slot + 1))
       continue
     fi
@@ -173,7 +206,6 @@ claim_slot() {
     # Claim it — atomic write via mkdir trick
     local claim_dir="$DEV_SLOT_DIR/.claiming-slot-${slot}"
     if mkdir "$claim_dir" 2>/dev/null; then
-      # Write lockfile
       cat > "$lockfile" << EOF
 {
   "pid": $$,
@@ -185,7 +217,6 @@ EOF
       echo "$slot"
       return 0
     else
-      # Another process claimed it — try next
       slot=$((slot + 1))
       continue
     fi
@@ -358,11 +389,9 @@ echo ""
 cleanup() {
   log_info "Releasing dev slot $SLOT..."
 
-  # Stop Supabase Docker containers
-  if command -v supabase &>/dev/null; then
-    log_info "Stopping Supabase..."
-    (cd "$ROOT_DIR/packages/supabase" && supabase stop --no-backup 2>/dev/null) || true
-  fi
+  # Stop this slot's Supabase containers (targeted, won't touch other slots)
+  log_info "Stopping Supabase (slot $SLOT)..."
+  stop_slot_supabase "$SLOT"
 
   # Remove lockfile
   rm -f "$DEV_SLOT_DIR/slot-${SLOT}.lock"
