@@ -288,18 +288,22 @@ export type Database = {
           discord_invite_url: string | null
           icon: string | null
           id: number
+          is_public: boolean
           logo_url: string | null
           name: string
           owner_user_id: string
           platform_fee_percentage: number | null
+          registration_mode: string
           slug: string
           social_links: Json
+          staff_invite_mode: string
           status: Database["public"]["Enums"]["community_status"] | null
           subscription_expires_at: string | null
           subscription_started_at: string | null
           subscription_tier:
             | Database["public"]["Enums"]["community_subscription_tier"]
             | null
+          team_sheet_visibility: string
           tier: Database["public"]["Enums"]["community_tier"] | null
           updated_at: string | null
         }
@@ -309,18 +313,22 @@ export type Database = {
           discord_invite_url?: string | null
           icon?: string | null
           id?: never
+          is_public?: boolean
           logo_url?: string | null
           name: string
           owner_user_id: string
           platform_fee_percentage?: number | null
+          registration_mode?: string
           slug: string
           social_links?: Json
+          staff_invite_mode?: string
           status?: Database["public"]["Enums"]["community_status"] | null
           subscription_expires_at?: string | null
           subscription_started_at?: string | null
           subscription_tier?:
             | Database["public"]["Enums"]["community_subscription_tier"]
             | null
+          team_sheet_visibility?: string
           tier?: Database["public"]["Enums"]["community_tier"] | null
           updated_at?: string | null
         }
@@ -330,18 +338,22 @@ export type Database = {
           discord_invite_url?: string | null
           icon?: string | null
           id?: never
+          is_public?: boolean
           logo_url?: string | null
           name?: string
           owner_user_id?: string
           platform_fee_percentage?: number | null
+          registration_mode?: string
           slug?: string
           social_links?: Json
+          staff_invite_mode?: string
           status?: Database["public"]["Enums"]["community_status"] | null
           subscription_expires_at?: string | null
           subscription_started_at?: string | null
           subscription_tier?:
             | Database["public"]["Enums"]["community_subscription_tier"]
             | null
+          team_sheet_visibility?: string
           tier?: Database["public"]["Enums"]["community_tier"] | null
           updated_at?: string | null
         }
