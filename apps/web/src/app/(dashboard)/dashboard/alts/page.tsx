@@ -695,6 +695,7 @@ export default function AltsPage() {
   const {
     data: alts,
     isLoading,
+    error: altsError,
     refetch,
   } = useSupabaseQuery(altsQueryFn, ["alts", refreshKey]);
 
@@ -718,18 +719,17 @@ export default function AltsPage() {
   const altIds = (alts ?? []).map((a) => a.id);
   const bulkStatsQueryFn = (client: TypedSupabaseClient) =>
     getAltsBulkStats(client, altIds);
-  const { data: bulkStats } = useSupabaseQuery(bulkStatsQueryFn, [
-    "altsBulkStats",
-    ...altIds,
-    refreshKey,
-  ]);
+  const { data: bulkStats, error: bulkStatsError } = useSupabaseQuery(
+    bulkStatsQueryFn,
+    ["altsBulkStats", ...altIds, refreshKey]
+  );
 
   const bulkRatingsQueryFn = (client: TypedSupabaseClient) =>
     getPlayerRatingsBulk(client, altIds, "overall");
-  const { data: bulkRatings } = useSupabaseQuery(bulkRatingsQueryFn, [
-    "altsBulkRatings",
-    ...altIds,
-  ]);
+  const { data: bulkRatings, error: bulkRatingsError } = useSupabaseQuery(
+    bulkRatingsQueryFn,
+    ["altsBulkRatings", ...altIds]
+  );
 
   const handleRefresh = () => {
     setRefreshKey((k) => k + 1);
@@ -760,12 +760,32 @@ export default function AltsPage() {
     setExpandedAltId((prev) => (prev === altId ? null : altId));
   };
 
+  // Bulk stat/rating errors are non-blocking — data falls back to dashes in cells
+  void bulkStatsError;
+  void bulkRatingsError;
+
   if (isLoading) {
     return (
       <>
         <PageHeader title="Alts" />
         <div className="flex min-h-[400px] items-center justify-center">
           <Loader2 className="text-muted-foreground size-8 animate-spin" />
+        </div>
+      </>
+    );
+  }
+
+  if (altsError) {
+    return (
+      <>
+        <PageHeader title="Alts" />
+        <div className="flex flex-col items-center justify-center py-12 text-center">
+          <p className="text-destructive text-sm font-medium">
+            Something went wrong
+          </p>
+          <p className="text-muted-foreground mt-1 text-xs">
+            {altsError.message || "Failed to load data. Please try refreshing."}
+          </p>
         </div>
       </>
     );

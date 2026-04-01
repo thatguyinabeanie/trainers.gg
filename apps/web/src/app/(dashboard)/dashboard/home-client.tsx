@@ -161,7 +161,7 @@ export function HomeClient({
   const refreshTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
 
   // Fetch user's alts early — needed for mainAltId
-  const { data: userAlts } = useSupabaseQuery(
+  const { data: userAlts, error: userAltsError } = useSupabaseQuery(
     (client) => getCurrentUserAlts(client),
     [user?.id]
   );
@@ -276,7 +276,7 @@ export function HomeClient({
   // When an alt is selected, use that alt's ID; otherwise fall back to main alt
   const dashboardAltId = selectedAltId ?? mainAltId;
 
-  const { data: dashboardData } = useSupabaseQuery(
+  const { data: dashboardData, error: dashboardError } = useSupabaseQuery(
     (client) =>
       dashboardAltId
         ? getMyDashboardData(client, dashboardAltId)
@@ -284,13 +284,13 @@ export function HomeClient({
     [dashboardAltId]
   );
 
-  const { data: activeMatch } = useSupabaseQuery(
+  const { data: activeMatch, error: activeMatchError } = useSupabaseQuery(
     (client) =>
       mainAltId ? getActiveMatch(client, mainAltId) : Promise.resolve(null),
     [mainAltId, refreshKey]
   );
 
-  const { data: recentHistory } = useSupabaseQuery(
+  const { data: recentHistory, error: recentHistoryError } = useSupabaseQuery(
     (client) => getUserTournamentHistory(client),
     [mainAltId]
   );
@@ -328,6 +328,25 @@ export function HomeClient({
   const recentResults = filteredHistory.slice(0, 5);
 
   const displayName = getUserDisplayName(user);
+
+  // Secondary errors — silently skip those sections rather than blocking the page
+  void userAltsError;
+  void activeMatchError;
+  void recentHistoryError;
+
+  if (dashboardError) {
+    return (
+      <div className="flex flex-col items-center justify-center py-12 text-center">
+        <p className="text-destructive text-sm font-medium">
+          Something went wrong
+        </p>
+        <p className="text-muted-foreground mt-1 text-xs">
+          {dashboardError.message ||
+            "Failed to load data. Please try refreshing."}
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-0">

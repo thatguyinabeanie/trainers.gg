@@ -484,14 +484,30 @@ export function TournamentsClient({
   const [selectedFormat, setSelectedFormat] = useState<string>("all");
   const [expandedId, setExpandedId] = useState<number | null>(null);
 
-  const { data: history, isLoading } = useSupabaseQuery(historyQueryFn, [
-    "tournamentHistory",
-  ]);
+  const {
+    data: history,
+    isLoading,
+    error: historyError,
+  } = useSupabaseQuery(historyQueryFn, ["tournamentHistory"]);
 
   if (isLoading) {
     return (
       <div className="flex min-h-[400px] items-center justify-center">
         <Loader2 className="text-muted-foreground size-8 animate-spin" />
+      </div>
+    );
+  }
+
+  if (historyError) {
+    return (
+      <div className="flex flex-col items-center justify-center py-12 text-center">
+        <p className="text-destructive text-sm font-medium">
+          Something went wrong
+        </p>
+        <p className="text-muted-foreground mt-1 text-xs">
+          {historyError.message ||
+            "Failed to load data. Please try refreshing."}
+        </p>
       </div>
     );
   }
