@@ -68,7 +68,7 @@
     "@trainers/prettier-config": "workspace:*",
     "prettier": "catalog:",
     "prettier-plugin-tailwindcss": "catalog:",
-    "turbo": "^2.8.21"
+    "turbo": "^2.9.3"
   },
   "pnpm": {
     "overrides": {
