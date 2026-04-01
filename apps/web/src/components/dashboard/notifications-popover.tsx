@@ -3,8 +3,9 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Bell } from "lucide-react";
 import { formatDistanceToNowStrict } from "date-fns";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { createClient } from "@/lib/supabase/client";
+import { useSupabase } from "@/lib/supabase";
 import { getNotifications, markAllNotificationsRead } from "@trainers/supabase";
 import {
   Popover,
@@ -184,7 +185,7 @@ function RecentItem({ notification }: RecentItemProps) {
 // ---------------------------------------------------------------------------
 
 export function NotificationsPopover() {
-  const supabase = createClient();
+  const supabase = useSupabase();
   const queryClient = useQueryClient();
 
   // Fetch recent notifications — last 20, newest first
@@ -201,6 +202,9 @@ export function NotificationsPopover() {
       void queryClient.invalidateQueries({
         queryKey: notificationsKeys.all,
       });
+    },
+    onError: () => {
+      toast.error("Failed to mark notifications as read");
     },
   });
 

@@ -105,3 +105,6 @@ mise.local.toml
 
 # Android SDK (symlink to external or local install)
 .android-sdk/
+.superpowers
+docs/specs
+docs/superpowers

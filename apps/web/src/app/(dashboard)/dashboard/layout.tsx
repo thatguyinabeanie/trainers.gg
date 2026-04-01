@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
 import { createClient, getUser } from "@/lib/supabase/server";
@@ -20,14 +20,26 @@ export default async function DashboardLayout({
   const supabase = await createClient();
 
   const [communities, alts, userRow] = await Promise.all([
-    listMyCommunities(supabase, user.id).catch(() => []),
-    getCurrentUserAlts(supabase).catch(() => []),
+    listMyCommunities(supabase, user.id).catch((err) => {
+      console.error("[DashboardLayout] Failed to load communities:", err);
+      return [];
+    }),
+    getCurrentUserAlts(supabase).catch((err) => {
+      console.error("[DashboardLayout] Failed to load alts:", err);
+      return [];
+    }),
     supabase
       .from("users")
       .select("main_alt_id")
       .eq("id", user.id)
       .single()
-      .then(({ data }) => data),
+      .then(({ data, error }) => {
+        if (error) {
+          console.error("[DashboardLayout] Failed to load user row:", error);
+          return null;
+        }
+        return data;
+      }),
   ]);
 
   const mainAltId = userRow?.main_alt_id ?? null;
@@ -80,7 +92,7 @@ export default async function DashboardLayout({
       style={
         {
           "--sidebar-width": "calc(var(--spacing) * 56)",
-        } as React.CSSProperties
+        } as CSSProperties
       }
     >
       <DashboardSidebar

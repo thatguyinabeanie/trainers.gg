@@ -1,9 +1,10 @@
 "use client";
 
-import type React from "react";
+import { type ComponentProps } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { toast } from "sonner";
 import {
   Home,
   Users,
@@ -104,7 +105,7 @@ export function DashboardSidebar({
   communities,
   selectedAltUsername,
   ...props
-}: DashboardSidebarProps & React.ComponentProps<typeof Sidebar>) {
+}: DashboardSidebarProps & ComponentProps<typeof Sidebar>) {
   const pathname = usePathname();
   const communitySlug = getCommunitySlug(pathname);
   const isCommunityContext = communitySlug !== null;
@@ -374,9 +375,13 @@ function NavUser({ user, activeCommunity }: NavUserProps) {
   const router = useRouter();
 
   const handleSignOut = async () => {
-    const supabase = createClient();
-    await supabase.auth.signOut();
-    router.push("/");
+    try {
+      const supabase = createClient();
+      await supabase.auth.signOut();
+      router.push("/");
+    } catch {
+      toast.error("Sign out failed. Please try again.");
+    }
   };
 
   return (

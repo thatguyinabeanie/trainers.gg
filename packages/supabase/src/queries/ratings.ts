@@ -35,7 +35,8 @@ export async function getPlayerRating(
     .eq("format", format)
     .maybeSingle();
 
-  if (error || !data) return null;
+  if (error) throw new Error(`Failed to fetch rating: ${error.message}`);
+  if (!data) return null;
 
   // Compute global rank: number of rated players (games_played > 0) with a strictly higher rating + 1
   const { count, error: countError } = await supabase
@@ -45,7 +46,8 @@ export async function getPlayerRating(
     .gt("games_played", 0)
     .gt("rating", data.rating);
 
-  if (countError) return null;
+  if (countError)
+    throw new Error(`Failed to fetch rating rank: ${countError.message}`);
 
   return {
     altId: data.alt_id,

@@ -1303,7 +1303,7 @@ export async function getTournamentMatchesForStaff(
  * - active: match is in progress
  */
 export async function getActiveMatch(supabase: TypedClient, altId: number) {
-  const { data: match } = await supabase
+  const { data: match, error } = await supabase
     .from("tournament_matches")
     .select(
       `
@@ -1327,6 +1327,7 @@ export async function getActiveMatch(supabase: TypedClient, altId: number) {
     .limit(1)
     .maybeSingle();
 
+  if (error) throw error;
   if (!match) return null;
 
   // Extract tournament and round info
@@ -1370,7 +1371,7 @@ export async function getActiveMatch(supabase: TypedClient, altId: number) {
 
 export async function getMyDashboardData(supabase: TypedClient, altId: number) {
   // Fetch all registrations for this user
-  const { data: tournamentRegistrations } = await supabase
+  const { data: tournamentRegistrations, error: regError } = await supabase
     .from("tournament_registrations")
     .select(
       `
@@ -1379,6 +1380,7 @@ export async function getMyDashboardData(supabase: TypedClient, altId: number) {
     `
     )
     .eq("alt_id", altId);
+  if (regError) throw regError;
 
   // Build myTournaments list (exclude archived)
   const myTournaments: {
@@ -1422,10 +1424,11 @@ export async function getMyDashboardData(supabase: TypedClient, altId: number) {
   }
 
   // Fetch player stats
-  const { data: playerStats } = await supabase
+  const { data: playerStats, error: statsError } = await supabase
     .from("tournament_player_stats")
     .select("*")
     .eq("alt_id", altId);
+  if (statsError) throw statsError;
 
   let totalMatches = 0;
   let totalWins = 0;
@@ -1448,7 +1451,7 @@ export async function getMyDashboardData(supabase: TypedClient, altId: number) {
   const winRate = totalMatches > 0 ? (totalWins / totalMatches) * 100 : 0;
 
   // Fetch recent completed matches
-  const { data: recentMatchesRaw } = await supabase
+  const { data: recentMatchesRaw, error: matchesError } = await supabase
     .from("tournament_matches")
     .select(
       `
@@ -1468,6 +1471,7 @@ export async function getMyDashboardData(supabase: TypedClient, altId: number) {
     .or(`alt1_id.eq.${altId},alt2_id.eq.${altId}`)
     .order("end_time", { ascending: false })
     .limit(5);
+  if (matchesError) throw matchesError;
 
   // Build recent activity
   const recentActivity: {
@@ -2016,11 +2020,12 @@ export async function getUserTournamentHistory(supabase: TypedClient) {
   >();
 
   if (completedTournamentIds.length > 0) {
-    const { data: standings } = await supabase
+    const { data: standings, error: standingsError } = await supabase
       .from("tournament_standings")
       .select("tournament_id, alt_id, rank, game_wins, game_losses")
       .in("tournament_id", completedTournamentIds)
       .in("alt_id", altIds);
+    if (standingsError) throw standingsError;
 
     for (const standing of standings ?? []) {
       standingsMap.set(`${standing.tournament_id}_${standing.alt_id}`, {
@@ -2040,7 +2045,7 @@ export async function getUserTournamentHistory(supabase: TypedClient) {
   const teamPokemonMap = new Map<number, string[]>();
 
   if (registrationTeamIds.length > 0) {
-    const { data: teamPokemon } = await supabase
+    const { data: teamPokemon, error: teamPokemonError } = await supabase
       .from("team_pokemon")
       .select(
         `
@@ -2051,6 +2056,7 @@ export async function getUserTournamentHistory(supabase: TypedClient) {
       )
       .in("team_id", registrationTeamIds)
       .order("team_position", { ascending: true });
+    if (teamPokemonError) throw teamPokemonError;
 
     for (const tp of teamPokemon ?? []) {
       const existing = teamPokemonMap.get(tp.team_id) ?? [];

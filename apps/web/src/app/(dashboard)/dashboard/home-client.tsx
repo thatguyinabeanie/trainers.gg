@@ -93,9 +93,7 @@ function PokemonSprite({ species }: { species: string }) {
 function ResultRow({ item }: { item: TournamentHistoryItem }) {
   const isFirst = item.placement === 1;
   const placementText =
-    item.placement != null
-      ? `${item.placement}${isFirst ? " 🏆" : ""}${item.placement != null ? ` / ${item.wins + item.losses + item.ties}` : ""}`
-      : "—";
+    item.placement != null ? `${item.placement}${isFirst ? " 🏆" : ""}` : "—";
 
   // Format date as "Mar 28"
   const dateText = item.endDate
@@ -243,7 +241,11 @@ export function HomeClient({
           );
         }
       )
-      .subscribe();
+      .subscribe((status, err) => {
+        if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
+          console.error("Dashboard realtime failed:", status, err);
+        }
+      });
 
     return () => {
       if (refreshTimeoutRef.current) clearTimeout(refreshTimeoutRef.current);

@@ -1,6 +1,7 @@
 {
   "permissions": {
     "allow": [
+      "Bash(PGPASSWORD=postgres psql:*)",
       "Bash(bash ~/.claude/plugins/cache/claude-plugins-official/superpowers/*/skills/brainstorming/scripts/start-server.sh --project-dir /Users/beanie/source/trainers-gg-dashboard 2>&1)",
       "mcp__plugin_playwright_playwright__browser_navigate",
       "mcp__plugin_playwright_playwright__browser_click",

@@ -701,11 +701,12 @@ export default function AltsPage() {
 
   const mainAltQueryFn = async (client: TypedSupabaseClient) => {
     if (!user) return null;
-    const { data } = await client
+    const { data, error } = await client
       .from("users")
       .select("main_alt_id")
       .eq("id", user.id)
       .single();
+    if (error) throw error;
     return data?.main_alt_id ?? null;
   };
   const { data: mainAltId } = useSupabaseQuery(mainAltQueryFn, [
