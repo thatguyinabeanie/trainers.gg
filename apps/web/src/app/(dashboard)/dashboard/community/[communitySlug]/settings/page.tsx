@@ -357,26 +357,6 @@ function SettingsForm({ org, onSaved }: SettingsFormProps) {
           Save
         </Button>
       </div>
-
-      {/* Card 4: Danger Zone */}
-      <DashboardCard
-        label="Danger Zone"
-        labelClassName="text-destructive"
-        className="border-destructive mt-6 border"
-      >
-        <div className="flex items-center justify-between gap-4">
-          <div>
-            <p className="text-sm font-medium">Delete community</p>
-            <p className="text-muted-foreground text-sm">
-              Permanently delete this community and all its data. This cannot be
-              undone.
-            </p>
-          </div>
-          <Button variant="destructive" size="sm">
-            Delete
-          </Button>
-        </div>
-      </DashboardCard>
     </div>
   );
 }
