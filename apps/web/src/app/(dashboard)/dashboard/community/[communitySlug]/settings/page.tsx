@@ -35,6 +35,7 @@ import {
 } from "@trainers/validators";
 import { PlatformIcon } from "@/components/communities/social-link-icons";
 import { socialPlatformLabels } from "@trainers/utils";
+import { DashboardCard } from "@/components/dashboard/dashboard-card";
 import { cn } from "@/lib/utils";
 
 const DESCRIPTION_MAX = 500;
@@ -92,7 +93,7 @@ export default function DashboardSettingsPage({ params }: PageProps) {
   return (
     <>
       <PageHeader title="Settings" />
-      <div className="flex flex-1 flex-col p-4 md:p-6">
+      <div className="bg-muted flex flex-1 flex-col gap-3 p-4 md:p-6">
         <div className="w-full max-w-[520px]">
           {isLoading ? (
             <SettingsSkeleton />
@@ -104,16 +105,17 @@ export default function DashboardSettingsPage({ params }: PageProps) {
             <Tabs defaultValue="general">
               <TabsList>
                 <TabsTrigger value="general">General</TabsTrigger>
-                <TabsTrigger value="permissions" aria-disabled disabled>
-                  Permissions
-                </TabsTrigger>
-                <TabsTrigger value="notifications" aria-disabled disabled>
-                  Notifications
-                </TabsTrigger>
+                <TabsTrigger value="permissions">Permissions</TabsTrigger>
               </TabsList>
 
               <TabsContent value="general" className="mt-4">
                 <SettingsForm org={org} onSaved={refetch} />
+              </TabsContent>
+
+              <TabsContent value="permissions" className="mt-4">
+                <p className="text-muted-foreground p-4 text-sm">
+                  Permissions settings coming soon.
+                </p>
               </TabsContent>
             </Tabs>
           )}
@@ -249,117 +251,115 @@ function SettingsForm({ org, onSaved }: SettingsFormProps) {
   };
 
   return (
-    <div className="space-y-6">
-      {/* Profile preview card */}
-      <div className="bg-muted/50 flex items-center gap-4 rounded-xl p-4">
-        {/* Logo — clickable to upload */}
-        <button
-          type="button"
-          onClick={() => fileInputRef.current?.click()}
-          disabled={isLogoUploading}
-          className={cn(
-            "group border-border relative shrink-0 cursor-pointer rounded-lg border-2 border-dashed p-0.5 transition-colors",
-            "hover:border-primary/60 disabled:cursor-not-allowed"
-          )}
-          aria-label="Upload community logo"
-        >
-          <Avatar className="h-14 w-14 rounded-md">
-            {currentLogoUrl && (
-              <AvatarImage src={currentLogoUrl} alt={org.name} />
-            )}
-            <AvatarFallback className="bg-primary/10 text-primary rounded-md text-xl font-semibold">
-              {org.name.charAt(0).toUpperCase()}
-            </AvatarFallback>
-          </Avatar>
-          {/* Camera overlay on hover */}
-          <div
+    <div className="space-y-3">
+      {/* Card 1: Community Identity */}
+      <DashboardCard label="Community Identity">
+        <div className="flex items-center gap-4">
+          {/* Logo — clickable to upload */}
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={isLogoUploading}
             className={cn(
-              "absolute inset-0.5 flex items-center justify-center rounded-md transition-opacity",
-              "bg-black/50 opacity-0 group-hover:opacity-100",
-              isLogoUploading && "opacity-100"
+              "group border-border relative shrink-0 cursor-pointer rounded-lg border-2 border-dashed p-0.5 transition-colors",
+              "hover:border-primary/60 disabled:cursor-not-allowed"
             )}
+            aria-label="Upload community logo"
           >
-            {isLogoUploading ? (
-              <Loader2 className="h-4 w-4 animate-spin text-white" />
-            ) : (
-              <Camera className="h-4 w-4 text-white" />
-            )}
-          </div>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/jpeg,image/png,image/webp,image/gif"
-            onChange={handleLogoSelect}
-            className="hidden"
-          />
-        </button>
-
-        {/* Community name + URL */}
-        <div className="min-w-0">
-          <p className="truncate leading-snug font-semibold">
-            {name || org.name}
-          </p>
-          <p className="text-muted-foreground mt-0.5 truncate font-mono text-xs">
-            trainers.gg/communities/{org.slug}
-          </p>
-          {currentLogoUrl && (
-            <button
-              type="button"
-              onClick={handleLogoRemove}
-              disabled={isLogoUploading}
-              className="text-muted-foreground hover:text-destructive mt-1 text-xs transition-colors disabled:opacity-50"
+            <Avatar className="h-14 w-14 rounded-md">
+              {currentLogoUrl && (
+                <AvatarImage src={currentLogoUrl} alt={org.name} />
+              )}
+              <AvatarFallback className="bg-primary/10 text-primary rounded-md text-xl font-semibold">
+                {org.name.charAt(0).toUpperCase()}
+              </AvatarFallback>
+            </Avatar>
+            {/* Camera overlay on hover */}
+            <div
+              className={cn(
+                "absolute inset-0.5 flex items-center justify-center rounded-md transition-opacity",
+                "bg-black/50 opacity-0 group-hover:opacity-100",
+                isLogoUploading && "opacity-100"
+              )}
             >
-              Remove logo
-            </button>
-          )}
-        </div>
-      </div>
+              {isLogoUploading ? (
+                <Loader2 className="h-4 w-4 animate-spin text-white" />
+              ) : (
+                <Camera className="h-4 w-4 text-white" />
+              )}
+            </div>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp,image/gif"
+              onChange={handleLogoSelect}
+              className="hidden"
+            />
+          </button>
 
-      {/* Community Name */}
-      <div className="space-y-1.5">
-        <Label htmlFor="communityName">Community Name</Label>
-        <Input
-          id="communityName"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          placeholder="My Community"
-        />
-      </div>
-
-      {/* Description */}
-      <div className="space-y-1.5">
-        <Label htmlFor="communityDescription">Description</Label>
-        <Textarea
-          id="communityDescription"
-          value={description}
-          onChange={(e) =>
-            setDescription(e.target.value.slice(0, DESCRIPTION_MAX))
-          }
-          placeholder="Describe your community..."
-          rows={3}
-        />
-        <div className="flex items-center justify-between">
-          <p className="text-muted-foreground text-xs">
-            Shown on your public community page
-          </p>
-          <p
-            className={cn(
-              "text-xs tabular-nums",
-              description.length >= DESCRIPTION_MAX
-                ? "text-destructive"
-                : "text-muted-foreground"
+          {/* Community name + URL */}
+          <div className="min-w-0 flex-1">
+            {currentLogoUrl && (
+              <button
+                type="button"
+                onClick={handleLogoRemove}
+                disabled={isLogoUploading}
+                className="text-muted-foreground hover:text-destructive mb-2 text-xs transition-colors disabled:opacity-50"
+              >
+                Remove logo
+              </button>
             )}
-          >
-            {description.length} / {DESCRIPTION_MAX}
-          </p>
+            <div className="space-y-1.5">
+              <Label htmlFor="communityName">Community Name</Label>
+              <Input
+                id="communityName"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="My Community"
+              />
+            </div>
+            <p className="text-muted-foreground mt-2 font-mono text-xs">
+              trainers.gg/communities/{org.slug}
+            </p>
+          </div>
         </div>
-      </div>
+      </DashboardCard>
 
-      {/* Social Links */}
-      <div className="space-y-1.5">
-        <Label>Social Links</Label>
+      {/* Card 2: About */}
+      <DashboardCard label="About">
+        <div className="space-y-1.5">
+          <Label htmlFor="communityDescription">Description</Label>
+          <Textarea
+            id="communityDescription"
+            value={description}
+            onChange={(e) =>
+              setDescription(e.target.value.slice(0, DESCRIPTION_MAX))
+            }
+            placeholder="Describe your community..."
+            rows={3}
+          />
+          <div className="flex items-center justify-between">
+            <p className="text-muted-foreground text-xs">
+              Shown on your public community page
+            </p>
+            <p
+              className={cn(
+                "text-xs tabular-nums",
+                description.length >= DESCRIPTION_MAX
+                  ? "text-destructive"
+                  : "text-muted-foreground"
+              )}
+            >
+              {description.length} / {DESCRIPTION_MAX}
+            </p>
+          </div>
+        </div>
+      </DashboardCard>
+
+      {/* Card 3: Social Links */}
+      <DashboardCard label="Social Links">
         <SocialLinksEditor links={socialLinks} onChange={setSocialLinks} />
-      </div>
+      </DashboardCard>
 
       {/* Save */}
       <div className="flex justify-end">
@@ -372,6 +372,26 @@ function SettingsForm({ org, onSaved }: SettingsFormProps) {
           Save
         </Button>
       </div>
+
+      {/* Card 4: Danger Zone */}
+      <DashboardCard
+        label="Danger Zone"
+        labelClassName="text-destructive"
+        className="border-destructive mt-6 border"
+      >
+        <div className="flex items-center justify-between gap-4">
+          <div>
+            <p className="text-sm font-medium">Delete community</p>
+            <p className="text-muted-foreground text-sm">
+              Permanently delete this community and all its data. This cannot be
+              undone.
+            </p>
+          </div>
+          <Button variant="destructive" size="sm">
+            Delete
+          </Button>
+        </div>
+      </DashboardCard>
     </div>
   );
 }

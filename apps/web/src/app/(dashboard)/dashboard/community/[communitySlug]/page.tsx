@@ -38,7 +38,7 @@ export default async function DashboardCommunityOverviewPage({
   return (
     <>
       <PageHeader title={organization.name} />
-      <div className="flex flex-1 flex-col gap-4 p-4 md:p-6">
+      <div className="bg-muted flex flex-1 flex-col gap-3 p-4 md:p-6">
         <OverviewClient
           organization={organization}
           recentTournaments={recentTournaments}
