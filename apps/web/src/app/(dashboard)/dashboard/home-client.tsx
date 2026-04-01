@@ -157,25 +157,31 @@ export function HomeClient({
   selectedAltUsername: string | null;
 }) {
   const { user } = useAuth();
-  const profileId = user?.profile?.id;
   const supabase = useSupabase();
   const toastShown = useRef(false);
   const [refreshKey, setRefreshKey] = useState(0);
   const refreshTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
 
+  // Fetch user's alts early — needed for mainAltId
+  const { data: userAlts } = useSupabaseQuery(
+    (client) => getCurrentUserAlts(client),
+    [user?.id]
+  );
+  const mainAltId = userAlts?.[0]?.id ?? null;
+
   // ── Realtime subscription for active match changes ──
   useEffect(() => {
-    if (!profileId) return;
+    if (!mainAltId) return;
 
     const channel = supabase
-      .channel(`dashboard-matches-${profileId}`)
+      .channel(`dashboard-matches-${mainAltId}`)
       .on(
         "postgres_changes",
         {
           event: "INSERT",
           schema: "public",
           table: "tournament_matches",
-          filter: `alt1_id=eq.${profileId}`,
+          filter: `alt1_id=eq.${mainAltId}`,
         },
         () => {
           if (refreshTimeoutRef.current)
@@ -192,7 +198,7 @@ export function HomeClient({
           event: "INSERT",
           schema: "public",
           table: "tournament_matches",
-          filter: `alt2_id=eq.${profileId}`,
+          filter: `alt2_id=eq.${mainAltId}`,
         },
         () => {
           if (refreshTimeoutRef.current)
@@ -209,7 +215,7 @@ export function HomeClient({
           event: "UPDATE",
           schema: "public",
           table: "tournament_matches",
-          filter: `alt1_id=eq.${profileId}`,
+          filter: `alt1_id=eq.${mainAltId}`,
         },
         () => {
           if (refreshTimeoutRef.current)
@@ -226,7 +232,7 @@ export function HomeClient({
           event: "UPDATE",
           schema: "public",
           table: "tournament_matches",
-          filter: `alt2_id=eq.${profileId}`,
+          filter: `alt2_id=eq.${mainAltId}`,
         },
         () => {
           if (refreshTimeoutRef.current)
@@ -243,7 +249,7 @@ export function HomeClient({
       if (refreshTimeoutRef.current) clearTimeout(refreshTimeoutRef.current);
       channel.unsubscribe();
     };
-  }, [supabase, profileId]);
+  }, [supabase, mainAltId]);
 
   // ── Welcome toast for temp usernames ──
   useEffect(() => {
@@ -259,20 +265,14 @@ export function HomeClient({
   }, [user]);
 
   // ── Queries ──
-  const { data: userAlts } = useSupabaseQuery(
-    (client) => getCurrentUserAlts(client),
-    [profileId]
-  );
 
   // Resolve the selected alt's database ID for filtered queries
   const selectedAltId = selectedAltUsername
     ? (userAlts?.find((a) => a.username === selectedAltUsername)?.id ?? null)
     : null;
 
-  // When an alt is selected, fetch stats for that alt
-  // When "All Alts", use the main alt (profileId) — aggregate mode would need
-  // a new query, but for now the main alt gives a reasonable default
-  const dashboardAltId = selectedAltId ?? profileId;
+  // When an alt is selected, use that alt's ID; otherwise fall back to main alt
+  const dashboardAltId = selectedAltId ?? mainAltId;
 
   const { data: dashboardData } = useSupabaseQuery(
     (client) =>
@@ -284,13 +284,13 @@ export function HomeClient({
 
   const { data: activeMatch } = useSupabaseQuery(
     (client) =>
-      profileId ? getActiveMatch(client, profileId) : Promise.resolve(null),
-    [profileId, refreshKey]
+      mainAltId ? getActiveMatch(client, mainAltId) : Promise.resolve(null),
+    [mainAltId, refreshKey]
   );
 
   const { data: recentHistory } = useSupabaseQuery(
     (client) => getUserTournamentHistory(client),
-    [profileId]
+    [mainAltId]
   );
 
   // ── Derived values ──
