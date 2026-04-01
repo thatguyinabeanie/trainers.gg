@@ -1,5 +1,5 @@
 import { describe, it, expect, jest, beforeEach } from "@jest/globals";
-import { getPlayerRating } from "../ratings";
+import { getPlayerRating, getPlayerRatingsBulk } from "../ratings";
 import type { TypedClient } from "../../client";
 
 // Build a chainable mock query builder that resolves to a given value
@@ -161,6 +161,185 @@ describe("getPlayerRating", () => {
       );
       const result = await getPlayerRating(client, 1);
       expect(result?.skillBracket).toBe(bracket);
+    }
+  );
+});
+
+// ============================================================================
+// getPlayerRatingsBulk
+// ============================================================================
+
+/**
+ * Build a chainable mock for `getPlayerRatingsBulk`, which makes two sequential
+ * `.from("player_ratings")` calls:
+ *   1. The "targeted" query filtered by `altIds` — returns `ratingRows`
+ *   2. The "all ratings" query for rank computation — returns `allRatingRows`
+ */
+function buildBulkClient(
+  ratingRows: { data: unknown; error: unknown },
+  allRatingRows: { data: unknown; error: unknown }
+): TypedClient {
+  let callCount = 0;
+
+  const makeChain = (resolved: { data: unknown; error: unknown }) => {
+    const chain: Record<string, jest.Mock> = {};
+    const methods = ["select", "eq", "in", "gt", "order", "limit"];
+    for (const m of methods) {
+      chain[m] = jest.fn().mockReturnThis();
+    }
+    // Terminal: awaiting the builder resolves the promise
+    chain["then"] = jest.fn((resolve: (v: unknown) => unknown) =>
+      Promise.resolve(resolved).then(resolve)
+    ) as jest.Mock;
+    return chain;
+  };
+
+  return {
+    from: jest.fn(() => {
+      callCount++;
+      return callCount === 1 ? makeChain(ratingRows) : makeChain(allRatingRows);
+    }),
+  } as unknown as TypedClient;
+}
+
+const BULK_ROW_1 = {
+  alt_id: 10,
+  format: "overall",
+  rating: "1400.00",
+  peak_rating: "1450.00",
+  games_played: 20,
+  skill_bracket: "advanced",
+};
+
+const BULK_ROW_2 = {
+  alt_id: 11,
+  format: "overall",
+  rating: "1200.00",
+  peak_rating: "1250.00",
+  games_played: 5,
+  skill_bracket: "beginner",
+};
+
+describe("getPlayerRatingsBulk", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it("returns empty object when altIds is empty", async () => {
+    // from() should never be called — no queries needed
+    const client = {
+      from: jest.fn(),
+    } as unknown as TypedClient;
+
+    const result = await getPlayerRatingsBulk(client, []);
+    expect(result).toEqual({});
+    expect(client.from).not.toHaveBeenCalled();
+  });
+
+  it("returns shaped PlayerRating entries for multiple alts", async () => {
+    // Two target rows, two all-ratings rows (same data)
+    const allRatings = [{ rating: "1400.00" }, { rating: "1200.00" }];
+    const client = buildBulkClient(
+      { data: [BULK_ROW_1, BULK_ROW_2], error: null },
+      { data: allRatings, error: null }
+    );
+
+    const result = await getPlayerRatingsBulk(client, [10, 11]);
+
+    expect(result[10]).toMatchObject({
+      altId: 10,
+      format: "overall",
+      rating: 1400,
+      peakRating: 1450,
+      gamesPlayed: 20,
+      skillBracket: "advanced",
+    });
+    expect(result[11]).toMatchObject({
+      altId: 11,
+      format: "overall",
+      rating: 1200,
+      peakRating: 1250,
+      gamesPlayed: 5,
+      skillBracket: "beginner",
+    });
+  });
+
+  it("computes global rank correctly from all-ratings query", async () => {
+    // alt 10 has rating 1400 — 0 players above → rank 1
+    // alt 11 has rating 1200 — 1 player above (1400) → rank 2
+    const allRatings = [{ rating: "1400.00" }, { rating: "1200.00" }];
+    const client = buildBulkClient(
+      { data: [BULK_ROW_1, BULK_ROW_2], error: null },
+      { data: allRatings, error: null }
+    );
+
+    const result = await getPlayerRatingsBulk(client, [10, 11]);
+
+    expect(result[10]?.globalRank).toBe(1);
+    expect(result[11]?.globalRank).toBe(2);
+  });
+
+  it("omits alts that have no rating record", async () => {
+    // Only alt 10 comes back from DB; alt 99 has no row
+    const client = buildBulkClient(
+      { data: [BULK_ROW_1], error: null },
+      { data: [{ rating: "1400.00" }], error: null }
+    );
+
+    const result = await getPlayerRatingsBulk(client, [10, 99]);
+
+    expect(Object.keys(result)).toHaveLength(1);
+    expect(result[10]).toBeDefined();
+    expect(result[99]).toBeUndefined();
+  });
+
+  it("returns empty object when no rows come back from DB", async () => {
+    const client = buildBulkClient(
+      { data: [], error: null },
+      { data: [], error: null }
+    );
+
+    const result = await getPlayerRatingsBulk(client, [10, 11]);
+    expect(result).toEqual({});
+  });
+
+  it("throws on rating query error", async () => {
+    const client = buildBulkClient(
+      { data: null, error: { message: "db error" } },
+      { data: [], error: null }
+    );
+
+    await expect(getPlayerRatingsBulk(client, [10])).rejects.toThrow(
+      "Failed to fetch bulk ratings: db error"
+    );
+  });
+
+  it("throws on all-ratings query error", async () => {
+    const client = buildBulkClient(
+      { data: [BULK_ROW_1], error: null },
+      { data: null, error: { message: "rank query failed" } }
+    );
+
+    await expect(getPlayerRatingsBulk(client, [10])).rejects.toThrow(
+      "Failed to fetch rating ranks: rank query failed"
+    );
+  });
+
+  it.each([
+    ["VGC", "VGC"],
+    ["singles", "singles"],
+    ["overall", "overall"],
+  ] as const)(
+    "passes format '%s' through to the returned record",
+    async (format) => {
+      const row = { ...BULK_ROW_1, format };
+      const client = buildBulkClient(
+        { data: [row], error: null },
+        { data: [{ rating: "1400.00" }], error: null }
+      );
+
+      const result = await getPlayerRatingsBulk(client, [10], format);
+      expect(result[10]?.format).toBe(format);
     }
   );
 });
