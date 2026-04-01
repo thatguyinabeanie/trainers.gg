@@ -1302,5 +1302,13 @@ BEGIN
   PERFORM apply_elo_result(v_draft_id, 'VGC', 0.0, 1210);
   PERFORM apply_elo_result(v_draft_id, 'overall', 0.0, 1210);
 
+  -- Standings for tournament history display
+  INSERT INTO tournament_standings (tournament_id, alt_id, round_number, rank, game_wins, game_losses, match_points, match_win_percentage, game_win_percentage) VALUES
+    (1, v_vgc_id,   5, 2,  9, 3, 12, 0.8000, 0.7500),
+    (2, v_vgc_id,   5, 5,  7, 5,  9, 0.6000, 0.5833),
+    (2, v_main_id,  5, 6,  5, 7,  9, 0.6000, 0.4167),
+    (1, v_draft_id, 4, 10, 5, 5,  6, 0.5000, 0.5000)
+  ON CONFLICT DO NOTHING;
+
   RAISE NOTICE 'Admin match data + ELO created for main=%, vgc=%, draft=%', v_main_id, v_vgc_id, v_draft_id;
 END $$;
