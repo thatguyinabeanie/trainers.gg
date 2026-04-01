@@ -4,7 +4,9 @@ import {
   communitySocialLinkSchema,
   communitySocialLinksSchema,
   SOCIAL_LINK_PLATFORMS,
+  updateCommunityPermissionsSchema,
   type CommunitySocialLink,
+  type UpdateCommunityPermissionsInput,
 } from "../community";
 
 // ---------------------------------------------------------------------------
@@ -295,5 +297,55 @@ describe("updateCommunitySchema", () => {
     },
   ])("rejects $desc", ({ input }) => {
     expect(updateCommunitySchema.safeParse(input).success).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// updateCommunityPermissionsSchema
+// ---------------------------------------------------------------------------
+
+describe("updateCommunityPermissionsSchema", () => {
+  it("accepts valid full permissions input", () => {
+    const input: UpdateCommunityPermissionsInput = {
+      isPublic: true,
+      registrationMode: "anyone",
+      staffInviteMode: "owner_only",
+      teamSheetVisibility: "after_tournament",
+    };
+    const result = updateCommunityPermissionsSchema.safeParse(input);
+    expect(result.success).toBe(true);
+  });
+
+  it("accepts partial input (all fields optional)", () => {
+    const result = updateCommunityPermissionsSchema.safeParse({
+      isPublic: false,
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("accepts empty object", () => {
+    const result = updateCommunityPermissionsSchema.safeParse({});
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects invalid registration_mode", () => {
+    const result = updateCommunityPermissionsSchema.safeParse({
+      registrationMode: "open_to_all",
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects invalid staff_invite_mode", () => {
+    const result = updateCommunityPermissionsSchema.safeParse({
+      staffInviteMode: "everyone",
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects invalid team_sheet_visibility", () => {
+    const result = updateCommunityPermissionsSchema.safeParse({
+      teamSheetVisibility: "always",
+    });
+    expect(result.success).toBe(false);
   });
 });

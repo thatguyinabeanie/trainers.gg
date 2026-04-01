@@ -85,6 +85,14 @@ export {
   updateCommunitySchema,
   type CreateCommunityInput,
   type UpdateCommunityInput,
+  REGISTRATION_MODES,
+  type RegistrationMode,
+  STAFF_INVITE_MODES,
+  type StaffInviteMode,
+  TEAM_SHEET_VISIBILITY_OPTIONS,
+  type TeamSheetVisibility,
+  updateCommunityPermissionsSchema,
+  type UpdateCommunityPermissionsInput,
 } from "./community";
 
 // Organization request validators
