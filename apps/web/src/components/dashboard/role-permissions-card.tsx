@@ -25,7 +25,6 @@ const ROLE_PERMISSIONS = [
   },
   { label: "Invite staff", admin: true, headJudge: false, judge: false },
   { label: "Manage staff roles", admin: true, headJudge: false, judge: false },
-  { label: "View team sheets", admin: true, headJudge: true, judge: true },
 ] as const;
 
 function PermissionCell({ allowed }: { allowed: boolean }) {
