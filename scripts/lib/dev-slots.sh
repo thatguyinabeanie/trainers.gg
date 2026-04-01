@@ -69,3 +69,63 @@ is_pid_alive() {
   local pid="$1"
   kill -0 "$pid" 2>/dev/null
 }
+
+# =============================================================================
+# Docker-based slot detection
+# =============================================================================
+# Docker container state is the primary authority for Supabase slot occupancy.
+# Lockfiles are advisory metadata; containers are the ground truth.
+
+# Get the Supabase project ID for a slot number
+# Usage: slot_project_id 0 → "supabase", slot_project_id 5 → "supabase-slot-5"
+slot_project_id() {
+  local slot="$1"
+  if [ "$slot" -eq 0 ]; then
+    echo "supabase"
+  else
+    echo "supabase-slot-${slot}"
+  fi
+}
+
+# Check if a slot has running Supabase Docker containers
+# Returns 0 if occupied, 1 if free
+# Usage: is_slot_occupied 15
+is_slot_occupied() {
+  local project_id
+  project_id=$(slot_project_id "$1")
+  docker ps --filter "name=_${project_id}" --format "{{.Names}}" 2>/dev/null | grep -q .
+}
+
+# List all slot numbers with running Supabase containers
+# Outputs one slot number per line, sorted
+# Usage: for slot in $(list_occupied_slots); do ...; done
+list_occupied_slots() {
+  local slots=""
+
+  # Non-zero slots: containers named *_supabase-slot-N
+  local nonzero
+  nonzero=$(docker ps --filter "name=supabase-slot-" --format "{{.Names}}" 2>/dev/null \
+    | sed -n 's/.*supabase-slot-\([0-9]*\).*/\1/p' | sort -un)
+  if [ -n "$nonzero" ]; then
+    slots="$nonzero"
+  fi
+
+  # Slot 0: containers named *_supabase (without -slot- suffix)
+  if docker ps --format "{{.Names}}" 2>/dev/null \
+    | grep -q "supabase_.*_supabase$"; then
+    slots=$(printf "%s\n0" "$slots")
+  fi
+
+  echo "$slots" | grep -v '^$' | sort -un
+}
+
+# Stop a specific slot's Supabase containers
+# Uses --project-id for targeted teardown (won't affect other slots)
+# Usage: stop_slot_supabase 15
+stop_slot_supabase() {
+  local project_id
+  project_id=$(slot_project_id "$1")
+  if command -v supabase &>/dev/null; then
+    supabase stop --project-id "$project_id" 2>/dev/null || true
+  fi
+}
