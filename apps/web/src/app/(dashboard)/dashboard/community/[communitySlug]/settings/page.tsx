@@ -26,7 +26,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+
 import { Camera, Loader2, X, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { ALLOWED_IMAGE_TYPES, MAX_IMAGE_SIZE } from "@trainers/validators";
@@ -105,26 +105,16 @@ export default function DashboardSettingsPage({ params }: PageProps) {
               Community not found.
             </p>
           ) : (
-            <Tabs defaultValue="general">
-              <TabsList>
-                <TabsTrigger value="general">General</TabsTrigger>
-                <TabsTrigger value="permissions">Permissions</TabsTrigger>
-              </TabsList>
-
-              <TabsContent value="general" className="mt-4">
-                <SettingsForm org={org} onSaved={refetch} />
-              </TabsContent>
-
-              <TabsContent value="permissions" className="mt-4">
-                <PermissionsTab
-                  communityId={org.id}
-                  communitySlug={org.slug}
-                  staffInviteMode={
-                    (org.staff_invite_mode ?? "owner_only") as StaffInviteMode
-                  }
-                />
-              </TabsContent>
-            </Tabs>
+            <div className="space-y-3">
+              <SettingsForm org={org} onSaved={refetch} />
+              <PermissionsTab
+                communityId={org.id}
+                communitySlug={org.slug}
+                staffInviteMode={
+                  (org.staff_invite_mode ?? "owner_only") as StaffInviteMode
+                }
+              />
+            </div>
           )}
         </div>
       </div>
