@@ -74,22 +74,24 @@ describe("getPlayerRating", () => {
     expect(result).toBeNull();
   });
 
-  it("returns null on a query error", async () => {
+  it("throws on a query error", async () => {
     const client = createMockClient(
       { data: null, error: { message: "network error" } },
       { data: null, error: null, count: null }
     );
-    const result = await getPlayerRating(client, 1);
-    expect(result).toBeNull();
+    await expect(getPlayerRating(client, 1)).rejects.toThrow(
+      "Failed to fetch rating: network error"
+    );
   });
 
-  it("returns null when the count query fails", async () => {
+  it("throws when the count query fails", async () => {
     const client = createMockClient(
       { data: RATING_ROW, error: null },
       { data: null, error: { message: "count query failed" }, count: null }
     );
-    const result = await getPlayerRating(client, 1);
-    expect(result).toBeNull();
+    await expect(getPlayerRating(client, 1)).rejects.toThrow(
+      "Failed to fetch rating rank: count query failed"
+    );
   });
 
   it("returns a shaped PlayerRating with rank when a row exists", async () => {
