@@ -28,6 +28,22 @@ jest.mock("@/lib/supabase/server", () => ({
       if (table === "user_roles") {
         return { upsert: mockUpsert };
       }
+      // Communities, community_staff, tournaments — seeded for E2E dashboard tests
+      if (
+        table === "communities" ||
+        table === "community_staff" ||
+        table === "tournaments"
+      ) {
+        return {
+          upsert: jest.fn().mockReturnValue({
+            select: jest.fn().mockReturnValue({
+              single: jest
+                .fn()
+                .mockResolvedValue({ data: { id: 1 }, error: null }),
+            }),
+          }),
+        };
+      }
       return {};
     }),
     auth: {
