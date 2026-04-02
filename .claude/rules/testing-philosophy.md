@@ -8,7 +8,7 @@ paths:
 
 # Testing Philosophy
 
-**Every feature, bug fix, or behavioral change must include tests.** CI enforces 60% patch coverage on new code.
+**Every feature, bug fix, or behavioral change must include tests.** CI enforces 60% patch coverage on new code — but 60% is the minimum, not the goal. Aim for 80%+ on new code. The problem with barely clearing 60% is that subsequent commits in the same PR (review fixes, refactors, new edge cases) add uncovered lines that push coverage below the threshold, failing CI. Write tests generously upfront so there's headroom for changes.
 
 ## What to Test
 

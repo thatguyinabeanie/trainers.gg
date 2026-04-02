@@ -1,6 +1,9 @@
 ---
 name: migration-reviewer
 description: Review SQL migration files for correctness, safety, RLS, and project conventions
+model: sonnet
+skills:
+  - reviewing-database
 ---
 
 # Migration Reviewer
