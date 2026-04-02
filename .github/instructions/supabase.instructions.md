@@ -49,3 +49,13 @@ All tables use RLS with `auth.uid()`. Queries that need to bypass RLS use a serv
 - Use `.maybeSingle()` for optional results, `.single()` when exactly one row is expected
 - Return `null` from queries when not found (do not throw)
 - Select only needed columns, not `*`, for list queries
+- Use `Promise.all` for independent queries, not sequential `await`
+- Push aggregation to SQL (RPCs, views) instead of fetching all rows to count/group in JS
+
+## Team Sheet Architecture
+
+Private team data (`teams`, `pokemon`, `team_pokemon`) is locked down via RLS — only viewable by the team owner or if the owner set `is_public = true`. Public tournament OTS (Open Team Sheet) data lives in `tournament_team_sheets` — created at tournament start, contains only species/ability/item/tera/moves (no EVs/IVs/nature). `tournament_team_sheets` intentionally uses `USING(true)` SELECT — if a row exists, it's public. The `open_team_sheets` flag on tournaments is a UI-level visibility toggle, not an access control.
+
+## Caching
+
+Dashboard pages behind auth use `createClient()` directly — do not use `unstable_cache` with `createStaticClient()` for data that requires authenticated access (e.g., `community_staff` is `TO authenticated` only).

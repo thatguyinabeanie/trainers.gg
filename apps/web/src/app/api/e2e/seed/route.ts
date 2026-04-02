@@ -219,6 +219,98 @@ export async function POST(request: NextRequest) {
     }
   }
 
+  // ---------------------------------------------------------------------------
+  // Create VGC League community for community dashboard E2E tests.
+  // The SQL seed files (04_organizations.sql etc.) only run on local dev via
+  // pnpm db:reset — the Supabase preview branch DB has schema but no seed data.
+  // ---------------------------------------------------------------------------
+  const adminUserId = E2E_USERS[0]!.id;
+
+  const { data: community, error: communityError } = await supabase
+    .from("communities")
+    .upsert(
+      {
+        name: "VGC League",
+        slug: "vgc-league",
+        description: "VGC League - Pokemon VGC Tournament Organization",
+        owner_user_id: adminUserId,
+        status: "active",
+      },
+      { onConflict: "slug" }
+    )
+    .select("id")
+    .single();
+
+  if (communityError) {
+    hasErrors = true;
+    results.push({
+      email: "community",
+      status: "error",
+      error: `communities.upsert failed: ${communityError.message}`,
+    });
+  } else if (community) {
+    // Add admin as staff member (owner access is via owner_user_id,
+    // but community_staff membership is also checked by some queries).
+    // No unique constraint on (community_id, user_id) — use insert and
+    // ignore "duplicate key" errors for idempotency.
+    const { error: staffError } = await supabase
+      .from("community_staff")
+      .insert({ community_id: community.id, user_id: adminUserId });
+    if (staffError && !staffError.message.includes("duplicate")) {
+      hasErrors = true;
+      results.push({
+        email: "community_staff",
+        status: "error",
+        error: `community_staff.insert failed: ${staffError.message}`,
+      });
+    }
+
+    // Create a completed tournament so the overview page has stats
+    const { error: tournamentError } = await supabase
+      .from("tournaments")
+      .upsert(
+        {
+          community_id: community.id,
+          name: "VGC League Week 1 Championship",
+          slug: "vgc-league-week-01",
+          status: "completed",
+          game_format: "gen9vgc2026regi",
+          tournament_format: "swiss_with_cut",
+          max_participants: 64,
+        },
+        { onConflict: "slug" }
+      );
+    if (tournamentError) {
+      hasErrors = true;
+      results.push({
+        email: "tournament",
+        status: "error",
+        error: `tournaments.upsert failed: ${tournamentError.message}`,
+      });
+    }
+
+    // Create Pallet Town community owned by player for access control test
+    const playerUserId = E2E_USERS[1]!.id;
+    const { error: palletError } = await supabase.from("communities").upsert(
+      {
+        name: "Pallet Town Trainers",
+        slug: "pallet-town",
+        description: "Pallet Town community",
+        owner_user_id: playerUserId,
+        status: "active",
+      },
+      { onConflict: "slug" }
+    );
+    if (palletError) {
+      hasErrors = true;
+      results.push({
+        email: "pallet-town",
+        status: "error",
+        error: `pallet-town.upsert failed: ${palletError.message}`,
+      });
+    }
+  }
+
   return NextResponse.json(
     { success: !hasErrors, results },
     { status: hasErrors ? 207 : 200 }

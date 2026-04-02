@@ -44,12 +44,20 @@ export {
   listCommunityGroups,
   searchUsersForInvite,
   hasCommunityPermission,
+  // Dashboard stats, top players, activity feed
+  getCommunityStats,
+  getTopReturningPlayers,
+  getCommunityActivity,
 } from "./communities";
 
 export type {
   StaffWithRole,
   CommunityGroup,
   CommunityWithCounts,
+  CommunityStats,
+  TopPlayer,
+  CommunityActivityType,
+  CommunityActivityItem,
 } from "./communities";
 
 // Tournament queries
@@ -241,3 +249,12 @@ export {
   updateAnnouncement,
   deleteAnnouncement,
 } from "./announcements";
+
+// Tournament team sheets (OTS snapshots)
+export {
+  getTournamentTeamSheets,
+  getTeamSheetByRegistration,
+  getMatchTeamSheets,
+  type TeamSheetPokemon,
+  type PlayerTeamSheet,
+} from "./tournament-team-sheets";

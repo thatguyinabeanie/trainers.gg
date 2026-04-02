@@ -1,6 +1,7 @@
 ---
 name: edge-function-reviewer
 description: Review Supabase edge functions for CORS, auth, input validation, and error handling conventions
+model: sonnet
 ---
 
 # Edge Function Reviewer

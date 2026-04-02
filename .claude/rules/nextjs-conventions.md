@@ -162,3 +162,9 @@ async function onSubmit(data: CreateTournamentInput) {
 - Only `NEXT_PUBLIC_*` env vars are available in the browser
 - Declare build-time env vars in `turbo.json` under the task's `env` array for cache invalidation
 - All env vars live in root `.env.local`, symlinked into apps/packages via `postinstall.sh`
+
+## Related Skills
+
+- `building-web-app` — routes, Server Actions, data fetching, proactive caching checklist
+- `reviewing-caching` — Next.js `unstable_cache`, TanStack Query, cache invalidation
+- `creating-components` — UI components, design tokens

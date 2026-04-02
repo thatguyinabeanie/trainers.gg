@@ -1,11 +1,14 @@
-import { createClient, getUser } from "@/lib/supabase/server";
 import {
   getCommunityBySlug,
   listCommunityStaffWithRoles,
   listCommunityGroups,
 } from "@trainers/supabase";
-import { StaffClient } from "./staff-client";
+
+import { createClient, getUser } from "@/lib/supabase/server";
 import { PageHeader } from "@/components/dashboard/page-header";
+import { RolePermissionsCard } from "@/components/dashboard/role-permissions-card";
+
+import { StaffClient } from "./staff-client";
 
 interface PageProps {
   params: Promise<{
@@ -42,7 +45,7 @@ export default async function DashboardStaffPage({ params }: PageProps) {
   return (
     <>
       <PageHeader title="Staff" />
-      <div className="flex flex-1 flex-col gap-4 p-4 md:p-6">
+      <div className="flex flex-1 flex-col gap-3 p-4 md:p-6">
         <StaffClient
           communityId={organization.id}
           communitySlug={communitySlug}
@@ -52,6 +55,7 @@ export default async function DashboardStaffPage({ params }: PageProps) {
           currentUserId={user?.id}
           currentUserRole={currentUserRole}
         />
+        <RolePermissionsCard />
       </div>
     </>
   );

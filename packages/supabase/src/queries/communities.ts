@@ -964,3 +964,363 @@ export async function hasCommunityPermission(
 
   return data === true;
 }
+
+// =============================================================================
+// Community Dashboard Stats
+// =============================================================================
+
+/**
+ * Aggregate stats for a community dashboard
+ */
+export interface CommunityStats {
+  totalTournaments: number;
+  activeTournaments: number;
+  uniquePlayers: number;
+  totalEntries: number;
+  staffCount: number;
+  adminCount: number;
+  judgeCount: number;
+}
+
+/**
+ * Get aggregated stats for a community.
+ *
+ * Queries tournament counts by status, unique player registrations, total
+ * registration entries, total staff headcount, and a breakdown of admins vs
+ * judges derived from the group/role hierarchy.
+ */
+export async function getCommunityStats(
+  supabase: TypedClient,
+  communityId: number
+): Promise<CommunityStats> {
+  const [tournamentsResult, staffResult, groupsResult] = await Promise.all([
+    supabase
+      .from("tournaments")
+      .select("id, status")
+      .eq("community_id", communityId)
+      .is("archived_at", null),
+    supabase
+      .from("community_staff")
+      .select("user_id", { count: "exact", head: true })
+      .eq("community_id", communityId),
+    supabase.from("groups").select("id").eq("community_id", communityId),
+  ]);
+
+  if (tournamentsResult.error)
+    throw new Error(
+      `Failed to fetch tournament counts: ${tournamentsResult.error.message}`
+    );
+  if (staffResult.error)
+    throw new Error(
+      `Failed to fetch staff count: ${staffResult.error.message}`
+    );
+  if (groupsResult.error)
+    throw new Error(`Failed to fetch groups: ${groupsResult.error.message}`);
+
+  const tournamentList = tournamentsResult.data ?? [];
+  const totalTournaments = tournamentList.length;
+  const activeTournaments = tournamentList.filter(
+    (t) => t.status === "active"
+  ).length;
+  const staffCount = staffResult.count;
+  const groups = groupsResult.data ?? [];
+
+  const tournamentIds = tournamentList.map((t) => t.id);
+
+  let uniquePlayers = 0;
+  let totalEntries = 0;
+
+  if (tournamentIds.length > 0) {
+    // Total entries: use DB-side count (no row transfer)
+    const { count: entryCount, error: countError } = await supabase
+      .from("tournament_registrations")
+      .select("*", { count: "exact", head: true })
+      .in("tournament_id", tournamentIds);
+
+    if (countError)
+      throw new Error(`Failed to count registrations: ${countError.message}`);
+
+    totalEntries = entryCount ?? 0;
+
+    // Unique players: fetch only user_id via alt join, dedup in JS
+    // This transfers ~8 bytes per registration (just the UUID) instead of full rows
+    const { data: userIds, error: userError } = await supabase
+      .from("tournament_registrations")
+      .select("alt:alts!tournament_registrations_alt_id_fkey(user_id)")
+      .in("tournament_id", tournamentIds);
+
+    if (userError)
+      throw new Error(`Failed to fetch unique players: ${userError.message}`);
+
+    uniquePlayers = new Set(
+      (userIds ?? [])
+        .map((r) => r.alt?.user_id)
+        .filter((id): id is string => id !== null && id !== undefined)
+    ).size;
+  }
+
+  const groupIds = (groups ?? []).map((g) => g.id);
+
+  let adminCount = 0;
+  let judgeCount = 0;
+
+  if (groupIds.length > 0) {
+    const { data: groupRoles, error: groupRolesError } = await supabase
+      .from("group_roles")
+      .select("id, role:roles(name)")
+      .in("group_id", groupIds);
+
+    if (groupRolesError)
+      throw new Error(
+        `Failed to fetch group roles: ${groupRolesError.message}`
+      );
+
+    const adminGroupRoleIds: number[] = [];
+    const judgeGroupRoleIds: number[] = [];
+
+    for (const gr of groupRoles ?? []) {
+      const roleName = gr.role?.name ?? "";
+      if (roleName === "org_admin") {
+        adminGroupRoleIds.push(gr.id);
+      } else if (roleName === "org_head_judge" || roleName === "org_judge") {
+        judgeGroupRoleIds.push(gr.id);
+      }
+    }
+
+    // Count distinct users per role bucket to avoid double-counting staff
+    // who hold multiple group roles
+    if (adminGroupRoleIds.length > 0) {
+      const { data: adminUsers, error } = await supabase
+        .from("user_group_roles")
+        .select("user_id")
+        .in("group_role_id", adminGroupRoleIds);
+
+      if (error)
+        throw new Error(`Failed to fetch admin count: ${error.message}`);
+      adminCount = new Set(adminUsers?.map((u) => u.user_id)).size;
+    }
+
+    if (judgeGroupRoleIds.length > 0) {
+      const { data: judgeUsers, error } = await supabase
+        .from("user_group_roles")
+        .select("user_id")
+        .in("group_role_id", judgeGroupRoleIds);
+
+      if (error)
+        throw new Error(`Failed to fetch judge count: ${error.message}`);
+      judgeCount = new Set(judgeUsers?.map((u) => u.user_id)).size;
+    }
+  }
+
+  return {
+    totalTournaments,
+    activeTournaments,
+    uniquePlayers,
+    totalEntries,
+    staffCount: staffCount ?? 0,
+    adminCount,
+    judgeCount,
+  };
+}
+
+// =============================================================================
+// Community Top Players
+// =============================================================================
+
+/**
+ * A player ranked by tournament participation within a community
+ */
+export interface TopPlayer {
+  userId: string;
+  username: string;
+  avatarUrl: string | null;
+  eventCount: number;
+}
+
+/**
+ * Get the most frequently returning players for a community.
+ *
+ * Counts how many distinct tournaments each player has entered (via their alt),
+ * then returns the top N players sorted by event count descending.
+ *
+ * @param limit - Maximum number of players to return (default: 10)
+ */
+export async function getTopReturningPlayers(
+  supabase: TypedClient,
+  communityId: number,
+  limit = 10
+): Promise<TopPlayer[]> {
+  // DB-side aggregation: GROUP BY user, COUNT(DISTINCT tournament), ORDER BY DESC, LIMIT
+  const { data, error } = await supabase.rpc("get_top_returning_players", {
+    p_community_id: communityId,
+    p_limit: limit,
+  });
+
+  if (error)
+    throw new Error(`Failed to fetch top returning players: ${error.message}`);
+
+  if (!data || data.length === 0) return [];
+
+  return (
+    data as Array<{
+      user_id: string;
+      username: string;
+      avatar_url: string | null;
+      event_count: number;
+    }>
+  ).map((row) => ({
+    userId: row.user_id,
+    username: row.username,
+    avatarUrl: row.avatar_url,
+    eventCount: row.event_count,
+  }));
+}
+
+// =============================================================================
+// Community Activity Feed
+// =============================================================================
+
+/**
+ * The type of activity event in the community activity feed
+ */
+export type CommunityActivityType =
+  | "registration"
+  | "tournament_completed"
+  | "staff_joined"
+  | "tournament_created";
+
+/**
+ * A single activity item in the community activity feed
+ */
+export interface CommunityActivityItem {
+  type: CommunityActivityType;
+  actorName: string;
+  targetName: string;
+  timestamp: string;
+}
+
+/**
+ * Get a chronological activity feed for a community.
+ *
+ * Assembles activity from multiple sources (no dedicated activity table):
+ * - Recent tournament creations
+ * - Recent tournament completions
+ * - Recent player registrations (via alt → username)
+ * - Recent staff joins (via user → username)
+ *
+ * Results are sorted newest-first and capped at `limit` items.
+ *
+ * @param limit - Maximum number of activity items to return (default: 20)
+ */
+export async function getCommunityActivity(
+  supabase: TypedClient,
+  communityId: number,
+  limit = 20
+): Promise<CommunityActivityItem[]> {
+  const items: CommunityActivityItem[] = [];
+
+  // Fetch all 4 activity sources in parallel, each with DB-side ORDER BY + LIMIT
+  const [createdResult, completedResult, registrationsResult, staffResult] =
+    await Promise.all([
+      // Recent tournament creations (DB-ordered, limited)
+      supabase
+        .from("tournaments")
+        .select("name, created_at")
+        .eq("community_id", communityId)
+        .is("archived_at", null)
+        .order("created_at", { ascending: false })
+        .limit(limit),
+
+      // Recent tournament completions (DB-ordered, limited)
+      supabase
+        .from("tournaments")
+        .select("name, updated_at")
+        .eq("community_id", communityId)
+        .is("archived_at", null)
+        .eq("status", "completed")
+        .order("updated_at", { ascending: false })
+        .limit(limit),
+
+      // Recent registrations with tournament name lookup
+      supabase
+        .from("tournament_registrations")
+        .select(
+          "tournament_id, created_at, alt:alts!tournament_registrations_alt_id_fkey(username), tournament:tournaments!inner(name, community_id)"
+        )
+        .eq("tournament.community_id", communityId)
+        .order("created_at", { ascending: false })
+        .limit(limit),
+
+      // Recent staff joins
+      supabase
+        .from("community_staff")
+        .select("created_at, user:users(username)")
+        .eq("community_id", communityId)
+        .order("created_at", { ascending: false })
+        .limit(limit),
+    ]);
+
+  if (createdResult.error)
+    throw new Error(
+      `Failed to fetch created tournaments: ${createdResult.error.message}`
+    );
+  if (completedResult.error)
+    throw new Error(
+      `Failed to fetch completed tournaments: ${completedResult.error.message}`
+    );
+  if (registrationsResult.error)
+    throw new Error(
+      `Failed to fetch registrations: ${registrationsResult.error.message}`
+    );
+  if (staffResult.error)
+    throw new Error(
+      `Failed to fetch staff joins: ${staffResult.error.message}`
+    );
+
+  for (const t of createdResult.data ?? []) {
+    items.push({
+      type: "tournament_created",
+      actorName: t.name,
+      targetName: "",
+      timestamp: t.created_at ?? new Date(0).toISOString(),
+    });
+  }
+
+  for (const t of completedResult.data ?? []) {
+    items.push({
+      type: "tournament_completed",
+      actorName: t.name,
+      targetName: "",
+      timestamp: t.updated_at ?? new Date(0).toISOString(),
+    });
+  }
+
+  for (const reg of registrationsResult.data ?? []) {
+    const tournament = reg.tournament as unknown as { name: string } | null;
+    items.push({
+      type: "registration",
+      actorName: reg.alt?.username ?? "Unknown player",
+      targetName: tournament?.name ?? "",
+      timestamp: reg.created_at ?? new Date(0).toISOString(),
+    });
+  }
+
+  for (const s of staffResult.data ?? []) {
+    if (s.created_at) {
+      items.push({
+        type: "staff_joined",
+        actorName: s.user?.username ?? "Unknown staff",
+        targetName: "",
+        timestamp: s.created_at,
+      });
+    }
+  }
+
+  // Sort all items newest-first and return top N
+  return items
+    .sort(
+      (a, b) =>
+        new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+    )
+    .slice(0, limit);
+}

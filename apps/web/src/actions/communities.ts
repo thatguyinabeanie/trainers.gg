@@ -26,7 +26,12 @@ import { CacheTags } from "@/lib/cache";
  */
 export type ActionResult<T = void> =
   | { success: true; data: T }
-  | { success: false; error: string };
+  | {
+      success: false;
+      error: string;
+      code?: string;
+      validationErrors?: string[];
+    };
 
 // =============================================================================
 // Organization CRUD
@@ -34,7 +39,7 @@ export type ActionResult<T = void> =
 
 /**
  * Update organization details
- * Revalidates: organizations list (if display data changes) and individual org page
+ * Revalidates: organizations list (always) and individual org page
  */
 export async function updateOrganization(
   communityId: number,
@@ -50,10 +55,8 @@ export async function updateOrganization(
     const supabase = await createClient();
     await updateCommunityMutation(supabase, communityId, updates);
 
-    // Revalidate list if display data changed (name, description, logo)
-    if (updates.name || updates.description || updates.logoUrl) {
-      updateTag(CacheTags.COMMUNITIES_LIST);
-    }
+    // Always revalidate list — any update may affect the public listing
+    updateTag(CacheTags.COMMUNITIES_LIST);
 
     // Revalidate individual organization page
     if (slug) {

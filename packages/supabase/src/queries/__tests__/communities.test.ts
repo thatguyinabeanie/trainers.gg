@@ -18,6 +18,9 @@ import {
   listCommunityGroups,
   searchUsersForInvite,
   hasCommunityPermission,
+  getCommunityStats,
+  getTopReturningPlayers,
+  getCommunityActivity,
 } from "../communities";
 import type { TypedClient } from "../../client";
 
@@ -977,6 +980,637 @@ describe("communities queries", () => {
       expect(result).toBe(false);
       expect(consoleErrorSpy).toHaveBeenCalled();
       consoleErrorSpy.mockRestore();
+    });
+  });
+
+  // ===========================================================================
+  // getCommunityStats
+  // ===========================================================================
+
+  describe("getCommunityStats", () => {
+    /**
+     * Build a mock client whose .from() calls resolve in the fixed sequence that
+     * getCommunityStats issues them.
+     *
+     * The function runs the first three queries in parallel via Promise.all,
+     * so their .then() callbacks fire in creation order (0→1→2), followed by
+     * the sequential registrations query (only when tournaments exist):
+     *
+     *   0. tournaments          (select id, status)           — parallel
+     *   1. community_staff      (count)                       — parallel
+     *   2. groups               (select id)                   — parallel
+     *   3. tournament_registrations  (select alt_id, alt:alts...)
+     *      — only when there are tournaments
+     *   4. group_roles          (select id, role:roles(name)) — only when there
+     *      are groups
+     *   5+. user_group_roles    (count) — one call per non-empty role bucket
+     *
+     * Callers pass resolved data for each call in order; any unspecified call
+     * resolves to `{ data: [], error: null, count: null }`.
+     */
+    function buildStatsMockClient(
+      resolvedCalls: Array<{
+        data?: unknown;
+        error?: unknown;
+        count?: number | null;
+      }>
+    ) {
+      let callIndex = 0;
+
+      const makeBuilder = () => {
+        const builder: Record<string, jest.Mock> = {};
+        const chainMethods = [
+          "select",
+          "eq",
+          "is",
+          "in",
+          "order",
+          "limit",
+          "not",
+          "or",
+          "ilike",
+          "range",
+        ];
+        for (const method of chainMethods) {
+          builder[method] = jest.fn().mockReturnThis();
+        }
+
+        // Terminal: .then() resolves to the next pre-configured payload
+        builder["then"] = jest.fn(
+          (
+            resolve: (value: {
+              data: unknown;
+              error: unknown;
+              count?: number | null;
+            }) => void
+          ) => {
+            const payload = resolvedCalls[callIndex++] ?? {
+              data: [],
+              error: null,
+              count: null,
+            };
+            return Promise.resolve({
+              data: payload.data ?? [],
+              error: payload.error ?? null,
+              count: payload.count ?? null,
+            }).then(resolve);
+          }
+        );
+
+        builder["single"] = jest
+          .fn()
+          .mockResolvedValue({ data: null, error: null });
+        builder["maybeSingle"] = jest
+          .fn()
+          .mockResolvedValue({ data: null, error: null });
+
+        return builder;
+      };
+
+      return {
+        from: jest.fn().mockImplementation(() => makeBuilder()),
+        rpc: jest.fn().mockResolvedValue({ data: [], error: null }),
+        auth: {
+          getUser: jest
+            .fn()
+            .mockResolvedValue({ data: { user: null }, error: null }),
+        },
+      } as unknown as TypedClient;
+    }
+
+    it("returns a stats object with all numeric fields", async () => {
+      const client = buildStatsMockClient([
+        // 0. tournaments (parallel)
+        {
+          data: [
+            { id: 1, status: "active" },
+            { id: 2, status: "completed" },
+          ],
+        },
+        // 1. community_staff count (parallel)
+        { data: null, count: 3 },
+        // 2. groups (parallel)
+        { data: [] },
+        // 3. tournament_registrations (sequential, after parallel batch)
+        {
+          data: [
+            { alt_id: 10, alt: { user_id: "user-a" } },
+            { alt_id: 11, alt: { user_id: "user-b" } },
+          ],
+        },
+      ]);
+
+      const result = await getCommunityStats(client, 1);
+
+      expect(typeof result.totalTournaments).toBe("number");
+      expect(typeof result.activeTournaments).toBe("number");
+      expect(typeof result.uniquePlayers).toBe("number");
+      expect(typeof result.totalEntries).toBe("number");
+      expect(typeof result.staffCount).toBe("number");
+      expect(typeof result.adminCount).toBe("number");
+      expect(typeof result.judgeCount).toBe("number");
+    });
+
+    it("returns zeros when community has no tournaments", async () => {
+      const client = buildStatsMockClient([
+        // 0. tournaments — empty (parallel)
+        { data: [] },
+        // 1. community_staff count (parallel)
+        { data: null, count: 0 },
+        // 2. groups (parallel)
+        { data: [] },
+        // no registrations call — tournament list is empty
+      ]);
+
+      const result = await getCommunityStats(client, 99);
+
+      expect(result.totalTournaments).toBe(0);
+      expect(result.activeTournaments).toBe(0);
+      expect(result.uniquePlayers).toBe(0);
+      expect(result.totalEntries).toBe(0);
+    });
+
+    it.each([
+      [
+        "active only",
+        [
+          { id: 1, status: "active" },
+          { id: 2, status: "active" },
+          { id: 3, status: "completed" },
+        ],
+        2,
+      ],
+      [
+        "upcoming only",
+        [
+          { id: 1, status: "upcoming" },
+          { id: 2, status: "completed" },
+        ],
+        0,
+      ],
+      [
+        "mixed active and upcoming",
+        [
+          { id: 1, status: "active" },
+          { id: 2, status: "upcoming" },
+          { id: 3, status: "upcoming" },
+          { id: 4, status: "completed" },
+        ],
+        1,
+      ],
+    ])(
+      "correctly counts %s tournaments",
+      async (_label, tournaments, expectedActive) => {
+        const client = buildStatsMockClient([
+          { data: tournaments },
+          { data: null, count: 0 },
+          { data: [] },
+          { data: [] },
+        ]);
+
+        const result = await getCommunityStats(client, 1);
+
+        expect(result.activeTournaments).toBe(expectedActive);
+        expect(result.totalTournaments).toBe(tournaments.length);
+      }
+    );
+
+    it("counts unique players vs total entries correctly", async () => {
+      // 3 registrations, but user-a appears twice (different alts, same user)
+      const client = buildStatsMockClient([
+        // 0. tournaments (parallel)
+        { data: [{ id: 1, status: "active" }] },
+        // 1. community_staff count (parallel)
+        { data: null, count: 0 },
+        // 2. groups (parallel)
+        { data: [] },
+        // 3. tournament_registrations count query — count: 3 (sequential, head:true)
+        { data: null, count: 3 },
+        // 4. tournament_registrations user_id join — user-a has 2 entries, user-b has 1 (sequential)
+        {
+          data: [
+            { alt: { user_id: "user-a" } },
+            { alt: { user_id: "user-a" } },
+            { alt: { user_id: "user-b" } },
+          ],
+        },
+      ]);
+
+      const result = await getCommunityStats(client, 1);
+
+      expect(result.totalEntries).toBe(3);
+      expect(result.uniquePlayers).toBe(2);
+    });
+
+    it.each([
+      [
+        "tournaments query fails",
+        [
+          { data: null, error: { message: "tournaments DB error" } },
+          { data: null, count: 0 },
+          { data: [] },
+        ],
+        "Failed to fetch tournament counts: tournaments DB error",
+      ],
+      [
+        "staff query fails",
+        [
+          { data: [] },
+          { data: null, error: { message: "staff DB error" } },
+          { data: [] },
+        ],
+        "Failed to fetch staff count: staff DB error",
+      ],
+      [
+        "groups query fails",
+        [
+          { data: [] },
+          { data: null, count: 0 },
+          { data: null, error: { message: "groups DB error" } },
+        ],
+        "Failed to fetch groups: groups DB error",
+      ],
+    ])("throws when the %s", async (_label, resolvedCalls, expectedMessage) => {
+      const client = buildStatsMockClient(resolvedCalls);
+
+      await expect(getCommunityStats(client, 1)).rejects.toThrow(
+        expectedMessage
+      );
+    });
+  });
+
+  // ===========================================================================
+  // getTopReturningPlayers
+  // ===========================================================================
+
+  describe("getTopReturningPlayers", () => {
+    /**
+     * Build a mock client for getTopReturningPlayers.
+     * The function uses a single supabase.rpc("get_top_returning_players", {...})
+     * call that returns pre-aggregated rows from the database.
+     */
+    function buildTopPlayersMockClient(
+      rpcData: Array<{
+        user_id: string;
+        username: string;
+        avatar_url: string | null;
+        event_count: number;
+      }>
+    ) {
+      const makeBuilder = () => {
+        const builder: Record<string, jest.Mock> = {};
+        const chainMethods = ["select", "eq", "is", "in", "order", "limit"];
+        for (const method of chainMethods) {
+          builder[method] = jest.fn().mockReturnThis();
+        }
+        builder["then"] = jest.fn(
+          (resolve: (value: { data: unknown; error: unknown }) => void) =>
+            Promise.resolve({ data: [], error: null }).then(resolve)
+        );
+        builder["single"] = jest
+          .fn()
+          .mockResolvedValue({ data: null, error: null });
+        builder["maybeSingle"] = jest
+          .fn()
+          .mockResolvedValue({ data: null, error: null });
+        return builder;
+      };
+
+      return {
+        from: jest.fn().mockImplementation(() => makeBuilder()),
+        rpc: jest.fn().mockResolvedValue({ data: rpcData, error: null }),
+        auth: {
+          getUser: jest
+            .fn()
+            .mockResolvedValue({ data: { user: null }, error: null }),
+        },
+      } as unknown as TypedClient;
+    }
+
+    it("returns empty array when RPC returns no rows", async () => {
+      const client = buildTopPlayersMockClient([]);
+
+      const result = await getTopReturningPlayers(client, 1);
+
+      expect(result).toEqual([]);
+    });
+
+    it("maps RPC rows to TopPlayer objects sorted by event count descending", async () => {
+      const client = buildTopPlayersMockClient([
+        // RPC returns rows already sorted descending by event_count
+        {
+          user_id: "user-b",
+          username: "bob",
+          avatar_url: null,
+          event_count: 3,
+        },
+        {
+          user_id: "user-a",
+          username: "alice",
+          avatar_url: null,
+          event_count: 2,
+        },
+        {
+          user_id: "user-c",
+          username: "carol",
+          avatar_url: null,
+          event_count: 1,
+        },
+      ]);
+
+      const result = await getTopReturningPlayers(client, 1);
+
+      expect(result).toHaveLength(3);
+      expect(result[0]?.userId).toBe("user-b");
+      expect(result[0]?.eventCount).toBe(3);
+      expect(result[1]?.userId).toBe("user-a");
+      expect(result[1]?.eventCount).toBe(2);
+      expect(result[2]?.userId).toBe("user-c");
+      expect(result[2]?.eventCount).toBe(1);
+    });
+
+    it("passes the limit parameter to the RPC call", async () => {
+      const client = buildTopPlayersMockClient([
+        {
+          user_id: "user-a",
+          username: "alice",
+          avatar_url: null,
+          event_count: 2,
+        },
+        {
+          user_id: "user-b",
+          username: "bob",
+          avatar_url: null,
+          event_count: 1,
+        },
+      ]);
+
+      const result = await getTopReturningPlayers(client, 42, 2);
+
+      expect(result).toHaveLength(2);
+      expect(client.rpc).toHaveBeenCalledWith("get_top_returning_players", {
+        p_community_id: 42,
+        p_limit: 2,
+      });
+    });
+
+    it("maps snake_case RPC fields to camelCase TopPlayer fields", async () => {
+      const client = buildTopPlayersMockClient([
+        {
+          user_id: "user-x",
+          username: "xavier",
+          avatar_url: "https://example.com/avatar.png",
+          event_count: 5,
+        },
+      ]);
+
+      const result = await getTopReturningPlayers(client, 1);
+
+      expect(result).toHaveLength(1);
+      expect(result[0]).toEqual({
+        userId: "user-x",
+        username: "xavier",
+        avatarUrl: "https://example.com/avatar.png",
+        eventCount: 5,
+      });
+    });
+  });
+
+  // ===========================================================================
+  // getCommunityActivity
+  // ===========================================================================
+
+  describe("getCommunityActivity", () => {
+    /**
+     * getCommunityActivity uses Promise.all with 4 parallel queries.
+     * Each query gets its own .from() builder, so payloads are consumed
+     * in the order the builders are created (creation order = Promise.all order):
+     *
+     *   0. tournaments (created — select name, created_at)
+     *   1. tournaments (completed — select name, updated_at)
+     *   2. tournament_registrations (select tournament_id, created_at, alt, tournament)
+     *   3. community_staff (select created_at, user)
+     */
+    function buildActivityMockClient(
+      payloads: Array<{ data: unknown; error?: unknown }>
+    ) {
+      let callIndex = 0;
+
+      const makeBuilder = () => {
+        const idx = callIndex++;
+        const payload = payloads[idx] ?? { data: [], error: null };
+
+        const builder: Record<string, jest.Mock> = {};
+        const chainMethods = [
+          "select",
+          "eq",
+          "is",
+          "in",
+          "order",
+          "limit",
+          "not",
+          "or",
+        ];
+        for (const method of chainMethods) {
+          builder[method] = jest.fn().mockReturnThis();
+        }
+        builder["then"] = jest.fn(
+          (resolve: (value: { data: unknown; error: unknown }) => void) =>
+            Promise.resolve({
+              data: payload.data,
+              error: payload.error ?? null,
+            }).then(resolve)
+        );
+        builder["single"] = jest
+          .fn()
+          .mockResolvedValue({ data: null, error: null });
+        builder["maybeSingle"] = jest
+          .fn()
+          .mockResolvedValue({ data: null, error: null });
+        return builder;
+      };
+
+      return {
+        from: jest.fn().mockImplementation(() => makeBuilder()),
+        rpc: jest.fn().mockResolvedValue({ data: [], error: null }),
+        auth: {
+          getUser: jest
+            .fn()
+            .mockResolvedValue({ data: { user: null }, error: null }),
+        },
+      } as unknown as TypedClient;
+    }
+
+    it("returns empty array when community has no activity", async () => {
+      const client = buildActivityMockClient([
+        { data: [] }, // 0. created tournaments
+        { data: [] }, // 1. completed tournaments
+        { data: [] }, // 2. registrations
+        { data: [] }, // 3. staff joins
+      ]);
+
+      const result = await getCommunityActivity(client, 1);
+
+      expect(result).toEqual([]);
+    });
+
+    it("sorts activities by timestamp descending (most recent first)", async () => {
+      const client = buildActivityMockClient([
+        // 0. created tournaments
+        {
+          data: [
+            { name: "Spring Cup", created_at: "2025-03-01T12:00:00Z" },
+            { name: "Winter Cup", created_at: "2025-01-01T12:00:00Z" },
+          ],
+        },
+        // 1. completed tournaments
+        {
+          data: [{ name: "Fall Cup", updated_at: "2025-09-01T12:00:00Z" }],
+        },
+        // 2. registrations
+        {
+          data: [
+            {
+              tournament_id: 10,
+              created_at: "2025-02-15T12:00:00Z",
+              alt: { username: "ash" },
+              tournament: { name: "Spring Cup", community_id: 1 },
+            },
+          ],
+        },
+        // 3. staff joins
+        { data: [] },
+      ]);
+
+      const result = await getCommunityActivity(client, 1);
+
+      // Items should be newest first
+      const timestamps = result.map((item) => item.timestamp);
+      for (let i = 1; i < timestamps.length; i++) {
+        expect(new Date(timestamps[i - 1]!).getTime()).toBeGreaterThanOrEqual(
+          new Date(timestamps[i]!).getTime()
+        );
+      }
+    });
+
+    it("respects limit parameter", async () => {
+      // 10 created tournaments — each becomes one activity item
+      const manyTournaments = Array.from({ length: 10 }, (_, i) => ({
+        name: `Tournament ${i}`,
+        created_at: `2025-0${(i % 9) + 1}-01T12:00:00Z`,
+      }));
+
+      const client = buildActivityMockClient([
+        { data: manyTournaments }, // 0. created tournaments
+        { data: [] }, // 1. completed tournaments
+        { data: [] }, // 2. registrations
+        { data: [] }, // 3. staff joins
+      ]);
+
+      const result = await getCommunityActivity(client, 1, 5);
+
+      expect(result.length).toBeLessThanOrEqual(5);
+    });
+
+    it.each([
+      ["registration", "registration" as const],
+      ["tournament_completed", "tournament_completed" as const],
+      ["staff_joined", "staff_joined" as const],
+      ["tournament_created", "tournament_created" as const],
+    ])("includes %s activity type", async (_label, expectedType) => {
+      const ts = "2025-06-01T12:00:00Z";
+
+      const client = buildActivityMockClient([
+        // 0. created tournaments
+        {
+          data:
+            expectedType === "tournament_created"
+              ? [{ name: "My Cup", created_at: ts }]
+              : [],
+        },
+        // 1. completed tournaments
+        {
+          data:
+            expectedType === "tournament_completed"
+              ? [{ name: "My Cup", updated_at: ts }]
+              : [],
+        },
+        // 2. registrations (inner-joined with tournaments)
+        {
+          data:
+            expectedType === "registration"
+              ? [
+                  {
+                    tournament_id: 5,
+                    created_at: ts,
+                    alt: { username: "ash" },
+                    tournament: { name: "My Cup", community_id: 1 },
+                  },
+                ]
+              : [],
+        },
+        // 3. staff joins
+        {
+          data:
+            expectedType === "staff_joined"
+              ? [{ created_at: ts, user: { username: "misty" } }]
+              : [],
+        },
+      ]);
+
+      const result = await getCommunityActivity(client, 1);
+
+      const found = result.some((item) => item.type === expectedType);
+      expect(found).toBe(true);
+    });
+
+    it.each([
+      [
+        "created tournaments query fails",
+        [
+          { data: null, error: { message: "created tournaments DB error" } },
+          { data: [] },
+          { data: [] },
+          { data: [] },
+        ],
+        "Failed to fetch created tournaments: created tournaments DB error",
+      ],
+      [
+        "completed tournaments query fails",
+        [
+          { data: [] },
+          { data: null, error: { message: "completed tournaments DB error" } },
+          { data: [] },
+          { data: [] },
+        ],
+        "Failed to fetch completed tournaments: completed tournaments DB error",
+      ],
+      [
+        "registrations query fails",
+        [
+          { data: [] },
+          { data: [] },
+          { data: null, error: { message: "registrations DB error" } },
+          { data: [] },
+        ],
+        "Failed to fetch registrations: registrations DB error",
+      ],
+      [
+        "staff joins query fails",
+        [
+          { data: [] },
+          { data: [] },
+          { data: [] },
+          { data: null, error: { message: "staff joins DB error" } },
+        ],
+        "Failed to fetch staff joins: staff joins DB error",
+      ],
+    ])("throws when the %s", async (_label, payloads, expectedMessage) => {
+      const client = buildActivityMockClient(payloads);
+
+      await expect(getCommunityActivity(client, 1)).rejects.toThrow(
+        expectedMessage
+      );
     });
   });
 });

@@ -3,7 +3,9 @@ import {
   getCurrentUser,
   checkCommunityPermission,
 } from "./helpers";
+import { createAdminSupabaseClient } from "../../client";
 import { recalculateStandings } from "./standings";
+import { createTournamentTeamSheets } from "./team-sheets";
 
 /**
  * Enhanced tournament start: lock teams, activate first phase, create Round 1.
@@ -56,6 +58,12 @@ export async function startTournamentEnhanced(
     .eq("status", "checked_in");
 
   if (lockError) throw lockError;
+
+  // 1b. Snapshot OTS data for all checked-in players (must run after locking).
+  // Requires a service role client: reads private team data and writes to
+  // tournament_team_sheets which only allows service role INSERT.
+  const serviceClient = createAdminSupabaseClient();
+  await createTournamentTeamSheets(serviceClient, tournamentId);
 
   // 2. Activate the first phase
   const { data: phases, error: phasesError } = await supabase

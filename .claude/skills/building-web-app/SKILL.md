@@ -52,3 +52,14 @@ TanStack Query v5 is the client state management layer. All server state flows t
 - **Query key factories**: define query keys via factory functions — mobile already follows this pattern (see `apps/mobile/src/lib/api/query-factory.ts`)
 
 See `creating-components` skill when building new UI components.
+
+## While Building Pages
+
+Keep these in mind — don't wait for review:
+
+- **Cache public data**: Server Components fetching community/tournament data should use `unstable_cache` + `createStaticClient()` + `CacheTags`. Only skip caching for user-specific data.
+- **Invalidate caches**: Server actions that mutate data must call `updateTag(CacheTags.xxx)`
+- **Add error boundaries**: New route segments should have an `error.tsx` sibling
+- **Parallel fetches**: Use `Promise.all` for independent data requests in Server Components
+
+See `reviewing-caching` skill for the full caching decision tree.

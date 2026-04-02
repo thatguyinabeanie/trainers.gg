@@ -1,9 +1,17 @@
 import type { Config } from "jest";
 
+const isCI = process.env.CI === "true";
+
 const config: Config = {
   displayName: "mobile",
   preset: "jest-expo",
   testMatch: ["<rootDir>/src/**/__tests__/**/*.test.{ts,tsx}"],
+
+  // In CI: add JUnit reporter for GitHub "Test Results" checks
+  ...(isCI && {
+    collectCoverage: true,
+    reporters: ["default", ["jest-junit", { outputName: "junit-mobile.xml" }]],
+  }),
 
   // pnpm hoists packages under node_modules/.pnpm/<pkg>/node_modules/<pkg>/
   // The default patterns only handle one level of node_modules. We need to

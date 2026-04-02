@@ -1,6 +1,9 @@
 ---
 name: security-reviewer
 description: Security-focused code review for RLS, auth, edge functions, and route protection
+model: sonnet
+skills:
+  - reviewing-database
 ---
 
 # Security Reviewer

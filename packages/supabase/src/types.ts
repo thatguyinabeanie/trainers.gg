@@ -2282,6 +2282,92 @@ export type Database = {
           },
         ]
       }
+      tournament_team_sheets: {
+        Row: {
+          ability: string
+          alt_id: number
+          created_at: string
+          format: string
+          held_item: string | null
+          id: number
+          move1: string
+          move2: string | null
+          move3: string | null
+          move4: string | null
+          position: number
+          registration_id: number
+          species: string
+          team_id: number
+          tera_type: string | null
+          tournament_id: number
+        }
+        Insert: {
+          ability: string
+          alt_id: number
+          created_at?: string
+          format: string
+          held_item?: string | null
+          id?: never
+          move1: string
+          move2?: string | null
+          move3?: string | null
+          move4?: string | null
+          position: number
+          registration_id: number
+          species: string
+          team_id: number
+          tera_type?: string | null
+          tournament_id: number
+        }
+        Update: {
+          ability?: string
+          alt_id?: number
+          created_at?: string
+          format?: string
+          held_item?: string | null
+          id?: never
+          move1?: string
+          move2?: string | null
+          move3?: string | null
+          move4?: string | null
+          position?: number
+          registration_id?: number
+          species?: string
+          team_id?: number
+          tera_type?: string | null
+          tournament_id?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tournament_team_sheets_alt_id_fkey"
+            columns: ["alt_id"]
+            isOneToOne: false
+            referencedRelation: "alts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tournament_team_sheets_registration_id_fkey"
+            columns: ["registration_id"]
+            isOneToOne: false
+            referencedRelation: "tournament_registrations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tournament_team_sheets_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tournament_team_sheets_tournament_id_fkey"
+            columns: ["tournament_id"]
+            isOneToOne: false
+            referencedRelation: "tournaments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tournament_template_phases: {
         Row: {
           created_at: string | null
@@ -2820,6 +2906,15 @@ export type Database = {
       get_role_name_from_group_role: {
         Args: { p_group_role_id: number }
         Returns: string
+      }
+      get_top_returning_players: {
+        Args: { p_community_id: number; p_limit?: number }
+        Returns: {
+          avatar_url: string
+          event_count: number
+          user_id: string
+          username: string
+        }[]
       }
       get_tournament_counts_by_status: {
         Args: never

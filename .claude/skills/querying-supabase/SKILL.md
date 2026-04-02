@@ -72,3 +72,17 @@ pnpm generate-types                            # Regenerate types.ts from schema
 - **Integration tests**: `src/__tests__/integration/` — require local Supabase (`pnpm db:start`)
 - **Test helpers**: `src/__tests__/integration/test-helpers.ts` — `createTestUser()`, `createTestTournament()`, `createTournamentScenario()`
 - `isSupabaseRunning()` auto-skips integration tests when local Supabase is unavailable
+
+## While Writing Queries
+
+Keep these in mind — don't wait for review to catch them:
+
+- **Avoid N+1**: Use `.in()` or joins instead of looping with individual queries
+- **Add `.limit()`**: Any query that could grow unboundedly needs a limit
+- **Use `Promise.all`**: Independent queries should run in parallel
+- **Push aggregation to SQL**: `COUNT`, `GROUP BY`, `DISTINCT` belong in the DB, not JS
+- **Index new columns**: If you add a column used in `WHERE`, `JOIN`, or `ORDER BY`, add an index in the migration
+- **Check RLS**: New tables need `ENABLE ROW LEVEL SECURITY` + policies
+- **Cache invalidation**: Server actions that mutate data must call `updateTag(CacheTags.xxx)`
+
+See `reviewing-database` skill for the full checklist.

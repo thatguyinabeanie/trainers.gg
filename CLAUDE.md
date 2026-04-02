@@ -29,8 +29,12 @@ Domain-specific guidance lives in `.claude/skills/`. Invoke the relevant skill b
 | `design-system`            | Elevation, typography hierarchy, transitions, layout conventions |
 | `product-vision`           | Product vision, feature roadmap, differentiators, user types     |
 | `competitive-landscape`    | Competitive landscape, positioning, alternatives by category     |
+| `reviewing-pr`             | PR review orchestrator: dispatches domain-specific checks        |
+| `reviewing-database`       | RLS, migrations, indexes, N+1, unbounded fetches, query perf     |
+| `reviewing-caching`        | Next.js unstable_cache, TanStack Query, cache invalidation       |
+| `reviewing-pr-feedback`    | CI monitoring, fetch/address/reply to review comments            |
 
-Slash-command skills (invoked directly, not listed above): `commit`, `create-migration`, `finish-branch`, `post-pr-monitoring`, `ticket`.
+Slash-command skills (invoked directly, not listed above): `commit`, `create-migration`, `finish-branch`, `ticket`.
 
 ## Project Rules
 
@@ -46,15 +50,16 @@ Path-scoped rules in `.claude/rules/` load automatically when working with match
 
 Custom agents in `.claude/agents/`. Invoke for isolated, focused work.
 
-| Agent                    | Model  | Purpose                                              |
-| ------------------------ | ------ | ---------------------------------------------------- |
-| `qa-engineer`            | sonnet | Write/review tests with fresh context                |
-| `pre-push-checker`       | haiku  | Run lint/typecheck/test/format, report pass/fail     |
-| `code-reviewer`          | sonnet | Review changes for style, architecture, correctness  |
-| `feature-implementer`    | sonnet | Implement features following domain skill patterns   |
-| `edge-function-reviewer` | —      | Review edge functions for CORS, auth, validation     |
-| `migration-reviewer`     | —      | Review SQL migrations for correctness, RLS, safety   |
-| `security-reviewer`      | —      | Security-focused review: RLS, auth, route protection |
+| Agent                    | Model  | Purpose                                             |
+| ------------------------ | ------ | --------------------------------------------------- |
+| `planner`                | opus   | Brainstorming, design, architecture, planning       |
+| `feature-implementer`    | sonnet | Implement features with domain skill patterns       |
+| `qa-engineer`            | sonnet | Write tests — aim 80%+ coverage                     |
+| `code-reviewer`          | sonnet | Review changes for style, architecture, correctness |
+| `pre-push-checker`       | haiku  | Run lint/typecheck/test/format, report pass/fail    |
+| `migration-reviewer`     | sonnet | Review SQL migrations for correctness, RLS, safety  |
+| `security-reviewer`      | sonnet | Security review: RLS, auth, route protection        |
+| `edge-function-reviewer` | sonnet | Review edge functions for CORS, auth, validation    |
 
 ## Monorepo Structure
 
