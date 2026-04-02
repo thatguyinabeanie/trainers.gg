@@ -250,19 +250,18 @@ export async function POST(request: NextRequest) {
     });
   } else if (community) {
     // Add admin as staff member (owner access is via owner_user_id,
-    // but community_staff membership is also checked by some queries)
+    // but community_staff membership is also checked by some queries).
+    // No unique constraint on (community_id, user_id) — use insert and
+    // ignore "duplicate key" errors for idempotency.
     const { error: staffError } = await supabase
       .from("community_staff")
-      .upsert(
-        { community_id: community.id, user_id: adminUserId },
-        { onConflict: "community_id,user_id" }
-      );
-    if (staffError) {
+      .insert({ community_id: community.id, user_id: adminUserId });
+    if (staffError && !staffError.message.includes("duplicate")) {
       hasErrors = true;
       results.push({
         email: "community_staff",
         status: "error",
-        error: `community_staff.upsert failed: ${staffError.message}`,
+        error: `community_staff.insert failed: ${staffError.message}`,
       });
     }
 
