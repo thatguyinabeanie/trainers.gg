@@ -1,5 +1,3 @@
-import { unstable_cache } from "next/cache";
-
 import {
   getCommunityBySlug,
   getCommunityStats,
@@ -8,14 +6,10 @@ import {
   listCommunityTournaments,
 } from "@trainers/supabase";
 
-import { CacheTags } from "@/lib/cache";
-import { createClient, createStaticClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/supabase/server";
 import { PageHeader } from "@/components/dashboard/page-header";
 
 import { OverviewClient } from "./overview-client";
-
-// On-demand revalidation only (no time-based)
-export const revalidate = false;
 
 interface PageProps {
   params: Promise<{ communitySlug: string }>;
@@ -26,57 +20,21 @@ export default async function DashboardCommunityOverviewPage({
 }: PageProps) {
   const { communitySlug } = await params;
 
-  // Authenticated client for access check
   const supabase = await createClient();
   const community = await getCommunityBySlug(supabase, communitySlug);
   if (!community) return null;
 
-  // Community stats are public data — cache with on-demand invalidation
-  const getCachedStats = unstable_cache(
-    async () => {
-      const client = createStaticClient();
-      return getCommunityStats(client, community.id);
-    },
-    [`community-stats-${community.id}`],
-    { tags: [CacheTags.community(communitySlug)] }
-  );
-
-  const getCachedTopPlayers = unstable_cache(
-    async () => {
-      const client = createStaticClient();
-      return getTopReturningPlayers(client, community.id, 5);
-    },
-    [`community-top-players-${community.id}`],
-    { tags: [CacheTags.community(communitySlug)] }
-  );
-
-  const getCachedActivity = unstable_cache(
-    async () => {
-      const client = createStaticClient();
-      return getCommunityActivity(client, community.id, 5);
-    },
-    [`community-activity-${community.id}`],
-    { tags: [CacheTags.community(communitySlug)] }
-  );
-
-  const getCachedUpcoming = unstable_cache(
-    async () => {
-      const client = createStaticClient();
-      return listCommunityTournaments(client, community.id, {
-        status: "upcoming",
-        limit: 3,
-      });
-    },
-    [`community-upcoming-${community.id}`],
-    { tags: [CacheTags.community(communitySlug)] }
-  );
-
+  // Fetch all overview data in parallel using the authenticated client.
+  // Dashboard pages are behind auth — community_staff requires authenticated access.
   const [stats, topPlayers, activity, { tournaments: upcomingTournaments }] =
     await Promise.all([
-      getCachedStats(),
-      getCachedTopPlayers(),
-      getCachedActivity(),
-      getCachedUpcoming(),
+      getCommunityStats(supabase, community.id),
+      getTopReturningPlayers(supabase, community.id, 5),
+      getCommunityActivity(supabase, community.id, 5),
+      listCommunityTournaments(supabase, community.id, {
+        status: "upcoming",
+        limit: 3,
+      }),
     ]);
 
   return (
