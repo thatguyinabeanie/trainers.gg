@@ -251,30 +251,48 @@ export async function POST(request: NextRequest) {
   } else if (community) {
     // Add admin as staff member (owner access is via owner_user_id,
     // but community_staff membership is also checked by some queries)
-    await supabase
+    const { error: staffError } = await supabase
       .from("community_staff")
       .upsert(
         { community_id: community.id, user_id: adminUserId },
         { onConflict: "community_id,user_id" }
       );
+    if (staffError) {
+      hasErrors = true;
+      results.push({
+        email: "community_staff",
+        status: "error",
+        error: `community_staff.upsert failed: ${staffError.message}`,
+      });
+    }
 
     // Create a completed tournament so the overview page has stats
-    await supabase.from("tournaments").upsert(
-      {
-        community_id: community.id,
-        name: "VGC League Week 1 Championship",
-        slug: "vgc-league-week-01",
-        status: "completed",
-        game_format: "gen9vgc2026regi",
-        tournament_format: "swiss_with_cut",
-        max_participants: 64,
-      },
-      { onConflict: "slug" }
-    );
+    const { error: tournamentError } = await supabase
+      .from("tournaments")
+      .upsert(
+        {
+          community_id: community.id,
+          name: "VGC League Week 1 Championship",
+          slug: "vgc-league-week-01",
+          status: "completed",
+          game_format: "gen9vgc2026regi",
+          tournament_format: "swiss_with_cut",
+          max_participants: 64,
+        },
+        { onConflict: "slug" }
+      );
+    if (tournamentError) {
+      hasErrors = true;
+      results.push({
+        email: "tournament",
+        status: "error",
+        error: `tournaments.upsert failed: ${tournamentError.message}`,
+      });
+    }
 
     // Create Pallet Town community owned by player for access control test
     const playerUserId = E2E_USERS[1]!.id;
-    await supabase.from("communities").upsert(
+    const { error: palletError } = await supabase.from("communities").upsert(
       {
         name: "Pallet Town Trainers",
         slug: "pallet-town",
@@ -284,6 +302,14 @@ export async function POST(request: NextRequest) {
       },
       { onConflict: "slug" }
     );
+    if (palletError) {
+      hasErrors = true;
+      results.push({
+        email: "pallet-town",
+        status: "error",
+        error: `pallet-town.upsert failed: ${palletError.message}`,
+      });
+    }
   }
 
   return NextResponse.json(

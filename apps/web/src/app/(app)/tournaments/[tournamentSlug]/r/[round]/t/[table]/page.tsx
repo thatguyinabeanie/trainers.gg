@@ -167,9 +167,12 @@ export default async function MatchPage({ params }: PageProps) {
     false;
   const tournamentStatus = matchData.tournament.status ?? "draft";
   // Open vs closed team sheets:
-  // - Open: opponents see OTS at round start (standard VGC)
-  // - Closed: opponents do NOT see OTS during active play
-  // - Both: all OTS public after tournament completes
+  // UI-level visibility toggle (NOT an access-control guarantee).
+  // tournament_team_sheets has USING(true) SELECT — data is always readable
+  // via direct API. This flag only controls what the match page displays.
+  // - Open: match page shows opponent OTS (standard VGC)
+  // - Closed: match page hides opponent OTS during active play
+  // - Both: match page shows all OTS after tournament completes
   const canViewOpponentTeam =
     isStaff ||
     (openTeamSheets && tournamentStatus === "active") ||

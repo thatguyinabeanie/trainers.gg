@@ -9,8 +9,7 @@ type MockQueryBuilder = {
   eq: jest.Mock;
   not: jest.Mock;
   single: jest.Mock;
-  delete: jest.Mock;
-  insert: jest.Mock;
+  upsert: jest.Mock;
 };
 
 const createMockClient = () => {
@@ -20,7 +19,7 @@ const createMockClient = () => {
     eq: jest.fn().mockReturnThis(),
     not: jest.fn().mockReturnThis(),
     single: jest.fn(),
-    insert: jest.fn(),
+    upsert: jest.fn(),
   };
   return mockClient as unknown as TypedClient;
 };
@@ -151,7 +150,7 @@ describe("createTournamentTeamSheets", () => {
         },
       });
 
-      const insertMock = jest.fn().mockResolvedValue({ error: null });
+      const upsertMock = jest.fn().mockResolvedValue({ error: null });
 
       fromSpy.mockReturnValueOnce({
         select: jest.fn().mockReturnThis(),
@@ -162,21 +161,15 @@ describe("createTournamentTeamSheets", () => {
         }),
       } as unknown as MockQueryBuilder);
 
-      // Third call: delete existing rows
+      // Third call: upsert snapshot rows
       fromSpy.mockReturnValueOnce({
-        delete: jest.fn().mockReturnThis(),
-        eq: jest.fn().mockResolvedValue({ error: null }),
-      } as unknown as MockQueryBuilder);
-
-      // Fourth call: insert
-      fromSpy.mockReturnValueOnce({
-        insert: insertMock,
+        upsert: upsertMock,
       } as unknown as MockQueryBuilder);
 
       await createTournamentTeamSheets(mockClient, tournamentId);
 
-      expect(insertMock).toHaveBeenCalledTimes(1);
-      const rows = (insertMock as jest.Mock).mock.calls[0]?.[0] as Array<{
+      expect(upsertMock).toHaveBeenCalledTimes(1);
+      const rows = (upsertMock as jest.Mock).mock.calls[0]?.[0] as Array<{
         tournament_id: number;
         registration_id: number;
         alt_id: number;
@@ -236,7 +229,7 @@ describe("createTournamentTeamSheets", () => {
 
     it("uses game_format from tournament as the format field", async () => {
       const fromSpy = jest.spyOn(mockClient, "from");
-      const insertMock = jest.fn().mockResolvedValue({ error: null });
+      const upsertMock = jest.fn().mockResolvedValue({ error: null });
 
       fromSpy.mockReturnValueOnce({
         select: jest.fn().mockReturnThis(),
@@ -257,17 +250,12 @@ describe("createTournamentTeamSheets", () => {
       } as unknown as MockQueryBuilder);
 
       fromSpy.mockReturnValueOnce({
-        delete: jest.fn().mockReturnThis(),
-        eq: jest.fn().mockResolvedValue({ error: null }),
-      } as unknown as MockQueryBuilder);
-
-      fromSpy.mockReturnValueOnce({
-        insert: insertMock,
+        upsert: upsertMock,
       } as unknown as MockQueryBuilder);
 
       await createTournamentTeamSheets(mockClient, 1);
 
-      const rows = (insertMock as jest.Mock).mock.calls[0]?.[0] as Array<{
+      const rows = (upsertMock as jest.Mock).mock.calls[0]?.[0] as Array<{
         format: string;
       }>;
       expect(rows[0]?.format).toBe("gen9vgc2026regi");
@@ -275,7 +263,7 @@ describe("createTournamentTeamSheets", () => {
 
     it("falls back to 'unknown' when game_format is null", async () => {
       const fromSpy = jest.spyOn(mockClient, "from");
-      const insertMock = jest.fn().mockResolvedValue({ error: null });
+      const upsertMock = jest.fn().mockResolvedValue({ error: null });
 
       fromSpy.mockReturnValueOnce({
         select: jest.fn().mockReturnThis(),
@@ -296,17 +284,12 @@ describe("createTournamentTeamSheets", () => {
       } as unknown as MockQueryBuilder);
 
       fromSpy.mockReturnValueOnce({
-        delete: jest.fn().mockReturnThis(),
-        eq: jest.fn().mockResolvedValue({ error: null }),
-      } as unknown as MockQueryBuilder);
-
-      fromSpy.mockReturnValueOnce({
-        insert: insertMock,
+        upsert: upsertMock,
       } as unknown as MockQueryBuilder);
 
       await createTournamentTeamSheets(mockClient, 1);
 
-      const rows = (insertMock as jest.Mock).mock.calls[0]?.[0] as Array<{
+      const rows = (upsertMock as jest.Mock).mock.calls[0]?.[0] as Array<{
         format: string;
       }>;
       expect(rows[0]?.format).toBe("unknown");
@@ -316,7 +299,7 @@ describe("createTournamentTeamSheets", () => {
   describe("early returns", () => {
     it("returns early when no checked-in registrations exist", async () => {
       const fromSpy = jest.spyOn(mockClient, "from");
-      const insertMock = jest.fn().mockResolvedValue({ error: null });
+      const upsertMock = jest.fn().mockResolvedValue({ error: null });
 
       fromSpy.mockReturnValueOnce({
         select: jest.fn().mockReturnThis(),
@@ -337,17 +320,17 @@ describe("createTournamentTeamSheets", () => {
       } as unknown as MockQueryBuilder);
 
       fromSpy.mockReturnValueOnce({
-        insert: insertMock,
+        upsert: upsertMock,
       } as unknown as MockQueryBuilder);
 
       await createTournamentTeamSheets(mockClient, 1);
 
-      expect(insertMock).not.toHaveBeenCalled();
+      expect(upsertMock).not.toHaveBeenCalled();
     });
 
     it("returns early when registrations is null", async () => {
       const fromSpy = jest.spyOn(mockClient, "from");
-      const insertMock = jest.fn().mockResolvedValue({ error: null });
+      const upsertMock = jest.fn().mockResolvedValue({ error: null });
 
       fromSpy.mockReturnValueOnce({
         select: jest.fn().mockReturnThis(),
@@ -368,18 +351,18 @@ describe("createTournamentTeamSheets", () => {
       } as unknown as MockQueryBuilder);
 
       fromSpy.mockReturnValueOnce({
-        insert: insertMock,
+        upsert: upsertMock,
       } as unknown as MockQueryBuilder);
 
       await createTournamentTeamSheets(mockClient, 1);
 
-      expect(insertMock).not.toHaveBeenCalled();
+      expect(upsertMock).not.toHaveBeenCalled();
     });
 
-    it("does not insert when all registrations produce zero Pokemon rows", async () => {
+    it("does not upsert when all registrations produce zero Pokemon rows", async () => {
       // All registrations have null team — so snapshotRows stays empty
       const fromSpy = jest.spyOn(mockClient, "from");
-      const insertMock = jest.fn().mockResolvedValue({ error: null });
+      const upsertMock = jest.fn().mockResolvedValue({ error: null });
 
       fromSpy.mockReturnValueOnce({
         select: jest.fn().mockReturnThis(),
@@ -400,12 +383,12 @@ describe("createTournamentTeamSheets", () => {
       } as unknown as MockQueryBuilder);
 
       fromSpy.mockReturnValueOnce({
-        insert: insertMock,
+        upsert: upsertMock,
       } as unknown as MockQueryBuilder);
 
       await createTournamentTeamSheets(mockClient, 1);
 
-      expect(insertMock).not.toHaveBeenCalled();
+      expect(upsertMock).not.toHaveBeenCalled();
     });
   });
 
@@ -437,12 +420,7 @@ describe("createTournamentTeamSheets", () => {
       } as unknown as MockQueryBuilder);
 
       fromSpy.mockReturnValueOnce({
-        delete: jest.fn().mockReturnThis(),
-        eq: jest.fn().mockResolvedValue({ error: null }),
-      } as unknown as MockQueryBuilder);
-
-      fromSpy.mockReturnValueOnce({
-        insert: insertMock,
+        upsert: insertMock,
       } as unknown as MockQueryBuilder);
 
       await createTournamentTeamSheets(mockClient, 1);
@@ -505,12 +483,7 @@ describe("createTournamentTeamSheets", () => {
       } as unknown as MockQueryBuilder);
 
       fromSpy.mockReturnValueOnce({
-        delete: jest.fn().mockReturnThis(),
-        eq: jest.fn().mockResolvedValue({ error: null }),
-      } as unknown as MockQueryBuilder);
-
-      fromSpy.mockReturnValueOnce({
-        insert: insertMock,
+        upsert: insertMock,
       } as unknown as MockQueryBuilder);
 
       await createTournamentTeamSheets(mockClient, 1);
@@ -585,7 +558,7 @@ describe("createTournamentTeamSheets", () => {
       );
     });
 
-    it("throws on insert error", async () => {
+    it("throws on upsert error", async () => {
       const fromSpy = jest.spyOn(mockClient, "from");
 
       fromSpy.mockReturnValueOnce({
@@ -607,18 +580,13 @@ describe("createTournamentTeamSheets", () => {
       } as unknown as MockQueryBuilder);
 
       fromSpy.mockReturnValueOnce({
-        delete: jest.fn().mockReturnThis(),
-        eq: jest.fn().mockResolvedValue({ error: null }),
-      } as unknown as MockQueryBuilder);
-
-      fromSpy.mockReturnValueOnce({
-        insert: jest.fn().mockResolvedValue({
-          error: { message: "Duplicate key violation" },
+        upsert: jest.fn().mockResolvedValue({
+          error: { message: "Upsert constraint violation" },
         }),
       } as unknown as MockQueryBuilder);
 
       await expect(createTournamentTeamSheets(mockClient, 1)).rejects.toThrow(
-        "Failed to create team sheet snapshots: Duplicate key violation"
+        "Failed to create team sheet snapshots: Upsert constraint violation"
       );
     });
   });

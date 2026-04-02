@@ -133,22 +133,15 @@ export async function createTournamentTeamSheets(
 
   if (snapshotRows.length === 0) return;
 
-  // Delete any existing snapshots for this tournament (idempotent — safe to re-run)
-  const { error: deleteError } = await supabase
-    .from("tournament_team_sheets")
-    .delete()
-    .eq("tournament_id", tournamentId);
-
-  if (deleteError) {
-    throw new Error(
-      `Failed to clear existing snapshots: ${deleteError.message}`
-    );
-  }
-
-  // Batch insert all snapshot rows
+  // Insert snapshot rows. The UNIQUE constraint on (tournament_id, registration_id, position)
+  // prevents duplicates if this function is called twice. We use upsert to make reruns
+  // idempotent without the non-atomic delete+insert pattern (which could leave zero
+  // snapshots if the insert fails after a successful delete).
   const { error: insertError } = await supabase
     .from("tournament_team_sheets")
-    .insert(snapshotRows);
+    .upsert(snapshotRows, {
+      onConflict: "tournament_id,registration_id,position",
+    });
 
   if (insertError) {
     throw new Error(

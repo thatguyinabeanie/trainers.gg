@@ -39,7 +39,7 @@ function activityVerb(item: CommunityActivityItem): string {
     case "registration":
       return `registered for ${item.targetName}`;
     case "tournament_completed":
-      return "completed";
+      return "was completed";
     case "staff_joined":
       return "joined staff";
     case "tournament_created":
