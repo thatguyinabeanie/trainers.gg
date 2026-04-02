@@ -220,7 +220,7 @@ export function OverviewClient({
                   <div
                     className="bg-primary h-full rounded-full"
                     style={{
-                      width: `${t.max_participants ? (t.registrationCount / t.max_participants) * 100 : 0}%`,
+                      width: `${t.max_participants ? Math.min((t.registrationCount / t.max_participants) * 100, 100) : 0}%`,
                     }}
                   />
                 </div>
