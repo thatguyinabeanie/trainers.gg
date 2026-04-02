@@ -1201,6 +1201,42 @@ describe("communities queries", () => {
       expect(result.totalEntries).toBe(3);
       expect(result.uniquePlayers).toBe(2);
     });
+
+    it.each([
+      [
+        "tournaments query fails",
+        [
+          { data: null, error: { message: "tournaments DB error" } },
+          { data: null, count: 0 },
+          { data: [] },
+        ],
+        "Failed to fetch tournament counts: tournaments DB error",
+      ],
+      [
+        "staff query fails",
+        [
+          { data: [] },
+          { data: null, error: { message: "staff DB error" } },
+          { data: [] },
+        ],
+        "Failed to fetch staff count: staff DB error",
+      ],
+      [
+        "groups query fails",
+        [
+          { data: [] },
+          { data: null, count: 0 },
+          { data: null, error: { message: "groups DB error" } },
+        ],
+        "Failed to fetch groups: groups DB error",
+      ],
+    ])("throws when the %s", async (_label, resolvedCalls, expectedMessage) => {
+      const client = buildStatsMockClient(resolvedCalls);
+
+      await expect(getCommunityStats(client, 1)).rejects.toThrow(
+        expectedMessage
+      );
+    });
   });
 
   // ===========================================================================
@@ -1526,6 +1562,55 @@ describe("communities queries", () => {
 
       const found = result.some((item) => item.type === expectedType);
       expect(found).toBe(true);
+    });
+
+    it.each([
+      [
+        "created tournaments query fails",
+        [
+          { data: null, error: { message: "created tournaments DB error" } },
+          { data: [] },
+          { data: [] },
+          { data: [] },
+        ],
+        "Failed to fetch created tournaments: created tournaments DB error",
+      ],
+      [
+        "completed tournaments query fails",
+        [
+          { data: [] },
+          { data: null, error: { message: "completed tournaments DB error" } },
+          { data: [] },
+          { data: [] },
+        ],
+        "Failed to fetch completed tournaments: completed tournaments DB error",
+      ],
+      [
+        "registrations query fails",
+        [
+          { data: [] },
+          { data: [] },
+          { data: null, error: { message: "registrations DB error" } },
+          { data: [] },
+        ],
+        "Failed to fetch registrations: registrations DB error",
+      ],
+      [
+        "staff joins query fails",
+        [
+          { data: [] },
+          { data: [] },
+          { data: [] },
+          { data: null, error: { message: "staff joins DB error" } },
+        ],
+        "Failed to fetch staff joins: staff joins DB error",
+      ],
+    ])("throws when the %s", async (_label, payloads, expectedMessage) => {
+      const client = buildActivityMockClient(payloads);
+
+      await expect(getCommunityActivity(client, 1)).rejects.toThrow(
+        expectedMessage
+      );
     });
   });
 });
