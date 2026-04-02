@@ -1,5 +1,7 @@
 import {
   VGC_FORMATS,
+  POKEMON_GAMES,
+  ALL_FORMAT_IDS,
   getFormatById,
   getFormatLabel,
   getActiveFormats,
@@ -168,6 +170,61 @@ describe("getFormatsByGame", () => {
 
     expect(swshIds).toContain("gen8vgc2022");
     expect(swshIds).toContain("gen8vgc2020");
+  });
+});
+
+describe("ALL_FORMAT_IDS", () => {
+  it("contains every format ID from VGC_FORMATS in order", () => {
+    const expectedIds = VGC_FORMATS.map((f) => f.id);
+    expect(ALL_FORMAT_IDS).toEqual(expectedIds);
+  });
+
+  it("has the same length as VGC_FORMATS", () => {
+    expect(ALL_FORMAT_IDS).toHaveLength(VGC_FORMATS.length);
+  });
+
+  it("contains gen9vgc2026regi", () => {
+    expect(ALL_FORMAT_IDS).toContain("gen9vgc2026regi");
+  });
+
+  it("all IDs are strings", () => {
+    expect(ALL_FORMAT_IDS.every((id) => typeof id === "string")).toBe(true);
+  });
+});
+
+describe("POKEMON_GAMES", () => {
+  it("defines Pokemon Champions as generation 10", () => {
+    expect(POKEMON_GAMES.champions.generation).toBe(10);
+    expect(POKEMON_GAMES.champions.name).toBe("Pokemon Champions");
+    expect(POKEMON_GAMES.champions.shortName).toBe("Champions");
+  });
+
+  it("defines Scarlet & Violet as generation 9", () => {
+    expect(POKEMON_GAMES.scarletViolet.generation).toBe(9);
+    expect(POKEMON_GAMES.scarletViolet.name).toBe("Scarlet & Violet");
+    expect(POKEMON_GAMES.scarletViolet.shortName).toBe("SV");
+  });
+
+  it("defines all seven games", () => {
+    const keys = Object.keys(POKEMON_GAMES);
+    expect(keys).toHaveLength(7);
+    expect(keys).toContain("champions");
+    expect(keys).toContain("scarletViolet");
+    expect(keys).toContain("swordShield");
+    expect(keys).toContain("sunMoon");
+    expect(keys).toContain("xy");
+    expect(keys).toContain("blackWhite");
+    expect(keys).toContain("diamondPearl");
+  });
+
+  it("generations decrease from Champions (10) to Diamond & Pearl (4)", () => {
+    expect(POKEMON_GAMES.champions.generation).toBeGreaterThan(
+      POKEMON_GAMES.scarletViolet.generation
+    );
+    expect(POKEMON_GAMES.scarletViolet.generation).toBeGreaterThan(
+      POKEMON_GAMES.swordShield.generation
+    );
+    expect(POKEMON_GAMES.diamondPearl.generation).toBe(4);
   });
 });
 
