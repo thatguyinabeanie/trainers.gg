@@ -54,10 +54,11 @@ describe("RolePermissionsCard", () => {
 
     it("renders exactly 6 permission rows", () => {
       render(<RolePermissionsCard />);
-      // getAllByRole("row") includes the header row and 6 data rows = 7 total
+      // getAllByRole("row") includes the header row + 6 data rows = 7 total
       const rows = screen.getAllByRole("row");
-      // Subtract 1 for the header row
       expect(rows).toHaveLength(7);
+      // Verify 6 data rows (excluding header)
+      expect(rows.length - 1).toBe(6);
     });
   });
 

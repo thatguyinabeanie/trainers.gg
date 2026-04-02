@@ -27,10 +27,10 @@ describe("DashboardCard", () => {
     });
 
     it("does not render a label element when label prop is omitted", () => {
-      render(<DashboardCard>content</DashboardCard>);
-      // Only the children text should exist — no extra paragraph for label
+      const { container } = render(<DashboardCard>content</DashboardCard>);
+      // Only the children text should exist — no <p> for label
       expect(screen.getByText("content")).toBeInTheDocument();
-      expect(screen.queryByRole("paragraph")).not.toBeInTheDocument();
+      expect(container.querySelectorAll("p")).toHaveLength(0);
     });
 
     it("does not render a label when label is an empty string", () => {
