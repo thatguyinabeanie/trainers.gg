@@ -1,0 +1,5 @@
+-- This migration was originally created to add community permission columns
+-- (is_public, registration_mode, staff_invite_mode, team_sheet_visibility).
+-- Those columns were removed in 20260401234001 as part of the OTS snapshot
+-- redesign. This file is kept empty to satisfy Supabase preview branch
+-- migration tracking — the remote already applied this migration version.
