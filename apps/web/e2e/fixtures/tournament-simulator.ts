@@ -112,10 +112,22 @@ const PLAYER_ACCOUNTS = [
 
 function assertNotProductionDatabase() {
   const productionRef = process.env.SUPABASE_PRODUCTION_PROJECT_REF;
-  if (!productionRef) return;
+  // Fail-closed: if we can't verify, block rather than assume safe
+  if (!productionRef) {
+    throw new Error(
+      "Tournament simulator BLOCKED: SUPABASE_PRODUCTION_PROJECT_REF is not set — " +
+        "cannot verify this is not the production database."
+    );
+  }
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
   const match = supabaseUrl.match(/https:\/\/([a-z0-9]+)\.supabase\.co/i);
   const currentRef = match?.[1];
+  if (!currentRef) {
+    throw new Error(
+      "Tournament simulator BLOCKED: could not extract Supabase project ref from " +
+        `NEXT_PUBLIC_SUPABASE_URL (${supabaseUrl || "<empty>"}) — cannot verify this is not the production database.`
+    );
+  }
   if (currentRef === productionRef) {
     throw new Error(
       "Tournament simulator BLOCKED: connected to production database " +

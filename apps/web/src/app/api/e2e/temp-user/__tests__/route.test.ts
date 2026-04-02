@@ -103,21 +103,37 @@ describe("temp-user E2E API route", () => {
       expect(body.error).toBe("Not found");
     });
 
-    it.each(["development", "preview"])(
-      "allows VERCEL_ENV=%s",
-      async (vercelEnv) => {
-        setEnv({ VERCEL_ENV: vercelEnv });
-        // Mock successful creation so we get past the guards
-        mockCreateUser.mockResolvedValue({
-          data: { user: { id: "user-123" } },
-          error: null,
-        });
+    it("allows VERCEL_ENV=development with valid production ref", async () => {
+      setEnv({
+        VERCEL_ENV: "development",
+        NEXT_PUBLIC_SUPABASE_URL: "https://devref789.supabase.co",
+        SUPABASE_PRODUCTION_PROJECT_REF: "prodref456",
+      });
+      mockCreateUser.mockResolvedValue({
+        data: { user: { id: "user-123" } },
+        error: null,
+      });
 
-        const { status } = await getJsonResponse(POST, makePostRequest());
+      const { status } = await getJsonResponse(POST, makePostRequest());
 
-        expect(status).not.toBe(404);
-      }
-    );
+      expect(status).not.toBe(404);
+    });
+
+    it("allows VERCEL_ENV=preview with valid production ref", async () => {
+      setEnv({
+        VERCEL_ENV: "preview",
+        NEXT_PUBLIC_SUPABASE_URL: "https://previewref123.supabase.co",
+        SUPABASE_PRODUCTION_PROJECT_REF: "prodref456",
+      });
+      mockCreateUser.mockResolvedValue({
+        data: { user: { id: "user-123" } },
+        error: null,
+      });
+
+      const { status } = await getJsonResponse(POST, makePostRequest());
+
+      expect(status).not.toBe(404);
+    });
 
     it("allows local dev when VERCEL_ENV is unset and NODE_ENV is development", async () => {
       setEnv({ VERCEL_ENV: undefined, NODE_ENV: "development" });
@@ -138,6 +154,80 @@ describe("temp-user E2E API route", () => {
 
       expect(status).toBe(404);
       expect(body.error).toBe("Not found");
+    });
+  });
+
+  // --------------------------------------------------------------------------
+  // Production database guard
+  // --------------------------------------------------------------------------
+
+  describe("production database guard", () => {
+    it("returns 404 when SUPABASE_PRODUCTION_PROJECT_REF is not set on Vercel (fail-closed)", async () => {
+      setEnv({
+        VERCEL_ENV: "preview",
+        NEXT_PUBLIC_SUPABASE_URL: "https://previewref123.supabase.co",
+        SUPABASE_PRODUCTION_PROJECT_REF: undefined,
+      });
+
+      const { status, body } = await getJsonResponse(POST, makePostRequest());
+
+      expect(status).toBe(404);
+      expect(body.error).toBe("Not found");
+    });
+
+    it("returns 404 when connected to production database", async () => {
+      setEnv({
+        VERCEL_ENV: "preview",
+        NEXT_PUBLIC_SUPABASE_URL: "https://prodref456.supabase.co",
+        SUPABASE_PRODUCTION_PROJECT_REF: "prodref456",
+      });
+
+      const { status, body } = await getJsonResponse(POST, makePostRequest());
+
+      expect(status).toBe(404);
+      expect(body.error).toBe("Not found");
+    });
+
+    it("returns 404 when SUPABASE_PRODUCTION_PROJECT_REF is set but NEXT_PUBLIC_SUPABASE_URL is empty (fail-closed)", async () => {
+      setEnv({
+        VERCEL_ENV: "preview",
+        NEXT_PUBLIC_SUPABASE_URL: "",
+        SUPABASE_PRODUCTION_PROJECT_REF: "prodref456",
+      });
+
+      const { status, body } = await getJsonResponse(POST, makePostRequest());
+
+      expect(status).toBe(404);
+      expect(body.error).toBe("Not found");
+    });
+
+    it("returns 404 when SUPABASE_PRODUCTION_PROJECT_REF is set but NEXT_PUBLIC_SUPABASE_URL is unparseable (fail-closed)", async () => {
+      setEnv({
+        VERCEL_ENV: "preview",
+        NEXT_PUBLIC_SUPABASE_URL: "not-a-valid-supabase-url",
+        SUPABASE_PRODUCTION_PROJECT_REF: "prodref456",
+      });
+
+      const { status, body } = await getJsonResponse(POST, makePostRequest());
+
+      expect(status).toBe(404);
+      expect(body.error).toBe("Not found");
+    });
+
+    it("skips guard for local dev", async () => {
+      setEnv({
+        VERCEL_ENV: undefined,
+        NODE_ENV: "development",
+        SUPABASE_PRODUCTION_PROJECT_REF: undefined,
+      });
+      mockCreateUser.mockResolvedValue({
+        data: { user: { id: "user-123" } },
+        error: null,
+      });
+
+      const { status } = await getJsonResponse(POST, makePostRequest());
+
+      expect(status).not.toBe(404);
     });
   });
 
