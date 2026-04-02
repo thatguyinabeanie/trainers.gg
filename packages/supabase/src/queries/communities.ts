@@ -975,7 +975,6 @@ export async function hasCommunityPermission(
 export interface CommunityStats {
   totalTournaments: number;
   activeTournaments: number;
-  upcomingTournaments: number;
   uniquePlayers: number;
   totalEntries: number;
   staffCount: number;
@@ -994,7 +993,6 @@ export async function getCommunityStats(
   supabase: TypedClient,
   communityId: number
 ): Promise<CommunityStats> {
-  // --- Parallel: tournament counts, staff headcount, group ids ---
   const [tournamentsResult, staffResult, groupsResult] = await Promise.all([
     supabase
       .from("tournaments")
@@ -1024,14 +1022,9 @@ export async function getCommunityStats(
   const activeTournaments = tournamentList.filter(
     (t) => t.status === "active"
   ).length;
-  const upcomingTournaments = tournamentList.filter(
-    (t) => t.status === "upcoming"
-  ).length;
   const staffCount = staffResult.count;
   const groups = groupsResult.data ?? [];
 
-  // --- Registrations: unique alts (players) + total entries ---
-  // tournament_registrations uses alt_id; alts.user_id gives the unique player
   const tournamentIds = tournamentList.map((t) => t.id);
 
   let uniquePlayers = 0;
@@ -1055,8 +1048,6 @@ export async function getCommunityStats(
         .filter((id): id is string => id !== null && id !== undefined)
     ).size;
   }
-
-  // --- Admin / judge breakdown via groups → group_roles → roles ---
 
   const groupIds = (groups ?? []).map((g) => g.id);
 
@@ -1114,7 +1105,6 @@ export async function getCommunityStats(
   return {
     totalTournaments,
     activeTournaments,
-    upcomingTournaments,
     uniquePlayers,
     totalEntries,
     staffCount: staffCount ?? 0,
@@ -1252,8 +1242,6 @@ export async function getCommunityActivity(
 ): Promise<CommunityActivityItem[]> {
   const items: CommunityActivityItem[] = [];
 
-  // --- Single tournament query: fetch id, name, status, created_at, updated_at ---
-  // Replaces three separate tournament queries (creations, completions, registrations).
   const { data: allTournaments, error: tournamentsError } = await supabase
     .from("tournaments")
     .select("id, name, status, created_at, updated_at")
@@ -1331,8 +1319,6 @@ export async function getCommunityActivity(
     }
   }
 
-  // --- Recent staff joins ---
-  // community_staff.user_id → users.username
   const { data: staffJoins, error: staffError } = await supabase
     .from("community_staff")
     .select("created_at, user:users(username)")

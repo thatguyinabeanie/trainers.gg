@@ -554,38 +554,53 @@ export function getFormatLabel(id: string): string {
   return FORMAT_BY_ID.get(id)?.label ?? id;
 }
 
+/** Pre-computed: formats grouped by game name */
+const FORMATS_BY_GAME = new Map<string, GameFormat[]>();
+for (const f of VGC_FORMATS) {
+  const existing = FORMATS_BY_GAME.get(f.game);
+  if (existing) {
+    existing.push(f);
+  } else {
+    FORMATS_BY_GAME.set(f.game, [f]);
+  }
+}
+
+/** Pre-computed: currently active formats */
+const ACTIVE_FORMATS = VGC_FORMATS.filter((f) => f.active);
+
+/** Pre-computed: unique games in order (newest first) */
+const AVAILABLE_GAMES: Array<{
+  name: string;
+  shortName: string;
+  generation: number;
+}> = [];
+{
+  const seen = new Set<string>();
+  for (const f of VGC_FORMATS) {
+    if (!seen.has(f.game)) {
+      seen.add(f.game);
+      AVAILABLE_GAMES.push({
+        name: f.game,
+        shortName: f.gameShort,
+        generation: f.generation,
+      });
+    }
+  }
+}
+
 /** Get all formats for a specific game (e.g., "Scarlet & Violet") */
 export function getFormatsByGame(gameName: string): GameFormat[] {
-  return VGC_FORMATS.filter((f) => f.game === gameName);
+  return FORMATS_BY_GAME.get(gameName) ?? [];
 }
 
 /** Get all currently active formats */
 export function getActiveFormats(): GameFormat[] {
-  return VGC_FORMATS.filter((f) => f.active);
+  return ACTIVE_FORMATS;
 }
 
 /** Get all unique game names (for the game selector dropdown) */
-export function getAvailableGames(): Array<{
-  name: string;
-  shortName: string;
-  generation: number;
-}> {
-  const seen = new Set<string>();
-  const games: Array<{ name: string; shortName: string; generation: number }> =
-    [];
-
-  for (const format of VGC_FORMATS) {
-    if (!seen.has(format.game)) {
-      seen.add(format.game);
-      games.push({
-        name: format.game,
-        shortName: format.gameShort,
-        generation: format.generation,
-      });
-    }
-  }
-
-  return games;
+export function getAvailableGames(): typeof AVAILABLE_GAMES {
+  return AVAILABLE_GAMES;
 }
 
 /** Get all Showdown format IDs */

@@ -1,4 +1,5 @@
 import type { TypedClient } from "../client";
+import type { Tables } from "../types";
 
 /**
  * OTS (Open Team Sheet) data for a single Pokemon.
@@ -25,6 +26,37 @@ export interface PlayerTeamSheet {
   pokemon: TeamSheetPokemon[];
 }
 
+type TeamSheetRow = Tables<"tournament_team_sheets">;
+
+/** Map a DB row to the camelCase TeamSheetPokemon interface */
+function rowToPokemon(row: TeamSheetRow): TeamSheetPokemon {
+  return {
+    position: row.position,
+    species: row.species,
+    ability: row.ability,
+    heldItem: row.held_item,
+    teraType: row.tera_type,
+    move1: row.move1,
+    move2: row.move2,
+    move3: row.move3,
+    move4: row.move4,
+  };
+}
+
+/** Build a PlayerTeamSheet from a set of rows (all same registration) */
+function rowsToSheet(rows: TeamSheetRow[]): PlayerTeamSheet | null {
+  if (rows.length === 0) return null;
+  const first = rows[0];
+  if (!first) return null;
+  return {
+    registrationId: first.registration_id,
+    altId: first.alt_id,
+    teamId: first.team_id,
+    format: first.format,
+    pokemon: rows.map(rowToPokemon),
+  };
+}
+
 /**
  * Get all visible team sheets for a tournament.
  * Returns one PlayerTeamSheet per registered player.
@@ -44,36 +76,20 @@ export async function getTournamentTeamSheets(
   if (error) throw new Error(`Failed to fetch team sheets: ${error.message}`);
   if (!data || data.length === 0) return [];
 
-  // Group by registration_id
-  const grouped = new Map<number, PlayerTeamSheet>();
+  const grouped = new Map<number, TeamSheetRow[]>();
 
   for (const row of data) {
-    let sheet = grouped.get(row.registration_id);
-    if (!sheet) {
-      sheet = {
-        registrationId: row.registration_id,
-        altId: row.alt_id,
-        teamId: row.team_id,
-        format: row.format,
-        pokemon: [],
-      };
-      grouped.set(row.registration_id, sheet);
+    const existing = grouped.get(row.registration_id);
+    if (existing) {
+      existing.push(row);
+    } else {
+      grouped.set(row.registration_id, [row]);
     }
-
-    sheet.pokemon.push({
-      position: row.position,
-      species: row.species,
-      ability: row.ability,
-      heldItem: row.held_item,
-      teraType: row.tera_type,
-      move1: row.move1,
-      move2: row.move2,
-      move3: row.move3,
-      move4: row.move4,
-    });
   }
 
-  return Array.from(grouped.values());
+  return Array.from(grouped.values())
+    .map(rowsToSheet)
+    .filter((s): s is PlayerTeamSheet => s !== null);
 }
 
 /**
@@ -92,26 +108,7 @@ export async function getTeamSheetByRegistration(
   if (error) throw new Error(`Failed to fetch team sheet: ${error.message}`);
   if (!data || data.length === 0) return null;
 
-  const first = data[0];
-  if (!first) return null;
-
-  return {
-    registrationId: first.registration_id,
-    altId: first.alt_id,
-    teamId: first.team_id,
-    format: first.format,
-    pokemon: data.map((row) => ({
-      position: row.position,
-      species: row.species,
-      ability: row.ability,
-      heldItem: row.held_item,
-      teraType: row.tera_type,
-      move1: row.move1,
-      move2: row.move2,
-      move3: row.move3,
-      move4: row.move4,
-    })),
-  };
+  return rowsToSheet(data);
 }
 
 /**
@@ -139,31 +136,8 @@ export async function getMatchTeamSheets(
     throw new Error(`Failed to fetch match team sheets: ${error.message}`);
   if (!data || data.length === 0) return { player1: null, player2: null };
 
-  const toSheet = (rows: typeof data): PlayerTeamSheet | null => {
-    if (rows.length === 0) return null;
-    const first = rows[0];
-    if (!first) return null;
-    return {
-      registrationId: first.registration_id,
-      altId: first.alt_id,
-      teamId: first.team_id,
-      format: first.format,
-      pokemon: rows.map((row) => ({
-        position: row.position,
-        species: row.species,
-        ability: row.ability,
-        heldItem: row.held_item,
-        teraType: row.tera_type,
-        move1: row.move1,
-        move2: row.move2,
-        move3: row.move3,
-        move4: row.move4,
-      })),
-    };
-  };
-
   return {
-    player1: toSheet(data.filter((r) => r.alt_id === player1AltId)),
-    player2: toSheet(data.filter((r) => r.alt_id === player2AltId)),
+    player1: rowsToSheet(data.filter((r) => r.alt_id === player1AltId)),
+    player2: rowsToSheet(data.filter((r) => r.alt_id === player2AltId)),
   };
 }

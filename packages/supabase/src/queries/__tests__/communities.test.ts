@@ -1104,7 +1104,6 @@ describe("communities queries", () => {
 
       expect(typeof result.totalTournaments).toBe("number");
       expect(typeof result.activeTournaments).toBe("number");
-      expect(typeof result.upcomingTournaments).toBe("number");
       expect(typeof result.uniquePlayers).toBe("number");
       expect(typeof result.totalEntries).toBe("number");
       expect(typeof result.staffCount).toBe("number");
@@ -1127,7 +1126,6 @@ describe("communities queries", () => {
 
       expect(result.totalTournaments).toBe(0);
       expect(result.activeTournaments).toBe(0);
-      expect(result.upcomingTournaments).toBe(0);
       expect(result.uniquePlayers).toBe(0);
       expect(result.totalEntries).toBe(0);
     });
@@ -1140,8 +1138,7 @@ describe("communities queries", () => {
           { id: 2, status: "active" },
           { id: 3, status: "completed" },
         ],
-        2, // activeTournaments
-        0, // upcomingTournaments
+        2,
       ],
       [
         "upcoming only",
@@ -1149,8 +1146,7 @@ describe("communities queries", () => {
           { id: 1, status: "upcoming" },
           { id: 2, status: "completed" },
         ],
-        0, // activeTournaments
-        1, // upcomingTournaments
+        0,
       ],
       [
         "mixed active and upcoming",
@@ -1160,27 +1156,21 @@ describe("communities queries", () => {
           { id: 3, status: "upcoming" },
           { id: 4, status: "completed" },
         ],
-        1, // activeTournaments
-        2, // upcomingTournaments
+        1,
       ],
     ])(
       "correctly counts %s tournaments",
-      async (_label, tournaments, expectedActive, expectedUpcoming) => {
+      async (_label, tournaments, expectedActive) => {
         const client = buildStatsMockClient([
-          // 0. tournaments (parallel)
           { data: tournaments },
-          // 1. community_staff count (parallel)
           { data: null, count: 0 },
-          // 2. groups (parallel)
           { data: [] },
-          // 3. tournament_registrations (sequential, after parallel batch)
           { data: [] },
         ]);
 
         const result = await getCommunityStats(client, 1);
 
         expect(result.activeTournaments).toBe(expectedActive);
-        expect(result.upcomingTournaments).toBe(expectedUpcoming);
         expect(result.totalTournaments).toBe(tournaments.length);
       }
     );
