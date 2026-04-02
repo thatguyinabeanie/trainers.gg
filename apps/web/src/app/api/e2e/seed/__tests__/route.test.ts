@@ -42,6 +42,7 @@ jest.mock("@/lib/supabase/server", () => ({
                 .mockResolvedValue({ data: { id: 1 }, error: null }),
             }),
           }),
+          insert: jest.fn().mockResolvedValue({ error: null }),
         };
       }
       return {};
