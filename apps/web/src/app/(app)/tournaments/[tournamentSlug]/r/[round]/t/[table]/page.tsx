@@ -2,8 +2,10 @@ import { notFound, redirect } from "next/navigation";
 import { createClientReadOnly } from "@/lib/supabase/server";
 import {
   getMatchByRoundAndTable,
+  getMatchTeamSheets,
   getPlayerTournamentStats,
   getTeamForRegistration,
+  type PlayerTeamSheet,
 } from "@trainers/supabase";
 import { getUser } from "@/lib/supabase/server";
 import { MatchPageClient } from "@/components/match/match-page-client";
@@ -164,9 +166,14 @@ export default async function MatchPage({ params }: PageProps) {
     (matchData.tournament as { open_team_sheets?: boolean }).open_team_sheets ??
     false;
   const tournamentStatus = matchData.tournament.status ?? "draft";
+  // Open vs closed team sheets:
+  // - Open: opponents see OTS at round start (standard VGC)
+  // - Closed: opponents do NOT see OTS during active play
+  // - Both: all OTS public after tournament completes
   const canViewOpponentTeam =
     isStaff ||
-    (openTeamSheets && ["active", "completed"].includes(tournamentStatus));
+    (openTeamSheets && tournamentStatus === "active") ||
+    tournamentStatus === "completed";
 
   // Determine opponent alt ID from current user's perspective
   const myAltIdForTeam = isPlayer1
@@ -180,36 +187,35 @@ export default async function MatchPage({ params }: PageProps) {
       ? matchData.match.alt1_id
       : null;
 
-  // For staff who aren't participants, fetch both player teams directly
+  // For staff who aren't participants, fetch both players' snapshots
   const staffViewBothTeams = isStaff && !isParticipant;
 
-  // Fetch teams and stats in parallel
-  const [myTeamRaw, opponentTeamRaw, player1StatsRaw, player2StatsRaw] =
+  // Decide whether to fetch OTS snapshots for opponent/staff views
+  const needsSnapshots =
+    (canViewOpponentTeam && opponentAltId !== null) || staffViewBothTeams;
+  const snapshotAlt1Id = matchData.match.alt1_id;
+  const snapshotAlt2Id = matchData.match.alt2_id;
+
+  // Fetch teams and stats in parallel.
+  // Own team: always use getTeamForRegistration (player can see their private full data).
+  // Opponent/staff teams: use getMatchTeamSheets (OTS snapshots — RLS-safe).
+  const [myTeamRaw, snapshotSheets, player1StatsRaw, player2StatsRaw] =
     await Promise.all([
-      // My team: participant's own team, or player2's team for staff (maps to right side)
+      // My team: participant's own full team data
       isParticipant && myAltIdForTeam
         ? getTeamForRegistration(supabase, tournamentId, myAltIdForTeam).catch(
             () => null
           )
-        : staffViewBothTeams && matchData.match.alt2_id
-          ? getTeamForRegistration(
-              supabase,
-              tournamentId,
-              matchData.match.alt2_id
-            ).catch(() => null)
-          : null,
-      // Opponent team: opponent's team for participants, player1's team for staff (maps to left side)
-      canViewOpponentTeam && opponentAltId
-        ? getTeamForRegistration(supabase, tournamentId, opponentAltId).catch(
-            () => null
-          )
-        : staffViewBothTeams && matchData.match.alt1_id
-          ? getTeamForRegistration(
-              supabase,
-              tournamentId,
-              matchData.match.alt1_id
-            ).catch(() => null)
-          : null,
+        : null,
+      // Snapshot sheets for opponent visibility and staff both-sides view
+      needsSnapshots && snapshotAlt1Id !== null && snapshotAlt2Id !== null
+        ? getMatchTeamSheets(
+            supabase,
+            tournamentId,
+            snapshotAlt1Id,
+            snapshotAlt2Id
+          ).catch(() => ({ player1: null, player2: null }))
+        : Promise.resolve({ player1: null, player2: null }),
       // Player 1 stats
       matchData.match.alt1_id
         ? getPlayerTournamentStats(
@@ -228,7 +234,7 @@ export default async function MatchPage({ params }: PageProps) {
         : null,
     ]);
 
-  // Transform team data into the shape expected by TeamSheet
+  // Transform full private team data (own team only)
   function transformTeam(
     raw: Awaited<ReturnType<typeof getTeamForRegistration>> | null
   ) {
@@ -254,8 +260,48 @@ export default async function MatchPage({ params }: PageProps) {
     };
   }
 
+  // Transform OTS snapshot data (opponent team / staff view).
+  // OTS format omits EVs, IVs, nature, gender, shiny — fill with safe defaults.
+  function transformSnapshotTeam(sheet: PlayerTeamSheet | null) {
+    if (!sheet) return null;
+    return {
+      teamId: sheet.teamId,
+      teamName: null,
+      pokemon: sheet.pokemon.map((p) => ({
+        species: p.species,
+        nickname: null,
+        ability: p.ability,
+        held_item: p.heldItem,
+        tera_type: p.teraType,
+        move1: p.move1,
+        move2: p.move2,
+        move3: p.move3,
+        move4: p.move4,
+        nature: "",
+        gender: null,
+        is_shiny: false,
+        position: p.position,
+      })),
+    };
+  }
+
+  // Resolve which snapshot belongs to which side
+  const opponentSheet = canViewOpponentTeam
+    ? isPlayer1
+      ? snapshotSheets.player2
+      : isPlayer2
+        ? snapshotSheets.player1
+        : null
+    : null;
+
   const myTeam = transformTeam(myTeamRaw);
-  const opponentTeam = transformTeam(opponentTeamRaw);
+  // Staff non-participant: show player2 on right (myTeam slot), player1 on left (opponentTeam slot)
+  const staffMyTeam = staffViewBothTeams
+    ? transformSnapshotTeam(snapshotSheets.player2)
+    : null;
+  const opponentTeam = staffViewBothTeams
+    ? transformSnapshotTeam(snapshotSheets.player1)
+    : transformSnapshotTeam(opponentSheet);
 
   // Transform player stats
   function transformStats(
@@ -311,7 +357,7 @@ export default async function MatchPage({ params }: PageProps) {
         isPlayer1={isPlayer1}
         player1Stats={player1Stats}
         player2Stats={player2Stats}
-        myTeam={myTeam}
+        myTeam={staffViewBothTeams ? staffMyTeam : myTeam}
         opponentTeam={opponentTeam}
         openTeamSheets={openTeamSheets}
         currentUserUsername={currentUserUsername}
