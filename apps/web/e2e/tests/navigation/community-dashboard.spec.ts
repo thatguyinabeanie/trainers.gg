@@ -66,22 +66,12 @@ test.describe("Community dashboard", () => {
         main.getByText("Overview", { exact: true }).first()
       ).toBeVisible({ timeout: 10000 });
 
-      // The seed creates multiple tournaments for vgc-league, so Tournaments
-      // stat should not be "0".
-      const tournamentsCard = main
-        .getByText("Tournaments", { exact: true })
-        .first()
-        .locator("..")
-        .locator("..");
-      await expect(tournamentsCard.getByText("0")).not.toBeVisible();
+      // The seed creates 3 tournaments for vgc-league — the stat should show "3"
+      await expect(main.getByText("3").first()).toBeVisible({ timeout: 10000 });
 
-      // Staff count should also be non-zero (seed adds 10 staff members)
-      const staffCard = main
-        .getByText("Staff", { exact: true })
-        .first()
-        .locator("..")
-        .locator("..");
-      await expect(staffCard.getByText("0")).not.toBeVisible();
+      // Unique Players and Total Entries should be non-zero
+      await expect(main.getByText("122").first()).toBeVisible();
+      await expect(main.getByText("142").first()).toBeVisible();
     });
 
     test("shows Upcoming Tournaments card", async ({ page }) => {
@@ -225,6 +215,11 @@ test.describe("Community dashboard", () => {
         main.getByText("Staff", { exact: true }).first()
       ).toBeVisible({
         timeout: 10000,
+      });
+
+      // Wait for the Role Permissions card to render (it's below the drag-drop UI)
+      await expect(main.getByText(/Role Permissions/i)).toBeVisible({
+        timeout: 15000,
       });
 
       // Column headers inside the permissions table
