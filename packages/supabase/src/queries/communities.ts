@@ -1086,26 +1086,28 @@ export async function getCommunityStats(
       }
     }
 
+    // Count distinct users per role bucket to avoid double-counting staff
+    // who hold multiple group roles
     if (adminGroupRoleIds.length > 0) {
-      const { count, error } = await supabase
+      const { data: adminUsers, error } = await supabase
         .from("user_group_roles")
-        .select("*", { count: "exact", head: true })
+        .select("user_id")
         .in("group_role_id", adminGroupRoleIds);
 
       if (error)
         throw new Error(`Failed to fetch admin count: ${error.message}`);
-      adminCount = count ?? 0;
+      adminCount = new Set(adminUsers?.map((u) => u.user_id)).size;
     }
 
     if (judgeGroupRoleIds.length > 0) {
-      const { count, error } = await supabase
+      const { data: judgeUsers, error } = await supabase
         .from("user_group_roles")
-        .select("*", { count: "exact", head: true })
+        .select("user_id")
         .in("group_role_id", judgeGroupRoleIds);
 
       if (error)
         throw new Error(`Failed to fetch judge count: ${error.message}`);
-      judgeCount = count ?? 0;
+      judgeCount = new Set(judgeUsers?.map((u) => u.user_id)).size;
     }
   }
 
@@ -1289,8 +1291,8 @@ export async function getCommunityActivity(
   for (const t of createdTournaments) {
     items.push({
       type: "tournament_created",
-      actorName: "",
-      targetName: t.name,
+      actorName: t.name,
+      targetName: "",
       timestamp: t.created_at ?? new Date(0).toISOString(),
     });
   }
@@ -1298,8 +1300,8 @@ export async function getCommunityActivity(
   for (const t of completedTournaments) {
     items.push({
       type: "tournament_completed",
-      actorName: "",
-      targetName: t.name,
+      actorName: t.name,
+      targetName: "",
       timestamp: t.updated_at ?? new Date(0).toISOString(),
     });
   }

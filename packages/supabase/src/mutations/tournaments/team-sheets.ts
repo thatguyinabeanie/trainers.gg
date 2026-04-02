@@ -133,6 +133,18 @@ export async function createTournamentTeamSheets(
 
   if (snapshotRows.length === 0) return;
 
+  // Delete any existing snapshots for this tournament (idempotent — safe to re-run)
+  const { error: deleteError } = await supabase
+    .from("tournament_team_sheets")
+    .delete()
+    .eq("tournament_id", tournamentId);
+
+  if (deleteError) {
+    throw new Error(
+      `Failed to clear existing snapshots: ${deleteError.message}`
+    );
+  }
+
   // Batch insert all snapshot rows
   const { error: insertError } = await supabase
     .from("tournament_team_sheets")

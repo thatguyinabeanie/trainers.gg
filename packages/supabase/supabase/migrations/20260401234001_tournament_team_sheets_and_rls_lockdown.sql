@@ -55,11 +55,13 @@ CREATE INDEX IF NOT EXISTS idx_tts_format_species
 -- RLS: existence = public (snapshots only created when meant to be visible)
 ALTER TABLE tournament_team_sheets ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Tournament team sheets are public" ON tournament_team_sheets;
 CREATE POLICY "Tournament team sheets are public"
   ON tournament_team_sheets FOR SELECT
   USING (true);
 
 -- Only service role can write (system creates snapshots at tournament start)
+DROP POLICY IF EXISTS "Service role manages team sheets" ON tournament_team_sheets;
 CREATE POLICY "Service role manages team sheets"
   ON tournament_team_sheets FOR ALL
   USING ((SELECT auth.role()) = 'service_role')

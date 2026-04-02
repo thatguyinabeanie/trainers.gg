@@ -9,6 +9,7 @@ type MockQueryBuilder = {
   eq: jest.Mock;
   not: jest.Mock;
   single: jest.Mock;
+  delete: jest.Mock;
   insert: jest.Mock;
 };
 
@@ -161,7 +162,13 @@ describe("createTournamentTeamSheets", () => {
         }),
       } as unknown as MockQueryBuilder);
 
-      // Third call: insert
+      // Third call: delete existing rows
+      fromSpy.mockReturnValueOnce({
+        delete: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockResolvedValue({ error: null }),
+      } as unknown as MockQueryBuilder);
+
+      // Fourth call: insert
       fromSpy.mockReturnValueOnce({
         insert: insertMock,
       } as unknown as MockQueryBuilder);
@@ -250,6 +257,11 @@ describe("createTournamentTeamSheets", () => {
       } as unknown as MockQueryBuilder);
 
       fromSpy.mockReturnValueOnce({
+        delete: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockResolvedValue({ error: null }),
+      } as unknown as MockQueryBuilder);
+
+      fromSpy.mockReturnValueOnce({
         insert: insertMock,
       } as unknown as MockQueryBuilder);
 
@@ -281,6 +293,11 @@ describe("createTournamentTeamSheets", () => {
           data: [makeRegistration()],
           error: null,
         }),
+      } as unknown as MockQueryBuilder);
+
+      fromSpy.mockReturnValueOnce({
+        delete: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockResolvedValue({ error: null }),
       } as unknown as MockQueryBuilder);
 
       fromSpy.mockReturnValueOnce({
@@ -420,6 +437,11 @@ describe("createTournamentTeamSheets", () => {
       } as unknown as MockQueryBuilder);
 
       fromSpy.mockReturnValueOnce({
+        delete: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockResolvedValue({ error: null }),
+      } as unknown as MockQueryBuilder);
+
+      fromSpy.mockReturnValueOnce({
         insert: insertMock,
       } as unknown as MockQueryBuilder);
 
@@ -480,6 +502,11 @@ describe("createTournamentTeamSheets", () => {
           ],
           error: null,
         }),
+      } as unknown as MockQueryBuilder);
+
+      fromSpy.mockReturnValueOnce({
+        delete: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockResolvedValue({ error: null }),
       } as unknown as MockQueryBuilder);
 
       fromSpy.mockReturnValueOnce({
@@ -577,6 +604,11 @@ describe("createTournamentTeamSheets", () => {
           data: [makeRegistration()],
           error: null,
         }),
+      } as unknown as MockQueryBuilder);
+
+      fromSpy.mockReturnValueOnce({
+        delete: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockResolvedValue({ error: null }),
       } as unknown as MockQueryBuilder);
 
       fromSpy.mockReturnValueOnce({
