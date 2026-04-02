@@ -1,12 +1,14 @@
-import { createClient, getUser } from "@/lib/supabase/server";
 import {
   getCommunityBySlug,
   listCommunityStaffWithRoles,
   listCommunityGroups,
 } from "@trainers/supabase";
-import { StaffClient } from "./staff-client";
+
+import { createClient, getUser } from "@/lib/supabase/server";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { RolePermissionsCard } from "@/components/dashboard/role-permissions-card";
+
+import { StaffClient } from "./staff-client";
 
 interface PageProps {
   params: Promise<{

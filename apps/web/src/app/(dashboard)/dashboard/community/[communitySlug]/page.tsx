@@ -1,4 +1,3 @@
-import { createClient } from "@/lib/supabase/server";
 import {
   getCommunityBySlug,
   getCommunityStats,
@@ -7,6 +6,7 @@ import {
   listCommunityTournaments,
 } from "@trainers/supabase";
 
+import { createClient } from "@/lib/supabase/server";
 import { PageHeader } from "@/components/dashboard/page-header";
 
 import { OverviewClient } from "./overview-client";

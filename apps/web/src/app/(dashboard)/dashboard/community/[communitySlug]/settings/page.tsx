@@ -1,9 +1,22 @@
 "use client";
 
 import { useState, useTransition, useRef, use } from "react";
-import { useSupabaseQuery } from "@/lib/supabase";
+import { Camera, Loader2, X, Plus } from "lucide-react";
+import { toast } from "sonner";
+
 import { getCommunityBySlug } from "@trainers/supabase";
-import type { TypedSupabaseClient } from "@trainers/supabase";
+import { type TypedSupabaseClient } from "@trainers/supabase";
+import { ALLOWED_IMAGE_TYPES, MAX_IMAGE_SIZE } from "@trainers/validators";
+import {
+  SOCIAL_LINK_PLATFORMS,
+  communitySocialLinksSchema,
+  type CommunitySocialLink,
+  type SocialLinkPlatform,
+} from "@trainers/validators";
+import { socialPlatformLabels } from "@trainers/utils";
+
+import { useSupabaseQuery } from "@/lib/supabase";
+import { cn } from "@/lib/utils";
 import { updateOrganization } from "@/actions/communities";
 import {
   uploadCommunityLogo,
@@ -23,20 +36,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-
-import { Camera, Loader2, X, Plus } from "lucide-react";
-import { toast } from "sonner";
-import { ALLOWED_IMAGE_TYPES, MAX_IMAGE_SIZE } from "@trainers/validators";
-import {
-  SOCIAL_LINK_PLATFORMS,
-  communitySocialLinksSchema,
-  type CommunitySocialLink,
-  type SocialLinkPlatform,
-} from "@trainers/validators";
 import { PlatformIcon } from "@/components/communities/social-link-icons";
-import { socialPlatformLabels } from "@trainers/utils";
 import { DashboardCard } from "@/components/dashboard/dashboard-card";
-import { cn } from "@/lib/utils";
 
 const DESCRIPTION_MAX = 500;
 
