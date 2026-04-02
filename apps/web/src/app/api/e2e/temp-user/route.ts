@@ -23,23 +23,30 @@ function validateRequest(request: NextRequest): NextResponse | null {
   // Supabase branching assigns a different project ref to each branch database.
   // If a preview deploy falls back to production (branch creation failed),
   // the project refs will match and we block the operation.
+  // Fail-closed: if SUPABASE_PRODUCTION_PROJECT_REF is not set, block the
+  // operation rather than assuming we're safe.
   if (vercelEnv) {
     const productionRef = process.env.SUPABASE_PRODUCTION_PROJECT_REF;
 
-    if (productionRef) {
-      const supabaseUrl =
-        process.env.NEXT_PUBLIC_SUPABASE_URL ?? process.env.SUPABASE_URL ?? "";
-      const projectRefMatch = supabaseUrl.match(
-        /https:\/\/([a-z0-9]+)\.supabase\.co/i
+    if (!productionRef) {
+      console.error(
+        "[e2e/temp-user] BLOCKED: SUPABASE_PRODUCTION_PROJECT_REF is not set — cannot verify this is not the production database"
       );
-      const currentRef = projectRefMatch?.[1];
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
 
-      if (currentRef === productionRef) {
-        console.error(
-          `[e2e/temp-user] BLOCKED: Connected to production database (ref: ${currentRef})`
-        );
-        return NextResponse.json({ error: "Not found" }, { status: 404 });
-      }
+    const supabaseUrl =
+      process.env.NEXT_PUBLIC_SUPABASE_URL ?? process.env.SUPABASE_URL ?? "";
+    const projectRefMatch = supabaseUrl.match(
+      /https:\/\/([a-z0-9]+)\.supabase\.co/i
+    );
+    const currentRef = projectRefMatch?.[1];
+
+    if (currentRef === productionRef) {
+      console.error(
+        `[e2e/temp-user] BLOCKED: Connected to production database (ref: ${currentRef})`
+      );
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
   }
 

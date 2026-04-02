@@ -173,38 +173,30 @@ describe("POST /api/e2e/seed", () => {
   // --------------------------------------------------------------------------
 
   describe("production database guard", () => {
-    it("allows seeding when SUPABASE_PRODUCTION_PROJECT_REF is not set on Vercel", async () => {
+    it("returns 404 when SUPABASE_PRODUCTION_PROJECT_REF is not set on Vercel (fail-closed)", async () => {
       setEnv({
         VERCEL_ENV: "preview",
         NEXT_PUBLIC_SUPABASE_URL: `https://${PREVIEW_PROJECT_REF}.supabase.co`,
         SUPABASE_PRODUCTION_PROJECT_REF: undefined,
       });
-      mockUpsert.mockResolvedValue({ error: null });
-      mockCreateUser.mockResolvedValue({ error: null });
-      mockUpdate.mockReturnValue({
-        eq: jest.fn().mockResolvedValue({ error: null }),
-      });
 
-      const { status } = await getJsonResponse(makeRequest());
+      const { status, body } = await getJsonResponse(makeRequest());
 
-      expect(status).not.toBe(404);
+      expect(status).toBe(404);
+      expect(body.error).toBe("Not found");
     });
 
-    it("allows seeding when Supabase URL is unparseable and no production ref is set", async () => {
+    it("returns 404 when Supabase URL is unparseable and no production ref is set (fail-closed)", async () => {
       setEnv({
         VERCEL_ENV: "preview",
         NEXT_PUBLIC_SUPABASE_URL: "",
         SUPABASE_PRODUCTION_PROJECT_REF: undefined,
       });
-      mockUpsert.mockResolvedValue({ error: null });
-      mockCreateUser.mockResolvedValue({ error: null });
-      mockUpdate.mockReturnValue({
-        eq: jest.fn().mockResolvedValue({ error: null }),
-      });
 
-      const { status } = await getJsonResponse(makeRequest());
+      const { status, body } = await getJsonResponse(makeRequest());
 
-      expect(status).not.toBe(404);
+      expect(status).toBe(404);
+      expect(body.error).toBe("Not found");
     });
 
     it("returns 404 with reason when connected to production database", async () => {
