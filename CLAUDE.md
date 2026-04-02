@@ -29,6 +29,7 @@ Domain-specific guidance lives in `.claude/skills/`. Invoke the relevant skill b
 | `design-system`            | Elevation, typography hierarchy, transitions, layout conventions |
 | `product-vision`           | Product vision, feature roadmap, differentiators, user types     |
 | `competitive-landscape`    | Competitive landscape, positioning, alternatives by category     |
+| `reviewing-pr`             | Full PR review: code quality, RLS, caching, N+1, CI, comments    |
 
 Slash-command skills (invoked directly, not listed above): `commit`, `create-migration`, `finish-branch`, `post-pr-monitoring`, `ticket`.
 
