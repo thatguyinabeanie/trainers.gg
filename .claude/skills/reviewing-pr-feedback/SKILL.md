@@ -67,21 +67,52 @@ After all comments reviewed, ask: **"Ready to implement?"**
 
 ## Phase 5: Reply to Comments
 
-After pushing fixes:
+After pushing fixes, reply to EVERY comment with a **status label** so anyone scanning the PR can immediately see what happened. The label must be the first thing in the reply — bold, with emoji.
+
+### Status Labels
+
+| Label                 | When to use                                                              |
+| --------------------- | ------------------------------------------------------------------------ |
+| ✅ **FIXED** (sha)    | Code was changed to address the comment                                  |
+| ❌ **FALSE POSITIVE** | The concern is incorrect (e.g., flagging a built-in function as missing) |
+| 🚫 **WON'T DO**       | Valid concern but intentionally not addressing (explain why)             |
+| 🔜 **DEFERRED**       | Valid concern, will address in a future PR (explain when/why)            |
+| ℹ️ **ACKNOWLEDGED**   | Informational — no code change needed but noting for the record          |
+
+### Format
+
+```
+✅ **FIXED** (abc1234) — Brief description of what changed.
+```
+
+Always include the commit SHA for FIXED items so the reviewer can verify. Keep the description to one line.
+
+### Reply Commands
 
 ```bash
-# Fixed
 gh api /repos/{owner}/{repo}/pulls/{pr}/comments/{id}/replies \
-  -f body="Fixed in {sha} — {summary}"
+  -f body="✅ **FIXED** ({sha}) — {what changed}"
 
-# Acknowledged
 gh api /repos/{owner}/{repo}/pulls/{pr}/comments/{id}/replies \
-  -f body="Acknowledged — {reason}"
+  -f body="❌ **FALSE POSITIVE** — {why it's incorrect}"
 
-# Dismissed
 gh api /repos/{owner}/{repo}/pulls/{pr}/comments/{id}/replies \
-  -f body="Dismissed — {reason}"
+  -f body="🔜 **DEFERRED** — {why and when}"
+
+gh api /repos/{owner}/{repo}/pulls/{pr}/comments/{id}/replies \
+  -f body="🚫 **WON'T DO** — {why}"
+
+gh api /repos/{owner}/{repo}/pulls/{pr}/comments/{id}/replies \
+  -f body="ℹ️ **ACKNOWLEDGED** — {context}"
 ```
+
+### Rules
+
+- **Every comment gets a labeled reply** — no comment left without a status
+- **FIXED replies must include the commit SHA** — "Fixed" without a SHA is useless
+- **DEFERRED must say when** — "later" is not a plan, "in a follow-up PR for X" is
+- **Never reply with just an explanation** — always lead with the status label
+- **If something was initially DEFERRED but later fixed in the same PR**, add a new reply updating the status to FIXED with the commit SHA
 
 ## Phase 6: Final CI Check
 
