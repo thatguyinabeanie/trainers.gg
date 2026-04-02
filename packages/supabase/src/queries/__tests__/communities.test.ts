@@ -990,15 +990,20 @@ describe("communities queries", () => {
   describe("getCommunityStats", () => {
     /**
      * Build a mock client whose .from() calls resolve in the fixed sequence that
-     * getCommunityStats issues them:
-     *   1. tournaments          (select id, status)
-     *   2. tournament_registrations  (select alt_id, alt:alts...) — only when
-     *      there are tournaments
-     *   3. community_staff      (count)
-     *   4. groups               (select id)
-     *   5. group_roles          (select id, role:roles(name)) — only when there
+     * getCommunityStats issues them.
+     *
+     * The function runs the first three queries in parallel via Promise.all,
+     * so their .then() callbacks fire in creation order (0→1→2), followed by
+     * the sequential registrations query (only when tournaments exist):
+     *
+     *   0. tournaments          (select id, status)           — parallel
+     *   1. community_staff      (count)                       — parallel
+     *   2. groups               (select id)                   — parallel
+     *   3. tournament_registrations  (select alt_id, alt:alts...)
+     *      — only when there are tournaments
+     *   4. group_roles          (select id, role:roles(name)) — only when there
      *      are groups
-     *   6+. user_group_roles    (count) — one call per non-empty role bucket
+     *   5+. user_group_roles    (count) — one call per non-empty role bucket
      *
      * Callers pass resolved data for each call in order; any unspecified call
      * resolves to `{ data: [], error: null, count: null }`.
@@ -1075,24 +1080,24 @@ describe("communities queries", () => {
 
     it("returns a stats object with all numeric fields", async () => {
       const client = buildStatsMockClient([
-        // 1. tournaments
+        // 0. tournaments (parallel)
         {
           data: [
             { id: 1, status: "active" },
             { id: 2, status: "completed" },
           ],
         },
-        // 2. tournament_registrations
+        // 1. community_staff count (parallel)
+        { data: null, count: 3 },
+        // 2. groups (parallel)
+        { data: [] },
+        // 3. tournament_registrations (sequential, after parallel batch)
         {
           data: [
             { alt_id: 10, alt: { user_id: "user-a" } },
             { alt_id: 11, alt: { user_id: "user-b" } },
           ],
         },
-        // 3. community_staff count
-        { data: null, count: 3 },
-        // 4. groups
-        { data: [] },
       ]);
 
       const result = await getCommunityStats(client, 1);
@@ -1109,12 +1114,13 @@ describe("communities queries", () => {
 
     it("returns zeros when community has no tournaments", async () => {
       const client = buildStatsMockClient([
-        // 1. tournaments — empty
+        // 0. tournaments — empty (parallel)
         { data: [] },
-        // 2. community_staff count
+        // 1. community_staff count (parallel)
         { data: null, count: 0 },
-        // 3. groups
+        // 2. groups (parallel)
         { data: [] },
+        // no registrations call — tournament list is empty
       ]);
 
       const result = await getCommunityStats(client, 99);
@@ -1161,13 +1167,13 @@ describe("communities queries", () => {
       "correctly counts %s tournaments",
       async (_label, tournaments, expectedActive, expectedUpcoming) => {
         const client = buildStatsMockClient([
-          // 1. tournaments
+          // 0. tournaments (parallel)
           { data: tournaments },
-          // 2. tournament_registrations
-          { data: [] },
-          // 3. community_staff count
+          // 1. community_staff count (parallel)
           { data: null, count: 0 },
-          // 4. groups
+          // 2. groups (parallel)
+          { data: [] },
+          // 3. tournament_registrations (sequential, after parallel batch)
           { data: [] },
         ]);
 
@@ -1182,9 +1188,13 @@ describe("communities queries", () => {
     it("counts unique players vs total entries correctly", async () => {
       // 3 registrations, but user-a appears twice (different alts, same user)
       const client = buildStatsMockClient([
-        // 1. tournaments
+        // 0. tournaments (parallel)
         { data: [{ id: 1, status: "active" }] },
-        // 2. tournament_registrations — user-a has 2 entries, user-b has 1
+        // 1. community_staff count (parallel)
+        { data: null, count: 0 },
+        // 2. groups (parallel)
+        { data: [] },
+        // 3. tournament_registrations — user-a has 2 entries, user-b has 1 (sequential)
         {
           data: [
             { alt_id: 10, alt: { user_id: "user-a" } },
@@ -1192,10 +1202,6 @@ describe("communities queries", () => {
             { alt_id: 12, alt: { user_id: "user-b" } },
           ],
         },
-        // 3. community_staff count
-        { data: null, count: 0 },
-        // 4. groups
-        { data: [] },
       ]);
 
       const result = await getCommunityStats(client, 1);
@@ -1380,12 +1386,11 @@ describe("communities queries", () => {
   describe("getCommunityActivity", () => {
     /**
      * getCommunityActivity issues these .from() calls in order:
-     *   1. tournaments  (created — select name, created_at) — .then()
-     *   2. tournaments  (completed — select name, updated_at) — .then()
-     *   3. tournaments  (for registrations — select id, name) — .then()
-     *   4. tournament_registrations (select tournament_id, created_at, alt) — .then()
-     *      (only when call 3 returns non-empty tournament list)
-     *   5. community_staff (select created_at, user) — .then()
+     *   0. tournaments  (combined — select id, name, status, created_at, updated_at) — .then()
+     *      Created/completed items are derived in JS from this single result set.
+     *   1. tournament_registrations (select tournament_id, created_at, alt) — .then()
+     *      Only issued when call 0 returns a non-empty tournament list.
+     *   2. community_staff (select created_at, user) — .then()
      *
      * Payloads are consumed in the order the .from() builders call .then().
      */
@@ -1439,12 +1444,10 @@ describe("communities queries", () => {
     }
 
     it("returns empty array when community has no activity", async () => {
-      // All four data sources return empty
+      // All data sources return empty
       const client = buildActivityMockClient([
-        { data: [] }, // created tournaments
-        { data: [] }, // completed tournaments
-        { data: [] }, // tournaments for registrations (no registrations call)
-        { data: [] }, // staff joins
+        { data: [] }, // 0. all tournaments (combined) — no registrations call
+        { data: [] }, // 1. staff joins
       ]);
 
       const result = await getCommunityActivity(client, 1);
@@ -1454,20 +1457,33 @@ describe("communities queries", () => {
 
     it("sorts activities by timestamp descending (most recent first)", async () => {
       const client = buildActivityMockClient([
-        // created tournaments
+        // 0. all tournaments (combined — created + completed derived in JS)
         {
           data: [
-            { name: "Spring Cup", created_at: "2025-03-01T12:00:00Z" },
-            { name: "Winter Cup", created_at: "2025-01-01T12:00:00Z" },
+            {
+              id: 10,
+              name: "Spring Cup",
+              status: "upcoming",
+              created_at: "2025-03-01T12:00:00Z",
+              updated_at: "2025-03-01T12:00:00Z",
+            },
+            {
+              id: 11,
+              name: "Winter Cup",
+              status: "upcoming",
+              created_at: "2025-01-01T12:00:00Z",
+              updated_at: "2025-01-01T12:00:00Z",
+            },
+            {
+              id: 12,
+              name: "Fall Cup",
+              status: "completed",
+              created_at: "2025-08-01T12:00:00Z",
+              updated_at: "2025-09-01T12:00:00Z",
+            },
           ],
         },
-        // completed tournaments
-        {
-          data: [{ name: "Fall Cup", updated_at: "2025-09-01T12:00:00Z" }],
-        },
-        // tournaments for registrations
-        { data: [{ id: 10, name: "Spring Cup" }] },
-        // registrations
+        // 1. registrations (tournaments list is non-empty)
         {
           data: [
             {
@@ -1477,7 +1493,7 @@ describe("communities queries", () => {
             },
           ],
         },
-        // staff joins
+        // 2. staff joins
         { data: [] },
       ]);
 
@@ -1493,17 +1509,19 @@ describe("communities queries", () => {
     });
 
     it("respects limit parameter", async () => {
-      // Generate 10 created tournaments
+      // Generate 10 tournaments — created events derived in JS from the combined query
       const manyTournaments = Array.from({ length: 10 }, (_, i) => ({
+        id: i + 1,
         name: `Tournament ${i}`,
+        status: "upcoming",
         created_at: `2025-0${(i % 9) + 1}-01T12:00:00Z`,
+        updated_at: `2025-0${(i % 9) + 1}-01T12:00:00Z`,
       }));
 
       const client = buildActivityMockClient([
-        { data: manyTournaments }, // created
-        { data: [] }, // completed
-        { data: [] }, // tournaments for registrations
-        { data: [] }, // staff joins
+        { data: manyTournaments }, // 0. all tournaments (combined)
+        { data: [] }, // 1. registrations (non-empty tournament list)
+        { data: [] }, // 2. staff joins
       ]);
 
       const result = await getCommunityActivity(client, 1, 5);
@@ -1519,42 +1537,51 @@ describe("communities queries", () => {
     ])("includes %s activity type", async (_label, expectedType) => {
       const ts = "2025-06-01T12:00:00Z";
 
-      // Build payloads that produce exactly one item of each type
+      // Build payloads for the refactored single-query pattern:
+      // 0. combined tournaments query (all statuses)
+      // 1. registrations (only if tournaments exist)
+      // 2. staff joins
+      const hasTournaments =
+        expectedType === "tournament_created" ||
+        expectedType === "tournament_completed" ||
+        expectedType === "registration";
+
+      const tournamentData = hasTournaments
+        ? [
+            {
+              id: 5,
+              name: "My Cup",
+              status:
+                expectedType === "tournament_completed"
+                  ? "completed"
+                  : "upcoming",
+              created_at: ts,
+              updated_at: ts,
+            },
+          ]
+        : [];
+
       const payloads: Array<{ data: unknown }> = [
-        // created tournaments
-        {
-          data:
-            expectedType === "tournament_created"
-              ? [{ name: "My Cup", created_at: ts }]
-              : [],
-        },
-        // completed tournaments
-        {
-          data:
-            expectedType === "tournament_completed"
-              ? [{ name: "My Cup", updated_at: ts }]
-              : [],
-        },
-        // tournaments for registrations
-        {
-          data:
-            expectedType === "registration" ? [{ id: 5, name: "My Cup" }] : [],
-        },
-        // registrations (only if the previous call returned tournaments)
-        ...(expectedType === "registration"
+        // 0. combined tournaments query
+        { data: tournamentData },
+        // 1. registrations (called when tournamentIds.length > 0)
+        ...(tournamentData.length > 0
           ? [
               {
-                data: [
-                  {
-                    tournament_id: 5,
-                    created_at: ts,
-                    alt: { username: "ash" },
-                  },
-                ],
+                data:
+                  expectedType === "registration"
+                    ? [
+                        {
+                          tournament_id: 5,
+                          created_at: ts,
+                          alt: { username: "ash" },
+                        },
+                      ]
+                    : [],
               },
             ]
           : []),
-        // staff joins
+        // 2. staff joins
         {
           data:
             expectedType === "staff_joined"

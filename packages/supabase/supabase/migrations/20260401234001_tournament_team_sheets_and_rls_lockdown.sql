@@ -11,13 +11,17 @@
 -- 1. Snapshots are created ONLY at tournament start, for seeded (checked-in)
 --    players. Before that, zero snapshot data exists — eliminates accidental leaks.
 -- 2. USING(true) on SELECT is intentional — if a row exists, it's public.
---    The security boundary is WHEN snapshots are created, not column-level gating.
+--    This includes anonymous users. The security boundary is WHEN snapshots are
+--    created (at tournament start), not column-level or role-level gating.
 -- 3. One flat table (not parent + child) for query simplicity.
 --    Group by (tournament_id, registration_id) for a full team sheet.
 -- 4. 'format' column stores Showdown format IDs (e.g., gen9vgc2026regi) for
 --    per-format analytics. Can add Postgres LIST partitioning later if needed.
 -- 5. INSERT/UPDATE/DELETE restricted to service role — only the system creates
 --    snapshots, never users directly.
+-- 6. alt_id and team_id use RESTRICT (default) on delete — snapshot rows are
+--    historical records and should not be silently deleted if the source data
+--    changes. Deletion of alts/teams with snapshots must be handled explicitly.
 
 CREATE TABLE IF NOT EXISTS tournament_team_sheets (
   id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
@@ -35,7 +39,9 @@ CREATE TABLE IF NOT EXISTS tournament_team_sheets (
   move2 text,
   move3 text,
   move4 text,
-  created_at timestamptz DEFAULT now()
+  created_at timestamptz NOT NULL DEFAULT now(),
+  -- A player cannot have two Pokemon in the same slot for the same tournament
+  UNIQUE (tournament_id, registration_id, position)
 );
 
 -- Indexes for common query patterns
@@ -56,8 +62,8 @@ CREATE POLICY "Tournament team sheets are public"
 -- Only service role can write (system creates snapshots at tournament start)
 CREATE POLICY "Service role manages team sheets"
   ON tournament_team_sheets FOR ALL
-  USING (auth.role() = 'service_role')
-  WITH CHECK (auth.role() = 'service_role');
+  USING ((SELECT auth.role()) = 'service_role')
+  WITH CHECK ((SELECT auth.role()) = 'service_role');
 
 -- =============================================================================
 -- Lock down pokemon table — drop USING(true), replace with scoped policy
@@ -143,14 +149,3 @@ CREATE POLICY "Teams are viewable"
 DROP POLICY IF EXISTS "staff_view_tournament_teams" ON teams;
 DROP POLICY IF EXISTS "staff_view_tournament_team_pokemon" ON team_pokemon;
 DROP POLICY IF EXISTS "staff_view_tournament_pokemon" ON pokemon;
-
--- =============================================================================
--- Drop unused community permission columns
--- (Added in dashboard redesign but no longer needed)
--- =============================================================================
-
-ALTER TABLE communities
-  DROP COLUMN IF EXISTS team_sheet_visibility,
-  DROP COLUMN IF EXISTS staff_invite_mode,
-  DROP COLUMN IF EXISTS is_public,
-  DROP COLUMN IF EXISTS registration_mode;

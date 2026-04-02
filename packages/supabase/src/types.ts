@@ -2286,7 +2286,7 @@ export type Database = {
         Row: {
           ability: string
           alt_id: number
-          created_at: string | null
+          created_at: string
           format: string
           held_item: string | null
           id: number
@@ -2304,7 +2304,7 @@ export type Database = {
         Insert: {
           ability: string
           alt_id: number
-          created_at?: string | null
+          created_at?: string
           format: string
           held_item?: string | null
           id?: never
@@ -2322,7 +2322,7 @@ export type Database = {
         Update: {
           ability?: string
           alt_id?: number
-          created_at?: string | null
+          created_at?: string
           format?: string
           held_item?: string | null
           id?: never

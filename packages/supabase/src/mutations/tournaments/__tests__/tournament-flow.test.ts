@@ -22,6 +22,14 @@ jest.mock("../team-sheets", () => ({
   createTournamentTeamSheets: jest.fn().mockResolvedValue(undefined),
 }));
 
+// Mock createAdminSupabaseClient so startTournamentEnhanced can construct the
+// service-role client it passes to createTournamentTeamSheets (which is itself
+// mocked above, so the client value is never actually used).
+jest.mock("../../../client", () => ({
+  ...jest.requireActual("../../../client"),
+  createAdminSupabaseClient: jest.fn().mockReturnValue({}),
+}));
+
 import { getCurrentUser, checkCommunityPermission } from "../helpers";
 import { recalculateStandings } from "../standings";
 
