@@ -122,6 +122,12 @@ function assertNotProductionDatabase() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
   const match = supabaseUrl.match(/https:\/\/([a-z0-9]+)\.supabase\.co/i);
   const currentRef = match?.[1];
+  if (!currentRef) {
+    throw new Error(
+      "Tournament simulator BLOCKED: could not extract Supabase project ref from " +
+        `NEXT_PUBLIC_SUPABASE_URL (${supabaseUrl || "<empty>"}) — cannot verify this is not the production database.`
+    );
+  }
   if (currentRef === productionRef) {
     throw new Error(
       "Tournament simulator BLOCKED: connected to production database " +

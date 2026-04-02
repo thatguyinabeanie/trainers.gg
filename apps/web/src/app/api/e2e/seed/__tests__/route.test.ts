@@ -199,6 +199,19 @@ describe("POST /api/e2e/seed", () => {
       expect(body.error).toBe("Not found");
     });
 
+    it("returns 404 when Supabase URL is unparseable and production ref is set (fail-closed)", async () => {
+      setEnv({
+        VERCEL_ENV: "preview",
+        NEXT_PUBLIC_SUPABASE_URL: "",
+        SUPABASE_PRODUCTION_PROJECT_REF: PRODUCTION_PROJECT_REF,
+      });
+
+      const { status, body } = await getJsonResponse(makeRequest());
+
+      expect(status).toBe(404);
+      expect(body.error).toBe("Not found");
+    });
+
     it("returns 404 with reason when connected to production database", async () => {
       setEnv({
         VERCEL_ENV: "preview",

@@ -86,6 +86,13 @@ export async function POST(request: NextRequest) {
     );
     const currentRef = projectRefMatch?.[1];
 
+    if (!currentRef) {
+      console.error(
+        `[e2e/seed] BLOCKED: Could not extract Supabase project ref from configured URL — cannot verify this is not the production database (url: ${supabaseUrl || "<empty>"})`
+      );
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
+
     if (currentRef === productionRef) {
       const reason =
         "Connected to production database — Supabase branching may not have created a branch DB for this PR";

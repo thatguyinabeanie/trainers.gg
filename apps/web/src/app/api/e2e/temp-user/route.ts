@@ -42,6 +42,13 @@ function validateRequest(request: NextRequest): NextResponse | null {
     );
     const currentRef = projectRefMatch?.[1];
 
+    if (!currentRef) {
+      console.error(
+        `[e2e/temp-user] BLOCKED: Could not extract Supabase project ref from configured URL — cannot verify this is not the production database (url: ${supabaseUrl || "<empty>"})`
+      );
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
+
     if (currentRef === productionRef) {
       console.error(
         `[e2e/temp-user] BLOCKED: Connected to production database (ref: ${currentRef})`

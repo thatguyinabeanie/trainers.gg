@@ -188,6 +188,32 @@ describe("temp-user E2E API route", () => {
       expect(body.error).toBe("Not found");
     });
 
+    it("returns 404 when SUPABASE_PRODUCTION_PROJECT_REF is set but NEXT_PUBLIC_SUPABASE_URL is empty (fail-closed)", async () => {
+      setEnv({
+        VERCEL_ENV: "preview",
+        NEXT_PUBLIC_SUPABASE_URL: "",
+        SUPABASE_PRODUCTION_PROJECT_REF: "prodref456",
+      });
+
+      const { status, body } = await getJsonResponse(POST, makePostRequest());
+
+      expect(status).toBe(404);
+      expect(body.error).toBe("Not found");
+    });
+
+    it("returns 404 when SUPABASE_PRODUCTION_PROJECT_REF is set but NEXT_PUBLIC_SUPABASE_URL is unparseable (fail-closed)", async () => {
+      setEnv({
+        VERCEL_ENV: "preview",
+        NEXT_PUBLIC_SUPABASE_URL: "not-a-valid-supabase-url",
+        SUPABASE_PRODUCTION_PROJECT_REF: "prodref456",
+      });
+
+      const { status, body } = await getJsonResponse(POST, makePostRequest());
+
+      expect(status).toBe(404);
+      expect(body.error).toBe("Not found");
+    });
+
     it("skips guard for local dev", async () => {
       setEnv({
         VERCEL_ENV: undefined,
