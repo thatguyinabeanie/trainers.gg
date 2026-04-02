@@ -1184,12 +1184,14 @@ describe("communities queries", () => {
         { data: null, count: 0 },
         // 2. groups (parallel)
         { data: [] },
-        // 3. tournament_registrations — user-a has 2 entries, user-b has 1 (sequential)
+        // 3. tournament_registrations count query — count: 3 (sequential, head:true)
+        { data: null, count: 3 },
+        // 4. tournament_registrations user_id join — user-a has 2 entries, user-b has 1 (sequential)
         {
           data: [
-            { alt_id: 10, alt: { user_id: "user-a" } },
-            { alt_id: 11, alt: { user_id: "user-a" } },
-            { alt_id: 12, alt: { user_id: "user-b" } },
+            { alt: { user_id: "user-a" } },
+            { alt: { user_id: "user-a" } },
+            { alt: { user_id: "user-b" } },
           ],
         },
       ]);
@@ -1208,23 +1210,17 @@ describe("communities queries", () => {
   describe("getTopReturningPlayers", () => {
     /**
      * Build a mock client for getTopReturningPlayers.
-     * The function makes exactly two .from() calls in order:
-     *   1. tournaments   (select id) — resolved via .then()
-     *   2. tournament_registrations (select tournament_id, alt:alts...) — via .then()
-     *
-     * When tournaments returns empty the second call never happens.
+     * The function uses a single supabase.rpc("get_top_returning_players", {...})
+     * call that returns pre-aggregated rows from the database.
      */
-    function buildTopPlayersMockClient(options: {
-      tournaments?: Array<{ id: number }>;
-      registrations?: Array<{
-        tournament_id: number;
-        alt: { user_id: string; username: string; avatar_url: string | null };
-      }>;
-    }) {
-      const { tournaments = [], registrations = [] } = options;
-      let callIndex = 0;
-      const payloads = [{ data: tournaments }, { data: registrations }];
-
+    function buildTopPlayersMockClient(
+      rpcData: Array<{
+        user_id: string;
+        username: string;
+        avatar_url: string | null;
+        event_count: number;
+      }>
+    ) {
       const makeBuilder = () => {
         const builder: Record<string, jest.Mock> = {};
         const chainMethods = ["select", "eq", "is", "in", "order", "limit"];
@@ -1232,13 +1228,8 @@ describe("communities queries", () => {
           builder[method] = jest.fn().mockReturnThis();
         }
         builder["then"] = jest.fn(
-          (resolve: (value: { data: unknown; error: unknown }) => void) => {
-            const payload = payloads[callIndex++] ?? { data: [] };
-            return Promise.resolve({
-              data: payload.data,
-              error: null,
-            }).then(resolve);
-          }
+          (resolve: (value: { data: unknown; error: unknown }) => void) =>
+            Promise.resolve({ data: [], error: null }).then(resolve)
         );
         builder["single"] = jest
           .fn()
@@ -1251,7 +1242,7 @@ describe("communities queries", () => {
 
       return {
         from: jest.fn().mockImplementation(() => makeBuilder()),
-        rpc: jest.fn().mockResolvedValue({ data: [], error: null }),
+        rpc: jest.fn().mockResolvedValue({ data: rpcData, error: null }),
         auth: {
           getUser: jest
             .fn()
@@ -1260,47 +1251,36 @@ describe("communities queries", () => {
       } as unknown as TypedClient;
     }
 
-    it("returns empty array when community has no tournaments", async () => {
-      const client = buildTopPlayersMockClient({ tournaments: [] });
+    it("returns empty array when RPC returns no rows", async () => {
+      const client = buildTopPlayersMockClient([]);
 
       const result = await getTopReturningPlayers(client, 1);
 
       expect(result).toEqual([]);
     });
 
-    it("returns players sorted by event count descending", async () => {
-      const client = buildTopPlayersMockClient({
-        tournaments: [{ id: 1 }, { id: 2 }, { id: 3 }],
-        registrations: [
-          // user-b attends 3 tournaments
-          {
-            tournament_id: 1,
-            alt: { user_id: "user-b", username: "bob", avatar_url: null },
-          },
-          {
-            tournament_id: 2,
-            alt: { user_id: "user-b", username: "bob", avatar_url: null },
-          },
-          {
-            tournament_id: 3,
-            alt: { user_id: "user-b", username: "bob", avatar_url: null },
-          },
-          // user-a attends 2 tournaments
-          {
-            tournament_id: 1,
-            alt: { user_id: "user-a", username: "alice", avatar_url: null },
-          },
-          {
-            tournament_id: 2,
-            alt: { user_id: "user-a", username: "alice", avatar_url: null },
-          },
-          // user-c attends 1 tournament
-          {
-            tournament_id: 1,
-            alt: { user_id: "user-c", username: "carol", avatar_url: null },
-          },
-        ],
-      });
+    it("maps RPC rows to TopPlayer objects sorted by event count descending", async () => {
+      const client = buildTopPlayersMockClient([
+        // RPC returns rows already sorted descending by event_count
+        {
+          user_id: "user-b",
+          username: "bob",
+          avatar_url: null,
+          event_count: 3,
+        },
+        {
+          user_id: "user-a",
+          username: "alice",
+          avatar_url: null,
+          event_count: 2,
+        },
+        {
+          user_id: "user-c",
+          username: "carol",
+          avatar_url: null,
+          event_count: 1,
+        },
+      ]);
 
       const result = await getTopReturningPlayers(client, 1);
 
@@ -1313,59 +1293,50 @@ describe("communities queries", () => {
       expect(result[2]?.eventCount).toBe(1);
     });
 
-    it("respects limit parameter", async () => {
-      const client = buildTopPlayersMockClient({
-        tournaments: [{ id: 1 }, { id: 2 }],
-        registrations: [
-          {
-            tournament_id: 1,
-            alt: { user_id: "user-a", username: "alice", avatar_url: null },
-          },
-          {
-            tournament_id: 2,
-            alt: { user_id: "user-a", username: "alice", avatar_url: null },
-          },
-          {
-            tournament_id: 1,
-            alt: { user_id: "user-b", username: "bob", avatar_url: null },
-          },
-          {
-            tournament_id: 1,
-            alt: { user_id: "user-c", username: "carol", avatar_url: null },
-          },
-        ],
-      });
+    it("passes the limit parameter to the RPC call", async () => {
+      const client = buildTopPlayersMockClient([
+        {
+          user_id: "user-a",
+          username: "alice",
+          avatar_url: null,
+          event_count: 2,
+        },
+        {
+          user_id: "user-b",
+          username: "bob",
+          avatar_url: null,
+          event_count: 1,
+        },
+      ]);
 
-      const result = await getTopReturningPlayers(client, 1, 2);
+      const result = await getTopReturningPlayers(client, 42, 2);
 
       expect(result).toHaveLength(2);
+      expect(client.rpc).toHaveBeenCalledWith("get_top_returning_players", {
+        p_community_id: 42,
+        p_limit: 2,
+      });
     });
 
-    it("counts unique tournaments per user, not duplicate entries in the same tournament", async () => {
-      // user-a has two registrations in tournament 1 (different alts), one in tournament 2
-      const client = buildTopPlayersMockClient({
-        tournaments: [{ id: 1 }, { id: 2 }],
-        registrations: [
-          {
-            tournament_id: 1,
-            alt: { user_id: "user-a", username: "alice", avatar_url: null },
-          },
-          {
-            tournament_id: 1,
-            alt: { user_id: "user-a", username: "alice", avatar_url: null },
-          },
-          {
-            tournament_id: 2,
-            alt: { user_id: "user-a", username: "alice", avatar_url: null },
-          },
-        ],
-      });
+    it("maps snake_case RPC fields to camelCase TopPlayer fields", async () => {
+      const client = buildTopPlayersMockClient([
+        {
+          user_id: "user-x",
+          username: "xavier",
+          avatar_url: "https://example.com/avatar.png",
+          event_count: 5,
+        },
+      ]);
 
       const result = await getTopReturningPlayers(client, 1);
 
       expect(result).toHaveLength(1);
-      // Should be 2 unique tournaments, not 3 raw entries
-      expect(result[0]?.eventCount).toBe(2);
+      expect(result[0]).toEqual({
+        userId: "user-x",
+        username: "xavier",
+        avatarUrl: "https://example.com/avatar.png",
+        eventCount: 5,
+      });
     });
   });
 
@@ -1375,14 +1346,14 @@ describe("communities queries", () => {
 
   describe("getCommunityActivity", () => {
     /**
-     * getCommunityActivity issues these .from() calls in order:
-     *   0. tournaments  (combined — select id, name, status, created_at, updated_at) — .then()
-     *      Created/completed items are derived in JS from this single result set.
-     *   1. tournament_registrations (select tournament_id, created_at, alt) — .then()
-     *      Only issued when call 0 returns a non-empty tournament list.
-     *   2. community_staff (select created_at, user) — .then()
+     * getCommunityActivity uses Promise.all with 4 parallel queries.
+     * Each query gets its own .from() builder, so payloads are consumed
+     * in the order the builders are created (creation order = Promise.all order):
      *
-     * Payloads are consumed in the order the .from() builders call .then().
+     *   0. tournaments (created — select name, created_at)
+     *   1. tournaments (completed — select name, updated_at)
+     *   2. tournament_registrations (select tournament_id, created_at, alt, tournament)
+     *   3. community_staff (select created_at, user)
      */
     function buildActivityMockClient(
       payloads: Array<{ data: unknown; error?: unknown }>
@@ -1390,6 +1361,9 @@ describe("communities queries", () => {
       let callIndex = 0;
 
       const makeBuilder = () => {
+        const idx = callIndex++;
+        const payload = payloads[idx] ?? { data: [], error: null };
+
         const builder: Record<string, jest.Mock> = {};
         const chainMethods = [
           "select",
@@ -1405,13 +1379,11 @@ describe("communities queries", () => {
           builder[method] = jest.fn().mockReturnThis();
         }
         builder["then"] = jest.fn(
-          (resolve: (value: { data: unknown; error: unknown }) => void) => {
-            const payload = payloads[callIndex++] ?? { data: [], error: null };
-            return Promise.resolve({
+          (resolve: (value: { data: unknown; error: unknown }) => void) =>
+            Promise.resolve({
               data: payload.data,
               error: payload.error ?? null,
-            }).then(resolve);
-          }
+            }).then(resolve)
         );
         builder["single"] = jest
           .fn()
@@ -1434,10 +1406,11 @@ describe("communities queries", () => {
     }
 
     it("returns empty array when community has no activity", async () => {
-      // All data sources return empty
       const client = buildActivityMockClient([
-        { data: [] }, // 0. all tournaments (combined) — no registrations call
-        { data: [] }, // 1. staff joins
+        { data: [] }, // 0. created tournaments
+        { data: [] }, // 1. completed tournaments
+        { data: [] }, // 2. registrations
+        { data: [] }, // 3. staff joins
       ]);
 
       const result = await getCommunityActivity(client, 1);
@@ -1447,43 +1420,29 @@ describe("communities queries", () => {
 
     it("sorts activities by timestamp descending (most recent first)", async () => {
       const client = buildActivityMockClient([
-        // 0. all tournaments (combined — created + completed derived in JS)
+        // 0. created tournaments
         {
           data: [
-            {
-              id: 10,
-              name: "Spring Cup",
-              status: "upcoming",
-              created_at: "2025-03-01T12:00:00Z",
-              updated_at: "2025-03-01T12:00:00Z",
-            },
-            {
-              id: 11,
-              name: "Winter Cup",
-              status: "upcoming",
-              created_at: "2025-01-01T12:00:00Z",
-              updated_at: "2025-01-01T12:00:00Z",
-            },
-            {
-              id: 12,
-              name: "Fall Cup",
-              status: "completed",
-              created_at: "2025-08-01T12:00:00Z",
-              updated_at: "2025-09-01T12:00:00Z",
-            },
+            { name: "Spring Cup", created_at: "2025-03-01T12:00:00Z" },
+            { name: "Winter Cup", created_at: "2025-01-01T12:00:00Z" },
           ],
         },
-        // 1. registrations (tournaments list is non-empty)
+        // 1. completed tournaments
+        {
+          data: [{ name: "Fall Cup", updated_at: "2025-09-01T12:00:00Z" }],
+        },
+        // 2. registrations
         {
           data: [
             {
               tournament_id: 10,
               created_at: "2025-02-15T12:00:00Z",
               alt: { username: "ash" },
+              tournament: { name: "Spring Cup", community_id: 1 },
             },
           ],
         },
-        // 2. staff joins
+        // 3. staff joins
         { data: [] },
       ]);
 
@@ -1499,19 +1458,17 @@ describe("communities queries", () => {
     });
 
     it("respects limit parameter", async () => {
-      // Generate 10 tournaments — created events derived in JS from the combined query
+      // 10 created tournaments — each becomes one activity item
       const manyTournaments = Array.from({ length: 10 }, (_, i) => ({
-        id: i + 1,
         name: `Tournament ${i}`,
-        status: "upcoming",
         created_at: `2025-0${(i % 9) + 1}-01T12:00:00Z`,
-        updated_at: `2025-0${(i % 9) + 1}-01T12:00:00Z`,
       }));
 
       const client = buildActivityMockClient([
-        { data: manyTournaments }, // 0. all tournaments (combined)
-        { data: [] }, // 1. registrations (non-empty tournament list)
-        { data: [] }, // 2. staff joins
+        { data: manyTournaments }, // 0. created tournaments
+        { data: [] }, // 1. completed tournaments
+        { data: [] }, // 2. registrations
+        { data: [] }, // 3. staff joins
       ]);
 
       const result = await getCommunityActivity(client, 1, 5);
@@ -1527,60 +1484,43 @@ describe("communities queries", () => {
     ])("includes %s activity type", async (_label, expectedType) => {
       const ts = "2025-06-01T12:00:00Z";
 
-      // Build payloads for the refactored single-query pattern:
-      // 0. combined tournaments query (all statuses)
-      // 1. registrations (only if tournaments exist)
-      // 2. staff joins
-      const hasTournaments =
-        expectedType === "tournament_created" ||
-        expectedType === "tournament_completed" ||
-        expectedType === "registration";
-
-      const tournamentData = hasTournaments
-        ? [
-            {
-              id: 5,
-              name: "My Cup",
-              status:
-                expectedType === "tournament_completed"
-                  ? "completed"
-                  : "upcoming",
-              created_at: ts,
-              updated_at: ts,
-            },
-          ]
-        : [];
-
-      const payloads: Array<{ data: unknown }> = [
-        // 0. combined tournaments query
-        { data: tournamentData },
-        // 1. registrations (called when tournamentIds.length > 0)
-        ...(tournamentData.length > 0
-          ? [
-              {
-                data:
-                  expectedType === "registration"
-                    ? [
-                        {
-                          tournament_id: 5,
-                          created_at: ts,
-                          alt: { username: "ash" },
-                        },
-                      ]
-                    : [],
-              },
-            ]
-          : []),
-        // 2. staff joins
+      const client = buildActivityMockClient([
+        // 0. created tournaments
+        {
+          data:
+            expectedType === "tournament_created"
+              ? [{ name: "My Cup", created_at: ts }]
+              : [],
+        },
+        // 1. completed tournaments
+        {
+          data:
+            expectedType === "tournament_completed"
+              ? [{ name: "My Cup", updated_at: ts }]
+              : [],
+        },
+        // 2. registrations (inner-joined with tournaments)
+        {
+          data:
+            expectedType === "registration"
+              ? [
+                  {
+                    tournament_id: 5,
+                    created_at: ts,
+                    alt: { username: "ash" },
+                    tournament: { name: "My Cup", community_id: 1 },
+                  },
+                ]
+              : [],
+        },
+        // 3. staff joins
         {
           data:
             expectedType === "staff_joined"
               ? [{ created_at: ts, user: { username: "misty" } }]
               : [],
         },
-      ];
-
-      const client = buildActivityMockClient(payloads);
+      ]);
 
       const result = await getCommunityActivity(client, 1);
 

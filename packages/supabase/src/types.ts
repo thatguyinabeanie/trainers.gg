@@ -2907,6 +2907,15 @@ export type Database = {
         Args: { p_group_role_id: number }
         Returns: string
       }
+      get_top_returning_players: {
+        Args: { p_community_id: number; p_limit?: number }
+        Returns: {
+          avatar_url: string
+          event_count: number
+          user_id: string
+          username: string
+        }[]
+      }
       get_tournament_counts_by_status: {
         Args: never
         Returns: {

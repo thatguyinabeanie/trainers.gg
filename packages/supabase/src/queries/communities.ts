@@ -1031,19 +1031,29 @@ export async function getCommunityStats(
   let totalEntries = 0;
 
   if (tournamentIds.length > 0) {
-    const { data: registrations, error: registrationsError } = await supabase
+    // Total entries: use DB-side count (no row transfer)
+    const { count: entryCount, error: countError } = await supabase
       .from("tournament_registrations")
-      .select("alt_id, alt:alts!tournament_registrations_alt_id_fkey(user_id)")
+      .select("*", { count: "exact", head: true })
       .in("tournament_id", tournamentIds);
 
-    if (registrationsError)
-      throw new Error(
-        `Failed to fetch registration counts: ${registrationsError.message}`
-      );
+    if (countError)
+      throw new Error(`Failed to count registrations: ${countError.message}`);
 
-    totalEntries = (registrations ?? []).length;
+    totalEntries = entryCount ?? 0;
+
+    // Unique players: fetch only user_id via alt join, dedup in JS
+    // This transfers ~8 bytes per registration (just the UUID) instead of full rows
+    const { data: userIds, error: userError } = await supabase
+      .from("tournament_registrations")
+      .select("alt:alts!tournament_registrations_alt_id_fkey(user_id)")
+      .in("tournament_id", tournamentIds);
+
+    if (userError)
+      throw new Error(`Failed to fetch unique players: ${userError.message}`);
+
     uniquePlayers = new Set(
-      (registrations ?? [])
+      (userIds ?? [])
         .map((r) => r.alt?.user_id)
         .filter((id): id is string => id !== null && id !== undefined)
     ).size;
@@ -1140,63 +1150,30 @@ export async function getTopReturningPlayers(
   communityId: number,
   limit = 10
 ): Promise<TopPlayer[]> {
-  // Get all tournament IDs for this community
-  const { data: tournaments, error: tournamentsError } = await supabase
-    .from("tournaments")
-    .select("id")
-    .eq("community_id", communityId)
-    .is("archived_at", null);
+  // DB-side aggregation: GROUP BY user, COUNT(DISTINCT tournament), ORDER BY DESC, LIMIT
+  const { data, error } = await supabase.rpc("get_top_returning_players", {
+    p_community_id: communityId,
+    p_limit: limit,
+  });
 
-  if (tournamentsError)
-    throw new Error(`Failed to fetch tournaments: ${tournamentsError.message}`);
+  if (error)
+    throw new Error(`Failed to fetch top returning players: ${error.message}`);
 
-  const tournamentIds = (tournaments ?? []).map((t) => t.id);
-  if (tournamentIds.length === 0) return [];
+  if (!data || data.length === 0) return [];
 
-  // Fetch registrations; join through alts to get user identity + display info
-  const { data: registrations, error: registrationsError } = await supabase
-    .from("tournament_registrations")
-    .select(
-      "tournament_id, alt:alts!tournament_registrations_alt_id_fkey(user_id, username, avatar_url)"
-    )
-    .in("tournament_id", tournamentIds);
-
-  if (registrationsError)
-    throw new Error(
-      `Failed to fetch registrations: ${registrationsError.message}`
-    );
-
-  // Group by user_id, counting unique tournaments
-  const playerMap = new Map<
-    string,
-    { username: string; avatarUrl: string | null; tournamentIds: Set<number> }
-  >();
-
-  for (const reg of registrations ?? []) {
-    const alt = reg.alt;
-    if (!alt?.user_id) continue;
-    const existing = playerMap.get(alt.user_id);
-    if (existing) {
-      existing.tournamentIds.add(reg.tournament_id);
-    } else {
-      playerMap.set(alt.user_id, {
-        username: alt.username,
-        avatarUrl: alt.avatar_url,
-        tournamentIds: new Set([reg.tournament_id]),
-      });
-    }
-  }
-
-  // Sort by event count descending and take top N
-  return Array.from(playerMap.entries())
-    .map(([userId, info]) => ({
-      userId,
-      username: info.username,
-      avatarUrl: info.avatarUrl,
-      eventCount: info.tournamentIds.size,
-    }))
-    .sort((a, b) => b.eventCount - a.eventCount)
-    .slice(0, limit);
+  return (
+    data as Array<{
+      user_id: string;
+      username: string;
+      avatar_url: string | null;
+      event_count: number;
+    }>
+  ).map((row) => ({
+    userId: row.user_id,
+    username: row.username,
+    avatarUrl: row.avatar_url,
+    eventCount: row.event_count,
+  }));
 }
 
 // =============================================================================
@@ -1242,41 +1219,65 @@ export async function getCommunityActivity(
 ): Promise<CommunityActivityItem[]> {
   const items: CommunityActivityItem[] = [];
 
-  const { data: allTournaments, error: tournamentsError } = await supabase
-    .from("tournaments")
-    .select("id, name, status, created_at, updated_at")
-    .eq("community_id", communityId)
-    .is("archived_at", null);
+  // Fetch all 4 activity sources in parallel, each with DB-side ORDER BY + LIMIT
+  const [createdResult, completedResult, registrationsResult, staffResult] =
+    await Promise.all([
+      // Recent tournament creations (DB-ordered, limited)
+      supabase
+        .from("tournaments")
+        .select("name, created_at")
+        .eq("community_id", communityId)
+        .is("archived_at", null)
+        .order("created_at", { ascending: false })
+        .limit(limit),
 
-  if (tournamentsError)
+      // Recent tournament completions (DB-ordered, limited)
+      supabase
+        .from("tournaments")
+        .select("name, updated_at")
+        .eq("community_id", communityId)
+        .is("archived_at", null)
+        .eq("status", "completed")
+        .order("updated_at", { ascending: false })
+        .limit(limit),
+
+      // Recent registrations with tournament name lookup
+      supabase
+        .from("tournament_registrations")
+        .select(
+          "tournament_id, created_at, alt:alts!tournament_registrations_alt_id_fkey(username), tournament:tournaments!inner(name, community_id)"
+        )
+        .eq("tournament.community_id", communityId)
+        .order("created_at", { ascending: false })
+        .limit(limit),
+
+      // Recent staff joins
+      supabase
+        .from("community_staff")
+        .select("created_at, user:users(username)")
+        .eq("community_id", communityId)
+        .order("created_at", { ascending: false })
+        .limit(limit),
+    ]);
+
+  if (createdResult.error)
     throw new Error(
-      `Failed to fetch tournaments for activity: ${tournamentsError.message}`
+      `Failed to fetch created tournaments: ${createdResult.error.message}`
+    );
+  if (completedResult.error)
+    throw new Error(
+      `Failed to fetch completed tournaments: ${completedResult.error.message}`
+    );
+  if (registrationsResult.error)
+    throw new Error(
+      `Failed to fetch registrations: ${registrationsResult.error.message}`
+    );
+  if (staffResult.error)
+    throw new Error(
+      `Failed to fetch staff joins: ${staffResult.error.message}`
     );
 
-  const tournamentList = allTournaments ?? [];
-  const tournamentIds = tournamentList.map((t) => t.id);
-  const tournamentNameById = new Map(tournamentList.map((t) => [t.id, t.name]));
-
-  // Split into created / completed in JS rather than making separate DB calls
-  const createdTournaments = tournamentList
-    .slice()
-    .sort(
-      (a, b) =>
-        new Date(b.created_at ?? 0).getTime() -
-        new Date(a.created_at ?? 0).getTime()
-    )
-    .slice(0, limit);
-
-  const completedTournaments = tournamentList
-    .filter((t) => t.status === "completed")
-    .sort(
-      (a, b) =>
-        new Date(b.updated_at ?? 0).getTime() -
-        new Date(a.updated_at ?? 0).getTime()
-    )
-    .slice(0, limit);
-
-  for (const t of createdTournaments) {
+  for (const t of createdResult.data ?? []) {
     items.push({
       type: "tournament_created",
       actorName: t.name,
@@ -1285,7 +1286,7 @@ export async function getCommunityActivity(
     });
   }
 
-  for (const t of completedTournaments) {
+  for (const t of completedResult.data ?? []) {
     items.push({
       type: "tournament_completed",
       actorName: t.name,
@@ -1294,42 +1295,17 @@ export async function getCommunityActivity(
     });
   }
 
-  if (tournamentIds.length > 0) {
-    const { data: registrations, error: registrationsError } = await supabase
-      .from("tournament_registrations")
-      .select(
-        "tournament_id, created_at, alt:alts!tournament_registrations_alt_id_fkey(username)"
-      )
-      .in("tournament_id", tournamentIds)
-      .order("created_at", { ascending: false })
-      .limit(limit);
-
-    if (registrationsError)
-      throw new Error(
-        `Failed to fetch registrations: ${registrationsError.message}`
-      );
-
-    for (const reg of registrations ?? []) {
-      items.push({
-        type: "registration",
-        actorName: reg.alt?.username ?? "Unknown player",
-        targetName: tournamentNameById.get(reg.tournament_id) ?? "",
-        timestamp: reg.created_at ?? new Date(0).toISOString(),
-      });
-    }
+  for (const reg of registrationsResult.data ?? []) {
+    const tournament = reg.tournament as unknown as { name: string } | null;
+    items.push({
+      type: "registration",
+      actorName: reg.alt?.username ?? "Unknown player",
+      targetName: tournament?.name ?? "",
+      timestamp: reg.created_at ?? new Date(0).toISOString(),
+    });
   }
 
-  const { data: staffJoins, error: staffError } = await supabase
-    .from("community_staff")
-    .select("created_at, user:users(username)")
-    .eq("community_id", communityId)
-    .order("created_at", { ascending: false })
-    .limit(limit);
-
-  if (staffError)
-    throw new Error(`Failed to fetch staff joins: ${staffError.message}`);
-
-  for (const s of staffJoins ?? []) {
+  for (const s of staffResult.data ?? []) {
     if (s.created_at) {
       items.push({
         type: "staff_joined",
