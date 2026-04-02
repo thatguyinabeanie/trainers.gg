@@ -94,3 +94,9 @@ import { updateCommunity as updateCommunityMutation } from "@trainers/supabase";
 - Use Supabase Realtime channels for live updates (tournament scores, chat)
 - Subscribe in `useEffect` with proper cleanup (unsubscribe on unmount)
 - Filter subscriptions to the minimum necessary rows/events
+
+## Related Skills
+
+- `querying-supabase` — client selection, query conventions, proactive quality checklist
+- `reviewing-database` — RLS, migrations, indexes, N+1, unbounded fetches, query efficiency
+- `reviewing-caching` — cache invalidation checklist for server actions
