@@ -112,6 +112,9 @@ export async function createCommunity(
     validatedLinks = parsed.data;
   }
 
+  // Keep discord_invite_url in sync with social links
+  const discordLink = validatedLinks.find((l) => l.platform === "discord");
+
   // Create organization with user as owner
   const { data: community, error } = await supabase
     .from("communities")
@@ -120,6 +123,7 @@ export async function createCommunity(
       slug: data.slug.toLowerCase(),
       description: data.description,
       social_links: validatedLinks,
+      discord_invite_url: discordLink?.url ?? null,
       logo_url: data.logoUrl,
       owner_user_id: user.id,
     })
@@ -181,6 +185,10 @@ export async function updateCommunity(
       );
     }
     updateData.social_links = parsed.data;
+
+    // Keep discord_invite_url in sync with the social links array
+    const discordLink = parsed.data.find((l) => l.platform === "discord");
+    updateData.discord_invite_url = discordLink?.url ?? null;
   }
   if (updates.logoUrl !== undefined) updateData.logo_url = updates.logoUrl;
 

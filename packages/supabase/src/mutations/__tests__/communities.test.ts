@@ -338,8 +338,10 @@ describe("Community Mutations", () => {
 
       await updateCommunity(mockClient, communityId, { socialLinks: links });
 
+      const discordLink = links.find((l) => l.platform === "discord");
       expect(updateMock).toHaveBeenCalledWith({
         social_links: links,
+        discord_invite_url: discordLink?.url ?? null,
       });
     });
 
