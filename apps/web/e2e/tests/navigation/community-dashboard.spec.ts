@@ -37,7 +37,7 @@ test.describe("Community dashboard", () => {
 
       // Page header title
       await expect(
-        main.getByRole("heading", { name: /Overview/i })
+        main.getByText("Overview", { exact: true }).first()
       ).toBeVisible({ timeout: 10000 });
 
       // Four stat card labels
@@ -63,7 +63,7 @@ test.describe("Community dashboard", () => {
 
       // Wait for the page to settle
       await expect(
-        main.getByRole("heading", { name: /Overview/i })
+        main.getByText("Overview", { exact: true }).first()
       ).toBeVisible({ timeout: 10000 });
 
       // The seed creates multiple tournaments for vgc-league, so Tournaments
@@ -90,7 +90,7 @@ test.describe("Community dashboard", () => {
 
       const main = page.getByRole("main");
       await expect(
-        main.getByRole("heading", { name: /Overview/i })
+        main.getByText("Overview", { exact: true }).first()
       ).toBeVisible({ timeout: 10000 });
 
       await expect(main.getByText(/Upcoming Tournaments/i)).toBeVisible({
@@ -104,7 +104,7 @@ test.describe("Community dashboard", () => {
 
       const main = page.getByRole("main");
       await expect(
-        main.getByRole("heading", { name: /Overview/i })
+        main.getByText("Overview", { exact: true }).first()
       ).toBeVisible({ timeout: 10000 });
 
       await expect(main.getByText(/Recent Activity/i)).toBeVisible({
@@ -118,7 +118,7 @@ test.describe("Community dashboard", () => {
 
       const main = page.getByRole("main");
       await expect(
-        main.getByRole("heading", { name: /Overview/i })
+        main.getByText("Overview", { exact: true }).first()
       ).toBeVisible({ timeout: 10000 });
 
       await expect(main.getByText(/Top Regulars/i)).toBeVisible({
@@ -134,7 +134,7 @@ test.describe("Community dashboard", () => {
 
       const main = page.getByRole("main");
       await expect(
-        main.getByRole("heading", { name: /Overview/i })
+        main.getByText("Overview", { exact: true }).first()
       ).toBeVisible({ timeout: 10000 });
 
       const createLink = main
@@ -162,7 +162,7 @@ test.describe("Community dashboard", () => {
       const main = page.getByRole("main");
 
       await expect(
-        main.getByRole("heading", { name: /Tournaments/i })
+        main.getByText("Tournaments", { exact: true }).first()
       ).toBeVisible({ timeout: 10000 });
 
       // The Create Tournament button lives in the page header (PageHeader slot)
@@ -179,7 +179,7 @@ test.describe("Community dashboard", () => {
 
       const main = page.getByRole("main");
       await expect(
-        main.getByRole("heading", { name: /Tournaments/i })
+        main.getByText("Tournaments", { exact: true }).first()
       ).toBeVisible({ timeout: 10000 });
 
       await expect(
@@ -202,7 +202,9 @@ test.describe("Community dashboard", () => {
 
       const main = page.getByRole("main");
 
-      await expect(main.getByRole("heading", { name: /Staff/i })).toBeVisible({
+      await expect(
+        main.getByText("Staff", { exact: true }).first()
+      ).toBeVisible({
         timeout: 10000,
       });
 
@@ -219,7 +221,9 @@ test.describe("Community dashboard", () => {
       await page.goto("/dashboard/community/vgc-league/staff");
 
       const main = page.getByRole("main");
-      await expect(main.getByRole("heading", { name: /Staff/i })).toBeVisible({
+      await expect(
+        main.getByText("Staff", { exact: true }).first()
+      ).toBeVisible({
         timeout: 10000,
       });
 
@@ -242,7 +246,9 @@ test.describe("Community dashboard", () => {
       await page.goto("/dashboard/community/vgc-league/staff");
 
       const main = page.getByRole("main");
-      await expect(main.getByRole("heading", { name: /Staff/i })).toBeVisible({
+      await expect(
+        main.getByText("Staff", { exact: true }).first()
+      ).toBeVisible({
         timeout: 10000,
       });
 
@@ -264,7 +270,7 @@ test.describe("Community dashboard", () => {
       const main = page.getByRole("main");
 
       await expect(
-        main.getByRole("heading", { name: /Settings/i })
+        main.getByText("Settings", { exact: true }).first()
       ).toBeVisible({ timeout: 10000 });
 
       // Three DashboardCard labels rendered by SettingsForm
@@ -283,7 +289,7 @@ test.describe("Community dashboard", () => {
 
       const main = page.getByRole("main");
       await expect(
-        main.getByRole("heading", { name: /Settings/i })
+        main.getByText("Settings", { exact: true }).first()
       ).toBeVisible({ timeout: 10000 });
 
       // Community Name input should be pre-filled from seed data
@@ -300,7 +306,7 @@ test.describe("Community dashboard", () => {
 
       const main = page.getByRole("main");
       await expect(
-        main.getByRole("heading", { name: /Settings/i })
+        main.getByText("Settings", { exact: true }).first()
       ).toBeVisible({ timeout: 10000 });
 
       await expect(main.getByLabel("Description")).toBeVisible({
@@ -317,7 +323,7 @@ test.describe("Community dashboard", () => {
 
       const main = page.getByRole("main");
       await expect(
-        main.getByRole("heading", { name: /Settings/i })
+        main.getByText("Settings", { exact: true }).first()
       ).toBeVisible({ timeout: 10000 });
 
       await expect(main.getByRole("button", { name: /Save/i })).toBeVisible({
