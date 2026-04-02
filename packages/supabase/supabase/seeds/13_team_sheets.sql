@@ -14,15 +14,15 @@ DECLARE
   reg record;
   tp record;
 BEGIN
-  -- Skip if already seeded
+  -- Always backfill game_format (idempotent — only updates NULLs)
+  UPDATE public.tournaments SET game_format = 'gen9vgc2026regi' WHERE game_format IS NULL;
+
+  -- Skip snapshot creation if already seeded
   SELECT EXISTS(SELECT 1 FROM public.tournament_team_sheets LIMIT 1) INTO sheets_exist;
   IF sheets_exist THEN
     RAISE NOTICE 'Team sheets already seeded, skipping';
     RETURN;
   END IF;
-
-  -- Set game_format on all tournaments (was not set in original seeds)
-  UPDATE public.tournaments SET game_format = 'gen9vgc2026regi' WHERE game_format IS NULL;
 
   -- Create OTS snapshots for all active/completed tournaments
   -- This simulates what createTournamentTeamSheets does at tournament start:
@@ -36,7 +36,7 @@ BEGIN
       FROM public.tournament_registrations tr
       WHERE tr.tournament_id = t.id
         AND tr.team_id IS NOT NULL
-        AND tr.status IN ('checked_in', 'registered')
+        AND tr.status = 'checked_in'
     LOOP
       FOR tp IN
         SELECT
