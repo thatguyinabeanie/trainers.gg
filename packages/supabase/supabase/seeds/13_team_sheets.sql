@@ -63,7 +63,7 @@ BEGIN
           COALESCE(t.game_format, 'gen9vgc2026regi'),
           tp.team_position, tp.species, tp.ability, tp.held_item, tp.tera_type,
           tp.move1, tp.move2, tp.move3, tp.move4
-        ) ON CONFLICT (tournament_id, registration_id, position) DO NOTHING;
+        ) ON CONFLICT DO NOTHING;
       END LOOP;
     END LOOP;
   END LOOP;
