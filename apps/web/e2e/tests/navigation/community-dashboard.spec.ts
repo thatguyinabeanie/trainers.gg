@@ -62,12 +62,12 @@ test.describe("Community dashboard", () => {
 
       // The Tournaments stat should show at least "1" (CI seeds 1, local seeds 3)
       // Staff count may be 0 on CI (no staff assigned to groups), that's valid
-      await expect(page.getByText("Tournaments")).toBeVisible({
+      await expect(page.getByText("Tournaments").first()).toBeVisible({
         timeout: 10000,
       });
-      await expect(page.getByText("Unique Players")).toBeVisible();
-      await expect(page.getByText("Total Entries")).toBeVisible();
-      await expect(page.getByText("Staff")).toBeVisible();
+      await expect(page.getByText("Unique Players").first()).toBeVisible();
+      await expect(page.getByText("Total Entries").first()).toBeVisible();
+      await expect(page.getByText("Staff").first()).toBeVisible();
     });
 
     test("shows Upcoming Tournaments card", async ({ page }) => {
@@ -78,7 +78,7 @@ test.describe("Community dashboard", () => {
         page.getByText("Overview", { exact: true }).first()
       ).toBeVisible({ timeout: 10000 });
 
-      await expect(page.getByText(/Upcoming Tournaments/i)).toBeVisible({
+      await expect(page.getByText("📅 Upcoming Tournaments")).toBeVisible({
         timeout: 10000,
       });
     });
@@ -147,7 +147,7 @@ test.describe("Community dashboard", () => {
 
       // The Create Tournament button lives in the page header (PageHeader slot)
       await expect(
-        page.getByRole("link", { name: /Create Tournament/i })
+        page.getByRole("link", { name: /Create Tournament/i }).first()
       ).toBeVisible({ timeout: 10000 });
     });
 
@@ -162,7 +162,7 @@ test.describe("Community dashboard", () => {
       ).toBeVisible({ timeout: 10000 });
 
       await expect(
-        page.getByRole("link", { name: /Create Tournament/i })
+        page.getByRole("link", { name: /Create Tournament/i }).first()
       ).toHaveAttribute(
         "href",
         /\/dashboard\/community\/vgc-league\/tournaments\/create/
@@ -204,19 +204,19 @@ test.describe("Community dashboard", () => {
       });
 
       // Wait for the Role Permissions card to render (it's below the drag-drop UI)
-      await expect(page.getByText(/Role Permissions/i)).toBeVisible({
+      await expect(page.getByText("Role Permissions").first()).toBeVisible({
         timeout: 15000,
       });
 
       // Column headers inside the permissions table
       await expect(
-        page.getByRole("columnheader", { name: /Admin/i })
+        page.getByRole("columnheader", { name: "Admin" })
       ).toBeVisible({ timeout: 10000 });
       await expect(
-        page.getByRole("columnheader", { name: /Head Judge/i })
+        page.getByRole("columnheader", { name: "Head Judge" })
       ).toBeVisible();
       await expect(
-        page.getByRole("columnheader", { name: /Judge/i })
+        page.getByRole("columnheader", { name: "Judge" }).first()
       ).toBeVisible();
     });
 
