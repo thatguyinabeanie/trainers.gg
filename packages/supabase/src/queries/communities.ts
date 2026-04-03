@@ -55,6 +55,29 @@ export async function listPublicCommunities(
 }
 
 /**
+ * List ALL communities regardless of status or ownership — for site admins in sudo mode only.
+ * Returns every community on the platform ordered by status (active first), then name.
+ * Sets isOwner: false and isSudoAccess: true on every result to signal sudo context to callers.
+ */
+export async function listAllCommunitiesForSudo(
+  supabase: TypedClient
+): Promise<(OrganizationRow & { isOwner: boolean; isSudoAccess: boolean })[]> {
+  const { data, error } = await supabase
+    .from("communities")
+    .select("*")
+    .order("status", { ascending: true })
+    .order("name", { ascending: true });
+
+  if (error) throw error;
+
+  return (data ?? []).map((community) => ({
+    ...community,
+    isOwner: false,
+    isSudoAccess: true,
+  }));
+}
+
+/**
  * List all organizations with pagination
  */
 export async function listCommunities(
