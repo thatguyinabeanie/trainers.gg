@@ -449,7 +449,7 @@ describe("TournamentPairings", () => {
     renderPairings();
 
     const tableRow = screen.getByText("Table 4").closest("tr");
-    expect(tableRow).toBeDefined();
+    expect(tableRow).not.toBeNull();
     await user.click(tableRow!);
 
     expect(mockPush).toHaveBeenCalledWith(

@@ -6,8 +6,14 @@ import { MatchPageClient, type MatchPageClientProps } from "../match-page-client
 // Mocks
 // ===========================================================================
 
-// Stub scrollIntoView for jsdom
-Element.prototype.scrollIntoView = jest.fn();
+// jsdom lacks scrollIntoView — stub/restore per suite
+const _origScrollIntoView = Element.prototype.scrollIntoView;
+beforeAll(() => {
+  Element.prototype.scrollIntoView = jest.fn();
+});
+afterAll(() => {
+  Element.prototype.scrollIntoView = _origScrollIntoView;
+});
 
 jest.mock("next/link", () => {
   const MockLink = ({
