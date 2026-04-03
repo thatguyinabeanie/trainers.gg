@@ -106,7 +106,7 @@ describe("Community Mutations", () => {
       expect(result).toEqual(mockOrg);
     });
 
-    it("should create community with valid social links", async () => {
+    it("should create community with valid social links and sync discord_invite_url", async () => {
       const fromSpy = jest.spyOn(mockClient, "from");
       const socialLinks: CommunitySocialLink[] = [
         { platform: "discord", url: "https://discord.gg/test" },
@@ -119,6 +119,24 @@ describe("Community Mutations", () => {
       expect(insertMock).toHaveBeenCalledWith(
         expect.objectContaining({
           social_links: socialLinks,
+          discord_invite_url: "https://discord.gg/test",
+        })
+      );
+    });
+
+    it("should set discord_invite_url to null when no discord link", async () => {
+      const fromSpy = jest.spyOn(mockClient, "from");
+      const socialLinks: CommunitySocialLink[] = [
+        { platform: "twitter", url: "https://x.com/test" },
+      ];
+      const { insertMock } = mockSuccessfulCreate(fromSpy);
+
+      await createCommunity(mockClient, { ...communityData, socialLinks });
+
+      expect(insertMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          social_links: socialLinks,
+          discord_invite_url: null,
         })
       );
     });
@@ -132,6 +150,7 @@ describe("Community Mutations", () => {
       expect(insertMock).toHaveBeenCalledWith(
         expect.objectContaining({
           social_links: [],
+          discord_invite_url: null,
         })
       );
     });
@@ -315,35 +334,64 @@ describe("Community Mutations", () => {
 
     it.each([
       {
-        desc: "single social link",
+        desc: "single discord link",
         links: [
           { platform: "discord" as const, url: "https://discord.gg/test" },
         ],
+        expectedDiscordUrl: "https://discord.gg/test",
       },
       {
-        desc: "multiple social links",
+        desc: "multiple social links with discord",
         links: [
           { platform: "discord" as const, url: "https://discord.gg/test" },
           { platform: "twitter" as const, url: "https://x.com/test" },
           { platform: "youtube" as const, url: "https://youtube.com/c/test" },
         ],
+        expectedDiscordUrl: "https://discord.gg/test",
+      },
+      {
+        desc: "discord.com invite URL",
+        links: [
+          {
+            platform: "discord" as const,
+            url: "https://discord.com/invite/test",
+          },
+        ],
+        expectedDiscordUrl: "https://discord.com/invite/test",
       },
       {
         desc: "empty social links array",
         links: [] as CommunitySocialLink[],
+        expectedDiscordUrl: null,
       },
-    ])("should update with valid social links ($desc)", async ({ links }) => {
-      const fromSpy = jest.spyOn(mockClient, "from");
-      const { updateMock } = mockSuccessfulUpdate(fromSpy);
+      {
+        desc: "no discord link",
+        links: [
+          { platform: "twitter" as const, url: "https://x.com/test" },
+        ],
+        expectedDiscordUrl: null,
+      },
+      {
+        desc: "discord link with non-Discord host",
+        links: [
+          { platform: "discord" as const, url: "https://evil.com/phish" },
+        ],
+        expectedDiscordUrl: null,
+      },
+    ])(
+      "should update with valid social links ($desc)",
+      async ({ links, expectedDiscordUrl }) => {
+        const fromSpy = jest.spyOn(mockClient, "from");
+        const { updateMock } = mockSuccessfulUpdate(fromSpy);
 
-      await updateCommunity(mockClient, communityId, { socialLinks: links });
+        await updateCommunity(mockClient, communityId, { socialLinks: links });
 
-      const discordLink = links.find((l) => l.platform === "discord");
-      expect(updateMock).toHaveBeenCalledWith({
-        social_links: links,
-        discord_invite_url: discordLink?.url ?? null,
-      });
-    });
+        expect(updateMock).toHaveBeenCalledWith({
+          social_links: links,
+          discord_invite_url: expectedDiscordUrl,
+        });
+      }
+    );
 
     it.each([
       {
