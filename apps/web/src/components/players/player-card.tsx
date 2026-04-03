@@ -3,7 +3,8 @@ import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent } from "@/components/ui/card";
 import { Trophy } from "lucide-react";
-import { getCountryName } from "@trainers/utils";
+import { getCountryName, formatDisplayUsername, isTempUsername } from "@trainers/utils";
+import { NewTrainerBadge } from "@/components/ui/new-trainer-badge";
 
 interface PlayerCardProps {
   username: string;
@@ -27,8 +28,10 @@ export function PlayerCard({
   winRate,
   className,
 }: PlayerCardProps) {
-  // Get first two characters of username for avatar fallback
-  const initials = username.slice(0, 2).toUpperCase();
+  // Get first two characters of display name for avatar fallback
+  const displayUsername = formatDisplayUsername(username);
+  const isTemp = isTempUsername(username);
+  const initials = isTemp ? "NT" : displayUsername.slice(0, 2).toUpperCase();
   const countryName = country ? getCountryName(country) : null;
 
   return (
@@ -51,7 +54,10 @@ export function PlayerCard({
           <div className="min-w-0 flex-1">
             {/* Username + country flag */}
             <div className="flex items-center gap-1.5">
-              <span className="truncate text-sm font-medium">{username}</span>
+              <span className="truncate text-sm font-medium">
+                {displayUsername}
+              </span>
+              {isTemp && <NewTrainerBadge />}
               {country && (
                 <span
                   className="shrink-0 text-sm"

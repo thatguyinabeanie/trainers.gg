@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Trophy } from "lucide-react";
+import { formatDisplayUsername, isTempUsername } from "@trainers/utils";
 import type { LeaderboardEntry } from "@trainers/supabase/queries";
 
 interface SidebarLeaderboardProps {
@@ -25,7 +26,9 @@ export function SidebarLeaderboard({ entries }: SidebarLeaderboardProps) {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-2">
-        {entries.map((entry, index) => (
+        {entries.map((entry, index) => {
+          const displayUsername = formatDisplayUsername(entry.username);
+          return (
           <Link
             key={entry.userId}
             href={`/u/${entry.username}`}
@@ -39,16 +42,16 @@ export function SidebarLeaderboard({ entries }: SidebarLeaderboardProps) {
             {/* Avatar */}
             <Avatar size="sm">
               {entry.avatarUrl && (
-                <AvatarImage src={entry.avatarUrl} alt={entry.username} />
+                <AvatarImage src={entry.avatarUrl} alt={displayUsername} />
               )}
               <AvatarFallback>
-                {entry.username.slice(0, 2).toUpperCase()}
+                {isTempUsername(entry.username) ? "NT" : entry.username.slice(0, 2).toUpperCase()}
               </AvatarFallback>
             </Avatar>
 
             {/* Name + stats */}
             <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-medium">{entry.username}</p>
+              <p className="truncate text-sm font-medium">{displayUsername}</p>
               <p className="text-muted-foreground text-xs">
                 {entry.rating.toLocaleString()} pts ·{" "}
                 {entry.skillBracket.charAt(0).toUpperCase() +
@@ -56,7 +59,8 @@ export function SidebarLeaderboard({ entries }: SidebarLeaderboardProps) {
               </p>
             </div>
           </Link>
-        ))}
+          );
+        })}
       </CardContent>
     </Card>
   );

@@ -2,13 +2,14 @@
 
 import { useState, useEffect, useTransition } from "react";
 import { useRouter } from "next/navigation";
+
 import { usernameSchema } from "@trainers/validators";
 import { COUNTRIES } from "@trainers/utils";
 import { Check, Loader2, X } from "lucide-react";
+
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -16,8 +17,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { checkUsernameAvailability } from "@/actions/profile";
+import { Textarea } from "@/components/ui/textarea";
 import { completeOnboarding } from "@/actions/onboarding";
+import { checkUsernameAvailability } from "@/actions/profile";
 
 type UsernameStatus = "idle" | "checking" | "available" | "taken" | "error";
 
@@ -68,11 +70,11 @@ export function OnboardingForm() {
     return () => clearTimeout(timer);
   }, [username]);
 
+  // Bio is optional — only require username + country
   const canSubmit =
     !isPending &&
     username.length > 0 &&
     country.length > 0 &&
-    bio.trim().length > 0 &&
     usernameStatus === "available";
 
   function handleSubmit() {
@@ -162,7 +164,10 @@ export function OnboardingForm() {
 
       {/* Bio */}
       <div className="space-y-2">
-        <Label htmlFor="bio">Bio</Label>
+        <Label htmlFor="bio">
+          Bio{" "}
+          <span className="font-normal text-zinc-500">(optional)</span>
+        </Label>
         <Textarea
           id="bio"
           value={bio}

@@ -11,7 +11,6 @@ export const ADMIN_ROUTES = ["/admin"];
 export const PROTECTED_ROUTES = [
   "/dashboard",
   "/communities/create",
-  "/onboarding",
 ];
 
 // Dynamic route patterns that require authentication (checked via regex)
@@ -80,6 +79,37 @@ export function isAdminRoute(pathname: string): boolean {
 
 export function isNextInternal(pathname: string): boolean {
   return pathname.startsWith("/_next") || pathname.startsWith("/__next");
+}
+
+/**
+ * Routes exempt from the onboarding gate. Users with temp usernames
+ * can access these without being redirected to /dashboard/onboarding.
+ * Covers auth flows, API routes, AT Protocol paths, the onboarding
+ * page itself, and public content pages (modal handles these client-side).
+ */
+const ONBOARDING_EXEMPT_ROUTES = [
+  "/sign-in",
+  "/sign-up",
+  "/forgot-password",
+  "/reset-password",
+  "/auth",
+  "/api",
+  "/oauth",
+  "/.well-known",
+  "/dashboard/onboarding",
+  "/players",
+  "/u",
+  "/tournaments",
+  "/communities",
+  "/organizations",
+];
+
+export function isOnboardingExempt(pathname: string): boolean {
+  // Homepage must match exactly — every route starts with "/"
+  if (pathname === "/") return true;
+  return ONBOARDING_EXEMPT_ROUTES.some(
+    (route) => pathname === route || pathname.startsWith(`${route}/`)
+  );
 }
 
 /**

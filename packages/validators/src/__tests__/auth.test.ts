@@ -254,9 +254,9 @@ describe("completeOnboardingSchema", () => {
     expect(completeOnboardingSchema.safeParse(input).success).toBe(false);
   });
 
-  it("rejects missing bio", () => {
+  it("accepts missing bio (bio is optional)", () => {
     const { bio: _, ...input } = validInput;
-    expect(completeOnboardingSchema.safeParse(input).success).toBe(false);
+    expect(completeOnboardingSchema.safeParse(input).success).toBe(true);
   });
 
   it("rejects temp_ username prefix", () => {
@@ -275,20 +275,20 @@ describe("completeOnboardingSchema", () => {
     expect(result.success).toBe(false);
   });
 
-  it("rejects empty bio", () => {
+  it("accepts empty bio", () => {
     const result = completeOnboardingSchema.safeParse({
       ...validInput,
       bio: "",
     });
-    expect(result.success).toBe(false);
+    expect(result.success).toBe(true);
   });
 
-  it("rejects whitespace-only bio", () => {
+  it("accepts whitespace-only bio (trimmed to empty string)", () => {
     const result = completeOnboardingSchema.safeParse({
       ...validInput,
       bio: "   ",
     });
-    expect(result.success).toBe(false);
+    expect(result.success).toBe(true);
   });
 
   it("rejects country code that is not 2 letters", () => {

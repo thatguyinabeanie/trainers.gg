@@ -81,4 +81,36 @@ describe("PlayerCard", () => {
     const flag = screen.getByRole("img");
     expect(flag).toHaveAttribute("aria-label", "ZZ");
   });
+
+  describe("temp username (new trainer) display", () => {
+    it.each(["temp_abc123", "user_06143118"])(
+      "shows 'New Trainer' display text for temp username '%s'",
+      (username) => {
+        render(<PlayerCard {...defaultProps} username={username} />);
+        expect(screen.getByText("New Trainer")).toBeInTheDocument();
+      }
+    );
+
+    it.each(["temp_abc123", "user_06143118"])(
+      "renders the NewTrainerBadge for temp username '%s'",
+      (username) => {
+        render(<PlayerCard {...defaultProps} username={username} />);
+        // NewTrainerBadge contains the text "New" inside a teal badge span
+        expect(screen.getByText("New")).toBeInTheDocument();
+      }
+    );
+
+    it.each(["temp_abc123", "user_06143118"])(
+      "shows 'NT' avatar fallback initials for temp username '%s'",
+      (username) => {
+        render(<PlayerCard {...defaultProps} username={username} avatarUrl={null} />);
+        expect(screen.getByText("NT")).toBeInTheDocument();
+      }
+    );
+
+    it("does not show NewTrainerBadge for a real username", () => {
+      render(<PlayerCard {...defaultProps} />);
+      expect(screen.queryByText("New")).not.toBeInTheDocument();
+    });
+  });
 });

@@ -16,7 +16,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Settings, Users } from "lucide-react";
-import { getCountryName } from "@trainers/utils";
+import { getCountryName, formatDisplayUsername, isTempUsername } from "@trainers/utils";
+import { NewTrainerBadge } from "@/components/ui/new-trainer-badge";
 import { PlayerProfileTabs } from "./player-profile-tabs";
 
 // On-demand revalidation only (no time-based)
@@ -93,7 +94,8 @@ export async function generateMetadata({
     return { title: "Player Not Found" };
   }
 
-  const displayName = profile.mainAlt?.username ?? profile.username ?? handle;
+  const rawDisplayName = profile.mainAlt?.username ?? profile.username ?? handle;
+  const displayName = formatDisplayUsername(rawDisplayName);
   const bio = profile.mainAlt?.bio;
   const description = bio
     ? bio.slice(0, 160)
@@ -223,18 +225,30 @@ function PlayerHeader({
         <Avatar className="h-16 w-16">
           <AvatarImage src={mainAlt?.avatar_url ?? undefined} />
           <AvatarFallback className="text-xl">
-            {(mainAlt?.username ?? profile.username ?? "?")
-              .slice(0, 2)
-              .toUpperCase()}
+            {(() => {
+              const raw = mainAlt?.username ?? profile.username ?? "?";
+              return isTempUsername(raw)
+                ? "NT"
+                : raw.slice(0, 2).toUpperCase();
+            })()}
           </AvatarFallback>
         </Avatar>
 
         <div>
-          <h1 className="text-3xl font-bold">
-            {mainAlt?.username ?? profile.username}
-          </h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-3xl font-bold">
+              {formatDisplayUsername(mainAlt?.username ?? profile.username ?? "")}
+            </h1>
+            {isTempUsername(mainAlt?.username ?? profile.username ?? "") && (
+              <NewTrainerBadge className="mt-1" />
+            )}
+          </div>
 
-          <p className="text-muted-foreground text-sm">@{profile.username}</p>
+          {isTempUsername(profile.username ?? "") ? (
+            <p className="text-muted-foreground text-sm">@New Trainer</p>
+          ) : (
+            <p className="text-muted-foreground text-sm">@{profile.username}</p>
+          )}
 
           {countryCode && countryName && (
             <p className="text-muted-foreground mt-1 flex items-center gap-1.5 text-sm">
@@ -296,7 +310,7 @@ export default async function PlayerPage({ params }: PlayerPageProps) {
   return (
     <div className="container mx-auto px-4 py-8">
       <Breadcrumb
-        username={profile.mainAlt?.username ?? profile.username ?? handle}
+        username={formatDisplayUsername(profile.mainAlt?.username ?? profile.username ?? handle)}
       />
       <PlayerHeader
         profile={profile}

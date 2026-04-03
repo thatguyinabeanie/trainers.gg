@@ -23,7 +23,7 @@ const PDS_HOST = process.env.PDS_HOST || "https://pds.trainers.gg";
 export async function completeOnboarding(data: {
   username: string;
   country: string;
-  bio: string;
+  bio?: string;
   birthDate?: string;
 }) {
   // Skip BotID in E2E: headless Chromium is flagged as a bot
@@ -115,7 +115,7 @@ export async function completeOnboarding(data: {
       .update({
         username: validated.username,
         country: validated.country.toUpperCase(),
-        bio: validated.bio,
+        bio: validated.bio || null,
         ...(validated.birthDate ? { birth_date: validated.birthDate } : {}),
       })
       .eq("id", user.id);
@@ -140,7 +140,7 @@ export async function completeOnboarding(data: {
         .from("alts")
         .update({
           username: validated.username,
-          bio: validated.bio,
+          bio: validated.bio || null,
         })
         .eq("id", userData.main_alt_id);
 

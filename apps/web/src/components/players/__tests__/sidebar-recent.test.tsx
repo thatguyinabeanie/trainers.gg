@@ -14,6 +14,9 @@ jest.mock("next/link", () => ({
 
 jest.mock("@trainers/utils", () => ({
   formatTimeAgo: (date: string) => `${date} ago`,
+  formatDisplayUsername: (username: string) => username,
+  isTempUsername: (username: string) =>
+    username.startsWith("temp_") || username.startsWith("user_"),
 }));
 
 const makePlayers = (count: number) =>

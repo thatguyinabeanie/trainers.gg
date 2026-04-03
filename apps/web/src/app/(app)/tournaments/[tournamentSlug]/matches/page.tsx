@@ -10,6 +10,7 @@ import {
 import { CacheTags } from "@/lib/cache";
 import {
   getPlayerName,
+  formatDisplayUsername,
   type PlayerRef,
   roundStatusLabels,
   getLabel,
@@ -170,12 +171,14 @@ export default async function MatchesPage({ params }: PageProps) {
                       <div className="space-y-2">
                         {round.matches.map((match) => {
                           const isBye = !match.alt2_id;
-                          const p1Name = getPlayerName(
-                            match.player1 as PlayerRef
+                          const p1Name = formatDisplayUsername(
+                            getPlayerName(match.player1 as PlayerRef)
                           );
                           const p2Name = isBye
                             ? "BYE"
-                            : getPlayerName(match.player2 as PlayerRef);
+                            : formatDisplayUsername(
+                                getPlayerName(match.player2 as PlayerRef)
+                              );
 
                           return (
                             <Link

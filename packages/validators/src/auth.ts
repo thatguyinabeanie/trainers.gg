@@ -118,11 +118,12 @@ export const completeOnboardingSchema = z.object({
   bio: z
     .string()
     .trim()
-    .min(1, "Bio is required")
     .max(160, "Bio must be 160 characters or less")
     .refine((val) => !containsProfanity(val), {
       message: PROFANITY_ERROR_MESSAGE,
-    }),
+    })
+    .optional()
+    .default(""),
   birthDate: z
     .string()
     .regex(/^\d{4}-\d{2}-\d{2}$/, "Birth date must be in YYYY-MM-DD format")

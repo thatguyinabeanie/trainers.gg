@@ -6,6 +6,7 @@ import {
   createServiceRoleClient,
   getUser,
 } from "@/lib/supabase/server";
+import { needsOnboarding } from "@/lib/proxy-routes";
 import {
   listMyCommunities,
   listAllCommunitiesForSudo,
@@ -91,6 +92,10 @@ export default async function DashboardLayout({
 
   const mainAltId = userRow?.main_alt_id ?? null;
 
+  const isOnboarding = needsOnboarding(
+    user.user_metadata?.username as string | undefined
+  );
+
   // Read the dashboard alt filter cookie
   const cookieStore = await cookies();
   const dashboardAltCookie =
@@ -153,6 +158,7 @@ export default async function DashboardLayout({
         communities={sidebarCommunities}
         alts={sidebarAlts}
         selectedAltUsername={selectedAltUsername}
+        isOnboarding={isOnboarding}
         isSiteAdmin={isAdmin}
         isSudoActive={sudoActive}
         variant="inset"

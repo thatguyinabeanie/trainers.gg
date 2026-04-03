@@ -1,5 +1,6 @@
 import { TopNav } from "@/components/topnav";
 import { AnnouncementBanner } from "@/components/layout/announcement-banner";
+import { UsernameRequiredModal } from "@/components/auth/username-required-modal";
 import type { ReactNode } from "react";
 
 export default function AppLayout({
@@ -22,6 +23,7 @@ export default function AppLayout({
           </p>
         </div>
       </footer>
+      <UsernameRequiredModal />
     </>
   );
 }

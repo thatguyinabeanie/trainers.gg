@@ -30,6 +30,23 @@ export function formatDateTime(dateStr: string): string {
 }
 
 /**
+ * Returns true when a username is a system-generated placeholder.
+ * OAuth sign-ups generate usernames with "temp_" or "user_" prefixes.
+ */
+export function isTempUsername(username: string): boolean {
+  return username.startsWith("temp_") || username.startsWith("user_");
+}
+
+/**
+ * Returns "New Trainer" for system-generated temp usernames,
+ * or the original username for real usernames.
+ * Use at the display layer only — never in database queries or API responses.
+ */
+export function formatDisplayUsername(username: string): string {
+  return isTempUsername(username) ? "New Trainer" : username;
+}
+
+/**
  * Format a date string as a human-readable "time ago" label.
  * Returns "Just now", "Xm ago", "Xh ago", "Xd ago", or a formatted date.
  */

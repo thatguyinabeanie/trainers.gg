@@ -15,6 +15,7 @@ import { ResponsiveTable } from "@/components/ui/responsive-table";
 import { Trophy, Users, Calendar, Swords } from "lucide-react";
 import { DateChip } from "@/app/(app)/tournaments/date-chip";
 import { getGameById, getFormatById } from "@/components/tournaments/shared";
+import { formatDisplayUsername } from "@trainers/utils";
 import type { TournamentWithOrg } from "@trainers/supabase";
 
 const TOURNAMENT_FORMAT_LABELS: Record<string, string> = {
@@ -384,7 +385,7 @@ export function CompletedTournaments({
                 {tournament.winner && (
                   <p className="text-primary mt-1 flex items-center gap-1 text-xs font-medium">
                     <Trophy className="h-3 w-3" />
-                    {tournament.winner.username || tournament.winner.username}
+                    {formatDisplayUsername(tournament.winner.username)}
                   </p>
                 )}
               </div>
@@ -449,8 +450,7 @@ export function CompletedTournaments({
                         <div className="text-primary flex items-center gap-1.5 font-medium">
                           <Trophy className="h-3.5 w-3.5" />
                           <span>
-                            {tournament.winner.username ||
-                              tournament.winner.username}
+                            {formatDisplayUsername(tournament.winner.username)}
                           </span>
                         </div>
                       ) : (
