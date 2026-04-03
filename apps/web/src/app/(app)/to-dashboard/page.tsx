@@ -30,9 +30,14 @@ export default async function TODashboardPage() {
     ReturnType<typeof listAllCommunitiesForSudo>
   > | null = null;
   if (sudoActive) {
-    allSudoCommunities = await listAllCommunitiesForSudo(
-      createServiceRoleClient()
-    );
+    try {
+      allSudoCommunities = await listAllCommunitiesForSudo(
+        createServiceRoleClient()
+      );
+    } catch {
+      // Service role client init or query failed — fall back to user's own communities
+      allSudoCommunities = null;
+    }
   }
 
   const mergedOrganizations = (() => {

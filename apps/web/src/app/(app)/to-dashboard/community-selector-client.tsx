@@ -13,6 +13,13 @@ import { Badge } from "@/components/ui/badge";
 import { Building2, Plus, Crown, Users, ArrowRight, ShieldAlert } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+const STATUS_LABELS: Record<string, string> = {
+  pending: "Pending",
+  active: "Active",
+  rejected: "Rejected",
+  suspended: "Suspended",
+};
+
 interface Organization {
   id: number;
   name: string;
@@ -169,7 +176,7 @@ export function CommunitySelectorClient({
                             "border-gray-200 text-gray-500"
                         )}
                       >
-                        {community.status}
+                        {STATUS_LABELS[community.status] ?? community.status}
                       </Badge>
                     )}
                   </div>

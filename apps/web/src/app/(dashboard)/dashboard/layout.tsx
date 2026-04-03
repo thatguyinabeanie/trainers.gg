@@ -62,15 +62,16 @@ export default async function DashboardLayout({
     ReturnType<typeof listAllCommunitiesForSudo>
   > | null = null;
   if (sudoActive) {
-    allSudoCommunities = await listAllCommunitiesForSudo(
-      createServiceRoleClient()
-    ).catch((err) => {
+    try {
+      const serviceRoleClient = createServiceRoleClient();
+      allSudoCommunities = await listAllCommunitiesForSudo(serviceRoleClient);
+    } catch (err) {
       console.error(
         "[DashboardLayout] Failed to load all communities for sudo:",
         err
       );
-      return null;
-    });
+      allSudoCommunities = null;
+    }
   }
 
   const mergedCommunities = (() => {

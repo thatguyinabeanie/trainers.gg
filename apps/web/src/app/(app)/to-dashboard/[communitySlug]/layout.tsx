@@ -34,15 +34,20 @@ export default async function OrgDashboardLayout({
     redirect(`/sign-in?redirect=/dashboard/community/${communitySlug}`);
   }
 
+  // Check sudo mode once — reused for both the org lookup fallback and the access check
+  const sudoActive = await isSudoModeActive();
+
   // Get organization — try service role if RLS may be blocking a non-active community
   let organization = await getCommunityBySlug(supabase, communitySlug);
 
   if (!organization) {
-    // Try service role in case RLS is blocking a non-active community
-    const sudoActive = await isSudoModeActive();
     if (sudoActive) {
-      const serviceClient = createServiceRoleClient();
-      organization = await getCommunityBySlug(serviceClient, communitySlug);
+      try {
+        const serviceClient = createServiceRoleClient();
+        organization = await getCommunityBySlug(serviceClient, communitySlug);
+      } catch {
+        // Service role client init or query failed — fall through to notFound()
+      }
     }
     if (!organization) {
       notFound();
@@ -60,7 +65,6 @@ export default async function OrgDashboardLayout({
   let isSudo = false;
 
   if (!hasAccess) {
-    const sudoActive = await isSudoModeActive();
     if (!sudoActive) {
       redirect(`/communities/${communitySlug}`);
     }

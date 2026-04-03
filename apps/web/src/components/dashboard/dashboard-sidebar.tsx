@@ -91,6 +91,13 @@ import {
 // Helpers
 // ---------------------------------------------------------------------------
 
+const STATUS_LABELS: Record<string, string> = {
+  pending: "Pending",
+  active: "Active",
+  rejected: "Rejected",
+  suspended: "Suspended",
+};
+
 function LiveDot() {
   return (
     <Circle className="ml-auto size-2 shrink-0 fill-emerald-500 text-emerald-500" />
@@ -648,8 +655,8 @@ function PlayerNav({ pathname, communities }: PlayerNavProps) {
                       <CommunityIcon community={community} />
                       <span className="truncate">{community.name}</span>
                       {community.status && community.status !== "active" && (
-                        <span className="text-muted-foreground ml-auto shrink-0 text-[10px] capitalize">
-                          {community.status}
+                        <span className="text-muted-foreground ml-auto shrink-0 text-[10px]">
+                          {STATUS_LABELS[community.status] ?? community.status}
                         </span>
                       )}
                       {community.hasLiveTournament && <LiveDot />}
