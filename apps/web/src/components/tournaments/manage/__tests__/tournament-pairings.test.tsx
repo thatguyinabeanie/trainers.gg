@@ -5,7 +5,7 @@
  */
 
 import type React from "react";
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { TournamentPairings } from "../tournament-pairings";
 
@@ -439,5 +439,174 @@ describe("TournamentPairings", () => {
     renderPairings();
 
     expect(screen.getByText(/Swiss Rounds - Round/)).toBeInTheDocument();
+  });
+
+  it("renders row click navigates to match detail", async () => {
+    const user = userEvent.setup();
+    phasesData = [buildPhase()];
+    roundsData = [buildRound({ round_number: 2 })];
+    matchesData = [buildMatch({ id: 55, table_number: 4 })];
+    renderPairings();
+
+    const tableRow = screen.getByText("Table 4").closest("tr");
+    expect(tableRow).toBeDefined();
+    await user.click(tableRow!);
+
+    expect(mockPush).toHaveBeenCalledWith(
+      "/tournaments/test-tournament/r/2/t/4"
+    );
+  });
+
+  it("opens report dialog when Report button is clicked", async () => {
+    const user = userEvent.setup();
+    phasesData = [buildPhase()];
+    roundsData = [buildRound()];
+    matchesData = [buildMatch({ status: "active" })];
+    renderPairings();
+
+    const reportBtn = screen.getByText("Report").closest("button");
+    await user.click(reportBtn!);
+
+    expect(screen.getByTestId("dialog")).toBeInTheDocument();
+    expect(screen.getByText("Report Match Result")).toBeInTheDocument();
+  });
+
+  it("shows player names in report dialog", async () => {
+    const user = userEvent.setup();
+    phasesData = [buildPhase()];
+    roundsData = [buildRound()];
+    matchesData = [buildMatch({ status: "active" })];
+    renderPairings();
+
+    const reportBtn = screen.getByText("Report").closest("button");
+    await user.click(reportBtn!);
+
+    // Player names appear as labels in the dialog
+    expect(
+      screen.getByLabelText(/Ash Ketchum Games Won/i)
+    ).toBeInTheDocument();
+  });
+
+  it("shows tied score error when scores are equal on submit", async () => {
+    const { toast } = jest.requireMock("sonner") as {
+      toast: { success: jest.Mock; error: jest.Mock };
+    };
+    const user = userEvent.setup();
+    phasesData = [buildPhase()];
+    roundsData = [buildRound()];
+    matchesData = [buildMatch({ status: "active" })];
+    renderPairings();
+
+    // Open dialog
+    await user.click(screen.getByText("Report").closest("button")!);
+
+    // Set both scores to "1" (tied)
+    const [p1Input, p2Input] = screen.getAllByRole("spinbutton");
+    await user.clear(p1Input!);
+    await user.type(p1Input!, "1");
+    await user.clear(p2Input!);
+    await user.type(p2Input!, "1");
+
+    await user.click(screen.getByRole("button", { name: /submit result/i }));
+
+    expect(toast.error).toHaveBeenCalledWith(
+      "Scores cannot be tied - one player must win"
+    );
+  });
+
+  it("shows phase selector when multiple phases exist", () => {
+    phasesData = [
+      buildPhase({ id: 1, name: "Swiss" }),
+      buildPhase({ id: 2, name: "Top Cut", phase_order: 2 }),
+    ];
+    roundsData = [];
+    renderPairings();
+    expect(screen.getByText("Select phase")).toBeInTheDocument();
+  });
+
+  it("does not show phase selector for a single phase", () => {
+    phasesData = [buildPhase()];
+    roundsData = [];
+    renderPairings();
+    expect(screen.queryByText("Select phase")).not.toBeInTheDocument();
+  });
+
+  it("renders player stats (wins-losses) in match rows", () => {
+    phasesData = [buildPhase()];
+    roundsData = [buildRound()];
+    matchesData = [
+      buildMatch({
+        player1Stats: { wins: 3, losses: 0 },
+        player2Stats: { wins: 1, losses: 2 },
+      }),
+    ];
+    renderPairings();
+
+    expect(screen.getByText("3-0")).toBeInTheDocument();
+    expect(screen.getByText("1-2")).toBeInTheDocument();
+  });
+
+  it("renders completed match winner and game score", () => {
+    phasesData = [buildPhase()];
+    roundsData = [buildRound()];
+    matchesData = [
+      buildMatch({
+        status: "completed",
+        winner: { username: "ash", display_name: "Ash Ketchum" },
+        game_wins1: 2,
+        game_wins2: 1,
+      }),
+    ];
+    renderPairings();
+
+    expect(screen.getByText("2-1")).toBeInTheDocument();
+  });
+
+  it("renders pending match result as dash", () => {
+    phasesData = [buildPhase()];
+    roundsData = [buildRound()];
+    matchesData = [buildMatch({ status: "pending" })];
+    renderPairings();
+
+    expect(screen.getByText("-")).toBeInTheDocument();
+  });
+
+  it("renders unpaired player username when displayName is null", () => {
+    phasesData = [buildPhase()];
+    roundsData = [buildRound()];
+    matchesData = [];
+    unpairedData = [{ altId: 10, username: "late_joiner", displayName: null }];
+    renderPairings();
+
+    expect(screen.getByText("late_joiner")).toBeInTheDocument();
+  });
+
+  it("renders round number in round selector", () => {
+    phasesData = [buildPhase()];
+    roundsData = [
+      buildRound({ id: 10, round_number: 1 }),
+      buildRound({ id: 11, round_number: 2 }),
+    ];
+    matchesData = [];
+    renderPairings();
+    // Both round options appear
+    expect(screen.getByText("Round 1")).toBeInTheDocument();
+    expect(screen.getByText("Round 2")).toBeInTheDocument();
+  });
+
+  it("report dialog has Cancel button that closes it", async () => {
+    const user = userEvent.setup();
+    phasesData = [buildPhase()];
+    roundsData = [buildRound()];
+    matchesData = [buildMatch({ status: "active" })];
+    renderPairings();
+
+    await user.click(screen.getByText("Report").closest("button")!);
+    expect(screen.getByTestId("dialog")).toBeInTheDocument();
+
+    // Click dialog Cancel button
+    const cancelBtn = screen.getAllByRole("button", { name: /cancel/i })[0];
+    await user.click(cancelBtn!);
+    expect(screen.queryByTestId("dialog")).not.toBeInTheDocument();
   });
 });

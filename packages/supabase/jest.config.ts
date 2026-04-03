@@ -26,6 +26,10 @@ const config: Config = createConfig({
     "!supabase/functions/_shared/__tests__/**",
     "!src/types.ts",
     "!src/index.ts",
+    // Auto-generated client wrappers — thin DI wrappers around core queries/mutations
+    "!src/clients/client.ts",
+    "!src/clients/mobile.ts",
+    "!src/clients/server.ts",
   ],
 });
 
