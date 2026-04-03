@@ -45,6 +45,8 @@ type SidebarContextProps = {
   toggleSidebar: () => void;
   sidebarWidth: number | null;
   setSidebarWidth: (width: number | null) => void;
+  isResizing: boolean;
+  setIsResizing: (resizing: boolean) => void;
 };
 
 const SidebarContext = React.createContext<SidebarContextProps | null>(null);
@@ -74,6 +76,7 @@ function SidebarProvider({
   const isMobile = useIsMobile();
   const [openMobile, setOpenMobile] = React.useState(false);
   const [sidebarWidth, setSidebarWidth] = React.useState<number | null>(null);
+  const [isResizing, setIsResizing] = React.useState(false);
 
   // Restore persisted width from cookie on mount
   React.useEffect(() => {
@@ -150,8 +153,10 @@ function SidebarProvider({
       toggleSidebar,
       sidebarWidth,
       setSidebarWidth,
+      isResizing,
+      setIsResizing,
     }),
-    [state, open, setOpen, isMobile, openMobile, setOpenMobile, toggleSidebar, sidebarWidth]
+    [state, open, setOpen, isMobile, openMobile, setOpenMobile, toggleSidebar, sidebarWidth, isResizing]
   );
 
   const resolvedWidth = sidebarWidth ? `${sidebarWidth}px` : SIDEBAR_WIDTH;
@@ -160,6 +165,7 @@ function SidebarProvider({
     <SidebarContext.Provider value={contextValue}>
       <div
         data-slot="sidebar-wrapper"
+        data-resizing={isResizing || undefined}
         style={
           {
             "--sidebar-width": resolvedWidth,
@@ -246,7 +252,7 @@ function Sidebar({
       <div
         data-slot="sidebar-gap"
         className={cn(
-          "relative w-(--sidebar-width) bg-transparent transition-[width] duration-200 ease-linear",
+          "relative w-(--sidebar-width) bg-transparent transition-[width] duration-200 ease-linear [[data-resizing]_&]:transition-none",
           "group-data-[collapsible=offcanvas]:w-0",
           "group-data-[side=right]:rotate-180",
           variant === "floating" || variant === "inset"
@@ -257,7 +263,7 @@ function Sidebar({
       <div
         data-slot="sidebar-container"
         className={cn(
-          "fixed inset-y-0 z-10 hidden h-svh w-(--sidebar-width) transition-[left,right,width] duration-200 ease-linear md:flex",
+          "fixed inset-y-0 z-10 hidden h-svh w-(--sidebar-width) transition-[left,right,width] duration-200 ease-linear [[data-resizing]_&]:transition-none md:flex",
           side === "left"
             ? "left-0 group-data-[collapsible=offcanvas]:left-[calc(var(--sidebar-width)*-1)]"
             : "right-0 group-data-[collapsible=offcanvas]:right-[calc(var(--sidebar-width)*-1)]",
@@ -308,7 +314,7 @@ function SidebarTrigger({
 }
 
 function SidebarRail({ className, ...props }: React.ComponentProps<"button">) {
-  const { toggleSidebar, setSidebarWidth, state } = useSidebar();
+  const { toggleSidebar, setSidebarWidth, state, setIsResizing } = useSidebar();
   const isDragging = React.useRef(false);
   const startX = React.useRef(0);
   const startWidth = React.useRef(0);
@@ -324,6 +330,7 @@ function SidebarRail({ className, ...props }: React.ComponentProps<"button">) {
       return;
     }
     isDragging.current = true;
+    setIsResizing(true);
     startX.current = e.clientX;
     const wrapper = (e.currentTarget as HTMLElement).closest(
       "[data-slot='sidebar-wrapper']"
@@ -350,6 +357,7 @@ function SidebarRail({ className, ...props }: React.ComponentProps<"button">) {
   const handlePointerUp = (e: React.PointerEvent) => {
     if (!isDragging.current) return;
     isDragging.current = false;
+    setIsResizing(false);
     document.body.style.cursor = "";
     document.body.style.userSelect = "";
     (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId);
