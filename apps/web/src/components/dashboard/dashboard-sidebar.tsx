@@ -95,12 +95,7 @@ import {
 // Helpers
 // ---------------------------------------------------------------------------
 
-const STATUS_LABELS: Record<string, string> = {
-  pending: "Pending",
-  active: "Active",
-  rejected: "Rejected",
-  suspended: "Suspended",
-};
+import { ORG_STATUS_LABELS } from "@/app/(app)/admin/helpers";
 
 function LiveDot() {
   return (
@@ -703,7 +698,7 @@ function PlayerNav({ pathname, communities }: PlayerNavProps) {
                           {community.status &&
                             community.status !== "active" && (
                               <span className="text-muted-foreground ml-auto shrink-0 text-[10px]">
-                                {STATUS_LABELS[community.status] ??
+                                {ORG_STATUS_LABELS[community.status] ??
                                   community.status}
                               </span>
                             )}

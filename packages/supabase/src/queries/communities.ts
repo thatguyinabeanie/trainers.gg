@@ -56,7 +56,8 @@ export async function listPublicCommunities(
 
 /**
  * List ALL communities regardless of status or ownership — for site admins in sudo mode only.
- * Returns every community on the platform ordered by status (active first), then name.
+ * Returns every community on the platform sorted by status (active first, then pending,
+ * suspended, rejected) and then by name within each status group.
  * Sets isOwner: false and isSudoAccess: true on every result to signal sudo context to callers.
  */
 export async function listAllCommunitiesForSudo(
@@ -65,16 +66,31 @@ export async function listAllCommunitiesForSudo(
   const { data, error } = await supabase
     .from("communities")
     .select("*")
-    .order("status", { ascending: true })
     .order("name", { ascending: true });
 
   if (error) throw error;
 
-  return (data ?? []).map((community) => ({
-    ...community,
-    isOwner: false,
-    isSudoAccess: true,
-  }));
+  // Explicit status ordering — Postgres enum order (pending, active, rejected, suspended)
+  // doesn't match our desired display order (active first).
+  const STATUS_ORDER: Record<string, number> = {
+    active: 0,
+    pending: 1,
+    suspended: 2,
+    rejected: 3,
+  };
+
+  return (data ?? [])
+    .sort((a, b) => {
+      const sa = (a.status && STATUS_ORDER[a.status]) ?? 99;
+      const sb = (b.status && STATUS_ORDER[b.status]) ?? 99;
+      if (sa !== sb) return sa - sb;
+      return a.name.localeCompare(b.name);
+    })
+    .map((community) => ({
+      ...community,
+      isOwner: false,
+      isSudoAccess: true,
+    }));
 }
 
 /**

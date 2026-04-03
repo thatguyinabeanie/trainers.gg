@@ -69,10 +69,23 @@ export default async function TODashboardPage() {
     redirect(`/dashboard/community/${mergedOrganizations[0].slug}`);
   }
 
+  // Map to only the fields the client component needs — avoids serializing
+  // full DB rows (subscription fields, owner_user_id, etc.) to the browser.
+  const slimOrganizations = mergedOrganizations.map((c) => ({
+    id: c.id,
+    name: c.name,
+    slug: c.slug,
+    logo_url: c.logo_url,
+    tier: c.tier,
+    status: c.status,
+    isOwner: c.isOwner,
+    isSudoAccess: c.isSudoAccess,
+  }));
+
   // Show the community selector
   return (
     <CommunitySelectorClient
-      organizations={mergedOrganizations}
+      organizations={slimOrganizations}
       sudoMode={sudoActive}
     />
   );

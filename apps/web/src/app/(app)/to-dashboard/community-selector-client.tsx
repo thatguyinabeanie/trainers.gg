@@ -12,13 +12,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Building2, Plus, Crown, Users, ArrowRight, ShieldAlert } from "lucide-react";
 import { cn } from "@/lib/utils";
-
-const STATUS_LABELS: Record<string, string> = {
-  pending: "Pending",
-  active: "Active",
-  rejected: "Rejected",
-  suspended: "Suspended",
-};
+import { ORG_STATUS_LABELS } from "@/app/(app)/admin/helpers";
 
 interface Organization {
   id: number;
@@ -176,7 +170,7 @@ export function CommunitySelectorClient({
                             "border-gray-200 text-gray-500"
                         )}
                       >
-                        {STATUS_LABELS[community.status] ?? community.status}
+                        {ORG_STATUS_LABELS[community.status] ?? community.status}
                       </Badge>
                     )}
                   </div>
@@ -255,7 +249,7 @@ export function CommunitySelectorClient({
                           "border-gray-200 text-gray-500"
                       )}
                     >
-                      {STATUS_LABELS[community.status] ?? community.status}
+                      {ORG_STATUS_LABELS[community.status] ?? community.status}
                     </Badge>
                   )}
                   <ArrowRight className="text-muted-foreground h-4 w-4" />
