@@ -36,3 +36,7 @@ Alert (with action slot), EmptyState (illustrated/minimal/inline variants), Empt
 ## Utility
 
 CopyButton (clipboard with feedback), Kbd (keyboard key display), Breadcrumb, Command (command palette via cmdk), Item (list item with media/actions)
+
+## Keeping This Catalog in Sync
+
+When you **create, rename, or delete** a UI component in `components/ui/`, update this catalog so future agents see accurate information. Also update the custom components table in `shadcn-ui-primitives.md` if the component is project-specific (not from shadcn).

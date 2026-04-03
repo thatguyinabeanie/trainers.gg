@@ -52,3 +52,7 @@ Available hooks and utility functions. Check this list before writing new utilit
 | `getUserTierFeatures(tier)` | Feature flags by user tier |
 | `getCommunityFeatures(tier)` | Feature availability by community subscription tier |
 | `calculatePlatformFee(fee, tier)` | Platform fee calculation from entry fee + community tier |
+
+## Keeping This Catalog in Sync
+
+When you **add, rename, or delete** a hook in `apps/web/src/hooks/` or a helper in `apps/web/src/lib/` or `@trainers/utils`, update this catalog so future agents see accurate information.
