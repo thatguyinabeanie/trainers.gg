@@ -687,7 +687,7 @@ describe("TournamentRegistrations — action handlers", () => {
     render(<TournamentRegistrations tournament={mockTournament} />);
 
     // Open the dropdown
-    const moreBtn = screen.getByRole("button", { name: "" });
+    const moreBtn = screen.getByRole("button", { name: "Registration actions" });
     await user.click(moreBtn);
 
     const checkInItem = await screen.findByText("Force Check-in");
@@ -711,7 +711,7 @@ describe("TournamentRegistrations — action handlers", () => {
     const user = userEvent.setup();
     render(<TournamentRegistrations tournament={mockTournament} />);
 
-    const moreBtn = screen.getByRole("button", { name: "" });
+    const moreBtn = screen.getByRole("button", { name: "Registration actions" });
     await user.click(moreBtn);
 
     const checkInItem = await screen.findByText("Force Check-in");
@@ -726,7 +726,7 @@ describe("TournamentRegistrations — action handlers", () => {
     const user = userEvent.setup();
     render(<TournamentRegistrations tournament={mockTournament} />);
 
-    const moreBtn = screen.getByRole("button", { name: "" });
+    const moreBtn = screen.getByRole("button", { name: "Registration actions" });
     await user.click(moreBtn);
 
     const dropItem = await screen.findByText("Drop Player");
