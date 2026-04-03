@@ -22,6 +22,8 @@ import {
   Check,
 } from "lucide-react";
 
+import { formatDisplayUsername } from "@trainers/utils";
+
 import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
 import {
@@ -78,6 +80,7 @@ interface DashboardSidebarProps {
   alts: AltInfo[];
   communities: CommunityInfo[];
   selectedAltUsername: string | null;
+  isOnboarding?: boolean;
 }
 
 import {
@@ -105,6 +108,7 @@ export function DashboardSidebar({
   alts,
   communities,
   selectedAltUsername,
+  isOnboarding = false,
   ...props
 }: DashboardSidebarProps & ComponentProps<typeof Sidebar>) {
   const pathname = usePathname();
@@ -131,7 +135,11 @@ export function DashboardSidebar({
         {isCommunityContext && activeCommunity ? (
           <CommunityNav community={activeCommunity} pathname={pathname} />
         ) : (
-          <PlayerNav pathname={pathname} communities={communities} />
+          <PlayerNav
+            pathname={pathname}
+            communities={communities}
+            isOnboarding={isOnboarding}
+          />
         )}
       </SidebarContent>
 
@@ -436,7 +444,9 @@ function NavUser({ user, activeCommunity }: NavUserProps) {
               </AvatarFallback>
             </Avatar>
             <div className="grid flex-1 text-left text-sm leading-tight">
-              <span className="truncate font-medium">{user.username}</span>
+              <span className="truncate font-medium">
+                {formatDisplayUsername(user.username)}
+              </span>
               <span className="text-muted-foreground truncate text-xs">
                 {activeCommunity
                   ? `${activeCommunity.role.charAt(0).toUpperCase()}${activeCommunity.role.slice(1)}`
@@ -462,7 +472,9 @@ function NavUser({ user, activeCommunity }: NavUserProps) {
                 </AvatarFallback>
               </Avatar>
               <div className="grid flex-1 text-left text-sm leading-tight">
-                <span className="truncate font-medium">{user.username}</span>
+                <span className="truncate font-medium">
+                  {formatDisplayUsername(user.username)}
+                </span>
                 <span className="text-muted-foreground truncate text-xs">
                   {activeCommunity
                     ? `${activeCommunity.role.charAt(0).toUpperCase()}${activeCommunity.role.slice(1)}`
@@ -511,9 +523,10 @@ function NavUser({ user, activeCommunity }: NavUserProps) {
 interface PlayerNavProps {
   pathname: string;
   communities: CommunityInfo[];
+  isOnboarding?: boolean;
 }
 
-function PlayerNav({ pathname, communities }: PlayerNavProps) {
+function PlayerNav({ pathname, communities, isOnboarding = false }: PlayerNavProps) {
   const playerItems = [
     {
       label: "Home",
@@ -538,7 +551,7 @@ function PlayerNav({ pathname, communities }: PlayerNavProps) {
   return (
     <>
       {/* Main nav */}
-      <SidebarGroup>
+      <SidebarGroup className={cn(isOnboarding && "pointer-events-none opacity-40")}>
         <SidebarGroupContent>
           <SidebarMenu>
             {playerItems.map((item) => (
@@ -560,7 +573,7 @@ function PlayerNav({ pathname, communities }: PlayerNavProps) {
       {/* Communities section */}
       {communities.length > 0 && (
         <>
-          <SidebarGroup className="group-data-[collapsible=icon]:hidden">
+          <SidebarGroup className={cn("group-data-[collapsible=icon]:hidden", isOnboarding && "pointer-events-none opacity-40")}>
             <SidebarGroupLabel>
               Communities
               <SidebarGroupAction
@@ -598,7 +611,7 @@ function PlayerNav({ pathname, communities }: PlayerNavProps) {
       )}
 
       {/* Secondary nav — pinned to bottom of SidebarContent */}
-      <SidebarGroup className="mt-auto">
+      <SidebarGroup className={cn("mt-auto", isOnboarding && "pointer-events-none opacity-40")}>
         <SidebarGroupContent>
           <SidebarMenu>
             <SidebarMenuItem>

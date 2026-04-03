@@ -2,6 +2,7 @@ import type { CSSProperties, ReactNode } from "react";
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
 import { createClient, getUser } from "@/lib/supabase/server";
+import { needsOnboarding } from "@/lib/proxy-routes";
 import { listMyCommunities, getCurrentUserAlts } from "@trainers/supabase";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { DashboardSidebar } from "@/components/dashboard/dashboard-sidebar";
@@ -44,6 +45,10 @@ export default async function DashboardLayout({
   ]);
 
   const mainAltId = userRow?.main_alt_id ?? null;
+
+  const isOnboarding = needsOnboarding(
+    user.user_metadata?.username as string | undefined
+  );
 
   // Read the dashboard alt filter cookie
   const cookieStore = await cookies();
@@ -108,6 +113,7 @@ export default async function DashboardLayout({
         communities={sidebarCommunities}
         alts={sidebarAlts}
         selectedAltUsername={selectedAltUsername}
+        isOnboarding={isOnboarding}
         variant="inset"
       />
       <SidebarInset>{children}</SidebarInset>
