@@ -637,8 +637,8 @@ function PlayerNav({ pathname, communities }: PlayerNavProps) {
         </SidebarGroupContent>
       </SidebarGroup>
 
-      {/* Communities section — user's own communities */}
-      {communities.filter((c) => c.role !== "sudo").length > 0 && (
+      {/* Communities section */}
+      {communities.length > 0 && (
         <SidebarGroup className="group-data-[collapsible=icon]:hidden">
           <SidebarGroupLabel>
             Communities
@@ -655,6 +655,7 @@ function PlayerNav({ pathname, communities }: PlayerNavProps) {
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
+              {/* User's own communities */}
               {communities
                 .filter((c) => c.role !== "sudo")
                 .map((community) => (
@@ -674,44 +675,42 @@ function PlayerNav({ pathname, communities }: PlayerNavProps) {
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-      )}
 
-      {/* Sudo communities — shown inline under a compact divider */}
-      {communities.filter((c) => c.role === "sudo").length > 0 && (
-        <SidebarGroup className="group-data-[collapsible=icon]:hidden">
-          <SidebarGroupLabel className="gap-1.5 text-amber-600">
-            <ShieldAlert className="size-3" />
-            Sudo
-          </SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {communities
-                .filter((c) => c.role === "sudo")
-                .map((community) => (
-                  <SidebarMenuItem key={community.id}>
-                    <SidebarMenuButton
-                      render={
-                        <Link
-                          href={`/dashboard/community/${community.slug}`}
-                        />
-                      }
-                      isActive={false}
-                      className="gap-2.5"
-                    >
-                      <CommunityIcon community={community} />
-                      <span className="truncate">{community.name}</span>
-                      {community.status && community.status !== "active" && (
-                        <span className="text-muted-foreground ml-auto shrink-0 text-[10px]">
-                          {STATUS_LABELS[community.status] ?? community.status}
-                        </span>
-                      )}
-                      {community.hasLiveTournament && <LiveDot />}
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
+              {/* Thin divider + sudo communities */}
+              {communities.some((c) => c.role === "sudo") && (
+                <>
+                  <li
+                    role="separator"
+                    className="mx-3 my-1.5 border-t border-amber-200/60"
+                  />
+                  {communities
+                    .filter((c) => c.role === "sudo")
+                    .map((community) => (
+                      <SidebarMenuItem key={community.id}>
+                        <SidebarMenuButton
+                          render={
+                            <Link
+                              href={`/dashboard/community/${community.slug}`}
+                            />
+                          }
+                          isActive={false}
+                          className="gap-2.5 opacity-75 hover:opacity-100"
+                        >
+                          <CommunityIcon community={community} />
+                          <span className="truncate">{community.name}</span>
+                          {community.status &&
+                            community.status !== "active" && (
+                              <span className="text-muted-foreground ml-auto shrink-0 text-[10px]">
+                                {STATUS_LABELS[community.status] ??
+                                  community.status}
+                              </span>
+                            )}
+                          {community.hasLiveTournament && <LiveDot />}
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    ))}
+                </>
+              )}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
