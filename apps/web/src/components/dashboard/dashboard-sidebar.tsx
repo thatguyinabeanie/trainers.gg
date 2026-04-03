@@ -679,11 +679,12 @@ function PlayerNav({ pathname, communities }: PlayerNavProps) {
         </SidebarGroup>
       )}
 
-      {/* Sudo communities section — admin access to all communities */}
+      {/* Sudo communities — shown inline under a compact divider */}
       {communities.filter((c) => c.role === "sudo").length > 0 && (
         <SidebarGroup className="group-data-[collapsible=icon]:hidden">
-          <SidebarGroupLabel className="text-amber-600">
-            All Communities (Sudo)
+          <SidebarGroupLabel className="gap-1.5 text-amber-600">
+            <ShieldAlert className="size-3" />
+            Sudo
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
