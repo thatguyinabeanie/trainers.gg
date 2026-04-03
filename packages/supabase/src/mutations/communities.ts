@@ -6,6 +6,34 @@ import {
   type CommunitySocialLink,
 } from "@trainers/validators";
 
+/** Valid Discord invite hosts for the discord_invite_url column. */
+const DISCORD_INVITE_HOSTS = ["discord.gg", "discord.com"];
+
+/**
+ * Extract a valid Discord invite URL from a social links array.
+ * Only promotes URLs with https:// and recognized Discord hosts.
+ */
+function extractDiscordInviteUrl(
+  links: CommunitySocialLink[]
+): string | null {
+  const discordLink = links.find((l) => l.platform === "discord");
+  if (!discordLink) return null;
+
+  try {
+    const parsed = new URL(discordLink.url);
+    if (
+      parsed.protocol === "https:" &&
+      DISCORD_INVITE_HOSTS.includes(parsed.hostname)
+    ) {
+      return discordLink.url;
+    }
+  } catch {
+    // Malformed URL — don't promote to discord_invite_url
+  }
+
+  return null;
+}
+
 /**
  * Helper to get current user
  */
@@ -120,6 +148,7 @@ export async function createCommunity(
       slug: data.slug.toLowerCase(),
       description: data.description,
       social_links: validatedLinks,
+      discord_invite_url: extractDiscordInviteUrl(validatedLinks),
       logo_url: data.logoUrl,
       owner_user_id: user.id,
     })
@@ -181,6 +210,9 @@ export async function updateCommunity(
       );
     }
     updateData.social_links = parsed.data;
+
+    // Keep discord_invite_url in sync with the social links array
+    updateData.discord_invite_url = extractDiscordInviteUrl(parsed.data);
   }
   if (updates.logoUrl !== undefined) updateData.logo_url = updates.logoUrl;
 
