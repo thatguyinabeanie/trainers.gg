@@ -9,6 +9,7 @@ import {
   isProtectedRoute,
   isAdminRoute,
   isNextInternal,
+  isOnboardingExempt,
   needsOnboarding,
   ADMIN_ROUTES,
   PROTECTED_ROUTES,
@@ -82,7 +83,7 @@ describe("proxy-routes", () => {
     it("should match exact protected routes", () => {
       expect(isProtectedRoute("/dashboard")).toBe(true);
       expect(isProtectedRoute("/communities/create")).toBe(true);
-      expect(isProtectedRoute("/onboarding")).toBe(true);
+      // /onboarding removed — now handled by the expanded onboarding gate
     });
 
     it("should match protected route prefixes", () => {
@@ -173,6 +174,46 @@ describe("proxy-routes", () => {
       expect(needsOnboarding(true)).toBe(false);
       expect(needsOnboarding(null)).toBe(false);
       expect(needsOnboarding({})).toBe(false);
+    });
+  });
+
+  describe("isOnboardingExempt", () => {
+    it("should exempt auth pages", () => {
+      expect(isOnboardingExempt("/sign-in")).toBe(true);
+      expect(isOnboardingExempt("/sign-up")).toBe(true);
+      expect(isOnboardingExempt("/forgot-password")).toBe(true);
+      expect(isOnboardingExempt("/reset-password")).toBe(true);
+    });
+
+    it("should exempt auth callbacks and API routes", () => {
+      expect(isOnboardingExempt("/auth/callback")).toBe(true);
+      expect(isOnboardingExempt("/api/health")).toBe(true);
+      expect(isOnboardingExempt("/api/oauth/callback")).toBe(true);
+    });
+
+    it("should exempt AT Protocol paths", () => {
+      expect(isOnboardingExempt("/oauth/jwks")).toBe(true);
+      expect(isOnboardingExempt("/.well-known/atproto-did")).toBe(true);
+    });
+
+    it("should exempt the onboarding page itself", () => {
+      expect(isOnboardingExempt("/dashboard/onboarding")).toBe(true);
+    });
+
+    it("should NOT exempt the homepage", () => {
+      expect(isOnboardingExempt("/")).toBe(false);
+    });
+
+    it("should NOT exempt dashboard routes", () => {
+      expect(isOnboardingExempt("/dashboard")).toBe(false);
+      expect(isOnboardingExempt("/dashboard/overview")).toBe(false);
+      expect(isOnboardingExempt("/dashboard/settings")).toBe(false);
+    });
+
+    it("should NOT exempt public content pages", () => {
+      expect(isOnboardingExempt("/players")).toBe(false);
+      expect(isOnboardingExempt("/tournaments")).toBe(false);
+      expect(isOnboardingExempt("/communities")).toBe(false);
     });
   });
 
