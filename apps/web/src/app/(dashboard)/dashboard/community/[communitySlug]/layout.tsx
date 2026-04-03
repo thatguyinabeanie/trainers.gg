@@ -1,7 +1,15 @@
 import type { ReactNode } from "react";
 import { redirect, notFound } from "next/navigation";
-import { createClient, getUser } from "@/lib/supabase/server";
+
 import { getCommunityBySlug, hasCommunityAccess } from "@trainers/supabase";
+
+import {
+  createClient,
+  createServiceRoleClient,
+  getUser,
+} from "@/lib/supabase/server";
+import { isSudoModeActive } from "@/lib/sudo/server";
+import { SudoCommunityBanner } from "@/components/dashboard/sudo-community-banner";
 
 interface LayoutProps {
   children: ReactNode;
@@ -23,11 +31,19 @@ export default async function DashboardCommunityLayout({
 
   const supabase = await createClient();
 
-  // Get organization
-  const organization = await getCommunityBySlug(supabase, communitySlug);
+  // Get organization — try service role if RLS may be blocking a non-active community
+  let organization = await getCommunityBySlug(supabase, communitySlug);
 
   if (!organization) {
-    notFound();
+    // Try service role in case RLS is blocking a non-active community
+    const sudoActive = await isSudoModeActive();
+    if (sudoActive) {
+      const serviceClient = createServiceRoleClient();
+      organization = await getCommunityBySlug(serviceClient, communitySlug);
+    }
+    if (!organization) {
+      notFound();
+    }
   }
 
   // Check if user has access (owner or staff)
@@ -37,10 +53,21 @@ export default async function DashboardCommunityLayout({
     user.id
   );
 
+  let isSudo = false;
+
   if (!hasAccess) {
-    redirect(`/communities/${communitySlug}`);
+    const sudoActive = await isSudoModeActive();
+    if (!sudoActive) {
+      redirect(`/communities/${communitySlug}`);
+    }
+    isSudo = true;
   }
 
   // No header or navigation -- the sidebar handles that
-  return <>{children}</>;
+  return (
+    <>
+      {isSudo && <SudoCommunityBanner communityName={organization.name} />}
+      {children}
+    </>
+  );
 }

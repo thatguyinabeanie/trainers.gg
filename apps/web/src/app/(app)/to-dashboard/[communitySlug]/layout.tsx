@@ -1,7 +1,15 @@
 import type { ReactNode } from "react";
 import { redirect, notFound } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+
 import { getCommunityBySlug, hasCommunityAccess } from "@trainers/supabase";
+
+import {
+  createClient,
+  createServiceRoleClient,
+} from "@/lib/supabase/server";
+import { isSudoModeActive } from "@/lib/sudo/server";
+import { SudoCommunityBanner } from "@/components/dashboard/sudo-community-banner";
+
 import { TODashboardNav } from "./to-dashboard-nav";
 
 interface LayoutProps {
@@ -26,11 +34,19 @@ export default async function OrgDashboardLayout({
     redirect(`/sign-in?redirect=/dashboard/community/${communitySlug}`);
   }
 
-  // Get organization
-  const organization = await getCommunityBySlug(supabase, communitySlug);
+  // Get organization — try service role if RLS may be blocking a non-active community
+  let organization = await getCommunityBySlug(supabase, communitySlug);
 
   if (!organization) {
-    notFound();
+    // Try service role in case RLS is blocking a non-active community
+    const sudoActive = await isSudoModeActive();
+    if (sudoActive) {
+      const serviceClient = createServiceRoleClient();
+      organization = await getCommunityBySlug(serviceClient, communitySlug);
+    }
+    if (!organization) {
+      notFound();
+    }
   }
 
   // Check if user has access (owner or staff)
@@ -41,15 +57,25 @@ export default async function OrgDashboardLayout({
     user.id
   );
 
+  let isSudo = false;
+
   if (!hasAccess) {
-    redirect(`/communities/${communitySlug}`);
+    const sudoActive = await isSudoModeActive();
+    if (!sudoActive) {
+      redirect(`/communities/${communitySlug}`);
+    }
+    isSudo = true;
   }
 
   // isOwner is needed for UI (to show owner-only features in nav)
-  const isOwner = organization.owner_user_id === user.id;
+  // Sudo access never grants ownership — always false in sudo mode
+  const isOwner = isSudo ? false : organization.owner_user_id === user.id;
 
   return (
     <div className="space-y-6">
+      {/* Sudo mode banner — shown when admin views via sudo bypass */}
+      {isSudo && <SudoCommunityBanner communityName={organization.name} />}
+
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-4">
