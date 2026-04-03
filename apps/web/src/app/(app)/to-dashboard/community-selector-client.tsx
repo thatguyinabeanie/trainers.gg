@@ -255,7 +255,7 @@ export function CommunitySelectorClient({
                           "border-gray-200 text-gray-500"
                       )}
                     >
-                      {community.status}
+                      {STATUS_LABELS[community.status] ?? community.status}
                     </Badge>
                   )}
                   <ArrowRight className="text-muted-foreground h-4 w-4" />
