@@ -1698,7 +1698,7 @@ describe("communities queries", () => {
       );
     });
 
-    it("queries communities with no filters and orders by status then name", async () => {
+    it("queries communities with no filters and orders by name", async () => {
       const mockClient = createMockClient();
       mockClient._queryBuilder.then = jest.fn((resolve) => {
         return Promise.resolve({ data: [], error: null }).then(resolve);
@@ -1708,12 +1708,28 @@ describe("communities queries", () => {
 
       expect(mockClient.from).toHaveBeenCalledWith("communities");
       expect(mockClient._queryBuilder.select).toHaveBeenCalledWith("*");
-      expect(mockClient._queryBuilder.order).toHaveBeenCalledWith("status", {
-        ascending: true,
-      });
+      // Only name ordering is done at DB level — status sorting happens in JS
       expect(mockClient._queryBuilder.order).toHaveBeenCalledWith("name", {
         ascending: true,
       });
+      expect(mockClient._queryBuilder.order).toHaveBeenCalledTimes(1);
+    });
+
+    it("sorts results by status order (active first) then name", async () => {
+      const mockClient = createMockClient();
+      const unsorted = [
+        { id: 1, name: "Zebra", status: "pending" },
+        { id: 2, name: "Alpha", status: "active" },
+        { id: 3, name: "Beta", status: "suspended" },
+        { id: 4, name: "Alpha", status: "pending" },
+      ];
+      mockClient._queryBuilder.then = jest.fn((resolve) => {
+        return Promise.resolve({ data: unsorted, error: null }).then(resolve);
+      });
+
+      const result = await listAllCommunitiesForSudo(mockClient);
+
+      expect(result.map((c) => c.id)).toEqual([2, 4, 1, 3]);
     });
   });
 });
