@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, act, waitFor } from "@testing-library/react";
 import { TournamentOverview } from "../tournament-overview";
 import {
   getTournamentPhases,
@@ -61,6 +61,66 @@ const mockGetTournamentPhases =
   getTournamentPhases as unknown as jest.MockedFunction<SyncPhasesFn>;
 const mockGetPhaseRoundsWithStats =
   getPhaseRoundsWithStats as unknown as jest.MockedFunction<SyncRoundsFn>;
+
+// Helper to set up consistent query mocks for phases + rounds
+function setupQueryMocks({
+  phases = [] as Parameters<typeof mockGetTournamentPhases["mockReturnValue"]>[0],
+  rounds = [] as Parameters<typeof mockGetPhaseRoundsWithStats["mockReturnValue"]>[0],
+  roundsLoading = false,
+} = {}) {
+  const refetchRounds = jest.fn().mockResolvedValue(undefined);
+  mockUseSupabaseQuery
+    .mockReturnValueOnce({
+      data: phases,
+      error: null,
+      isLoading: false,
+      refetch: jest.fn(),
+    })
+    .mockReturnValueOnce({
+      data: rounds,
+      error: null,
+      isLoading: roundsLoading,
+      refetch: refetchRounds,
+    });
+  return { refetchRounds };
+}
+
+const baseTournament = {
+  id: 1,
+  name: "Test Tournament",
+  status: "active",
+  registrations: [],
+  currentPhaseId: 1,
+  tournamentFormat: "swiss_with_cut",
+  format: "VGC 2025",
+  swissRounds: 5,
+};
+
+const mockPhases = [
+  { id: 1, name: "Swiss", tournament_id: BigInt(1), planned_rounds: 5 },
+];
+
+const makeActiveRound = (overrides = {}) => ({
+  id: 10,
+  round_number: 2,
+  status: "active",
+  matchCount: 8,
+  completedCount: 4,
+  inProgressCount: 2,
+  pendingCount: 2,
+  ...overrides,
+});
+
+const _makePendingRound = (overrides = {}) => ({
+  id: 11,
+  round_number: 2,
+  status: "pending",
+  matchCount: 8,
+  completedCount: 0,
+  inProgressCount: 0,
+  pendingCount: 8,
+  ...overrides,
+});
 
 describe("TournamentOverview", () => {
   beforeEach(() => {
@@ -603,6 +663,365 @@ describe("TournamentOverview", () => {
       // Should not show round command center
       expect(screen.queryByText("Ready to Start")).not.toBeInTheDocument();
       expect(screen.queryByText("Start Round")).not.toBeInTheDocument();
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // RoundCommandCenter state rendering
+  // ---------------------------------------------------------------------------
+
+  describe("RoundCommandCenter states", () => {
+    it("shows loading spinner when rounds are loading", () => {
+      setupQueryMocks({ phases: mockPhases, rounds: [], roundsLoading: true });
+      render(<TournamentOverview tournament={baseTournament} />);
+      // Loader2 SVG — no text to assert, but command center content absent
+      expect(screen.queryByText("Ready to Start")).not.toBeInTheDocument();
+      expect(screen.queryByText("Generating pairings...")).not.toBeInTheDocument();
+    });
+
+    it("shows 'no phases configured' when tournament has no phase", () => {
+      setupQueryMocks({ phases: [], rounds: [] });
+      render(
+        <TournamentOverview
+          tournament={{ ...baseTournament, currentPhaseId: null }}
+        />
+      );
+      expect(
+        screen.getByText(/no phases configured/i)
+      ).toBeInTheDocument();
+    });
+
+    it("shows idle state with round 1 label when no rounds exist", () => {
+      setupQueryMocks({ phases: mockPhases, rounds: [] });
+      render(<TournamentOverview tournament={baseTournament} />);
+      expect(screen.getByText("Ready to Start")).toBeInTheDocument();
+      expect(
+        screen.getByRole("button", { name: /start round 1/i })
+      ).toBeInTheDocument();
+    });
+
+    it("shows 'all swiss rounds completed' message when nextRound exceeds plannedRounds", () => {
+      setupQueryMocks({
+        phases: mockPhases,
+        rounds: [
+          {
+            id: 1,
+            round_number: 5,
+            status: "completed",
+            matchCount: 8,
+            completedCount: 8,
+            inProgressCount: 0,
+            pendingCount: 0,
+          },
+        ],
+      });
+      render(<TournamentOverview tournament={baseTournament} />);
+      expect(screen.getByText(/all swiss rounds completed/i)).toBeInTheDocument();
+      // No Start Round button should appear
+      expect(screen.queryByRole("button", { name: /start round/i })).not.toBeInTheDocument();
+    });
+
+    it("shows intermediate idle state label after completing a round", () => {
+      setupQueryMocks({
+        phases: mockPhases,
+        rounds: [
+          {
+            id: 1,
+            round_number: 2,
+            status: "completed",
+            matchCount: 8,
+            completedCount: 8,
+            inProgressCount: 0,
+            pendingCount: 0,
+          },
+        ],
+      });
+      render(<TournamentOverview tournament={baseTournament} />);
+      expect(screen.getByText(/round 2 complete/i)).toBeInTheDocument();
+      expect(
+        screen.getByRole("button", { name: /start round 3/i })
+      ).toBeInTheDocument();
+    });
+
+    it("shows active round progress in command center", () => {
+      setupQueryMocks({
+        phases: mockPhases,
+        rounds: [makeActiveRound()],
+      });
+      render(<TournamentOverview tournament={baseTournament} />);
+      expect(screen.getByText(/round 2 in progress/i)).toBeInTheDocument();
+      expect(
+        screen.getByRole("button", { name: /complete round/i })
+      ).toBeInTheDocument();
+    });
+
+    it("Complete Round button is disabled when not all matches are done", () => {
+      setupQueryMocks({
+        phases: mockPhases,
+        rounds: [makeActiveRound({ completedCount: 4, matchCount: 8 })],
+      });
+      render(<TournamentOverview tournament={baseTournament} />);
+      expect(
+        screen.getByRole("button", { name: /complete round/i })
+      ).toBeDisabled();
+    });
+
+    it("uses phases[0].planned_rounds when currentPhaseId is null", () => {
+      // No explicit currentPhaseId — should fall back to phases[0]
+      setupQueryMocks({
+        phases: [{ id: 2, name: "Swiss", tournament_id: BigInt(1), planned_rounds: 3 }],
+        rounds: [],
+      });
+      render(
+        <TournamentOverview
+          tournament={{ ...baseTournament, currentPhaseId: null }}
+        />
+      );
+      const roundCard = screen.getByText("Round Progress").closest('[data-slot="card"]');
+      expect(roundCard).toHaveTextContent("of 3 rounds");
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // formatDate helper
+  // ---------------------------------------------------------------------------
+
+  describe("formatDate", () => {
+    it("shows em-dash when no start date is provided", () => {
+      setupQueryMocks({ phases: mockPhases, rounds: [] });
+      render(
+        <TournamentOverview
+          tournament={{ ...baseTournament, status: "upcoming", startDate: undefined }}
+        />
+      );
+      const scheduleCard = screen.getByText("Schedule").closest('[data-slot="card"]');
+      expect(scheduleCard).toHaveTextContent("—");
+    });
+
+    it("formats a valid timestamp into a readable date string", () => {
+      setupQueryMocks({ phases: mockPhases, rounds: [] });
+      const ts = new Date("2025-06-15T14:00:00Z").getTime();
+      render(
+        <TournamentOverview
+          tournament={{ ...baseTournament, status: "upcoming", startDate: ts }}
+        />
+      );
+      const scheduleCard = screen.getByText("Schedule").closest('[data-slot="card"]');
+      // Should not show em-dash for the start date
+      const startTimeEl = scheduleCard?.querySelector("p.font-medium");
+      expect(startTimeEl?.textContent).not.toBe("—");
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // Registration card edge cases
+  // ---------------------------------------------------------------------------
+
+  describe("Registration card edge cases", () => {
+    it("shows 'registered' label when no maxParticipants (draft)", () => {
+      setupQueryMocks({ phases: [], rounds: [] });
+      render(
+        <TournamentOverview
+          tournament={{
+            ...baseTournament,
+            status: "draft",
+            registrations: [{ status: "registered" }],
+          }}
+        />
+      );
+      expect(screen.getByText("registered")).toBeInTheDocument();
+    });
+
+    it("does not show dropped count when none have dropped", () => {
+      setupQueryMocks({ phases: [], rounds: [] });
+      render(
+        <TournamentOverview
+          tournament={{
+            ...baseTournament,
+            registrations: [{ status: "checked_in" }],
+          }}
+        />
+      );
+      expect(screen.queryByText(/dropped/)).not.toBeInTheDocument();
+    });
+
+    it("shows format as 'Custom' when format field is empty", () => {
+      setupQueryMocks({ phases: [], rounds: [] });
+      render(
+        <TournamentOverview
+          tournament={{ ...baseTournament, format: "" }}
+        />
+      );
+      expect(screen.getByText("Custom")).toBeInTheDocument();
+    });
+
+    it("shows default 50m round time when roundTimeMinutes is 0", () => {
+      setupQueryMocks({ phases: [], rounds: [] });
+      render(
+        <TournamentOverview
+          tournament={{ ...baseTournament, roundTimeMinutes: 0 }}
+        />
+      );
+      expect(screen.getByText("50m")).toBeInTheDocument();
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // Realtime subscription lifecycle
+  // ---------------------------------------------------------------------------
+
+  describe("realtime subscription", () => {
+    it("subscribes to the realtime channel on mount", () => {
+      setupQueryMocks({ phases: mockPhases, rounds: [] });
+      render(<TournamentOverview tournament={baseTournament} />);
+      // channel() called for registrations + matches + rounds (activePhaseId present)
+      expect(mockSupabase.channel).toHaveBeenCalledWith(
+        `overview-registrations-${baseTournament.id}`
+      );
+      expect(mockSupabase.channel).toHaveBeenCalledWith(
+        `overview-matches-${baseTournament.id}`
+      );
+    });
+
+    it("does NOT subscribe to rounds channel when there is no active phase", () => {
+      setupQueryMocks({ phases: [], rounds: [] });
+      render(
+        <TournamentOverview
+          tournament={{ ...baseTournament, currentPhaseId: null }}
+        />
+      );
+      expect(mockSupabase.channel).not.toHaveBeenCalledWith(
+        expect.stringMatching(/overview-rounds/)
+      );
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // Round command center handlers
+  // ---------------------------------------------------------------------------
+
+  describe("round command center actions", () => {
+    it("calls prepareRound and enters preview state on success", async () => {
+      const { prepareRound } = jest.requireMock("@/actions/tournaments") as {
+        prepareRound: jest.Mock;
+      };
+      const previewPayload = {
+        roundId: 99,
+        roundNumber: 3,
+        matchesCreated: 4,
+        byePlayer: null,
+        matches: [
+          {
+            player1Name: "Ash",
+            player2Name: "Gary",
+            tableNumber: 1,
+          },
+        ],
+      };
+      prepareRound.mockResolvedValue({ success: true, data: previewPayload });
+
+      setupQueryMocks({
+        phases: mockPhases,
+        rounds: [
+          {
+            id: 9,
+            round_number: 2,
+            status: "completed",
+            matchCount: 4,
+            completedCount: 4,
+            inProgressCount: 0,
+            pendingCount: 0,
+          },
+        ],
+      });
+      render(<TournamentOverview tournament={baseTournament} />);
+
+      const startBtn = screen.getByRole("button", {
+        name: /start round 3/i,
+      });
+      await act(async () => {
+        startBtn.click();
+      });
+
+      await waitFor(() => {
+        expect(prepareRound).toHaveBeenCalledWith(
+          baseTournament.id,
+          baseTournament.currentPhaseId
+        );
+      });
+    });
+
+    it("shows error toast when prepareRound fails", async () => {
+      const { prepareRound } = jest.requireMock("@/actions/tournaments") as {
+        prepareRound: jest.Mock;
+      };
+      const { toast } = jest.requireMock("sonner") as {
+        toast: { error: jest.Mock };
+      };
+      prepareRound.mockResolvedValue({
+        success: false,
+        error: "Not enough players",
+      });
+
+      setupQueryMocks({
+        phases: mockPhases,
+        rounds: [
+          {
+            id: 9,
+            round_number: 2,
+            status: "completed",
+            matchCount: 4,
+            completedCount: 4,
+            inProgressCount: 0,
+            pendingCount: 0,
+          },
+        ],
+      });
+      render(<TournamentOverview tournament={baseTournament} />);
+
+      const startBtn = screen.getByRole("button", {
+        name: /start round 3/i,
+      });
+      await act(async () => {
+        startBtn.click();
+      });
+
+      await waitFor(() => {
+        expect(toast.error).toHaveBeenCalledWith("Not enough players");
+      });
+    });
+
+    it("renders Complete Round button for active round with all matches done", () => {
+      setupQueryMocks({
+        phases: mockPhases,
+        rounds: [makeActiveRound({ completedCount: 8, matchCount: 8 })],
+      });
+      render(<TournamentOverview tournament={baseTournament} />);
+
+      // The active round view shows progress and complete button
+      expect(screen.getByText(/Round 2 in Progress/)).toBeInTheDocument();
+      expect(
+        screen.getByRole("button", { name: /complete round/i })
+      ).toBeInTheDocument();
+    });
+
+    it("renders active round stats grid with in-progress, completed, remaining", () => {
+      setupQueryMocks({
+        phases: mockPhases,
+        rounds: [
+          makeActiveRound({
+            matchCount: 8,
+            completedCount: 3,
+            inProgressCount: 2,
+            pendingCount: 3,
+          }),
+        ],
+      });
+      render(<TournamentOverview tournament={baseTournament} />);
+
+      expect(screen.getByText("In Progress")).toBeInTheDocument();
+      expect(screen.getByText("Completed")).toBeInTheDocument();
+      expect(screen.getByText("Remaining")).toBeInTheDocument();
     });
   });
 });

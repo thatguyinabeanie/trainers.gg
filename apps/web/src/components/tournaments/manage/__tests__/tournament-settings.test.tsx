@@ -516,5 +516,214 @@ describe("TournamentSettings", () => {
 
       expect(screen.getByText("Late Registration")).toBeInTheDocument();
     });
+
+    it("shows maximum players input when playerCapEnabled is true", () => {
+      // max_participants is non-null → playerCapEnabled starts true
+      render(
+        <TournamentSettings
+          tournament={buildTournament({ max_participants: 64 })}
+        />
+      );
+      expect(screen.getByLabelText("Maximum Players")).toBeInTheDocument();
+    });
+
+    it("hides maximum players input when no maxParticipants", () => {
+      render(
+        <TournamentSettings
+          tournament={buildTournament({ max_participants: null })}
+        />
+      );
+      expect(
+        screen.queryByLabelText("Maximum Players")
+      ).not.toBeInTheDocument();
+    });
+
+    it("shows late check-in max round input when allowLateRegistration is true", () => {
+      render(
+        <TournamentSettings
+          tournament={buildTournament({ allow_late_registration: true, late_check_in_max_round: 3 })}
+        />
+      );
+      expect(screen.getByLabelText("Close After Round")).toBeInTheDocument();
+    });
+
+    it("hides late check-in round input when allowLateRegistration is false", () => {
+      render(
+        <TournamentSettings
+          tournament={buildTournament({ allow_late_registration: false })}
+        />
+      );
+      expect(
+        screen.queryByLabelText("Close After Round")
+      ).not.toBeInTheDocument();
+    });
+  });
+
+  // ── handleSave ───────────────────────────────────────────────────────────────
+
+  describe("handleSave", () => {
+    it("calls updateTournamentMutation and saveTournamentPhasesAction on save", async () => {
+      const { saveTournamentPhasesAction } = jest.requireMock(
+        "@/actions/tournaments"
+      ) as { saveTournamentPhasesAction: jest.Mock };
+      mockUpdateTournamentMutateAsync.mockResolvedValue(undefined);
+      saveTournamentPhasesAction.mockResolvedValue({ success: true });
+
+      const user = userEvent.setup();
+      render(
+        <TournamentSettings tournament={buildTournament({ status: "draft" })} />
+      );
+
+      await user.click(screen.getByRole("button", { name: /edit settings/i }));
+      await user.click(screen.getByRole("button", { name: /save changes/i }));
+
+      expect(mockUpdateTournamentMutateAsync).toHaveBeenCalledWith(
+        expect.objectContaining({ tournamentId: 1 })
+      );
+      expect(saveTournamentPhasesAction).toHaveBeenCalled();
+    });
+
+    it("shows error toast when saveTournamentPhasesAction fails", async () => {
+      const { toast } = jest.requireMock("sonner") as {
+        toast: { success: jest.Mock; error: jest.Mock };
+      };
+      const { saveTournamentPhasesAction } = jest.requireMock(
+        "@/actions/tournaments"
+      ) as { saveTournamentPhasesAction: jest.Mock };
+
+      mockUpdateTournamentMutateAsync.mockResolvedValue(undefined);
+      saveTournamentPhasesAction.mockResolvedValue({
+        success: false,
+        error: "Phase save failed",
+      });
+
+      const user = userEvent.setup();
+      render(
+        <TournamentSettings tournament={buildTournament({ status: "draft" })} />
+      );
+
+      await user.click(screen.getByRole("button", { name: /edit settings/i }));
+      await user.click(screen.getByRole("button", { name: /save changes/i }));
+
+      expect(toast.error).toHaveBeenCalledWith(
+        "Error saving phases",
+        expect.objectContaining({ description: "Phase save failed" })
+      );
+    });
+
+    it("shows error toast when updateTournamentMutation throws", async () => {
+      const { toast } = jest.requireMock("sonner") as {
+        toast: { success: jest.Mock; error: jest.Mock };
+      };
+      mockUpdateTournamentMutateAsync.mockRejectedValue(
+        new Error("Network error")
+      );
+
+      const user = userEvent.setup();
+      render(
+        <TournamentSettings tournament={buildTournament({ status: "draft" })} />
+      );
+
+      await user.click(screen.getByRole("button", { name: /edit settings/i }));
+      await user.click(screen.getByRole("button", { name: /save changes/i }));
+
+      expect(toast.error).toHaveBeenCalledWith(
+        "Error saving settings",
+        expect.objectContaining({ description: "Network error" })
+      );
+    });
+  });
+
+  // ── handleDelete ─────────────────────────────────────────────────────────────
+
+  describe("handleDelete", () => {
+    it("calls deleteTournamentMutation when user confirms deletion", async () => {
+      mockDeleteTournamentMutateAsync.mockResolvedValue(undefined);
+      // window.confirm is already mocked to return true in beforeEach
+
+      const user = userEvent.setup();
+      render(
+        <TournamentSettings tournament={buildTournament({ status: "draft" })} />
+      );
+
+      await user.click(
+        screen.getByRole("button", { name: /delete tournament/i })
+      );
+
+      expect(mockDeleteTournamentMutateAsync).toHaveBeenCalledWith({
+        tournamentId: 1,
+      });
+    });
+
+    it("does NOT call deleteTournamentMutation when user cancels confirmation", async () => {
+      window.confirm = jest.fn(() => false);
+
+      const user = userEvent.setup();
+      render(
+        <TournamentSettings tournament={buildTournament({ status: "draft" })} />
+      );
+
+      await user.click(
+        screen.getByRole("button", { name: /delete tournament/i })
+      );
+
+      expect(mockDeleteTournamentMutateAsync).not.toHaveBeenCalled();
+    });
+
+    it("shows error toast when deleteTournamentMutation throws", async () => {
+      const { toast } = jest.requireMock("sonner") as {
+        toast: { success: jest.Mock; error: jest.Mock };
+      };
+      mockDeleteTournamentMutateAsync.mockRejectedValue(
+        new Error("Delete failed")
+      );
+
+      const user = userEvent.setup();
+      render(
+        <TournamentSettings tournament={buildTournament({ status: "draft" })} />
+      );
+
+      await user.click(
+        screen.getByRole("button", { name: /delete tournament/i })
+      );
+
+      expect(toast.error).toHaveBeenCalledWith(
+        "Error deleting tournament",
+        expect.objectContaining({ description: "Delete failed" })
+      );
+    });
+  });
+
+  // ── convertPhasesForSave / db-prefixed ID stripping ──────────────────────────
+
+  describe("convertPhasesForSave — db-id stripping", () => {
+    it("passes numeric id for db-prefixed phases and undefined for new phases", async () => {
+      const { saveTournamentPhasesAction } = jest.requireMock(
+        "@/actions/tournaments"
+      ) as { saveTournamentPhasesAction: jest.Mock };
+
+      mockUpdateTournamentMutateAsync.mockResolvedValue(undefined);
+      saveTournamentPhasesAction.mockResolvedValue({ success: true });
+
+      const phases = [
+        buildPhase({ id: 5, name: "Swiss Rounds", status: "pending" }),
+      ];
+
+      const user = userEvent.setup();
+      render(
+        <TournamentSettings
+          tournament={buildTournament({ status: "draft" })}
+          phases={phases}
+        />
+      );
+
+      await user.click(screen.getByRole("button", { name: /edit settings/i }));
+      await user.click(screen.getByRole("button", { name: /save changes/i }));
+
+      const callArgs = saveTournamentPhasesAction.mock.calls[0];
+      // Second arg is the converted phases array
+      const convertedPhases = callArgs[1] as Array<{ id?: number }>;
+      expect(convertedPhases[0]?.id).toBe(5);
+    });
   });
 });

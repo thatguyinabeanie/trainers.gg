@@ -38,6 +38,7 @@ import {
   checkUsernameAvailability,
   getCurrentUserProfile,
   updateProfile,
+  updateAltVisibilityAction,
 } from "../profile";
 
 // Helper to create a chainable mock query builder
@@ -896,5 +897,767 @@ describe("updateProfile", () => {
       expect(result.success).toBe(false);
       expect(result.error).toContain("configuration error");
     });
+  });
+
+  describe("bio update", () => {
+    it("updates bio on main alt when bio is provided", async () => {
+      mockUsernameQuery();
+
+      // users table update (no username change, just other fields)
+      // In this scenario there's no userUpdate so the update step is skipped
+      // bio path: fetch main_alt_id
+      mockFrom.mockReturnValueOnce(
+        createQueryBuilder({
+          maybeSingle: jest.fn().mockResolvedValue({
+            data: { main_alt_id: 5 },
+            error: null,
+          }),
+        })
+      );
+
+      // Update alts table bio
+      mockFrom.mockReturnValueOnce(
+        createQueryBuilder({
+          eq: jest.fn().mockResolvedValue({ error: null }),
+        })
+      );
+
+      const result = await updateProfile({ bio: "Pokemon master" });
+
+      expect(result.success).toBe(true);
+    });
+
+    it("returns error when bio update fails", async () => {
+      mockUsernameQuery();
+
+      // bio path: fetch main_alt_id
+      mockFrom.mockReturnValueOnce(
+        createQueryBuilder({
+          maybeSingle: jest.fn().mockResolvedValue({
+            data: { main_alt_id: 5 },
+            error: null,
+          }),
+        })
+      );
+
+      // Update alts table bio — error
+      mockFrom.mockReturnValueOnce(
+        createQueryBuilder({
+          eq: jest.fn().mockResolvedValue({
+            error: { message: "constraint error", code: "42000" },
+          }),
+        })
+      );
+
+      const result = await updateProfile({ bio: "Pokemon master" });
+
+      expect(result.success).toBe(false);
+      expect(result.error).toBe("Failed to update bio");
+    });
+
+    it("skips alt bio update when user has no main alt", async () => {
+      mockUsernameQuery();
+
+      // bio path: fetch main_alt_id — no alt
+      mockFrom.mockReturnValueOnce(
+        createQueryBuilder({
+          maybeSingle: jest.fn().mockResolvedValue({
+            data: { main_alt_id: null },
+            error: null,
+          }),
+        })
+      );
+
+      const result = await updateProfile({ bio: "Pokemon master" });
+
+      // Should succeed even without a main alt
+      expect(result.success).toBe(true);
+    });
+  });
+
+  describe("username update without main alt", () => {
+    beforeEach(() => {
+      process.env.NEXT_PUBLIC_SUPABASE_URL = "https://test.supabase.co";
+      mockAuth.getUser.mockResolvedValue({
+        data: { user: { id: "user-1" } },
+        error: null,
+      });
+      mockAuth.getSession.mockResolvedValue({
+        data: { session: { access_token: "token-abc" } },
+      });
+      mockAuth.updateUser.mockResolvedValue({ error: null });
+      global.fetch = jest.fn().mockResolvedValue({
+        json: () => Promise.resolve({ success: true }),
+      });
+    });
+
+    afterAll(() => {
+      global.fetch = originalFetch;
+      delete process.env.NEXT_PUBLIC_SUPABASE_URL;
+    });
+
+    it("skips alt username sync when user has no main alt", async () => {
+      mockUsernameQuery();
+
+      // PDS status check — external (skip PDS)
+      mockFrom.mockReturnValueOnce(
+        createQueryBuilder({
+          maybeSingle: jest.fn().mockResolvedValue({
+            data: { pds_status: "external" },
+            error: null,
+          }),
+        })
+      );
+
+      // Update users table
+      mockFrom.mockReturnValueOnce(
+        createQueryBuilder({
+          eq: jest.fn().mockResolvedValue({ error: null }),
+        })
+      );
+
+      // Get main_alt_id — null
+      mockFrom.mockReturnValueOnce(
+        createQueryBuilder({
+          maybeSingle: jest.fn().mockResolvedValue({
+            data: { main_alt_id: null },
+            error: null,
+          }),
+        })
+      );
+
+      const result = await updateProfile({ username: "newname" });
+
+      expect(result.success).toBe(true);
+      // auth.updateUser should still be called to sync metadata
+      expect(mockAuth.updateUser).toHaveBeenCalledWith({
+        data: { username: "newname" },
+      });
+    });
+
+    it("returns error when alt_id fetch fails", async () => {
+      mockUsernameQuery();
+
+      // PDS status check — external
+      mockFrom.mockReturnValueOnce(
+        createQueryBuilder({
+          maybeSingle: jest.fn().mockResolvedValue({
+            data: { pds_status: "external" },
+            error: null,
+          }),
+        })
+      );
+
+      // Update users table
+      mockFrom.mockReturnValueOnce(
+        createQueryBuilder({
+          eq: jest.fn().mockResolvedValue({ error: null }),
+        })
+      );
+
+      // Get main_alt_id — error
+      mockFrom.mockReturnValueOnce(
+        createQueryBuilder({
+          maybeSingle: jest.fn().mockResolvedValue({
+            data: null,
+            error: { message: "db error", code: "500" },
+          }),
+        })
+      );
+
+      const result = await updateProfile({ username: "newname" });
+
+      expect(result.success).toBe(false);
+      expect(result.error).toBe("Failed to sync username to alt");
+    });
+
+    it("returns error when alt username update fails", async () => {
+      mockUsernameQuery();
+
+      // PDS status check — external
+      mockFrom.mockReturnValueOnce(
+        createQueryBuilder({
+          maybeSingle: jest.fn().mockResolvedValue({
+            data: { pds_status: "external" },
+            error: null,
+          }),
+        })
+      );
+
+      // Update users table
+      mockFrom.mockReturnValueOnce(
+        createQueryBuilder({
+          eq: jest.fn().mockResolvedValue({ error: null }),
+        })
+      );
+
+      // Get main_alt_id — has alt
+      mockFrom.mockReturnValueOnce(
+        createQueryBuilder({
+          maybeSingle: jest.fn().mockResolvedValue({
+            data: { main_alt_id: 7 },
+            error: null,
+          }),
+        })
+      );
+
+      // Update alts table — error
+      mockFrom.mockReturnValueOnce(
+        createQueryBuilder({
+          eq: jest.fn().mockResolvedValue({
+            error: { message: "constraint", code: "42000" },
+          }),
+        })
+      );
+
+      const result = await updateProfile({ username: "newname" });
+
+      expect(result.success).toBe(false);
+      expect(result.error).toBe("Failed to sync username to alt");
+    });
+
+    it("returns error when auth metadata update fails", async () => {
+      mockUsernameQuery();
+
+      // PDS status check — external
+      mockFrom.mockReturnValueOnce(
+        createQueryBuilder({
+          maybeSingle: jest.fn().mockResolvedValue({
+            data: { pds_status: "external" },
+            error: null,
+          }),
+        })
+      );
+
+      // Update users table
+      mockFrom.mockReturnValueOnce(
+        createQueryBuilder({
+          eq: jest.fn().mockResolvedValue({ error: null }),
+        })
+      );
+
+      // Get main_alt_id — no alt
+      mockFrom.mockReturnValueOnce(
+        createQueryBuilder({
+          maybeSingle: jest.fn().mockResolvedValue({
+            data: { main_alt_id: null },
+            error: null,
+          }),
+        })
+      );
+
+      mockAuth.updateUser.mockResolvedValue({
+        error: { message: "auth service error" },
+      });
+
+      const result = await updateProfile({ username: "newname" });
+
+      expect(result.success).toBe(false);
+      expect(result.error).toBe("Failed to update auth metadata");
+    });
+  });
+
+  describe("PDS provision paths", () => {
+    beforeEach(() => {
+      process.env.NEXT_PUBLIC_SUPABASE_URL = "https://test.supabase.co";
+      mockAuth.getUser.mockResolvedValue({
+        data: { user: { id: "user-1" } },
+        error: null,
+      });
+      mockAuth.getSession.mockResolvedValue({
+        data: { session: { access_token: "token-abc" } },
+      });
+      mockAuth.updateUser.mockResolvedValue({ error: null });
+      global.fetch = jest.fn().mockResolvedValue({
+        json: () => Promise.resolve({ success: true }),
+      });
+    });
+
+    afterAll(() => {
+      global.fetch = originalFetch;
+      delete process.env.NEXT_PUBLIC_SUPABASE_URL;
+    });
+
+    it("returns error when no session during provision-pds", async () => {
+      mockUsernameQuery();
+      mockAuth.getSession.mockResolvedValue({ data: { session: null } });
+
+      // PDS status check — null (triggers provision)
+      mockFrom.mockReturnValueOnce(
+        createQueryBuilder({
+          maybeSingle: jest.fn().mockResolvedValue({
+            data: { pds_status: null },
+            error: null,
+          }),
+        })
+      );
+
+      const result = await updateProfile({ username: "newuser" });
+
+      expect(result.success).toBe(false);
+      expect(result.error).toBe("No active session");
+    });
+
+    it("returns error when NEXT_PUBLIC_SUPABASE_URL missing during provision-pds", async () => {
+      delete process.env.NEXT_PUBLIC_SUPABASE_URL;
+      mockUsernameQuery();
+
+      // PDS status check — null (triggers provision)
+      mockFrom.mockReturnValueOnce(
+        createQueryBuilder({
+          maybeSingle: jest.fn().mockResolvedValue({
+            data: { pds_status: null },
+            error: null,
+          }),
+        })
+      );
+
+      const result = await updateProfile({ username: "newuser" });
+
+      expect(result.success).toBe(false);
+      expect(result.error).toBe("Server configuration error");
+    });
+
+    it("returns error when provision-pds fetch times out", async () => {
+      mockUsernameQuery();
+
+      // PDS status check — failed
+      mockFrom.mockReturnValueOnce(
+        createQueryBuilder({
+          maybeSingle: jest.fn().mockResolvedValue({
+            data: { pds_status: "failed" },
+            error: null,
+          }),
+        })
+      );
+
+      global.fetch = jest.fn().mockImplementation(() => {
+        const error = new Error("AbortError");
+        error.name = "AbortError";
+        return Promise.reject(error);
+      });
+
+      const result = await updateProfile({ username: "newuser" });
+
+      expect(result.success).toBe(false);
+      expect(result.error).toBe("Request timed out. Please try again.");
+    });
+
+    it("returns error when provision-pds fetch fails with network error", async () => {
+      mockUsernameQuery();
+
+      // PDS status check — null
+      mockFrom.mockReturnValueOnce(
+        createQueryBuilder({
+          maybeSingle: jest.fn().mockResolvedValue({
+            data: { pds_status: null },
+            error: null,
+          }),
+        })
+      );
+
+      global.fetch = jest.fn().mockRejectedValue(new Error("Network error"));
+
+      const result = await updateProfile({ username: "newuser" });
+
+      expect(result.success).toBe(false);
+      expect(result.error).toContain("Failed to connect to server");
+    });
+
+    it("handles ALREADY_PROVISIONED and continues with profile update", async () => {
+      mockUsernameQuery();
+
+      // PDS status check — null
+      mockFrom.mockReturnValueOnce(
+        createQueryBuilder({
+          maybeSingle: jest.fn().mockResolvedValue({
+            data: { pds_status: null },
+            error: null,
+          }),
+        })
+      );
+
+      // provision-pds returns ALREADY_PROVISIONED
+      global.fetch = jest.fn().mockResolvedValue({
+        json: () =>
+          Promise.resolve({
+            success: false,
+            code: "ALREADY_PROVISIONED",
+          }),
+      });
+
+      // Update users table
+      mockFrom.mockReturnValueOnce(
+        createQueryBuilder({
+          eq: jest.fn().mockResolvedValue({ error: null }),
+        })
+      );
+
+      // Get main_alt_id
+      mockFrom.mockReturnValueOnce(
+        createQueryBuilder({
+          maybeSingle: jest.fn().mockResolvedValue({
+            data: { main_alt_id: null },
+            error: null,
+          }),
+        })
+      );
+
+      const result = await updateProfile({ username: "newuser" });
+
+      expect(result.success).toBe(true);
+    });
+
+    it("returns error when provision-pds response fails to parse", async () => {
+      mockUsernameQuery();
+
+      // PDS status check — null
+      mockFrom.mockReturnValueOnce(
+        createQueryBuilder({
+          maybeSingle: jest.fn().mockResolvedValue({
+            data: { pds_status: null },
+            error: null,
+          }),
+        })
+      );
+
+      global.fetch = jest.fn().mockResolvedValue({
+        status: 500,
+        json: () => Promise.reject(new Error("not json")),
+      });
+
+      const result = await updateProfile({ username: "newuser" });
+
+      expect(result.success).toBe(false);
+      expect(result.error).toContain("Failed to create your Bluesky account");
+    });
+
+    it("returns error when provision-pds returns HANDLE_TAKEN", async () => {
+      mockUsernameQuery();
+
+      // PDS status check — null
+      mockFrom.mockReturnValueOnce(
+        createQueryBuilder({
+          maybeSingle: jest.fn().mockResolvedValue({
+            data: { pds_status: null },
+            error: null,
+          }),
+        })
+      );
+
+      global.fetch = jest.fn().mockResolvedValue({
+        json: () =>
+          Promise.resolve({
+            success: false,
+            code: "HANDLE_TAKEN",
+          }),
+      });
+
+      const result = await updateProfile({ username: "takenuser" });
+
+      expect(result.success).toBe(false);
+      expect(result.error).toBe("This handle is already registered on Bluesky");
+    });
+
+    it("returns error with provision-pds generic failure message", async () => {
+      mockUsernameQuery();
+
+      // PDS status check — null
+      mockFrom.mockReturnValueOnce(
+        createQueryBuilder({
+          maybeSingle: jest.fn().mockResolvedValue({
+            data: { pds_status: null },
+            error: null,
+          }),
+        })
+      );
+
+      global.fetch = jest.fn().mockResolvedValue({
+        json: () =>
+          Promise.resolve({
+            success: false,
+            code: "SOME_OTHER_ERROR",
+            error: "Quota exceeded",
+          }),
+      });
+
+      const result = await updateProfile({ username: "newuser" });
+
+      expect(result.success).toBe(false);
+      expect(result.error).toBe("Quota exceeded");
+    });
+
+    it("returns error when no session during active PDS handle update", async () => {
+      mockUsernameQuery();
+      mockAuth.getSession.mockResolvedValue({ data: { session: null } });
+
+      // PDS status check — active
+      mockFrom.mockReturnValueOnce(
+        createQueryBuilder({
+          maybeSingle: jest.fn().mockResolvedValue({
+            data: { pds_status: "active" },
+            error: null,
+          }),
+        })
+      );
+
+      const result = await updateProfile({ username: "newuser" });
+
+      expect(result.success).toBe(false);
+      expect(result.error).toBe("No active session");
+    });
+
+    it("returns error when update-pds-handle fetch throws network error", async () => {
+      mockUsernameQuery();
+
+      // PDS status check — active
+      mockFrom.mockReturnValueOnce(
+        createQueryBuilder({
+          maybeSingle: jest.fn().mockResolvedValue({
+            data: { pds_status: "active" },
+            error: null,
+          }),
+        })
+      );
+
+      global.fetch = jest.fn().mockRejectedValue(new Error("Network failure"));
+
+      const result = await updateProfile({ username: "newuser" });
+
+      expect(result.success).toBe(false);
+      expect(result.error).toContain("Failed to update Bluesky handle");
+    });
+
+    it("returns error when update-pds-handle response fails to parse", async () => {
+      mockUsernameQuery();
+
+      // PDS status check — active
+      mockFrom.mockReturnValueOnce(
+        createQueryBuilder({
+          maybeSingle: jest.fn().mockResolvedValue({
+            data: { pds_status: "active" },
+            error: null,
+          }),
+        })
+      );
+
+      global.fetch = jest.fn().mockResolvedValue({
+        status: 500,
+        json: () => Promise.reject(new Error("bad json")),
+      });
+
+      const result = await updateProfile({ username: "newuser" });
+
+      expect(result.success).toBe(false);
+      expect(result.error).toContain("Failed to update Bluesky handle");
+    });
+
+    it("returns error when pds_status fetch itself errors", async () => {
+      mockUsernameQuery();
+
+      // PDS status check — db error
+      mockFrom.mockReturnValueOnce(
+        createQueryBuilder({
+          maybeSingle: jest.fn().mockResolvedValue({
+            data: null,
+            error: { message: "db error", code: "500" },
+          }),
+        })
+      );
+
+      const result = await updateProfile({ username: "newuser" });
+
+      expect(result.success).toBe(false);
+      expect(result.error).toBe("Failed to fetch user data");
+    });
+
+    it("invalidates new username cache tag when username changes", async () => {
+      // Setup: current username is old_name, new is new_name
+      mockFrom.mockReturnValueOnce(
+        createQueryBuilder({
+          maybeSingle: jest
+            .fn()
+            .mockResolvedValue({ data: { username: "old_name" }, error: null }),
+        })
+      );
+
+      // PDS status check — external
+      mockFrom.mockReturnValueOnce(
+        createQueryBuilder({
+          maybeSingle: jest.fn().mockResolvedValue({
+            data: { pds_status: "external" },
+            error: null,
+          }),
+        })
+      );
+
+      // Update users table
+      mockFrom.mockReturnValueOnce(
+        createQueryBuilder({
+          eq: jest.fn().mockResolvedValue({ error: null }),
+        })
+      );
+
+      // Get main_alt_id
+      mockFrom.mockReturnValueOnce(
+        createQueryBuilder({
+          maybeSingle: jest.fn().mockResolvedValue({
+            data: { main_alt_id: null },
+            error: null,
+          }),
+        })
+      );
+
+      await updateProfile({ username: "new_name" });
+
+      expect(mockUpdateTag).toHaveBeenCalledWith("player:old_name");
+      expect(mockUpdateTag).toHaveBeenCalledWith("player:new_name");
+      expect(mockUpdateTag).toHaveBeenCalledWith("players-directory");
+      expect(mockUpdateTag).toHaveBeenCalledWith("players-new");
+    });
+  });
+});
+
+// ── updateAltVisibilityAction ──────────────────────────────────────────────
+
+describe("updateAltVisibilityAction", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockAuth.getUser.mockResolvedValue({
+      data: { user: { id: "user-1" } },
+      error: null,
+    });
+  });
+
+  it("returns error when not authenticated", async () => {
+    mockAuth.getUser.mockResolvedValue({ data: { user: null } });
+
+    const result = await updateAltVisibilityAction(1, true);
+
+    expect(result.success).toBe(false);
+    expect(result.error).toContain("Not authenticated");
+  });
+
+  it("returns error when alt not found", async () => {
+    // alts table — alt not found
+    mockFrom.mockReturnValueOnce(
+      createQueryBuilder({
+        maybeSingle: jest
+          .fn()
+          .mockResolvedValue({ data: null, error: null }),
+      })
+    );
+
+    const result = await updateAltVisibilityAction(99, true);
+
+    expect(result.success).toBe(false);
+    expect(result.error).toContain("Alt not found");
+  });
+
+  it("returns error when alt belongs to a different user", async () => {
+    mockFrom.mockReturnValueOnce(
+      createQueryBuilder({
+        maybeSingle: jest.fn().mockResolvedValue({
+          data: { id: 1, user_id: "other-user" },
+          error: null,
+        }),
+      })
+    );
+
+    const result = await updateAltVisibilityAction(1, true);
+
+    expect(result.success).toBe(false);
+    expect(result.error).toContain("only update your own alts");
+  });
+
+  it("returns error when DB update fails", async () => {
+    // Alt lookup — belongs to user-1
+    mockFrom.mockReturnValueOnce(
+      createQueryBuilder({
+        maybeSingle: jest.fn().mockResolvedValue({
+          data: { id: 1, user_id: "user-1" },
+          error: null,
+        }),
+      })
+    );
+
+    // Update alts — error
+    mockFrom.mockReturnValueOnce(
+      createQueryBuilder({
+        eq: jest.fn().mockResolvedValue({
+          error: { message: "constraint", code: "42000" },
+        }),
+      })
+    );
+
+    const result = await updateAltVisibilityAction(1, false);
+
+    expect(result.success).toBe(false);
+  });
+
+  it("returns success and invalidates player cache", async () => {
+    // Alt lookup — belongs to user-1
+    mockFrom.mockReturnValueOnce(
+      createQueryBuilder({
+        maybeSingle: jest.fn().mockResolvedValue({
+          data: { id: 1, user_id: "user-1" },
+          error: null,
+        }),
+      })
+    );
+
+    // Update alts table
+    mockFrom.mockReturnValueOnce(
+      createQueryBuilder({
+        eq: jest.fn().mockResolvedValue({ error: null }),
+      })
+    );
+
+    // Fetch username for cache invalidation
+    mockFrom.mockReturnValueOnce(
+      createQueryBuilder({
+        maybeSingle: jest.fn().mockResolvedValue({
+          data: { username: "ash_ketchum" },
+          error: null,
+        }),
+      })
+    );
+
+    const result = await updateAltVisibilityAction(1, true);
+
+    expect(result.success).toBe(true);
+    expect(mockUpdateTag).toHaveBeenCalledWith("player:ash_ketchum");
+  });
+
+  it("does not throw when username lookup returns null", async () => {
+    // Alt lookup — belongs to user-1
+    mockFrom.mockReturnValueOnce(
+      createQueryBuilder({
+        maybeSingle: jest.fn().mockResolvedValue({
+          data: { id: 1, user_id: "user-1" },
+          error: null,
+        }),
+      })
+    );
+
+    // Update alts table
+    mockFrom.mockReturnValueOnce(
+      createQueryBuilder({
+        eq: jest.fn().mockResolvedValue({ error: null }),
+      })
+    );
+
+    // Fetch username — no user row
+    mockFrom.mockReturnValueOnce(
+      createQueryBuilder({
+        maybeSingle: jest.fn().mockResolvedValue({ data: null, error: null }),
+      })
+    );
+
+    const result = await updateAltVisibilityAction(1, true);
+
+    // Should still succeed — missing username just skips cache tag
+    expect(result.success).toBe(true);
+    expect(mockUpdateTag).not.toHaveBeenCalled();
   });
 });

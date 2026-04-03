@@ -584,7 +584,13 @@ export function TournamentRegistrations({
                         <TableCell>
                           <DropdownMenu>
                             <DropdownMenuTrigger
-                              render={<Button variant="ghost" size="sm" />}
+                              render={
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  aria-label="Registration actions"
+                                />
+                              }
                             >
                               <MoreHorizontal className="h-4 w-4" />
                             </DropdownMenuTrigger>
