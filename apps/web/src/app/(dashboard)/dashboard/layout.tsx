@@ -1,4 +1,4 @@
-import type { CSSProperties, ReactNode } from "react";
+import type { ReactNode } from "react";
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
 import {
@@ -147,13 +147,7 @@ export default async function DashboardLayout({
   }));
 
   return (
-    <SidebarProvider
-      style={
-        {
-          "--sidebar-width": "calc(var(--spacing) * 56)",
-        } as CSSProperties
-      }
-    >
+    <SidebarProvider>
       <DashboardSidebar
         user={sidebarUser}
         communities={sidebarCommunities}

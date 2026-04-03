@@ -37,6 +37,7 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarRail,
   useSidebar,
 } from "@/components/ui/sidebar";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -159,6 +160,7 @@ export function DashboardSidebar({
           isSudoActive={isSudoActive}
         />
       </SidebarFooter>
+      <SidebarRail />
     </Sidebar>
   );
 }
