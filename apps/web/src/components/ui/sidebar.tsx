@@ -318,6 +318,28 @@ function SidebarRail({ className, ...props }: React.ComponentProps<"button">) {
   const isDragging = React.useRef(false);
   const startX = React.useRef(0);
   const startWidth = React.useRef(0);
+  const sideRef = React.useRef<"left" | "right">("left");
+
+  const resetDragState = (el: HTMLElement, pointerId?: number) => {
+    isDragging.current = false;
+    setIsResizing(false);
+    document.body.style.cursor = "";
+    document.body.style.userSelect = "";
+    if (pointerId !== undefined) {
+      el.releasePointerCapture(pointerId);
+    }
+  };
+
+  const persistWidth = (el: HTMLElement) => {
+    const wrapper = el.closest("[data-slot='sidebar-wrapper']");
+    const sidebarEl = wrapper?.querySelector(
+      "[data-slot='sidebar-container']"
+    ) as HTMLElement | null;
+    const finalWidth = sidebarEl?.offsetWidth;
+    if (finalWidth) {
+      document.cookie = `${SIDEBAR_WIDTH_COOKIE}=${finalWidth}; path=/; max-age=${SIDEBAR_COOKIE_MAX_AGE}`;
+    }
+  };
 
   const handlePointerDown = (e: React.PointerEvent) => {
     // Double-click toggles collapse
@@ -332,6 +354,10 @@ function SidebarRail({ className, ...props }: React.ComponentProps<"button">) {
     isDragging.current = true;
     setIsResizing(true);
     startX.current = e.clientX;
+    // Detect sidebar side from closest [data-side] ancestor
+    const sidebarGroup = (e.currentTarget as HTMLElement).closest("[data-side]");
+    sideRef.current =
+      (sidebarGroup?.getAttribute("data-side") as "left" | "right") ?? "left";
     const wrapper = (e.currentTarget as HTMLElement).closest(
       "[data-slot='sidebar-wrapper']"
     );
@@ -346,7 +372,9 @@ function SidebarRail({ className, ...props }: React.ComponentProps<"button">) {
 
   const handlePointerMove = (e: React.PointerEvent) => {
     if (!isDragging.current) return;
-    const delta = e.clientX - startX.current;
+    const rawDelta = e.clientX - startX.current;
+    // Invert delta for right sidebar — dragging left should increase width
+    const delta = sideRef.current === "right" ? -rawDelta : rawDelta;
     const newWidth = Math.min(
       SIDEBAR_MAX_WIDTH,
       Math.max(SIDEBAR_MIN_WIDTH, startWidth.current + delta)
@@ -356,22 +384,13 @@ function SidebarRail({ className, ...props }: React.ComponentProps<"button">) {
 
   const handlePointerUp = (e: React.PointerEvent) => {
     if (!isDragging.current) return;
-    isDragging.current = false;
-    setIsResizing(false);
-    document.body.style.cursor = "";
-    document.body.style.userSelect = "";
-    (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId);
-    // Persist to cookie
-    const wrapper = (e.currentTarget as HTMLElement).closest(
-      "[data-slot='sidebar-wrapper']"
-    );
-    const sidebarEl = wrapper?.querySelector(
-      "[data-slot='sidebar-container']"
-    ) as HTMLElement | null;
-    const finalWidth = sidebarEl?.offsetWidth;
-    if (finalWidth) {
-      document.cookie = `${SIDEBAR_WIDTH_COOKIE}=${finalWidth}; path=/; max-age=${SIDEBAR_COOKIE_MAX_AGE}`;
-    }
+    resetDragState(e.currentTarget as HTMLElement, e.pointerId);
+    persistWidth(e.currentTarget as HTMLElement);
+  };
+
+  const handlePointerCancel = (e: React.PointerEvent) => {
+    if (!isDragging.current) return;
+    resetDragState(e.currentTarget as HTMLElement, e.pointerId);
   };
 
   return (
@@ -383,6 +402,7 @@ function SidebarRail({ className, ...props }: React.ComponentProps<"button">) {
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
+      onPointerCancel={handlePointerCancel}
       title="Drag to resize, double-click to collapse"
       className={cn(
         "hover:after:bg-sidebar-border absolute inset-y-0 z-20 hidden w-4 -translate-x-1/2 transition-all ease-linear group-data-[side=left]:-right-4 group-data-[side=right]:left-0 after:absolute after:inset-y-0 after:left-1/2 after:w-[2px] sm:flex",
