@@ -1,6 +1,6 @@
 "use client";
 
-import { type ComponentProps } from "react";
+import { type ComponentProps, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -17,6 +17,7 @@ import {
   MoreVertical,
   LogOut,
   Settings,
+  ShieldAlert,
   User,
   ChevronsUpDown,
   Check,
@@ -38,6 +39,7 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarRail,
   useSidebar,
 } from "@/components/ui/sidebar";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -71,8 +73,9 @@ interface CommunityInfo {
   name: string;
   slug: string;
   logoUrl?: string | null;
-  role: "owner" | "staff";
+  role: "owner" | "staff" | "sudo";
   hasLiveTournament: boolean;
+  status?: string | null;
 }
 
 interface DashboardSidebarProps {
@@ -81,6 +84,8 @@ interface DashboardSidebarProps {
   communities: CommunityInfo[];
   selectedAltUsername: string | null;
   isOnboarding?: boolean;
+  isSiteAdmin?: boolean;
+  isSudoActive?: boolean;
 }
 
 import {
@@ -92,6 +97,8 @@ import {
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
+
+import { ORG_STATUS_LABELS } from "@/app/(app)/admin/helpers";
 
 function LiveDot() {
   return (
@@ -109,6 +116,8 @@ export function DashboardSidebar({
   communities,
   selectedAltUsername,
   isOnboarding = false,
+  isSiteAdmin = false,
+  isSudoActive = false,
   ...props
 }: DashboardSidebarProps & ComponentProps<typeof Sidebar>) {
   const pathname = usePathname();
@@ -150,8 +159,11 @@ export function DashboardSidebar({
           activeCommunity={
             isCommunityContext && activeCommunity ? activeCommunity : null
           }
+          isSiteAdmin={isSiteAdmin}
+          isSudoActive={isSudoActive}
         />
       </SidebarFooter>
+      <SidebarRail />
     </Sidebar>
   );
 }
@@ -381,6 +393,7 @@ function AltSwitcher({ alts, selectedAltUsername }: AltSwitcherProps) {
 // ---------------------------------------------------------------------------
 
 function CommunityHeader({ community }: { community: CommunityInfo }) {
+  const isSudo = community.role === "sudo";
   return (
     <SidebarMenu>
       <SidebarMenuItem>
@@ -388,8 +401,13 @@ function CommunityHeader({ community }: { community: CommunityInfo }) {
           <CommunityIcon community={community} />
           <div className="grid flex-1 text-left text-sm leading-tight">
             <span className="truncate font-semibold">{community.name}</span>
-            <span className="text-muted-foreground truncate text-xs capitalize">
-              {community.role}
+            <span
+              className={cn(
+                "truncate text-xs capitalize",
+                isSudo ? "font-medium text-amber-600" : "text-muted-foreground"
+              )}
+            >
+              {isSudo ? "Sudo" : community.role}
             </span>
           </div>
           {community.hasLiveTournament && <LiveDot />}
@@ -406,11 +424,32 @@ function CommunityHeader({ community }: { community: CommunityInfo }) {
 interface NavUserProps {
   user: UserInfo;
   activeCommunity: CommunityInfo | null;
+  isSiteAdmin: boolean;
+  isSudoActive: boolean;
 }
 
-function NavUser({ user, activeCommunity }: NavUserProps) {
+function NavUser({ user, activeCommunity, isSiteAdmin, isSudoActive }: NavUserProps) {
   const { isMobile } = useSidebar();
   const router = useRouter();
+  const [togglingS, setTogglingS] = useState(false);
+
+  const handleToggleSudo = async () => {
+    setTogglingS(true);
+    try {
+      const { toggleSudoMode } = await import("@/lib/sudo/actions");
+      const result = await toggleSudoMode();
+      if (result.success) {
+        toast.success(result.isActive ? "Sudo mode activated" : "Sudo mode deactivated");
+        router.refresh();
+      } else {
+        toast.error(result.error);
+      }
+    } catch {
+      toast.error("Failed to toggle sudo mode");
+    } finally {
+      setTogglingS(false);
+    }
+  };
 
   const handleSignOut = async () => {
     try {
@@ -447,9 +486,18 @@ function NavUser({ user, activeCommunity }: NavUserProps) {
               <span className="truncate font-medium">
                 {formatDisplayUsername(user.username)}
               </span>
-              <span className="text-muted-foreground truncate text-xs">
+              <span
+                className={cn(
+                  "truncate text-xs",
+                  activeCommunity?.role === "sudo"
+                    ? "font-medium text-amber-600"
+                    : "text-muted-foreground"
+                )}
+              >
                 {activeCommunity
-                  ? `${activeCommunity.role.charAt(0).toUpperCase()}${activeCommunity.role.slice(1)}`
+                  ? activeCommunity.role === "sudo"
+                    ? "Sudo"
+                    : `${activeCommunity.role.charAt(0).toUpperCase()}${activeCommunity.role.slice(1)}`
                   : "Player"}
               </span>
             </div>
@@ -475,9 +523,18 @@ function NavUser({ user, activeCommunity }: NavUserProps) {
                 <span className="truncate font-medium">
                   {formatDisplayUsername(user.username)}
                 </span>
-                <span className="text-muted-foreground truncate text-xs">
+                <span
+                  className={cn(
+                    "truncate text-xs",
+                    activeCommunity?.role === "sudo"
+                      ? "font-medium text-amber-600"
+                      : "text-muted-foreground"
+                  )}
+                >
                   {activeCommunity
-                    ? `${activeCommunity.role.charAt(0).toUpperCase()}${activeCommunity.role.slice(1)}`
+                    ? activeCommunity.role === "sudo"
+                      ? "Sudo"
+                      : `${activeCommunity.role.charAt(0).toUpperCase()}${activeCommunity.role.slice(1)}`
                     : "Player"}
                 </span>
               </div>
@@ -501,6 +558,26 @@ function NavUser({ user, activeCommunity }: NavUserProps) {
                 Account
               </Link>
             </DropdownMenuItem>
+            {isSiteAdmin && (
+              <>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onClick={handleToggleSudo}
+                  disabled={togglingS}
+                  className={cn(
+                    "gap-2",
+                    isSudoActive && "text-amber-600 focus:text-amber-600"
+                  )}
+                >
+                  <ShieldAlert className="size-4" />
+                  {togglingS
+                    ? "Toggling..."
+                    : isSudoActive
+                      ? "Deactivate Sudo"
+                      : "Activate Sudo"}
+                </DropdownMenuItem>
+              </>
+            )}
             <DropdownMenuSeparator />
             <DropdownMenuItem
               onClick={handleSignOut}
@@ -572,28 +649,32 @@ function PlayerNav({ pathname, communities, isOnboarding = false }: PlayerNavPro
 
       {/* Communities section */}
       {communities.length > 0 && (
-        <>
-          <SidebarGroup className={cn("group-data-[collapsible=icon]:hidden", isOnboarding && "pointer-events-none opacity-40")}>
-            <SidebarGroupLabel>
-              Communities
-              <SidebarGroupAction
-                render={
-                  <Link
-                    href="/dashboard/community/request"
-                    aria-label="Request a community"
-                  />
-                }
-              >
-                <Plus className="size-3.5" />
-              </SidebarGroupAction>
-            </SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                {communities.map((community) => (
+        <SidebarGroup className={cn("group-data-[collapsible=icon]:hidden", isOnboarding && "pointer-events-none opacity-40")}>
+          <SidebarGroupLabel>
+            Communities
+            <SidebarGroupAction
+              render={
+                <Link
+                  href="/dashboard/community/request"
+                  aria-label="Request a community"
+                />
+              }
+            >
+              <Plus className="size-3.5" />
+            </SidebarGroupAction>
+          </SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {/* User's own communities */}
+              {communities
+                .filter((c) => c.role !== "sudo")
+                .map((community) => (
                   <SidebarMenuItem key={community.id}>
                     <SidebarMenuButton
                       render={
-                        <Link href={`/dashboard/community/${community.slug}`} />
+                        <Link
+                          href={`/dashboard/community/${community.slug}`}
+                        />
                       }
                       isActive={false}
                       className="gap-2.5"
@@ -604,10 +685,45 @@ function PlayerNav({ pathname, communities, isOnboarding = false }: PlayerNavPro
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 ))}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-        </>
+
+              {/* Thin divider + sudo communities */}
+              {communities.some((c) => c.role === "sudo") && (
+                <>
+                  <li
+                    role="separator"
+                    className="mx-3 my-1.5 border-t border-amber-200/60"
+                  />
+                  {communities
+                    .filter((c) => c.role === "sudo")
+                    .map((community) => (
+                      <SidebarMenuItem key={community.id}>
+                        <SidebarMenuButton
+                          render={
+                            <Link
+                              href={`/dashboard/community/${community.slug}`}
+                            />
+                          }
+                          isActive={false}
+                          className="gap-2.5 opacity-75 hover:opacity-100"
+                        >
+                          <CommunityIcon community={community} />
+                          <span className="truncate">{community.name}</span>
+                          {community.status &&
+                            community.status !== "active" && (
+                              <span className="text-muted-foreground ml-auto shrink-0 text-[10px]">
+                                {ORG_STATUS_LABELS[community.status] ??
+                                  community.status}
+                              </span>
+                            )}
+                          {community.hasLiveTournament && <LiveDot />}
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    ))}
+                </>
+              )}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
       )}
 
       {/* Secondary nav — pinned to bottom of SidebarContent */}

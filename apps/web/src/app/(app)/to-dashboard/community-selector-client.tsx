@@ -10,7 +10,9 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Building2, Plus, Crown, Users, ArrowRight } from "lucide-react";
+import { Building2, Plus, Crown, Users, ArrowRight, ShieldAlert } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { ORG_STATUS_LABELS } from "@/app/(app)/admin/helpers";
 
 interface Organization {
   id: number;
@@ -20,14 +22,17 @@ interface Organization {
   tier: string | null;
   status: string | null;
   isOwner: boolean;
+  isSudoAccess?: boolean;
 }
 
 interface CommunitySelectorClientProps {
   organizations: Organization[];
+  sudoMode?: boolean;
 }
 
 export function CommunitySelectorClient({
   organizations,
+  sudoMode,
 }: CommunitySelectorClientProps) {
   // Empty state - user has no organizations
   if (organizations.length === 0) {
@@ -83,6 +88,15 @@ export function CommunitySelectorClient({
         </Link>
       </div>
 
+      {sudoMode && (
+        <div className="flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-amber-800">
+          <ShieldAlert className="h-4 w-4 shrink-0" />
+          <span className="text-sm font-medium">
+            Sudo Mode — viewing all communities on the platform
+          </span>
+        </div>
+      )}
+
       {useGrid ? (
         // Grid layout for 2-5 organizations
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -119,7 +133,15 @@ export function CommunitySelectorClient({
                 </CardHeader>
                 <CardContent>
                   <div className="flex flex-wrap gap-2">
-                    {community.isOwner ? (
+                    {community.isSudoAccess ? (
+                      <Badge
+                        variant="outline"
+                        className="gap-1 border-amber-200 bg-amber-50 text-amber-800"
+                      >
+                        <ShieldAlert className="h-3 w-3" />
+                        Sudo
+                      </Badge>
+                    ) : community.isOwner ? (
                       <Badge variant="default" className="gap-1">
                         <Crown className="h-3 w-3" />
                         Owner
@@ -134,6 +156,21 @@ export function CommunitySelectorClient({
                       community.tier === "partner") && (
                       <Badge variant="outline">
                         {community.tier === "partner" ? "Partner" : "Verified"}
+                      </Badge>
+                    )}
+                    {community.status && community.status !== "active" && (
+                      <Badge
+                        variant="outline"
+                        className={cn(
+                          community.status === "pending" &&
+                            "border-amber-200 text-amber-700",
+                          community.status === "suspended" &&
+                            "border-red-200 text-red-700",
+                          community.status === "rejected" &&
+                            "border-gray-200 text-gray-500"
+                        )}
+                      >
+                        {ORG_STATUS_LABELS[community.status] ?? community.status}
                       </Badge>
                     )}
                   </div>
@@ -181,7 +218,15 @@ export function CommunitySelectorClient({
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
-                  {community.isOwner ? (
+                  {community.isSudoAccess ? (
+                    <Badge
+                      variant="outline"
+                      className="gap-1 border-amber-200 bg-amber-50 text-amber-800"
+                    >
+                      <ShieldAlert className="h-3 w-3" />
+                      Sudo
+                    </Badge>
+                  ) : community.isOwner ? (
                     <Badge variant="default" className="gap-1">
                       <Crown className="h-3 w-3" />
                       Owner
@@ -190,6 +235,21 @@ export function CommunitySelectorClient({
                     <Badge variant="secondary" className="gap-1">
                       <Users className="h-3 w-3" />
                       Staff
+                    </Badge>
+                  )}
+                  {community.status && community.status !== "active" && (
+                    <Badge
+                      variant="outline"
+                      className={cn(
+                        community.status === "pending" &&
+                          "border-amber-200 text-amber-700",
+                        community.status === "suspended" &&
+                          "border-red-200 text-red-700",
+                        community.status === "rejected" &&
+                          "border-gray-200 text-gray-500"
+                      )}
+                    >
+                      {ORG_STATUS_LABELS[community.status] ?? community.status}
                     </Badge>
                   )}
                   <ArrowRight className="text-muted-foreground h-4 w-4" />
