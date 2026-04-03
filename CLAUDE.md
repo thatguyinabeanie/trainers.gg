@@ -40,11 +40,14 @@ Slash-command skills (invoked directly, not listed above): `commit`, `create-mig
 
 Path-scoped rules in `.claude/rules/` load automatically when working with matching files.
 
-| Rule                    | Applies To                                                                    |
-| ----------------------- | ----------------------------------------------------------------------------- |
-| `code-style.md`         | All TypeScript/TSX files (`**/*.{ts,tsx}`)                                    |
-| `architecture.md`       | All shared packages (`packages/**/*`)                                         |
-| `testing-philosophy.md` | All test files (`**/*.test.*`, `**/*.spec.*`, `**/__tests__/**`, `**/e2e/**`) |
+| Rule                       | Applies To                                                                    |
+| -------------------------- | ----------------------------------------------------------------------------- |
+| `code-style.md`            | All TypeScript/TSX files (`**/*.{ts,tsx}`)                                    |
+| `architecture.md`          | All shared packages (`packages/**/*`)                                         |
+| `testing-philosophy.md`    | All test files (`**/*.test.*`, `**/*.spec.*`, `**/__tests__/**`, `**/e2e/**`) |
+| `shadcn-ui-primitives.md`  | shadcn/ui component files (`apps/web/src/components/ui/**`)                   |
+| `web-ui-catalog.md`        | All web app TS/TSX files (`apps/web/src/**/*.{ts,tsx}`)                       |
+| `web-hooks-and-helpers.md` | All web app TS/TSX files (`apps/web/src/**/*.{ts,tsx}`)                       |
 
 ## Workspace Agents
 

@@ -21,6 +21,7 @@ import {
   getCommunityStats,
   getTopReturningPlayers,
   getCommunityActivity,
+  listAllCommunitiesForSudo,
 } from "../communities";
 import type { TypedClient } from "../../client";
 
@@ -1611,6 +1612,124 @@ describe("communities queries", () => {
       await expect(getCommunityActivity(client, 1)).rejects.toThrow(
         expectedMessage
       );
+    });
+  });
+
+  describe("listAllCommunitiesForSudo", () => {
+    it("returns all communities with isOwner: false and isSudoAccess: true", async () => {
+      const communities = organizationFactory.buildList(3, {
+        status: "active",
+      });
+
+      const mockClient = createMockClient();
+      mockClient._queryBuilder.then = jest.fn((resolve) => {
+        return Promise.resolve({ data: communities, error: null }).then(
+          resolve
+        );
+      });
+
+      const result = await listAllCommunitiesForSudo(mockClient);
+
+      expect(result).toHaveLength(3);
+      result.forEach((community) => {
+        expect(community.isOwner).toBe(false);
+        expect(community.isSudoAccess).toBe(true);
+      });
+    });
+
+    it("preserves the original community fields alongside the sudo flags", async () => {
+      const community = organizationFactory.build({
+        name: "Pallet Town League",
+        slug: "pallet-town-league",
+        status: "active",
+      });
+
+      const mockClient = createMockClient();
+      mockClient._queryBuilder.then = jest.fn((resolve) => {
+        return Promise.resolve({ data: [community], error: null }).then(
+          resolve
+        );
+      });
+
+      const result = await listAllCommunitiesForSudo(mockClient);
+
+      expect(result).toHaveLength(1);
+      expect(result[0]).toMatchObject({
+        name: "Pallet Town League",
+        slug: "pallet-town-league",
+        status: "active",
+        isOwner: false,
+        isSudoAccess: true,
+      });
+    });
+
+    it("returns empty array when no communities exist", async () => {
+      const mockClient = createMockClient();
+      mockClient._queryBuilder.then = jest.fn((resolve) => {
+        return Promise.resolve({ data: [], error: null }).then(resolve);
+      });
+
+      const result = await listAllCommunitiesForSudo(mockClient);
+
+      expect(result).toEqual([]);
+    });
+
+    it("returns empty array when data is null", async () => {
+      const mockClient = createMockClient();
+      mockClient._queryBuilder.then = jest.fn((resolve) => {
+        return Promise.resolve({ data: null, error: null }).then(resolve);
+      });
+
+      const result = await listAllCommunitiesForSudo(mockClient);
+
+      expect(result).toEqual([]);
+    });
+
+    it("throws when Supabase returns an error", async () => {
+      const dbError = new Error("permission denied for table communities");
+
+      const mockClient = createMockClient();
+      mockClient._queryBuilder.then = jest.fn((resolve) => {
+        return Promise.resolve({ data: null, error: dbError }).then(resolve);
+      });
+
+      await expect(listAllCommunitiesForSudo(mockClient)).rejects.toThrow(
+        "permission denied for table communities"
+      );
+    });
+
+    it("queries communities with no filters and orders by name", async () => {
+      const mockClient = createMockClient();
+      mockClient._queryBuilder.then = jest.fn((resolve) => {
+        return Promise.resolve({ data: [], error: null }).then(resolve);
+      });
+
+      await listAllCommunitiesForSudo(mockClient);
+
+      expect(mockClient.from).toHaveBeenCalledWith("communities");
+      expect(mockClient._queryBuilder.select).toHaveBeenCalledWith("*");
+      // Only name ordering is done at DB level — status sorting happens in JS
+      expect(mockClient._queryBuilder.order).toHaveBeenCalledWith("name", {
+        ascending: true,
+      });
+      expect(mockClient._queryBuilder.order).toHaveBeenCalledTimes(1);
+    });
+
+    it("sorts results by status order (active first) then name", async () => {
+      const mockClient = createMockClient();
+      const unsorted = [
+        { id: 1, name: "Zebra", status: "pending" },
+        { id: 2, name: "Alpha", status: "active" },
+        { id: 3, name: "Beta", status: "suspended" },
+        { id: 4, name: "Alpha", status: "pending" },
+      ];
+      mockClient._queryBuilder.then = jest.fn((resolve) => {
+        return Promise.resolve({ data: unsorted, error: null }).then(resolve);
+      });
+
+      const result = await listAllCommunitiesForSudo(mockClient);
+
+      expect(result.map((c) => c.id)).toEqual([2, 4, 1, 3]);
     });
   });
 });

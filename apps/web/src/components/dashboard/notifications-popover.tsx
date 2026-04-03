@@ -180,6 +180,7 @@ export function NotificationsPopover() {
     <Popover>
       {/* Bell trigger with badge */}
       <PopoverTrigger
+        suppressHydrationWarning
         className={cn(
           "relative flex size-8 items-center justify-center rounded-md",
           "text-muted-foreground hover:text-foreground hover:bg-accent",

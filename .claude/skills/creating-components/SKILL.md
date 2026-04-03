@@ -7,6 +7,15 @@ description: Use when creating UI components, working with design tokens, or app
 
 Add or create a UI component in the trainers.gg web app following project conventions.
 
+## First: Check the Catalog
+
+When the `web-ui-catalog.md` rule is loaded, it lists all existing UI components by category. Before creating a new component:
+
+1. Check the catalog for something similar
+2. If a similar component exists, read the file — you may be able to extend it
+3. If a shadcn component exists for your need, install it: `npx shadcn@latest add <name>`
+4. Only create a new component if nothing suitable exists
+
 ## Arguments
 
 - `name` (required): Component name in kebab-case (e.g., `status-badge`, `team-card`)
