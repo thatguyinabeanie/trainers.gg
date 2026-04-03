@@ -1,5 +1,6 @@
 import { createStaticClient } from "@/lib/supabase/server";
 import { getActiveAnnouncements } from "@trainers/supabase";
+import { getErrorMessage } from "@trainers/utils";
 import { cn } from "@/lib/utils";
 import { Info, AlertTriangle, XCircle, CheckCircle2 } from "lucide-react";
 
@@ -41,7 +42,10 @@ export async function AnnouncementBanner() {
     const supabase = createStaticClient();
     announcements = await getActiveAnnouncements(supabase);
   } catch (err) {
-    console.error("[announcement-banner] Failed to fetch announcements:", err);
+    console.error(
+      "[announcement-banner] Failed to fetch announcements:",
+      getErrorMessage(err, "Unknown error")
+    );
     return null;
   }
 
