@@ -30,9 +30,9 @@ export function PlayerCard({
 }: PlayerCardProps) {
   // Get first two characters of display name for avatar fallback
   const displayUsername = formatDisplayUsername(username);
-  const initials = displayUsername.slice(0, 2).toUpperCase();
-  const countryName = country ? getCountryName(country) : null;
   const isTemp = isTempUsername(username);
+  const initials = isTemp ? "NT" : displayUsername.slice(0, 2).toUpperCase();
+  const countryName = country ? getCountryName(country) : null;
 
   return (
     <Link href={`/u/${username}`} className="block">

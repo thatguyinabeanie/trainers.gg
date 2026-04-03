@@ -200,8 +200,8 @@ describe("proxy-routes", () => {
       expect(isOnboardingExempt("/dashboard/onboarding")).toBe(true);
     });
 
-    it("should NOT exempt the homepage", () => {
-      expect(isOnboardingExempt("/")).toBe(false);
+    it("should exempt the homepage", () => {
+      expect(isOnboardingExempt("/")).toBe(true);
     });
 
     it("should NOT exempt dashboard routes", () => {
@@ -210,10 +210,17 @@ describe("proxy-routes", () => {
       expect(isOnboardingExempt("/dashboard/settings")).toBe(false);
     });
 
-    it("should NOT exempt public content pages", () => {
-      expect(isOnboardingExempt("/players")).toBe(false);
-      expect(isOnboardingExempt("/tournaments")).toBe(false);
-      expect(isOnboardingExempt("/communities")).toBe(false);
+    it("should exempt public content pages (modal handles them client-side)", () => {
+      expect(isOnboardingExempt("/players")).toBe(true);
+      expect(isOnboardingExempt("/tournaments")).toBe(true);
+      expect(isOnboardingExempt("/communities")).toBe(true);
+    });
+
+    it("should exempt public content sub-routes", () => {
+      expect(isOnboardingExempt("/players/ash_ketchum")).toBe(true);
+      expect(isOnboardingExempt("/tournaments/summer-2025")).toBe(true);
+      expect(isOnboardingExempt("/u/ash_ketchum")).toBe(true);
+      expect(isOnboardingExempt("/organizations/smogon")).toBe(true);
     });
   });
 

@@ -372,15 +372,17 @@ describe("completeOnboarding", () => {
     });
   });
 
-  it("returns validation error when bio is missing", async () => {
+  it("succeeds when bio is empty string (normalized to null)", async () => {
+    setupHappyPath();
+
     const result = await completeOnboarding({
       username: "ash_ketchum",
       country: "US",
       bio: "",
     });
 
-    expect(result.success).toBe(false);
-    expect(result.error).toBeTruthy();
+    // Empty bio is valid — normalized to null before writing to DB
+    expect(result).toEqual({ success: true, error: null });
   });
 
   it("returns validation error when country code is invalid", async () => {

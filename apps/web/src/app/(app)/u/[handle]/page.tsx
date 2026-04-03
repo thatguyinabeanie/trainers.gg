@@ -244,7 +244,11 @@ function PlayerHeader({
             )}
           </div>
 
-          <p className="text-muted-foreground text-sm">@{profile.username}</p>
+          {isTempUsername(profile.username ?? "") ? (
+            <p className="text-muted-foreground text-sm">@New Trainer</p>
+          ) : (
+            <p className="text-muted-foreground text-sm">@{profile.username}</p>
+          )}
 
           {countryCode && countryName && (
             <p className="text-muted-foreground mt-1 flex items-center gap-1.5 text-sm">
