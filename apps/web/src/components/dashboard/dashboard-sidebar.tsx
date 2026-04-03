@@ -374,6 +374,7 @@ function AltSwitcher({ alts, selectedAltUsername }: AltSwitcherProps) {
 // ---------------------------------------------------------------------------
 
 function CommunityHeader({ community }: { community: CommunityInfo }) {
+  const isSudo = community.role === "sudo";
   return (
     <SidebarMenu>
       <SidebarMenuItem>
@@ -381,8 +382,13 @@ function CommunityHeader({ community }: { community: CommunityInfo }) {
           <CommunityIcon community={community} />
           <div className="grid flex-1 text-left text-sm leading-tight">
             <span className="truncate font-semibold">{community.name}</span>
-            <span className="text-muted-foreground truncate text-xs capitalize">
-              {community.role}
+            <span
+              className={cn(
+                "truncate text-xs capitalize",
+                isSudo ? "font-medium text-amber-600" : "text-muted-foreground"
+              )}
+            >
+              {isSudo ? "Sudo" : community.role}
             </span>
           </div>
           {community.hasLiveTournament && <LiveDot />}
@@ -438,9 +444,18 @@ function NavUser({ user, activeCommunity }: NavUserProps) {
             </Avatar>
             <div className="grid flex-1 text-left text-sm leading-tight">
               <span className="truncate font-medium">{user.username}</span>
-              <span className="text-muted-foreground truncate text-xs">
+              <span
+                className={cn(
+                  "truncate text-xs",
+                  activeCommunity?.role === "sudo"
+                    ? "font-medium text-amber-600"
+                    : "text-muted-foreground"
+                )}
+              >
                 {activeCommunity
-                  ? `${activeCommunity.role.charAt(0).toUpperCase()}${activeCommunity.role.slice(1)}`
+                  ? activeCommunity.role === "sudo"
+                    ? "Sudo"
+                    : `${activeCommunity.role.charAt(0).toUpperCase()}${activeCommunity.role.slice(1)}`
                   : "Player"}
               </span>
             </div>
@@ -464,9 +479,18 @@ function NavUser({ user, activeCommunity }: NavUserProps) {
               </Avatar>
               <div className="grid flex-1 text-left text-sm leading-tight">
                 <span className="truncate font-medium">{user.username}</span>
-                <span className="text-muted-foreground truncate text-xs">
+                <span
+                  className={cn(
+                    "truncate text-xs",
+                    activeCommunity?.role === "sudo"
+                      ? "font-medium text-amber-600"
+                      : "text-muted-foreground"
+                  )}
+                >
                   {activeCommunity
-                    ? `${activeCommunity.role.charAt(0).toUpperCase()}${activeCommunity.role.slice(1)}`
+                    ? activeCommunity.role === "sudo"
+                      ? "Sudo"
+                      : `${activeCommunity.role.charAt(0).toUpperCase()}${activeCommunity.role.slice(1)}`
                     : "Player"}
                 </span>
               </div>
@@ -558,30 +582,33 @@ function PlayerNav({ pathname, communities }: PlayerNavProps) {
         </SidebarGroupContent>
       </SidebarGroup>
 
-      {/* Communities section */}
-      {communities.length > 0 && (
-        <>
-          <SidebarGroup className="group-data-[collapsible=icon]:hidden">
-            <SidebarGroupLabel>
-              Communities
-              <SidebarGroupAction
-                render={
-                  <Link
-                    href="/dashboard/community/request"
-                    aria-label="Request a community"
-                  />
-                }
-              >
-                <Plus className="size-3.5" />
-              </SidebarGroupAction>
-            </SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                {communities.map((community) => (
+      {/* Communities section — user's own communities */}
+      {communities.filter((c) => c.role !== "sudo").length > 0 && (
+        <SidebarGroup className="group-data-[collapsible=icon]:hidden">
+          <SidebarGroupLabel>
+            Communities
+            <SidebarGroupAction
+              render={
+                <Link
+                  href="/dashboard/community/request"
+                  aria-label="Request a community"
+                />
+              }
+            >
+              <Plus className="size-3.5" />
+            </SidebarGroupAction>
+          </SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {communities
+                .filter((c) => c.role !== "sudo")
+                .map((community) => (
                   <SidebarMenuItem key={community.id}>
                     <SidebarMenuButton
                       render={
-                        <Link href={`/dashboard/community/${community.slug}`} />
+                        <Link
+                          href={`/dashboard/community/${community.slug}`}
+                        />
                       }
                       isActive={false}
                       className="gap-2.5"
@@ -592,10 +619,46 @@ function PlayerNav({ pathname, communities }: PlayerNavProps) {
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 ))}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-        </>
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+      )}
+
+      {/* Sudo communities section — admin access to all communities */}
+      {communities.filter((c) => c.role === "sudo").length > 0 && (
+        <SidebarGroup className="group-data-[collapsible=icon]:hidden">
+          <SidebarGroupLabel className="text-amber-600">
+            All Communities (Sudo)
+          </SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {communities
+                .filter((c) => c.role === "sudo")
+                .map((community) => (
+                  <SidebarMenuItem key={community.id}>
+                    <SidebarMenuButton
+                      render={
+                        <Link
+                          href={`/dashboard/community/${community.slug}`}
+                        />
+                      }
+                      isActive={false}
+                      className="gap-2.5"
+                    >
+                      <CommunityIcon community={community} />
+                      <span className="truncate">{community.name}</span>
+                      {community.status && community.status !== "active" && (
+                        <span className="text-muted-foreground ml-auto shrink-0 text-[10px] capitalize">
+                          {community.status}
+                        </span>
+                      )}
+                      {community.hasLiveTournament && <LiveDot />}
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
       )}
 
       {/* Secondary nav — pinned to bottom of SidebarContent */}
