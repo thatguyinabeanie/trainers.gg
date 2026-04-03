@@ -63,3 +63,12 @@ Keep these in mind — don't wait for review:
 - **Parallel fetches**: Use `Promise.all` for independent data requests in Server Components
 
 See `reviewing-caching` skill for the full caching decision tree.
+
+## Component & Helper Awareness
+
+When editing web app files, path-scoped rules automatically load:
+
+- **`web-ui-catalog.md`** — categorized index of all UI components in `components/ui/`
+- **`web-hooks-and-helpers.md`** — index of available hooks, lib helpers, and `@trainers/utils` exports
+
+Check these catalogs before creating new components or utilities. See `creating-components` skill for component creation patterns.
