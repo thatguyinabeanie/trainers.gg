@@ -1,8 +1,17 @@
 import type { CSSProperties, ReactNode } from "react";
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
-import { createClient, getUser } from "@/lib/supabase/server";
-import { listMyCommunities, getCurrentUserAlts } from "@trainers/supabase";
+import {
+  createClient,
+  createServiceRoleClient,
+  getUser,
+} from "@/lib/supabase/server";
+import {
+  listMyCommunities,
+  listAllCommunitiesForSudo,
+  getCurrentUserAlts,
+} from "@trainers/supabase";
+import { isSudoModeActive } from "@/lib/sudo/server";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { DashboardSidebar } from "@/components/dashboard/dashboard-sidebar";
 import { DASHBOARD_ALT_COOKIE } from "@/components/dashboard/sidebar-helpers";
@@ -20,7 +29,7 @@ export default async function DashboardLayout({
 
   const supabase = await createClient();
 
-  const [communities, alts, userRow] = await Promise.all([
+  const [communities, alts, userRow, sudoActive] = await Promise.all([
     listMyCommunities(supabase, user.id).catch((err) => {
       console.error("[DashboardLayout] Failed to load communities:", err);
       return [];
@@ -41,7 +50,42 @@ export default async function DashboardLayout({
         }
         return data;
       }),
+    isSudoModeActive().catch((err) => {
+      console.error("[DashboardLayout] Failed to check sudo mode:", err);
+      return false;
+    }),
   ]);
+
+  // When sudo mode is active, merge all communities — user's own keep their real
+  // role, communities the user doesn't belong to get role: "sudo".
+  let allSudoCommunities: Awaited<
+    ReturnType<typeof listAllCommunitiesForSudo>
+  > | null = null;
+  if (sudoActive) {
+    allSudoCommunities = await listAllCommunitiesForSudo(
+      createServiceRoleClient()
+    ).catch((err) => {
+      console.error(
+        "[DashboardLayout] Failed to load all communities for sudo:",
+        err
+      );
+      return null;
+    });
+  }
+
+  const mergedCommunities = (() => {
+    if (!sudoActive || !allSudoCommunities) {
+      return communities.map((c) => ({ ...c, isSudoAccess: false as const }));
+    }
+    const myIds = new Set(communities.map((c) => c.id));
+    const sudoOnlyCommunities = allSudoCommunities
+      .filter((c) => !myIds.has(c.id))
+      .map((c) => ({ ...c, isOwner: false as const, isSudoAccess: true as const }));
+    return [
+      ...communities.map((c) => ({ ...c, isSudoAccess: false as const })),
+      ...sudoOnlyCommunities,
+    ];
+  })();
 
   const mainAltId = userRow?.main_alt_id ?? null;
 
@@ -56,7 +100,7 @@ export default async function DashboardLayout({
       : null;
 
   // Check which communities have active (live) tournaments
-  const communityIds = communities.map((c) => c.id);
+  const communityIds = mergedCommunities.map((c) => c.id);
   let activeCommunityIds = new Set<number>();
   if (communityIds.length > 0) {
     const { data, error: tournamentsError } = await supabase
@@ -79,13 +123,18 @@ export default async function DashboardLayout({
     avatarUrl: (user.user_metadata?.avatar_url as string | undefined) ?? null,
   };
 
-  const sidebarCommunities = communities.map((c) => ({
+  const sidebarCommunities = mergedCommunities.map((c) => ({
     id: c.id,
     name: c.name,
     slug: c.slug,
     logoUrl: c.logo_url ?? null,
-    role: c.isOwner ? ("owner" as const) : ("staff" as const),
+    role: c.isSudoAccess
+      ? ("sudo" as const)
+      : c.isOwner
+        ? ("owner" as const)
+        : ("staff" as const),
     hasLiveTournament: activeCommunityIds.has(c.id),
+    status: c.status,
   }));
 
   const sidebarAlts = alts.map((a) => ({

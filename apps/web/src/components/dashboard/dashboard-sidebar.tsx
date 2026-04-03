@@ -69,8 +69,9 @@ interface CommunityInfo {
   name: string;
   slug: string;
   logoUrl?: string | null;
-  role: "owner" | "staff";
+  role: "owner" | "staff" | "sudo";
   hasLiveTournament: boolean;
+  status?: string | null;
 }
 
 interface DashboardSidebarProps {
