@@ -7,6 +7,7 @@ import {
   isAdminRoute,
   isNextInternal,
   needsOnboarding,
+  isOnboardingExempt,
 } from "@/lib/proxy-routes";
 
 /**
@@ -30,10 +31,15 @@ import {
  *    - Impersonation requires an active sudo session
  *
  * 3. Protected routes (auth required, always enforced):
- *    - /dashboard/*, /communities/create, /onboarding
+ *    - /dashboard/*, /communities/create
  *    - /tournaments/[slug]/r/[round]/t/[table]
  *    - See PROTECTED_ROUTES and PROTECTED_PATTERNS in proxy-routes.ts
  *    - Unauthenticated users are redirected to /sign-in?redirect=<path>
+ *
+ * 4. Onboarding gate (username required, always enforced):
+ *    - ALL authenticated routes except auth flows, API, AT Protocol, and the onboarding page
+ *    - Users with temp_/user_ usernames are redirected to /dashboard/onboarding
+ *    - See isOnboardingExempt() in proxy-routes.ts for the exemption list
  */
 
 export default async function proxy(request: NextRequest) {
@@ -160,24 +166,27 @@ export default async function proxy(request: NextRequest) {
   }
 
   // Onboarding gate: users with temp usernames must complete setup
-  // before accessing protected routes (except /onboarding itself)
+  // Applies to ALL routes except auth flows, API, and the onboarding page itself
   if (
     user &&
-    isProtectedRoute(pathname) &&
-    !pathname.startsWith("/onboarding") &&
+    !isOnboardingExempt(pathname) &&
     needsOnboarding(user.user_metadata?.username)
   ) {
-    return NextResponse.redirect(new URL("/onboarding", request.url));
+    return NextResponse.redirect(
+      new URL("/dashboard/onboarding", request.url)
+    );
   }
 
-  // Reverse gate: if user is on /onboarding but already has a permanent
-  // username, redirect them to the dashboard
+  // Reverse gate: if user is on /dashboard/onboarding but already has a
+  // permanent username, redirect them to the dashboard
   if (
     user &&
-    pathname.startsWith("/onboarding") &&
+    pathname.startsWith("/dashboard/onboarding") &&
     !needsOnboarding(user.user_metadata?.username)
   ) {
-    return NextResponse.redirect(new URL("/dashboard/overview", request.url));
+    return NextResponse.redirect(
+      new URL("/dashboard/overview", request.url)
+    );
   }
 
   return response;
