@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Zap } from "lucide-react";
-import { formatTimeAgo } from "@trainers/utils";
+import { formatTimeAgo, formatDisplayUsername, isTempUsername } from "@trainers/utils";
 import type { RecentlyActivePlayer } from "@trainers/supabase/queries";
 
 interface SidebarRecentProps {
@@ -27,7 +27,9 @@ export function SidebarRecent({ players }: SidebarRecentProps) {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-2">
-        {players.map((player) => (
+        {players.map((player) => {
+          const displayUsername = formatDisplayUsername(player.username);
+          return (
           <Link
             key={player.userId}
             href={`/u/${player.username}`}
@@ -36,22 +38,23 @@ export function SidebarRecent({ players }: SidebarRecentProps) {
             {/* Avatar */}
             <Avatar size="sm">
               {player.avatarUrl && (
-                <AvatarImage src={player.avatarUrl} alt={player.username} />
+                <AvatarImage src={player.avatarUrl} alt={displayUsername} />
               )}
               <AvatarFallback>
-                {player.username.slice(0, 2).toUpperCase()}
+                {isTempUsername(player.username) ? "NT" : player.username.slice(0, 2).toUpperCase()}
               </AvatarFallback>
             </Avatar>
 
             {/* Name + last active */}
             <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-medium">{player.username}</p>
+              <p className="truncate text-sm font-medium">{displayUsername}</p>
               <p className="text-muted-foreground text-xs">
                 Active {formatTimeAgo(player.lastActiveAt)}
               </p>
             </div>
           </Link>
-        ))}
+          );
+        })}
       </CardContent>
     </Card>
   );
