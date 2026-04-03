@@ -12,6 +12,8 @@ export {
   formatDate,
   formatDateTime,
   formatTimeAgo,
+  isTempUsername,
+  formatDisplayUsername,
 } from "./format";
 
 // countries.ts — ISO 3166-1 country codes and helpers

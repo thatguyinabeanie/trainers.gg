@@ -4,6 +4,8 @@ import {
   formatDate,
   formatDateTime,
   formatTimeAgo,
+  isTempUsername,
+  formatDisplayUsername,
 } from "../format";
 
 describe("getPlayerName", () => {
@@ -211,5 +213,47 @@ describe("formatTimeAgo", () => {
     // 1 hour and 59 minutes ago = 1h ago (floors to 1)
     const date = new Date("2025-01-15T10:01:00.000Z").toISOString();
     expect(formatTimeAgo(date)).toBe("1h ago");
+  });
+});
+
+describe("isTempUsername", () => {
+  it.each([
+    { username: "temp_06143118-14b", expected: true },
+    { username: "temp_abc", expected: true },
+    { username: "user_abc123", expected: true },
+    { username: "user_x", expected: true },
+  ])(
+    "returns true for system-generated username '$username'",
+    ({ username, expected }: { username: string; expected: boolean }) => {
+      expect(isTempUsername(username)).toBe(expected);
+    }
+  );
+
+  it.each([
+    { username: "ash_ketchum", expected: false },
+    { username: "cynthia", expected: false },
+    { username: "temporary", expected: false },
+    { username: "username_real", expected: false },
+    { username: "", expected: false },
+  ])(
+    "returns false for real username '$username'",
+    ({ username, expected }: { username: string; expected: boolean }) => {
+      expect(isTempUsername(username)).toBe(expected);
+    }
+  );
+});
+
+describe("formatDisplayUsername", () => {
+  it("returns 'New Trainer' for temp_ prefix usernames", () => {
+    expect(formatDisplayUsername("temp_06143118-14b")).toBe("New Trainer");
+  });
+
+  it("returns 'New Trainer' for user_ prefix usernames", () => {
+    expect(formatDisplayUsername("user_abc123")).toBe("New Trainer");
+  });
+
+  it("returns the username unchanged for real usernames", () => {
+    expect(formatDisplayUsername("ash_ketchum")).toBe("ash_ketchum");
+    expect(formatDisplayUsername("cynthia")).toBe("cynthia");
   });
 });
